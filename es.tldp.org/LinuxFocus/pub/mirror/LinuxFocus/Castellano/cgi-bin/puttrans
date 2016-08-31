@@ -1,0 +1,280 @@
+#!/usr/bin/perl -wT
+#this is for /usr/internet/infosystems/httpd/cgi-bin or /www/cgi-bin
+# Copyright: Guido Socher, eedgus
+# $Revision: 1.4 $, last changed: $Date: 1999/10/06 20:29:11 $
+#
+
+=head1 Get a new articel number
+
+getticket provides a interface to reserve new article numbers.
+
+=head1 DESCRIPTION
+
+This is a system where editors can themselves pick article numbers
+in advance. getticket sends out mails.
+
+=cut
+
+# -------------------------------------------------------
+use strict;
+my %FORM;
+my %html;
+#
+# Location of important files
+#
+my $url = "undefined";
+#
+my %LANGUAGES = ( " en" => "English" , " es" => "Spanish" , " fr" => "French" ,
+" de" => "German" );
+#
+my @LANGS;
+my $NumLANGS=0;
+#
+my $dbfile= "ArticleNumbers.txt";
+my $langfile="ArticleLanguages.txt";
+#
+my %STATUS;
+my %TYPES = (
+" free" => '<FONT COLOR="red">Untranslated</FONT>',
+" going" => '<FONT COLOR="blue">In curse</FONT>' , 
+" done" => '<FONT COLOR="seablue" SIZE="-1">Finished</FONT>'
+);
+#
+#print "Content-type: text/html\n\n";
+#
+&cgi_receive;
+my $number;
+my $title;
+my %TRANSLATORS;
+my $lang;
+my %languages;
+my @line;
+
+&readHTMLpage;
+&printHTMLpage('main');
+
+my $count=0;
+open(FF,"$langfile")||die "ERROR: languages file doesn't exist\n";
+while(<FF>) {
+    next unless (/\w/);
+    chomp;
+    @line=split(/\+\+/);
+    $number = shift @line;
+    chop $number;
+    chop @line;
+    if ( $number eq "000" ) {
+        while ( ($LANGS[$NumLANGS] = shift @line) ) {
+            next unless $LANGS[$NumLANGS] ne ' 00';
+            $NumLANGS++;
+            }
+        next;
+        }
+    for ( $count=0 ; $count<$NumLANGS ; $count++ ) {
+        if ( $line[$count] ne ' 00' && $line[$count] ne ' ' ) {
+                $STATUS{$number . $LANGS[$count]} = $line[$count];
+            }
+        }
+    }
+close FF;
+
+&printHTMLpage('tablehead');
+
+print "  <TR>\n";
+open(FF,"$dbfile")||die "ERROR: can not read db\n";
+for ( $count=0 ; $count<$NumLANGS ; $count++ ) {
+    print '    <TD ALIGN="center">' . "\n";
+    print "    <B><I>$LANGUAGES{$LANGS[$count]}</I></B>\n";
+    print '    </TD>' . "\n";
+    }
+print "  </TR>\n";
+#
+while(<FF>){
+    next unless (/\w/ && /^[0-9]/);
+    print "<TR>\n";
+    chomp;
+    @line=split(/\+\+/);
+    $number = shift @line;
+    chop $number;
+    $title = shift @line;
+    if ( $title eq " ") {
+        $title="Unknown"
+        }
+    print "<TD align=right><tt>$number</tt></TD>\n<TD>$title</TD>\n";
+    for ( $count=0 ; $count<$NumLANGS ; $count++ ) {
+        $lang=$LANGS[$count];
+        print "<TD align=center>";
+        if ( $STATUS{$number . $lang} ) {
+            print $TYPES{$STATUS{$number . $lang}};
+        }else{
+            print $TYPES{' free'};
+#            print '<INPUT TYPE="button" NAME="';
+#            print $number.$lang;
+#            print '" VALUE="reserve">' ,
+            }
+        print "</TD>\n";
+        }
+    print "</TR>\n";
+    }
+close FF;
+&printHTMLpage('tablefoot');
+
+&printHTMLpage('mainfoot');
+
+#--------------------------------------------------------
+sub printHTMLpage($){
+    my $reqpage = shift;
+    my $tmp;
+    die "ERROR: no such template $reqpage\n" unless ($html{$reqpage});
+    for (@{$html{$reqpage}}){
+        print;
+    }
+}
+#--------------------------------------------------------
+sub readHTMLpage(){
+    #read and print any text between __ xxx __ and the next __ 
+    my $pagename="nix";
+    while(<DATA>){
+        if (/^__ (\w+) __/){
+            $pagename=$1;
+            next;
+        }
+        next if (/^__ /);
+        # the /o is important!!
+        s/\$url/$url/o;
+        push(@{$html{$pagename}},$_);
+    }
+}
+#--------------------------------------------------------
+sub cgi_receive{
+    my $buffer = "";
+    my $pair;
+    my $name;
+    my $value;
+    if ($ENV{'GATEWAY_INTERFACE'} && $ENV{'GATEWAY_INTERFACE'} =~ /CGI/){
+        if ($ENV{'REQUEST_METHOD'} eq 'GET') {
+            if($ENV{'QUERY_STRING'}){
+                $buffer = $ENV{'QUERY_STRING'};
+            }
+        }elsif ($ENV{'REQUEST_METHOD'} eq 'POST') {
+            read(STDIN, $buffer,$ENV{'CONTENT_LENGTH'});
+        }else{
+            die "Unknown REQUEST_METHOD: $ENV{'REQUEST_METHOD'}";
+        }
+    }else {
+        $buffer = $ARGV[0] if ($ARGV[0]);
+    }
+    # now decode it:
+    #
+    # Split the name-value pairs
+    foreach $pair (split(/\&/, $buffer)){
+        ($name, $value) = split(/=/, $pair);
+        $value = " " unless ($value);
+        # Un-Webify plus signs and %-encoding
+        $value =~ tr/+/ /;
+        $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+        $FORM{$name} = $value;
+    }
+}
+
+#--------------------------------------------------------
+__END__
+__ main __
+<HTML>
+<HEAD>
+<TITLE>LF article ticket number</TITLE>
+</HEAD>
+
+<BODY>
+<CENTER><H1>
+<FONT COLOR="#339900">
+LinuxFocus article translation status report.
+</FONT>
+</H1></CENTER>
+
+
+__ main2 __
+<P>
+The box below should be revisited. It's there in order to avoid rewriting.
+</P>
+
+<center>
+<FORM METHOD="get" ACTION="$url"> 
+    <TABLE BORDER="1" CELLPADDING="5" cellspacing="0" bgcolor="#6495ED" >
+    <TR>
+    <TD ALIGN="center">
+    Please enter YOUR e-mail address<BR>
+        <INPUT TYPE="text" NAME="email" SIZE=30 VALUE="">
+    </TD>
+    <TD>
+    Please enter YOUR name<BR>
+        <INPUT TYPE="text" NAME="name" SIZE=30 VALUE="">
+    </TD>
+    </TR>
+    <TR>
+    <TD>
+    Please enter the article number<BR>
+        <CENTER><INPUT TYPE="text" NAME="number" SIZE=5 VALUE=""></CENTER>
+    </TD>
+    <TD  VALIGN="top" ALIGN="center">
+        <INPUT TYPE="submit" VALUE="Reserve the translation">
+    </TD>
+    </TR>
+    </TABLE>
+</FORM>
+</CENTER>
+
+__ mainfoot __
+<HR SIZE="2" NOSHADE>
+<P>Last updated :</P>
+</BODY>
+</HTML>
+
+__ tablehead __
+<HR SIZE="2" NOSHADE>
+<CENTER>
+<FORM METHOD="get" ACTION="$url">
+<TABLE BORDER ="1" BGCOLOR="lightgreen" CELLSPACING="0">
+  <TR>
+    <TD ROWSPAN=2>
+    &nbsp;
+    </TD>
+    <TD ROWSPAN="2">
+    <B><FONT SIZE="+2">Title</FONT></B>
+    </TD>
+    <TD COLSPAN="4" ALIGN="center">
+    <B><FONT SIZE="+1">Languages</FONT></B>
+    </RTD
+  </TR>
+
+__ tablefoot __
+</TABLE>
+</FORM>
+</CENTER>
+
+__ selecthead __
+<HR SIZE="2" NOSHADE>
+<CENTER>
+<FORM METHOD="get" ACTION="$url">
+<TABLE BORDER ="1" BGCOLOR="lightgreen" CELLSPACING="0">
+  <TR><TD COLSPAN="6" BGCOLOR="seablue" BORDER=2 ALIGN="CENTER">
+  <INPUT TYPE="submit" VALUE="Selection Finished">
+  </TD></TR>
+  <TR>
+    <TD ROWSPAN=2>
+    &nbsp;
+    </TD>
+    <TD ROWSPAN="2">
+    <B><FONT SIZE="+2">Title</FONT></B>
+    </TD>
+    <TD COLSPAN="4" ALIGN="center">
+    <B><FONT SIZE="+1">Languages</FONT></B>
+    </RTD
+  </TR>
+
+__ selectfoot __
+  <TR><TD COLSPAN="6" BGCOLOR="seablue" BORDER=2 ALIGN="CENTER">
+  <INPUT TYPE="submit" VALUE="Selection Finished">
+  </TD></TR>
+</TABLE>
+</FORM>
+</CENTER>

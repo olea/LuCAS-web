@@ -1,0 +1,64 @@
+#!/usr/bin/perl -w
+# vim: set sw=4 ts=4 si et:
+# Note: Convert this to unix text file format if you saved it under windows!
+# Copyright: GPL, Author: Guido Socher
+# From: linuxfocus.org July 2003
+# Requires montage and convert from ImageMagick (http://www.imagemagick.org)
+use strict;
+use vars qw($opt_h);
+use Getopt::Std;
+sub help();
+#
+getopts("h")||die "ERROR: No such option. -h for help.\n";
+help() if ($opt_h);
+help() unless ($ARGV[0]);
+my @four=();
+my $i=0;
+foreach (@ARGV){
+        if (scalar @four < 4){
+                push(@four,"\"$_\"");
+        }else{
+                $i++;
+                print "$four[0] $four[1] $four[2] $four[3] -> out.$i.jpg, land.$i.jpg\n";
+                # combine 4 images to one
+                print `montage -quality 95 -borderwidth 10 -bordercolor white -tile 2x2 -geometry 1600x1200 -page A4 $four[0] $four[1] $four[2] $four[3] out.$i.jpg`;
+                print `convert -quality 100 -rotate 90 out.$i.jpg land.$i.jpg`;
+        @four=();
+                push(@four,"\"$_\"");
+        }
+}
+$i++;
+# the last one:
+if (scalar @four > 0){
+        # combine less than 4 images to one
+        my $imgs=join(' ',@four);
+        print "$imgs -> out.$i.jpg, land.$i.jpg\n";
+        print `montage -quality 95 -borderwidth 10 -bordercolor white -tile 2x2 -geometry 1600x1200 -page A4 $imgs out.$i.jpg`;
+        print `convert -quality 100 -rotate 90 out.$i.jpg land.$i.jpg`;
+}
+        
+#
+sub help(){
+print "combine4images -- combine 4 images onto one A4 page 
+
+USAGE: combine4images img1.jpg img2.jpg ...
+
+combine4images is very useful if you have a lot of digital
+photos which you do not want to print in full size. This
+program combines 4 images onto one A4 page for easy printing.
+
+The program generates out.X.jpg (portrait) and land.C.jpg (landscape) 
+images. X is an integer.
+
+EXAMPLE: You have have directory with 20 .jpg image which you want
+to combine (4 images per page) for easy printing:
+combine4images *
+
+This will generate out.1.jpg, out.2.jpg, ..., out.5.jpg and
+land.1.jpg, ..., land.5.jpg
+
+\n";
+exit;
+}
+__END__ 
+

@@ -1,0 +1,764 @@
+ <!DOCTYPE debiandoc PUBLIC "-//DebianDoc//DTD DebianDoc//ES" [
+ <!entity % versiondata  SYSTEM "dynamic.ent" > %versiondata;
+ <!entity % messagesdata SYSTEM "messages.ent"> %messagesdata;
+ <!entity % defaultsdata SYSTEM "defaults.ent"> %defaultsdata;
+ <!entity % urlsdata     SYSTEM "urls.ent"    > %urlsdata;
+ <!entity cvsrev "$Revision: 1.2 $">
+ <!-- 
+        document conventions:
+          file,directory,partition == file
+          program, command == prgn
+          program output == tt
+          key input == em, example for longer ones
+          command input == tt
+          variable == var
+          package == package
+
+   -->
+]>
+
+<debiandoc>
+  <book>
+    <titlepag>
+      <title>
+Documentación sobre <prgn>dselect</prgn> para principiantes.
+      <author>
+        <name>Stéphane Bortzmeyer</name>
+        <email>bortzmeyer@debian.org</email>
+      </author>
+    </titlepag>
+
+
+    <chapt id="dselect-intro">Introducción
+
+      <P>
+Este fichero contiene documentación sobre <prgn>dselect</prgn> para
+aquellos que lo usen por primera vez y pretende servir de ayuda a la hora
+de instalar Debian con éxito. No hace ningún intento de explicarlo todo,
+así que cuando se encuentre con <prgn>dselect</prgn> por primera vez
+léase las pantallas de ayuda.
+      <P>
+<prgn>dselect</prgn> se utiliza para seleccionar qué paquetes
+desea usted instalar (hay actualmente unos &num-of-distrib-pkgs; paquetes
+en Debian &release;).. Se ejecutará durante la instalación
+y como es un objeto muy potente y algo complejo, es altamente
+recomendable tener algún conocimiento previo sobre él. Usar
+<prgn>dselect</prgn> descuidadamente puede estropear seriamente el
+sistema.
+      <p>
+<prgn>dselect</prgn>le llevará a través del proceso de instalación de
+paquetes como sigue:
+
+<list>
+	  <item>Escoger el método de acceso que se va a utilizar.
+	  <item>Actualizar la lista de paquetes disponibles, si es posible.
+	  <item>Solicitar los paquetes que desea en el sistema.
+	  <item>Instalar y actualizar los paquetes deseados.
+	  <item>Configurar los paquetes que estén sin configurar.
+	  <item>Eliminar el software no deseado.
+</list>
+
+Conforme cada paso se completa con éxito, le guiará al siguiente.
+Recórralos en orden, sin saltarse ningún paso.
+      <P>
+Aquí y allá en este documento hablaremos de iniciar otro shell. Linux
+tiene 6 sesiones de consola o shells disponibles en cualquier momento.
+Puede cambiar entre ellas pulsanto <em>ALT-IZQDO F1</em>, <em>ALT-IZQDO
+F2</em>, ...  <em>ALT-IZQDO F6</em>, después de lo cual usted puede
+entrar a su nuevo shell y proseguir. El shell usado por el proceso de
+instalación es el 1 (o tty1), de modo que deberá pulsar <em>ALT-IZQDO
+F1</em> cuando desee regresar a dicho proceso.
+
+    <chapt id="dselect-main">Una vez dentro de <prgn>dselect</prgn>
+      <p>
+Una vez dentro de <prgn>dselect</prgn> verá la siguiente pantalla:
+
+<example>
+Debian Linux `dselect' package handling frontend.
+
+0.  [A]ccess  Choose the access method to use. 
+1.  [U]pdate  Update list of available packages, if possible. 
+2   [S]elect  Request which packages you want on your system.
+3.  [I]nstall Install and upgrade wanted packages. 
+4.  [C]onfig  Configure any packages that are unconfigured. 
+5.  [R]emove  Remove unwanted software.
+6.  [Q]uit    Quit dselect.
+</example>
+
+Examinemos estas opciones una a una.
+
+      <sect id="access">``Access''
+	<p>
+Esta es la pantalla de acceso (access):
+
+<example>
+dselect - list of access methods
+  Abbrev.        Description
+  cdrom          Install from a CD-ROM.
+* multi_cd       Install from a CD-ROM set.
+  nfs            Install from an NFS server (not yet mounted).
+  multi_nfs      Install from an NFS server (using the CD-ROM set) (not yet mounted).
+  harddisk       Install from a hard disk partition (not yet mounted).
+  mounted        Install from a filesystem which is already mounted.
+  multi_mount    Install from a mounted partition with changing contents.
+  floppy         Install from a pile of floppy disks.
+  apt            APT Acquisition [file,http,ftp]
+</example>
+
+	<p>
+Aquí le decimos a <prgn>dselect</prgn> dónde están nuestros paquetes.
+(Las opciones pueden aparecer en otro orden). Es muy importante que
+seleccione el método apropiado para la instalación.
+Puede que tenga otros métodos en la lista, o algunos menos, o aparezcan
+en otro orden; no se preocupe.
+En la siguiente lista describiremos los distintos métodos.
+
+<taglist>
+	    <tag>multi_cd</tag>
+	    <item>
+Grande y potente, este complejo método es el recomendado para instalar
+una versión reciente de Debian desde un conjunto de múltiples CDs
+binarios. Cada uno de esos CDs debe contener información sobre los
+paquetes que haya en él y en los CDs anteriores (en el fichero
+<file>Packages.cd</file>). Cuando seleccione este método por primera vez,
+asegúrese de que el CD-ROM que va a usar no esté montado. Ponga el último
+disco <em>binario</em> del conjunto (no necesitará los CDs de fuentes)
+en la lectora y responda las preguntas que aparezcan:
+<list>
+		  <item>
+	Localización de la unidad de CD-ROM
+		  <item>
+	Confirmación de que está usando un conjunto multi-cd
+		  <item>
+	La localización de la distribución Debian en el(los) disco(s)
+		  <item>
+	[ Posiblemente ] la localización del(de los) fichero(s) Packages
+		</list>
+	      <p>
+Una vez que ha actualizado la lista de paquetes disponibles y
+seleccionado los paquetes que desea instalar, el método multi-cd diverge
+del procedimiento normal. Debe ejecutar un paso ``instalar'' por cada uno
+de los CDs que tenga, uno tras otro. Desafortunadamente, debido a las
+limitaciones de dselect no podrá pedirle que introduzca un nuevo disco en
+cada paso; la forma de actuar para cada disco es
+<list>
+		  <item>
+	Inserte el CD en su unidad de CD-ROM.
+		  <item>
+	Desde el menu principal de dselect, escoja ``Instalar''.
+		  <item>
+	Espere hasta que dpkg termine de instalar desde ese CD (puede
+	informar de una instalación correcta, o tal vez de una
+	instalación con errores. No se preocupe de ellos hasta más
+	tarde).
+		  <item>
+	Pulse [Intro] para volver al menu principal de dselect.
+		  <item>
+	Repita el procedimiento con el siguiente CD en el conjunto...
+		</list>
+	      <p>
+Puede que sea necesario ejecutar el paso ``Instalar'' más de una vez para
+corregir el orden de la instalación de paquetes - algunos paquetes
+instalados al principio pueden necesitar paquetes que se instalan después
+antes de poder configurarse correctamente.
+	      <p>
+Se recomienda ejecutar un paso ``Configurar'', para ayudarle a corregir
+cualquier paquete que haya quedado sin configurar.
+
+	    <tag>multi_nfs, multi_mount</tag>
+	    <item>
+Estos métodos son muy similares al método multi-cd, y son refinamientos
+sobre el tema de tratar con medios cambiantes, por ejemplo si se instala
+desde un conjunto multi-cd exportado vía NFS desde la unidad CD-ROM de
+otra máquina.
+
+	    <tag>apt</tag>
+	    <item>
+Una de las mejores opciones para instalar desde una réplica local del
+archivo de Debian, o desde la red. Este método usa el sistema ``apt''
+para analizar totalmente las dependencias y ordenar, así que los paquetes
+se instalarán en el orden óptimo.
+	      <p>
+La configuración de este método es simple; puede escoger un número
+cualquiera de localizaciones diferentes, mezclando URLs <tt>file:</tt>
+(discos locales or montados por NFS), URLs <tt>http:</tt>, o URLs
+<tt>ftp:</tt>. Note sin embargo que las opciones HTTP y FTP no soportan
+proxies locales que autentifiquen.
+	      <p>
+Si tiene un servidor proxy para http o ftp (o ambos), asegúrese que
+define las variables de entorno <tt>http_proxy</tt> o <tt>ftp_proxy</tt>
+respectivamente. Defínalas desde su shell antes de ejecutar dselect, por
+ejemplo:
+<example>
+# export http_proxy=http://gateway:3128/
+# dselect
+</example>
+
+	    <tag>floppy</tag>
+	    <item>
+Está dirigido a la gente que no disponga de CD-ROM o acceso a la red. No
+se recomienda como método de instalación viable si está usando disquetes
+de tamaño tradicional, pero puede funcionar mejor con unidades Zip o
+LS/120. Especifique la localización de su disquetera, e introduzca los
+disquetes. El primero debe contener el fichero Packages. Este método es
+lento y puede ser poco fiable debido a problemas con el medio.
+
+<!-- FIXME Todavía tá en inglés -->
+<![ IGNORE [ <tag>ftp</tag>
+	    <item>
+<strong>DEPRECATED METHOD -- use apt instead.  Only try if all else
+fails.</strong>
+	      <p>
+You will be asked to supply the address of an ftp site, whether you
+want to use passive mode (for proxied ftp), a username/password
+combination, the path to the debian directory, the list of
+distributions you are interested in and a place to download the binary
+package files to (relative to /var/lib/dpkg/methods/ftp).
+	      <p>
+The setup script will then immediately attempt to connect to the
+remote server to grab the Packages file(s) etc., then dselect will
+reconnect later when you actually start installing packages.
+	      <p>
+If you need to work through a firewall this method should work well,
+and is ideal for people without much local disk space.]]>
+
+<![ IGNORE [ <tag>http</tag>
+	    <item>
+<strong>DEPRECATED METHOD -- use apt instead.  Only try this method if
+all else fails</strong>
+	      <p>
+Similar to ftp, but will use a mixture of <tt>http:</tt>,
+<tt>ftp:</tt> and <tt>file:</tt> URLs to find the Debian files. You
+can set it up to use different proxies for <tt>http:</tt> and
+<tt>ftp:</tt> URLs if necessary. Very useful if a local proxy will
+cache the package files for multiple users, or if a mirror only allows
+http access and not ftp.  ]]>
+<!-- ENDFIXME Todavía tá en inglés -->
+
+	    <tag>nfs</tag>
+	    <item>
+<strong>METODO DESAPROBADO -- use apt o multi_nfs en su lugar.  Pruebe
+este método sólo si todo lo demás falla.</strong>
+	      <p>
+Este es un método de instalación simple, con necesidades simples:
+introduzca la dirección del servidor NFS, la localización de la
+distribución Debian en el servidor y (tal vez) el fichero Packages.
+Entonces dselect instalará las distintas secciones una tras otra
+desde el servidor. Lento pero fácil; no ordena los paquetes a instalar,
+así que tendrá que ejecutar varias veces el paso ``Configurar''.
+Obviamente este método sólo es apropiado para instalaciones basadas en
+NFS.
+
+	    <tag>harddisk</tag>
+	    <item>
+<strong>METODO DESAPROBADO -- use apt o multi_mount en su lugar.  Pruebe
+este método sólo si todo lo demás falla.</strong>
+	      <p>
+Introduzca el dispositivo de bloques de la partición del disco duro que
+usará, y la localización habitual de los ficheros de Debian en dicha
+partición. Lento y fácil. No ordena los paquetes a instalar,
+así que tendrá que ejecutar varias veces el paso ``Configurar''.
+No se recomienda, ya que el método ``apt'' provee esta funcionalidad,
+pero con ordenamiento correcto.
+
+	    <tag>mounted</tag>
+	    <item>
+<strong>METODO DESAPROBADO -- use apt o multi_mount en su lugar.  Pruebe
+este método sólo si todo lo demás falla.</strong>
+	      <p>
+Especifique simplemente la localización de los ficheros de Debian en su
+sistema de ficheros. Posiblemente el método más fácil, pero lento. No
+ordena los paquetes a instalar, así que tendrá que ejecutar varias veces
+el paso ``Configurar''.
+
+<!-- FIXME Todavía tá en inglés -->
+<![ IGNORE [ <tag>mountable</tag>
+	    <item>
+<strong>DEPRECATED METHOD -- use apt or multi_mount instead.  Only try
+this method if all else fails</strong>
+	      <p>
+A more complex method than ``mounted'', and a good deal faster -- it
+will scan only the packages needed. It gives more control over the
+installation options than some of the other methods, but requires more
+setup.  ]]>
+<!-- ENDFIXME Todavía tá en inglés -->
+
+
+	    <tag>cdrom</tag>
+	    <item>
+<strong>METODO DESAPROBADO -- use multi_cd en su lugar.  Pruebe
+este método sólo si todo lo demás falla.</strong>
+	      <p>
+Diseñado para instalaciones de un solo CD, este método simple pregunta
+por la localización de su unidad de CD-ROM, la localización de la
+distribución Debian en ese disco y (si es necesario) la localización
+del fichero Packages en el disco. Simple pero muy lento. No ordena los
+paquetes a instalar. No se recomienda, porque se asume que la
+distribution está en un solo CD-ROM, lo cual ya no es cierto.  Use el
+método ``multi-cd'' en su lugar.
+
+	  </taglist>
+
+	<p>
+Si se encuentra con problemas en este punto - tal vez Linux no detecta el
+CD-ROM, su acceso nfs no funciona o se ha olvidado de en qué partición
+están los paquetes - tiene un par de opciones:
+
+<list>
+	    <item>
+Abra otro shell. Corrija el problema y regrese al shell principal.
+	    <item>
+Salga de <prgn>dselect</prgn> y ejecútelo de nuevo más tarde. Puede que
+incluso necesite apagar la computadora para resolver algún problema. Esto
+es correcto, pero cuando regrese a <prgn>dselect</prgn>, ejecútelo como
+root. No se ejecutará automáticamente después de la primera vez.
+</list>
+
+	<p>
+Después de que escoja el método de acceso, <prgn>dselect</prgn> le pedirá
+que indique la localización precisa de los paquetes. Si no lo introduce
+correctamente a la primera, pulse <em>Control-C</em> y regrese a la
+opción ``Access''.
+
+	<p>
+Una vez que termine con esto, regresará a la pantalla principal.
+
+      <sect id="update">``Update''
+	<p>
+<prgn>dselect</prgn> leerá los ficheros <file>Packages</file> o
+<file>Packages.gz</file> de la réplica, y creará una base de datos en el
+sistema con todos los paquetes disponibles. Puede tardar un rato mientras
+obtiene y procesa los ficheros.
+
+      <sect id="select">``Select''
+	<p>
+Sujétese el sombrero. Aquí es donde todo sucede. El objeto de este
+ejercicio es seleccionar qué paquetes desea instalar.
+	<p>
+Pulse <em>Intro</em>. Si tiene una máquina lenta tenga en cuenta que
+la pantalla se borrará y puede permanecer vacía durante 15 segundos,
+así que no empiece a golpear teclas en este punto.
+	<p>
+Lo primero que aparece en la pantalla es la página 1 del fichero de
+ayuda.  Puede volver a esta ayuda pulsando <em>?</em> en cualquier punto
+de las pantallas de ``Select'' y puede avanzar a lo largo de las
+pantallas de ayuda pulsando la tecla <em>.</em> (punto). </P>
+
+	<P>
+Antes de sumergirse en ello tenga en cuenta estos puntos:
+
+<list>
+	    <item>
+Para salir de la pantalla de selección después de que haya terminado de
+seleccionar paquetes, pulse <em>Intro</em>. Así regresará a la pantalla
+principal si no hay ningún problema con su selección.  Si no, se le
+solicitará que corrija dicho problema. Cuando esté satisfecho con
+cualquier pantalla pulse <em>Intro</em> para salir de ella.
+	    <item>
+Ciertos problemas son muy normales y son de esperar. Si selecciona el
+paquete <var>A</var> y dicho paquete necesita el paquete <var>B</var>
+para ejecutarse, entonces <prgn>dselect</prgn> le advertirá del problema
+y lo más probable es que le sugiera una solución. Si el paquete
+<var>A</var> entra en conflicto con el paquete <var>B</var> (son
+mutuamente excluyentes) se le solicitará que decida entre ellos. 
+	  </list>
+
+<P>Veamos las dos primeras líneas de la pantalla de selección. 
+
+<example>
+dselect - main package listing (avail., priority)          mark:+/=/- verbose:v help:?
+EIOM Pri Section  Package      Inst.ver    Avail.ver   Description
+</example>
+
+	<P>
+Este encabezado nos recuerda algunas de las teclas especiales:
+
+<taglist>
+	    <tag><tt>+</tt>
+	    <item>
+Select a package for installation.
+
+	    <tag><tt>=</tt>
+	    <item>
+Place a package on hold -- useful on a broken package. You can
+reinstall an older version and place it on hold while you wait for a
+new one to appear.
+
+	    <tag><tt>-</tt>
+Remove a package.
+
+	    <tag><tt>_</tt>
+	    <item>
+Remove a package and its config files.
+
+	    <tag><tt>i,I</tt>
+	    <item>
+Toggle/cycle info displays.
+
+	    <tag><tt>o,O</tt>
+	    <item>
+Cycle through the sort options.
+
+	    <tag><tt>v,V</tt>
+	    <item>
+A terse/verbose toggle. Use this key to unlock the meanings of EIOM on
+line two, but I'll give you a summary here anyway. (Note that upper
+and lower case keys are quite different in effect.)
+<example>
+Flag   Meaning           Possible values 
+E      Error             Space, R, I
+I      Installed state   Space, *, -, U, C, I 
+O      Old mark          *, -, =, _, n
+M      Mark              *, -, =, _, n 
+</example>
+	  </taglist>
+
+	<p>
+En lugar de describir todo esto aquí, le recomiendo las pantallas de
+ayuda, donde se muestra todo. Un ejemplo, sin embargo.
+	<p>
+Usted inicia <prgn>dselect</prgn> y encuentra una linea como la
+siguiente:
+
+<example>
+EIOM Pri  Section  Package   Description 
+  ** Opt  misc     loadlin   a loader (running under DOS) for LINUX kernel
+</example>
+
+Esto le dice que loadlin fue seleccionado la última vez que utilizó
+<prgn>dselect</prgn> y que sigue seleccionado, pero no está instalado.
+¿Por qué no? La respuesta puede ser que el paquete loadlin no está
+disponible físicamente. No se encuentra en su réplica.
+	<p>
+La información que utiliza <prgn>dselect</prgn> para instalar los
+paquetes correctos se encuentra en el interior de los propios paquetes.
+Nada es perfecto en este mundo, y a veces sucede que las dependencias
+incluídas en un paquete son incorrectas, con el resultado de que
+<prgn>dselect</prgn> simplemente no puede resolver la situación. Existe
+una manera de resolverlo mediante la cual el usuario puede retomar el
+control, mediante las órdenes <em>Q</em> y <em>X</em>, que están
+disponibles en la pantalla de selección.
+
+<taglist>
+	    <tag><em>Q</em>
+	    <item>
+Obliga a <prgn>dselect</prgn> a no tener en cuenta las dependencias
+incluídas, y a hacer lo que usted le ha especificado. Los resultados, por
+supuesto, serán responsabilidad suya.
+
+	    <tag><em>X</em>
+	    <item>
+Use <em>X</em> si se encuentra totalmente perdido. Pondrá las
+cosas tal y como estaban y saldrá.
+	  </taglist>
+
+	      <p>
+Algunas teclas que le ayudan a <em>no</em> perderse (!) son <em>R</em>,
+<em>U</em> y <em>D</em>.
+
+<taglist>
+	    <tag><em>R</em>
+	    <item>
+Cancela todas las selecciones en este nivel. No afecta a las
+selecciones hechas en el nivel anterior.
+
+	    <tag><em>U</em>
+	    <item>
+Si <prgn>dselect</prgn> ha propuesto algunos cambios y usted ha
+realizados más cambios, U repondrá las selecciones de
+<prgn>dselect</prgn>.
+
+	    <tag><em>D</em>
+	    <item>
+Elimina las selecciones hechas por <prgn>dselect</prgn>, dejando sólo las
+suyas.
+	  </taglist>
+
+	<p>
+<!-- FIXME: this example is not only a bad example but also wrong -->
+<!-- factually now -->
+
+Veamos un ejemplo: El paquete <package>boot-floppies</package> (no es
+precisamente un ejemplo para principiantes, lo sé, pero ha sido escogido
+porque tiene un buen montón de dependencias) depende de los siguientes
+paquetes:
+
+<list>
+	    <item>
+<package>libc6-pic</package>
+	    <item>
+<package>slang1-pic</package>
+	    <item>
+<package>sysutils</package>
+	    <item>
+<package>makedev </package>
+	    <item>
+<package>newt0.25</package>
+	    <item>
+<package>newt0.25-dev</package>
+	    <item>
+<package>popt</package>
+	    <item>
+<package>zlib1g</package>
+	    <item>
+<package>zlib1g-dev</package>
+	    <item>
+<package>recode</package>
+	  </list>
+
+	<P>
+La persona que mantiene el paquete <package>boot-floppies</package>
+también piensa que los siguientes paquetes deberían instalarse. Pero no
+son esenciales:
+
+<list>
+	    <item>
+<package>lynx</package>
+	    <item>
+<package>debiandoc-sgml</package>
+	    <item>
+<package>unzip</package>
+	  </list>
+
+	<p>
+Así que cuando seleccionamos <package>boot-floppies</package>, obtenemos
+esta pantalla:
+
+<example>
+dselect - recursive package listing mark:             +/=/- verbose:v help:?
+EIOM Pri Section Package Description
+
+dselect - recursive package listing                         mark:+/=/- verbose:v help:?
+EIOM Pri Section  Package      Description
+  ** Opt admin    boot-floppie Scripts to create the Debian installation floppy set.   
+  _* Opt devel    newt0.25-dev Developer's toolkit for newt windowing library
+  _* Opt devel    slang1-dev   The S-Lang programming library, development version.
+  _* Opt devel    slang1-pic   The S-Lang programming library, shared library subset ki
+</example>
+
+(Pueden aparecer otros paquetes, dependiendo de lo que ya tenga en el
+sistema). Verá que todos los paquetes necesarios han sido seleccionados
+para nosotros.
+	<p>
+La tecla <em>R</em> Rpone las cosas de nuevo en el punto de partida.
+
+<example>
+dselect - recursive package listing mark:             +/=/- verbose:v help:?
+EIOM Pri Section Package Description
+
+dselect - recursive package listing                         mark:+/=/- verbose:v help:?
+EIOM Pri Section  Package      Description
+  __ Opt admin    boot-floppie Scripts to create the Debian installation floppy set.   
+  __ Opt devel    newt0.25-dev Developer's toolkit for newt windowing library
+  __ Opt devel    slang1-dev   The S-Lang programming library, development version.
+  __ Opt devel    slang1-pic   The S-Lang programming library, shared library subset ki
+</example>
+
+
+Si decidimos ahora que no queremos instalar el paquete boot-floppies,
+simplemente pulsamos <em>Enter</em>.
+
+	<P>
+La tecla <em>D</em> pone las cosas como las seleccionamos en primer
+lugar:
+
+<example>
+dselect - recursive package listing mark:             +/=/- verbose:v help:?
+EIOM Pri Section Package Description
+
+dselect - recursive package listing                         mark:+/=/- verbose:v help:?
+EIOM Pri Section  Package      Description
+  _* Opt admin    boot-floppie Scripts to create the Debian installation floppy set.   
+  __ Opt devel    newt0.25-dev Developer's toolkit for newt windowing library
+  __ Opt devel    slang1-dev   The S-Lang programming library, development version.
+  __ Opt devel    slang1-pic   The S-Lang programming library, shared library subset ki
+</example>
+
+	<p>
+La tecla <em>U</em> repone las selecciones de <prgn>dselect</prgn>:
+
+<example>
+dselect - recursive package listing mark:             +/=/- verbose:v help:?
+EIOM Pri Section Package Description
+
+dselect - recursive package listing                         mark:+/=/- verbose:v help:?
+EIOM Pri Section  Package      Description
+  _* Opt admin    boot-floppie Scripts to create the Debian installation floppy set.   
+  _* Opt devel    newt0.25-dev Developer's toolkit for newt windowing library
+  _* Opt devel    slang1-dev   The S-Lang programming library, development version.
+  _* Opt devel    slang1-pic   The S-Lang programming library, shared library subset ki
+</example>
+
+
+	<P>
+Le recomiendo que siga con las opciones por defecto de momento - tendrá
+oportunidad de añadir más cosas más tarde.
+	<P>
+Sea lo que sea lo que usted decida, pulse <em>Intro</em> para aceptarlo y
+regresar a la pantalla principal.  Si esto da como resultado problemas
+sin resolver, regresará de nuevo a otra pantalla de resolución de
+problemas.
+	<P>
+Así, las teclas <em>R</em>, <em>U</em>, y <em>D</em> son muy útiles en
+situaciones de ¿Qué_pasaría_si...?. Puede experimentar libremente y luego
+restaurarlo todo y comenzar de nuevo. <em>No</em> las mire como si
+estuvieran en una caja de cristal con la etiqueta ``Romper en caso de
+Emergencia.''
+	<P>
+Después de realizar su selección en la pantalla ``Select'', pulse
+<em>I</em> para obtener una ventana grande, <em>t</em> para moverse hasta
+el principio <em>Av Pág</em> para revisar rápidamente la selección. De
+este modo puede comprobar los resultados de su trabajo y detectar errores
+evidentes. Algunas personas han deseleccionado grupos enteros de paquetes
+por error y no se han dado cuenta del error hasta que ya era demasiado
+tarde. <prgn>dselect</prgn> es una herramienta <em>muy</em> poderosa,
+no la utilice incorrectamente.
+
+	<P>
+Debe tener ahora esta situación:
+
+<example>
+package category     status
+
+required             all selected
+important            all selected
+standard             mostly selected
+optional             mostly deselected
+extra                mostly deselected
+</example>
+
+	<P>
+¿Contento? Pulse <em>Intro</em> para salir del proceso de selección.
+Puede regresar y ejecutar ``Select'' de nuevo si lo desea.
+
+      <sect id="install">``Install''
+	<p>
+<prgn>dselect</prgn> discurrirá por los &num-of-distrib-pkgs; paquetes e
+instalará aquellos que haya seleccionado. Debe esperar que el sistema le
+pida que tome algunas decisiones mientras avanza. A menudo es útil
+cambiar a un shell diferente para comparar, digamos, una configuración
+antigua y una nueva.  Si el fichero antiguo es <file>conf.modules</file>
+el nuevo será <file>conf.modules.dpkg-dist</file>.
+	<p>
+La pantalla se desplaza bastante rápido en una máquina nueva. Puede
+parar/seguir con <em>Control-s</em>/<em>Control-q</em> y al final del
+proceso obtendrá una lista de cualquier paquete que no se haya podido
+instalar. Si quiere guardar un registro de todo lo que ocurra utilice las
+herramientas normales de Unix como <prgn>tee</prgn> o
+<prgn>script</prgn>.
+	<P>
+Puede suceder que un paquete no se instale porque depende de otro paquete
+que está seleccionado para instalarse pero no se ha instalado aún. La
+solución aquí es ejecutar ``Install'' de nuevo. Hay informes de casos
+donde fué necesario ejecutarlo 4 veces antes de que todo estuviese en su
+sitio. Esto variará según el método de instalación que use.
+
+      <sect id="configure">``Configure''
+	<P>
+La mayoría de los paquetes se configurarán en el paso 3, pero cualquier
+cosa que quedase pendiente puede configurarse aquí.
+
+      <sect id="remove">``Remove''
+	<P>
+Elimina los paquetes que están instalados pero no ya se necesitan.
+
+      <sect id="quit">``Quit''
+	<P>
+Termina dselect
+	<P>
+Le sugiero que ejecute <file>/etc/cron.daily/find</file> en este punto,
+dado que tiene un montón de ficheros nuevos en el sistema. De este modo,
+puede utilizar <prgn>locate</prgn> para obtener la localización de
+cualquier fichero.
+
+    <chapt id="dselect-conclusion">Unas cuantas pistas como conclusión.
+      <P>
+Cuando el proceso de instalación ejecuta <prgn>dselect</prgn> para usted,
+estará indudablemente ansioso de tener Debian funcionando tan pronto como
+sea posible. Bien, por favor prepárese para invertir alrededor de una
+hora dado que tiene que acostumbrarse y hacerlo bien. Cuando entre en la
+pantalla ``Select'' por primera vez no haga NINGUNA selección -
+simplemente pulse <em>Intro</em> y vea qué problemas de dependencias hay.
+Intente arreglarlos. Si se encuentra de nuevo en la pantalla principal
+vuelva a ejecutar <ref id="select"> de nuevo.
+      <P>
+Puede hacerse una idea del tamaño de una paquete pulsando <em>i</em>dos
+veces y buscando el valor de ``Size''. Este es el tamaño del paquete
+comprimido, así que el paquete descomprimido será mucho mayor (vea
+``Installed-Size'', en kilobytes, para saber cuanto).
+      <P>
+Instalar un sistema Debian nuevo es algo muy complejo, pero
+<prgn>dselect</prgn> dselect puede hacerlo por usted tan fácil como sea
+posible. Así que tómese su tiempo para aprender cómo usarlo. Lea las
+pantallas de ayuda y experimente con <em>i, I, o,</em> y <em>O</em>.
+Use la tecla <em>R</em>. Está todo ahí, pero es cosa suya utilizarlo con
+efectividad.</P>
+
+    <chapt id="dselect-glossary">Glossary
+      <p>
+Los siguientes términos son útiles para usted, tanto en este documento
+como en general al hablar sobre Debian.
+
+<taglist>
+	  <tag>Paquete
+	  <item> 
+Un fichero que contiene todo lo necesario para instalar, desinstalar
+y ejecutar un programa en particular.
+	    <P>
+El programa que manipula los paquetes es
+<prgn>dpkg</prgn>. <prgn>dselect</prgn> is un interfaz para
+<prgn>dpkg</prgn>. Los usuarios experimentados utilizan a menudo 
+<prgn>dpkg</prgn> para instalar o eliminar un paquete.
+
+	  <tag>Nombres de paquetes
+	  <item>
+Todos los nombres de paquetes tienen la forma <var>xxxxxxxxxxx.deb</var>.
+	    <p>
+Ejemplos de nombres de paquetes son:
+
+<list>
+		<item>
+<file>efax_08a-1.deb</file>
+		<item>
+<file>lrzsz_0.12b-1.deb</file>
+		<item>
+<file>mgetty_0.99.2-6.deb</file>
+		<item>
+<file>minicom_1.75-1.deb</file>
+		<item>
+<file>term_2.3.5-5.deb</file>
+		<item>
+<file>uucp_1.06.1-2.deb</file>
+		<item>
+<file>uutraf_1.1-1.deb</file>
+		<item>
+<file>xringd_1.10-2.deb</file>
+		<item>
+<file>xtel_3.1-2.deb</file>
+	      </list>
+
+	</taglist>
+
+</book>
+
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:nil
+sgml-shorttag:t
+sgml-namecase-general:t
+sgml-general-insert-case:lower
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:2
+sgml-indent-data:nil
+sgml-parent-document:nil
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
+
+
+
