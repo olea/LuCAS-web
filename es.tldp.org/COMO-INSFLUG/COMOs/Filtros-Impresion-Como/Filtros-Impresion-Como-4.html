@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Filtros de impresi&oacute;n con Ghostscript: ¿Qu&eacute; es un filtro de impresi&oacute;n y c&oacute;mo se construye?</TITLE>
+ <LINK HREF="Filtros-Impresion-Como-5.html" REL=next>
+ <LINK HREF="Filtros-Impresion-Como-3.html" REL=previous>
+ <LINK HREF="Filtros-Impresion-Como.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Filtros-Impresion-Como-5.html">Página siguiente</A>
+<A HREF="Filtros-Impresion-Como-3.html">Página anterior</A>
+<A HREF="Filtros-Impresion-Como.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="s4">4. ¿Qu&eacute; es un filtro de impresi&oacute;n y c&oacute;mo se construye?</A></H2>
+
+<P>
+<P>Antes que nada es necesario recordar el mecanismo de <EM>spooling</EM>
+t&iacute;pico de los servidores de impresi&oacute;n en linux. En primer lugar el
+servidor <EM>lpr/lprng</EM> copia el fichero a imprimir en el directorio
+de «<EM>spool</EM>» (<CODE>sd</CODE>) indicado en el fichero <CODE>/etc/printcap</CODE>,
+creando en dicho directorio un fichero de control indicando el trabajo a
+imprimir, el usuario que solicita el servicio de impresi&oacute;n, par&aacute;metros
+pasados en l&iacute;nea de &oacute;rdenes, etc. Luego, el demonio de impresi&oacute;n
+(<EM>lpd</EM>) comprueba peri&oacute;dicamente si hay ficheros de control en el
+directorio <EM>spool</EM>, y si es as&iacute;, realiza las siguientes tareas:
+<P>
+<UL>
+<LI>Imprime la p&aacute;gina de «<EM>banner</EM>» si no se ha suprimido (con la
+instrucci&oacute;n <CODE>sh</CODE> en el fichero <CODE>/etc/printcap</CODE>) y la pasa a
+trav&eacute;s del filtro de salida si lo hay (instrucci&oacute;n <CODE>of</CODE> del fichero
+<CODE>/etc/printcap</CODE>)</LI>
+<LI>Si no se indic&oacute; al servidor de impresi&oacute;n que empleara alg&uacute;n filtro
+de impresi&oacute;n en concreto, entonces se utilizar&aacute; el filtro de entrada, cuya
+ruta indica el par&aacute;metro <CODE>if</CODE> del fichero <CODE>/etc/printcap</CODE>.</LI>
+<LI>Al ejecutarse el filtro de entrada, se redirecciona su entrada
+est&aacute;ndar al fichero de control y su salida est&aacute;ndar a:
+
+<UL>
+<LI>la entrada est&aacute;ndar del filtro de salida (<CODE>of</CODE>) cuando lo haya, y
+la salida de dicho filtro al dispositivo de impresi&oacute;n asociado a la
+impresora (entrada <CODE>lp</CODE> del fichero <CODE>/etc/printcap</CODE>)</LI>
+<LI>al dispositivo de impresi&oacute;n indicado en <CODE>/etc/printcap</CODE></LI>
+</UL>
+
+</LI>
+</UL>
+<P>Por lo tanto un filtro de entrada de impresi&oacute;n no es m&aacute;s que un programa
+(generalmente un gui&oacute;n) que teniendo en su entrada est&aacute;ndar (<EM>STDIN</EM>) un
+fichero en un formato determinado , p. ej., ps (postscript), escribe en
+su salida est&aacute;ndar (<EM>STDOUT</EM>) los c&oacute;digos necesarios para que la impresora
+imprima dicho fichero.
+<P>Consideremos que disponemos de una impresora <B>HP Laserjet Plus</B> y
+vamos a escribir algunos filtros. La resoluci&oacute;n ser&aacute; de <B>300x300</B>;
+el formato de papel, <B>A4</B>; y el controlador de dispositivo es
+<B>ljetplus</B>.
+<P>Vamos a escribir el filtro
+para ficheros PS como un <EM>shell script</EM>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/bash/
+#Filtro de ficheros postscript
+/usr/bin/gs -q -dSAFER -dNOPAUSE -sDEVICE=ljetplus -r300 -sPAPERSIZE=a4 -sOutputFile=- -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Como podemos ver, <EM>gs</EM> lee la <EM>STDIN</EM> desde el fichero de control
+que ha creado el servidor de impresi&oacute;n <EM>lpr</EM>; se ejecuta el filtro y
+la opci&oacute;n <CODE>-sOutputFile=-</CODE> env&iacute;a la salida a <EM>STDOUT</EM>. El
+demonio <EM>lpd</EM> tomar&aacute; los datos que se encuentren en <EM>STDOUT</EM> y los
+enviar&aacute; a la cola de impresi&oacute;n.
+<P>Para procesar un fichero PDF aprovechando la utilidad <EM>pdf2ps</EM>
+(<EM>shell script</EM> que convierte un fichero PDF a PS), escribiremos el
+filtro:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/bash/
+#Filtro de ficheros pdf
+/usr/bin/pdf2ps | /usr/bin/gs -q -dSAFER -dNOPAUSE -sDEVICE=ljetplus -r300 -sPAPERSIZE=a4\
+-sOutputFile=- -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para un texto en formato troff, emplear&iacute;amos este otro
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/bash/
+#Filtro de ficheros troff
+/usr/bin/grops -g | /usr/bin/gs -q -dSAFER -dNOPAUSE -sDEVICE=ljetplus -r300 -sPAPERSIZE=a4\
+-sOutputFile=- -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(la opci&oacute;n <CODE>-g</CODE> para la orden <EM>grops</EM> permite generar documentos en
+formato <CODE>letter</CODE> o <CODE>a4</CODE>)
+<P>Como puede verse el concepto de filtro ser&iacute;a un <EM>shell script</EM> con los
+siguientes campos:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/bash
+#Comentario 'filtro para ficheros XYZ'
+/usr/bin/XYZps | /usr/bin/gs -q -dSAFER -dNOPAUSE -sDEVICE=ljetplus -r300 -sPAPERSIZE=a4\
+-sOutputFile=- -
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Donde <EM>XYZps</EM> es un programa (con opciones) que convierte el formato XYZ a
+PS. Hay una gran cantidad de ellos que servir&iacute;an para hacer filtros con
+posibilidad de imprimir gr&aacute;ficos; as&iacute; el formato TIFF se pasa
+directamente con la utilidad <EM>tiff2ps</EM>, mientras que los GIF y JPEG se pasan
+a formato PNM mediante los programas <EM>giftopnm</EM> y <EM>djpeg</EM>,
+respectivamente. Una vez en este formato, se traduce a PS con la utilidad
+<EM>pnmtops</EM>.
+<P>
+<HR>
+<A HREF="Filtros-Impresion-Como-5.html">Página siguiente</A>
+<A HREF="Filtros-Impresion-Como-3.html">Página anterior</A>
+<A HREF="Filtros-Impresion-Como.html#toc4">Índice general</A>
+</BODY>
+</HTML>

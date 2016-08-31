@@ -1,0 +1,844 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>FAQ sobre Linux para principiantes - es.comp.os.linux: Internet / Redes / Modems</TITLE>
+ <LINK HREF="FAQ_Linux-9.html" REL=next>
+ <LINK HREF="FAQ_Linux-7.html" REL=previous>
+ <LINK HREF="FAQ_Linux.html#toc8" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="FAQ_Linux-9.html">Next</A>
+<A HREF="FAQ_Linux-7.html">Previous</A>
+<A HREF="FAQ_Linux.html#toc8">Contents</A>
+<HR>
+<H2><A NAME="s8">8. Internet / Redes / Modems</A></H2>
+
+<H2><A NAME="ss8.1">8.1 ¿Qué es un modem? ¿Y un puerto serie?</A>
+</H2>
+
+<P>¿Por qué los modems están normalmente asociados a puertos serie? Lo
+impone el hecho que cuando uno usa un modem, la línea telefónica a 
+la que está conectado sólo tiene un cable por el que enviar la información.
+Para transmitir simultáneamente los 8 bits de los que consta un byte, que
+es la unidad de información usual en los ordenadores, harían falta 8 cables 
+(8 líneas telefonicas). Una solución alternativa es enviar los 8 bits 
+sucesivamente uno detrás del otro a intervalos de tiempo regulares. 
+Precisamente esto es lo que hace un puerto serie.
+<P>El corazón del puerto serie es un chip del ordenador llamado UART 
+(Receptor-Transmisor Asíncrono Universal) el cual se encarga de todo
+el trabajo, tanto para recibir datos como para enviarlos. Así, la 
+potencia de dicha UART y lo bien configurada que esté influirán en la 
+calidad de la comunicación.
+<P>El flujo de bits generado por la UART/puerto serie no puede introducirse 
+directamente en la línea telefónica al no estar preparada para ello. 
+La solución es utilizar un aparato intermedio que tome los bits que
+llegan del puerto serie y emita un tono u otro por la línea telefónica 
+según le llegue un bit 0 o un 1. Esto es lo que se conoce como "modular una 
+señal". Al otro lado del hilo telefónico otro aparato similar 
+interpretaría estos tonos y generaría unos o ceros en función del tono 
+recibido. Éste sería el paso opuesto, "demodular la señal". Como 
+normalmente se deseará enviar y recibir, el aparato intermedio deberá 
+realizar ambas funciones: MOdular y DEModular (MO-DEM). Así funcionaban 
+los modems antiguos. Los modernos se basan en los mismos principios
+aunque son infinitamente más versátiles y potentes.
+<P>Los modems modernos realizan la modulación y demodulación utilizando
+chips especiales llamados DSP (Procesadores Digitales de Señales en
+castellano). Son como microprocesadores, pero muy rápidos y optimizados 
+para tratamiento de señales. Los modems modernos también incorporan sistemas 
+de compresión de datos que aceleran las transferencias, sistemas de
+corrección de errores, cambios automáticos de velocidad de transferencia
+si la calidad de la señal mejora o empeora, etc...
+<P>Existen dos clases de modems: Los internos y los externos. Los externos
+van conectados a un puerto serie del ordenador por lo que simplemente
+se limitan a las funciones descritas de modulación-demodulación, compresión, 
+correción, etc. Los modems internos "de verdad", al no ir conectados a un 
+puerto serie incorporan una UART como las de dichos puertos serie, de forma
+que a ojos del ordenador se trata de un puerto serie más.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.2">8.2 Entonces, ¿Qué es un winmodem, modem HSP o modem software ? ¿Funcionan los winmodem en Linux ? ¿Y los modems PCI?</A>
+</H2>
+
+<P>Son modems internos "capados". Los fabricantes les quitan chips para que sean 
+más baratos. Por ejemplo, algunos no tienen UART, a otros les quitan los 
+protocolos de compresión, etc. Para que tengan las mismas funciones que los 
+modems "de verdad", las funciones correspondientes a los chips retirados
+las tienen que realizar drivers del sistema operativo, o sea el 
+microprocesador del ordenador.
+<P>Los fabricantes de los distintos modems sólo ofrecen drivers para Windows
+y no dan especificaciones de como se programan, y así desarrollar versiones
+para Linux. Por tanto estos modems no funcionan en Linux.
+<P>Sobre los modems PCI, no tengo noticias de que ninguno sea un modem "de
+verdad". Es probable que en el futuro aparezcan pues el hecho de ser
+PCI no es ningún impedimento para ello.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.3">8.3 ¿Cómo se configura el puerto serie ?</A>
+</H2>
+
+<P>La primera pregunta sería: ¿ Debo configurar mis puertos serie ?
+<P>En general, sólo deberás configurar los puertos serie en estos casos:
+<UL>
+<LI>Tu modem es interno y Plug'n'Play. Deberás configurar el modem y al menos 
+el puerto serie que incorpora.
+</LI>
+<LI>Tienes más de dos puertos serie, contando además con los que incorporan los 
+modems internos (si tienes alguno). Por lo general deberás configurar todos
+los puertos a partir del COM3 incluido.
+</LI>
+<LI>Un tercer caso, más raro, que consistiría en tener un modem interno
+en COM1 o COM2 y que no usara los recursos estandar (puerto 3f8 e
+interrupcion 4 para COM1, y puerto 2f8 e interrupción 3 para COM2). Los
+recursos utilizados por el modem pueden consultarse en el Panel de Control de 
+Windows 95 (Sistema -> Administrador de dispositivos -> Puertos COM y LPT ->
+el puerto que sea -> Recursos). Entonces deberás configurar el puerto del 
+modem.</LI>
+</UL>
+
+Si no cumples ninguna de estas condiciones, puedes ignorar el resto de la
+sección.
+<P>Un puerto serie (más exactamente, la UART del puerto serie) usa un rango 
+de direcciones de entrada-salida y una solicitud de interrupción para 
+comunicarse con el sistema operativo. Para el correcto funcionamiento del 
+ordenador y del sistema operativo, ningún otro dispositivo del ordenador 
+puede usar alguno de esos valores. Nuestro objetivo será conseguir esto, 
+y en segundo lugar, hacer que el sistema operativo atienda a ese rango de 
+entrada-salida y esa interrupción para comunicarse con el modem.
+<P>Tradicionalmente la elección del rango de entrada-salida y la interrupción
+se realizaba a través de una serie de microinterruptores manuales situados 
+en el modem. Conocida la posición de estos interruptores, se configuraba
+el sistema operativo para que usara esos valores. Hoy en día casi la totalidad
+de los modems internos son Plug'n'Play, lo cual significa que el sistema
+operativo puede, por software, decirle a la tarjeta qué valores debe usar.
+<P><B>Configuración de modems Plug'n'Play en Linux</B>
+<P>Si tienes un modem Plug'n'Play, lo primero que habrá que hacer es
+decirle que rango de entrada-salida y que interrupción debe usar. Lo más
+cómodo en este caso es usar los mismos valores que Windows 95. Para ello
+arranca Windows 95, y haz Inicio->Configuración->Panel de control. Una vez
+en el Panel de control, elige el icono 'Sistema' y dentro de él, el
+'Administrador de dispositivos'. Dentro del apartado 'Puertos COM y LPT'
+elige el correspondiente al puerto COM donde tienes el modem. Busca en
+'Recursos' el rango de entrada-salida y la interrupción que use y apúntalos.
+<P>Con esos valores en la mano, puedes configurar tu modem Plug'n'Play en Linux.
+Eso se hace con el programa 'isapnp'. Entra en Linux y busca si tienes
+un archivo llamado <CODE>/etc/isapnp.conf</CODE>. Si no lo tienes haz lo siguiente:
+<PRE>
+  pnpdump > /etc/isapnp.conf
+</PRE>
+
+Esto generará el esqueleto de un archivo de configuración para 'isapnp'.
+Este programa generará un listado con todas las posibles posibilidades
+de configuración que permiten tus dispositivos Plug'n'Play, pero 
+todas deshabilitadas con un '#' al principio de cada línea. Los dispositivos
+aparecen por secciones por lo que es fácil encontrar los correspondientes
+a tu modem.
+<P>Así tu misión se reducirá a encontrar en la sección correspondiente a tu modem
+del archivo <CODE>/etc/isapnp.conf</CODE>, dos líneas así:
+<PRE>
+  # (IO 0 (BASE 0x0NNN))
+  # (INT 0 (IRQ MM (MODE +E)))
+</PRE>
+
+donde NNN sea el rango de entrada-salida que use el modem en Windows y MM
+la interrupción. Las líneas no tienen por qué ser consecutivas ni ir en ningún
+orden especial. Cuando las encuentres, quítales el '#' inicial. Luego, al
+final de la sección del modem encontrarás una línea parecida a esta:
+<PRE>
+  # (ACT Y)
+</PRE>
+
+De la misma forma, le quitas el '#' inicial. Ya está. Listo para enviar
+dichos valores al modem. Esto lo hace la orden <CODE>isapnp /etc/isapnp.conf</CODE>
+y deberá aparecer en los scripts de arranque de Linux para enviar los
+valores cada vez que enciendas el ordenador. Las distribuciones más
+recientes (Red-Hat 5.0 y posteriores, Debian 2.0 y posteriores) ya incluyen
+dicha invocación por lo que no necesitarás tocar los scripts de arranque.  
+En caso de tener una distribución antigua, será necesario añadir dicha
+orden. Un buen sitio para incluirla sería el script <CODE>rc.local</CODE>, que suele
+estar situado en uno de los subdirectorios de <CODE>/etc</CODE>.
+<P>De todas formas será necesario ejecutar <CODE>isapnp /etc/isapnp.conf</CODE> si queremos 
+activar los cambios en este momento y nos queremos ahorrar el rearrancar la 
+máquina.
+<P>Ahora hay que decirle al sistema operativo que debe usar esos valores para 
+comunicarse con el modem. En el caso de los modems Plug'n'Play lo que viene
+a continuación es imprescindible.
+<P>
+<P>
+<P><B>Configuración de los puertos serie a ojos del sistema operativo</B>
+<P>Lo primero que hay que saber es que Linux no llama a los puertos serie
+de la misma forma que el DOS o Windows. Así existe la siguiente 
+correspondencia:
+<PRE>
+  DOS-Windows                     Linux
+  -----------                   ----------
+     COM1                       /dev/ttyS0
+     COM2                       /dev/ttyS1
+     COM3                       /dev/ttyS2
+     COM4                       /dev/ttyS3
+</PRE>
+
+Ojo a las mayúsculas y las minúsculas del nombre de Linux. Son importantes.
+<P>Para leer la configuración y configurar los puertos serie se usa
+la orden 'setserial'. Para leer la configuración, hay que ejecutar
+<CODE>setserial</CODE> con el puerto serie que deseamos ver como único parámetro.
+<P>Por ejemplo:
+<PRE>
+  setserial /dev/ttyS1
+</PRE>
+
+nos muestra la configuración de COM2 y se obtendrá algo como esto:
+<PRE>
+  /dev/ttyS1, UART: 16550A, Port: 0x02f8, IRQ 3
+</PRE>
+
+o sea, el puerto serie (<CODE>/dev/ttyS1</CODE>), el tipo de chip UART que lleva (16550A), 
+el puerto base de entrada-salida (2f8) y la solicitud de interrupción (3). 
+Nótese que estos son los valores que el sistema operativo CREE que debe 
+utilizar para comunicarse con el modem/puerto serie. Es posible que ahora no
+coincidan con los reales, incluso que ni siquiera detecte la UART, lo cual no 
+es raro en caso de modems Plug'n'Play.
+<P>Si no coinciden, asignaremos los valores adecuados. Por fortuna, por lo 
+general no será necesario indicar la dirección base de entrada-salida. Salvo
+casos muy, muy excepcionales COM1 usa la dirección base 3f8, COM2 la 2f8,
+COM3 la 3e8 y COM4 la 2e8, y eso setserial lo sabe. Así, al indicar el
+puerto serie, setserial implícitamente sabe cual es la dirección base.
+En cambio, en caso de tener un puerto COM5 o superior sí será necesario 
+indicar la dirección base.
+<P>Así para COM1-COM4 sólo indicaremos la interrupción. Por ejemplo,
+supongamos que tenemos un modem en COM3 que usa la interrupcion 5.
+La orden a introducir sería.
+<PRE>
+  setserial /dev/ttyS2 irq 5 autoconfig
+</PRE>
+ 
+Y si quisiéramos indicar también la dirección base de entrada-salida
+(por tener el modem en COM5, por ejemplo) se haría así.
+<PRE>
+  setserial /dev/ttyS4 port 0x2e8 irq 10 autoconfig
+</PRE>
+
+lo cual hace que el sistema operativo use un rango de direcciones desde
+la 2e8, y la interrupción 10. Nótese que el '0x' antes de la dirección base
+es importante.
+<P>Por último sólo queda ver que los cambios han surtido efecto. Para ello
+bastará usar de nuevo setserial de la primera forma que se indicó.
+<P>Por desgracia esta configuración durará hasta que apaguemos el ordenador.
+Por tanto será necesario incluir la línea o líneas de configuración 
+<CODE>setserial /dev/ttyS2 irq 5...</CODE> en uno de los scripts de arranque de
+Linux para que los puertos se configuren cada vez que se inicie el sistema 
+operativo. Un buen candidato es <CODE>rc.local</CODE>, que estará en uno de los 
+subdirectorios de <CODE>/etc</CODE>. En caso de ser necesario incluir en <CODE>rc.local</CODE> tanto 
+el <CODE>isapnp /etc/isapnp.conf</CODE> para configurar un modem Plug'n'Play, y el 
+<CODE>setserial...</CODE> de los puertos serie, deberá colocarse el <CODE>isapnp...</CODE> en 
+primer lugar.
+<P>También habrá que usar <CODE>setserial</CODE> de la misma forma si el ordenador tuviera 
+más de dos puertos serie, (contando los que traen los modems internos en caso 
+de disponer de alguno). El motivo es que por alguna extraña razón de diseño del
+PC, COM1 y COM3 por defecto comparten la misma interrupción, y a pesar de que
+esa configuración no es deseable, Linux por defecto busca COM3 en la misma
+interrupción que COM1, por lo que habría que cambiar la de COM3. Lo mismo 
+ocurre con COM2 y COM4 por lo que habría que cambiar COM4. Si no se hiciera 
+esto, podrían ocurrir cosas muy raras, como ratones y modems que dejan de 
+funcionar, modems que funcionan "a pedales" (cuando se mueve el ratón), etc...
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.4">8.4 ¿ Cómo compruebo que todo está bien configurado ?</A>
+</H2>
+
+<P>Una vez activados los cambios con el comando isapnp para los modems
+Plug'n'Play y el/los comando(s) setserial necesarios para configurar el/los
+puerto(s) serie, o se ha reiniciado el ordenador con los scripts de arranque
+modificados para que ejecuten dichas órdenes (es más seguro hacer lo primero),
+se puede probar si todo va bien. La forma más sencilla es usar un programa
+de comunicaciones y enviarle comandos al modem para ver si responde.
+<P>Así un programa adecuado sería <CODE>minicom</CODE> que es un terminal de comunicaciones
+tipo Telix. No es complicado de configurar. Pulsando <CODE>Ctrl+a</CODE> y luego z sale
+un menú. Una de las opciones 'cOnfigure minicom' dará paso a otro menú donde
+la opción "Serial port setup" nos permitirá elegir el puerto serie, la 
+velocidad con la que nos comunicaremos con él (no la velocidad del modem) y
+otras opciones más. Lo normal es usar 115200 o 57600 para la velocidad, 8N1,
+"Hardware Flow Control: Yes" y "Software Flow control: No". Una vez 
+configurado y sin ningún menú sobre la pantalla escribes 'AT' (Las dos
+en mayúsculas o las dos en minúsculas) y pulsas ENTER. Si el modem responde
+al instante 'OK' o con un número cero, indicaría que el modem funciona y
+que responde bien. Para completar la faena puedes probar a conectarte a una
+BBS o a tu nodo de infovia plus (los nodos de infovia plus permiten una
+conexión tipo terminal, aunque no sé que se puede hacer con ella) y así
+probar que todo va bien.
+<P>Si el modem tarda en responder al 'AT', o no responde, algo ha fallado en
+la configuración del modem o del puerto serie y habría que revisar lo hecho.
+<P>Un comentario sobre el 'AT'. Cuando se escriben estas dos letras pueden
+ocurrir varias cosas.
+<UL>
+<LI>Que salga el AT mientras lo escribes (lo normal).</LI>
+<LI>Que no te salga el AT, pero al pulsar <CODE>ENTER</CODE> el modem responda con OK. Para
+solucionar esto  deberías activar el eco local del terminal con <CODE>Ctrl+a e</CODE>
+o escribir a ciegas "ATE1" y pulsar <CODE>ENTER</CODE>.</LI>
+<LI>Que te salga AATT y todo lo que pongas por duplicado. No es problema
+porque el modem sólo recibirá 'AT'. Para quitar esto, desactiva el eco local
+del terminal con <CODE>Ctrl+a e</CODE> o escribe "ATE0" aunque te salga duplicado.
+Cuando pulses ENTER tras el ATE0 ya funcionará bien.</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="ss8.5">8.5 ¿Cómo conecto a internet con pppd ?</A>
+</H2>
+
+<P>¿Que es pppd? Se trata de la primera posibilidad de conexión a internet
+que ofrece Linux. Es una conexión a internet que gasta pocos recursos
+y con posibilidad de hacerla desde la consola, sin necesidad de entrar en
+modo gráfico. Cualquiera que aspire a obtener al máximo rendimiento de la
+conexión a internet, por ejemplo automatizando la conexión, automatizando
+la recogida de correo, noticias, ftp, etc... casi seguro no tendrá más 
+remedio que pasar por aquí.
+<P>Como inconvenientes, tiene unos cuantos. El más destacable es la falta
+total y absoluta de interactividad o de información en pantalla de cómo
+va la conexión, siendo necesario el uso de otros comandos (como <CODE>ifconfig</CODE>)
+o la observación de archivos históricos (<CODE>/var/log/messages</CODE>) para averiguar si 
+la conexión se ha realizado con éxito o ha habido algún error.
+<P>La configuración de pppd se basa en la creación de una serie de archivos.
+<P><CODE><B>/etc/ppp/options </B></CODE>: Configuración de la conexión y del puerto serie  <BR> 
+<CODE><B>/etc/ppp/marcado </B></CODE>: Configuración del modem y marcado del número de teléfono   <BR> 
+<CODE><B>/etc/ppp/pap-secrets </B></CODE>: Claves de acceso para identificación con PAP   <BR> 
+<CODE><B>/etc/ppp/chap-secrets </B></CODE>: Claves de acceso para identificación con CHAP   <BR> 
+<CODE><B>/etc/resolv.conf </B></CODE>: Servidores de nombres (DNS)   <BR> 
+<P>Así un posible <CODE>/etc/ppp/options</CODE> sería así:
+<PRE>
+  -----------------------------------------------------------------
+  connect "/usr/sbin/chat -v -f /etc/ppp/marcado"
+  name mi_login@mi_proveedor
+  defaultroute
+  noipdefault
+  modem
+  crstcts
+  asyncmap a0000
+  mru 576
+  /dev/ttySx
+  115200
+  --------------------------------------------------------------------
+</PRE>
+
+Comentarios:
+<UL>
+<LI>En mi_login@mi_proveedor irá el login y el proveedor (el proveedor sin
+dominio, por ejemplo: fulanito@arrakis)
+</LI>
+<LI>Donde pone <CODE>/dev/ttySx</CODE>, la 'x' indica el puerto serie: <CODE>/dev/ttyS0 = COM1,
+/dev/ttyS1 = COM2</CODE>, etc...
+</LI>
+<LI>La velocidad 115200 <EM>NO es la velocidad del modem</EM>, es la velocidad entre el
+modem y el puerto serie, que no tiene por qué coincidir con la velocidad
+en el lado de la línea telefónica. <EM>La velocidad del modem (33600, 28800...)
+NO hay que ponerla en ningun sitio</EM>. Algunos modems no soportan esa velocidad
+entre el modem y el puerto serie y habrá que probar con 57600 o incluso con
+38400. Si se tiene una UART 16450 o 8250, utilizar 38400 (usar 
+<CODE>setserial /dev/ttySx</CODE> para conocer la UART del modem o del puerto serie, 
+donde 'x' indica el puerto serie de la misma forma que antes). Nótese que el 
+valor óptimo es 115200 y conforme menor sea dicho valor, menos rendimiento 
+le sacaremos al modem.</LI>
+</UL>
+
+<CODE>/etc/ppp/marcado</CODE>:
+<PRE>
+  --------------------------------------------------------------
+  ABORT "BUSY"
+  ABORT "NO CARRIER"
+  ABORT "NO DIALTONE"
+  ABORT "ERROR"
+  ""
+  "AT&amp; F" TIMEOUT 5 OK
+  "ATDTnumero_de_telefono" TIMEOUT 100 CONNECT
+  ---------------------------------------------------------------
+</PRE>
+
+Comentarios:
+<UL>
+<LI>Los ABORT iniciales sirven para que, si el modem encuentra una situación
+anómala (no hay tono de llamada, comunicando...) y responde alguno de esos
+mensajes (BUSY, NO CARRIER...), el pppd pare y no pierda tiempo hasta fallar
+el TIMEOUT 100 que sería el que acabase la conexión. El problema es que no
+todos los modems responden de la misma forma (por ejemplo, el mío responde
+"NO DIAL TONE" en vez de "NO DIALTONE") y la correspondencia debe ser exacta.
+Por tanto, para una configuración correcta, será necesario consultar en el
+manual del modem cómo son estos mensajes.
+</LI>
+<LI>El "AT&amp; F" es la cadena de inicialización del modem. La que se indica es 
+de las más estandar. No obstante, en algunos modems puede ser mejor "ATZ"
+o variantes de "AT&amp; F" (como "AT&amp; F1", "AT&amp; F2"...). Como referencia, se debe
+usar aquella que configure el modem para usar control de flujo hardware
+(RTS/CTS). En caso de no acertar en la configuración del modem, es posible
+que se produzcan algunos efectos indeseables (el modem no cuelga al cortar
+la comunicación, conexión lenta...). Una posibilidad es "fusilar" la que
+use windows. Se puede ver dentro del directorio de windows un archivo
+llamado modemlog.txt o modemdet.txt.
+</LI>
+<LI>El numero_de_telefono es precisamente eso. El número de telefono del
+nodo de Infovia Plus, el de Iddeo, etc...</LI>
+</UL>
+<P><CODE>/etc/ppp/pap-secrets</CODE> y <CODE>/etc/ppp/chap-secrets</CODE>
+<P>Existen dos formas posibles de identificación cuando nos conectamos a
+un proveedor: PAP y CHAP. PAP es la más sencilla y es la que usaba por
+ejemplo Infovia. CHAP es muy usada en Infovia Plus.
+<P>El formato de ambos archivos es el mismo:
+<PRE>
+  ------------------------------------------------------------------------
+  mi_login@mi_proveedor *       password
+  ------------------------------------------------------------------------
+</PRE>
+
+Comentarios:
+<UL>
+<LI>mi_login@mi_proveedor debe ser exactamente lo mismo que se puso como
+parámetro de la opción 'name' en <CODE>/etc/ppp/options</CODE>.
+</LI>
+<LI>Los campos <EM>Van separador por TABULADORES no por espacios</EM>.
+</LI>
+<LI>Si se dispone de más cuentas en otros proveedores, se pueden añadir
+nuevas líneas con el mismo formato.</LI>
+</UL>
+
+¿Cual uso, pap-secrets o chap-secrets? Si sabes que tu proveedor usa PAP,
+grábalo como <CODE>pap-secrets</CODE>. Si usa CHAP, grábalo como <CODE>chap-secrets</CODE>. Si no
+sabes cual usa, puedes hacer prueba-y-error o crearte los dos, o crearte
+uno sólo y hacer un enlace simbólico de uno al otro. Por ejemplo, si has
+creado chap-secrets, para hacer un enlace desde pap-secrets se haría:
+<PRE>
+  cd /etc/ppp
+  ln -s chap-secrets pap-secrets
+</PRE>
+
+Esto en teoría haría que pppd y tu proveedor se pusieran de acuerdo
+para elegir PAP o CHAP según prefieran.
+<P><CODE>/etc/resolv.conf</CODE> :
+<P>Aquí irían las direcciones de los DNS primario y secundario. El formato
+es muy sencillo:
+<PRE>
+  -------------------------------------------------------
+  nameserver DNS_primario
+  nameserver DNS_secundario
+  -------------------------------------------------------
+</PRE>
+
+Por ejemplo, <CODE>nameserver 195.5.65.2</CODE>
+<P>Comentarios:
+<UL>
+<LI>En lugar de DNS_primario y DNS_secundario, se pondrán las direcciones
+numéricas de los DNS primario y secundario respectivamente. Los DNS
+primarios y secundarios deberás preguntarlos a tu proveedor y deberán
+dártelos, pues no son secretos. 
+</LI>
+<LI>Si no tuvieras DNS_secundario, puedes ahorrarte la segunda línea.</LI>
+</UL>
+
+Una vez creados los scripts, la conexión se efectuaría al escribir
+<CODE>pppd</CODE> o <CODE>/usr/sbin/pppd</CODE>.
+<P>Para comprobar si la conexión tiene éxito, se puede usar el
+comando <CODE>/sbin/ifconfig</CODE> y ver si al cabo de un minuto o dos aparece
+un bloque nuevo <CODE>ppp0</CODE>.
+<P>Otra forma es consultando periódicamente el fichero <CODE>/var/log/messages</CODE>
+hasta ver si aparece algo como esto:
+<PRE>
+  Local  IP address xxx.xxx.xxx.xxx
+  Remote IP address yyy.yyy.yyy.yyy
+</PRE>
+
+Lo cual indicaría una conexión con éxito. Una forma de hacer esto sería
+con la orden <CODE>tail -f /var/log/messages</CODE> y pulsar <CODE>Ctrl+C</CODE> cuando veamos
+que la conexión ha funcionado o fallado.
+<P>La desconexión se realizaría introduciendo la orden <CODE>killall pppd</CODE>.
+<P>En caso de necesitar ayuda, remitir la duda a es.comp.os.linux.misc o
+es.comp.os.linux.redes mandando copia de los scripts (ocultando los
+passwords, claro) y lo que haya salido en <CODE>/var/log/messages</CODE> durante
+la conexión fallida.
+<P><B>NOTA IMPORTANTE</B>: Los ficheros arriba descritos han de crearse desde cero
+con un editor de Linux. Crearlos con un editor de DOS o de Windows, o
+con operaciones de cortar-y-pegar en Windows añade un caracter no visible
+al final de cada línea que Linux confundiría con un caracter normal, 
+inutilizando los scripts.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.6">8.6 ¿Cómo conecto a internet con KDE-kppp?</A>
+</H2>
+
+<P>Después de haber utilizado diversos sistemas para conectar con Internet a través de InfovíaPlus mediante módem y haber constatado en el grupo de noticias <EM>es.comp.os.linux</EM> la gran cantidad de veces que se pregunta acerca de cómo conectarse mediante kppp, hemos pensado que este breve resumen sobre como establecer la conexión usando el kppp podría ser interesante para algunos que se inician en linux y disfrutan del entorno grafico KDE. Las notas que escribo a continuación se refieren a la versión KDE 1.0 (las diferencias con respecto al KDE 1.1 son mínimas)y por lo tanto voy a partir de la base de que el usuario de linux ha instalado ya el KDE y le funciona sin problemas de ningún tipo.
+<P><B>Guía paso a paso de conexión a internet a través de InfovíaPlus con kppp</B>. 
+<P><EM>Antes de comenzar</EM>
+<P>El módem debe estar correctamente instalado y su funcionamiento verificado (usando por ejemplo el programa minicom). El dispositivo asociado al módem dependerá del puerto serie al que está conectado. Si está conectado al "COM2" (en jerga DOS) el dispositivo será <CODE>/dev/ttyS1</CODE>, y podemos hacer un enlace simbólico a <CODE>/dev/modem</CODE>:
+<PRE>
+  ln -s /dev/ttyS1 /dev/modem
+</PRE>
+
+Además debemos saber su velocidad máxima. Si el módem es de más de 28,8Kbps podemos tomar 115200.
+<P>Otros datos fundamentales son los que tienen que ver con nuestro proveedor de internet:
+<UL>
+<LI><EM>"Domain name"</EM> (Nombre de dominio del servidor de acceso) seguido por un punto y la extensión del país: por ejemplo proveedor.es (se trata de un nombre inventado para ilustrar el procedimiento)
+</LI>
+<LI><EM>"DNS IP"</EM> (Dirección IP del servidor de nombres de dominio: en nuestro caso será (inventado también) 194.150.24.25
+</LI>
+<LI><EM>Login:</EM> compuesto por nuestro indicador de usuario (p.ej. user) y "Domain name" sin extensión separados por arroba: user@proveedor
+</LI>
+<LI><EM>Número de teléfono</EM> que corresponda según nuestro nodo de conexión. Cuando existía Infovía este número era el 055, pero con InfovíaPlus, dependiendo del lugar hay un teléfono de acceso, por ejemplo (para Sevilla) 954547000</LI>
+</UL>
+<P><EM>Comenzamos</EM> 
+<P>Invoquemos kppp mediante acción sobre el correspondiente icono del menú del KDE o escribiendo en un terminal 
+<PRE>
+  [user@localhost]# kppp
+</PRE>
+
+Para que programa funcione para un usuario normal el propietario y el grupo deben ser root y el ejecutable debe tener el bit SETUID activado, para poder abrir el dispositivo del módem. Si no es así se pone uno superusuario
+<PRE>
+  [user@localhost]# su root
+
+  (... da la password... y entonces hacemos)
+
+  [user@localhost]# chown root.root kppp
+  [user@localhost]# chmod +s kppp
+  [user@localhost]# exit
+
+  (...para volver a usuario normal...)
+</PRE>
+
+Si todo ha ido bien aparecerá la ventana del kppp y con el ratón accionaremos la tecla
+<PRE>
+  setup
+</PRE>
+
+Entonces se abrirá la ventana kppp configuration con varias pestañas indicando secciones: Accounts; Device; Modem; PPP y About. Comenzaremos por la primera sección
+<UL>
+<LI><B><EM>Seccion ACCOUNTS</EM></B>
+<P>Accionamos la tecla new y aparece una nueva ventana llamada new account con otra serie de subsecciones: desde Dial hasta Accounting.
+<P><B><EM>Subseccion DIAL</EM></B> 
+<P>Esta sección contiene el Dial Setup que debemos rellenar: <BR> 
+<EM>Connection name</EM>: Ponemos el nombre que queramos dar a la conexión; por ejemplo INFOPLUS <BR> 
+<EM>Phone number</EM>: 954547000 <BR> 
+<EM>Authentication</EM>: La autenticación puede realizarse de cuatro modos; script-based, PAP, terminal-based o CHAT; debemos elegir la opción PAP  <BR> 
+<EM>Store password</EM>: Si no quieres tener que teclear la password cada vez que te conectes deja activada esta opción
+<EM>Execute program upon connect</EM>: Debe tener su casillero vacío. No escribas nada. <BR> 
+<EM>Execute program upon disconnect</EM>: Debe tener su casillero vacío. No escribas nada. <BR> 
+<EM>Edit pppd arguments</EM>: Una vez activada la opción los argumentos se introducen escribiéndolos en el casillero "arguments" y pulsando la tecla "add". Deben estar los siguientes:
+<PRE>
+  detach
+  defaultroute
+  asyncmap a0000
+  noipdefault
+  ipcp-accept-local
+  ipcp-accept-remote
+</PRE>
+
+cuando hayamos terminado, pulsamos "close" y pasamos a las subsecciones siguientes
+<P>NOTA: Estos argumentos los tenía así establecidos para cuando conectaba con Infovía. Al pasar a InfovíaPlus, alguno puede quedar superfluo, pero ¡funciona!, así que no quité ninguno.
+<P><B><EM>Subseccion IP</EM></B>
+<P>Contiene el IP setup. La única opción que debe estar activada es 
+<EM>Dynamic IP address</EM>
+<P><B><EM>Subseccion DNS</EM></B>
+<P>Aquí tenemos el menú del DNS Server: <BR> 
+<EM>Domain name</EM>: proveedor.es <BR> 
+<EM>DNS IP address</EM>: La(s) introducimos en este casillero: 194.150.24.25 y pulsando la tecla "add" la(s) pasamos al DNS address list. Al menos debe haber una. <BR> 
+<EM>Disable existing DNS servers during connection</EM>: Esta opción debe estar activada <BR> 
+<P><B><EM>Subseccion GATEWAY</EM></B>
+<P>Contiene el Gateway setup las opciones que deben activarse son: <BR> 
+<EM>Default Gateway</EM> <BR> 
+<EM>Assign the default route to this gateway</EM> <BR> 
+<P><B><EM>Subseccion LOGIN SCRIPT</EM></B>
+<P>¡Principiantes Ni tocarlo! El edit script deberá estar vacío, con el primer casillero de opciones presentando la opción "EXPECT".
+<P><B><EM>Subseccion ACCOUNTING</EM></B>
+<P>La opción <EM>Enable accounting</EM> debe estar activada. Selecciona entonces con la opción "Selected" : Spain y dentro de ella, Telefónica Local y deja la opción "Volume accounting: No accounting" desactivada.
+<P>Entonces, una vez que hemos rellenado todas las subsecciones de la sección ACCOUNTS, accionamos el botón OK de la ventana "new account" y volvemos a la de kppp configuration. Hay que rellenar el resto de las secciones.
+<P>
+</LI>
+<LI><B><EM>Seccion DEVICE</EM></B>
+<P>Aquí está el menú Serial device:  <BR> 
+<EM>Modem device</EM>: pon el dispositivo correspondiente, p.ej. /dev/ttyS1 (para modem en puerto serie com2) <BR> 
+<EM>Flow control</EM>: CRTSCTS (hardware flow control) <BR> 
+<EM>Line termination</EM>: La que corresponda. Generalmente es CR/LF <BR> 
+<EM>Connection speed</EM>: La que corresponda, p.ej. 115200 <BR> 
+<EM>Modem lock file</EM>: /var/lock/LCK..modem <BR> 
+<P>Este fichero debe estar por defecto. No lo cambies si no sabes lo que haces, pues algunos programas como mgetty dependen de la existencia de tal fichero y kppp no funcionará.
+<P>
+</LI>
+<LI><B><EM>Seccion MODEM</EM></B>
+<P><EM>Busy wait</EM>: 0 seconds <BR> 
+<EM>Modem Asserts CD line</EM>: opción desactivada <BR> 
+<EM>Modem commands</EM>: Deja los valores por defecto y no cambies nada <BR> 
+<EM>Query modem</EM>: Pulsando este botón kppp insta al módem a que se identifique. Sirve para probar el módem. <BR> 
+<EM>Terminal</EM>: También sirve para comprobar si el módem negocia bien el protocolo de conexión. De todos modos no te detengas en esto si no sabes lo que haces y sigue adelante.
+<P>
+</LI>
+<LI><B><EM>Seccion PPP</EM></B>
+<P>Presenta el ppp setup:
+<P><EM>pppd timeout</EM>: 60 seconds <BR> 
+<EM>Dock into the panel on connect</EM>: opción desactivada <BR> 
+<EM>Automatic redial on disconnect</EM>: opción generalmente desactivada <BR> 
+<EM>Show clock on caption</EM>: opción activada <BR> 
+<EM>Disconnect on X-server shutdown</EM>: opción activada <BR> 
+<EM>Quit on disconnect</EM>: opción desactivada <BR> 
+<EM>Minimize window on connect</EM>: opción activada <BR> 
+</LI>
+</UL>
+<P>La sección ABOUT evidentemente es para mirar solamente. Por último accionamos el botón OK de la ventana kppp configuration. Con ello volvemos a la inicial de kppp. Activamos "Show log window". En el casillero "Connect to" deberá aparecer el nombre de nuestra conexión (en el ejemplo INFOPLUS). El login ID será en nuestro ejemplo user@proveedor. Escribimos la password en su casillero: ****** y por último pulsamos "connect"
+<P>Si todo va bien, aparecerán dos ventanas: una con el marco superior indicando "Connecting to: INFOPLUS" que mostrará Dialing 954547000 y otra mayor, a la derecha de la primera indicando en su marco superior "Login Script Debug Window" y presentando una serie de acciones: 
+<PRE>
+  ATZ
+  OK
+  ATD954547000
+
+  (Mientras está "Expecting Connect")
+</PRE>
+
+cuando se ha establecido la conexión, aparece en esa misma pantalla
+<PRE>
+  CONNECT 115200
+</PRE>
+
+e indicará en su marco inferior "running pppd" mientras la otra ventana indica "Logging on the network". Cuando la ventana mayor presente en su marco inferior "Done"; la otra más pequeña, que en su marco superior exhibirá el nombre de la conexión (INFOPLUS), se minimizará y ya estamos conectados.
+<P>Si restauramos la ventana de conexión INFOPLUS en un momento dado nos mostrará la siguiente información:
+<PRE>
+  Connected at 115200
+  Time connected ....
+  Session bill...PTAS
+  Total bill ....PTAS
+</PRE>
+
+y dos teclas "Details" (para ver los detalles de la conexión con nuestro proveedor) y "Disconnect" evidentemente para desconectarnos. Si la pulsamos, aparecerá de nuevo la ventana kppp y entonces, para salir, presionaremos la tecla "quit".
+<P><B>Preguntas habituales</B>
+<P>
+<UL>
+<LI>kppp muestra "<B>pppd has died unexpectly</B>" o "data timeout has expired" (pppd ha muerto inesperadamente o ha pasado el tiempo de espera)
+<P>Estos mensajes pueden aparecer alguna que otra vez, aisladamente. Si siempre se producen, entonces hay un problema. Hemos de comprobar que:
+<P>- pppd es realmente un binario y no un script  <BR> 
+- pppd tiene el bit setuid activado  <BR> 
+- el fichero <CODE>/etc/pppd/options</CODE> existe pero está VACÍO  <BR> 
+- que no has usado la opción "lock" como argumento del pppd en la configuración del kppp  <BR> 
+- no uses el enlace simbólico <CODE>/dev/modem</CODE>; en su lugar usa el dispositivo real que corresponda, p.ej., <CODE>/dev/ttyS1</CODE>  <BR> 
+- asegúrate que tienes los permisos necesarios  <BR> 
+<P>en caso de seguir igual, invoca:
+<PRE>
+  [user@localhost]# tail /var/log/messages
+</PRE>
+
+para considerar las causas de posibles fallos. Es muy conveniente leer el dossier sobre kppp que aparece pulsando la tecla help de la ventana de kppp.
+<P>
+</LI>
+<LI>kppp indica "<B>sorry, can't open the modem</B>" (perdón, no puedo abrir el modem)
+<P>Esto significa que kppp no tiene permisos para abrir el dispositivo modem o que se ha seleccionado un dispositivo incorrecto en el cuadro del modem. Comprueba que el dispositivo sea correcto y luego dale el bit setuid a kppp.
+<P>
+</LI>
+<LI>kppp muestra "<B>I can't create a modem lock file</B>" (no puedo crear el fichero de cerradura)
+<P>O bien le das a kppp el bit setuid o das acceso al fichero /var/lock a los usuarios normales         
+<P>
+</LI>
+<LI>kppp sólo espera (<B>Expecting OK</B>)
+<P>- ¿Has jugado con la configuración de CR/LF?  <BR> 
+- El modem quizá necesita más tiempo para inicializarse. Ve al cuadro "Modem commands" y aumenta el "Init Delay Time".  <BR> 
+<P>
+</LI>
+<LI>La conexión funciona, pero <B>no se pueden arrancar aplicaciones</B>
+<P>Puede ser que esté activada la opción "Auto configure hostname" y el servidor X tiene problemas para conectar con tu nuevo servidor. Si no hay más remedio que usar dicha opción, tendrás que proporcionar los permisos adecuados tecleando xhost + antes de realizar la conexión. Pero ¡MUCHO CUIDADO! porque cualquier otra persona tendrá acceso a tu servidor de X.
+<P>
+</LI>
+<LI>kppp funciona, pero Netscape indica que "<B>There is not a DNS entry for this server</B>" (El servidor no tiene una entrada DNS)
+<P>Intenta hacer un ping al número IP de otro servidor. Si funciona entonces hay que comprobar si le diste al kppp al menos una dirección DNS o si en el fichero <CODE>/etc/host.conf</CODE> hay una línea indicando algo parecido a <CODE>order hosts, bind</CODE>. (Debe haberla para que se consulte al servidor de nombres cuando se busca una dirección)
+</LI>
+</UL>
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.7">8.7 Mi modem cuelga durante la negociación inicial.</A>
+</H2>
+
+<P>La negociación se puede distinguir por ser la fase en la que suenan
+los modems. Si cuelga bruscamente puede ser debido a un TIMEOUT demasiado
+corto en el script de marcado. Se puede subir a TIMEOUT 100 o a TIMEOUT 150. 
+En caso de seguir colgando, se puede intentar añadir <CODE>S7=100</CODE> o <CODE>S7=150</CODE> entre
+el <CODE>AT</CODE> y el <CODE>DTnumero_de_telefono</CODE> en el script de marcado.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.8">8.8 Mi modem suena muy fuerte ¿Cómo le bajo el volumen?</A>
+</H2>
+
+<P>Depende de lo que quieras. Si simplemente quieres bajar el volumen del
+modem, basta añadir L1 o L0 a la cadena de inicializacion del modem. 
+Un posible sitio para colocarlo seria entre el "AT" y el 
+<CODE>DTnumero_de_telefono</CODE> en el script de marcado.
+<P>Si lo que quieres es que no suene para nada (por ejemplo, si quieres
+automatizar la conexión para que se realice de madrugada) deberás añadir
+M0 a la cadena de inicialización del modem. Puedes colocarla en el mismo
+sitio que se indicó para L1 o L0.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.9">8.9 Conecto a internet, pero no logro ir a ningún sitio.</A>
+</H2>
+
+<P>Lo primero que hay que tener en cuenta es que no hay conexión hasta
+que no aparece por <CODE>/var/log/messages</CODE> lo de <CODE>Local IP Address xxx.xxx.xxx.xxx</CODE>
+y <CODE>Remote IP Address yyy.yyy.yyy.yyy</CODE> (o el bloque <CODE>ppp0</CODE> al escribir <CODE>ifconfig</CODE>.
+Esto viene al caso de que a veces la autentificación inicial falla, por ejemplo 
+porque haya caído el proveedor o esté saturado. En esos casos Infovia Plus no 
+corta la conexión y puede parecer que el modem está conectado a internet cuando 
+en realidad ni siquiera ha llegado a contactar con el proveedor. En ese caso 
+habría que revisar las claves de acceso que se hubiesen introducido en 
+<CODE>pap-secrets</CODE> o <CODE>chap-secrets</CODE> o intentarlo más tarde.
+<P>En caso de aparecer <CODE>Local IP Address...</CODE> y <CODE>Remote IP Address...</CODE> en
+<CODE>/var/log/messages</CODE>, pero no conseguir conectar a ningún sitio habría que
+revisar en primer lugar <CODE>/etc/resolv.conf</CODE> y ver si las direcciones allí
+introducidas son correctas. Una forma de averiguar si es culpa de los DNS 
+es probar a conectar usando una dirección numérica. Por ejemplo se puede 
+probar con la dirección 130.206.1.2 que corresponde a www.rediris.es . Si 
+conecta, es un problema en <CODE>/etc/resolv.conf</CODE> (o del DNS de tu proveedor).
+<P>Si se descarta el DNS, comprueba que tienes la opción <EM>defaultroute</EM>
+en <CODE>/etc/ppp/options</CODE>. En caso afirmativo, comprueba <CODE>/var/log/messages</CODE>
+y mira si aparece algún mensaje tipo <CODE>ppp not replacing existing default route to ...</CODE>. Este último caso es típico si se tiene alguna tarjeta de red
+y has definido alguna dirección de gateway. Lo normal es eliminar dicho
+gateway. Averigua como introduciste el gateway y elimínalo. Una forma
+de eliminarlo sería por ejemplo con linuxconf, que viene con Red-Hat.
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.10">8.10 ¿Qué significa eso de "Unsupported protocol 0x31"?</A>
+</H2>
+
+<P>Es un mensaje que aparece en <CODE>/var/log/messages</CODE> típico de Infovia Plus
+y debido a un protocolo de red llamado IPX. No debe suponer ningún problema
+para la conexión, pero si resultara molesto se podría añadir la opción
+<EM>noipx</EM> a <CODE>/etc/ppp/options</CODE>.
+<P>
+<P>
+<H2><A NAME="ss8.11">8.11 Mi modem no cuelga ¿Qué hago?</A>
+</H2>
+
+<P>Asegúrate de que tienes (si usas pppd) la opcion <EM>modem</EM> en <CODE>/etc/ppp/options</CODE>.
+<P>En caso de que la tuvieras, comprueba que has puesto una cadena de 
+inicialización al modem en el script de marcado (por ejemplo at&amp; f, atz...). 
+<P>En caso de que así siguiese sin colgar, tendrás que echar mano del manual 
+del modem y buscar el comando "que haga que el modem cuelgue (o se resetee) 
+cuando cambie la línea DTR". Normalmente es &amp; Dx donde 'x' es un numero 
+(que es lo que deberás buscar en el manual del modem, si prefieres 
+prueba-y-error 'x' normalmente estará entre 0 y 4). Luego deberás
+editar el script de marcado del modem y colocar dicho "&amp; Dx" entre el "AT"
+y el "DTnumero_de_telefono". Al usar el caracter '&amp;', no olvides poner todo 
+el conjunto (desde el AT hasta el final del número de teléfono) entre comillas 
+dobles (p.e.: "AT&amp; D3DT055").
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.12">8.12 Internet me va mucho mas lento con Linux que con Windows.</A>
+</H2>
+
+<P>Esto puede deberse a muchas causas:
+<P>Deberás verificar la configuración del modem y del puerto serie. Sigue
+la descripción que se da en la sección correspondiente de la FAQ.
+<P>Comprueba que la velocidad que has puesto en <CODE>/etc/ppp/options</CODE> NO es
+la velocidad del modem (nada de 28800, 33600 o lo que sea, no es eso lo que 
+debes poner ahí). Pon 115200 o 57600, preferiblemente la primera. Si tienes 
+una UART 16450 u 8250 pon 38400 y asegúrate de NO poner el flag 'spd_hi' o 
+'spd_vhi' con setserial (si has seguido las instrucciones de la FAQ desde 
+el principio no hace falta que compruebes esto). El tipo de UART que tienes 
+lo podrás ver haciendo <CODE>setserial /dev/ttySx</CODE> donde 'x' es 0 para COM1, 
+1 para COM2, etc...
+<P>Si sigue lento o conectando mal, asegúrate de poner una cadena de 
+inicialización al modem ("at&amp; f", "atz") y que la opción <EM>crtscts</EM> aparece
+en <CODE>/etc/ppp/options</CODE>. En caso de continuar los problemas deberás echar 
+mano del manual del modem y buscar las opciones que "activen el control de 
+flujo RTS/CTS". Suelen ser de la familia de las que empiezan por '&amp;'. En 
+algunos modems es una sola orden (por ejemplo "&amp; K3") y en otros hay que 
+activar el RTS y el CTS separadamente. Colocar el o los comandos entre el "AT" 
+y el "DTnumero_de_telefono". Si usas el caracter '&amp;', asegúrate de poner todo 
+el conjunto (desde el AT hasta el final del número de teléfono) entre comillas 
+dobles (p.e. "AT&amp; K3DT055").
+<P>
+<P>
+<P>
+<H2><A NAME="ss8.13">8.13 Tengo más de un proveedor de internet ¿Qué hago para poder elegir por cual me conecto?</A>
+</H2>
+
+<P>Una posible forma sería eliminar de <CODE>/etc/ppp/options</CODE> la opción
+<EM>name mi_login@mi_proveedor</EM>. De esta forma, si hemos puesto en <CODE>pap-secrets</CODE>
+o <CODE>chap-secrets</CODE>, el login y el password de todos nuestros proveedores,
+bastaría con escribir <CODE>pppd name login@proveedor</CODE> para elegir a cual
+nos queremos conectar.
+<P>Esto funciona si todos los proveedores comparten el mismo número de
+teléfono (por ejemplo, si todos están en infovía plus). En caso de
+tener diferentes números de teléfono, habría que eliminar en 
+<CODE>connect "/usr/sbin/chat -v -f /etc/ppp/marcado"</CODE> de <CODE>/etc/ppp/options</CODE>,
+crearse un fichero de marcado particular para cada proveedor y crearse
+un fichero para cada proveedor en <CODE>/etc/ppp</CODE> con las dos opciones personalizadas
+que le correspondan. O sea:
+<PRE>
+  /etc/ppp/nombre_del_proveedor:
+
+  ------------------------------------------------------------
+  connect "/usr/sbin/chat -v -f /etc/ppp/marcado_proveedor"
+  name login@proveedor
+  ------------------------------------------------------------
+</PRE>
+
+Y ejecutar pppd así:
+<PRE>
+  /usr/sbin/pppd file /etc/ppp/nombre_del_proveedor
+</PRE>
+
+Las DNS de todos los proveedores se podrían poner en <CODE>/etc/resolv.conf</CODE>,
+añadiendo nuevas líneas "nameserver xxx.xxx.xxx.xxx". Es conveniente
+ordenar los nameservers poniendo primero todos los DNS primarios de todos
+los proveedores y después los DNS secundarios. También conviene poner en
+primer lugar los correspondientes a los proveedores más usados.
+<P>
+<P>
+<H2><A NAME="ss8.14">8.14 Solo puedo usar internet como root. ¿Qué hago para poder hacerlo como usuario?</A>
+</H2>
+
+<P>Hay dos formas de hacerlo. La forma "buena", sería usando el programa <CODE>sudo</CODE>
+el cual permite ejecutar como usuario algunos programas que sólo podrían
+funcionar como root. Esto supondría que cada vez que uno quisiera conectarse
+a internet debería introducir un password, lo cual es útil en caso de que
+otros tuvieran acceso a nuestro ordenador. Para lo configuración de sudo
+consultar <CODE>man sudo</CODE>.
+<P>La forma "mala", y digo mala porque es más insegura en caso de que otros
+tengan acceso a nuestra máquina, consistiría en poner pppd "suid root"
+lo cual posibilita que un usuario normal tuviera acceso al programa de
+una forma similar que root.
+<P>Para esto último, habría que empezar por localizar <CODE>pppd</CODE>. Suele estar en el
+directorio <CODE>/usr/sbin</CODE>. Luego haría falta echar un vistazo para ver que permisos
+tiene. Esto se hace con la orden <CODE>ls -l pppd</CODE> y debe arrojar algo parecido
+a esto.
+<PRE>
+  -rws--x--x   1 root   ppp     70336   May 18  1996 pppd
+</PRE>
+
+Lo que se persigue es que la tercera letra sea una 's', como en el ejemplo.
+Si el programa no está "suid root", la tercera letra será una 'x'. Entonces
+en este caso habría que hacer <CODE>chmod 4711 pppd</CODE> para conseguirlo.
+<P>Los scripts de <CODE>/etc/ppp</CODE> necesitarían tambien acceso libre para los usuarios
+así que habría que hacer <CODE>chmod 755 /etc/ppp</CODE> y <CODE>chmod a+r /etc/ppp/*</CODE>. El
+efecto secundario que esto tiene es que cualquier usuario del sistema puede
+leer las claves de acceso a nuestro proveedor de internet. Existe la 
+posibilidad de limitar la conexión a internet (y a los scripts de conexión
+y claves de acceso), leer la seccion 
+<A HREF="FAQ_Linux-7.html#permisos">¿Cómo se cambian los permisos de ficheros y directorios? </A><P><B>NOTA</B>: Aún así, es posible que no seamos capaces de conectar con internet 
+como usuario normal. Una posible causa de fallo sería intentar conectar 
+a internet escribiendo <CODE>pppd</CODE> en vez de <CODE>/usr/sbin/pppd</CODE>. Para root funciona
+la primera, pero para el resto de usuarios no. El motivo es que el PATH 
+(el conjunto de directorios en los que Linux busca un ejecutable) es 
+diferente para root que para los usuarios normales. Los usuarios normales 
+no tienen <CODE>/usr/sbin</CODE> dentro del PATH así que deberán hacer <CODE>/usr/sbin/pppd</CODE> 
+para conectarse a internet o hacer un enlace simbólico a <CODE>/usr/sbin/pppd</CODE> 
+desde otro directorio que sí esté en el PATH de usuario (como por ejemplo 
+<CODE>/usr/bin</CODE>), o hacernos un script (pequeño programa) que se limite a ejecutar 
+<CODE>/usr/sbin/pppd</CODE>. Para el enlace simbólico bastaría hacer:
+<CODE>ln -s /usr/sbin/pppd /usr/bin/pppd</CODE>
+<P>
+<P>
+<P>
+<HR>
+<A HREF="FAQ_Linux-9.html">Next</A>
+<A HREF="FAQ_Linux-7.html">Previous</A>
+<A HREF="FAQ_Linux.html#toc8">Contents</A>
+</BODY>
+</HTML>

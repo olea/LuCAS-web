@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+#DIALOG=Xdialog
+DIALOG=dialog
+#
+# name of your default isp:
+defaultisp=maxnet
+#
+error()
+{
+	echo "$1"
+	exit 2
+}
+help()
+{
+  cat <<HELP
+pppdialout -- select an ISP and dial out.
+All available ISPs must have a config file in /etc/ppp/peers
+
+pppdialout executes the ppp-on/ppp-off scripts as described
+in http://linuxfocus.org/English/March2001/article192.shtml
+
+pppdialout, copyright gpl, http://linuxfocus.org/English/November2002
+HELP
+  exit 0
+}
+
+# parse command line:
+while [ -n "$1" ]; do
+case $1 in
+    -h) help;shift 1;; # function help is called
+    --) shift;break;; # end of options
+    -*) echo "error: no such option $1. -h for help";exit 1;;
+    *)  break;;
+esac
+done
+
+tempfile=/tmp/pppdialout.$$
+trap "rm -f $tempfile" 1 2 5 15
+
+# check if we have a ppp network interface
+if /sbin/ifconfig | grep '^ppp' > /dev/null; then
+	# we are already online
+	$DIALOG --title "go offline" --yesno "Click YES to terminate the ppp connection" 0 0
+	rval="$?"
+	clear 
+	if [ "$rval" = "0" ]; then
+		echo "running /etc/ppp/scripts/ppp-off ..."
+		/etc/ppp/scripts/ppp-off
+	fi
+else
+	# no ppp connection found, go online
+	# get the names of all available ISP by listing /etc/ppp/peers
+	for f in `ls /etc/ppp/peers`; do
+		if [ -f "/etc/ppp/peers/$f" ]; then
+			isplist="$isplist $f =="
+		fi
+	done
+	[ -z "$isplist" ]&& error "No isp def found in /etc/ppp/peers"
+	#
+	$DIALOG --default-item "$defaultisp" --title "pppdialout"  --menu "Please select one of\
+	the following ISPs for dialout" 0 0 0 $isplist 2> $tempfile
+	rval="$?" # return status, isp name will be in $tempfile
+	clear
+	if [ "$rval" = "0" ]; then
+		isp=`cat $tempfile`
+		echo "running /etc/ppp/scripts/ppp-on $isp..."	
+		/etc/ppp/scripts/ppp-on "$isp"
+	else
+		echo "Cancel..."	
+	fi
+	rm -f $tempfile
+fi
+# end of pppdialout

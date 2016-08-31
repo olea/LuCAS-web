@@ -1,0 +1,93 @@
+<HTML>
+<HEAD>
+<TITLE>DNS COMO: Mantenimiento </TITLE>
+</HEAD>
+<BODY>
+<A HREF="DNS-Como-5.html">Anterior</A>
+<A HREF="DNS-Como-7.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="mantenimiento"></A> <A NAME="s6">6. Mantenimiento </A></H2>
+
+
+<P>Manteni&eacute;ndolo en funcionamiento.</P>
+<P>Hay una tarea de mantenimiento que tiene que realizar con <CODE>named</CODE>,
+adem&aacute;s de mantenerlo en funcionamiento. Esta tarea es mantener el archivo
+<CODE>root.cache</CODE> actualizado. La forma m&aacute;s f&aacute;cil es usar <CODE>dig</CODE>,
+primero ejecute <CODE>dig</CODE> sin argumentos, conseguir&aacute;
+<CODE>root.cache</CODE> de acuerdo con su propio servidor.  Entonces pregunte
+a alguno de los servidores ra&iacute;z listados con</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dig @rootserver 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Podr&aacute; observar que la salida se parece terriblemente al archivo
+<CODE>root.cache</CODE> excepto por un par de n&uacute;meros extras. Esos n&uacute;meros no
+ocasionan problemas. Gu&aacute;rdelo en un archivo</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dig @rootserver . ns &gt; root.cache.new
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y sustituya el antiguo <CODE>root.cache</CODE> con &eacute;l. </P>
+<P>Recuerde reiniciar <CODE>named</CODE> despu&eacute;s de sustituir el archivo cach&eacute;. </P>
+<P>Al Longyear me envi&oacute; este script que puede ser ejecutado autom&aacute;ticamente
+para actualizar <CODE>root.cache</CODE>, instale una entrada en el
+<CODE>crontab</CODE> para ejecutarlo una vez al mes y olv&iacute;dese.  El script
+supone que trabaja con correo y que el alias de mail <CODE>hostmaster</CODE> est&aacute;
+definido. Debe editarlo para ajustarlo a su configuraci&oacute;n.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#
+# Actualizacion del cache del servidor de nombres una vez al mes.
+# Esto es ejecutado automaticamente mediante una entrada de cron
+#
+(
+ echo &quot;To: hostmaster &lt;hostmaster&gt;&quot;
+ echo &quot;From: system &lt;root&gt;&quot;
+ echo &quot;Subject: Actualizacion automatica del fichero named.boot&quot;
+ echo
+
+ export PATH=/sbin:/usr/sbin:/bin:/usr/bin:
+ cd /var/named
+
+ dig @rs.internic.net . ns &gt;root.cache.new
+
+ echo &quot;El fichero named.boot ha sido actualizado para contener la 
+siguiente informacion:&quot;
+ echo
+ cat root.cache.new
+
+ chown root.root root.cache.new
+ chmod 444 root.cache.new
+ rm -f root.cache.old
+ mv root.cache root.cache.old
+ mv root.cache.new root.cache
+ ndc restart
+ echo
+ echo &quot;El servidor de nombres ha sido rearrancado a fin de asegurar que la
+actualizacion es completa.&quot;
+ echo &quot;El anterior fichero root.cache se ha renombrado a /var/named/root.cache.old.&quot;
+) 2&gt;&1 | /usr/lib/sendmail -t
+exit 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Alguno de ustedes puede haber observado que el archivo <CODE>root.cache</CODE>
+est&aacute; tambi&eacute;n disponible mediante ftp en <I>Internic</I>. Por favor NO
+utilice ftp para actualizar <CODE>root.cache</CODE>, el m&eacute;todo anterior es mucho
+m&aacute;s amistoso con la red. </P>
+
+<HR>
+<A HREF="DNS-Como-5.html">Anterior</A>
+<A HREF="DNS-Como-7.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

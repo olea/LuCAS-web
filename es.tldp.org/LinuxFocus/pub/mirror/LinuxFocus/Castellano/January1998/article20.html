@@ -1,0 +1,726 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML lang="es">
+<HEAD><META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <TITLE>LF vol.2 Depurando C&oacute;digo con ddd</TITLE>
+ <META name="Author" CONTENT="Jose Maria Laveda">
+ <META name="Keywords" CONTENT="compiling debugging ddd">
+ <META name="Description" CONTENT="Tutorial sobre ela utilización del depurador gráfico ddd">
+ <META name="Copyright" CONTENT="&copy; 1998 Jose María Laveda">
+ <META name="Translator" CONTENT="">
+ <META name="Date" CONTENT="1998-02-03T00:00:00Z">
+
+
+</HEAD>
+
+<BODY bgcolor="#FFFFFF" text="#000000" link="#ff0033" vlink="#FF3333">
+
+  <MAP name="navegator">
+      <AREA shape="rect" coords="0, 0, 65, 28" alt="Ir al Hogar" href="../">
+      <AREA shape="rect" coords="66, 0, 124, 28" alt="Ver &Iacute;ndice" href="../indice.html">
+      <AREA shape="rect" coords="125, 0, 193, 28" alt="Buscar" href="../search.html">
+      <AREA shape="rect" coords="194, 0, 260, 28" alt="Enlaces" href="../links.html">
+      <AREA shape="rect" coords="261, 0, 350, 28" alt="Acerda de nosotros" href="../aboutus.html">
+  </MAP>
+
+
+
+ <TABLE border="0" width="100%" cellspacing="0" cellpadding="0">
+
+ <THEAD>
+   <TR align="center">
+      <TD colspan="2"><IMG src="../../common/January1998/border-short.jpg" alt="[LinuxFocus Image]" width="407" height="88"></TD>
+   </TR>
+
+   <TR align="center">
+      <TD colspan="2" bgcolor="#660033"><IMG src="../../common/January1998/Navegator-bar.gif" ismap usemap="#navegator" border="0" width="351" height="28" alt="[Navegation Bar]"></TD>
+   </TR>
+
+   <TR align="center">
+     <TD colspan="2">     
+           <TABLE  border="0" width="75%" cellspacing="0" cellpadding="5">
+		<TR bgcolor="#000000">
+		<TD align="center">
+		  <A href="../News/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Noticias</B></FONT></A>
+		  <A href="../Archives/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Archivos</B></FONT></A>
+		  <A href="../Companies/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Compa&ntilde;&iacute;as</B></FONT></A>
+		  <A href="../Tips/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Consejos&nbsp;</B></FONT></A> 
+               </TD>
+            </TR>
+            
+		<TR>
+            <!--   Here goes the Title of the article, authors name and abstract -->
+		   <TD align="center">
+ 			<FONT face="Helvetica,Arial" color="#660066"><H1>Depurando C&oacute;digo con ddd</H1></FONT>
+ 			<FONT face="Helvetica,Arial" color="#000000"><H3>por <A href="mailto:jmlm@ctv.es"><FONT color="#000000">Jose María Laveda</FONT></A></H3></FONT>
+                  <HR size="2" noshade>
+	         </TD>
+            </TR>
+
+           </TABLE>
+
+     </TD>
+   </TR>
+
+ </THEAD>
+
+
+
+ <TBODY>
+  
+ <TR>
+    <TD valign="top" align="center">
+
+           <H4><A href="#prolog">Prólogo</A></H4>
+           <H4><A href="#whatis"> &#191;Qu&eacute; es un depurador ?</A></H4>
+           <H4><A href="#ddd">&#191;Qu&eacute; es DDD?</A></H4>
+           <H4><A href="#gui"> Aspecto del Entorno</A></H4>
+           <H4><A href="#botom">Empezando por Abajo </A></H4>
+           <H4><A href="#final">Consideraciones Finales</A></H4>
+
+
+
+    </TD>
+   
+    <TD align="center">
+       <TABLE border="0" width="80%" cellspacing="0" cellpadding="0">
+	  <TR>
+          <TD>
+
+     <P ALIGN=RIGHT><FONT SIZE=-1><I>&quot; Me gustan mis errores, no quisiera renunciar
+           a la deliciosa libertad de equivocarme&quot;.</I></FONT><BR> 
+                             Charles Chaplin</P> 
+ 
+
+
+	     <A name="prolog"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">Prólogo</FONT></H3>
+
+
+		  <P>El  siguiente    art&iacute;culo      est&aacute;
+		  concebido  con el  prop&oacute;sito   de mostrar una
+		  serie de conceptos  b&aacute;sicos a  todo aquel que
+		  nunca     a    utilizado un    depurador    o   que,
+		  habi&eacute;ndolo  utilizado,    esta    buscando un
+		  entorno  gr&aacute;fico m&aacute;s agradable para su
+		  trabajo   diario con   esta  herramienta.  Sobre  la
+		  potencia y  posibilidades del depurador descrito (el
+		  gdb) se podr&iacute;a  escribir mucho por lo que  la
+		  simplicidad   con    que   se   han    tratado   los
+		  t&eacute;rminos   es     con     un   fin  meramente
+		  did&aacute;ctico, como siempre :).  &#9;</p>
+ 
+
+
+	     <A name="whatis"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">&#191;Qu&eacute; es un depurador ? </FONT></H3>
+  (Basado en una historia real ;) ).<BR>
+
+		  <P>&quot;Erase       una    vez un  programador cuya
+		  &uacute;nica tarea, cuando se hallaba con un error en
+		  su software, era la siguiente:</P>
+
+
+		  <tt>
+		    /*C&oacute;digo*/<br>
+		    (...)<BR>
+		    bucle<BR>
+		    cambio_en_una_variable<BR>
+		    mostrar valor_variable;<BR>
+		    fin_bucle<BR>
+		    (...)<BR>
+		  </tt>
+		  
+		  <P>Ten&iacute;a que insertar numerosas l&iacute;neas
+		  en su  c&oacute;digo   fuente para que,   durante la
+		  ejecuci&oacute;n  de   su  programa, se   le  fuesen
+		  mostrando   los   valores    de   las  variables  de
+		  inter&eacute;s.  &Eacute;sto    hac&iacute;a       su  vida
+		  dif&iacute;cil y el  coste de  depurar (=revisar) su
+		  c&oacute;digo fuera   dos veces  mayor  que  el   de
+		  escribir el c&oacute;digo ...  (..)&quot;.</P>
+
+
+		  <P>&#191;Quien  no se ha  encontrado alguna vez ante
+		  este panorama?, tenemos un  error en un programa, lo
+		  hemos  intentado y    modificado todo,       estamos
+		  convencidos      de     que    &quot;es    culpa del
+		  compilador&quot; ya    que  no    se  puede    hacer
+		  m&aacute;s,      se       han              intentado
+		  alternativas.... aqu&iacute; es donde entra en juego
+		  este tipo de software.</P>
+
+		  <P>Un    depurador       permite     controlar    la
+		  ejecuci&oacute;n de  un programa en todo momento, de
+		  esta  forma   podemos  conocer  el  estado   de  las
+		  variables,  definici&oacute;n   de  las  mismas, que
+		  pasar&iacute;a ante  ciertos cambios,  etc...   Todo
+		  ello, repito,   de forma  interactiva  y mientras se
+		  ejecuta  el c&oacute;digo  a  depurar. Si  con  esta
+		  definici&oacute;n no  ha   quedado muy  claro espero
+		  hacerlo a lo largo de este art&iacute;culo.</P>
+
+		  <P>&#191;Qu&eacute;   pasar&iacute;a si  el  programador de
+		    nuestra historia dispusiera   de un programa  que le
+		    permitiese hacer lo siguiente?.
+		  </P>
+		  
+		  <TT>
+		    curro # espiar mi_programa<BR>
+		  </TT>
+		  
+		  <P>(Suponiendo que el programa  a depurar se llame
+		  <I>mi_programa</i>)</P>
+		  
+		  <P>Una  vez invocado  el programa &quot;espia&quot;,
+		  hiciera lo siguiente:</P>
+		  
+		  <TT>
+		    espia &gt; ejecuta mi_programa &quot;hasta la l&iacute;nea 50&quot;<BR>
+		    espia &gt; muestrame el valor de la variable &lt;X&gt; <BR>
+		    espia &gt; &#191;de que tipo es la variable &lt;X&gt; <BR>
+		  </TT>
+		  
+		  <P>En  este  punto nuestro  amigo    da un salto  de
+		  alegr&iacute;a, ha encontrado su error, metiendo n&uacute;meros de
+		  centenares de cifras de bytes puede ser malo para su
+		  salud.
+		  </P>
+		  
+		  <TT>
+		    espia &gt; sigue ejecut&aacute;ndote hasta el final<BR>
+		    espia &gt; salir.<BR>
+		  </TT>
+
+
+		  <P>Hemos   visto   que el     programa       llamado
+		  &quot;espia&quot;    para nuestra   historia   le ha
+		  ayudado, y mucho, ha estado ejecutando el programa a
+		  su  antojo,   observando  valores   de   variables y
+		  c&oacute;mo est&aacute;n  definidas. Pues  bien, ESO
+		  ES UN DEPURADOR, a grandes rasgos, claro.<BR>
+
+		  <P><B>Aviso </B>!!: Para  poder  hacer uso   de esta
+		  capacidad el programa  ha de  ser  compilado con  el
+		  par&aacute;metro &quot;-g&quot;,  caso de tratase de
+		  un programa en C y el compilador GNU gcc.</P>
+
+
+		  <P>Existe una herramienta  de  este  tipo disponible
+		  para  todos los usuarios   de LINUX (y  otras muchas
+		  plataformas), el GDB  &quot; <I>The GNU Source-Level
+		  Debugger</I>&quot;. Por el mismo  precio, y bajo  la
+		  misma licencia, que  el sistema operativo con el que
+		  seguramente  est&aacute;s          leyendo      este
+		  art&iacute;culo,     la     GNU     General   Public
+		  License.   Permite depurar c&oacute;digo generado en
+		  C, C++, Modula-2 y ensamblador.</P>
+
+		  <P>Seguramente la distribuci&oacute;n   que utilizas
+		  lo  incorpora,  si   no  es as&iacute;,    cambia de
+		  distribuci&oacute;n   inmediatamente u obtenlo    de
+		  cualquier   lugar   en  la   red  donde  est&eacute;
+		  disponible ;).  Echa un  vistazo a los  paquetes que
+		  tienes  disponibles, si obtienes un &quot;<I>command
+		  not         found</I>&quot;    al  invocarlo    como
+		  &quot;gdb&quot; es que  muy probablemente no lo  has
+		  instalado.</P>
+
+
+
+		  <P>Introducido      en          el        directorio
+		  &quot;/usr/src/gdb-4.xxxx/gdb&quot;,          teclea
+		  &quot;./configure&quot;,    tras    lo   cual puedes
+		  introducirte en    el directorio  &quot;doc&quot;  y
+		  teclear    &quot;make gdb.dvi;make refcard.dvi&quot;
+		  con lo  que   obtienes dicho  manual en  el  formato
+		  especificado, de ah&iacute; a obtener un fichero que
+		  tu impresora  pueda entender lo dejo  como ejercicio
+		  para el lector :).</P>
+
+ 
+	     <A name="ddd"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033"> &#191;Qu&eacute; es DDD?</FONT></H3>
+
+
+		  <P>En  vez de  continuar  por una descripci&oacute;n
+		  detallada del funcionamiento de este programa, todos
+		  sus comandos  y ejemplos  de  funcionamiento, pienso
+		  que es  mucho  m&aacute;s   &uacute;til para  el  no
+		  iniciado el facilitarle la tarea  mediante el uso un
+		  entorno   m&aacute;s   amable.     En    este   caso
+		  explicar&eacute;  el  uso   general de uno   de  los
+		  disponibles,  el  llamado  DDD  de  <I>Display  Data
+		  Debugger</I>.<P>
+
+ 
+
+		  <P>Este    entorno   permite,    en  t&eacute;rminos
+		  generales,    el  disponer  de  un   interfaz  mucho
+		  m&aacute;s    amigable  adem&aacute;s   de     poder
+		  configurar  la  tarea   de  depurar  c&oacute;digo a
+		  nuestro   gusto,  pero   una  advertencia    previa,
+		  simplemente se  trata  de un entorno  gr&aacute;fico
+		  que funciona &quot;por  encima&quot; del gdb, por lo
+		  que necesita  de este  para poder ejecutarse,  no se
+		  reinventa la rueda.  De echo veremos como su aspecto
+		  nos  posibilitar&aacute;  el   utilizar el       gdb
+		  directamente si  lo deseamos.   Tambi&eacute;n    es
+		  posible utilizar otros depuradores (dbx y xdb).
+		  </P>
+
+
+
+		  <P>Puede obtenerse  el software e informaci&oacute;n
+		  sobre          el      mismo            en        <A
+		  HREF="http://www.cs.tu-bs.de/softech/ddd/">,
+		  http://www.cs.tu-bs.de/softech/ddd/</A>   aunque  si
+		  utilizas Red Hat, por  ejemplo, lo tienes disponible
+		  en  formato .rpm&quot;.  Una advertencia, puede  que
+		  tengas dos  versiones del mismo, una est&aacute;tica
+		  y otra din&aacute;mica, esto es debido a que se basa
+		  en las   librer&iacute;a  Motif, por  lo que   de no
+		  tenerlas  ha   de   optarse por   la  versi&oacute;n
+		  est&aacute;tica del mismo.</P>
+
+		  <P>El  autor desconoce la situaci&oacute;n actual en
+		  cuanto a si  DDD funciona  correctamente con LESSTIF
+		  (<A                   HREF="http://www.lesstif.org">
+		  http://www.lesstif.org</A>),   implementaci&oacute;n
+		  libre  de dicha librer&iacute;a gr&aacute;fica.   No
+		  hace  mucho  tiempo  funcionaba a&ntilde;adiendo  un
+		  parche  al c&oacute;digo fuente  del  depurador,  el
+		  autor de este art&iacute;culo lo usaba de esta forma
+		  en  un kernel 1.2.13 y con  una lesstif  0.75 (si no
+		  recuerdo  mal). Consulta   la p&aacute;gina de  este
+		  proyecto para m&aacute;s informaci&oacute;n.</P>
+
+		  <P>Al grano, invocando ddd obtendremos:</P>
+		  
+		  <CENTER>
+		    <A HREF="../../common/January1998/imagen1.gif">
+		      <IMG SRC="../../common/January1998/imagen1.gif" WIDTH="350">
+		    </A>
+		    <BR>
+		    <I>Figura 1. Pantalla que se obtiene al invocar el programa</I>
+		  </CENTER><BR>
+		  
+
+		  <P>Podemos  invocar  el programa  de tres formas, la
+		    descrita y las dos siguientes:</P>
+		  
+		  <TT>
+		    ddd &lt;programa&gt; core<BR>
+		    ddd &lt;programa&gt; &lt;identificador_de_proceso&gt;<BR>
+		  </TT>
+		  
+
+
+		  <P>Un  fichero &quot;core&quot;  se produce ante  un
+		  error en   un  programa, que  autom&aacute;ticamente
+		  generar&aacute; dicho     fichero para   poder   ser
+		  inspeccionado con  este tipo de herramientas.  Si en
+		  tu   m&aacute;quina  no  se  generan este    tipo de
+		  ficheros  echale     un   vistazo   al    valor  del
+		  int&eacute;rprete de comandos para este fichero (con
+		  'ulimit -a'  muestra todos   ellos, con 'ulimit   -c
+		  &lt;valor&gt;'   puedes  definir   el  tama&ntilde;o
+		  m&aacute;ximo  de   estos ficheros, adem&aacute;s de
+		  otros par&aacute;metros de inter&eacute;s).</P>
+
+
+
+		  <P>Mediante  el  identificador de proceso    podemos
+		  inspeccionar  el programa mientras se    est&aacute;
+		  ejecutando.</p>
+
+		  <P>Con    este  entorno   gr&aacute;fico     existen
+		  m&uacute;ltiples  formas de realizar  una tarea,  no
+		  voy a  describirlas todas, simplemente la m&aacute;s
+		  sencilla  o     la   m&aacute;s  directa,   asimismo
+		  podr&aacute;s  observar  en la ventana del depurador
+		  (la &uacute;ltima  de abajo)  el reflejo  v&iacute;a
+		  comandos de  todo lo que    estas haciendo, lo  cual
+		  puede serte muy  &uacute;til para aprender el manejo
+		  del gdb desde la l&iacute;nea de comandos.</P>
+
+
+	     <A name="gui"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">Aspecto del Entorno</FONT></H3>
+
+ 
+
+		  <P>En la Figura  1  puede observarse que la  ventana
+		  est&aacute;  dividida  en 3 zonas, la  de m&aacute;s
+		  abajo se corresponde con   la ventana del  depurador
+		  &quot;puro  y  duro&quot;, en  &eacute;sta   podemos
+		  introducir  los  comandos como  si  no tuvi&eacute;semos el
+		  interfaz    a  nuestra disposici&oacute;n,   la zona
+		  central es la  que contendr&aacute; al c&oacute;digo
+		  fuente, la  superior puede servirnos para obtener el
+		  contenido      de      una    variable    en   forma
+		  gr&aacute;fica.   La  barra   de   tareas  o ventana
+		  flotante  que    aparece  nos  permitir&aacute;   el
+		  controlar la ejecuci&oacute;n  del programa en  todo
+		  momento.</P>
+
+
+
+		  <P>Existen asimismo  una ventana de ejecuci&oacute;n
+		  de  las    aplicaciones   y  otra   que  muestra  el
+		  c&oacute;digo fuente  del software a  depurar. Ambas
+		  opcionales.</P>
+
+
+
+		  <P>Podemos  obtener informaci&oacute;n sobre lo  que
+		  estamos  haciendo,   o  deseamos hacer  en cualquier
+		  momento de   m&uacute;ltiples formas,  por  ejemplo,
+		  cuando estamos encima de una variable o de cualquier
+		  bot&oacute;n    del entorno nos aparecer&aacute;  un
+		  di&aacute;logo mostrando informaci&oacute;n sobre el
+		  mismo; en la  parte inferior  de la ventana  tenemos
+		  una l&iacute;nea   de  estado   sobre  lo  que    se
+		  est&aacute; haciendo y  su resultado;  tenemos en la
+		  parte derecha    un men&uacute; desplegable   con la
+		  ayuda  disponible; pulsando F1 y despu&eacute;s sobre
+		  lo que   queremos conocer obtendremos una  ventana de
+		  di&aacute;logo con lo  que queremos saber  ... En la
+		  ventana del depurador      podemos        introducir
+		  &quot;help&quot;    para  una ayuda   general o para
+		  cualquier comando deseado.</P>
+
+
+
+
+		  <P>Mediante el  men&uacute;  &quot;Preferences&quot;
+		  podemos hacer, si  lo deseamos, que  se nos muestren
+		  las ventanas separadas, en vez de unidas.</P>
+
+		  <CENTER>
+		    <IMG SRC="./../../common/January1998/imagen2.gif"><BR>
+		    <I>Figura 2. Ayuda sobre el men&uacute; &quot;File&quot;</I>
+		  </CENTER><BR>
+		  
+		  <A name="botom"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">Empezando por Abajo</FONT></H3>
+
+ 
+
+		  <P>En         la        ventana   del      depurador
+		  (&quot;<I>DDD:Debugger  Console&quot;)  </I>podremos
+		  dar nuestros primeros  pasos en el uso del depurador
+		  o, si nuestros conocimientos lo permiten, introducir
+		  los comandos deseados sin hacer uso del rat&oacute;n
+		  ni de men&uacute;  alguno. Puede ayudarnos para esto
+		  el observar  su estado  cuando realizamos  cualquier
+		  maniobra usando  el entorno gr&aacute;fico. Mediante
+		  la       opci&oacute;n      del          men&uacute;
+		  &quot;Commands-&gt;Command  History&quot;   podremos
+		  obtener una ventana con el hist&oacute;rico de todos
+		  los comandos introducidos hasta el momento.</P>
+
+
+		  <P>Para     un  mejor       conocimiento  de     las
+		  caracter&iacute;sticas recomiendo recurrir al propio
+		  manual del  mismo. De todas formas tratar&eacute; de
+		  especificar  en  algunos      casos  c&oacute;mo  se
+		  realizar&iacute;a    una tarea   desde el  depurador
+		  directamente.</P>
+
+
+ 
+ 
+
+	     <A name="general"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">Ideas Generales</FONT></H3>
+
+
+ 
+		  <P>Una  vez cargado el c&oacute;digo fuente deseado,
+		  mediante    la   invocaci&oacute;n del   depurador o
+		  mediante    el  men&uacute; &quot;<I>File</I>&quot;,
+		  aparecer&aacute;  el  c&oacute;digo fuente del mismo
+		  en el &aacute;rea  correspondiente. A partir de este
+		  momento  ya   podemos  navegar por  el c&oacute;digo
+		  fuente, obtener el valor  y definici&oacute;n de las
+		  variables,    ejecutar   el  programa controlando su
+		  evoluci&oacute;n...</P>
+
+
+		  <P>Podemos  visualizar la   salida  de  un  programa
+		  mediante una ventana de ejecuci&oacute;n (<I>Options
+		  -&gt;  Run  in Execution Window  </I>),  o viendo su
+		  salida  en la  consola  del depurador  (salvo  si el
+		  programa  est&aacute; concebido para ejecutarse con
+		  Motif,  u   otra  librer&iacute;a  de   desarrollo de
+		  entornos gr&aacute;ficos).</P>
+
+
+		  <P>Ubicando el  puntero  del rat&oacute;n  encima de
+		  cualquier variable  del c&oacute;digo fuente podemos
+		  obtener su  valor actual en la  linea de estado o en
+		  forma de informaci&oacute;n emergente. Si   pulsamos
+		  el  bot&oacute;n derecho del rat&oacute;n  obtenemos
+		  un men&uacute; como el siguiente:</P>
+
+		  <CENTER>
+		    <IMG SRC="./../../common/January1998/imagen3.gif">
+		  </CENTER><BR>
+		  
+		  
+
+		  <P>Este men&uacute; permite  el obtener el valor  de
+		  la variable    &quot;fname&quot;,  en   la   ventana
+		  inferior,   mostrarla   visualmente  en  la  ventana
+		  superior  (&quot;&aacute;rea de dibujo&quot;), tanto
+		  si se  trata de una variable  como si  es un puntero
+		  (variable  que  contiene    la  direcci&oacute;n  de
+		  memoria de otra,  no  su valor).  Con  &quot;<I>What
+		  is</I>&quot; podemos conocer la estructura o tipo de
+		  variable  se&ntilde;alada.  <I>Lookup </I>permite la
+		  b&uacute;squeda de ocurrencias de la misma. <I>Break
+		  at</I>  y <I>Clear at permiten  </I>el manejo de los
+		  denominados &quot;puntos  de     ruptura&quot;     (
+		  <I>breakpoints)</I>      que    explicar&eacute;  en
+		  breve.</P>
+
+
+
+
+		  <P>Podemos   utilizar   tambi&eacute;n  las opciones
+		  disponibles desde la barra de botones ubicada debajo
+		  del  &aacute;rea del c&oacute;digo fuente, colocando
+		  el   par&aacute;metro  deseado dentro  de la ventana
+		  izquierda     y      escogiendo  posteriormente   la
+		  acci&oacute;n deseada.</P>
+
+
+		  <P>Un punto de ruptura  permite ejecutar el programa
+		  hasta una  l&iacute;nea  concreta del programa, para
+		  despu&eacute;s    poder observar   el  valor de  las
+		  variables, seguir  ejecutando paso  a paso el mismo,
+		  revisar    el      estado     de     las      hebras
+		  (<I>threads</I>).... Hay que tener en cuenta que, en
+		  general,   si  no ponernos un    punto de ruptura en
+		  nuestro programa puede finalizar su ejecuci&oacute;n
+		  correctamente o salir debido a un  error, con lo que
+		  no seremos  capaces de ejecutar acci&oacute;n alguna
+		  sobre  el mismo, hay  que  depurar  el c&oacute;digo
+		  &quot;en marcha&quot;.</P>
+
+		  <P>Para colocar un  punto   de  ruptura  en  nuestro
+		  c&oacute;digo fuente podemos hacer varias cosas:</P>
+
+		  <UL>
+		    <LI>Colocar el rat&oacute;n  en la parte izquierda
+		    de la l&iacute;nea  en la  que deseamos colocarlo,
+		    pulsar el bot&oacute;n derecho del mismo y escoger
+		    <I>Set   Breakpoint</I>  o     <I>Set    Temporary
+		    Breakpoint</I>. La diferencia  consiste en que uno
+		    temporal se desactiva   la primera vez  que  se ha
+		    alcanzado, el otro  ha   de  hacerse mediante   el
+		    comando correspondiente (&#191;lo adivina? :) ).
+
+		    <LI>Escoger  el  bot&oacute;n  del &aacute;rea del
+		    c&oacute;digo       fuente<I>&quot;Break        at
+		    ()&quot;.</I>
+
+		    <LI>Teclear  en la    consola  del  depurador   la
+		    l&iacute;nea                           &quot;break
+		    &lt;numero_linea&gt;&quot;.
+
+		    <LI>Mediante  la  opci&oacute;n    del men&uacute;
+		    <I>Source-&gt;Edit   Breakpoints,</I>  con la  que
+		    obtendremos una ventana para   el control de  esta
+		    utilidad:
+		  </UL>
+
+
+
+		  <CENTER>
+		    <A HREF="../../common/January1998/imagen5.gif">
+		      <IMG SRC="./../../common/January1998/imagen5.gif" WIDTH="350">
+		    </A>
+		  </CENTER>
+
+
+		  <P>En   la  figura  podemos  observar  dos puntos de
+		  ruptura  en     las  l&iacute;neas  70    y 71   del
+		  c&oacute;digo  fuente, el s&iacute;mbolo es bastante
+		  auto-explicativo.</P>
+
+		  <P>El men&uacute; siguiente permite el control de los mismos:</P>
+
+
+		  <CENTER>
+		    <A HREF="../../common/January1998/imagen4.gif">
+		      <IMG SRC="./../../common/January1998/imagen4.gif" WIDTH="350">
+		    </A>
+		  </CENTER>
+		  
+
+		  <DL>
+		    <DT>Mediante      la    opci&oacute;n <I>Condition
+		    </I>puede establecerse una  condici&oacute;n  para
+		    el punto    de ruptura,  se    detendr&aacute;  la
+		    ejecuci&oacute;n  del     programa   caso   de que
+		    est&aacute;  condici&oacute;n  se  cumpla   en  la
+		    l&iacute;nea marcada.    Con      <I>Ignore  Count
+		    </I>puede  establecerse  un  contador para  que se
+		    detenga la ejecuci&oacute;n del programa    cuando
+		    haya  pasado   &lt;n&gt;   veces      sobre  dicha
+		    l&iacute;nea, por ejemplo, pensemos en un bucle en
+		    el    que queremos  detener  la   ejecuci&oacute;n
+		    pasadas 15 iteraciones del mismo.  <DT>Llegados al
+		    punto de ruptura podemos estudiar el estado de las
+		    variables  definidas en el  programa  mediante las
+		    opciones   mostradas      en      el   men&uacute;
+		    correspondiente. Vuelvo a recordar que todas estas
+		    y otras  opciones se  encuentran en el men&uacute;
+		    principal  (p.ej:   men&uacute;      <I>Data</I>).
+		    <DT>Para   la  ejecuci&oacute;n  del c&oacute;digo
+		    utilizaremos la   barra de tareas  habilitada para
+		    tal fin, que aparece  en la parte superior derecha
+		    de la ventana principal.  <DD><BR>
+		  </DL>
+
+		  <CENTER>
+		    <IMG SRC="./../../common/January1998/imagen6.gif"><BR>
+		    <IMG SRC="./../../common/January1998/imagen7.gif">
+		  </CENTER>
+		  
+
+		  <P>Con  este sencillo  montaje se puede  apreciar el
+		  paralelismo entre  la    barra   de  tareas   y   el
+		  men&uacute; correspondiente.</P>
+
+		  <P>Podemos  ejecutar el programa e interrumpirlo, si
+		  lo hacemos  desde el men&uacute;  podemos introducir
+		  par&aacute;metros para la ejecuci&oacute;n  mediante
+		  un cuadro de di&aacute;logo.  <I>Step</I> ejecuta el
+		  programa  una l&iacute;nea mas   (paso a paso), esto
+		  es, si se hace  una llamada a una funci&oacute;n, se
+		  recorrer&aacute;n las l&iacute;neas de  &eacute;sta,
+		  a diferencia  de  <I>Next</I>, que la tratar&aacute;
+		  como una sola l&iacute;nea.</P>
+
+		  <P><I>Continue</I>   permite  continuar    con    la
+		  ejecuci&oacute;n   del  programa tras   el  punto de
+		  ruptura.  <I>Kill, Interrupt y Abort</I> permiten la
+		  interrupci&oacute;n del programa depurado.</P>
+
+
+		  <P>Llegados  a este  punto  podemos inspeccionar  el
+		  valor   de  las  variables   con los  m&eacute;todos
+		  descritos      hasta      el   momento,   mostrarlas
+		  gr&aacute;ficamente, examinar  pila de  llamadas   a
+		  rutinas,       <I>Threads,     </I>registros     del
+		  procesador... (ver men&uacute; <I>Status).</I></P>
+
+		  <P>Quiz&aacute; el  elemento m&aacute;s llamativo de
+		  este  entorno gr&aacute;fico  es  su &aacute;rea  de
+		  dibujo para los datos,   en la parte superior  de la
+		  ventana,     en    la     que     podemos   apreciar
+		  gr&aacute;ficamente tanto la estructura y  contenido
+		  de  los datos,   como la  relaci&oacute;n  existente
+		  entre  los mismos, de existir,  veamos un ejemplo en
+		  el que se muestra un vector (Argumentos) y cuatro de
+		  sus componentes:</P>
+
+		  <CENTER>
+		    <A HREF="../../common/January1998/imagen8.gif">
+		      <IMG SRC="./../../common/January1998/imagen8.gif" WIDTH="350">
+		    </A>
+		  </CENTER>
+		  
+
+		  <P>La informaci&oacute;n a mostrarse en esta ventana
+		  puede ser muy variada, basta  con echarle un vistazo
+		  al   men&uacute;  <I>Data-&gt;More Status   Displays
+		  </I>en   el que  se  puede  configurar  todo  lo que
+		  deseamos  que se muestre  en pantalla,  para el caso
+		  anterior  podemos  ampliar la  informaci&oacute;n al
+		  estado de    los     registros   del     procesador,
+		  librer&iacute;as   din&aacute;micas   utilizadas   y
+		  estado de la ejecuci&oacute;n del programa:</P>
+		  
+		  <CENTER>
+		    <A HREF="../../common/January1998/imagen9.gif"> 
+		      <IMG SRC="../../common/January1998/imagen9.gif" WIDTH="350"></A>
+		  </CENTER><BR>
+		  
+		  
+		  
+
+
+	     <A name="final"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">Consideraciones Finales</FONT></H3>
+
+
+ 
+		  <P>El  entorno   es   configurable desde el   propio
+		  programa,         mediante   el          men&uacute;
+		  <I>Options-&gt;Preferences</I>,    principales     y
+		  mediante el mecanismo de  recursos propio del  mundo
+		  de las  aplicaciones Motif (fichero $HOME/.dddinit),
+		  pero  saldr&iacute;a  de  el  objetivo  del presente
+		  art&iacute;culo el    describir  todos los  recursos
+		  configurables y c&oacute;mo hacerlo.  </P>
+ 
+		  <P>Recomendar encarecidamente  la lectura del manual
+		  del programa (ddd.ps) que acompa&ntilde;a al mismo y
+		  del        manual      del    depurador  propiamente
+		  (&quot;<I>Debuggin with GDB</I>&quot;),   aunque  el
+		  lector con un poco  de curiosidad puede manejarse en
+		  este entorno en poco  tiempo,  basta con depurar  un
+		  c&oacute;digo fuente conocido   para ver  todas  las
+		  posibilidades existentes.</P>
+ 
+		  <P>Por  &uacute;ltimo pedir disculpas ante cualquier
+		  error  grave    que haya  podido    cometerse  en la
+		  redacci&oacute;n   de  este  documento  por mi parte
+		  :).</P>
+          </TD>
+        </TR>
+	 </TABLE>
+
+     <HR size=2 noshade>
+    </TD>
+
+ </TR>
+
+ </TBODY>
+
+<TBODY>
+  <TR>
+    <TD colspan="2">
+    <B>Para m&aacute;s informaci&oacute;n</B>:<BR>
+    <UL>
+      <LI>Leer el manual del gdb. </LI>
+      <LI>Leer otros artículos del autor <A href="../November1997/article4.html">Como Utilizar Linux F&aacute;cilmente</A>.</LI> 
+     <UL><BR><BR>
+    <TD>
+  </TR>
+</TBODY>
+
+ <TR bgcolor="#660033">
+   <TD colspan="2" align="center"><FONT face="Helvetica,Arial" color="#FFFFFF"><B>
+         &copy; 1998 Jose Maria Laveda</B></FONT><BR>
+    <FONT color="#ffffff">P&aacute;ginas web mantenidas por 
+    <A href="mailto:angel@mercury.chem.pitt.edu"><FONT color="#ffffff">Miguel A Sepulveda</FONT></A></FONT>.
+   </TD>
+ </TR>
+
+
+
+</TABLE>
+
+
+</BODY>
+</HTML>
+
+
+
+
+
+

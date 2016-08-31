@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> C&oacute;mo pasar de DOS/Windows a Linux: Disquetes, discos duros y similares.</TITLE>
+ <LINK HREF="Dos-Win-Linux-Como-7.html" REL=next>
+ <LINK HREF="Dos-Win-Linux-Como-5.html" REL=previous>
+ <LINK HREF="Dos-Win-Linux-Como.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Dos-Win-Linux-Como-7.html">Página siguiente</A>
+<A HREF="Dos-Win-Linux-Como-5.html">Página anterior</A>
+<A HREF="Dos-Win-Linux-Como.html#toc6">Índice general</A>
+<HR>
+<H2><A NAME="Disquetes"></A> <A NAME="s6">6. Disquetes, discos duros y similares.</A></H2>
+
+<P>
+<P>Hay dos maneras de adminsitrar dispositivos bajo Linux: a la manera de DOS
+y a la manera de UNIX. Elija.
+<P>
+<H2><A NAME="ss6.1">6.1 Administraci&oacute;n de dispositivos en «modo DOS»</A>
+</H2>
+
+<P>
+<P>La mayor parte de las distribuciones de Linux incluyen las Mtools, un
+conjunto de &oacute;rdenes que son perfectamente equivalentes a sus
+correspondientes &oacute;rdenes en DOS, pero que empiezan con una 'm': p.e.,
+<CODE>mformat</CODE>, <CODE>mdir</CODE>, <CODE>mmd</CODE>, <CODE>mdel</CODE>, y as&iacute;. Pueden incluso
+conservar los nombres de ficheros largos, pero no los permisos de los
+ficheros. Si usted configura las Mtools editando un fichero llamado
+<CODE>/etc/mtools.conf</CODE> (se proporciona un ejemplo en la
+distribuci&oacute;n), podr&aacute; tambi&eacute;n acceder a la partici&oacute;n DOS/Win, el CD-ROM,
+y la unidad Zip. Sin embargo, para formatear un disco sin formato, la
+orden <CODE>mformat</CODE> no funcionar&aacute;. Como root, tendr&aacute; que ejecutar esta
+orden con anterioridad: <CODE> fdformat /dev/fd0H1440 </CODE>
+<P>Nota: no podr&aacute; acceder a los ficheros del disquete con una orden como, por
+ejemplo, <CODE>less a:fich.txt</CODE>. Esta es la desventaja de la manera DOS
+de montar discos.
+<P>
+<H2><A NAME="ss6.2">6.2 Administraci&oacute;n de dispositivos en «modo UNIX»</A>
+</H2>
+
+<P>
+<P>UNIX maneja los dispositivos de una manera distinta. No hay unidades
+separadas como A: o C:; un disco, sea un disquete o lo que sea, pasa a
+ser parte del sistema de ficheros local mediante una operaci&oacute;n denominada
+«montaje» (mounting). Cuando se acaba de utilizar el disco, antes de
+extraerlo, debe «desmontarlo» (unmount).
+<P>F&iacute;sicamente, dar formato a un disco es una cosa, hacer un sistema de
+ficheros en &eacute;l es otra. La orden de DOS <CODE>FORMAT A:</CODE> hace ambas cosas,
+pero bajo Linux son acciones separadas. Para dar formato a un disco, mire
+m&aacute;s arriba. Para crear un sistema de ficheros:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mkfs -t ext2 -c /dev/fd0H1440
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Puede utilizar <CODE>dos</CODE>, <CODE>vfat</CODE> (recomendado) u otros formatos en
+lugar de <CODE>ext2</CODE>. Una vez que el disco est&eacute; preparado, m&oacute;ntelo con la
+orden
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount -t ext2 /dev/fd0 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>especificando el sistema de ficheros correcto si no utiliza <CODE>ext2</CODE>.
+Ahora usted puede acceder a los ficheros del disquete. Todo lo que sol&iacute;a
+hacer con A: o B: se hace ahora utilizando en su lugar <CODE>/mnt</CODE>.
+Ejemplos:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+DOS                                     Linux
+---------------------------------------------------------------------
+
+C:\GUIDO>DIR A:                         $ ls /mnt
+C:\GUIDO>COPY A:*.*                     $ cp /mnt/* .
+C:\GUIDO>COPY *.ZIP A:                  $ cp *.zip /mnt
+C:\GUIDO>EDIT A:FILE.TXT                $ jstar /mnt/file.txt
+C:\GUIDO>A:                             $ cd /mnt
+A:> _                                   /mnt/$ _
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Cuando haya acabado, antes de sacar el disco <EM>deber&aacute;</EM> desmontarlo con
+la orden 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# umount /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Obviamente, debe hacer un <CODE>fdformat</CODE> y un <CODE>mkfs</CODE> s&oacute;lo a los discos no
+formateados, que no han sido usados nunca. Si quiere utilizar la unidad B:,
+ponga <CODE>fd1H1440</CODE> y <CODE>fd1</CODE> en lugar de <CODE>fd0H1440</CODE> y <CODE>fd0</CODE> en los
+ejemplos anteriores.
+<P>No hace falta decir que la manera de proceder con los disquetes tambi&eacute;n
+funciona con otros dispositivos, como por ejemplo, otro disco duro o una
+unidad CD-ROM. Esto es para montar el CD-ROM: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount -t iso9660 /dev/cdrom /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esta era la manera «oficial» de montar discos, pero hay un truco. Como
+es algo inc&oacute;modo tener que ser root para montar un disquete o un CD-ROM,
+puede darse permisos a cada usuario de esta manera:
+<P>
+<UL>
+<LI>como root, hacer lo siguiente:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# mkdir /mnt/a: ; mkdir /mnt/floppy ; mkdir /mnt/cdrom
+# chmod 777 /mnt/floppy* /mnt/cd*
+# # aseg&uacute;rese de que el dispositivo CD-ROM es el adecuado
+# chmod 666 /dev/hdb ; chmod 666 /dev/fd*
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+ </LI>
+<LI>a&ntilde;adir en <CODE>/etc/fstab</CODE> las siguientes l&iacute;neas:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/cdrom        /mnt/cdrom    iso9660   ro,user,noauto          0       0
+/dev/fd0          /mnt/floppy   vfat      user,noauto             0       0
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+<P>Ahora, para montar un disquete DOS y un CD-ROM:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ mount /mnt/floppy
+$ mount /mnt/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Cualquier usuario puede acceder a <CODE>/mnt/floppy</CODE>,
+<CODE>/mnt/a:</CODE>, y <CODE>/mnt/cdrom</CODE>. Recuerde que si considera
+importante la seguridad, dejar que todo el mundo pueda montar discos de
+esta manera constituye un gran agujero.
+<P>Dos &oacute;rdenes &uacute;tiles son <CODE>df</CODE>, que da informaci&oacute;n acerca de los sistemas
+de ficheros montados, y <CODE>du nombredir</CODE> que informa del espacio de
+disco consumido por el directorio.
+<P>
+<H2><A NAME="Copias de Seguridad"></A> <A NAME="ss6.3">6.3 Copias de seguridad </A>
+</H2>
+
+<P>
+<P>Hay muchos paquetes que pueden servirle, pero lo m&aacute;s simple para hacer una
+copia de seguridad multivolumen (como root) es:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tar -M -cvf /dev/fd0H1440 /directorio_a_guardar
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Aseg&uacute;rese de tener un disquete formateado en la unidad, y otros ya
+preparados. Para restaurar sus ficheros, inserte el primer disquete en la
+unidad y utilice: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tar -M -xpvf /dev/fd0H1440
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="Dos-Win-Linux-Como-7.html">Página siguiente</A>
+<A HREF="Dos-Win-Linux-Como-5.html">Página anterior</A>
+<A HREF="Dos-Win-Linux-Como.html#toc6">Índice general</A>
+</BODY>
+</HTML>

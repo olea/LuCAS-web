@@ -1,0 +1,470 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP-Linux-Como: Configuraci&oacute;n del servidor LDAP</TITLE>
+ <LINK HREF="LDAP-Linux-Como-4.html" REL=next>
+ <LINK HREF="LDAP-Linux-Como-2.html" REL=previous>
+ <LINK HREF="LDAP-Linux-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="LDAP-Linux-Como-4.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-2.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="3"></A> <A NAME="s3">3. Configuraci&oacute;n del servidor LDAP</A></H2>
+
+<P>Cuando el software se haya compilado e instalado, ya puede
+configurarlo para utilizarlo en su servidor. Toda la configuraci&oacute;n en
+tiempo de ejecuci&oacute;n de <EM>slapd</EM> se realiza mediante el fichero
+<CODE>slapd.conf</CODE>, que se instala en el directorio que haya especificado
+en <CODE>--prefix</CODE> en el gui&oacute;n de configuraci&oacute;n, o bien, si no
+especific&oacute; ninguno, en <CODE>/usr/local/etc/openldap</CODE> de forma
+predeterminada.
+<P>
+<P>En este directorio hallar&aacute; asimismo los ficheros <CODE>slapd.oc.conf</CODE> y
+<CODE>slapd.at.conf</CODE> que se incluyen en el fichero <CODE>slad.conf</CODE> (v&eacute;ase
+la opci&oacute;n <EM>include</EM> en la 
+<A HREF="#3.2">secci&oacute;n 3.2</A>) y que
+incluyen, respectivamente, las definiciones de clases de objetos
+(<EM>objectclasses</EM>) y atributos para la base de datos de segundo
+plano de LDAP (<EM>backend</EM>). Lo que sigue es una descripci&oacute;n del formato
+general del fichero de configuraci&oacute;n, y continuaremos con una
+descripci&oacute;n detallada de cada opci&oacute;n del fichero de configuraci&oacute;n.
+<P>
+<H2><A NAME="ss3.1">3.1 Formato del fichero de configuraci&oacute;n</A>
+</H2>
+
+<P>El fichero <CODE>slapd.conf</CODE> est&aacute; compuesto por una serie de
+opciones globales de configuraci&oacute;n que afectan a <CODE>slapd</CODE> en su
+conjunto (incluyendo todas las bases de datos de segundo plano o
+<EM>backends</EM>), seguido por cero o m&aacute;s definiciones de <EM>backends</EM>,
+las cuales contienen informaci&oacute;n espec&iacute;fica de una instancia de
+<EM>backend</EM>.
+<P>Las opciones globales de configuraci&oacute;n pueden anularse en un
+<EM>backend</EM> determinado (para opciones que aparecen m&aacute;s de una vez,
+se usa la &uacute;ltima aparici&oacute;n en el fichero de configuraci&oacute;n
+<CODE>slapd.conf</CODE>). Se ignoran las l&iacute;neas en blanco y las l&iacute;neas de
+comentario que comienzan por el car&aacute;cter de «#». Si una l&iacute;nea
+comienza por un espacio en blanco, se considera una continuaci&oacute;n de la
+l&iacute;nea anterior. El formato general del fichero <CODE>slapd.conf</CODE> es el
+siguiente: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     # comentario - estas opciones se aplican a cualquier base de datos
+     &lt;opciones de configuraci&oacute;n globales&gt; 
+     # definici&oacute;n de la base de datos y opciones de configuraci&oacute;n
+     database &lt;backend tipo 1&gt;
+     &lt;opciones de configuraci&oacute;n espec&iacute;ficas del backend tipo 1&gt; 
+     #definici&oacute;n de la segunda base de datos y opciones de configuraci&oacute;n
+     database &lt;backend tipo 2&gt;
+     &lt;opciones de configuraci&oacute;n espec&iacute;ficas del backend tipo 2&gt; 
+     # definiciones subsiguientes de bases de datos y opciones de configuraci&oacute;n 
+     ... 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Los argumentos de la l&iacute;nea de configuraci&oacute;n est&aacute;n separados por
+espacios en blanco. Si un argumento contiene espacios en blanco, el
+argumento debe encerrarse entre comillas dobles "de esta manera". Si
+un argumento contiene unas dobles comillas o una barra invertida
+`\', el car&aacute;cter ha de ir precedido de una barra invertida
+`\', (p. ej. `\\d').
+<P>La distribuci&oacute;n de <EM>OpenLDAP</EM> contiene un fichero de configuraci&oacute;n de
+ejemplo que se instalar&aacute; en el directorio de configuraci&oacute;n
+especificado en <CODE>--prefix</CODE>. Tambi&eacute;n se proporcionan un
+<CODE>slapd.at.conf</CODE>, que contiene muchas definiciones de atributos
+utilizadas a menudo, y <CODE>slapd.oc.conf</CODE>, que contiene muchas
+definiciones de clases usadas con frecuencia.
+<P>
+<H2><A NAME="3.2"></A> <A NAME="ss3.2">3.2 Opciones globales</A>
+</H2>
+
+<P>Las opciones que se describen en esta secci&oacute;n se aplican a todos los
+<EM>backends</EM>, a menos que se sobreescriban o anulen espec&iacute;ficamente
+en la definici&oacute;n de un <EM>backend</EM> concreto. Los argumentos de opci&oacute;n
+que han de sustituirse por texto de verdad se muestran entre signos de
+«mayor que» y «menor que» &lt;&gt;.
+<P>
+<DL>
+<DT><B>access to &lt;algo&gt; [ by &lt;qui&eacute;n&gt;
+&lt;niveldeacceso&gt; ]+</B><DD><P>Esta opci&oacute;n concede acceso (especificado en &lt;niveldeacceso&gt;) a
+una serie de entradas o atributos (especificados por &lt;algo&gt;)
+para uno o m&aacute;s peticionarios (especificados en &lt;qui&eacute;n&gt;). V&eacute;anse
+los ejemplos de control de acceso para m&aacute;s detalles.
+<P>
+<DT><B>attribute &lt;nombre&gt; [&lt;nombre2&gt;] { bin
+| ces | cis | tel | dn } </B><DD><P>Esta opci&oacute;n asocia a una sintaxis con un nombre de atributo. Por
+defecto se supone que un atributo tiene sintaxis «cis». Se le puede
+proporcionar a un atributo un nombre alternativo opcional. Las
+posibles reglas de sintaxis y su significado son &eacute;stas:
+<UL>
+<LI>bin: binario</LI>
+<LI>ces: cadena con may&uacute;sculas y min&uacute;sculas exactas (las may&uacute;sculas y
+min&uacute;sculas son significativas durante las comparaciones)</LI>
+<LI>cis: cadena con may&uacute;sculas y min&uacute;sculas ignoradas (las may&uacute;sculas
+y min&uacute;sculas no son significativas durante las comparaciones)</LI>
+<LI>tel: cadena de n&uacute;mero de tel&eacute;fono (como «cis», pero durante las 
+comparaciones se ignoran los espacios en blanco y los guiones "-")</LI>
+<LI>dn:  "distinguished name" («nombre distintivo»)</LI>
+</UL>
+<P>
+<DT><B>defaultaccess { none | compare | search |
+read | write } </B><DD><P>Esta opci&oacute;n especifica el acceso por defecto que se conceder&aacute; a los
+solicitantes que no coincidan con ninguna otra l&iacute;nea de acceso (v&eacute;anse
+los ejemplos de control de acceso m&aacute;s abajo). N&oacute;tese que un nivel de
+acceso implica en s&iacute; tambi&eacute;n los niveles de acceso inferiores a
+&eacute;l. Por ejemplo, el acceso a escritura implica el acceso a lectura, el
+acceso a b&uacute;squeda y el acceso a comparaci&oacute;n. 
+<P>Valor predeterminado: <CODE>defaultaccess read</CODE>
+<P>
+<DT><B>include &lt;nombrefichero&gt;</B><DD><P>Esta opci&oacute;n ordena a <EM>slapd</EM> que lea informaci&oacute;n adicional de
+configuraci&oacute;n desde el fichero especificado, antes de continuar con la
+l&iacute;nea siguiente del fichero actual. El fichero que se especifica ha de
+seguir el formato normal de configuraci&oacute;n de <EM>slapd</EM>. Utilice esta 
+opci&oacute;n para incluir ficheros que contengan las clases de objetos
+(<EM>objectclass</EM>) y definiciones de atributo (<EM>attribute
+definitions</EM>) de su base de datos de segundo plano o <EM>backend</EM>. El
+paquete de software de LDAP viene con los ficheros <CODE>slapd.oc.conf</CODE> y
+<CODE>slapd.at.conf</CODE>. 
+<P><B>Nota:</B> Tenga cuidado al utilizar esta opci&oacute;n. No hay l&iacute;mite m&iacute;nimo en
+el n&uacute;mero de opciones <CODE>include</CODE> anidadas, ni tampoco se hace una
+detecci&oacute;n de anidamiento para el caso de bucles sin fin. 
+<P>
+<DT><B>loglevel &lt;numeroentero&gt;</B><DD><P>Esta opci&oacute;n especifica el nivel de detalle con el que el sistema debe
+registrar en un archivo de registro (syslog) las informaciones de
+depuraci&oacute;n y las estad&iacute;sticas de funcionamiento (en este caso se
+registran mediante el servicio LOCAL4 de <CODE>syslogd(8)</CODE>. Para que esta
+caracter&iacute;stica est&eacute; habilitada, es necesario haber compilado
+<EM>slapd</EM> con la opci&oacute;n de compilaci&oacute;n <CODE>-DLDAP_DEBUG</CODE>, excepto
+para los dos niveles de estad&iacute;sticas, que est&aacute;n siempre
+habilitados. Los niveles de registro son acumulativos. Para visualizar
+qu&eacute; n&uacute;meros corresponden a cada tipo de depuraci&oacute;n, ejecute <CODE>slapd</CODE>
+con la opci&oacute;n <CODE>-?</CODE> o consulte la tabla de m&aacute;s abajo. Los valores
+posibles para &lt;numeroentero&gt; son: 
+<UL>
+<LI>1 trazado de llamadas a funci&oacute;n</LI>
+<LI>2 manejo de paquetes de depurado</LI>
+<LI>4 depurado de trazado intensivo <EM>heavy trace</EM></LI>
+<LI>8 gesti&oacute;n de conexiones</LI>
+<LI>16 mostrar los paquetes enviados y recibidos</LI>
+<LI>32 procesado del filtro de b&uacute;squeda</LI>
+<LI>64 procesado de ficheros de configuraci&oacute;n</LI>
+<LI>128 procesado de listas de control de acceso</LI>
+<LI>256 estad&iacute;sticas de registro de conexiones/operaciones/resultados</LI>
+<LI>512 enviar las entradas de registro de estad&iacute;sticas</LI>
+<LI>1024 imprimir los <EM>backends</EM> de comunicaci&oacute;n con el
+int&eacute;rprete de &oacute;rdenes</LI>
+<LI>2048 imprimir el an&aacute;lisis completo de depuraci&oacute;n</LI>
+</UL>
+<P>Ejemplo: <CODE>loglevel 255</CODE> har&aacute; que grandes cantidades de informaci&oacute;n vayan a un archivo de registro a trav&eacute;s de syslog.
+<P>Valor predeterminado: <CODE>loglevel 256</CODE>
+<P>
+<DT><B>objectclass &lt;nombre&gt;</B><DD><P>
+<PRE>
+objectclass &lt;nombre&gt;
+[ requires &lt;atributos&gt; ] 
+[ allows &lt;atributos&gt; ]
+</PRE>
+<P>Esta opci&oacute;n define las reglas de estructura o esquema para la clase de
+objetos (<EM>objectclass</EM>) especificada. Se usa junto con la opci&oacute;n
+<B>schemacheck</B>. 
+<P>
+<DT><B>referral &lt;url&gt;</B><DD><P>Esta opci&oacute;n especifica la autoridad en la que basarse cuando
+<EM>slapd</EM> no pueda hallar una base de datos local para gestionar una
+petici&oacute;n.  
+<P>Ejemplo: 
+<CODE>referral ldap://ldap.itd.umich.edu</CODE>
+<P>Esto remitir&aacute; las consultas no locales al servidor LDAP de la
+Universidad de Michigan. Algunos clientes LDAP con capacidades
+inteligentes podr&aacute;n redirigir su consulta a dicho servidor, pero tenga
+en cuanta que la mayor&iacute;a de esos clientes no gestionar&aacute;n URLs
+sencillas de LDAP que contengan una parte de nombre de m&aacute;quina y, como
+opci&oacute;n, una parte de nombre distintivo (<CODE>dn</CODE>).
+<P>
+<DT><B>schemacheck { on | off } </B><DD><P>Esta opci&oacute;n activa (<B>on</B>) o desactiva (<B>off</B>) la verificaci&oacute;n de
+estructura. Si la verificaci&oacute;n de estructura est&aacute; activada, se
+comprobar&aacute;n las entradas que se a&ntilde;adan o modifiquen, con el fin de
+garantizar que obedecen a las reglas de estructura o esquema que
+implica la clase de objetos (<EM>objectclass</EM>) a la que pertenecen,
+tal y como las definen las correspondientes opciones de la clase de
+objetos correspondiente. Si la verificaci&oacute;n de estructura est&aacute;
+desactivada (<B>off</B>), esta verificaci&oacute;n no se realiza.
+<P>Valor predeterminado: <CODE>schemacheck off</CODE>
+<P>
+<DT><B>sizelimit &lt;numeroentero&gt;</B><DD><P>Esta opci&oacute;n especifica el n&uacute;mero m&aacute;ximo de entradas que hay que
+devolver de una operaci&oacute;n de b&uacute;squeda.
+<P>Valor predeterminado: <CODE>sizelimit 500</CODE>
+<P>
+<DT><B>srvtab &lt;nombrefichero&gt;</B><DD><P>Esta opci&oacute;n especifica el fichero <CODE>srvtab</CODE> en el que <EM>slapd</EM>
+puede encontrar las claves <EM>kerberos</EM> necesarias para autentificar
+a los clientes que usen <EM>kerberos</EM>. Esto opci&oacute;n es significativa
+&uacute;nicamente si Usted utiliza autentificaci&oacute;n por <EM>kerberos</EM>, que ha
+de activarse en el momento de la compilaci&oacute;n incluyendo las
+definiciones apropiadas en el fichero <CODE>Make-common</CODE>.
+<P>Valor predeterminado: <CODE>srvtab /etc/srvtab</CODE>
+<P>
+<DT><B>timelimit &lt;numeroentero&gt;</B><DD><P>Esta opci&oacute;n especifica el n&uacute;mero m&aacute;ximo de segundos (en tiempo real)
+que <EM>slapd</EM> pasar&aacute; contestando una petici&oacute;n de b&uacute;squeda. Si pasado
+ese tiempo no se ha contestado una petici&oacute;n, se devolver&aacute; un resultado
+que indicar&aacute; <EM>exceeding time</EM>, «tiempo sobrepasado». 
+<P>Valor predeterminado: <CODE>timelimit 3600 </CODE>
+<P>
+</DL>
+<P>
+<H2><A NAME="ss3.3">3.3 Opciones generales del backend</A>
+</H2>
+
+<P>Las opciones de esta secci&oacute;n s&oacute;lo se aplican al <EM>backend</EM> en el que
+est&eacute;n definidas. Estas opciones est&aacute;n soportadas para todos los tipos
+de <EM>backend</EM>. 
+<P>
+<DL>
+<DT><B>database &lt;tipobasededatos&gt;</B><DD><P>Esta opci&oacute;n marca el comienzo de la definici&oacute;n de una nueva instancia
+de base de datos.  <B>&lt;tipobasededatos&gt;</B> debe ser una de las
+siguientes: ldbm, shell, o passwd dependiendo del <EM>backend</EM> sobre
+el que servir&aacute; la base de datos.
+<P>Ejemplo: <CODE>database ldbm</CODE> marca el comienzo de la definici&oacute;n de una
+nueva instancia de una base de datos con <EM>backend</EM> LDBM. 
+<P>
+<DT><B>lastmod { on | off } </B><DD><P>Esta opci&oacute;n controla si <EM>slapd</EM> mantendr&aacute; autom&aacute;ticamente para cada
+entrada los atributos <CODE>modifiersName</CODE>, <CODE>modifyTimestamp</CODE>,
+<CODE>creatorsName</CODE> y <CODE>createTimestamp</CODE>.
+<P>Valor predeterminado: <CODE>lastmod off</CODE> 
+<P>
+<DT><B>readonly { on | off } </B><DD><P>Esta opci&oacute;n pone a la base de datos en modo «s&oacute;lo lectura». Cualquier
+intento de modificar la base de datos devolver&aacute; un error de "unwilling
+to perform" («no se llevar&aacute; a cabo la operaci&oacute;n»).
+<P>Valor predeterminado: <CODE>readonly off </CODE>
+<P>
+<DT><B>replica host=&lt;nombredemaquina&gt;[:&lt;puerto&gt;] </B><DD><P>
+<PRE>
+replica host=&lt;nombredemaquina&gt;[:&lt;puerto&gt;]
+"binddn=&lt;DN&gt;" 
+bindmethod={ simple | kerberos } 
+[credentials=&lt;contrase&ntilde;a&gt;] 
+[srvtab=&lt;nombrefichero&gt;]
+</PRE>
+<P>Esta opci&oacute;n especifica una direcci&oacute;n para la duplicaci&oacute;n o r&eacute;plica
+esta base de datos. El par&aacute;metro <CODE>host=</CODE> especifica en qu&eacute; m&aacute;quina
+(y opcionalmente, en qu&eacute; puerto) puede encontrarse la instancia del 
+<EM>slapd</EM> esclavo. para <CODE>&lt;nombrem&aacute;quina&gt;</CODE> puede usarse lo
+mismo un nombre que una direcci&oacute;n IP. Si no se proporciona el
+par&aacute;metro <CODE>&lt;puerto&gt;</CODE> se usar&aacute; el puerto est&aacute;ndar de LDAP, el
+389. 
+<P>El par&aacute;metro <CODE>binddn</CODE> proporciona el <CODE>DN</CODE> al que se vincular&aacute; el
+<EM>slapd</EM> esclavo para sus actualizaciones. Ha de tratarse de un
+<CODE>DN</CODE> que tenga acceso de lectura y escritura a la base de datos del
+esclavo, que normalmente aparece como <CODE>rootdn</CODE> en el fichero de
+configuraci&oacute;n del esclavo. Tambi&eacute;n tiene que coincidir con la opci&oacute;n
+<CODE>updatedn</CODE> en el fichero de configuraci&oacute;n del <EM>slapd</EM> esclavo. 
+Puesto que los <CODE>DN</CODE> son proclives a contener espacios incrustados,
+la cadena completa <CODE>"binddn=&lt;DN&gt;"</CODE> ha de estar encerrada
+entre comillas. 
+<P><CODE>bindmethod</CODE> puede ser o bien <CODE>simple</CODE> o bien <CODE>kerberos</CODE>,
+dependiendo de si se usa autentificaci&oacute;n sencilla basada en
+contrase&ntilde;as o bien kerberos cuando se conecte con el <EM>slapd</EM>
+esclavo. La autentificaci&oacute;n sencilla precisa que se proporcione una
+contrase&ntilde;a v&aacute;lida. La autentificaci&oacute;n mediante kerberos precisa de un
+fichero <CODE>srvtab</CODE> v&aacute;lido. 
+<P>El par&aacute;metro <CODE>credentials=</CODE>, que s&oacute;lo se precisa si se usa
+autentificaci&oacute;n sencilla, proporciona la contrase&ntilde;a para <CODE>binddn</CODE>
+en el <EM>slapd</EM> esclavo. 
+<P>El par&aacute;metro <CODE>srvtab=</CODE>, que s&oacute;lo se precisa si se usa
+autentificaci&oacute;n mediante kerberos, especifica el nombre de fichero que
+aloja la llave kerberos para el <EM>slapd</EM> esclavo. Si se omite, se
+utiliza el fichero <CODE>/etc/srvtab</CODE>. 
+<P>
+<DT><B>replogfile &lt;nombrefichero&gt; </B><DD><P>Esta opci&oacute;n especifica el nombre del fichero de registro de
+duplicaci&oacute;n (registro de r&eacute;plica) en el cual <EM>slapd</EM> registrar&aacute; los
+cambios. El registro de duplicaci&oacute;n generalmente lo escribe <EM>slapd</EM>
+y lo lee <EM>slurpd</EM>. Esta opci&oacute;n normalmente s&oacute;lo tiene efecto si se
+usa <EM>slurpd</EM> para duplicar la base de datos. Sin embargo, puede 
+utilizarla tambi&eacute;n para generar un registro de transacciones, si
+<EM>slurpd</EM> no se est&aacute; ejecutando. En este caso, necesitar&aacute; truncar
+peri&oacute;dicamente el fichero, pues de otra manera crecer&iacute;a
+indefinidamente. 
+<P>
+<DT><B>rootdn &lt;dn&gt; </B><DD><P>Esta opci&oacute;n identifica al <CODE>DN</CODE> de una entrada no sujeta a control
+de acceso o a restricciones en los permisos de administraci&oacute;n para las
+operaciones en esta base de datos.
+<P>Ejemplo: <CODE>rootdn "cn=Manager, o=U of M, c=US" </CODE>
+<P>
+<DT><B>rootkrbname &lt;nombrekerberos&gt; </B><DD><P>Esta opci&oacute;n especifica un nombre kerberos que funcionar&aacute; en todos los
+casos para el <CODE>DN</CODE> dado anteriormente, con independencia de que
+exista una entrada con el <CODE>DN</CODE> especificado o de que tenga el atributo
+<CODE>krbName</CODE>. Esta opci&oacute;n es &uacute;til al crear una base de datos y tambi&eacute;n
+cuando se utilice <EM>slurpd</EM> para proporcionar servicios de
+duplicaci&oacute;n (servicios de r&eacute;plica).
+<P>Ejemplo: <CODE>rootkrbname admin@umich.edu </CODE>
+<P>
+<DT><B>rootpw &lt;password&gt; </B><DD><P>Esta opci&oacute;n especifica una contrase&ntilde;a, que funcionar&aacute; en todos los
+casos, para el <CODE>DN</CODE> dado anteriormente, con independencia de que el
+<CODE>DN</CODE> en cuesti&oacute;n exista o ya tenga contrase&ntilde;a. Esta opci&oacute;n es &uacute;til
+al crear una base de datos y tambi&eacute;n cuando se utilice <EM>slurpd</EM>
+para proporcionar servicios de duplicaci&oacute;n (servicios de r&eacute;plica).
+Evite tener una contrase&ntilde;a de texto sencillo acompa&ntilde;ando a esta
+opci&oacute;n. Proporcione una contrase&ntilde;a cifrada (puede usar una entrada
+del fichero de Unix <CODE>/etc/passwd/</CODE>). <EM>slapd</EM> soporta tambi&eacute;n
+otros m&eacute;todos de cifrado.
+<P>Ejemplos: 
+<CODE>rootpw secret</CODE>
+<CODE>rootpw {crypto}contrase&ntilde;a_cifrada_va_aqu&iacute; </CODE>
+<P>
+<DT><B>suffix &lt;dn sufijo&gt; </B><DD><P>Esta opci&oacute;n especifica el sufijo <CODE>DN</CODE> de consultas que se le pasar&aacute;
+a la base de datos de <EM>backend</EM>. Pueden proporcionarse m&uacute;ltiples
+l&iacute;neas de sufijo, y se requiere al menos una para cada definici&oacute;n de
+base de datos. 
+<P>Ejemplo: <CODE>suffix "o=University of Michigan, c=US" </CODE>
+<P>Las consultas que tengan un <CODE>DN</CODE> terminado en <CODE>"o=University of
+Michigan, c=US"</CODE> se le pasar&aacute;n a este <EM>backend</EM> de base de datos.
+<P><B>Nota:</B> cuando se selecciona el <EM>backend</EM> al que hay que pasarle
+la consulta, <EM>slapd</EM> examina la l&iacute;nea o l&iacute;neas de sufijo en cada
+definici&oacute;n de base de datos en el orden en que aparecen en el
+fichero. De esta manera, si el sufijo de una base de datos es el
+prefijo de otra, dicho sufijo debe aparecer despu&eacute;s que el prefijo en
+el fichero de configuraci&oacute;n.
+<P>
+<DT><B>updatedn &lt;dn&gt; </B><DD><P>Esta opci&oacute;n s&oacute;lo se aplica a un <EM>slapd</EM> esclavo. Especifica el
+<CODE>DN</CODE> al que se le permite hacer cambios en la
+duplicaci&oacute;n. Generalmente se trata del <CODE>DN</CODE> al que <EM>slurpd</EM> se
+vincula cuando hace cambios a la duplicaci&oacute;n o r&eacute;plica.
+</DL>
+<P>
+<H2><A NAME="ss3.4">3.4 Opciones espec&iacute;ficas del <EM>backend</EM> LDBM</A>
+</H2>
+
+<P>Las opciones de esta categor&iacute;a s&oacute;lo se aplican a la base de datos de
+<CODE>backend</CODE> LDBM. Es decir, tienen que ir despu&eacute;s de una l&iacute;nea
+<CODE>"database ldbm"</CODE> y antes de otra l&iacute;nea de <CODE>"database"</CODE>.
+<P>
+<DL>
+<DT><B>cachesize &lt;numeroentero&gt; </B><DD><P>Esta opci&oacute;n especifica a instancia de la base de datos de <EM>backend</EM>
+LDBM el n&uacute;mero de entradas en la memoria cach&eacute; interna que ha de
+mantener. 
+<P>Valor predeterminado:
+<CODE>cachesize 1000 </CODE>
+<P>
+<DT><B>dbcachesize &lt;numeroentero&gt; </B><DD><P>Esta opci&oacute;n especifica el tama&ntilde;o en bytes de la memoria cach&eacute; interna
+asociada con cada fichero de &iacute;ndice abierto. En caso de no estar
+soportada por el m&eacute;todo de base de datos subyacente, esta opci&oacute;n se
+ignora sin mayores avisos. El incremento de este n&uacute;mero utilizar&aacute; m&aacute;s
+memoria, pero tambi&eacute;n causar&aacute; un aumento espectacular del
+rendimiento, especialmente durante las modificaciones o a la hora de
+construir los &iacute;ndices. 
+<P>Valor predeterminado: <CODE>dbcachesize 100000 </CODE>
+<P>
+<DT><B>directory &lt;directorio&gt; </B><DD><P>Esta opci&oacute;n especifica el directorio donde residen los ficheros LDBM
+que contienen la base de datos y sus ficheros asociados.
+<P>Valor predeterminado: <CODE>directory </CODE>usr/tmp /
+<P>
+<DT><B>index {&lt;listadeatributos&gt; | default} [pres,eq,approx,sub,none] </B><DD><P>Esta opci&oacute;n especifica qu&eacute; &iacute;ndices hay que mantener para un atributo
+especificado. Si se proporciona &uacute;nicamente una
+&lt;listadeatributos&gt; se mantendr&aacute;n todos los &iacute;ndices posibles.
+<P>Ejemplos:
+<CODE>index cn </CODE>
+<CODE>index sn,uid eq,sub,approx </CODE>
+<CODE>index default none </CODE>
+<P>Este ejemplo har&aacute; que se d&eacute; mantenimiento a todos los &iacute;ndices para el
+atributo <CODE>cn</CODE>: que se mantengan &iacute;ndices de igualdad, subcadenas y
+cadenas aproximadas en el caso de los atributos <CODE>sn</CODE> y <CODE>uid</CODE>; y
+que no se mantengan &iacute;ndices para todos los dem&aacute;s atributos.
+<P>
+<DT><B>mode &lt;numeroentero&gt; </B><DD><P>Esta opci&oacute;n especifica qu&eacute; permisos de ficheros (modo de protecci&oacute;n)
+debe tener el &iacute;ndice de la base de datos reci&eacute;n creada.
+<P>Valor predeterminado: <CODE>mode 0600 </CODE>
+</DL>
+<P>
+<H2><A NAME="bla"></A> <A NAME="ss3.5">3.5 Access Control Examples </A>
+</H2>
+
+<P>La caracter&iacute;stica de control de acceso presentada en la 
+<A HREF="#3.2">secci&oacute;n 3.2</A> es bastante potente. En esta secci&oacute;n se muestran
+varios ejemplos de su uso. Primeramente, algunos ejemplos sencillos: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+access to * by * read 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esta directiva de acceso concede acceso de lectura a todo el mundo. Si
+aparece en solitario tiene el mismo efecto que la siguiente l&iacute;nea de 
+<CODE>defaultaccess</CODE>: 
+<BLOCKQUOTE><CODE>
+<PRE>
+defaultaccess read 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El siguiente ejemplo muestra el uso de una expresi&oacute;n regular para
+seleccionar las entradas por <CODE>DN</CODE> en dos directivas de acceso en
+las que el orden es significativo.
+<BLOCKQUOTE><CODE>
+<PRE>
+access to dn=".*, o=U of M, c=US" 
+by * search 
+access to dn=".*, c=US" 
+by * read 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El acceso en modo lectura se concede a las entradas que est&aacute;n bajo el
+sub-&aacute;rbol <CODE>"o=University of Michigan, c=US"</CODE>, al que se permite el
+acceso en modo lectura. Si su hubiera invertido el orden de las
+directivas de acceso, la directiva espec&iacute;fica de la Universidad de
+Michigan nunca hubiera coincidido, puesto que todas las entradas de la
+U. de M. son tambi&eacute;n entradas de <CODE>c=US</CODE>.  
+<P>El pr&oacute;ximo ejemplo vuelve a mostrar la importancia del orden, tanto en
+lo que se refiere a las directivas de acceso como a las cl&aacute;usulas
+<CODE>"by"</CODE>. Tambi&eacute;n muestra el uso de un selector de atributos para
+conceder acceso a un atributo espec&iacute;fico y a varios selectores
+&lt;qui&eacute;n&gt; (&lt;who&gt;).
+<BLOCKQUOTE><CODE>
+<PRE>
+access to dn=".*, o=U of M, c=US" attr=homePhone 
+by self write 
+by dn=".*, o=U of M, c=US" search 
+by domain=.*\.umich\.edu read 
+by * compare 
+access to dn=".*, o=U of M, c=US" 
+by self write 
+by dn=".*, o=U of M, c=US" search 
+by * none 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este ejemplo se aplica a las entradas en el sub-&aacute;rbol <CODE>"o=U of M,
+c=US"</CODE>. Para todos los atributos excepto <CODE>homePhone</CODE>, la propia
+entrada tiene puede escribirlos, otras entradas de "U of M" pueden
+buscar por ellas, y nadie m&aacute;s tiene acceso. La entrada tiene permisos
+de escritura sobre el atributo <CODE>homePhone</CODE>, permisos de b&uacute;squeda
+para otras entradas de la "U of M", permisos de lectura para otros
+clientes que conecten desde alg&uacute;n lugar del dominio umich.edu, y
+permisos de comparaci&oacute;n para el resto del mundo. 
+<P>A veces es &uacute;til permitir que un <CODE>DN</CODE> particular se a&ntilde;ada o elimine
+a s&iacute; mismo de un atributo. Por ejemplo, si se desea crear un grupo y
+permitir que los usuarios lo a&ntilde;adan y eliminen de su atributo
+<CODE>member</CODE> en su propio <CODE>DN</CODE>, puede lograrse con una directiva de
+acceso como la siguiente:
+<BLOCKQUOTE><CODE>
+<PRE>
+access to attr=member,entry 
+by dnattr=member selfwrite 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El selector <CODE>dnattr &lt;qui&eacute;n&gt;</CODE> nos dice que el acceso se aplica
+a entradas listadas en el atributo <CODE>member</CODE>. El selector
+<CODE>selfwrite access</CODE> especifica que tales miembros s&oacute;lo pueden a&ntilde;adir
+o eliminar del atributo su propio <CODE>DN</CODE> y no otros valores. El
+a&ntilde;adido del atributo <CODE>entry</CODE> es necesario, ya que se requiere el
+<CODE>access</CODE> de la entrada para acceder a alguno de los atributos de
+esa entrada. 
+<P>Observe que la construcci&oacute;n <CODE>attr=member</CODE> en la cl&aacute;usula
+<CODE>&lt;qu&eacute;&gt;</CODE> es un atajo para la cl&aacute;usula <CODE>"dn=* attr=member"</CODE>
+(es decir, que coincide con el atributo <CODE>member</CODE> en todas las
+entradas). 
+<P>
+<HR>
+<A HREF="LDAP-Linux-Como-4.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-2.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

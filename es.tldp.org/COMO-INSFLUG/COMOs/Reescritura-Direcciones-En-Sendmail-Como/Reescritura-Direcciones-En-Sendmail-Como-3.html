@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Reescritura de direcciones con sendmail mini-COMO: Configuraci&oacute;n de sendmail</TITLE>
+ <LINK HREF="Reescritura-Direcciones-En-Sendmail-Como-4.html" REL=next>
+ <LINK HREF="Reescritura-Direcciones-En-Sendmail-Como-2.html" REL=previous>
+ <LINK HREF="Reescritura-Direcciones-En-Sendmail-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Reescritura-Direcciones-En-Sendmail-Como-4.html">Página siguiente</A>
+<A HREF="Reescritura-Direcciones-En-Sendmail-Como-2.html">Página anterior</A>
+<A HREF="Reescritura-Direcciones-En-Sendmail-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="s3">3. Configuraci&oacute;n de sendmail</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 El fichero principal de configuraci&oacute;n</A>
+</H2>
+
+<P>
+<P>Sendmail utiliza un sistema de reglas muy complejo para su configuraci&oacute;n.  
+Debido a que se pueden hacer millares de cosas con ellas, escribir un
+fichero <CODE>sendmail.cf</CODE> desde cero es bastante inusual y lleva mucho
+tiempo. Si est&aacute; interesado en hacer eso, deber&iacute;a dejar de leer este
+documento ahora mismo y leer, en su lugar, el <I>Bat Book</I> de la
+editorial <I>O'Reilly</I>.
+<P>En lugar de crear a mano estas reglas, confiaremos en el procesador de
+macros <CODE>m4</CODE> para crear nuestro fichero de configuraci&oacute;n a partir de
+fragmentos escritos anteriormente que se distribuyen junto con sendmail.
+<P>Echemos un vistazo a las primeras l&iacute;neas del fichero <CODE>sendmail.mc</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+include(/usr/lib/sendmail.cf/m4/cf.m4)
+VERSIONID(`sendmail.mc - roessler@guug.de')
+OSTYPE(debian)
+define(`ALIAS_FILE',`/etc/mail/aliases')
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Al comienzo, se incluye <CODE>cf.m4</CODE>. Este fichero de macros m4 contiene
+muchas definiciones de macro para el resto del fichero.  Aseg&uacute;rese de que
+la ruta de archivo que proporciona aqu&iacute; es correcta (la que aqu&iacute; se
+representa es la t&iacute;pica de Debian GNU/Linux). La macro <CODE>OSTYPE</CODE> se
+utiliza para dar algunas configuraciones por defecto muy &uacute;tiles. Si no
+utiliza un sistema Debian, reemplace la palabra <CODE>debian</CODE> por
+<CODE>linux</CODE>. <CODE>ALIAS_FILE</CODE> indica a sendmail d&oacute;nde buscar la lista de
+alias.
+<P>Las siguientes l&iacute;neas dir&aacute;n a sendmail que utilice la caracter&iacute;stica
+<CODE>genericstable</CODE>, y d&oacute;nde encontrar los ficheros de configuraci&oacute;n
+necesarios para usarla: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+FEATURE(masquerade_envelope)
+FEATURE(genericstable, `hash -o /etc/mail/genericstable')
+GENERICS_DOMAIN_FILE(`/etc/mail/genericsdomain')
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La caracter&iacute;stica <CODE>masquerade_envelope</CODE> le dice a sendmail que aplique
+la cabecera reescribiendo el <I>sobre</I> del remitente de un mensaje.  Esta
+es la direcci&oacute;n de correo a la que los subsistemas de reparto dirigir&aacute;n
+los informes de fallo en el reparto y mensajes de advertencia. Los
+ficheros <CODE>generics*</CODE> se explicar&aacute;n m&aacute;s abajo.
+<P>Ahora, debemos definir un, llam&eacute;mosle as&iacute;, servidor «inteligente»
+<CODE>(smart-host)</CODE>, esto es, una m&aacute;quina que manejar&aacute; el correo
+saliente de nuestro sistema. D&eacute;se cuenta de que esta m&aacute;quina puede ser
+distinta de los servidores POP e IMAP de su proveedor. En caso de duda,
+llame al servicio t&eacute;cnico. El c&oacute;digo en el fichero de configuraci&oacute;n
+maestra es:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+define(`SMART_HOST',`mensajes-salientes.su.proveedor')
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Reemplace <CODE>mensajes-salientes.su.proveedor</CODE> por la direcci&oacute;n completa
+de de la m&aacute;quina de su proveedor de servicios Internet que gestionar&aacute; el
+correo saliente. 
+<P>Las dos l&iacute;neas finales incluyen las definiciones del <I>cartero</I> que son
+requeridas por sendmail para averiguar c&oacute;mo manejar varios tipos de
+correo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+MAILER(local)
+MAILER(smtp)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para generar el fichero <CODE>sendmail.cf</CODE> a partir de este
+<CODE>sendmail.mc</CODE>, teclee los siguientes comandos (como root): 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# m4 sendmail.mc > _sendmail.cf
+# mv -f _sendmail.cf sendmail.cf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>F&iacute;jese en que la t&eacute;cnica de escribir las salidas <CODE>m4</CODE> a un fichero
+temporal que ser&aacute; movido a su lugar correcto.  Esto ayuda a prevenir que
+sendmail lea ficheros de configuraci&oacute;n parcialmente escritos.
+<P>
+<H2><A NAME="ss3.2">3.2 Reescritura de direcciones</A>
+</H2>
+
+<P>
+<P>Primero, le debemos comunicar a sendmail qu&eacute; direcciones van a
+considerarse como locales (y de esta manera deber&iacute;an estar sujetas a la
+reescritura). Esto es bastante simple: s&oacute;lo coloque el nombre completo de
+su m&aacute;quina en el fichero <CODE>/etc/mail/genericsdomain</CODE> Para conseguir
+el nombre completo de su m&aacute;quina, teclee el siguiente comando:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ hostname -f
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ahora, vayamos con la tabla de reescritura propiamente dicha: 
+<CODE>/etc/mail/genericstable</CODE>.  Este fichero consiste en dos columnas
+separadas por espacios en blanco.  La primera columna contiene la
+direcci&oacute;n local, la segunda columna contiene la direcci&oacute;n de correo
+electr&oacute;nico que deber&iacute;a utilizarse en su lugar. El fichero podr&iacute;a tener
+este aspecto:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+harry   harryx@su.proveedor
+maude   maudey@el.proovedor.de.ella
+root    fredx@su.proovedor
+news    fredx@su.proovedor
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Note que debe haber una entrada para <I>cada</I> cuenta de la m&aacute;quina local,
+de manera que el correo generado que salga del sistema local lleve,
+autom&aacute;ticamente, informaci&oacute;n de cabecera correcta.
+<P>Por razones de prestaciones, sendmail no utiliza este fichero
+directamente, utiliza una versi&oacute;n procesada en su lugar.  Para generarla
+utilice el siguiente comando:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# makemap -r hash genericstable.db &lt; genericstable
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>F&iacute;jese en que las reglas de reescritura incluidas en <CODE>genericstable</CODE>
+<I>no</I> se aplican al correo local ni a los mensajes que recibe desde
+fuera;  el mapeo s&oacute;lo se utiliza si un mensaje abandona su sistema local a
+trav&eacute;s del servidor <I>inteligente</I> de su proovedor de Internet.
+<P>
+<H2><A NAME="ss3.3">3.3 Alias</A>
+</H2>
+
+<P>
+<P>El fichero de alias contiene informaci&oacute;n adicional de los nombres locales
+que s&oacute;lo son v&aacute;lidos para mensajes locales.  Esto es &uacute;til para cuentas
+administrativas como <CODE>root</CODE> que recibe los mensajes generados
+autom&aacute;ticamente por el sistema.
+<P>Un comienzo razonable para <CODE>/etc/mail/aliases</CODE> podr&iacute;a ser el
+siguiente fichero: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+root: fred
+news: root
+postmaster: root
+mail: root
+www: root
+
+nobody: /dev/null
+MAILER-DAEMON: nobody
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este ejemplo reenviar&aacute; el correo local para los usuarios <CODE>root</CODE>,
+<CODE>news</CODE>, <CODE>postmaster</CODE>, <CODE>mail</CODE>, y <CODE>www</CODE> a <CODE>fred</CODE>, mientras
+que los mensajes para <CODE>nobody</CODE> y para <CODE>MAILER-DAEMON</CODE> se redirigir&aacute;n
+a <CODE>/dev/null</CODE>. 
+<P>Al igual que el fichero <CODE>genericstable</CODE>, <CODE>aliases</CODE> puede contener
+<I>cientos</I> de entradas.  Esto es, podr&iacute;a ser ineficiente que sendmail
+utilizara el fichero de texto tal y como se describe.  El mismo mecanismo
+utilizado para <CODE>genericstable</CODE> se utiliza para <CODE>aliases</CODE>: se genera
+una tabla preformateada. En lugar de utilizar <CODE>makemap</CODE> directamente,
+puede utilizar el comando <CODE>newaliases</CODE> esta vez. Se encargar&aacute;
+autom&aacute;ticamente de lo que sea necesario para que los cambios tomen efecto.
+<P>
+<HR>
+<A HREF="Reescritura-Direcciones-En-Sendmail-Como-4.html">Página siguiente</A>
+<A HREF="Reescritura-Direcciones-En-Sendmail-Como-2.html">Página anterior</A>
+<A HREF="Reescritura-Direcciones-En-Sendmail-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

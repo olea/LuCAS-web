@@ -1,0 +1,109 @@
+diff -ru wx168eorig/contrib/wxstring/wxregex.cpp wx168epatch/contrib/wxstring/wxregex.cpp
+--- wx168eorig/contrib/wxstring/wxregex.cpp	Wed Mar 25 07:16:32 1998
++++ wx168epatch/contrib/wxstring/wxregex.cpp	Tue Aug 20 23:02:49 2002
+@@ -2394,10 +2394,10 @@
+ 	case charset:
+ 	case charset_not:
+ 	  {
+-	    int not = 0;	    /* Nonzero for charset_not.  */
++	    int nnot = 0;	    /* Nonzero for charset_not.  */
+ 	    register int c;
+ 	    if (*(p - 1) == (unsigned char) charset_not)
+-	      not = 1;
++	      nnot = 1;
+ 
+ 	    PREFETCH;	    /* Fetch a data character. */
+ 
+@@ -2408,15 +2408,15 @@
+ 
+ 	    if (c < *p * BYTEWIDTH
+ 		&& p[1 + c / BYTEWIDTH] & (1 << (c % BYTEWIDTH)))
+-	      not = !not;
++	      nnot = !nnot;
+ 
+ 	    p += 1 + *p;
+ 
+-	    if (!not) goto fail;
++	    if (!nnot) goto fail;
+ 	    SET_REGS_MATCHED;
+             d++;
+-	    break;
+ 	  }
++	    break;
+ 
+ 	case begline:
+           if ((size1 != 0 && d == string1)
+@@ -2482,13 +2482,13 @@
+ 		else if (p1[3] == (unsigned char) charset
+ 			 || p1[3] == (unsigned char) charset_not)
+ 		  {
+-		    int not = p1[3] == (unsigned char) charset_not;
++		    int nnot = p1[3] == (unsigned char) charset_not;
+ 		    if (c < p1[4] * BYTEWIDTH
+ 			&& p1[5 + c / BYTEWIDTH] & (1 << (c % BYTEWIDTH)))
+-		      not = !not;
++		      nnot = !nnot;
+ 		    /* `not' is 1 if c would match.  */
+ 		    /* That means it is not safe to finalize.  */
+-		    if (!not)
++		    if (!nnot)
+ 		      p[-3] = (unsigned char) finalize_jump;
+ 		  }
+ 	      }
+diff -ru wx168eorig/src/x/wx_rbox.cpp wx168epatch/src/x/wx_rbox.cpp
+--- wx168eorig/src/x/wx_rbox.cpp	Sun Nov  8 05:53:50 1998
++++ wx168epatch/src/x/wx_rbox.cpp	Tue Aug 20 23:08:32 2002
+@@ -282,7 +282,7 @@
+ #endif
+ 						 NULL);
+       XtAddCallback (radioButtons[i], XmNvalueChangedCallback, (XtCallbackProc) wxRadioBoxCallback,
+-		     (XtCallbackProc) this);
++		     (XtPointer) this);
+ 
+       if (buttonFont)
+ 	XtVaSetValues (radioButtons[i],
+@@ -1171,7 +1171,7 @@
+ #endif
+ 						 NULL);
+   XtAddCallback (radioButtonWidget, XmNvalueChangedCallback, (XtCallbackProc) wxRadioButtonCallback,
+-		     (XtCallbackProc) this);
++		     (XtPointer) this);
+ 
+   if (labelFont)
+    XtVaSetValues (radioButtonWidget,
+diff -ru wx168eorig/utils/image/src/wx_image.cpp wx168epatch/utils/image/src/wx_image.cpp
+--- wx168eorig/utils/image/src/wx_image.cpp	Fri Feb 13 05:18:40 1998
++++ wx168epatch/utils/image/src/wx_image.cpp	Tue Aug 20 23:22:15 2002
+@@ -407,7 +407,7 @@
+   i = strlen(fullname);
+   if (i>2 && strcmp(fullname+i-2,".Z")==0) {
+     strcpy(filename,"/tmp/xvXXXXXX");
+-    mktemp(filename);
++    mkstemp(filename);
+     sprintf(wxBuffer,"%s -c %s >%s",UNCOMPRESS,fullname,filename);
+     if (system(wxBuffer)) {
+       goto FAILED;
+@@ -421,7 +421,7 @@
+     FILE *fp;
+ 
+     strcpy(filename,"/tmp/xvXXXXXX");
+-    mktemp(filename);
++    mkstemp(filename);
+ 
+     fp = fopen(filename,"w");
+     if (!fp) FatalError("can't write /tmp/xv****** file");
+diff -ru wx168eorig/utils/prologio/src/read.cpp wx168epatch/utils/prologio/src/read.cpp
+--- wx168eorig/utils/prologio/src/read.cpp	Fri Jul 25 05:48:40 1997
++++ wx168epatch/utils/prologio/src/read.cpp	Tue Aug 20 22:49:44 2002
+@@ -1364,7 +1364,9 @@
+     PrologExpr *argument = expr->value.first->next;
+     while (argument)
+     {
+-      PrologType object = va_arg(ap, PrologType);
++	    PrologType object;
++      //PrologType object = va_arg(ap, PrologType);
++      object = (PrologType)va_arg(ap, int);
+ 
+       if (((int)object) == 0)
+       {
+Only in wx168epatch/utils/prologio/src: y.tab.c

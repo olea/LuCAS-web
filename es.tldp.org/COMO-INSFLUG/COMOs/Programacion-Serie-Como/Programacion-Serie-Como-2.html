@@ -1,0 +1,159 @@
+<HTML>
+<HEAD>
+<TITLE>C&Oacute;MO Programar el puerto serie en Linux: Comenzando</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Programacion-Serie-Como-1.html">Anterior</A>
+<A HREF="Programacion-Serie-Como-3.html">Siguiente</A>
+<A HREF="Programacion-Serie-Como.html#toc2">Indice</A>
+<HR>
+<H2><A NAME="s2">2. Comenzando</A></H2>
+
+
+
+<H2><A NAME="ss2.1">2.1 Depuraci&oacute;n </A></H2>
+
+<P> </P>
+<P>La mejor forma de depurar su c&oacute;digo es configurar otra m&aacute;quina Linux y
+conectar los dos ordenadores mediante un cable null-m&oacute;dem.</P>
+<P>Use <CODE>miniterm</CODE>, disponible en el LDP <I>Programmers Guide</I>:<BR>
+(<CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/docs/LDP/programmers-guide/">ftp://sunsite.unc.edu/pub/Linux/docs/LDP/programmers-guide/</A></CODE><BR>
+ en el directorio de ejemplos) para transmitir caracteres a su m&aacute;quina
+Linux. Miniterm se puede compilar con mucha facilidad y transmitir&aacute; todas
+las entradas en bruto del teclado por el puerto serie. </P>
+<P>S&oacute;lo las sentencias <I>define</I> (<CODE>#define MODEMDEVICE "/dev/ttyS0"</CODE>)
+tienen que ser comprobadas.  Ponga <CODE>ttyS0</CODE> para COM1,
+<CODE>ttyS1</CODE> para COM2, etc.. Es esencial para comprobar que <EM>todos</EM>
+los caracteres se transmiten en bruto (sin un procesamiento de salida) por
+la l&iacute;nea. Para comprobar su conexi&oacute;n, inicie <CODE>miniterm</CODE> en ambos
+ordemadores y teclee algo.  Los caracteres introducidos en un ordenador
+deber&iacute;an aparecer en el otro y viceversa. La entrada no tendr&aacute; eco en la
+pantalla del ordenador en el que escribamos. </P>
+<P>Para hacer un cable null-modem tiene que cruzar las l&iacute;neas TxD (transmit) 
+y RxD (receive). Para una descripci&oacute;n del cable vea el Serie-COMO.</P>
+<P>Tambi&eacute;n es posible ejecutar estas comprobaciones con un s&oacute;lo ordenador, si
+tiene un puerto serie no utilizado. Puede ejecutar dos miniterm en sendas
+consolas virtuales. Si libera un puerto serie desconectando el rat&oacute;n,
+recuerde redirigir <CODE>/dev/mouse</CODE>, si existe. Si usa una tarjeta
+multipuerto serie, est&eacute; seguro de configurarla correctamente. Yo ten&iacute;a la
+m&iacute;a mal configurada, y todo funcionaba bien mientras hac&iacute;a las
+comprobaciones en un s&oacute;lo ordenador. Cuando lo conect&eacute; a otro, el puerto
+empez&oacute; a perder caracteres. La ejecuci&oacute;n de dos programas en un ordenador
+nunca es completamente as&iacute;ncrona. </P>
+
+
+<H2><A NAME="ss2.2">2.2 Configuraci&oacute;n del Puerto</A></H2>
+
+
+<P>Los dispositivos <CODE>/dev/ttyS*</CODE> tienen como misi&oacute;n conectar
+terminales a su linux, y est&aacute;n configurados para este uso al arrancar.
+Hay que tener esto presente cuando se programen comunicaciones con un
+dispositivo. Por ejemplo, los puertos est&aacute;n configurados para escribir en
+pantalla cada car&aacute;cter enviado desde el dispositivo, que normalmente tiene
+que ser cambiado para la transmisi&oacute;n de datos. </P>
+<P>Todos los par&aacute;metros se pueden configurar f&aacute;cilmente con un programa. La
+configuraci&oacute;n se guarda en una estructura <CODE>struct termios</CODE>, que
+est&aacute; definida en <CODE>&lt;asm/termbits.h&gt;</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define NCCS 19
+struct termios {
+      tcflag_t c_iflag;         /* parametros de modo entrada */
+      tcflag_t c_oflag;         /* parametros de modo salida */
+      tcflag_t c_cflag;         /* parametros de modo control */
+      tcflag_t c_lflag;         /* parametros de modo local */
+      cc_t c_line;              /* disciplina de la linea */
+      cc_t c_cc[NCCS];          /* caracteres de control */
+};
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Este archivo tambi&eacute;n incluye todas las definiciones de par&aacute;metros. Los
+par&aacute;metros de modo entrada de <CODE>c_iflag</CODE> manejan todos los procesos
+de entrada, lo cual significa que los caracteres enviados desde el
+dispositivo pueden ser procesados antes de ser le&iacute;dos con <CODE>read</CODE>. </P>
+<P>De forma similar <CODE>c_oflag</CODE> maneja los procesos de salida. 
+<CODE>c_cflag</CODE> contiene la configuraci&oacute;n del puerto, como la velocidad
+en baudios, bits por car&aacute;cter, bits de parada, etc... Los par&aacute;metros de
+modo local se guardan en <CODE>c_lflag</CODE>. Determinan si el car&aacute;cter tiene
+eco, se&ntilde;ales enviadas al programa, etc...</P>
+<P>Finalmente la tabla <CODE>c_cc</CODE> define el car&aacute;cter de control para el
+fin de fichero, parada, etc... Los valores por defecto de los caracteres
+de control est&aacute;n definidos en <CODE>&lt;asm/termios.h&gt;</CODE>. Los
+par&aacute;metros est&aacute;n descritos en la p&aacute;gina del manual <CODE>termios(3)</CODE>.</P>
+<P>La estructura <CODE>termios</CODE> contiene los elementos <CODE>c_line</CODE>. 
+Estos elementos no se mencionan ni las p&aacute;ginas del manual para <I>termios</I> de
+Linux ni en las p&aacute;ginas de manual de Solaris 2.5. ¿Podr&iacute;a alguien arrojar
+alguna luz sobre esto? ¿No deber&iacute;a estar incluido en la estructura
+<CODE>termio</CODE>? </P>
+
+
+
+<H2><A NAME="ss2.3">2.3 Conceptos de entrada para dispositivos serie</A></H2>
+
+
+<P>Hay tres diferentes conceptos de entrada que queremos presentar. El
+concepto apropiado se tiene que escoger para la aplicaci&oacute;n a la que lo
+queremos destinar. Siempre que sea posible no haga un bucle para leer un
+s&oacute;lo car&aacute;cter a fin de obtener una cadena completa. Cuando he hecho esto,
+he perdido caracteres, mientras que un <CODE>read</CODE> para toda la cadena
+no mostr&oacute; errores.</P>
+
+<H3>Proceso de Entrada Can&oacute;nico</H3>
+
+
+<P>Es el modo de proceso normal para terminales, pero puede ser &uacute;til tambi&eacute;n
+para comunicaciones con otros dispositivos. Toda la entrada es procesada
+en unidades de l&iacute;neas, lo que significa que un <CODE>read</CODE> s&oacute;lo
+devolver&aacute; una l&iacute;nea completa de entrada. Una l&iacute;nea est&aacute;, por defecto,
+finalizada con un <CODE>NL</CODE>(ASCII <CODE>LF</CODE>), y fin de fichero, o un
+car&aacute;cter fin de l&iacute;nea. Un <CODE>CR</CODE> (el fin de l&iacute;nea por defecto de
+DOS/Windows) no terminar&aacute; una l&iacute;nea con la configuraci&oacute;n por defecto.</P>
+<P>El proceso de entrada can&oacute;nica puede, tambi&eacute;n, manejar los caracteres
+borrado, borrado de palabra, reimprimir car&aacute;cter, traducir <CODE>CR</CODE> a
+<CODE>NL</CODE>, etc..</P>
+
+<H3>Proceso de Entrada No Can&oacute;nico</H3>
+
+
+<P>El <I>Proceso de Entrada No Can&oacute;nico</I> manejar&aacute; un conjunto fijo de
+caracteres por lectura, y permite un car&aacute;cter temporizador. Este modo se
+deber&iacute;a usar si su aplicaci&oacute;n siempre lee un n&uacute;mero fijo de caracteres, o
+si el dispositivo conectado env&iacute;a r&aacute;fagas de caracteres. </P>
+
+<H3>Entrada As&iacute;ncrona</H3>
+
+
+<P>Los dos modos descritos anteriomente se pueden usar en modos s&iacute;ncrono y
+as&iacute;ncrono. El modo s&iacute;ncrono viene por defecto, donde la sentencia
+<CODE>read</CODE> se bloquar&aacute; hasta que la lectura est&eacute; completa. En modo
+as&iacute;ncrono la sentencia <CODE>read</CODE> devolver&aacute; inmediatamente y enviar&aacute;
+una se&ntilde;al al programa llamador cuando est&eacute; completa. Esta se&ntilde;al puede ser
+recibida por un manejador de se&ntilde;ales. </P>
+
+<H3>Espera de Entradas Origen M&uacute;ltiple</H3>
+
+
+<P>No es un modo diferente de entrada, pero puede ser &uacute;til si est&aacute; manejando
+dispositivos m&uacute;ltiples. En mi aplicaci&oacute;n manejaba entradas sobre un
+<I>socket</I> TCP/IP y entradas sobre una conexi&oacute;n serie de otro ordenador
+de forma casi simult&aacute;nea. El programa ejemplo dado abajo esperar&aacute; una
+entrada de dos or&iacute;genes distintos. Si la entrada de una fuente est&aacute;
+disponible, entonces ser&aacute; procesada, y el programa esperar&aacute; otra entrada
+nueva.</P>
+<P>La aproximaci&oacute;n presentada abajo parece m&aacute;s bien compleja, pero es
+importante tener en cuenta que Linux es un sistema operativo multiproceso. 
+La llamada al sistema <CODE>select</CODE> no carga la CPU mientras espera una
+entrada, mientras que un bucle hasta que hay una una entrada disponible
+ralentizar&iacute;a demasiado el resto de procesos que se ejecuten a la misma
+vez. </P>
+
+
+<HR>
+<A HREF="Programacion-Serie-Como-1.html">Anterior</A>
+<A HREF="Programacion-Serie-Como-3.html">Siguiente</A>
+<A HREF="Programacion-Serie-Como.html#toc2">Indice</A>
+</BODY>
+</HTML>

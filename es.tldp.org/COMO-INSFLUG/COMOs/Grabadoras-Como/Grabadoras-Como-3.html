@@ -1,0 +1,480 @@
+<HTML>
+<HEAD>
+<TITLE>Grabadoras de CD - Como: Configuraci&oacute;n del Kernel</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Grabadoras-Como-2.html">Anterior</A>
+<A HREF="Grabadoras-Como-4.html">Siguiente</A>
+<A HREF="Grabadoras-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Configuraci&oacute;n del Kernel</A></H2>
+
+
+<P>El primer paso es configurar el kernel para que Linux vea nuestras
+grabadoras y/o lectores correctamente, tanto si son SCSI como IDE o ATAPI
+por puerto paralelo.</P>
+<P>En los dos &uacute;ltimos casos hay que hacer ciertos «chanchullos», aunque el
+que m&aacute;s pueda resultar dificultoso sea configurar el kernel para
+grabadoras IDE, ya que no basta conectarla, decirle que es un dispositivo
+IDE/ATAPI CD-ROM y directo a grabar como un poseso; hay que recompilar el
+kernel con una serie de opciones y modificaciones que se describen y
+explican en su apartado correspondiente. </P>
+<P>Hay que saber c&oacute;mo configurar el kernel, para ello entramos en el
+directorio <CODE>/usr/src/linux</CODE>, donde normalmente se encuentran los
+fuentes. Para asegurarnos de que nada raro pueda pasar, ejecutaremos
+<CODE>make mrproper</CODE> lo que elimina todos los binarios, incluso las
+configuraciones; es decir, una limpieza exhaustiva que asegure que no haya
+ninguna interferencia de nada de lo anterior que pueda hacer que el nuevo
+kernel no compile o nos d&eacute; errores. </P>
+<P>Una vez hecho esto, teclearemos <CODE>make menuconfig</CODE> si queremos interfaz
+ncurses para el shell o <CODE>make xconfig</CODE> desde un terminal de X-Window
+para hacer lo mismo en X con interfaz TCL/TK, lo que quiere decir que si
+no tiene dichas librer&iacute;as no podr&aacute; compilar los programas respectivos. </P>
+<P>Podr&aacute; recurrir en &uacute;ltima instancia al viejo programa de configuraci&oacute;n, un
+script que se invoca desde la consola con <CODE>make config</CODE> y en el que
+tendr&aacute; que poner <CODE>y (si)</CODE>, <CODE>n (no)</CODE> y/o <CODE>m (m&oacute;dulo)</CODE> el los
+lugares en donde corresponda en el prompt, ya que &eacute;ste no permite volver
+hacia atr&aacute;s; si quiere hacerlo tiene dos opciones, una pulsar
+<CODE>Control+C</CODE> y cancelar la configuraci&oacute;n volviendo a empezar, o terminar
+de configurar y volver a empezar, (lo configurado anteriormente se
+mantiene), y rectificar lo que haya dejado o haya puesto mal. </P>
+<P>Si tiene mas dudas sobre c&oacute;mo configurar el n&uacute;cleo del sistema le remito
+al documento <I>Kernel Como</I> que se encuentra en <CODE>
+<A HREF="http://www.insflug.org">http://www.insflug.org</A></CODE>. </P>
+
+<H2><A NAME="scsi"></A> <A NAME="ss3.1">3.1 Configurar el Kernel para grabadoras SCSI </A></H2>
+
+
+<P>Voy a suponer que no tiene ni la m&aacute;s remota idea de qu&eacute; es el sistema
+SCSI, cosa en la que tampoco voy a profundizar, ya que para eso hay un
+hermoso documento llamado <I>SCSI-HOWTO</I> al cual puede referirse en caso
+de dudas y o problemas de configuraci&oacute;n del dispositivo SCSI.</P>
+<P>El caso es que se ha comprado un equipo cuya placa madre trae SCSI
+integrada, o una controladora SCSI en la que ha puesto el CD, y el dichoso
+windows lo ha configurado a la primera o los amables chicos de la tienda
+de inform&aacute;tica en donde acaba de comprarlo han instalado y configurado
+todo.</P>
+<P>Lo primero es saber qu&eacute; tipo de controladora SCSI es, me refiero a su chip
+principal; las controladoras m&aacute;s comunes son <I>Adaptec</I>, <I>Advansys</I> y
+las basadas en los chip <I>Symbios 53c8xx</I> (<I>NCR</I>), pero si no tiene
+ninguna de &eacute;stas no se preocupe, el kernel lleva soporte para muchas m&aacute;s.
+Puede saber qu&eacute; controladora tiene mirando simplemente los manuales,
+mirando el chip principal de la tarjeta o el nombre del controlador de
+windows (s&oacute;lo en &uacute;ltima instancia). </P>
+<P>Si el controlador no corresponde exactamente al modelo que aparece en el
+kernel, seguramente funcionar&aacute; con alguno de los que lleva gen&eacute;ricos para
+varios tipos de controladoras con las mismas caracter&iacute;sticas. Puede
+compilar como m&oacute;dulo las que m&aacute;s se parezcan al suyo y luego ir probando
+los m&oacute;dulos hasta que d&eacute; con el que corresponda. Si al cargar alg&uacute;n m&oacute;dulo
+nota que se le ha quedado el ordenador colgado, no lo vuelva a intentar
+con ese, ya que algunos controladores que no corresponden al hardware
+instalado son cargados de todos modos produciendo estas desagradables
+situaciones. </P>
+<P>Acto seguido nos vamos a la configuraci&oacute;n del kernel y entramos en
+<CODE>SCSI Support</CODE>, lo que luego nos dejar&aacute; se&ntilde;alar las dem&aacute;s opciones que
+son para dar soporte gen&eacute;rico, y a unidades de CD-ROM, Discos Duros y
+cintas, de las cuales nos interesa el soporte gen&eacute;rico, <CODE>SCSI generic
+support</CODE>, que proporciona el interfaz ASPI, (para poder grabar) y el
+<CODE>SCSI CD-ROM support</CODE>, para leer unidades de CD-ROM, incluidas
+grabadoras y DVDs.  Si dispone de un disco duro, ZIP o JAZ SCSI deber&aacute;
+responder <CODE>y</CODE> tambi&eacute;n si quiere poder usarlo. </P>
+<P>Si por casualidad tiene la grabadora como unidad externa, y la
+controladora SCSI dedicada en <I>exclusiva</I> a ella, recomiendo que ponga
+el driver de la controladora como m&oacute;dulo, es decir, poniendo <CODE>m</CODE> en
+lugar de <CODE>y</CODE>, ya que le permitir&aacute; cargar/descargar a voluntad todos los
+m&oacute;dulos de soporte SCSI cuando no los necesite, y apagar la unidad externa
+cuando no la est&eacute; usando (cosa que con windows no es posible hasta el W98) 
+ya que al cargar su m&oacute;dulo, la controladora inicializar&aacute; y escanear&aacute; los
+dispositivos de nuevo sin necesidad de reiniciar el ordenador para
+detectarlos; si la tiene interna, a&ntilde;ada el soporte directamente en el
+kernel y se ahorra trabajo en cargar los m&oacute;dulos. </P>
+<P>Tenga en cuenta no obstante, que si carga, descarga, y vuelve a cargar el
+m&oacute;dulo sin reiniciar el equipo, la controladora recibir&aacute; un n&uacute;mero de host
+distinto, y los par&aacute;metros que tengamos para <CODE>cdrecord</CODE> configurados no
+ser&aacute;n v&aacute;lidos. </P>
+<P>Si no puede descargar el soporte SCSI por tener otros dispositivos
+dependiendo de &eacute;l (porque su disco duro ra&iacute;z sea SCSI, por ejemplo, o por
+no poder tenerlo como m&oacute;dulo por las razones que sean) tambi&eacute;n puede
+activar y desactivar dispositivos a voluntad, incluidas grabadoras,
+cintas, esc&aacute;neres, etc. sin necesidad de descargar el m&oacute;dulo. vea la
+secci&oacute;n 
+<A HREF="#alvuelo">Activaci&oacute;n y desactivaci&oacute;n de dispositivos SCSI al vuelo</A>.</P>
+<P>As&iacute; que una vez hecho esto pase al apartado siguiente para especificar el
+driver de su controladora. Si le ha dicho antes, en soporte SCSI, que lo
+compile como m&oacute;dulo solo le dejar&aacute; seleccionar como m&oacute;dulo el driver del
+controlador. </P>
+<P>Espero que no se equivoque en escoger el driver para su controladora,
+porque si es as&iacute; le tocar&aacute; elegir otro y recompilar solo los m&oacute;dulos.  Una
+vez recompilados los nuevos m&oacute;dulos, previa configuraci&oacute;n, s&oacute;lo tendr&aacute; que
+probarlos; si ha incluido soporte SCSI en el kernel junto a un
+controlador, &eacute;ste detectar&aacute; el dispositivo y podr&aacute; accederse a &eacute;l desde
+los ficheros de dispositivo <CODE>/dev/scdX</CODE> o <CODE>/dev/srX</CODE> (estos
+&uacute;ltimos se crean, si no lo est&aacute;n ya, a trav&eacute;s de un script que se puede
+encontrar junto a los programas de grabaci&oacute;n, as&iacute; como con el script
+<CODE>/dev/MAKEDEV</CODE>, o bien el que trae el <CODE>X-CD-Roast</CODE> (secci&oacute;n 
+<A HREF="Grabadoras-Como-6.html#xcdroast">X-CD-Roast</A>) o bien <I>a mano</I> con el comando
+<CODE>mknod</CODE> con este bucle:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 ; 
+    do mknod /dev/sr$i b 11 $i;
+done
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Del mismo modo, si lo ha hecho como m&oacute;dulo, s&oacute;lo tendr&aacute; que cargar los
+m&oacute;dulos SCSI en el siguiente orden: </P>
+<P>
+<OL>
+<LI>M&oacute;dulo <CODE>scsi_mod.o</CODE> que es el driver principal del que cuelgan
+todos:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+insmod scsi_mod
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Seguido del m&oacute;dulo de soporte para SCSI gen&eacute;rico (proporciona el interfaz
+ASPI <I>Advanced SCSI Programming Interface</I>, para poder grabar CDs, o
+usar algunos programas con unidades de cinta, esc&aacute;neres, etc) <CODE>sg.o</CODE> y
+el de soporte de CD-ROMs SCSI, <CODE>sr_mod.o</CODE>: 
+        
+<BLOCKQUOTE><CODE>
+<PRE>
+insmod sg
+insmod sr_mod
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Por &uacute;ltimo, hacer un <CODE>insmod</CODE> al driver que corresponda a su
+controladora, el cual sacar&aacute; un debug de lo que encuentre, de tal forma
+que las unidades de CD corresponder&aacute;n a <CODE>/dev/sr0</CODE> para el primer
+dispositivo CD-ROM SCSI, <CODE>/dev/sr1</CODE> para el segundo, etc,
+independientemente del bus o ID SCSI en el que est&eacute;n. 
+</LI>
+</OL>
+</P>
+<P>De todas maneras si hace un <CODE>cat</CODE> al archivo <CODE>/proc/scsi/scsi</CODE>
+podr&aacute; ver qu&eacute; ID SCSI se tienen sus dispositivos, dato indispensable para
+determinar los interfaces gen&eacute;ricos <CODE>/dev/sgX</CODE>. </P>
+<P>Si instala <CODE>X-CD-Roast</CODE> podr&aacute; usar los dispositivos <CODE>/dev/sr0</CODE>
+hasta <CODE>/dev/sr15</CODE>; tambi&eacute;n puede usarlos en lugar de los
+dispositivos <CODE>/dev/scdX</CODE>, que usan otros programas, como
+<CODE>cdrecord</CODE>. Estos son los nuevos dispositivos que se usar&aacute;n a partir de
+ahora para referirse a las unidades de discos &oacute;pticos tipo ROM como los
+CD-ROM y DVD-ROM.</P>
+<P>Recomiendo que active el soporte <CODE>kerneld</CODE>, e introduzca el alias
+apropiado a la controladora en <CODE>/etc/conf.modules</CODE>, para que la
+carga de los m&oacute;dulos sea autom&aacute;tica. Si tiene dudas sobre esto, lea el
+<I>Kernel-Como</I> para mejor referencia. Si ya tiene una distribuci&oacute;n con
+el kernel <CODE>2.2.XX</CODE> no se cargar&aacute; el <CODE>kerneld</CODE>, el propio kernel hace
+las funciones del <CODE>kerneld</CODE>. </P>
+<P>Lea tambi&eacute;n la secci&oacute;n 
+<A HREF="#IDE">Configuraci&oacute;n del kernel para grabadoras IDE</A> porque explico algunas cosas m&aacute;s que pueden servir para
+solucionar posibles problemas que puedan ocurrir y que son comunes tanto
+para IDE como para SCSI. Y porqu&eacute; no, para cuando un amigo se instale una
+grabadora IDE... </P>
+
+<H3><A NAME="alvuelo"></A> Activaci&oacute;n y desactivaci&oacute;n de dispositivos SCSI <I>al vuelo</I> </H3>
+
+
+<P>La forma m&aacute;s limpia de hacer que el kernel active o desactive sin
+necesidad de resetear el sistema, o cargar/descargar m&oacute;dulos, dando igual
+si est&aacute; compilado el soporte como m&oacute;dulo o no, es mediante el siguiente
+m&eacute;todo. </P>
+<P>El activar o desactivar dispositivos SCSI a voluntad sin necesidad de
+demasiados aspavientos puede ser m&aacute;s pr&aacute;ctico de lo que parece: suponga
+que su grabadora es externa, y la mantiene apagada mientras no la usa, lo
+mismo sucede con un scanner, unidad ZIP, JAZ, CDROMs o unidades de cinta
+externa, dando por supuesto que son SCSI, claro est&aacute;.</P>
+<P><B>Advertencia</B>: Cuando hablamos de activar, nos referimos al caso en que
+el dispositivo est&aacute; <I>conectado</I> externamente a la controladora, pero en
+un principio apagado, y una vez encendido, deseamos activar; no que
+cualquier controladora SCSI mediante este m&eacute;todo soporte
+<I>conexi&oacute;n/desconexi&oacute;n en caliente de dispositivos</I>, tenga cuidado o
+puede desde corromper datos a estropear definitivamente dispositivos del
+bus SCSI.</P>
+<P>Supongamos que la grabadora est&aacute; en la primera o &uacute;nica controladora SCSI
+del sistema, y que la grabadora tiene asignado el ID SCSI 4. </P>
+<P>si ejecutamos el comando:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;scsi add-single-device 0 0 4 0&quot; &gt; /proc/scsi/scsi
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El kernel activar&aacute; la grabadora.</P>
+<P>En este caso, el primer <CODE>0</CODE> especifica la primera controladora, el
+segundo el canal de la controladora (a menos que tenga una Wide o UW SCSI. 
+siempre ser&aacute; <CODE>0</CODE>, ya que s&oacute;lo tiene uno; no confundir canal con
+conector) el <CODE>4</CODE> especifica el ID SCSI, y el &uacute;ltimo <CODE>0</CODE> el LUN. (Ver
+secci&oacute;n 
+<A HREF="Grabadoras-Como-4.html#notacion">Notaci&oacute;n est&aacute;ndard</A>) </P>
+<P>y si ejecutamos</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo &quot;scsi remove-single-device 0 0 4 0&quot; &gt; /proc/scsi/scsi
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La desactivaremos.</P>
+
+
+<H2><A NAME="IDE"></A> <A NAME="ss3.2">3.2 Configurar el Kernel para grabadoras IDE </A></H2>
+
+
+<P>El problema de las grabadoras IDE es que no hay software espec&iacute;fico que
+detecte y grabe en estos dispositivos, ya que todos los programas se basan
+en la interfaz SCSI <I>(ASPI)</I> del kernel para acceder a &eacute;stos. </P>
+<P>Por esta raz&oacute;n, no es tan sencillo configurar del Kernel para las
+grabadoras IDE. Lo primero es aplicar una peque&ntilde;a modificaci&oacute;n al Kernel,
+s&oacute;lo necesario si tiene una grabadora Regrabable <I>HP</I> como las
+<I>7100</I> o <I>7110</I> o superiores. </P>
+<P>La modificaci&oacute;n, que consiste en aumentarle el tiempo de espera del IRQ,
+es absolutamente necesaria ya que si no lo hacemos no cerrar&aacute; los CDs, o
+al intentar cerrarlos, es decir, al escribir la <I>Tabla de Contenidos</I>,
+se detendr&aacute; con un error y habremos perdido el CD sin forma de
+recuperarlo.</P>
+<P>Para efectuarla, vamos al archivo <CODE>ide.h</CODE> que se encuentra en
+<CODE>/usr/src/linux/drivers/block</CODE>, y buscamos la siguiente l&iacute;nea:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define WAIT_CMD        (10*HZ) /* 10sec  - maximum wait for an IRQ to happen */
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>que tenemos que modificar de modo que quede as&iacute;:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define WAIT_CMD        (1000*HZ)       /* 1000sec  - maximum wait for an IRQ to happen */
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>Con lo cual solucionamos el problema. Parece ser que con poner <CODE>400</CODE> en
+vez de <CODE>1000</CODE> funciona, pero no lo he probado personalmente. De todas
+formas, con el paquete de los fuentes del <CODE>cdrecord</CODE> viene un archivo
+llamado <CODE>README.ATAPI</CODE>, en que se dice que haga exactamente esto, as&iacute;
+como c&oacute;mo hacer funcionar estas grabadoras con la versi&oacute;n antigua de
+<CODE>cdrecord</CODE>, es decir, la <CODE>1.5</CODE>, aplic&aacute;ndole un serie de parches al
+programa y al kernel.</P>
+<P>Una vez realizada la modificaci&oacute;n debe configurar el kernel, ir al men&uacute;
+<CODE>Floppy, IDE and other block devices</CODE>, desactivar el soporte para
+<CODE>IDE/ATAPI CD-ROM</CODE> (¡OJO, <B>NO</B> el <CODE>Enhanced IDE/MFM/RLL
+disk/cdrom/tape/floppy support</CODE>!) y activar la emulaci&oacute;n SCSI que s&oacute;lo
+hay en los &uacute;ltimos kernel, versiones <CODE>2.0.31</CODE> en adelante y <CODE>2.2.XX</CODE>,
+para que as&iacute; los programas detecten nuestra grabadora IDE como SCSI y
+funcione como tal.</P>
+<P>Si activamos el soporte IDE/ATAPI para las unidades de CD-ROM el kernel no
+detectar&aacute; nuestra grabadora como un dispositivo SCSI y habremos perdido el
+tiempo. Hacer que a nuestra grabadora la vean los programas como si fuera
+SCSI es muy sencillo, y se basa en que las grabadoras reciben comandos
+estandarizados (pertenecientes al interfaz <I>ASPI</I>, <I>Advanced SCSI
+Programming Interface</I>) para grabar que por casualidad son espec&iacute;ficos de
+los SCSI; de esta forma, con la emulaci&oacute;n lo que hacemos es que se puedan
+enviar este tipo de comandos a trav&eacute;s del bus IDE de nuestra grabadora. </P>
+<P>Hasta el momento que he tenido para probarlo, funciona perfectamente, tan
+bien, que se consigue un rendimiento similar al de una SCSI aut&eacute;ntica.</P>
+<P>De la misma forma, windows lo que hace es emular SCSI con las IDE, lo que
+le trae una peque&ntilde;a serie de inconvenientes como cierto software que no
+funciona bien o el excesivo consumo de recursos del sistema. </P>
+<P>Por lo visto las grabadoras IDE consumen muchos recursos, m&aacute;s que las
+SCSI, pero en linux con la emulaci&oacute;n la carga parece menor, o al menos no
+se nota de forma excesiva; lo &uacute;nico recomendable es dejar un puerto IDE
+para ella sola, seg&uacute;n recomiendan los fabricantes; lo mas com&uacute;n suele ser
+el secundario.</P>
+<P>Con esto nos aseguramos de que no haya cualquier posible interferencia del
+otro dispositivo que haya conectado al puerto de la grabadora (solo por
+seguridad); yo he probado a tener el lector y la grabadora en el mismo
+interfaz, esto se puede hacer pero recomiendo que desmonte la unidad
+lectora de CD para que no haya interferencias; se puede usar, por ejemplo,
+para escuchar CDs de m&uacute;sica mientras se graba el CD, si tiene bot&oacute;n de
+reproducci&oacute;n, claro esta ;).</P>
+<P>He recibido noticias de que hay gente que tiene la grabadora y la unidad
+lectora colocadas en la misma interfaz haciendo copias directas sin muchos
+problemas. Antes de ponerlo as&iacute;, recomiendo realizar muchas pruebas antes
+de dejarlo de forma fija.</P>
+<P>El &uacute;ltimo paso para configurar el kernel es ir a la secci&oacute;n <CODE>SCSI
+support</CODE> e incluir el soporte SCSI en el kernel, junto al <CODE>SCSI
+generic</CODE> y el soporte SCSI para los CD-ROM (Ojo, no lo haga como m&oacute;dulo,
+hay un fallo en la configuraci&oacute;n para la emulaci&oacute;n SCSI a la hora de
+incluir el soporte gen&eacute;rico SCSI en el kernel, por lo que si no lo
+incluimos manualmente en &eacute;l no podremos compilar el nuevo kernel y es
+posible que se pase un buen rato d&aacute;ndole vueltas a lo mismo). </P>
+<P>Gracias a este procedimiento ahora nuestra grabadora y/o lectora/as
+aparecer&aacute;n como dispositivos SCSI en vez de IDE. </P>
+<P>No es nada recomendable hacer cosas con el disco duro «origen» mientras se
+est&aacute; grabando, si lee datos de un disco secundario podr&aacute; trabajar con el
+principal, pero no recomiendo abusar de su uso ya que es posible que pueda
+haber alguna peque&ntilde;a interferencia con el DMA, aunque no suele ser muy
+com&uacute;n. Es decir, deje el disco duro s&oacute;lo para la grabaci&oacute;n. </P>
+<P>Otra cosa a tener en cuenta es que si no tiene un disco con extracci&oacute;n por
+DMA como un Fast ATA o Ultra DMA desactive del kernel el soporte para el
+chip Intel Trit&oacute;n (I/II), ya que si har&aacute; interferencia el DMA con la
+emulaci&oacute;n y dejar&aacute; el controlador colgado, oblig&aacute;ndole a resetear el
+ordenador con ese bot&oacute;n que se tiene algo olvidado la gente de linux. 
+(Mirar en el apartado 
+<A HREF="Grabadoras-Como-8.html#PUF">Preguntas de Uso Frecuente</A>) 
+para m&aacute;s detalles).</P>
+
+
+<H2><A NAME="parport"></A> <A NAME="ss3.3">3.3 Configurar el Kernel para grabadoras IDE-ATAPI por puerto paralelo</A></H2>
+
+
+<P>¿Grabadoras por puerto paralelo? ¿De verdad eso existe? Pues s&iacute;, existe, y
+c&oacute;mo Linux es capaz de usarlas, ¿C&oacute;mo? Gracias <CODE>cdrecord</CODE> y a los
+desarrolladores del kernel que han introducido como novedad de los n&uacute;cleos
+<I>2.1.x</I>: (de desarrollo) el soporte para unidades ATAPI por puerto
+paralelo como unidades de CD-ROM y discos duros. </P>
+<P>Para esto deberemos tener el kernel <CODE>2.0.35</CODE> o superior con la
+configuraci&oacute;n necesaria para que reconozca nuestra unidad externa, que se
+describe a continuaci&oacute;n: </P>
+<P>Lo primero de todo es reiniciar el ordenador y entrar en la configuraci&oacute;n
+de la <I>BIOS</I>, y, normalmente, en el men&uacute; <CODE>Integrated Peripherals</CODE>,
+si tiene la controladora del puerto paralelo integrada en la placa base,
+como en las &uacute;ltimas placas de 486 y en todas las placas de Pentium y
+Pentium Pro/II. Configuraremos el puerto de impresora en modo <I>EPP</I>, si
+no lo establecemos as&iacute;, no habr&aacute; forma de que funcione.</P>
+<P>Seguidamente, una vez arrancado nuestro sistema entrar en la configuraci&oacute;n
+del kernel en <CODE>Floppy, IDE, and other block devices</CODE> y seleccionar como
+m&oacute;dulo el par&aacute;metro <CODE>Parallel port IDE device support</CODE>. Seguidamente
+seleccionar, al menos, tambi&eacute;n como m&oacute;dulos los siguientes:</P>
+<P>
+<UL>
+<LI><CODE>Parallel port ATAPI CD-ROMs</CODE></LI>
+<LI><CODE>Parallel port generic ATAPI devices</CODE></LI>
+<LI><CODE>Shuttle EPAT/EPEZ protocol</CODE></LI>
+</UL>
+</P>
+<P>De esta forma ya tenemos los m&oacute;dulos para hacer funcionar la grabadora
+como unidad lectora; si lo prefiere puede incluirlo en el kernel, pero
+primero aseg&uacute;rese de que funciona bien como m&oacute;dulo antes. </P>
+<P>Seguidamente procedemos a la recompilaci&oacute;n e instalaci&oacute;n de los m&oacute;dulos en
+su lugar, y sin necesidad de reiniciar (a no ser que se actualice partes
+no compiladas como m&oacute;dulos)  ejecute <CODE>depmod -a</CODE> para crear las
+dependencias de los m&oacute;dulos a fin de poder cargarlos con <CODE>modprobe</CODE>,
+<CODE>kerneld</CODE> o <CODE>kmod</CODE>.</P>
+<P>Comenzamos por cargar el modulo <CODE>paride</CODE>, el <CODE>epat</CODE>, y por &uacute;ltimo el
+m&oacute;dulo del driver que vayamos a usar; como nos interesa poder usar nuestra
+grabadora tenemos que cargar el <CODE>pg</CODE> para que nos reconozca la
+grabadora <CODE>cdrecord</CODE> (equivalente al m&oacute;dulo <CODE>sg</CODE> en SCSI) y el
+<CODE>pcd</CODE> para usar la grabadora como unidad lectora (el equivalente a
+<CODE>sr</CODE> en SCSI).</P>
+<P>Para usar nuestra unidad como lectora debemos montar la unidad con la orden:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount /dev/pcd0 /cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>No obstante, si piensa utilizar su grabadora como lector, o para
+extracci&oacute;n de audio asiduamente, le recomiendo que lea la secci&oacute;n 
+<A HREF="Grabadoras-Como-8.html#mtbf">¿Es recomendable utilizar la grabadora para extraer o leer?</A>, su bolsillo lo acabar&aacute; agradeciendo. </P>
+<P>Si no existe el dispositivo <CODE>/dev/pcd0</CODE> puede crearlo con el
+siguiente bucle:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+for i in 0 1 2 3 ; do mknod /dev/pcd$i b 46 $i ; done
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si dispone del un kernel de la serie <CODE>2.1.x</CODE> o <CODE>2.2.x</CODE> antes de usar
+los controladores de cualquier dispositivo de puerto paralelo ha de cargar
+el m&oacute;dulo <CODE>parport.o</CODE>, el cual hace de interfaz para poder tener
+cargados y operativos varios dispositivos de puerto paralelo al mismo
+tiempo como unidades ZIP, discos y lectores/grabadores de CD e impresoras
+y scanners simult&aacute;neamente (genial ¿¿¿no??? ;-)). </P>
+<P>Como todav&iacute;a no ha ca&iacute;do en mis manos una grabadora de este tipo no he
+podido hacer pruebas ni nada por el estilo, los detalles de la
+configuraci&oacute;n del kernel los he elaborado a partir de lo que he podido
+recopilar leyendo por la Web y la ayuda prestada por colaboradores.</P>
+<P>Apelo a la colaboraci&oacute;n de la comunidad linuxera a fin de completar este
+apartado con lo que m&aacute;s le vaya haciendo falta, para estar a la altura de
+los anteriores; bien se lo merece el esfuerzo mostrado por las personas
+que hacen posible que dispositivos tan raros y minoritarios sean capaces
+de ser utilizados por Linux.</P>
+
+
+<H2><A NAME="otraskernel"></A> <A NAME="ss3.4">3.4 Otras opciones del kernel recomendables</A></H2>
+
+
+<P>En linux (y en unix) existe la posibilidad de poder acceder, leer y
+escribir en sistemas de archivos que no se encuentren en una partici&oacute;n o
+en un disco, sino, en un fichero. ¿C&oacute;mo? ¿En un fichero? Si, as&iacute; es, y
+para eso solo necesitamos dos cosas, un dispositivo <CODE>loopback</CODE> y el
+comando <CODE>mount</CODE>.</P>
+<P>Para asegurarnos de que incluimos esta opci&oacute;n en el kernel como m&oacute;dulo
+entramos en la configuraci&oacute;n del kernel mediante <CODE>make menuconfig</CODE>, y
+accedemos al men&uacute; <CODE>Floppy, IDE, and other block devices</CODE>; justo tras
+<CODE>Additional Block Devices</CODE> se encuentra la opci&oacute;n <CODE>Loopback device
+support</CODE> la cual recomiendo seleccionar como m&oacute;dulo, y si en el men&uacute;
+principal <I>Filesystems</I> tiene seleccionada la opci&oacute;n <CODE>Kernel
+automounter support</CODE> al montar el archivo, este m&oacute;dulo se cargar&aacute;
+autom&aacute;ticamente; si la opci&oacute;n anterior est&aacute; como m&oacute;dulo deber&aacute; cargarlo a
+mano, sino no se cargar&aacute; autom&aacute;ticamente ning&uacute;n modulo y nos dar&aacute; error.
+Para cargarla manualmente deberemos teclear: <CODE>insmod loop</CODE>. </P>
+<P>Tambi&eacute;n debemos asegurarnos que en <CODE>dev</CODE> existan los ficheros
+especiales de dispositivo <CODE>loopX</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+brw-rw----   1 root     disk       7,   0 Jul  1  1996 /dev/loop0
+brw-rw----   1 root     disk       7,   1 Jul  1  1996 /dev/loop1
+brw-rw----   1 root     disk       7,   2 Jul  1  1996 /dev/loop2
+...
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>si no los tiene, cr&eacute;elos con el siguiente bucle:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+for i in 0 1 2 3 4 5 6 7; do mknod /dev/loop$i b 7 $i ; done
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>as&iacute;, para montar una imagen para revisarla, en el directorio
+<CODE>/mnt/imagenesCD</CODE> haremos: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -o loop imagenCD.iso /mnt/imagenesCD
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Una vez hecho esto, acceda al directorio <CODE>/mnt/imagenesCD</CODE> y podr&aacute;
+ver los contenidos de la imagen. Las im&aacute;genes ISO9660 son de s&oacute;lo lectura,
+por lo que no podr&aacute; modificarlas de ninguna manera, claro, a menos que
+genere otra imagen nueva.</P>
+<P>Como puede observar no he puesto el comando <CODE>-t iso9660</CODE> para
+especificarle que es una imagen ISO9660, ya que autom&aacute;ticamente lo debe
+detectar.</P>
+<P>Si tiene pensado hacer im&aacute;genes Joliet, le recomiendo que cargue en el
+kernel el soporte para <I>Joliet</I>, en el men&uacute; principal <CODE>Filesystems</CODE>,
+activar el soporte para <I>ISO9660</I> en los kernels <CODE>2.0.33</CODE> en
+adelante, y en los superiores a <CODE>2.0.37</CODE>, o <CODE>2.1.x</CODE> o <CODE>2.2.x</CODE>
+activar <CODE>Microsoft Joliet CD-ROM extensions</CODE>; y dentro del submen&uacute;
+<CODE>Native Language Support</CODE> activar <CODE>Codepage 437</CODE>, <CODE>850</CODE> y <CODE>NLS
+ISO 8859-1</CODE>.</P>
+<P>Recomiendo al menos incluir esto como parte del kernel de arranque, aunque
+si no le sobra mucha memoria incl&uacute;yalos como m&oacute;dulos, que el kernel se
+ocupar&aacute; de cargarlos cuando sea necesario. El resto de <I>Codepages</I> y
+<I>NLS</I>s recomiendo que los ponga como m&oacute;dulos si decide activarlos,
+aunque los m&aacute;s utilizados son los mencionados anteriormente. </P>
+
+
+<HR>
+<A HREF="Grabadoras-Como-2.html">Anterior</A>
+<A HREF="Grabadoras-Como-4.html">Siguiente</A>
+<A HREF="Grabadoras-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

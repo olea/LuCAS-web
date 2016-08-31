@@ -1,0 +1,310 @@
+<HTML
+><HEAD
+><TITLE
+>Instalación UUCP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Poner Eximen marcha"
+HREF="x-087-2-exim.html"><LINK
+REL="PREVIOUS"
+TITLE='Protegerse contra el "spam"'
+HREF="x16541.html"><LINK
+REL="NEXT"
+TITLE="Noticias"
+HREF="x-087-2-news.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x16541.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 19. Poner Eximen marcha</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-news.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-EXIM.SIMPLE">19.8. Instalación UUCP</H1
+><P
+>&#13;
+Exim no posee código específico para transportar correo mediante UUCP ni 
+soporta prohibición de direcciones UUCP. De todos modos, si se usa el direccionamiento
+de dominios, Exim puede interactuar con UUCP de una manera bastante sencilla.
+He aquí un fragmento de configuración para enviar ciertos dominios a UUCP
+tomado de una instalación real:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # Transporte
+    uucp:
+      driver = pipe
+      user = nobody
+      command = "/usr/local/bin/uux -r - \
+        ${substr_-5:$host}!rmail ${local_part}"
+      return_fail_output = true
+    
+    # Encaminador
+    uucphost:
+      transport = uucp
+      driver = domainlist
+      route_file = /usr/exim/uucphosts
+      search_type = lsearch</PRE
+></TD
+></TR
+></TABLE
+><P
+>En un fichero de configuración completo, el transporte se insertaría 
+entre los otros transportes, y el encaminador definido probablemente 
+como el primer encaminador. El fichero <TT
+CLASS="FILENAME"
+>/usr/exim/uucphosts</TT
+>
+contiene entradas como ésta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    darksite.example.com:           darksite.UUCP</PRE
+></TD
+></TR
+></TABLE
+>
+
+que se interpreta como, &ldquo;Enviar el correo dirigido al dominio
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>darksite.example.com</B
+></SPAN
+> al anfitrión
+UUCP <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>darksite</B
+></SPAN
+>.&rdquo;
+Puede realizar esta configuración de manera más sencilla sin que el 
+encaminador añada el sufijo .UUCP a <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>darksite</B
+></SPAN
+> 
+sólo para que el transporte se lo quite de nuevo, pero este método resulta
+útil porque así queda más clara la distinción entre el nombre del dominio
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>darksite.example.com</B
+></SPAN
+> y el nombre del
+anfitrión UUCP <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>darksite</B
+></SPAN
+>.</P
+><P
+>Cuando el encaminador se encuentre con un dominio presente en el fichero
+de rutado, enviará la dirección al transporte UUCP, que se la enviará a
+su vez a la orden <B
+CLASS="COMMAND"
+>uux</B
+> (descrita en <A
+HREF="x-087-2-uucp.html"
+>Capítulo 16</A
+>). Si ocurre algún problema <B
+CLASS="COMMAND"
+>uux</B
+> 
+generará alguna salida y terminará con un código de error distinto a cero. 
+Use la opción <TT
+CLASS="LITERAL"
+>return_fail_output</TT
+> para asegurarse de que 
+la salida se devuelve al remitente.</P
+><P
+>Si los mensajes UUCP entrantes se agrupan en ficheros en formato SMTP
+por lotes, pueden pasarse directamente a Exim usando una orden como ésta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    exim -bS &lt;/var/uucp/incoming/001</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>De toda formas, no todo es tan sencillo. Cuando Exim recibe un mensaje
+localmente, insiste en que el remitente es el usuario conectado que lo
+haya enviado, pero para un lote UUCP queremos que los remitentes se tomen de
+los mensajes entrantes. Exim hará esto si el proceso que lo llama se 
+está ejecutando como un <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>usuario en el que se confía</I
+></SPAN
+>. 
+Si especifica que el correo UUCP entrante lo gestione por ejemplo un 
+usuario llamado <SPAN
+CLASS="SYSTEMITEM"
+>uucp</SPAN
+>, necesitará 
+especificar:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    trusted_users = uucp</PRE
+></TD
+></TR
+></TABLE
+>
+
+en el fichero de configuración de Exim para asegurarse de que las direcciones
+de los remitentes se tratan de manera correcta.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x16541.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-news.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Protegerse contra el "spam"</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Noticias</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

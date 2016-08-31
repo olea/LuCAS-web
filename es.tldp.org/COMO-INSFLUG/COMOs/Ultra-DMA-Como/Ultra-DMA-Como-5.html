@@ -1,0 +1,230 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>El Mini-C&oacute;mo de Ultra-DMA en Linux: Interfaces UDMA PCI externas</TITLE>
+ <LINK HREF="Ultra-DMA-Como-6.html" REL=next>
+ <LINK HREF="Ultra-DMA-Como-4.html" REL=previous>
+ <LINK HREF="Ultra-DMA-Como.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Ultra-DMA-Como-6.html">Página siguiente</A>
+<A HREF="Ultra-DMA-Como-4.html">Página anterior</A>
+<A HREF="Ultra-DMA-Como.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="pci"></A> <A NAME="s5">5. Interfaces UDMA PCI externas</A></H2>
+
+<P>Estas son interfaces UDMA sobre tarjetas PCI que pueden ser usadas para
+a&ntilde;adir esta capacidad a un ordenador existente sin tener que reemplazar la
+placa madre o para a&ntilde;adir soporte para cuatro dispositivos adicionales
+a un ordenador que tiene ocupados todos los que ofrece su placa madre.
+Pueden encontrarse preinstaladas en algunos ordenadores, especialmente
+en m&aacute;quinas Gateway 2000 y Dell.
+<P>Muchas de ellas no est&aacute;n soportadas por los n&uacute;cleos estables actuales
+(como el 2.0.35), debiendo aplicarse un parche o usar uno de los n&uacute;cleos de
+desarrollo (2.1.x). Si necesita instalar Linux en un disco duro conectado
+a estas interfaces, necesitar&aacute; usar algunos trucos.
+<P>
+<H2><A NAME="promise"></A> <A NAME="ss5.1">5.1 Promise Ultra33</A>
+</H2>
+
+<P>
+<P>Esta es una tarjeta PCI que tiene dos canales UDMA, soportando hasta
+cuatro dispositivos en total. Puede ver las especificaciones y precios en
+<A HREF="http://www.promise.com">http://www.promise.com</A>.
+<P>Esta tarjeta se inclu&iacute;a en los sistemas Pentium II modernos modelo
+Gateway 2000, y puede aparecer o no en modelos m&aacute;s recientes.
+<P>El n&uacute;cleo 2.0.35 soporta el Ultra33 expl&iacute;citamente, y los n&uacute;cleos en
+desarrollo (el actual es el 2.1.114) dispone de soporte gen&eacute;rico para
+interfaces IDE PCI que, autom&aacute;ticamente, detecta el Promise Ultra33. Pero,
+los viejos n&uacute;cleos estables (2.0.34 e inferiores) no lo detectan y,
+dado que muchas de las distribuciones de Linux incluyen estos &uacute;ltimos,
+puede ser bastante complicado instalar este sistema operativo.
+<P><B>Instalando Linux con la Promise</B>
+<P>Aunque hay un parche para la interfaz Promise, ¡no es f&aacute;cil aplicarlo
+y recompilar el n&uacute;cleo si todav&iacute;a no tiene Linux instalado! Por
+eso, hay un truco que le permite instalarlo. Agradecimientos a Gadi Oxman
+por la siguiente informaci&oacute;n sobre la obtenci&oacute;n de la configuraci&oacute;n de la
+interfaz:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Si podemos acceder a la consola con el disco de instalaci&oacute;n, tambi&eacute;n
+podemos usar "cat /proc/pci" para obtener la configuraci&oacute;n de la interfaz:
+
+    RAID bus interface: Promise Technology Unknown device (rev 1).
+      Vendor id=105a. Device id=4d33.
+      Medium devsel.  IRQ 12.  Master Capable.  Latency=32.
+      I/O at 0xe000.   (a)
+      I/O at 0xd804.   (b)
+      I/O at 0xd400.   (c)
+      I/O at 0xd004.   (d)
+      I/O at 0xc800.   (e)
+
+y pasar el par&aacute;metro "ide2=a,b+2 ide3=c,d+2" en la l&iacute;nea de argumentos
+del n&uacute;cleo.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>N&oacute;tese que los n&uacute;meros probablemente no sean los mismos que los que usted
+tendr&aacute;. S&oacute;lo como ejemplo, los par&aacute;metros a usar con el conjunto de
+n&uacute;meros anterior ser&iacute;a ``<CODE>ide2=0xe000,0xd806 ide3=0xd400,0xd006</CODE>''.
+Si s&oacute;lo est&aacute; usando el primer canal del Ultra33 (por ejemplo, si usted
+s&oacute;lo dispone de un dispositivo, o dos si son master y slave en el mismo
+canal), entonces no necesitar&iacute;a especificar <CODE>ide3</CODE>.
+<P><B>Red Hat 5.1:</B> Inicie la instalaci&oacute;n con el disquete de arranque,
+pulsando ENTER cuando se le pregunte. El n&uacute;cleo se cargar&aacute; y entonces
+se le preguntar&aacute; por el idioma, tipo de teclado, y modo de instalaci&oacute;n.
+Se le pedir&aacute; informaci&oacute;n adicional sobre el medio de origen; no importa
+lo que responda mientras llegue al siguiente paso. Entonces ver&aacute; una
+pantalla titulada ``Select Installation Path''; pulse Alt-F2 ahora para
+llegar al int&eacute;rprete de comandos. Ejecute ``<CODE>cat /proc/pci</CODE>'',
+apunte los n&uacute;meros como antes, y vuelva a arrancar desde el mismo disquete.
+Esta vez, escriba ``<CODE>linux ide2=</CODE> <EM>(aqu&iacute; es donde debe poner
+los n&uacute;meros como se mostr&oacute; anteriormente)</EM><CODE> ide3=</CODE><EM>(m&aacute;s n&uacute;meros)</EM>'' y
+luego pulse ENTER. Ahora deber&iacute;a ser posible alojar Linux en su disco duro
+sin dificultades, aunque LILO probablemente no ser&aacute; capaz de instalarse de
+forma correcta: haga un disquete de arranque y util&iacute;celo para acceder a
+su sistema Linux con los mismos par&aacute;metros, hasta que pueda parchear el LILO
+y el n&uacute;cleo.
+<P><B>Red Hat 5.0</B> y <B>Slackware 3.4:</B> El proceso a seguir en ambas
+distribuciones es similar, incluyendo el problema de que los programas
+de instalaci&oacute;n ignoran los <CODE>/dev/hde-h</CODE> (los dispositivos en
+<CODE>ide2</CODE> e <CODE>ide3</CODE>). Para poder instalar a/o desde estos dispositivos
+es necesario pasar por encima de uno o de los dos canales de interfaz
+de la placa madre. De todas maneras, aseg&uacute;rese de no pasar por encima de 
+un dispositivo que necesite para la instalaci&oacute;n; por ejemplo, si est&aacute; 
+instalando desde un CD-ROM en <CODE>/dev/hdd</CODE> (<CODE>ide1</CODE>, interfaz en 
+la placa madre) a un disco duro en <CODE>/dev/hde</CODE> (<CODE>ide2</CODE>, 
+el Ultra33), deber&iacute;a deshabilitar el innecesario <CODE>ide0</CODE> con <CODE>ide2</CODE>
+y dejar intacto <CODE>ide1</CODE>. Asumiendo los n&uacute;meros anteriores, deber&iacute;a 
+arrancar con ``<CODE>ide0=0xe000,0xd806</CODE>''. Red Hat 5.0 le ofrecer&aacute; un 
+int&eacute;rprete de comandos si usa la capacidad de disquete de rescate 
+(rescue disk), y Slackware incluye un int&eacute;rprete en el proceso de
+instalaci&oacute;n normal. Tenga en cuenta que Red Hat 5.0 es dif&iacute;cil de arrancar
+despu&eacute;s de la instalaci&oacute;n; si tiene problemas podr&iacute;a probar a bajarse un
+disquete de arranque de Slackware desde 
+<A HREF="ftp://ftp.cdrom.com/pub/linux/slackware-3.5/bootdsks.144/">ftp://ftp.cdrom.com/pub/linux/slackware-3.5/bootdsks.144/</A> y
+usarlo para arrancar.
+<P>Con otras distribuciones de Linux deber&aacute; improvisar un poco, pero el
+proceso deber&iacute;a ser el mismo que el visto anteriormente.
+<P><B><EM>IMPORTANTE:</EM></B> ¡Sin el parche (del cual se habla en la
+secci&oacute;n 
+<A HREF="Ultra-DMA-Como-7.html#generic">UDMA­Gen&eacute;rico</A>), el n&uacute;cleo <B>necesita</B>
+estos par&aacute;metros de arranque para poder acceder a su disco duro! Por eso
+es muy importante que cuando configure LILO, tanto en un disco duro como
+en un disquete de arranque, a&ntilde;ada los <B>mismos par&aacute;metros exactamente</B>
+tal y como lo hizo al instalar. ¡De otra manera su sistema no arrancar&aacute;!
+Deber&iacute;a ser posible pas&aacute;rselos a LILO cuando arranque (por ejemplo,
+pulsando MAYS, escribiendo ``<CODE>linux ide2=</CODE><EM>.....</EM>'' cada vez que
+lo haga), ¡pero s&oacute;lo podr&aacute; hacerlo si guarda los n&uacute;meros! Es recomendable
+que aplique el parche al n&uacute;cleo tan pronto como pueda para que no 
+deba preocuparse al respecto; una vez que pueda arrancar con el 
+n&uacute;cleo parcheado, podr&aacute; olvidarse de los par&aacute;metros de arranque.
+Adem&aacute;s, por lo menos que yo sepa, no hay manera de pasar par&aacute;metros
+a un disquete de arranque sencillo (hecho con ``<CODE>make zdisk</CODE>''),
+<B>deber&aacute;</B> usar LILO u otro cargador (como LOADLIN) que le
+permita pasarlos.
+<P>De todas maneras, los n&uacute;cleos no parcheados y programas de instalaci&oacute;n
+pasan un mal rato usando ide2 e ide3, aunque los dispositivos hayan sido
+detectados correctamente. Por eso, si no es capaz de instalar Linux usando
+la t&eacute;cnica anterior, pruebe a especificar ide0 o ide1 en vez de ide2 o
+ide3 (gracias a Martin Gaitan por esta t&eacute;cnica). Esencialmente consiste
+en reemplazar el interfaz en placa por el Promise Ultra33, al menos
+en lo que concierne al n&uacute;cleo, pudiendo seguir en la direcci&oacute;n de la
+siguiente secci&oacute;n como si los hubiera movido f&iacute;sicamente. N&oacute;tese que si
+est&aacute; usando el CD-ROM IDE conectado a su interfaz en placa como fuente de
+la instalaci&oacute;n, ¡deber&aacute; asegurarse que no deshabilita la interfaz en la
+que se encuentra el CD o ser&aacute; incapaz de instalar! Si el CD est&aacute; en hda o
+hdb, use ide1 para su disco duro, y si est&aacute; en hdc o hdd, entonces use
+ide0.
+<P><B>Instalando Linux salt&aacute;ndose la Promise</B>
+<P>Si no consigue que funcionen los trucos software, tendr&aacute; que usar un
+m&eacute;todo m&aacute;s expeditivo. Este es un m&eacute;todo alternativo que virtualmente
+tiene &eacute;xito garantizado, pero va a requerir que abra su ordenador y lo
+modifique internamente. <B>NOTA:</B> ¡Si no est&aacute; familiarizado con el
+proceso de conectar y desconectar dispositivos IDE, <B>lea los manuales</B>
+que ven&iacute;an con su ordenador, su disco duro y/o con la Promise Ultra33
+antes de intentarlo! Si modifica algo y no sabe c&oacute;mo ponerlo otra vez en
+su sitio, ¡podr&iacute;a acabar arrepinti&eacute;ndose!
+<P>Habiendo dicho esto, es todo muy simple. Muchas de las placas madres de
+hoy en d&iacute;a tienen incorporadas interfaces EIDE. Desconecte su disco duro
+de la Ultra33 y con&eacute;ctelo a la interfaz en placa. Si tiene otros
+dispositivos IDE en la misma interfaz, como un CD-ROM, una unidad de cintas
+o un disco ZIP, es m&aacute;s f&aacute;cil si simplemente a&ntilde;ade el disco duro en alg&uacute;n
+canal no usado (el secundario en vez del primario) o temporalmente
+desconecte alg&uacute;n dispositivo que no necesite inmediatamente (como el ZIP
+o la cinta). Instale Linux y, finalmente, b&aacute;jese y aplique el parche para
+la Promise UDMA (vea la secci&oacute;n siguiente).
+<P>Ahora est&aacute; en disposici&oacute;n de volver a poner el disco en la Promise...
+casi. Para estar seguro haga un disquete de arranque (<CODE>cd
+/usr/src/linux ; make zdisk</CODE>) que podr&aacute; usar para arrancar su
+sistema en caso de que LILO no funcione. Bueno, para estar <B>muy</B>
+seguro, haga dos y guarde uno de ellos por ahora.
+<P>Muy bien, ahora es el momento de pensar un poco... si s&oacute;lo dispone de un
+disco duro que se encontrar&aacute; en la Promise, entonces lo m&aacute;s seguro es
+que sea <CODE>/dev/hde</CODE> (<CODE>a</CODE> y <CODE>b</CODE> son para la interfaz primaria
+en placa, <CODE>c</CODE> y <CODE>d</CODE> para la secundaria). Si va a poner m&aacute;s
+discos, entonces el esclavo del primer canal de la Promise ser&aacute;
+<CODE>/dev/hdf</CODE>, el master del segundo <CODE>/dev/hdg</CODE> y el
+esclavo del segundo <CODE>/dev/hdh</CODE>.
+<P>Edite <CODE>/etc/fstab</CODE>, y cambie todas las particiones de los discos
+duros que est&aacute; moviendo de los dispositivos en placa (<CODE>/dev/hda</CODE>, 
+<CODE>hdb</CODE>, etc) a sus nuevas localizaciones en la Promise
+(<CODE>/dev/hde</CODE>, <CODE>hdf</CODE>, etc). Si tiene que poner otros
+dispositivos (como un CD-ROM o un disco ZIP) que desea dejar en la interfaz
+en placa, entonces c&aacute;mbielos a su nueva localizaci&oacute;n tambi&eacute;n. Por
+ejemplo, si su CD-ROM era originariamente el master del canal primario
+(<CODE>/dev/hda</CODE>), pero puso su disco duro en ese lugar y
+tuvo que cambiar el CD al esclavo (<CODE>/dev/hdb</CODE>) o al canal
+secundario (<CODE>/dev/hdc</CODE>), y ahora quiere volver a ponerlo otra vez
+en su sitio, entonces c&aacute;mbielo a <CODE>/dev/hda</CODE>.
+<P>Si est&aacute; usando LILO, reconfig&uacute;relo para usar la nueva localizaci&oacute;n del
+dispositivo (la configuraci&oacute;n de LILO sale de las pretensiones de este
+documento, as&iacute; que si no conoce c&oacute;mo hacerlo, lea el 
+<A HREF="http://sunsite.unc.edu/LDP/HOWTO/mini/LILO.html">LILO mini-HOWTO</A>),
+o no ser&aacute; capaz, probablemente, de arrancar a menos que no use el
+disquete de arranque que le he hecho hacer, con el que tambi&eacute;n desear&aacute;
+arrancar la nueva partici&oacute;n. Esto se hace usando el comando <CODE>rdev</CODE>:
+introduzca el disquete y escriba ``<CODE>rdev /dev/fd0 /dev/hde1</CODE>''.
+Por supuesto, esto es suponiendo que su partici&oacute;n ra&iacute;z es la primera de su
+primer dispositivo UDMA. Si no es as&iacute; (por ejemplo, en mi caso es
+<CODE>/dev/hde7</CODE>), entonces use el n&uacute;mero de partici&oacute;n apropiado.
+<P>Vuelva a arrancar. Su sistema tendr&iacute;a que funcionar correctamente.
+<P><B>Aplicando el parche para la Promise</B>
+<P>El n&uacute;cleo 2.0.35 y superior soporta de forma nativa la Promise Ultra33;
+obtenga y actual&iacute;cese desde su distribuci&oacute;n Linux o desde 
+<A HREF="http://www.kernel.org">http://www.kernel.org</A>.
+<P>Para instrucciones sobre c&oacute;mo compilar el n&uacute;cleo, lea el 
+<A HREF="ftp://ftp.insflug.org/es/Kernel-Como.gz">Kernel-COMO</A>.   
+<P><B>Usando dos tarjetas Ultra33 en el mismo ordenador</B>
+<P>Esto actualmente no funciona correctamente... no lo haga por ahora a
+menos que est&eacute; deseoso de modificar el n&uacute;cleo para hacer que las cosas
+funcionen.  
+<P>
+<H2><A NAME="artop"></A> <A NAME="ss5.2">5.2 Artop ATP850UF</A>
+</H2>
+
+<P>
+<P>Esta tarjeta est&aacute; soportada por el udma-generic. La instalaci&oacute;n de Linux
+en un sistema con esta tarjeta como interfaz para el disco destino
+deber&iacute;a ser similar al proceso para con la Promise Ultra33.
+<P>
+<H2><A NAME="ss5.3">5.3 A&ntilde;adiendo ficheros de dispositivo</A>
+</H2>
+
+<P>
+<P>Las interfaces IDE terciario y cuaternario (ide2 e ide3) usan ficheros de
+dispositivo entre el <CODE>/dev/hde*</CODE> y el <CODE>/dev/hdh*</CODE>. En n&uacute;cleos
+antiguos estos dispositivos no eran creados autom&aacute;ticamente, por lo que
+podr&iacute;a ser necesario a&ntilde;adirlos de forma manual para que las cosas
+funcionen correctamente.
+<P>Esto se puede hacer f&aacute;cilmente si tiene actualmente una copia instalada de
+los fuentes del n&uacute;cleo; simplemente ejecute <CODE>/usr/src/linux/scripts/MAKEDEV.ide</CODE> 
+y se crear&aacute;n los ficheros de dispositivo relevantes.
+<P>
+<HR>
+<A HREF="Ultra-DMA-Como-6.html">Página siguiente</A>
+<A HREF="Ultra-DMA-Como-4.html">Página anterior</A>
+<A HREF="Ultra-DMA-Como.html#toc5">Índice general</A>
+</BODY>
+</HTML>

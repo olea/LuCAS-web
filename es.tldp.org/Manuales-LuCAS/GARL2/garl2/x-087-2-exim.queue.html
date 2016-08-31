@@ -1,0 +1,409 @@
+<HTML
+><HEAD
+><TITLE
+>Modos de Envío de Correo</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Poner Eximen marcha"
+HREF="x-087-2-exim.html"><LINK
+REL="PREVIOUS"
+TITLE="Compilar Exim"
+HREF="x16242.html"><LINK
+REL="NEXT"
+TITLE="Otras opciones de configuración"
+HREF="x-087-2-exim.options.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x16242.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 19. Poner Eximen marcha</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-exim.options.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-EXIM.QUEUE">19.4. Modos de Envío de Correo</H1
+><P
+>&#13;
+
+
+Como ya se ha dicho anteriormente, Exim es capaz de enviar los mensajes de
+inmediato o guardarlos en una cola para procesarlos más tarde.
+Todo el correo entrante se guarda en el
+directorio<TT
+CLASS="FILENAME"
+>input</TT
+> bajo
+<TT
+CLASS="FILENAME"
+>/var/spool/exim</TT
+>. Cuando el encolado no se encuentra
+activo, se inicia un proceso de envío para cada mensaje en cuanto llega.
+De otro modo, se queda en la cola hasta que un proceso
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>queue-runner</I
+></SPAN
+> lo recoge. El encolado puede
+ajustarse como incondicional mediante <TT
+CLASS="OPTION"
+>queue_only</TT
+> en el
+fichero de configuración, o puede estar condicionado por la carga del
+sistema minuto a minuto mediante:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    queue_only_load = 4</PRE
+></TD
+></TR
+></TABLE
+>
+
+que hace que los mensajes se encolen si la carga del sistema excede
+4.<A
+NAME="AEN16273"
+HREF="#FTN.AEN16273"
+>[1]</A
+></P
+><P
+>Si su anfitrión no está conectado permanentemente a Internet, quizá quiera
+activar el encolado para direcciones remotas, permitiendo al mismo tiempo
+que Exim realice los envíos locales de inmediato. Puede hacer esto poniendo:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    queue_remote_domains = *</PRE
+></TD
+></TR
+></TABLE
+>
+
+en el fichero de configuración.</P
+><P
+> 
+Si activa cualquier tipo de encolado tiene que asegurarse de que las colas
+se comprueba de manera regular, probablemente cada 10 ó 15 minutos. Aún sin
+opciones explícitas de encolado, las colas necesitan comprobarse
+por si se hubieran pospuesto mensajes a causa de fallos temporales de envío. 
+Si ejecuta Exim como demonio tendrá que añadir la opción
+<TT
+CLASS="OPTION"
+>&ndash;q15m</TT
+> en la línea de órdenes para procesar la
+cola cada 15 minutos.  También puede invocar a <B
+CLASS="COMMAND"
+>exim
+&ndash;q</B
+> desde <B
+CLASS="COMMAND"
+>cron</B
+> a estos intervalos.</P
+><P
+>&#13;
+Puede mostrar la cola de correo invocando a Exim con la opción
+<TT
+CLASS="OPTION"
+>&ndash;bp</TT
+>. De manera equivalente, puede enlazar
+<B
+CLASS="COMMAND"
+>mailq</B
+> con Exim e invocar
+<B
+CLASS="COMMAND"
+>mailq</B
+>&thinsp;:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>mailq</B
+></TT
+>
+     2h   52K 12EwGE-0005jD-00 &lt;sam@vbrew.com&gt;
+            D bob@vbrew.com
+              harry@example.net  </PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;Esto muestra un único mensaje desde <SPAN
+CLASS="SYSTEMITEM"
+>sam@vbrew.com</SPAN
+> para dos receptores en la
+cola de mensajes. Se ha enviado con éxito a 
+<SPAN
+CLASS="SYSTEMITEM"
+>bob@vbrew.com</SPAN
+> pero aún no 
+se ha enviado a <SPAN
+CLASS="SYSTEMITEM"
+>harry@example.net</SPAN
+> aunque ha estado en la
+cola dos horas. El tamaño del mensaje es de 52K y la identificación que
+usa Exim para este mensaje es
+<TT
+CLASS="LITERAL"
+>12EwGE-0005jD-00</TT
+>. Puede averiguar por qué aún no
+se ha completado el envío mirando en el fichero de registro individual del
+mensaje, que se guarda en el directorio <TT
+CLASS="FILENAME"
+>msglog</TT
+> dentro del
+directorio de la cola de Exim. La opción<TT
+CLASS="OPTION"
+>&ndash;Mvl</TT
+> es una 
+manera sencilla de hacer esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>exim &ndash;Mvl 12EwGE-0005jD-00</B
+></TT
+>
+    2000-01-30 17:28:13 example.net [192.168.8.2]: Connection timed out
+    2000-01-30 17:28:13 harry@example.net: remote_smtp transport deferred: 
+      Connection timed out</PRE
+></TD
+></TR
+></TABLE
+>
+
+Los ficheros de registro individuales mantienen una copia de las entradas del 
+registro para cada mensaje por lo que puede inspeccionarlas fácilmente. 
+Puede extraer esa misma información del fichero de registro principal
+mediante la utilidad <B
+CLASS="COMMAND"
+>exigrep</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>exigrep 12EwGE-0005jD-00 /var/log/exim/exim_mainlog</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Eso puede llevarle bastante tiempo, especialmente en un sistema ocupado en el 
+que los ficheros de registro pueden hacerse bastante grandes. 
+La utilidad <B
+CLASS="COMMAND"
+>exigrep</B
+> es apropiada
+cuando se busca información sobre más de un mensaje. Su primera variable es
+una expresión regular, y toma todas las líneas del registro de cualquier 
+mensaje en las que coincida al menos una línea con la expresión. Por esto,
+puede usarse para consultar todos los mensajes en busca de una dirección o de un
+anfitrión específicos.</P
+><P
+>Puede echar un vistazo general a lo que está haciendo un Exim en ejecución 
+mediante la orden <B
+CLASS="COMMAND"
+>tail</B
+> sobre el fichero de registro 
+principal. Otra manera de hacer esto es ejecutar la utilidad
+<B
+CLASS="COMMAND"
+>eximon</B
+> que viene con Exim. Se trata de una aplicación
+que muestra una pantalla donde aparece el registro principal en tiempo real, 
+además de mostrarle una lista con los mensajes que estén esperando ser 
+enviados, así como unas gráficas de barras acerca de la actividad de envío.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN16273"
+HREF="x-087-2-exim.queue.html#AEN16273"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>La carga del sistema es una medida estándar en Unix de la cantidad
+media de procesos que están en la cola esperando ejecutarse. El
+<B
+CLASS="COMMAND"
+>uptime</B
+> muestra la carga media del sistema tomada en los
+1, 5 y 15 minutos previos.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x16242.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.options.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Compilar Exim</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Otras opciones de configuración</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PPP C&oacute;mo: Tras hacer que la conexi&oacute;n funcione - el script</TITLE>
+ <LINK HREF="PPP-Como-24.html" REL=next>
+ <LINK HREF="PPP-Como-22.html" REL=previous>
+ <LINK HREF="PPP-Como.html#toc23" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PPP-Como-24.html">Página siguiente</A>
+<A HREF="PPP-Como-22.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc23">Índice general</A>
+<HR>
+<H2><A NAME="ip-up"></A> <A NAME="s23">23. Tras hacer que la conexi&oacute;n funcione - el script</A><CODE>/etc/ppp/ip-up</CODE></H2>
+
+<P>Una vez que la conexi&oacute;n PPP se ha establecido, pppd busca un fichero
+<CODE>/etc/ppp/ip-up</CODE>. Si este script existe y es ejecutable, el demonio
+PPP ejecutar&aacute; el script. Esto le permite automatizar cualquier orden de
+encaminamiento que pueda ser necesaria y cualesquiera otras acciones que
+puede desear que sucedan cada vez que conecte el enlace PPP.
+<P>
+<P>Esto es s&oacute;lo un script de shell y puede hacer cualquier cosa que un script
+de shell pueda hacer (esto es, casi todo lo que quiera).
+<P>
+<P>Por ejemplo, puede hacer que sendmail env&iacute;a cualquier mensaje situado en la
+cola de mensajes a enviar.
+<P>
+<P>De manera similar, puede insertar en ip-up las &oacute;rdenes para recoger
+(utilizando pop) cualquier email disponible para usted en su ISP.
+<P>
+<P>Hay restricciones en <CODE>/etc/ppp/ip-up</CODE>:-
+<P>
+<UL>
+<LI>Se ejecuta en un entorno deliberadamente restringido para mejorar la
+seguridad. Esto quiere decir que debe proporcionar la ruta completa de los
+ejecutables, etc...</LI>
+<LI>T&eacute;cnicamente, <CODE>/etc/ppp/ip-up</CODE> es un <EM>programa</EM>, no un
+script. Esto quiere decir que puede ser ejecutado directamente - y por ello
+requiere que el fichero m&aacute;gico est&aacute;ndar (<CODE>#!/bin/bash</CODE>) de la primera
+l&iacute;nea debe ser legible y ejecutable por el root.</LI>
+</UL>
+<P>
+<H2><A NAME="ss23.1">23.1 Encaminamiento especial</A>
+</H2>
+
+<P>Si est&aacute; interconectando dos redes locales, necesitar&aacute; establecer caminos
+espec&iacute;ficos para las redes externas. Esto se puede hacer f&aacute;cilmente
+utilizando el script <CODE>/etc/ppp/ip-up</CODE>. La &uacute;nica diferencia estriba en
+si su m&aacute;quina maneja varias conexiones PPP.
+<P>
+<P>Esto es debido a que <CODE>/etc/ppp/ip-up</CODE> se ejecuta para CADA conexi&oacute;n
+ppp que se realiza, por lo que necesita ejecutar cuidadosamente las
+&oacute;rdenes
+de encaminamiento correctos para el enlace particular que se realiza - y no
+cuando se lleva a cabo cualquier otra conexi&oacute;n.
+<P>
+<H2><A NAME="ss23.2">23.2 Manejando colas de correo electr&oacute;nico</A>
+</H2>
+
+<P>Cuando se establece la conexi&oacute;n entre dos redes locales, puede que desee
+asegurarse de que el correo electr&oacute;nico que est&aacute; esperando en cada lado de
+la conexi&oacute;n sea <EM>enviado</EM> a su destino. Esto se hace a&ntilde;adiendo la
+invocaci&oacute;n adecuada de <CODE>sendmail</CODE>.
+<P>
+<P>Utilizar la funci&oacute;n 'case' de bash con un par&aacute;metro apropiado que pppd pase
+al script puede servir para esto. Por ejemplo, este es el script
+<CODE>/etc/ppp/ip-up</CODE> que utilizo para manejar nuestras conexiones WAN y
+la conexi&oacute;n a mi Ethernet dom&eacute;stico (tambi&eacute;n manejado con el mismo servidor
+ppp).
+<P>
+<H2><A NAME="ss23.3">23.3 Un script <CODE>/etc/ppp/ip-up</CODE> de ejemplo</A>
+</H2>
+
+<P>Este ejemplo da informaci&oacute;n acerca de una variedad amplia de usos.
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+#
+# Script que maneja las tablas de encaminamiento de la manera necesaria para
+# pppd
+# S&oacute;lo requiere este manejamiento el enlace a Newman.
+#
+# Cuando la conexi&oacute;n ppp se establece, se llama a este script con los
+# siguientes par&aacute;metros
+#       $1      el nombre de interfaz utilizado por pppd (como ppp3)
+#       $2      el nombre de dispositivo tty
+#       $3      la velocidad del dispositivo tty
+#       $4      la direcci&oacute;n IP local para la interfaz
+#       $5      la direcci&oacute;n IP remota
+#       $6      el par&aacute;metro especificado para pppd en la opci&oacute;n 'ipparam'
+#
+case "$5" in
+# Manejar el encaminamiento al servidor del Campus de Newman
+        202.12.126.1)
+                /sbin/route add -net 202.12.126.0 gw 202.12.126.1
+# y enviar la cola de mensajes para que su correo se distribuya.
+     /usr/sbin/sendmail -q &amp;
+                ;;
+ 139.130.177.2)
+# Nuestro enlace Internet
+# Cuando &eacute;ste se ejecuta, arrancar el servidor de tiempo y sincronizarlo con
+# mundo en el caso de que no est&eacute; ya ejecut&aacute;ndose
+                if [ ! -f /var/lock/subsys/xntpd ]; then
+                        /etc/rc.d/init.d/xntpd.init start &amp;
+                fi
+# Arrancar el servidor de noticias (si no estaba ejecut&aacute;ndose)
+                if [ ! -f /var/lock/subsys/news ]; then
+                        /etc/rc.d/init.d/news start &amp;
+                fi
+                ;;
+ 203.18.8.104)
+# Descargar el correo a mi m&aacute;quina dom&eacute;stica tan pronto como se efectue el
+# enlace. No se requiere encaminamiento ya que mi Ethernet dom&eacute;stico est&aacute;
+# manejado por enmascaramiento IP y encaminamiento proxyarp.
+     /usr/sbin/sendmail -q &amp;
+     ;;
+        *)
+esac
+exit 0
+</PRE>
+<HR>
+<P>
+<P>Como resultado de llevar a cabo el enlace a nuestro campus de Newman y este
+script, hemos obtenido la siguiente tabla de encaminamiento (esta m&aacute;quina
+tambi&eacute;n es nuestro servidor general PPP y TAMBIEN maneja nuestra conexi&oacute;n a
+Internet. He intercalado comentarios en la salida para ayudar a explicar qu&eacute;
+es cada entrada) :-
+<P>
+<HR>
+<PRE>
+[root@kepler /root]# route -n
+Kernel routing table
+Destination     Gateway         Genmask         Flags MSS    Window Use Iface
+# el camino de MAQUINA a nuestra pasarela remota a Internet
+139.130.177.2   *               255.255.255.255 UH    1500   0      134 ppp4
+# el camino de MAQUINA a nuestro servidor en el campus de Newman
+202.12.126.1    *               255.255.255.255 UH    1500   0       82 ppp5
+# el camino de MAQUINA a mi ethernet dom&eacute;stica
+203.18.8.104    *               255.255.255.255 UH    1500   0       74 ppp3
+# dos de nuestras l&iacute;neas generales de marcado PPP
+203.18.8.64     *               255.255.255.255 UH    552    0        0 ppp2
+203.18.8.62     *               255.255.255.255 UH    552    0        1 ppp1
+# el camino espec&iacute;fico de red a la red local del campus de Newman
+202.12.126.0    202.12.126.1    255.255.255.0   UG    1500   0        0 ppp5
+# el camino a nuestra Ethernet local (metaconectar dos clases C adyacentes)
+203.18.8.0      *               255.255.254.0   U     1500   0     1683 eth0
+# el camino al dispositivo de bucle
+127.0.0.0       *               255.0.0.0       U     3584   0      483 lo
+# el camino por defecto a Internet
+default         139.130.177.2   *               UG    1500   0     3633 ppp4
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss23.4">23.4 Manejando correo</A>
+</H2>
+
+<P>La secci&oacute;n anterior le muestra el modo de manejar el correo saliente -
+simplemete enviando la cola de correo una vez que la conexi&oacute;n est&eacute;
+establecida.
+<P>
+<P>Si se encuentra ejecutando una conexi&oacute;n WAN, puede hacer que el
+administrador de la red remota haga exactamente lo mismo. Por ejemplo, en el
+extremo del Campus de Newman de nuestra conexi&oacute;n WAN, el script
+<CODE>/etc/ppp/ip-up</CODE> ser&iacute;a como :-
+<P>
+<HR>
+<PRE>
+#!/bin/bash
+#
+# Script que maneja las tablas de encaminamiento de la manera necesaria para
+# pppd
+# S&oacute;lo requiere esto la conexi&oacute;n con Hedland
+#
+# Cuando la conexi&oacute;n ppp se establece, se llama a este script con los
+# siguientes par&aacute;metros
+#       $1      el nombre de interfaz utilizado por pppd (como ppp3)
+#       $2      el nombre de dispositivo tty
+#       $3      la velocidad del dispositivo tty
+#       $4      la direcci&oacute;n IP local para la interfaz
+#       $5      la direcci&oacute;n IP remota
+#       $6      el par&aacute;metro especificado para pppd en la opci&oacute;n 'ipparam'
+#
+case "$5" in
+        203.18.8.4)
+                /usr/sbin/sendmail -q
+                ;;
+        *)
+esac
+exit 0
+</PRE>
+<HR>
+<P>
+<P>Si, sin embargo usted s&oacute;lo tiene un enlace PPP de IP din&aacute;mica, necesitar&aacute;
+recoger el correo de su cuenta en la m&aacute;quina de su proovedor. Esto suele
+realizarse utilizando POP (Protocolo de Oficina de Correos). Este proceso
+puede manejarse utilizando el programa 'popclient' - y el script ip-up puede
+tambi&eacute;n automatizar este proceso por usted.
+<P>
+<P>Simplemente, cree un script <CODE>/etc/ppp/ip-up</CODE> que contenga la llamada
+correcta a popclient. Para mi port&aacute;til, que ejecuta Red Hat Linux, el script
+es
+<P>
+<HR>
+<PRE>
+popclient -3 -c -u hartr -p &lt;password> kepler.hedland.edu.au |formail -s procmail
+</PRE>
+<HR>
+<P>
+<P>Usted podr&iacute;a utilizar usar slurp u otro programa para hacer lo mismo con las
+noticias, y as&iacute;. Recuerde, el script ip-up es s&oacute;lo un script est&aacute;ndar bash y
+por lo tanto puede ser usado para automatizar CUALQUIER funci&oacute;n que necesite
+ser realizada cada vez que se lleve a cabo la conexi&oacute;n PPP.
+<P>
+<HR>
+<A HREF="PPP-Como-24.html">Página siguiente</A>
+<A HREF="PPP-Como-22.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc23">Índice general</A>
+</BODY>
+</HTML>

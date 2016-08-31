@@ -1,0 +1,509 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP-Linux-Como: Creaci&oacute;n y mantenimiento de bases de datos</TITLE>
+ <LINK HREF="LDAP-Linux-Como-6.html" REL=next>
+ <LINK HREF="LDAP-Linux-Como-4.html" REL=previous>
+ <LINK HREF="LDAP-Linux-Como.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="LDAP-Linux-Como-6.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-4.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="s5">5. Creaci&oacute;n y mantenimiento de bases de datos</A></H2>
+
+<P>Esta secci&oacute;n le explica c&oacute;mo crear una base de datos de <EM>slapd</EM>
+empezando desde cero. Hay dos maneras de crear una base de datos: la
+primera, puede crear la base de datos en l&iacute;nea, usando LDAP. Con este
+m&eacute;todo, s&oacute;lo tiene que ejecutar <EM>slapd</EM> y a&ntilde;adir entradas usando el
+cliente LDAP de su elecci&oacute;n. Este m&eacute;todo es adecuado para bases de
+datos relativamente peque&ntilde;as (algunos cientos o miles de entradas,
+dependiendo de los requerimientos).
+<P>El segundo m&eacute;todo de creaci&oacute;n de bases de datos es no hacerlo en
+l&iacute;nea, sin mediante herramientas de generaci&oacute;n de &iacute;ndices. Este es el
+mejor m&eacute;todo si tiene que crear muchos miles de entradas, que si se
+introdujeran con el m&eacute;todo LDAP llevar&iacute;an un tiempo intolerablemente
+largo. Tambi&eacute;n es &uacute;til si desea asegurarse de que no se acceder&aacute; a la
+base de datos durante su creaci&oacute;n.
+<P>
+<H2><A NAME="ss5.1">5.1 Creaci&oacute;n de una base de datos en l&iacute;nea</A>
+</H2>
+
+<P>El paquete de software <EM>OpenLDAP</EM> viene con una utilidad llamada
+<CODE>ldapadd</CODE>, que se utiliza para a&ntilde;adir entradas mientras el servidor
+LDAP se ejecuta. Si decide crear en l&iacute;nea la base de datos, puede
+utilizar la herramienta <CODE>ldapadd</CODE> para a&ntilde;adir las entradas. Tras 
+de a&ntilde;adir las primeras entradas, puede seguir usando posteriormente
+<CODE>ldapadd</CODE> para a&ntilde;adir m&aacute;s entradas. Antes de iniciar <EM>slapd</EM>,
+aseg&uacute;rese de que activa las siguientes opciones de configuraci&oacute;n en su
+fichero <CODE>sladp.conf</CODE>:
+<P>
+<P><CODE>suffix &lt;dn&gt; </CODE>
+<P>
+<P>Tal como se explic&oacute; en la 
+<A HREF="LDAP-Linux-Como-3.html#3">secci&oacute;n 3</A>, esta opci&oacute;n
+describe qu&eacute; entradas se mantendr&aacute;n en esta base de datos. Deber&aacute; dar
+a esta opci&oacute;n el valor del <CODE>DN</CODE> de la ra&iacute;z del sub-&aacute;rbol que va a
+crear. Por ejemplo: 
+<P><CODE>suffix "o=TUDelft, c=NL" </CODE>
+<P>Aseg&uacute;rese de especificar en qu&eacute; directorio se crear&aacute;n los archivos de
+configuraci&oacute;n: 
+<P><CODE>directory &lt;directorio&gt;</CODE>
+<P>Por ejemplo:
+<P><CODE>directory /usr/local/tudelft</CODE>
+<P>Tendr&aacute; que realizar el siguiente paso para poder conectar con <EM>slapd</EM>
+como usuario con permisos para a&ntilde;adir entradas. Se lleva a cabo
+a&ntilde;adiendo las dos siguientes opciones en la definici&oacute;n de la base de
+datos: 
+<P><CODE>rootdn &lt;dn&gt; </CODE>
+<P><CODE>rootpw &lt;contrase&ntilde;a&gt;</CODE> /* ¡Recuerde usar contrase&ntilde;a «cripto» aqu&iacute; ! */
+<P>Estas opciones especifican un <CODE>DN</CODE> y una contrase&ntilde;a que pueden
+usarse para autentificarse como la entrada «superusuario» de una base
+de datos (es decir, la entrada que tiene permisos para realizar
+cualquier tarea). El <CODE>DN</CODE> y la contrase&ntilde;a especificados aqu&iacute;
+funcionar&aacute;n siempre, con independencia de que la entrada de <CODE>DN</CODE>
+exista realmente o tenga una contrase&ntilde;a v&aacute;lida igual a la
+especificada. As&iacute; se arregla del problema del qu&eacute; va primero, si el
+huevo o la gallina, a la hora de autentificarse y a&ntilde;adir entradas
+antes de que las propias entradas existan siquiera.
+<P>Finalmente debe asegurarse de que la definici&oacute;n de base de datos
+contiene las definiciones de &iacute;ndices que usted desea:
+<P><CODE>index {&lt;attrlist&gt; | default} [pres,eq,approx,sub,none] </CODE>
+<P>Para indexar los atributos de clase de objetos (<CODE>objectclass</CODE>)
+<CODE>cn</CODE>, <CODE>sn</CODE> y <CODE>uid</CODE> se pueden usar por ejemplo las siguientes
+l&iacute;neas de configuraci&oacute;n:
+<P><CODE> index cn,sn,uid </CODE>
+<P><CODE>index objectclass pres,eq </CODE>
+<P><CODE>index default none </CODE>
+<P>Una vez que haya configurado las cuestiones a su gusto, arranque su
+cliente LDAP y comience a a&ntilde;adir entradas. Por ejemplo, para a&ntilde;adir
+la entrada <CODE>TUDelft</CODE> seguida de una entrada <CODE>Postmaster</CODE>
+utilizando la herramienta <CODE>ldapadd</CODE>, puede crear un fichero llamado <CODE>/tmp/entradanueva</CODE> con el contenido: 
+<BLOCKQUOTE><CODE>
+<PRE>
+o=TUDelft, c=NL 
+objectClass=organization 
+
+o=TUDelft 
+description=Technical University of Delft Netherlands 
+
+cn=Postmaster, o=TUDelft, c=NL 
+objectClass=organizationalRole 
+cn=Postmaster 
+description= TUDelft postmaster - postmaster@tudelft.nl 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>y luego utilizar una orden como la siguiente para crear de verdad la
+entrada:  
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapadd -f /tmp/entradanueva -D "cn=Manager, o=TUDelft, c=NL" -w secret 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Estar orden supone que Usted ha configurado <CODE>rootdn</CODE> como
+<CODE>"cn=Manager, o=TUDelft, c=NL"</CODE> y que la contrase&ntilde;a <CODE>rootpw</CODE> es
+«secret». 
+Si no desea escribir la contrase&ntilde;a en la l&iacute;nea de &oacute;rdenes, utilice la
+opci&oacute;n <CODE>-W</CODE> de la orden <CODE>ldapadd</CODE>, en lugar de <CODE>-w
+"contrase&ntilde;a"</CODE>. Se le pedir&aacute; que introduzca interactivamente la
+contrase&ntilde;a: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapadd -f /tmp/entradanueva -D "cn=Manager, o=TUDelft, c=NL" -W 
+Enter LDAP Password : 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 Creaci&oacute;n de una base de datos sin estar en l&iacute;nea</A>
+</H2>
+
+<P>El segundo m&eacute;todo de creaci&oacute;n de una base de datos es hacerlo sin
+estar en l&iacute;nea, usando las herramientas de generaci&oacute;n de &iacute;ndices
+descritas m&aacute;s abajo. Este es el mejor m&eacute;todo si tiene que crear muchos
+miles de entradas, y crearlas con el m&eacute;todo interactivo de LDAP
+descrito arriba llevar&iacute;a mucho tiempo. Estas herramientas leen el
+fichero de configuraci&oacute;n de <EM>slapd</EM> y un fichero de entrada LDIF
+que contiene una representaci&oacute;n de las entradas que hay que a&ntilde;adir en
+formato de texto. Estas herramientas generan los ficheros de &iacute;ndices
+LDBM directamente. Deber&aacute; asegurarse de la activaci&oacute;n de varias
+opciones de configuraci&oacute;n importantes, de manera que se encuentren
+primero en la definici&oacute;n de base de datos del fichero de
+configuraci&oacute;n:  
+<P><CODE>suffix &lt;dn&gt; </CODE>
+<P>Tal y como se ha descrito en la secci&oacute;n anterior, esta opci&oacute;n
+especifica qu&eacute; entradas se mantendr&aacute;n mediante esta base de
+datos. Debe Usted ajustarla al <CODE>DN</CODE> de la ra&iacute;z del sub-&aacute;rbol que
+intenta crear, por ejemplo: 
+<P>suffix "o=TUDelft, c=NL" 
+<P>Aseg&uacute;rese de especificar un directorio en el que crear los ficheros de
+&iacute;ndice:
+<P><CODE>directory &lt;directorio&gt; </CODE>
+<P>Por ejemplo: 
+<P><CODE>directory /usr/local/tudelft</CODE>
+<P>Despu&eacute;s querr&aacute; seguramente aumentar el tama&ntilde;o de la memoria de
+almacenamiento intermedio (<EM>cach&eacute;</EM>) interna de la aplicaci&oacute;n, y que
+se utiliza para cada fichero de &iacute;ndice abierto. Para un mejor
+rendimiento durante la creaci&oacute;n del fichero de &iacute;ndices, la situaci&oacute;n
+de rendimiento ideal es aquella en la que el fichero completo se carga
+en memoria. 
+Si el volumen de sus datos no permite esta operaci&oacute;n, o bien si no
+dispone de mucha memoria, todav&iacute;a podr&aacute; darle un valor alto a este
+par&aacute;metro y dejar que haga su trabajo la paginaci&oacute;n a disco del
+sistema. El tama&ntilde;o se configura con la opci&oacute;n siguiente:
+<P>dbcachesize &lt;n&uacute;meroentero&gt; 
+<P>Por ejemplo:
+<P>dbcachesize 50000000 
+<P>Esto crear&aacute; una memoria de almacenamiento intermedio (<EM>cach&eacute;</EM>) de
+un tama&ntilde;o de 50 MB, que ya es bastante grande (en la Universidad de
+Michigan la base de datos tiene cerca de 125.000 entradas, y el mayor
+fichero de &iacute;ndices ocupa aproximadamente 45 MB). Experimente Usted
+varias veces con este par&aacute;metro y con el grado de paralelismo (ver m&aacute;s
+abajo), con el fin de ver qu&eacute; combinaci&oacute;n funcione mejor en su
+sistema. Acu&eacute;rdese de devolver a este n&uacute;mero su valor original despu&eacute;s
+de crear los ficheros de &iacute;ndices y antes de ejecutar <EM>slapd</EM>. 
+<P>Finalmente tendr&aacute; que especificar concretamente qu&eacute; &iacute;ndices desea
+construir. Esto se consigue con una o m&aacute;s opciones que se aplican a
+los &iacute;ndices.
+<P><CODE>index {&lt;listaatributos&gt; | default} [pres,eq,approx,sub,none] </CODE>
+<P>Por ejemplo: 
+<P><CODE>index cn,sn,uid pres,eq,approx </CODE>
+<P><CODE>index default none </CODE>
+<P>Esto crear&aacute; &iacute;ndices de presencia (<EM>presence</EM>), igualdad
+(<EM>equality</EM>) y aproximaci&oacute;n (<EM>approximate</EM>) de los atributos
+<CODE>cn</CODE>, <CODE>sn</CODE> y <CODE>uid</CODE>, y no crear&aacute; ning&uacute;n &iacute;ndice para ning&uacute;n
+otro atributo. Para m&aacute;s informaci&oacute;n acerca de esta opci&oacute;n, v&eacute;ase el
+fichero de configuraci&oacute;n en la  
+<A HREF="LDAP-Linux-Como-3.html#3">secci&oacute;n 3</A>. 
+<P>Una vez que haya configurado estos par&aacute;metros seg&uacute;n sus preferencias,
+cree los &iacute;ndices ejecutando el programa <CODE>ldif2ldbm</CODE>:
+<P><CODE>ldif2ldbm -i &lt;ficheroentrada&gt; -f &lt;ficheroconfigslapd&gt; [-d &lt;niveldepuraci&oacute;n&gt;] [-j &lt;n&uacute;meroentero&gt;] [-n &lt;numerodebasedatos&gt;] [-e &lt;directorioetc&gt;] </CODE>
+<P>Los argumentos tienen estos significados:
+<P><CODE>-i &lt;ficheroentrada&gt; </CODE>
+<P>Especifica el fichero de entrada LDIF que contiene en formato de texto
+las entradas por a&ntilde;adir.
+<P>-f &lt;ficheroconfigslapd&gt; 
+<P>Especifica el fichero de configuraci&oacute;n de <EM>slapd</EM> que indica d&oacute;nde
+crear los &iacute;ndices, qu&eacute; &iacute;ndices hay que crear, etc.
+<P><CODE>-d &lt;niveldepuraci&oacute;n&gt; </CODE>
+<P>Activa la depuraci&oacute;n, seg&uacute;n se especifique en &lt;niveldepuraci&oacute;n&gt;.
+Los niveles de depuraci&oacute;n son los mismos que para <EM>slapd</EM> (v&eacute;ase la
+<A HREF="LDAP-Linux-Como-4.html#4.1">secci&oacute;n 4.1</A>). 
+<P><CODE>-j &lt;n&uacute;meroentero&gt; </CODE>
+<P>Es un argumento opcional que especifica que, como m&iacute;nimo la cantidad
+&lt;n&uacute;meroentero&gt;  de procesos han de iniciarse en paralelo en el
+momento de construir los &iacute;ndices. El valor por defecto es 1. Si se
+especifica un valor superior a 1, <CODE>ldif2ldbm</CODE> crear&aacute; como m&iacute;nimo
+ese n&uacute;mero de subprocesos a la hora de construir los &iacute;ndices. Para
+construir cada &iacute;ndice de atributos se crea un subproceso separado. La
+ejecuci&oacute;n en paralelo de estos procesos puede acelerar grandemente el
+resultado, pero tenga cuidado de no crear demasiados procesos que
+compitan todos a la vez por los recursos de disco y memoria. 
+<P><CODE>-n &lt;n&uacute;merodebasedatos&gt; </CODE>
+<P>Es un argumento opcional que especifica la base de datos del fichero
+de configuraci&oacute;n para la cual hay que construir los &iacute;ndices. La
+primera base de datos aparece listada como «1», la segunda como «2»,
+etc. Se usa por defecto la primera base de datos LDBM que aparezca en
+el fichero de configuraci&oacute;n.
+<P><CODE>-e &lt;etcdir&gt; </CODE>
+<P>Es un argumento opcional que especifica el directorio en donde
+<CODE>ldif2ldbm</CODE> podr&aacute; hallar las otras herramientas de conversi&oacute;n de
+bases de datos que precisa para ejecutarse (<CODE>ldif2index</CODE> y
+similares). El valor por defecto es el directorio de instalaci&oacute;n que
+se especific&oacute; en el gui&oacute;n de instalaci&oacute;n. V&eacute;ase el siguiente ejemplo
+del uso de la orden <CODE>ldif2ldbm</CODE>:
+<P><CODE>/usr/local/sbin/ldif2ldbm -i nuevas_entradas -f myslapd.conf </CODE>
+<P>
+<H2><A NAME="ss5.3">5.3 Cuestiones adicionales sobre el formato LDIF</A>
+</H2>
+
+<P>El formato de intercambio de datos de LDAP (<EM>LDAP Data Interchange
+Format</EM>, LDIF) se usa para representar entradas de LDAP en formato de
+texto sencillo. La forma b&aacute;sica de una entrada es:
+<BLOCKQUOTE><CODE>
+<PRE>
+[&lt;id&gt;] 
+dn: &lt;distinguished name&gt; 
+&lt;tipodeatributo&gt;: &lt;valordel_atributo&gt; 
+&lt;tipodeatributo&gt;: &lt;valordel_atributo&gt; 
+... 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>en donde <CODE>&lt;id&gt;</CODE> el ID opcional de la entrada (un n&uacute;mero
+decimal positivo). No se suele pasar este par&aacute;metro, permitiendo que
+la base de datos lo haga por usted. El programa <CODE>ldbmcat</CODE>, no
+obstante, produce un formato LDIF que incluye <CODE>&lt;id&gt;</CODE> de
+manera que los nuevos &iacute;ndices que se creen sean consistentes. 
+<P>Puede continuarse una l&iacute;nea a&ntilde;adiendo un espacio al principio de la
+siguiente, p. ej.:
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara J Jensen, o=University of Michi
+ gan, c=US 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>M&uacute;ltiples valores de un atributo se especifican en l&iacute;neas separadas,
+por ejemplo:
+<BLOCKQUOTE><CODE>
+<PRE>
+cn: Barbara J Jensen 
+cn: Babs Jensen 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si un &lt;valordel_atributo&gt; contiene un car&aacute;cter no imprimible, o
+comienza con un espacio o con dos puntos «:», entonces el
+&lt;tipodeatributo&gt;  va seguido con el signo los dos puntos, dos
+veces, y el valor se codifica en notaci&oacute;n de base 64; por ejemplo, el
+valor " begins with a space" se codificar&iacute;a de la manera siguiente:
+<BLOCKQUOTE><CODE>
+<PRE>
+cn:: IGJlZ2lucyB3aXRoIGEgc3BhY2U= 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En el mismo fichero LDIF, las entradas m&uacute;ltiples se separan por l&iacute;neas
+en blanco. He aqu&iacute; un ejemplo de un fichero LDIF que contiene tres
+entradas:
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara J Jensen, o=University of Michigan, c=US 
+cn: Barbara J Jensen 
+cn: Babs Jensen 
+objectclass: person 
+sn: Jensen 
+
+dn: cn=Bjorn J Jensen, o=University of Michigan, c=US 
+cn: Bjorn J Jensen 
+cn: Bjorn Jensen 
+objectclass: person 
+sn: Jensen 
+
+dn: cn=Jennifer J Jensen, o=University of Michigan, c=US 
+cn: Jennifer J Jensen 
+cn: Jennifer Jensen 
+objectclass: person 
+sn: Jensen 
+jpegPhoto:: /9j/4AAQSkZJRgABAAAAAQABAAD/2wBDABALD 
+A4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQ 
+ERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVG 
+... 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>N&oacute;tese que el tipo de atributo <CODE>jpegPhoto</CODE> en la entrada de
+Jennifer Jensen se codifica usando base64. El programa <EM>ldif</EM> que
+viene con el paquete <EM>OpenLDAP</EM> puede usarse para producir el formato
+LDIF. 
+<P><B>Nota:</B> en un fichero LDIF, los espacios finales no se eliminan de
+los valores, ni tampoco se comprimen m&uacute;ltiples espacios internnnos. Si
+no los quiere en sus datos, no debe incluirlos.
+<P>
+<H2><A NAME="ss5.4">5.4 Las utilidades ldapsearch, ldapdelete y ldapmodify</A>
+</H2>
+
+<P><CODE>ldapsearch</CODE> - <EM>ldapsearch</EM> es una interfaz, accesible desde la
+l&iacute;nea de &oacute;rdenes, para la llamada a biblioteca
+<EM>ldap_search(3)</EM>. Use esta utilidad para buscar entradas en el
+dorsal (<EM>backend</EM>) de nuestra base de datos LDAP.
+<P>La sinopsis de las opciones de <EM>ldapsearch</EM> es la siguiente (v&eacute;ase
+la p&aacute;gina de manual de <CODE>ldapsearch(1)</CODE> para conocer el significado
+de cada opci&oacute;n): 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapsearch  [-n]  [-u]  [-v]
+[-k]  [-K]  [-t]  [-A]
+[-B] [-L] [-R] 
+[-d niveldepuraci&oacute;n] [-F separador] 
+[-f fichero] [-D dn_deacceso]  [-W]  
+[-w contrase&ntilde;a_acceso]  [-h servidorldap]  
+[-p puertoldap]   [-b baseb&uacute;squeda]   
+[-s base|one|sub]  
+[-a never|always|search|find] 
+[-l l&iacute;mitetiempo] [-z l&iacute;mitetama&ntilde;o] filtro
+[atributos...]  
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>ldapsearch</CODE> abre una conexi&oacute;n a un servidor LDAP, se «engancha» a
+&eacute;l y lleva a cabo una b&uacute;squeda utilizando el filtro <CODE>filtro</CODE>. Este
+filtro debe ajustarse a la representaci&oacute;n de cadenas de texto para
+filtros LDAP, tal y como se definen en el Request for Comments 1558
+(RFC 1558). Si <EM>ldapsearch</EM> encuentra una o m&aacute;s entradas, se
+obtienen los atributos especificados en <CODE>atributos</CODE> y se imprimen
+por salida est&aacute;ndar las entradas y sus valores. Si no se listan
+atributos, se devuelven todos los atributos.
+<P>He aqu&iacute; algunos ejemplos del uso de <EM>ldapsearch</EM>:
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapsearch -b 'o=TUDelft,c=NL' 'objectclass=*' 
+
+ldapsearch -b 'o=TUDelft,c=NL' 'cn=Rene van Leuken' 
+
+ldasearch -u -b 'o=TUDelft,c=NL' 'cn=Luiz Malere' sn mail 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La opci&oacute;n <CODE>-b</CODE> representa la base de b&uacute;squeda (el punto inicial de
+la b&uacute;squeda) y la opci&oacute;n <CODE>-u</CODE> representa la opci&oacute;n «amigable para
+el usuario», refiri&eacute;ndose a la informaci&oacute;n de salida.
+<P><CODE>ldapdelete</CODE> - <EM>ldapdelete</EM> es una interfaz, accesible desde la
+l&iacute;nea de &oacute;rdenes, para la llamada a biblioteca <EM>ldap_delete(3)</EM>. Use
+esta utilidad para buscar entradas en el dorsal (<EM>backend</EM>) de 
+nuestra base de datos LDAP.
+<P>La sinopsis de las opciones de <EM>ldapdelete</EM> es la siguiente (v&eacute;ase
+la p&aacute;gina de manual de <CODE>ldapdelete(1)</CODE> para conocer el significado
+de cada opci&oacute;n): 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapdelete   [-n]   [-v]  [-k]
+[-K]  [-c]  [-d nivel_depuraci&oacute;n]
+[-f fichero]  [-D dn_de_enganche]  [-W]
+[-w contrase&ntilde;a]  [-h servidorldap] 
+[-p puertoldap] [dn]... 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><EM>ldapdelete</EM> abre una conexi&oacute;n con un servidor LDAP, se «engancha»
+a &eacute;l, y borra una o m&aacute;s entradas. Si se proporcionan uno o m&aacute;s
+argumentos de <CODE>dn</CODE>, se borrar&aacute;n las entradas con estos
+<CODE>Distinguished Names</CODE>. Cada <CODE>dn</CODE> debe se la representaci&oacute;n
+mediante una cadena de un <CODE>DN</CODE> de la forma especificada en el RFC
+1779. Si no se proporcionan argumentos de <CODE>dn</CODE>, entonces se leer&aacute;
+la lista de <CODE>DNs</CODE> desde la entrada est&aacute;ndar (o bien desde un
+fichero si se utiliza la opci&oacute;n <CODE>-f</CODE>).
+<P>He aqu&iacute; algunos ejemplos del uso de <EM>ldapdelete</EM>:
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapdelete 'cn=Luiz Malere,o=TUDelft,c=NL' 
+
+ldapdelete -v 'cn=Rene van Leuken,o=TUDelft,c=NL' -D 'cn=Luiz Malere,o=TUDelft,c=NL' -W 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>La opci&oacute;n <CODE>-v</CODE> representa el modo verboso. La opci&oacute;n <CODE>-D</CODE>
+representa el DN de enganche (<EM>Binddn</EM>) y la opci&oacute;n <CODE>-W</CODE> sirve
+para que se nos pregunte interactivamente por la contrase&ntilde;a.
+<P>
+<P><CODE>ldapmodify</CODE> - <EM>ldapmodify</EM> es una interfaz, accesible desde la
+l&iacute;nea de &oacute;rdenes, para la llamada a biblioteca <EM>ldap_modify(3)</EM> y
+<EM>ldap_add(3)</EM>. Use esta utilidad para modificar entradas en el
+dorsal (<EM>backend</EM>) de nuestra base de datos LDAP. 
+<P>
+<P>La sinopsis de las opciones de <EM>ldapmodify</EM> es la siguiente (v&eacute;ase
+la p&aacute;gina de manual de <CODE>ldapmodify(1)</CODE> para conocer el significado
+de cada opci&oacute;n): 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify   [-a]  [-b]  [-c]
+[-r]  [-n]  [-v]  [-k]
+[-d nivelde_depuraci&oacute;n]  [-D dn_de_enganche]
+[-W]  [-w contrase&ntilde;a]  [-h servidorldap]
+[-p puertoldap] [-f fichero] 
+
+ldapadd [-b] [-c] [-r] [-n]
+[-v]  [-k]  [-K]  
+[-d nivelde_depuraci&oacute;n]  [-D dn_de_enganche]  
+[-w contrase&ntilde;a]  [-h servidorldap]  
+[-p puertoldap] [-f fichero] 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><EM>ldapadd</EM> est&aacute; implementado en forma de enlace no simb&oacute;lico 
+(<EM>hard link</EM>) a la utilidad <EM>ldapmodify</EM>. Cuando se llama a la
+utilidad en la forma <CODE>ldapadd</CODE>, la opci&oacute;n <CODE>-a</CODE> (a&ntilde;adir nueva
+entrada) se activa autom&aacute;ticamente.
+<P><EM>ldapmodify</EM> abre una conexi&oacute;n con un servidor LDAP, se «engancha»
+a &eacute;l, y modifica o a&ntilde;ade entradas. La informaci&oacute;n sobre la entrada que
+hay que modificar se lee desde la entrada est&aacute;ndar o desde un fichero
+a trav&eacute;s de la opci&oacute;n <CODE>-f</CODE>.
+<P>He aqu&iacute; algunos ejemplos del uso de ldapmodify:
+<P>Suponiendo que el fichero <CODE>/tmp/entrymods</CODE> exista y tenga un
+contenido: 
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Modify Me, o=University of Michigan, c=US 
+changetype: modify 
+replace: mail 
+mail: modme@terminator.rs.itd.umich.edu 
+- 
+add: title 
+title: Grand Poobah 
+- 
+add: jpegPhoto 
+jpegPhoto: /tmp/modme.jpeg 
+- 
+delete: description 
+- 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La orden:  
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify -b -r -f /tmp/modif_entrada
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>sustituir&aacute; el contenido del atributo <CODE>mail</CODE> de la entrada
+<CODE>"Modify Me"</CODE> con el valor
+<CODE>"modme@terminator.rs.itd.umich.edu"</CODE>, le a&ntilde;adir&aacute; el t&iacute;tulo de 
+<CODE>"Grand Poobah"</CODE>, el contenido del fichero <EM>/tmp/modme.jpeg</EM>
+como <CODE>jpegPhoto</CODE>, y eliminar&aacute; completamente el atributo
+<CODE>description</CODE>. 
+<P>Pueden llevarse a cabo las mismas modificaciones usando el formato de
+introducci&oacute;n m&aacute;s antiguo de <EM>ldapmodify</EM>: 
+<BLOCKQUOTE><CODE>
+<PRE>
+cn=Modify Me, o=University of Michigan, c=US 
+mail=modme@terminator.rs.itd.umich.edu 
++title=Grand Poobah 
++jpegPhoto=/tmp/modme.jpeg 
+-description 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esto m&aacute;s la orden siguiente:
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify -b -r -f /tmp/modif_entrada 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Eso suponiendo que el fichero /tmp/newentry exista y tenga el
+siguiente contenido:
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara Jensen, o=University of Michigan, c=US 
+objectClass: person 
+cn: Barbara Jensen 
+cn: Babs Jensen 
+sn: Jensen 
+title: the world's most famous manager 
+mail: bjensen@terminator.rs.itd.umich.edu 
+uid: bjensen 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La orden:
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapadd -f /tmp/modif_entrada
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Suponiendo que el fichero /tmp/modif_entrada exista y tenga el contenido:
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: cn=Barbara Jensen, o=University of Michigan, c=US 
+changetype: delete 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La orden:
+<BLOCKQUOTE><CODE>
+<PRE>
+ldapmodify -f /tmp/modif_entrada 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>eliminar&aacute; la entrada de Babs Jensen.
+<P>La opci&oacute;n -f representa «fichero» (leer las modificaciones desde un
+fichero en vez de hacerlo desde la entrada est&aacute;ndar). La opci&oacute;n -b
+representa a «binario», es decir, cualquier tipo de valores que
+empiecen por '/' en el fichero de entrada se interpretan como
+binarios, y la -r representa «reemplazar» (sustituir los valores
+existentes de forma predeterminada). 
+<P>
+<HR>
+<A HREF="LDAP-Linux-Como-6.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-4.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc5">Índice general</A>
+</BODY>
+</HTML>

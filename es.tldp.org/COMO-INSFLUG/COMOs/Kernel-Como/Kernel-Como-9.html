@@ -1,0 +1,137 @@
+<HTML>
+<HEAD>
+<TITLE>Kernel-Como: M&oacute;dulos</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Kernel-Como-8.html">Anterior</A>
+<A HREF="Kernel-Como-10.html">Siguiente</A>
+<A HREF="Kernel-Como.html#toc9">Indice</A>
+<HR>
+<H2><A NAME="s9">9. M&oacute;dulos</A></H2>
+
+
+<P>Los m&oacute;dulos del n&uacute;cleo cargables le permitir&aacute;n simplificar la
+configuraci&oacute;n del n&uacute;cleo y ahorrar memoria. Sirven para a&ntilde;adir
+din&aacute;micamente nuevos soportes de sistemas de ficheros o manejadores, a un
+n&uacute;cleo que ya est&aacute; corriendo. </P>
+
+<H2><A NAME="ss9.1">9.1 Instalaci&oacute;n de las utilidades asociadas</A></H2>
+
+
+<P>Estas utilidades est&aacute;n disponibles all&iacute; donde est&eacute; el n&uacute;cleo, como
+<CODE>modules-x.y.z.tar.gz</CODE>. Elija el que corresponda a su n&uacute;cleo. 
+Descompr&iacute;malo con `<CODE>tar zxvf modules-x.y.z.tar.gz</CODE>', cambie al
+directorio que crea (<CODE>modules-x.y.z</CODE>), l&eacute;ase el fichero
+<CODE>README</CODE>, y siga las instrucciones de instalaci&oacute;n (normalmente, tan
+simple como `<CODE>make install</CODE>'). Con ello tendr&aacute; las utilidades
+<CODE>insmod</CODE>, <CODE>rmmod</CODE>, <CODE>ksyms</CODE>, <CODE>lsmod</CODE>,
+<CODE>genksyms</CODE>, <CODE>modprobe</CODE> y <CODE>depmod</CODE> en <CODE>/sbin</CODE>.
+Si lo desea, puede probar el manejador ejemplo ``<CODE>hw</CODE>'' con
+<CODE>insmod</CODE>; lea el fichero <CODE>INSTALL</CODE> para m&aacute;s detalle.</P>
+<P><CODE>insmod</CODE> inserta un m&oacute;dulo en el n&uacute;cleo arrancado. Generalmente los
+m&oacute;dulos son ficheros <CODE>.o</CODE>; el manejador ejemplo es
+<CODE>drv_hello.o</CODE>, con lo que para insertarlo se usar&iacute;a
+`<CODE>insmod drv_hello.o</CODE>'. Para ver los m&oacute;dulos cargados,
+pruebe <CODE>lsmod</CODE>. La salida ser&aacute; como &eacute;sta:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ blah# lsmod
+ Module:#pages:Used by:
+ drv_hello1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>`<CODE>drv_hello</CODE>' es el nombre del m&oacute;dulo, que usa una p&aacute;gina (4k) 
+de memoria, y no hay m&oacute;dulos que dependan de &eacute;l en este momento. Para
+quitar el m&oacute;dulo, teclee `<CODE>rmmod drv_hello</CODE>'. Vea que
+<CODE>rmmod</CODE> necesita el nombre del m&oacute;dulo, no del fichero. Ese nombre lo
+obtiene al listar los m&oacute;dulos instalados. Las otras utilidades de m&oacute;dulos
+se encuentran documentadas en los manuales <I>on-line</I>. </P>
+<P><B>Inciso de la revisi&oacute;n 2.1</B></P>
+<P>Tres cosas relativas a m&oacute;dulos:</P>
+<P>
+<UL>
+<LI>Siempre que compile un kernel nuevo, y sus correspondientes m&oacute;dulos
+(con <CODE>make modules; make modules_install</CODE> tras los <CODE>make dep; make clean; make zImage
+<SL>O <CODE>make zlilo</CODE>, si usa <CODE>LILO</CODE> como
+gestor de arranque.</SL>
+</CODE> lo primero que ha de hacer al arrancar
+con el mismo, para computar las dependencias entre m&oacute;dulos, es invocar el
+comando
+
+<BLOCKQUOTE><CODE>
+<PRE>
+depmod -a
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Desde la aparici&oacute;n de <CODE>kerneld</CODE>, el andar insertando y retirando
+m&oacute;dulos de memoria a mano no se estila mucho, en su lugar es <CODE>kerneld</CODE>
+quien se encarga de esto. Para hacer uso de &eacute;l, aseg&uacute;rese de responder s&iacute;
+al soporte <CODE>kerneld</CODE> durante la configuraci&oacute;n del n&uacute;cleo, y ll&aacute;melo
+desde los <I>scripts</I> de inicializaci&oacute;n del sistema, que est&aacute;n
+t&iacute;picamente en <CODE>/etc/rc.d/rc.x</CODE>.
+
+Sigue pudiendo cargar m&oacute;dulos a voluntad; el comando recomendado es
+<CODE>modprobe modulo</CODE>, que tendr&aacute; en cuenta las dependencias entre m&oacute;dulos,
+cargando todos los necesarios (como por ejemplo el m&oacute;dulo <CODE>slhc</CODE> en el
+caso de que queramos cargar el m&oacute;dulo <CODE>ppp</CODE>.) 
+
+<B>Atenci&oacute;n:</B> El soporte de compresi&oacute;n CCP (<CODE>bsd_comp</CODE>) no est&aacute;
+inclu&iacute;do en esto debido a problemas de <I>copyright</I>, por lo que
+deberemos cargarlo a mano; o bien ejecutamos la orden <CODE>modprobe
+bsd_comp</CODE> cuando queramos cargar <CODE>ppp</CODE>, o bien lo insertamos
+<B>despu&eacute;s</B> de haber cargado <CODE>ppp</CODE> y <CODE>slhc</CODE>, con por ejemplo,
+<CODE>modprobe ppp</CODE>.
+
+Lea el fichero <CODE>/usr/src/linux/Documentation/modules.txt</CODE>,
+disponible en castellano en <CODE>
+<A HREF="http://www.insflug.org/pub/online/modulos.txt">http://www.insflug.org/pub/online/modulos.txt</A></CODE> para
+profundizar sobre este tema, as&iacute; como sobre el tercero de los &iacute;tems: 
+</LI>
+<LI><CODE>/etc/modules.conf</CODE> o <CODE>/etc/conf.modules</CODE>. Lea el
+anterior fichero (<CODE>modulos.txt</CODE>). 
+</LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss9.2">9.2 M&oacute;dulos distribuidos con el n&uacute;cleo <CODE>1.2.2</CODE></A></H2>
+
+
+<P>Algunos sistemas de ficheros, manejadores SCSI y de tarjetas de red, as&iacute;
+como otras utilidades son cargables como m&oacute;dulos. Para usarlos, lo
+primero, no incluirlos en el n&uacute;cleo principal (al compilarlo, no decir que
+`s&iacute;' al manejador correspondiente durante el `<CODE>make config</CODE>').
+Luego se arranca ese n&uacute;cleo
+<SL>Esto es obsoleto en el caso de los
+n&uacute;cleos <CODE>2.0.x</CODE>, recu&eacute;rdelo; con los <CODE>2.0.x</CODE> puede compilarlo todo
+seguido, y arrancar posteriormente, ejecutar <CODE>depmod -a</CODE> y estar&aacute; todo
+listo.  </SL>
+ y se entra de nuevo en <CODE>/usr/src/linux</CODE> para
+hacer `<CODE>make modules</CODE>', lo que compilar&aacute; m&oacute;dulos para todas
+aquellas opciones que no se eligieron durante el `<CODE>make config</CODE>', y
+los dejar&aacute; en <CODE>/usr/src/linux/modules</CODE>. Puede ahora ejecutar
+`<CODE>make modules_install</CODE>' que los instalar&aacute; en
+<CODE>/lib/modules/x.y.z</CODE> siendo <CODE>x.y.z</CODE> la versi&oacute;n del n&uacute;cleo. </P>
+<P>Esto es especialmente &uacute;til con los sistemas de ficheros que, como
+<CODE>minix</CODE> o <CODE>msdos</CODE>, no se usan normalmente. As&iacute;, cuando se quiera
+leer un disquete MSDOS, primero se cargar&iacute;a el m&oacute;dulo con
+<CODE>insmod</CODE>
+<SL>Mejor <CODE>modprobe</CODE>, que como hemos comentado,
+tendr&aacute; en cuenta las dependencias entre m&oacute;dulos que ha generado <CODE>depmod
+-a</CODE>, carg&aacute;ndolos todos.</SL>
+ y se descargar&iacute;a al finalizar. Esto
+ahorrar&aacute; unos 50K de memoria en la operaci&oacute;n normal del n&uacute;cleo. Notar que
+el sistema Minix siempre deber&aacute; estar dentro del n&uacute;cleo (no como m&oacute;dulo) 
+si se quiere hacer un disquete de rescate con &eacute;l. </P>
+
+
+<HR>
+<A HREF="Kernel-Como-8.html">Anterior</A>
+<A HREF="Kernel-Como-10.html">Siguiente</A>
+<A HREF="Kernel-Como.html#toc9">Indice</A>
+</BODY>
+</HTML>

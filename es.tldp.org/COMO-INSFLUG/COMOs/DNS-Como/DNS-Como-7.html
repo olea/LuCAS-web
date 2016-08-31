@@ -1,0 +1,135 @@
+<HTML>
+<HEAD>
+<TITLE>DNS COMO: Configuraci&oacute;n de Conexiones Autom&aacute;ticas v&iacute;a telef&oacute;nica </TITLE>
+</HEAD>
+<BODY>
+<A HREF="DNS-Como-6.html">Anterior</A>
+<A HREF="DNS-Como-8.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc7">Indice</A>
+<HR>
+<H2><A NAME="timofonicas"></A> <A NAME="s7">7. Configuraci&oacute;n de Conexiones Autom&aacute;ticas v&iacute;a telef&oacute;nica </A>.</H2>
+
+
+<P>Esta secci&oacute;n explica c&oacute;mo he dispuesto las cosas para automatizarlo todo. 
+Mi m&eacute;todo puede que no se adapte completamente al suyo, pero puede obtener
+ideas de algunas de las cosas que he hecho. Tambi&eacute;n, uso <CODE>ppp</CODE> para
+marcar, mientras que mucha gente usa <CODE>slip</CODE> o <CODE>cslip</CODE> y por tanto
+casi toda su configuraci&oacute;n puede ser distinta a la m&iacute;a.  Pero el programa
+de slip <CODE>dip</CODE> deber&iacute;a poder hacer muchas de las cosas que yo hago.</P>
+<P>Normalmente, cuando no estoy conectado a la red tengo un archivo
+<CODE>resolv.conf</CODE> que simplemente contiene la l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     domain uio.no
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Eso me asegura que no tengo que esperar a que la librer&iacute;a de resoluci&oacute;n de
+nombres del sistema intente conectar con un servidor de nombres que no
+puede ayudarme.  Pero cuando me conecto quiero arrancar mi <CODE>named</CODE>
+y tener un <CODE>resolv.conf</CODE> parecido a los descritos anteriormente. He
+resuelto esto teniendo dos archivos <CODE>resolv.conf</CODE> llamados
+<CODE>resolv.conf.local</CODE> y <CODE>resolv.conf.connected</CODE>. El &uacute;ltimo se parece
+al <CODE>resolv.conf</CODE> descrito anteriormente en este documento. </P>
+<P>Para conectarme autom&aacute;ticamente a la red ejecuto un script llamado
+<CODE>ppp-on</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+echo llamando...
+pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>pppd</CODE> tiene un archivo llamado <CODE>options</CODE> que indica las
+caracter&iacute;sticas de la conexi&oacute;n. Una vez que mi conexi&oacute;n ppp est&aacute; activa
+<CODE>pppd</CODE> llama a un <I>script</I> llamado <CODE>ip-up</CODE> (este est&aacute;
+descrito en la p&aacute;gina <CODE>pppd (8)</CODE> de man). He aqu&iacute; una parte del
+<I>script</I>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+interface=&quot;$1&quot;
+device=&quot;$2&quot;
+speed=&quot;$3&quot;
+myip=&quot;$4&quot;
+upip=&quot;$5&quot;
+ ...
+cp -v /etc/resolv.conf.connected /etc/resolv.conf
+ ...
+/usr/sbin/named
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Es decir, arranco el <CODE>named</CODE> desde aqu&iacute;. Cuando se corta la conexi&oacute;n
+ppp, <CODE>pppd</CODE> ejecuta un script llamado <CODE>ip-down</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+cp /etc/resolv.conf.local /etc/resolv.conf
+read namedpid &lt; /var/run/named.pid
+kill $namedpid
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>As&iacute; configuramos las cosas de una forma cuando estamos conectados y las
+desconfiguramos cuando nos desconectamos. </P>
+<P>Algunos programas, <CODE>irc</CODE> y <CODE>talk</CODE> me vienen a la mente,
+hacen algunas suposiciones, y para que en <CODE>irc</CODE> el comportamiento
+de las capacidades <CODE>dcc</CODE>, y <CODE>talk</CODE> funcionen bien tiene que
+modificar su archivo <CODE>hosts</CODE>.  Yo he insertado en mi script
+<CODE>ip-up</CODE> lo siguiente:</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cp /etc/hosts.ppp /etc/hosts
+echo $myip      roke &gt;&gt;/etc/hosts
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>hosts.ppp</CODE> simplemente contiene</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+127.0.0.1       localhost
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y <CODE>echo</CODE> inserta la direcci&oacute;n IP que he recibido para mi nombre de host
+(<CODE>roke</CODE>). Vd. deber&aacute; usar en su lugar el nombre de su m&aacute;quina. Este
+nombre se puede saber con el comando <CODE>hostname</CODE>.</P>
+<P>Probablemente no sea inteligente ejecutar <CODE>named</CODE> cuando no est&eacute;
+conectado a la red, esto es porque <CODE>named</CODE> intentar&aacute; enviar
+solicitudes a la red y eso consume tiempo, y Vd. tendr&aacute; que esperar este
+tiempo cada vez que alg&uacute;n programa intente resolver un nombre. Si est&aacute;
+usando conexiones telef&oacute;nicas deber&iacute;a iniciar <CODE>named</CODE> cuando se
+conecte y matarlo cuando se desconecte. Pero por favor lea la secci&oacute;n de
+PUF (
+<A HREF="DNS-Como-8.html#PUF">PUF</A>) para los trucos.</P>
+<P>A algunas personas le gusta usar la directiva <CODE>forwarders</CODE> para
+conexiones de escasa velocidad. Si su proveedor de Internet tiene
+servidores DNS en <CODE>1.2.3.4</CODE> y <CODE>1.2.3.5</CODE> puede insertar la l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+forwarders 1.2.3.4 1.2.3.5
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en el archivo <CODE>named.boot</CODE>.  Deje tambi&eacute;n vac&iacute;o el archivo
+<CODE>root.cache</CODE>. Esto disminuir&aacute; el tr&aacute;fico IP que origina su m&aacute;quina.
+Esto es especialmente importante si paga por cada byte que circule por el
+cable. Tiene el valor a&ntilde;adido de evitarle el deber del mantenimiento; no
+tiene porqu&eacute; actualizar un archivo <CODE>root.cache</CODE> vac&iacute;o. </P>
+
+<HR>
+<A HREF="DNS-Como-6.html">Anterior</A>
+<A HREF="DNS-Como-8.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc7">Indice</A>
+</BODY>
+</HTML>

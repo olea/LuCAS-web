@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.7.4">
+ <TITLE>Linux netfilter Hacking COMO: Motivaci&oacute;n</TITLE>
+ <LINK HREF="netfilter-hacking-COMO-8.html" REL=next>
+ <LINK HREF="netfilter-hacking-COMO-6.html" REL=previous>
+ <LINK HREF="netfilter-hacking-COMO.html#toc7" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="netfilter-hacking-COMO-8.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-6.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc7">Índice general</A>
+<HR>
+<H2><A NAME="s7">7.</A> <A HREF="netfilter-hacking-COMO.html#toc7">Motivaci&oacute;n</A></H2>
+
+<P>Mientras desarrollaba ipchains, me di cuenta (en uno de esos momentos 
+de destello-cegador-mientras-esperas-los-entrantes en un restaurante 
+chino de Sydney) de que el filtrado de paquetes estaba haci&eacute;ndose de la 
+manera equivocada. No puedo encontrarlo, pero recuerdo haberle enviado un 
+correo a Alan Cox, que respondi&oacute; algo como `aunque problemente tengas 
+raz&oacute;n, por qu&eacute; no acabas primero lo que est&aacute;s haciendo'. En pocas
+palabras, el pragmatismo ganaba sobre El Modo Correcto.</P>
+
+<P>Cuando acab&eacute; ipchains, que inicialmente iba a ser una peque&ntilde;a 
+modificaci&oacute;n de la parte del kernel de ipfwadm, y luego se convirti&oacute; en 
+una reescritura mucho mayor, y escrib&iacute; el HOWTO. Me di cuenta de cu&aacute;nta 
+confusi&oacute;n existe en la mayor&iacute;a de la comunidad Linux acerca de cuestiones 
+como el filtrado de paquetes, enmascaramiento, redireccionamiento de 
+puertos y cosas as&iacute;.</P>
+
+<P>&Eacute;sta es la satisfacci&oacute;n de hacer tu propio soporte: tienes una mejor 
+percepci&oacute;n de lo que tratan de hacer los usuarios, y con qu&eacute; cosas se 
+est&aacute;n peleando. El software libre es m&aacute;s gratificante cuando est&aacute; en 
+manos de la mayor&iacute;a de los usuarios (de eso se trata, ¿no?), y eso 
+significa hacerlo m&aacute;s f&aacute;cil. La arquitectura, no la documentaci&oacute;n, era el 
+defecto clave.</P>
+
+<P>Por tanto, ten&iacute;a la experiencia, con el c&oacute;digo de ipchains, y una 
+buena idea de lo que la gente de fuera estaba haciendo. S&oacute;lo hab&iacute;a dos 
+problemas.</P>
+
+<P>Primero, no quer&iacute;a volver al tema de la seguridad. Ser un experto en 
+seguridad es un juego moral de la cuerda entre tu conciencia y tu 
+cartera. A un nivel fundamental, est&aacute;s vendiendo la sensaci&oacute;n de 
+seguridad, que est&aacute; re&ntilde;ida con la verdadera seguridad. Quiz&aacute; trabajando 
+en un cuartel militar, donde entienden la seguridad, ser&iacute;a distinto.</P>
+
+<P>El segundo problema es que los usuarios novatos no son los &uacute;nicos 
+interesados; hay un n&uacute;mero en aumento de grandes empresas y PSIs que 
+est&aacute;n utilizando esto. Necesitaba 
+The second problem is that newbie users aren't the only concern; an
+increasing number of large companies and ISPs are using this stuff.  I
+needed reliable input from that class of users if it was to scale to
+tomorrow's home users.</P>
+
+<P>Estos problemas se resolvieron cuando me top&eacute; con David Bonn, de 
+WatchGuard, en el Usenix de julio de 1998. Estaban buscando un 
+programador del kernel de Linux; al final acordamos que ir&iacute;a a sus 
+oficinas de Seattle durante un mes, y ver&iacute;amos si pod&iacute;amos sacar un 
+acuerdo por el cual ellos patrocinar&iacute;an mi c&oacute;digo nuevo y mis esfuerzos 
+por realizar este soporte. El precio que acordamos era m&aacute;s de lo que yo 
+ped&iacute;a, 
+These problems were resolved, when I ran into David Bonn, of
+WatchGuard fame, at Usenix in July 1998.  They were looking for a
+Linux kernel coder; in the end we agreed that I'd head across to their
+Seattle offices for a month and we'd see if we could hammer out an
+agreement whereby they'd sponsor my new code, and my current support
+efforts.  The rate we agreed on was more than I asked, so I didn't
+take a pay cut.  This means I don't have to even think about external
+conslutting for a while.</P>
+
+<P>El acceso a WatchGuard me dio acceso a los grandes clientes que 
+necesitaba, y ser independiente de ellos me permiti&oacute; dar soporte a todos 
+los usuarios (por ejemplo, a la compentencia de WatchGuard) por igual.</P>
+
+<P>Podr&iacute;a simplemente haber escrito netfilter y portado ipchains, y 
+habr&iacute;a acabado con eso. Desafortunadamente, eso habr&iacute;a dejado todo el 
+c&oacute;digo de enmascaramiento dentro del kernel: hacer el enmascaramiento
+independiente del filtrado es uno de los principales puntos a favor de
+mover los puntos de filtrado de paquetes, pero para hacer eso, el
+enmascaramiento tambi&eacute;n necesitaba moverse al sistema netfilter.
+So I could have simply written netfilter, ported ipchains over the
+top, and been done with it.  Unfortunately, that would leave all the
+masquerading code in the kernel: making masquerading independent from
+filtering is the one of the major wins point of moving the packet
+filtering points, but to do that masquerading also needed to be moved
+over to the netfilter framework as well.</P>
+
+<P>Adem&aacute;s, mi experiencia con la caracter&iacute;stica `interface-address' de
+ipfwadm (la que elimin&eacute; en ipchains) me hab&iacute;a ense&ntilde;ado que no era factible
+quitar el c&oacute;digo de enmascaramiento y esperar que alguien que lo necesitase
+hiciese por m&iacute; el trabajo de portarlo a netfilter.</P>
+
+<P>Por tanto, necesitaba tener al menos tantas caracter&iacute;sticas como en
+el c&oacute;digo de entonces; preferiblemente unas cuantas m&aacute;s, para animar a los
+usuarios de nicho (??) a hacerse los primeros en adoptarlo. Esto significa
+reemplazar el proxy transparente (¡felizmente!), el enmascaramiento y el
+redireccionamiento de puertos. En otras palabras, una capa NAT completa.
+So I needed to have at least as many features as the current code;
+preferably a few more, to encourage niche users to become early
+adopters.  This means replacing transparent proxying (gladly!),
+masquerading and port forwarding.  In other words, a complete NAT layer.</P>
+
+<P>Aunque hubiese decidido portar la capa de enmascaramiento existente, en
+vez de escribir un sistema NAT gen&eacute;rico, el c&oacute;digo de enmascaramiento
+mostraba ya una edad y una falta de mantenimiento. No hab&iacute;a nadie
+manteniendo el enmascaramiento, y se notaba. Parece que los usuarios serios
+generalmente no usan enmascaramiento, y no hay muchos usuarios dom&eacute;sticos
+que se dediquen a la tarea de llevar el mantenimiento. Gente animosa como
+Juan Ciarlante hac&iacute;a correcciones, pero se hab&iacute;a llegado a un punto
+(que se alargaba m&aacute;s y m&aacute;s) en el que era necesario una reescritura.</P>
+
+<P>Por favor, tenga en cuenta que yo no era la persona para hacer una
+reescritura del NAT: no utilic&eacute; m&aacute;s el enmascaramiento, y no hab&iacute;a
+estudiado el c&oacute;digo existente entonces. Probablemente por eso me llev&oacute;
+m&aacute;s tiempo del que hubiese debido. Pero el resultado es bastante bueno,
+en mi opini&oacute;n, y est&aacute; claro que he aprendido mucho. Sin duda la segunda
+versi&oacute;n ser&aacute; incluso mejor, una vez que veamos c&oacute;mo lo utiliza la gente.</P>
+
+<HR>
+<A HREF="netfilter-hacking-COMO-8.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-6.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc7">Índice general</A>
+</BODY>
+</HTML>

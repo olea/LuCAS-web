@@ -1,0 +1,102 @@
+
+mkdir -p /chroot/SERVICE
+cd /chroot/SERVICE
+
+mkdir -p root
+mkdir -p etc
+mkdir -p dev
+mkdir -p tmp
+  ### You might want to take out these next to lines if you don't need
+  ### temporary files. 
+chmod 777 tmp
+chmod +t tmp
+mkdir -p bin
+mkdir -p sbin
+mkdir -p var/run
+mkdir -p usr/lib
+mkdir -p usr/sbin
+mkdir -p var/log
+mkdir -p usr/bin
+
+  ### You probably don't need all the these files
+  ### These files are just files I have noticed are used by a lot fo services.
+rsync -a /etc/HOSTNAME etc/
+rsync -a /etc/hosts etc/
+rsync -a /etc/login.defs etc/
+rsync -a /etc/passwd etc/
+rsync -a /etc/resolv.conf etc/
+rsync -a /etc/group etc/
+rsync -a /etc/host.conf etc/
+rsync -a /etc/localtime etc/
+rsync -a /etc/pam.d etc/
+rsync -a /etc/pwdb.conf etc/
+rsync -a /etc/ld.* etc/
+
+  ### Copy over all but the modules, which we probably don't want to do. 
+  ### There are probably lots of libraries we don't need. 
+rsync -a /lib/* --exclude modules  lib/
+
+  ### /dev/log is for syslogd, and the others are used in general. 
+rsync -a /bin/false bin/
+rsync -a /dev/log dev/
+rsync -a /dev/null dev/
+rsync -a /dev/zero dev/
+
+  ### We need root in the passwd file for su
+grep ^root: /etc/passwd > etc/passwd
+grep ^root: /etc/group > etc/group
+
+  ### We need these binary programs to start the scripts and for su. 
+rsync -a /bin/su bin/
+rsync -a /bin/bash bin/
+rsync -a /bin/sh bin/
+
+  ### Relink the libraries we need. 
+echo "You may get errors of libraries not existing, ignore them.\n";
+cp /sbin/ldconfig .
+/usr/sbin/chroot /chroot/SERVICE ./ldconfig
+rm -f ldconfig
+
+  ### Put commands to copy or configure specfic service files here. 
+
+_CUSTOM_COMMANDS_
+
+  ### Setup the batch files to start the service SERVICE.
+
+echo " _SYSLOGD_COMMAND_ " > SERVICE.bat
+echo " _START_COMMAND_ " >> SERVICE.bat 
+chmod 755 SERVICE.bat
+
+  ####
+echo "The chrooted service 'SERVICE' is installed.\n";
+
+  ### exit here if you are not debugging.
+exit
+ 
+echo "Starting SERVICE"
+cd ..
+echo "/usr/sbin/chroot /chroot/SERVICE ./SERVICE.bat" >Config/SERVICE_start.bat
+echo "echo 'The process id is'" >> Config/SERVICE_start.bat
+echo 'pid=`head -1 _PID_FILE_`' >> Config/SERVICE_start.bat
+echo 'echo $pid' >> Config/SERVICE_start.bat
+
+chmod 755 Config/SERVICE_start.bat
+./Config/SERVICE_start.bat
+
+echo "Stopping service SERVICE"
+echo "" > Config/SERVICE_stop.bat
+echo 'pid=`head -1 _PID_FILE_`' >> Config/SERVICE_stop.bat
+echo 'echo "killing pid $pid for SERVICE"' >> Config/SERVICE_stop.bat
+echo 'kill -TERM $pid' >> Config/SERVICE_stop.bat
+
+echo 'echo "If syslogd was not chrooted with this service, ignore errors below here."' >> Config/SERVICE_stop.bat
+echo 'pid=`head -1 /chroot/SERVICE/var/run/syslogd.pid`' >> Config/SERVICE_stop.bat
+echo 'echo "killing pid $pid for syslogd"' >> Config/SERVICE_stop.bat
+echo 'kill -TERM $pid' >> Config/SERVICE_stop.bat
+
+chmod 755 Config/SERVICE_stop.bat
+./Config/SERVICE_stop.bat
+
+
+
+

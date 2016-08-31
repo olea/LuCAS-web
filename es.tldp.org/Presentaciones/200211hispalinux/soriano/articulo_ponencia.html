@@ -1,0 +1,222 @@
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>El Proyecto TuX-Mobile</title><meta name="generator" content="DocBook XSL Stylesheets V1.50.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article"><div class="titlepage"><div><h1 class="title"><a name="id2752674"></a>El Proyecto TuX-Mobile</h1></div><div><div class="author"><h3 class="author">Enrique Soriano Salvador</h3><div class="affiliation"><div class="address"><p><a href="http://gsyc.escet.urjc.es/~esoriano" target="_top">http://gsyc.escet.urjc.es/~esoriano</a></p></div></div></div></div><div><div class="legalnotice"><p>Copyright (C) 2002 Enrique Soriano Salvador. Permitida la redistribución ilimitada de copias literales y la traducción del texto a otros idiomas, siempre y cuando se mantenga  esta autorización y la nota de copyright.
+</p></div></div><div><div class="revhistory"><table border="1" width="100%" summary="Revision history"><tr><th align="left" valign="top" colspan="2"><b>Historial de revisiones</b></th></tr><tr><td align="left">Revisión 1</td><td align="left">25 de julio de 2002</td></tr></table></div></div><div><div class="abstract"><p class="title"><b>Resumen</b></p><p>En este artículo se expondrá el Proyecto TuX-Mobile, presentado como Proyecto de Fin de Carrera de la titulación de Ingeniería Informática en el curso académico 2001-2002, en la Universidad Rey Juan Carlos de Madrid. El proyecto fue calificado con una Matrícula de Honor por el tribunal de evaluación, y propuesto para su presentación a la V edición del Congreso Hispalinux. El proyecto TuX-Mobile pretende facilitar el uso de ordenadores portátiles en distintas redes de área local realizando la configuración de las interfaces de red de forma automática, transparente e independiente del entorno GNU/Linux.</p></div></div><hr></div><div class="toc"><p><b>Tabla de contenidos</b></p><dl><dt>1. <a href="#id2751007">El proyecto TuX-Mobile </a></dt><dt>2. <a href="#id2755244">Estudio de trabajos en el mismo área </a></dt><dd><dl><dt>2.1. <a href="#id2755266">Laptop-net </a></dt><dt>2.2. <a href="#id2755523">Laptop-netconf </a></dt><dt>2.3. <a href="#id2755617">Intuitively </a></dt><dt>2.4. <a href="#id2755681">Whereami </a></dt><dt>2.5. <a href="#id2755797">Conclusiones sobre los paquetes existentes </a></dt></dl></dd><dt>3. <a href="#id2755832">Objetivos:  El Proyecto TuX-Mobile </a></dt><dt>4. <a href="#id2755925">Implementación </a></dt><dd><dl><dt>4.1. <a href="#id2755949">Identificación de entidades externas </a></dt><dt>4.2. <a href="#id2756016">Identificación de tareas principales </a></dt><dt>4.3. <a href="#id2756073">Jerarquía de módulos </a></dt><dt>4.4. <a href="#id2756137">Fichero de configuración </a></dt><dt>4.5. <a href="#id2756282">El comando spyMAC </a></dt></dl></dd><dt>5. <a href="#id2756309">Conclusiones </a></dt><dt>6. <a href="#id2756489">Referencias </a></dt></dl></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2751007"></a>1. El proyecto TuX-Mobile </h2></div></div><p>
+Usar un ordenador portátil en diferentes redes de área local es habitual,
+dado que la potencia actual de estos dispositivos y su reducido tamaño
+y peso hace que esto sea posible. Dado que los protocolos de red comunes
+como TCP/IP fueron diseñados para computadoras fijas, estos ordenadores
+portátiles deben ser configurados cada vez que el usuario se mueve
+de una red de área local a otra.
+</p><p>
+El proyecto TuX-Mobile [1] propone una solución a éste problema para
+un sistema operativo GNU/Linux sobre redes de área local TCP/IP de
+tipo Ethernet, realizando dicha configuración de una forma automática
+y transparente para el usuario, en tres pasos básicos:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Detectar que se ha producido un cambio en la localización del ordenador    portátil: este primer paso se basa en la detección de ciertos eventos    que hacen posible un cambio de localización, como la desconexión    y conexión del cable de red o la inserción de una nueva tarjeta    de red en el ordenador portátil. Para hacer que el sistema detecte    los cambios de localización (el usuario se ha trasladado a una nueva    red de área local) se han supuesto unos ciertos eventos que son    habituales cuando un ordenador se mueve de un lugar a otro. Todos    estos eventos se pueden controlar accediendo a la configuración    del sistema operativo, aunque para ciertos modelos de tarjetas de    comunicaciones el primer apartado no está disponible en la implementación    de sus controladores o drivers. Los eventos son los siguientes:
+</p><div class="itemizedlist"><ul type="round"><li><p>Desconexión y conexión de un cable de red a la tarjeta de comunicaciones:  Cuando se está usando una red Ethernet convencional, se debe estar  conectado a través de un cable a ésta. Hemos considerado razonable   suponer que cuando se desconecte y se vuelva a conectar el cable  de red, sea probable que se haya producido un cambio de localización.</p></li><li><p>Inserción de una nueva tarjeta de comunicaciones: Igualmente se ha  considerado que cuando se inserta una nueva tarjeta de comunicaciones  en el ordenador es plausible que se haya producido un cambio de localización.  Indistintamente de que realmente sea un cambio de ubicación, se debería  hacer una reconfiguración de la interfaz de red, por lo que el sistema  deberá proceder a ello.</p></li><li><p>Desconfiguración de una interfaz de red: También se considera que  una desconfiguración de una interfaz de red es un evento que puede  predecir un cambio de localización, y análogamente al apartado anterior,  aunque no se haya producido este cambio, el sistema debería igualmente  proceder su configuración </p></li></ul></div></li><li><p>Detectar dónde se encuentra el ordenador portátil en este instante:    se basa en un mecanismo de espionaje del tráfico de la red a la    que se ha conectado el ordenador portátil. Con este mecanismo se    puede determinar en cual de las redes de área local especificadas    previamente en la configuración del sistema se encuentra el ordenador    portátil actualmente. </p></li><li><p>Configurar las interfaces de red del portátil según su localización:    el tercer paso consiste en adquirir los parámetros correctos del    fichero de configuración del sistema y activar la interfaz de red    con estos valores. </p></li></ul></div><p>
+A continuación se hará un rápido recorrido por las tecnologías
+que han sido utilizadas para el desarrollo del proyecto:
+</p><div class="itemizedlist"><ul type="disc"><li><p>El conjunto de protocolos de comunicaciones TCP/IP [2]. El objetivo    principal del proyecto es la configuración de interfaces de    redes TCP/IP, por tanto se hará una breve exposición de este conjunto    de protocolos. </p></li><li><p>Los estándares IEEE 802.3 [3] y 802.11 [4], más conocidos como tecnología    Ethernet. La localización, que es el segundo paso básico de nuestra    aplicación, se apoya en gran parte en peculiaridades del protocolo    Ethernet, perteneciente a la subcapa de acceso al medio.     Cada tarjeta de comunicaciones de tipo Ethernet posee una dirección    de acceso al medio (MAC), que es unívoca. El mecanismo de localización    de la ubicación actual del portátil (segundo paso básico del proyecto)    se basa exclusivamente en este hecho: estas direcciones son asignadas    por el fabricante de las tarjetas y no pueden ser modificadas a través    de software.  </p><p>
+  La localización consiste en el espionaje del tráfico de la red de    área local en la que se encuentra el ordenador portátil (ver siguiente    sección) para capturar las direcciones MAC de las máquinas que están    conectadas en la red. A partir de estas direcciones, y habiendo configurado    correctamente el sistema, este debería ser capaz de determinar donde    se encuentra y poder configurar correctamente la interfaz de red.    Las direcciones MAC que se especifiquen en el fichero de configuración    deberían ser de máquinas que suelen estar normalmente encendidas y    generando tráfico de red, como servidores de aplicaciones, servidores    web, servidores DNS etc...</p></li><li><p>El protocolo de asignación dinámica de direcciones DHCP [5]. Una    vez que ya se conoce la localización del ordenador portátil, se    procederá a configurar la interfaz de red, extrayendo los parámetros    necesarios del fichero de configuración o usando el protocolo DHCP    para la obtención de los mismos por la propia red. El usuario especificará    las redes en las que se use este tipo de servicio.</p></li><li><p>La biblioteca para espionaje de tráfico de red libpcap [6], usada    para la fase de localización, como se ha comentado anteriormente.</p></li><li><p>El lenguaje XML [7]. Los mecanismos de configuración del    sistema están basados en dicha tecnología. </p></li><li><p>Las bibliotecas gráficas GTK+ [8]. El proyecto ha sido dotado de    una interfaz gráfica GTK+ que pretende hacer el proceso de configuración    y el uso del sistema rápidos e intuitivos.</p></li><li><p>GNU/Linux [9]. El proyecto ha sido diseñado e implementado para una    plataforma GNU/Linux, un sistema operativo multiplataforma tecnológicamente    avanzado de la familia UNIX [10].</p></li></ul></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755244"></a>2. Estudio de trabajos en el mismo área </h2></div></div><p>
+Antes de la implementación del proyecto TuX-Mobile, se ha realizado un
+estudio de los paquetes de software disponibles que realizan tareas
+similares, comprobando que todas ellas dejaban ciertos aspectos y
+necesidades sin cubrir (ficheros de configuración poco intuitivos,
+carencia de interfaz gráfica etc...). A continuación se hará una breve
+descripción de estos paquetes.
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755266"></a>2.1. Laptop-net </h3></div></div><p>
+El paquete Laptot-net [34] ha sido desarrollado en el MIT para portátiles
+HP-OmniBook sobre Debian GNU/Linux. Debe haber escrita información
+sobre cómo se configura e inicializa la red para cada localización
+(IP, máscara de subred, gateway ...). A esa información se la llama
+Scheme (esquema). Los esquemas pueden también especificar que las direcciones
+se obtengan median DHCP. En todo momento hay un Scheme seleccionado
+y existe uno por defecto. Su fichero de configuración (/etc/default/laptop-net)
+se separa en las siguientes secciones: 
+</p><div class="variablelist"><dl><dt><span class="term">SCHEME:</span></dt><dd><p>El identificador del esquema. </p></dd><dt><span class="term">INTERFACE:</span></dt><dd><p>El nombre de la interfaz de red que se utiliza (eth0,    wvlan0 ...). </p></dd><dt><span class="term">MODULE-NAME:</span></dt><dd><p>Especifica el nombre del módulo del kernel que contiene    el driver para esa interfaz de red. El paquete se encarga de cargar    y descargar los módulos. </p></dd><dt><span class="term">DHCP:</span></dt><dd><p>Se activa con el valor &quot;yes&quot;, e indica que la dirección se    obtendrá por DHCP. Si contiene el valor &quot;no&quot;, usará la configuración    estática. Las variables para la configuración estática son las comunes:    ADDRESS, NETMASK, GATEWAY, BROADCAST, NETWORK, DOMAIN, SEARCH y    NAMESERVERS. </p></dd></dl></div><p>
+Hay información de más alto nivel denominada Profiles que se indexan
+según las distintas direcciones IP disponibles. En esta información
+se describirán servicios como las impresoras disponibles en cada red
+(los Profiles consisten en copias de ficheros de configuración como
+<tt>/etc/printcap</tt>). Se definen en el directorio <tt>/etc/laptop-net/profiles</tt>
+y cada Profile corresponde a un subdirectorio de éste. Dentro de los
+subdirectorios pertenecientes a estos perfiles existen más subdirectorios,
+cada uno dedicado a un propósito general:
+</p><div class="variablelist"><dl><dt><span class="term">paterns:</span></dt><dd><p>Fichero que contiene los patrones que especifican las    direcciones IP pertenecientes a un perfil.</p></dd><dt><span class="term">files.d/:</span></dt><dd><p>Contiene los ficheros que deben copiarse cuando se selecciona    un patrón. </p></dd><dt><span class="term">Before-select:</span></dt><dd><p>Fichero que especifica programas que se deban ejecutar    antes de seleccionar un patrón. </p></dd><dt><span class="term">After-select:</span></dt><dd><p>Fichero que especifica programas que se deban ejecutar    después de seleccionar un patrón. </p></dd><dt><span class="term">deselect:</span></dt><dd><p>Fichero que especifica programas que se deban ejecutar    antes de de seleccionar un patrón. </p></dd><dt><span class="term">rc.d/:</span></dt><dd><p>En este directorio habrá enlaces simbólicos a los scripts de    inicialización para gestionar los servicios del sistema operativo. </p></dd></dl></div><p>
+De esta forma permite configurar las interfaces de red de los equipos
+portátiles de una forma más cómoda para el usuario cuando lo usa en
+diferentes entornos de red, detectando cuando se inserta o se quita
+un cable de red de la tarjeta (no todos los drivers de tarjetas de
+red soportan esta opción de notificación cuando se inserta un cable
+o se desconecta). Una vez que se detecta un cambio de cable (por lo
+que se supone un cambio de localización), si se está usando DHCP,
+al adquirir la nueva dirección IP ya se averigua inmediatamente la
+ubicación actual por que pertenecerá a algún patrón de la configuración
+y se automatiza la configuración. Si no se usa DHCP, el usuario deberá
+especificar la nueva dirección IP y a partir de ella se determinará
+un patrón. Es una solución complicada, y el programa carece de interfaz
+gráfica de usuario y más métodos de detección de cambios de localización.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755523"></a>2.2. Laptop-netconf </h3></div></div><p>
+Laptop-netconf [34] es un programa que detecta otras máquinas en la
+red local en la que nos encontremos y configura de una forma adecuada
+la interfaz de red dadas unas configuraciones establecidas de antemano.
+En un fichero de configuración llamado opts se especifican: 
+</p><div class="itemizedlist"><ul type="disc"><li><p>La interfaz de red en el que se debe hacer la detección. </p></li><li><p>La configuración de las redes de área local a las que podemos acceder.    La detección se realiza enviando paquetes ARP y escuchando las respuestas.    Una red se determina cuando en los paquetes ARP de respuesta se    identifica una dirección de hardware que conocemos; entonces se    ejecuta el script correspondiente al perfil localizado. Sus distintas    partes son: 
+</p><div class="orderedlist"><ol type="1"><li><p>Dirección IP que se debe tomar en esta red: las direcciones IP con     las que debe probar para recibir respuestas ARP más la dirección     MAC con la que debe coincidir esas respuestas para determinar una     ubicación.</p></li><li><p>El perfil que corresponde a esta ubicación, o sea que script de shell     debe ejecutar. </p></li></ol></div></li></ul></div><p>
+Una vez que se ha determinado en qué red se está viendo qué máquinas
+se tienen alrededor, se configuran las interfaces ejecutando una serie
+de scripts de shell que el usuario especifica (que configuran las
+opciones de red haciendo enlaces simbólicos de los distintos ficheros
+de configuración alternativos con los los del sistema y ejecutando
+los comandos de configuración ifconfig, route etc). Es bastante sencillo
+(un solo fichero escrito en C de 586 lineas) que ofrece una solución
+simple al problema. Su fichero de configuración también es simple
+e intuitivo, pero carece de interfaz gráfica y de la posibilidad de
+usar DHCP.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755617"></a>2.3. Intuitively </h3></div></div><p>
+Como el paquete anterior, Intuitively [42] configura de una forma automática
+la interfaz de red descubriendo en que red local se está mediante
+según las respuestas de los paquetes ARP que emite. En un fichero
+de configuración se describen las máquinas que posiblemente se encuentren
+activas en las distintas redes en las que podemos usar el ordenador
+portátil, normalmente servidores que estén funcionando de una forma
+ininterrumpida. Intuitively manda por la red falsos paquetes ARP y
+espera respuesta de esas máquinas para saber en que red local se encuentra
+y así poder configurar el sistema. Este sondeo se repite hasta un
+máximo de 6 veces y deja la configuración de red en su estado inicial.
+Si encuentra y reconoce la red, crea enlaces simbólicos desde la raíz
+del sistema de ficheros a los archivos que contenga en el directorio
+<tt>/etc/intuitively/NETWORK</tt> (de esta forma se puede mantener la configuración
+de impresoras, del sistema apt etc...). Se puede también especificar
+scripts que se quieran ejecutar cuando se detecte la nueva ubicación.
+Este paquete se centra más en la localización propiamente dicha, dejando
+de parte del usuario el que se deba hacer una vez que se ha determinado
+la ubicación.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755681"></a>2.4. Whereami </h3></div></div><p>
+El programa Whereami [35] supone que ha habido un cambio de ubicación
+del portátil cuando el sistema arranca o cuando se inserta una tarjeta
+de red, y automatiza la configuración de la red que habitualmente
+se realiza a mano. La tarea de localizar la ubicación actual corresponde
+a unos pequeños scripts de unas pocas lineas de código que se ejecutan
+en un orden establecido por el programa. Estos scripts están situados
+en el directorio <tt>/etc/whereami/tests/</tt> y al ejecutarse deben poder
+determinar la ubicación, escribirla en un fichero de configuración
+y activar una variable de entorno que se llama LOCATED que se usa
+como flag dándola un valor de 1. En la documentación no se explica
+de una forma detallada el proceso de creación de estos scripts, que
+los debe crear el propio usuario (usando comandos como ping para determinar
+la localización). Los scripts que se deben ejecutar (una vez determinada
+la ubicación actual) para configurar la red se especifican un el fichero
+de configuración donde cada ubicación es precedida por un operador
+(+, -, =) y se relaciona con un script de una manera un tanto críptica:
+</p><pre class="programlisting">
+ [ operador, ubicación, script ]
+</pre><div class="variablelist"><dl><dt><span class="term">+:</span></dt><dd><p>el script se ejecuta si ahora estás en esa ubicación y antes estabas    en cualquier otra. </p></dd><dt><span class="term">-:</span></dt><dd><p>el script se ejecuta si no estás ahora en esa ubicación pero sí    que estabas cuando se aplicó el script la última vez. </p></dd><dt><span class="term">=:</span></dt><dd><p>el script se ejecuta si estás en esa ubicación sin preocuparse    de cual era tu anterior ubicación. </p></dd></dl></div><p>
+De los cuatro paquetes destacó por ser el más complicado, con unos
+ficheros de configuración poco intuitivos. Además, delega en el usuario
+la creación de sus propios scripts de shell para determinar la localización,
+centrándose en el problema de qué se debe hacer cuando se está en
+un sitio determinado y no en el problema de determinar la ubicación
+del ordenador, justo lo contrario que los dos paquetes anteriores.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755797"></a>2.5. Conclusiones sobre los paquetes existentes </h3></div></div><p>
+La primera solución, Laptop-net, intenta hacer más cómoda la configuración
+centrándose más en el qué hay que hacer que en el cuándo, al igual
+que el paquete Whereami. Las otras dos soluciones (Laptop-netconf
+e Intuitively) se centran más en averiguar la localización del ordenador
+en cada momento, las dos usando un método similar, el envío de paquetes
+ARP, y delegando la configuración del sistema en programas escritos
+por el propio usuario.
+</p><p>
+Tras el estudio previo no se ha considerado completo ninguno de estos
+paquetes. Por esta razón, el proyecto TuX-Mobile pretende cubrir todas
+estas carencias.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755832"></a>3. Objetivos:  El Proyecto TuX-Mobile </h2></div></div><p>
+El objetivo del proyecto TuX-Mobile es lograr implementar un sistema
+para la configuración automática de interfaces de red que satisfaga
+las necesidades de los usuarios. Después de estudiar los programas
+disponibles que realizaban estos cometidos,
+se llegó a la conclusión de que ninguno de ellos era completo y de
+que ninguno presentaba una solución adecuada, sobre todo para el usuario
+poco experimentado. Los objetivos principales son:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Hacer que el sistema sea transparente para el usuario respecto a    su funcionamiento. El usuario tan sólo debería preocuparse por la    configuración del sistema. Una vez que el sistema esté configurado    completamente, el usuario no se deberá preocupar de configurar las    interfaces de red de su ordenador portátil cada vez que cambie de    red de área local.</p></li><li><p>Crear una herramienta compatible con todos los entornos GNU/Linux    existentes. En la actualidad hay una gran cantidad de distribuciones    de este sistema operativo, y un objetivo del proyecto es hacer una    herramienta que sea compatible con todos ellos.</p></li><li><p>Crear una herramienta completa, que no delegue funciones en el usuario.    La sensación que creó el estudio previo de los programas existentes    fue que todos ellos delegaban funciones complejas a los usuarios,    tales como la creación de scripts para la configuración. Un objetivo    del proyecto es crear una herramienta de fácil uso, que no delegue    este tipo de cometidos a los usuarios.</p></li><li><p>La creación de un sistema fácil de utilizar y de configurar. Este    objetivo se pretende alcanzar dotando al sistema de una interfaz    gráfica intuitiva. </p></li></ul></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755925"></a>4. Implementación </h2></div></div><p>
+Para el desarrollo del proyecto TuX-Mobile se ha seguido un ciclo de
+vida en espiral [37], por tanto el diseño ha sido refinado en cada
+iteración de éste.  Los prototipos han sido depurados en el ciclo de vida, 
+y en cada iteración se les ha añadido nuevas funcionalidades. El lenguaje de
+programación que se ha usado para crear la aplicación es el lenguaje
+C.
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755949"></a>4.1. Identificación de entidades externas </h3></div></div><p>
+Las entidades externas con las que interactúa el sistema TuX-Mobile
+son:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Controladores de los dispositivos de red. El programa realiza consultas    mediante llamadas al sistema para averiguar el estado de los dispositivos    de red, cuyos manejadores o &quot;drivers&quot; se deben encontrar instalados    en el núcleo del sistema.</p></li><li><p>El sistema TuX-Mobile también se comunica con un programa cliente    de DHCP externo a la aplicación. La interacción con este es su invocación    cuando sea necesaria y su posterior desactivación cuando no se deba    seguir utilizando. El script de invocación del cliente DHCP se llama    dhcp.sh.</p></li><li><p>Los programas de configuración del sistema ifconfig y route. Estos    programas serán invocados desde un script del intérprete de comandos    llamado up.sh, que se describirá en un apartado más adelante. </p></li></ul></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2756016"></a>4.2. Identificación de tareas principales </h3></div></div><p>
+En el sistema se identifican las siguientes tareas principales a realizar:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Detección periódica del estado de las interfaces de red y posibles    cambios de localización.</p></li><li><p>Determinación de la ubicación actual. Haciendo un espionaje de los    paquetes que viajan por la red en la que estamos y consultando el    fichero de configuración podremos determinar la ubicación actual    siempre que esta esté representada en dicho fichero de configuración.</p></li><li><p>Configuración de las interfaces de red en función de la tarea anterior,    o la invocación del cliente DHCP, según esté especificado en su    fichero de configuración, llamando a los comandos ifconfig y route    adecuadamente.</p></li></ul></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2756073"></a>4.3. Jerarquía de módulos </h3></div></div><p>
+El sistema está compuesto por una serie módulos:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Módulos de Detección de Cambios: estos módulos se encargan de ofrecer    una interfaz para la revisión de los distintos dispositivos de red.    Existen dos módulos de este tipo, el módulo genérico para dispositivos    de red y el específico para dispositivos inalámbricos.</p></li><li><p>Módulo de Detección de Ubicación: el módulo que ofrece el servicio    de detección de la localización actual del portátil.</p></li><li><p>Módulos de Configuración: módulos que se encargan de configurar las    interfaces.</p></li><li><p>Módulos de la Interfaz Gráfica: son los módulos que se encargan del    manejo de la interfaz gráfica de usuario (GUI).</p></li></ul></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2756137"></a>4.4. Fichero de configuración </h3></div></div><p>
+El fichero de configuración del sistema TuX-Mobile es muy sencillo
+y comprensible, ya que está basado en XML. 
+</p><p>
+Los elementos que componen el fichero se identifican con la etiqueta &quot;net&quot;, y en estos
+se incluye el nombre de esa red y todos los parámetros necesarios
+para la configuración de una interfaz de red en una red dada: 
+</p><div class="variablelist"><dl><dt><span class="term">name</span></dt><dd><p>es el nombre de la red.</p></dd><dt><span class="term">dhcp</span></dt><dd><p>especifica si en esa red se usará el protocolo DHCP para obtener       los parámetros. Cuando su contenido es &quot;yes&quot; es que sí que se       usa, cuando es &quot;no&quot; es que no se usa.</p></dd><dt><span class="term">ip</span></dt><dd><p>especifica la dirección ip que se debe poner en esa red.</p></dd><dt><span class="term">mask</span></dt><dd><p>es la máscara de subred</p></dd><dt><span class="term">gateway</span></dt><dd><p>es el encaminador por defecto que habrá en esa red</p></dd><dt><span class="term">dns</span></dt><dd><p>son los servidores de nombres que se usarán</p></dd><dt><span class="term">mac</span></dt><dd><p>son las direcciones de acceso al medio por las que el programa       decidirá que se encuentra en esta red.</p></dd></dl></div><p>
+En el fichero de configuración habrá tantos elementos &quot;net&quot; como
+redes queramos tener configuradas en el sistema. El formato del fichero
+es extremadamente sencillo, por lo que se puede configurar a mano
+si se desea en vez de usa la interfaz gráfica para ello, aunque siempre
+será más recomendable que se use la interfaz gráfica puesto que verifica
+la validez de los parámetros insertados.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2756282"></a>4.5. El comando spyMAC </h3></div></div><p>
+Con el proyecto TuX-Mobile se ha adjuntado un comando que facilita
+la obtención de las direcciones MAC de una red, ya que esto sería
+una tarea complicada si el usuario se trasladase a una red en la que
+no tenga acceso a otros ordenadores y no se pudiera poner en contacto
+con su administrador. El comando spyMAC se basa, como el paso de localización
+de TuX-Mobile, en el espionaje del tráfico de la red actual. El
+comando se dispone a espiar la red que tengamos en el interfaz eth0,
+y ofrece un listado de hasta 20 direcciones MAC, ya que captura 10
+tramas de la red antes de presentar la información.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2756309"></a>5. Conclusiones </h2></div></div><p>
+Todos los objetivos descritos se han cumplido, dando como fruto el 
+sistema TuX-Mobile. 
+</p><p>
+Se consiguió crear el sistema ajustándose a su especificación y se
+logró usar las bibliotecas elegidas para poder hacerlo. También se
+logró escribir el programa TuX-Mobile de una forma clara y comprensible,
+con una jerarquía de módulos razonable y equilibrada. El proyecto
+TuX-Mobile queda abierto a nuevas versiones en las que se podrían
+incluir nuevas funcionalidades y aumentar las prestaciones del mismo.
+</p><p>
+El proyecto ha servido para la familiarización con el entorno UNIX
+y con la programación en C con bibliotecas gráficas sobre él. Además
+también ha servido como experiencia en el diseño y desarrollo de soluciones
+para sistemas y redes, y a manejar las bibliotecas de espionaje de
+red y de tratamiento de ficheros XML. 
+</p><p>
+Se ha logrado crear una herramienta útil, surgida de la necesidad de
+hacer el uso de un ordenador portátil en varias redes de área local
+más fácil para los usuarios de sistemas GNU/Linux. Hemos usado la
+licencia libre GPL [41] para el proyecto, lo que da derecho a todos
+los interesados para modificar, optimizar y mejorar el código fuente
+de la aplicación. 
+</p><p>
+Asimismo se han desarrollado utilidades y herramientas que no entraban
+dentro de los objetivos del proyecto TuX-Mobile. Se han creado un
+conjunto de módulos que pueden ser muy útiles para la creación 
+de otras herramientas de gestión de redes.
+Aparte de esto, también se ha implementado el comando spyMAC de captura
+de direcciones MAC  que puede resultar valioso para la 
+administración de redes de área local y para
+la implementación de otras herramientas de administración.
+</p><p>
+El tiempo estimado que se ha dedicado al estudio, análisis de requisitos,
+diseño e implementación del proyecto y su documentación es de alrededor
+de 200 horas, repartidas aproximadamente como sigue: 
+</p><div class="itemizedlist"><ul type="disc"><li><p>Alrededor del 10% del trabajo para el estudio de los programas ya    existentes descritos en el primer capítulo de esta memoria. </p></li><li><p>Aproximadamente un 5% en la creación del documento de especificación    de requisitos.</p></li><li><p>En torno al 40% del trabajo para el diseño y la creación de los módulos    y herramientas aquí descritas.</p></li><li><p>Alrededor del 35% para la creación de la interfaz gráfica de usuario    con Glade/GTK+ y el manejo del fichero de configuración XML.</p></li><li><p>Cerca del 10% en la creación de la documentación y su corrección.</p></li></ul></div><p>
+La relación entre el resultado del proyecto y el tiempo que se ha dedicado
+a la creación del mismo resulta bastante aceptable, más aun habiendo
+sido alcanzados todos los objetivos que se habían marcado.
+</p><p>
+La documentación del proyecto, capturas de pantalla y el código fuente están disponible en la siguiente dirección:
+</p><p>
+<a href="http://gsyc.escet.urjc.es/~esoriano" target="_top">http://gsyc.escet.urjc.es/~esoriano</a> 
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2756489"></a>6. Referencias </h2></div></div><div class="orderedlist"><ol type="1"><li><p>E. Soriano. El proyecto TuX-Mobile. <a href="http://gsyc.escet.urjc.es/~esoriano" target="_top">http://gsyc.escet.urjc.es/~esoriano</a>,    2002.</p></li><li><p>A. S. Tanenbaum. Redes de Computadoras 3a Edición, Capítulos quinto    y sexto . Pearson, 1997.</p></li><li><p>A. S. Tanenbaum. Redes de Computadoras 3a Edición, Capítulo cuarto.    Pearson, 1997.</p></li><li><p>Grupo de Sistemas y Comunicaciones Universidad Rey Juan Carlos. Redes    de área local inalámbricas.   <a href="http://gsyc.escet.urjc.es/docencia/asignaturas/redes-I/transparencias/ral-inalambrica/index.html" target="_top">http://gsyc.escet.urjc.es/docencia/asignaturas/redes-I/transparencias/ral-inalambrica/index.html</a>,    2001.</p></li><li><p>R. Droms. Dynamic Host Configuration Protocol RFC 2131.    <a href="http://www.freesoft.org/CIE/RFC/2131/" target="_top">http://www.freesoft.org/CIE/RFC/2131/</a>, 1997.</p></li><li><p>T. Carstens. Programming with pcap. <a href="http://www.tcpdump.org/pcap.htm" target="_top">http://www.tcpdump.org/pcap.htm</a>,    2002.</p></li><li><p>Extensible Markup Language. <a href="http://www.w3.org/XML/" target="_top">http://www.w3.org/XML/</a>, 1997.</p></li><li><p>GTK+. <a href="http://www.gtk.org/" target="_top">http://www.gtk.org/</a></p></li><li><p>Linux Home Page at Linux Online. <a href="http://www.linux.org/" target="_top">http://www.linux.org/</a></p></li><li><p>E. Nemeth. UNIX System Administration Handbook 3rd Edition. Prentice    Hall PTR, 2000.</p></li><li><p>International Organization for Standardization. <a href="http://www.iso.ch" target="_top">http://www.iso.ch</a>.</p></li><li><p>A. S. Tanenbaum. Redes de Computadoras 3a Edición, Capítulo primero.    Pearson, 1997.</p></li><li><p>E. Nemeth. UNIX System Administration Handbook 3rd Edition, capítulo    16. Prentice Hall PTR, 2000.</p></li><li><p>A. S. Tanenbaum. Redes de Computadoras 3a Edición, Capítulo cuarto.    Pearson, 1997.</p></li><li><p>V. Bharghavan, A. Demers, S. Shenker, L. Zhang. MACAW: A Media Access    Protocol for Wireless LAN's. ACM SIGCOMM, 1995.</p></li><li><p>J. Deng and Z. J. Haas, Dual Busy Tone Multiple Access (DBTMA): A New    Medium Access Control for Packet Radio Networks, IEEE ICUPC'98, Florence,    Italy, 1998.</p></li><li><p>Tcpdump Public Repository. <a href="http://www.tcpdump.org" target="_top">http://www.tcpdump.org</a></p></li><li><p>The Internet Engineering Task Force. <a href="http://www.ietf.org" target="_top">http://www.ietf.org</a></p></li><li><p>J. K. Reynolds. BOOTP Vendor Information Extensions RFC 1497.    <a href="http://www.faqs.org/rfcs/rfc1497.html" target="_top">http://www.faqs.org/rfcs/rfc1497.html</a>, 1993.</p></li><li><p>W3 Consortium. <a href="http://www.w3.org" target="_top">http://www.w3.org</a></p></li><li><p>HyperText Markup Language. <a href="http://www.w3.org/MarkUp" target="_top">http://www.w3.org/MarkUp</a>, 1995.</p></li><li><p>M. Bryan. SGML An Author's Guide to the Standard Generalized Markup  Language. Addison-Wesley Pub, 1988.</p></li><li><p>D. Veillard. The XML C library for Gnome. <a href="http://xmlsoft.org" target="_top">http://xmlsoft.org</a></p></li><li><p>GNU's Not Unix! - the GNU Project and the Free Software Foundation    (FSF). <a href="http://www.gnu.org" target="_top">http://www.gnu.org</a></p></li><li><p>GLADE GTK+ User Interface Builder. <a href="http://glade.gnome.org" target="_top">http://glade.gnome.org</a></p></li><li><p>The Linux Kernel Archives. <a href="http://www.kernel.org" target="_top">http://www.kernel.org</a></p></li><li><p>Portable Operating System Interface(POSIX). ISO/IEC 9945-1:1996, IEEE.</p></li><li><p>Ghostscript-GNU-Project-Free_Software_Foundation(FSF).    <a href="http://www.gnu.org/software/ghostscript/ghostscript.html" target="_top">http://www.gnu.org/software/ghostscript/ghostscript.html</a></p></li><li><p>GCC-GNU-Project-Free_Software_Foundation(FSF).    <a href="http://www.gnu.org/software/gcc/gcc.html" target="_top">http://www.gnu.org/software/gcc/gcc.html</a></p></li><li><p>GLIB-GNU-Project-Free_Software_Foundation(FSF).    <a href="http://www.gnu.org/software/libc/libc.html" target="_top">http://www.gnu.org/software/libc/libc.html</a></p></li><li><p>Solaris 9 Operating System. <a href="http://wwws.sun.com/software/solaris" target="_top">http://wwws.sun.com/software/solaris</a></p></li><li><p>Windows Family Home Page. <a href="http://www.microsoft.com/windows" target="_top">http://www.microsoft.com/windows</a></p></li><li><p>C. Hansom. The Laptop-net Manual.    <a href="http://www.swiss.ai.mit.edu/projects/omnibook/documentation/laptop-net.html" target="_top">http://www.swiss.ai.mit.edu/projects/omnibook/documentation/laptop-net.html</a>,   2001.</p></li><li><p>Laptop-netconf Package.    <a href="http://packages.debian.org/testing/net/laptop-netconf.html" target="_top">http://packages.debian.org/testing/net/laptop-netconf.html</a></p></li><li><p>Whereami? - Network Autoconfiguration Utility.    ttp://mcmillan.net.nz/linux/whereami/</p></li><li><p>IEEE Recommended Practice for Software Requirements SpeciÞcations.    IEEE Std 830-1998.</p></li><li><p>B. Boehm. A Spiral Model of Software Development and Enhancement. ACM    SIGSOFT Software Engineering Notes, 1986. </p></li><li><p>Document Object Model (DOM). <a href="http://www.w3.org/DOM/" target="_top">http://www.w3.org/DOM/</a>, 2002.</p></li><li><p>The SAX Project. <a href="http://www.saxproject.org/" target="_top">http://www.saxproject.org/</a></p></li><li><p>Wireless Tools for Linux.    <a href="http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html" target="_top">http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html</a></p></li><li><p>GNU General Public License - GNU Project - Free Software Foundation    (FSF). <a href="http://www.gnu.org/copyleft/gpl.html" target="_top">http://www.gnu.org/copyleft/gpl.html</a></p></li><li><p>Intuitively. <a href="http://www.samfundet.no/~tfheen/intuitively.htm" target="_top">http://www.samfundet.no/~tfheen/intuitively.htm</a></p></li></ol></div></div></div></body></html>

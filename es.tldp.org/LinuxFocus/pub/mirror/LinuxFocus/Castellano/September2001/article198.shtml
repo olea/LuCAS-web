@@ -1,0 +1,1019 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="Software Development">
+ <TITLE>lf198, Software Development: Evitando agujeros de seguridad al desarrollar una aplicaci&oacute;n - Parte 5: condiciones de carrera</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://www.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://www.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<IMG alt="[image of the authors]" height=150 src="../../common/images/FredCrisBCrisG.jpg" width=200>
+<BR>por  <a href="mailto:pappy@users.sourceforge.net,ccb@club-internet.fr,grenier@nef.esiea.fr">Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>Christophe Blaess es un ingeniero aeron&aacute;utico independiente. Es un fan&aacute;tico de Linux
+y gran parte de su trabajo lo realiza en este sistema operativo. Coordina la traducci&oacute;n de las
+p&aacute;ginas del manual del <I>Proyecto de Documentaci&oacute;n de Linux</I>.</P><P>Christophe Grenier es un estudiante de quinto a&ntilde;o del ESIEA donde trabaja
+como administrador de sistemas. Es un apasionado de la seguridad inform&aacute;tica</P><P>Fr&eacute;d&eacute;ric Raynal ha usado Linux durante muchos a&ntilde;os ya que no contamina, no
+usa hormonas, MSG o harinas animales...s&oacute;lo requiere de un poco de sudor y astucia.</P>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex1">Primer ejemplo</A></LI>
+  <LI><A HREF="#lfindex2">Seamos m&aacute;s realistas</A></LI>
+  <LI><A HREF="#lfindex3">Posible mejoras</A></LI>
+  <LI><A HREF="#lfindex4">Generalizaci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex5">Accesos concurrentes al contenido de un archivo</A></LI>
+  <LI><A HREF="#lfindex6">Archivos temporales</A></LI>
+  <LI><A HREF="#lfindex7">Conclusi&oacute;n</A></LI>
+  <LI><A HREF="#lfindex8">Enlaces</A></LI>
+  <LI><A HREF="http://www.linuxfocus.org/cgi-bin/lftalkback?anum=198&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Evitando agujeros de seguridad al desarrollar una aplicaci&oacute;n - Parte 5: condiciones de carrera</H2>
+ <IMG alt="[article illustration]" height=100 hspace=10 src="../../common/images/illustration183.gif" width=100>
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+
+Este es el quinto art&iacute;culo de nuestra serie dedicada a los
+problemas de seguridad vinculados con la multitarea. Una <EM>condici&oacute;n de carrera &oacute; acceso
+concurrente</EM>
+ocurre cuando diferentes procesos usan un mismo recurso (archivo, dispositivo, memoria)
+al mismo tiempo y cada uno "piensa" que tiene acceso exclusivo. Esto conduce a dificultar
+la detecci&oacute;n de fallos y tambi&eacute;n a crear agujeros de seguridad que pueden comprometer
+la seguridad global de nuestro sistema.
+
+</P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n</H2>
+
+<P>El principio general que define una condici&oacute;n de carrera es la siguiente. Un proceso
+quiere acceder a un recurso del sistema en forma exclusiva, primero verifica que el recurso
+no esta siendo usado y a continuaci&oacute;n lo usa a su antojo.
+El problema surge cuando otro proceso aprovecha el lapso de tiempo comprendido
+entre la verificaci&oacute;n y el acceso efectivo para atribuirse el mismo recurso. Las consecuencias
+pueden ser diversas. El cl&aacute;sico ejemplo en la teor&iacute;a de los sistemas operativos
+es el abrazo mortal (deadlock) entre ambos procesos. En la mayor&iacute;a de los casos pr&aacute;cticos
+esto ocasiona a menudo el mal funcionamiento de una aplicaci&oacute;n o incluso da lugar a
+agujeros de seguridad cuando un proceso injustamente se beneficia de los privilegios
+que tiene otro.
+</P>
+<P>Lo que hemos previamente denominado <EM>recurso</EM> puede presentarse bajo distintas formas.
+La mayor&iacute;a de las <EM>condiciones de carrera</EM> que han sido descubiertas y corregidas
+en el propio kernel fueron debido a accesos concurrentes a &aacute;reas de memoria.
+Nosotros &uacute;nicamente, nos centraremos en las aplicaciones del sistema y supondremos que los recursos
+involucrados son nodos del sistema de archivos. Esto incluye no s&oacute;lo a los
+archivos comunes sino tambi&eacute;n a los accesos directos a los dispositivos a trav&eacute;s de los
+puntos de entradas especiales del directorio <CODE>/dev/</CODE>. </P>
+<P>La mayor&iacute;a de las veces, un ataque que tiende a comprometer la seguridad de un sistema
+se realiza contra aplicaciones <EM>Set-UID</EM> pues de esta manera el atacante puede beneficiarse
+de los privilegios del propietario de un archivo ejecutable. Sin embargo, a diferencia
+de los agujeros de seguridad que se han discutido previamente (desbordamiento de b&uacute;fer,
+formateo de cadenas...), las condiciones de carrera no permiten la ejecuci&oacute;n de c&oacute;digo
+"personalizado" y s&oacute;lo se benefician de los recursos de un programa mientras est&aacute;
+ejecut&aacute;ndose. Este tipo de ataque est&aacute; dirigido tambi&eacute;n a utilidades normales
+(no s&oacute;lo a las del tipo <EM>Set-UID</EM>). El cracker tiende una emboscada en espera de
+un usuario, preferentemente <EM>root</EM>, para que ejecute la aplicaci&oacute;n afectada y de
+esta manera poder acceder a sus recursos. Esto tambi&eacute;n es v&aacute;lido para escribir un archivo (es decir,
+<CODE>~/.rhost</CODE> en donde la cadena "<CODE>+&nbsp;+</CODE>" proporciona un
+acceso directo desde cualquier m&aacute;quina sin contrase&ntilde;a) o para leer un archivo confidencial
+(datos comerciales reservados, informaci&oacute;n m&eacute;dica personal, archivo de contrase&ntilde;as,
+clave privada...) </P>
+<P>A diferencia de los agujeros de seguridad discutidos en nuestros art&iacute;culos
+previos este problema afecta a todas las aplicaciones y no &uacute;nicamente a las utilidades
+<EM>Set-UID</EM>, servidores de sistemas o demonios.</P>
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Primer ejemplo</H2>
+
+<P>Analicemos el comportamiento de un programa <EM>Set-UID</EM> que necesita
+guardar datos en un archivo perteneciente a un usuario. Podemos considerar
+el caso, por ejemplo, de un cliente de correo como <EM>sendmail</EM>. Supongamos que
+el usuario puede proporcionar un nombre al archivo  y un mensaje
+para escribir en &eacute;l lo cual es posible en determinadas circunstancias.
+En este caso, la aplicaci&oacute;n debe verificar que el archivo pertenece a la persona
+que inici&oacute; el programa y que no se trata de un enlace simb&oacute;lico a un archivo del sistema.
+No olvidemos que, al ser un programa <EM>Set-UID root</EM>, puede modificar cualquier
+archivo del sistema. En consecuencia, comparar&aacute; el propietario del archivo con su
+UID real. Escribamos algo as&iacute;:
+</P>
+<PRE>1     /* ex_01.c */
+2     #include &lt;stdio.h&gt;
+3     #include &lt;stdlib.h&gt;
+4     #include &lt;unistd.h&gt;
+5     #include &lt;sys/stat.h&gt;
+6     #include &lt;sys/types.h&gt;
+7
+8     int
+9     main (int argc, char * argv [])
+10    {
+11        struct stat st;
+12        FILE * fp;
+13
+14        if (argc != 3) {
+15            fprintf (stderr, "Uso : %s mensaje a archivo\n", argv [0]);
+16            exit(EXIT_FAILURE);
+17        }
+18        if (stat (argv [1], &amp; st) &lt; 0) {
+19            fprintf (stderr, "No se puede ubicar %s\n", argv [1]);
+20            exit(EXIT_FAILURE);
+21        }
+22        if (st . st_uid != getuid ()) {
+23            fprintf (stderr, "No es el propietario de %s \n", argv [1]);
+24            exit(EXIT_FAILURE);
+25        }
+26        if (! S_ISREG (st . st_mode)) {
+27            fprintf (stderr, "%s no es un archivo normal\n", argv[1]);
+28            exit(EXIT_FAILURE);
+29        }
+30
+31        if ((fp = fopen (argv [1], "w")) == NULL) {
+32            fprintf (stderr, "No se puede abrir\n");
+33            exit(EXIT_FAILURE);
+34        }
+35        fprintf (fp, "%s\n", argv [2]);
+36        fclose (fp);
+37        fprintf (stderr, "Escritura exitosa\n");
+38        exit(EXIT_SUCCESS);
+39    }
+</PRE>
+<P>Como explicamos en nuestro primer art&iacute;culo, ser&iacute;a conveniente para una
+aplicaci&oacute;n <EM>Set-UID</EM> abandonar moment&aacute;neamente sus privilegios y abrir el
+archivo usando el UID real del usuario que lo llam&oacute;.
+De hecho, la situaci&oacute;n descripta corresponde m&aacute;s bien a un demonio que proporciona servicios
+a todos los usuarios. Al correr siempre con el ID <EM>root</EM>, har&aacute; la verificaci&oacute;n
+de pertenencia con el UID de su interlocutor m&aacute;s bien que con su propio UID real.
+Sin embargo, seguiremos por el momento con esta suposici&oacute;n a pesar de no ser realista
+pues nos permitir&aacute; comprender f&aacute;cilmente c&oacute;mo explotar el  agujero de seguridad. </P>
+<P>Como podemos ver, el programa empieza a efectuar todas las verificaciones
+pertinentes. Es decir: que el archivo existe, que pertenece al usuario
+y que se trata de un archivo normal.  A continuaci&oacute;n, abre el archivo y escribe el
+mensaje. &iexcl;Es aqu&iacute; donde radica el agujero de seguridad!. O, para ser m&aacute;s precisos,
+entre el lapso de tiempo comprendido entre la lectura de los atributos del archivo con
+<CODE>stat()</CODE> y su apertura con <CODE>fopen()</CODE>. Si bien este intervalo de tiempo
+es extremadamente breve  un atacante puede beneficiarse con &eacute;l cambiando
+las caracter&iacute;sticas del archivo. Para que nuestro ataque sea a&uacute;n m&aacute;s sencillo,
+agreguemos una l&iacute;nea que ponga a dormir el proceso entre las dos operaciones
+para contar con el tiempo suficiente para poder realizar la tarea manualmente.
+Cambiemos la l&iacute;nea 30 (previamente vac&iacute;a) por la siguiente:
+</P><PRE>30        sleep (20);
+</PRE>
+<P>Manos a la obra. Primero hagamos a la aplicaci&oacute;n <EM>Set-UID
+root</EM>. <STRONG>Es muy importante</STRONG> previamente realizar una copia
+de seguridad de nuestro archivo de contrase&ntilde;as ocultas <CODE>/etc/shadow</CODE>:
+</P><PRE>$ <STRONG>cc ex_01.c -Wall -o ex_01</STRONG>
+$ <STRONG>su</STRONG>
+Password:
+# <STRONG>cp /etc/shadow /etc/shadow.bak</STRONG>
+# <STRONG>chown root.root ex_01</STRONG>
+# <STRONG>chmod +s ex_01</STRONG>
+# <STRONG>exit</STRONG>
+$ <STRONG>ls -l ex_01</STRONG>
+-rwsrwsr-x 1 root  root    15454 Jan 30 14:14 ex_01
+$
+</PRE>
+<P>Todo est&aacute; listo para el ataque. Estamos en un directorio que es nuestro. Hemos
+descubierto una utilidad <EM>Set-UID root</EM> (en este caso <CODE>ex_01</CODE>) que contiene
+un agujero de seguridad  y queremos reemplazar la l&iacute;nea del archivo de contrase&ntilde;as
+<CODE>/etc/shadow</CODE> que contiene la palabra <EM>root</EM> por una l&iacute;nea
+con el campo de contrase&ntilde;a vac&iacute;o.
+</P>
+<P>Primero, creamos un archivo <CODE>fic</CODE>:
+</P><PRE>$ <STRONG>rm -f fic</STRONG>
+$ <STRONG>touch fic</STRONG>
+</PRE>
+<P>A continuaci&oacute;n, ejecutamos nuestra aplicaci&oacute;n en segundo plano a fin de conservar la
+principal y le pedimos que escriba una cadena en el archivo. Primero, el programa hace
+las verificaciones pertinentes para posteriormente dormir moment&aacute;neamente antes de acceder al archivo.
+</P><PRE>$ <STRONG>./ex_01 fic "root::1:99999:::::" &amp;</STRONG>
+[1] 4426
+</PRE>
+<P>El contenido de la l&iacute;nea referente al <CODE>root</CODE> se detalla en la p&aacute;gina
+del manual <CODE>shadow(5)</CODE>. Lo m&aacute;s importante es que el segundo campo
+se encuentra vac&iacute;o (sin contrase&ntilde;a). Mientras el proceso duerme, contamos con alrededor
+de 20 segundos para eliminar el archivo <CODE>fic</CODE> y reemplazarlo por
+un enlace (simb&oacute;lico o f&iacute;sico, cualquiera de los dos funciona correctamente)
+al archivo <CODE>/etc/shadow</CODE>. Recordemos que todo usuario puede crear un enlace
+a un archivo situado en un directorio de su pertenencia (o como veremos m&aacute;s tarde en
+<CODE>/tmp</CODE>)a&uacute;n cuando no sea capaz de leer su contenido . Sin embargo, no
+es posible crear una <EM>copia</EM> de dicho archivo pues requerir&iacute;a
+permiso de lectura</P>
+<PRE>$ <STRONG>rm -f fic</STRONG>
+$ <STRONG>ln -s /etc/shadow ./fic</STRONG>
+</PRE>
+<P>A continuaci&oacute;n mediante el comando <CODE>fg</CODE> del shell traemos el proceso
+<CODE>ex_01</CODE> al primer plano y esperamos a que finalize:
+</P><PRE>$ <STRONG>fg</STRONG>
+./ex_01 fic "root::1:99999:::::"
+Escritura exitosa
+$
+</PRE>
+<P>&iexcl;Voil&agrave;! Operaci&oacute;n terminada. El archivo <CODE>/etc/shadow</CODE> contiene una &uacute;nica
+l&iacute;nea indicando que el <EM>root</EM> no tiene contrase&ntilde;a. &iquest;No lo creen?
+</P><PRE>$ <STRONG>su</STRONG>
+# <STRONG>whoami</STRONG>
+root
+# <STRONG>cat /etc/shadow</STRONG>
+root::1:99999:::::
+#
+</PRE>
+<P>Terminemos con nuestro experimento recuperando nuestro archivo de contrase&ntilde;as original:
+</P><PRE># <STRONG>cp /etc/shadow.bak /etc/shadow</STRONG>
+cp: replace `/etc/shadow¿ <STRONG>y</STRONG>
+#
+</PRE>
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Seamos m&aacute;s realistas</H2>
+
+<P>Hemos explotado con &eacute;xito una condici&oacute;n de carrera en una utilidad <EM>Set-UID root</EM>.
+Por supuesto, este programa fue demasiado "generoso" al darnos 20 segundos
+para modificar los archivos a sus espaldas. En una aplicaci&oacute;n real la condici&oacute;n
+de carrera s&oacute;lo se aplica a un intervalo muy breve de tiempo. &iquest;C&oacute;mo podemos aprovecharnos
+de esta situaci&oacute;n entonces?
+</P>
+<P>Generalmente, un cracker recurre a un ataque de fuerza bruta renovando los intentos
+cientos, miles o millones de veces mediante scripts que automatizan la tarea.
+Es posible aumentar las posibilidades de "caer" dentro del agujero de seguridad
+con diversas artima&ntilde;as con el prop&oacute;sito de incrementar el intervalo de tiempo
+entre las dos operaciones que el programa incorrectamente considera &iacute;ntimamente
+enlazadas. La idea consiste en frenar el proceso objetivo para aprovechar
+m&aacute;s f&aacute;cilmente la demora precedente a la modificaci&oacute;n del archivo.
+Distintos enfoques pueden ayudarnos a alcanzar nuestra meta:
+</P>
+<UL>
+  <LI>Reducir la prioridad del proceso atacado tanto como sea posible
+  ejecut&aacute;ndolo con el prefijo <CODE>nice&nbsp;-n&nbsp;20</CODE>;
+  <LI>Incrementar la carga del sistema ejecutando varios procesos que
+  consuman ciclos del procesador (como por ejemplo usando <CODE>while (1);</CODE>);
+  <LI>Si bien el kernel no permite depurar programas <EM>Set-UID</EM> es posible
+  forzar una pseudo ejecuci&oacute;n paso a paso enviando una secuencia de se&ntilde;ales
+  <EM>SIGSTOP</EM>-<EM>SIGCONT</EM> que permitan bloquear moment&aacute;neamente el proceso
+  (mediante por ejemplo la combinaci&oacute;n de teclas Ctrl-Z) y volver a iniciarlo
+  si fuera necesario </LI></UL>
+<P>El m&eacute;todo que permite beneficiarnos de un agujero de seguridad basado en una condici&oacute;n
+de carrera es aburrido y repetitivo pero realmente se puede usar. Intentemos
+hallar otras soluciones m&aacute;s efectivas. </P>
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Posible mejoras</H2>
+
+<P>El problema discutido anteriormente est&aacute; relacionado con la capacidad de
+cambiar las caracter&iacute;sticas de un objeto durante el intervalo de tiempo
+entre dos operaciones pr&aacute;cticamente simult&aacute;neas. En la situaci&oacute;n descripta, el cambio no
+estaba relacionado con propio archivo. Dicho sea de paso, como usuario normal
+ser&iacute;a bastante dif&iacute;cil modificar o incluso leer el archivo <CODE>/etc/shadow</CODE>.
+De hecho, los cambios estan relacionados con el enlace entre el nodo del
+archivo existente en el &aacute;rbol de nombres y el propio archivo considerado
+como entidad f&iacute;sica. Recordemos que la mayor&iacute;a
+de los comandos del sistema (<CODE>rm</CODE>, <CODE>mv</CODE>, <CODE>ln</CODE>, etc.)
+act&uacute;an sobre el nombre del archivo y no sobre el contenido del mismo. Incluso cuando
+se borra un archivo (usando <CODE>rm</CODE> y la llamada del sistema <CODE>unlink()</CODE>),
+realmente se borra el contenido cuando se elimina el &uacute;limo enlace f&iacute;sico, la &uacute;ltima
+referencia.
+</P>
+<P>El error cometido por el programa es haber considerado la asociaci&oacute;n entre el nombre
+del archivo y su contenido como intercambiables, o al menos constantes, durante el intervalo
+de tiempo entre las operaciones <CODE>stat()</CODE> y <CODE>fopen()</CODE>.
+Bastar&aacute; con recurrir a un enlace f&iacute;sico para comprobar que esta asociaci&oacute;n no es
+permanente en absoluto. Consideremos un ejemplo usando este tipo de enlace. En un
+directorio nuestro creamos un nuevo enlace a un archivo del sistema. Obviamente,
+conservamos el propietario del archivo y el modo de acceso.
+La opci&oacute;n <CODE>-f</CODE> del comando <CODE>ln</CODE> fuerza su creaci&oacute;n
+incluso si el nombre ya existe: :
+</P><PRE>$ <STRONG>ln -f /etc/fstab ./mi_archivo</STRONG>
+$ <STRONG>ls -il /etc/fstab mi_archivo</STRONG>
+8570 -rw-r--r--   2 root  root  716 Jan 25 19:07 /etc/fstab
+8570 -rw-r--r--   2 root  root  716 Jan 25 19:07 mi_archivo
+$ <STRONG>cat mi_archivo</STRONG>
+/dev/hda5   /                 ext2    defaults,mand   1 1
+/dev/hda6   swap              swap    defaults        0 0
+/dev/fd0    /mnt/floppy       vfat    noauto,user     0 0
+/dev/hdc    /mnt/cdrom        iso9660 noauto,ro,user  0 0
+/dev/hda1   /mnt/dos          vfat    noauto,user     0 0
+/dev/hda7   /mnt/audio        vfat    noauto,user     0 0
+/dev/hda8   /home/ccb/annexe  ext2    noauto,user     0 0
+none        /dev/pts          devpts  gid=5,mode=620  0 0
+none        /proc             proc    defaults        0 0
+$ <STRONG>ln -f /etc/host.conf ./mi_archivo</STRONG>
+$ <STRONG>ls -il /etc/host.conf mi_archivo </STRONG>
+8198 -rw-r--r--   2 root  root   26 Mar 11  2000 /etc/host.conf
+8198 -rw-r--r--   2 root  root   26 Mar 11  2000 mi_archivo
+$ <STRONG>cat mi_archivo</STRONG>
+order hosts,bind
+multi on
+$
+
+</PRE>
+<P>La opci&oacute;n <CODE>-i</CODE> de  <CODE>/bin/ls</CODE> muestra el n&uacute;mero de
+&iacute;nodo al comienzo de la l&iacute;nea. Podemos ver que el mismo nombre apunta a
+dos &iacute;nodos f&iacute;sicos diferentes. Es evidente que los dos comandos"<CODE>cat</CODE>"
+actuando sobre el mismo nombre de archivo muestran dos contenidos totalmente
+diferentes a pesar de que no ha ocurrido ning&uacute;n cambio en estos archivos entre
+las dos operaciones.</P>
+<P>En verdad, nos gustar&iacute;a que las funciones que verifican y acceden
+al archivo siempre apunten al mismo contenido y al mismo &iacute;nodo. &iexcl;Y es posible!
+El propio kernel efect&uacute;a esta asociaci&oacute;n de manera autom&aacute;tica cuando nos proporciona un
+descriptor de archivo. Cuando abrimos un archivo para lectura,
+la llamada al sistema <CODE>open()</CODE> devuelve un valor entero -el descriptor-
+que lo asocia mediante una tabla interna con un archivo f&iacute;sico.
+Todas las lecturas que hagamos posteriormente estar&aacute;n relacionadas con el
+contenido de este archivo independientemente de lo que ocurra con el nombre
+usado durante la operaci&oacute;n de apertura del mismo.</P>
+<P>Hagamos hincapi&eacute; en lo siguiente: una vez que se ha abierto un archivo, cada
+operaci&oacute;n relacionada con el nombre del mismo, incluyendo su eliminaci&oacute;n, no tendr&aacute;
+ning&uacute;n efecto sobre su contenido. Mientras exista un proceso que
+contenga el descriptor de un archivo, el contenido del mismo no se eliminar&aacute;
+del disco incluso si su nombre desaparece del directorio donde fue almacenado.
+El kernel mantiene la asociaci&oacute;n entre un descriptor y el contenido de un
+archivo durante el tiempo comprendido entre la llamada al sistema
+<CODE>open()</CODE> que proporciona el descriptor y la liberaci&oacute;n del mismo
+mediante <CODE>close()</CODE> o hasta que ocurra la finalizaci&oacute;n del proceso.
+</P>
+<P>&iexcl;Aqu&iacute; tenemos nuestra soluci&oacute;n! Podemos abrir el archivo y verificar
+a continuaci&oacute;n sus permisos examinando las caracter&iacute;sticas de su descriptor
+en vez de su nombre. Esto se puede realizar usando la llamada al sistema <CODE>fstat()</CODE>
+que funciona como <CODE>stat()</CODE> pero verifica un descriptor de archivo en vez de una ruta.
+Para acceder al contenido de un archivo usando su descriptor emplearemos la funci&oacute;n
+<CODE>fdopen()</CODE> que funciona como <CODE>fopen()</CODE> pero haciendo uso
+del descriptor en vez del nombre del archivo. Por lo tanto, el programa quedar&aacute;:
+</P><PRE>1    /* ex_02.c */
+2    #include &lt;fcntl.h&gt;
+3    #include &lt;stdio.h&gt;
+4    #include &lt;stdlib.h&gt;
+5    #include &lt;unistd.h&gt;
+6    #include &lt;sys/stat.h&gt;
+7    #include &lt;sys/types.h&gt;
+8
+9     int
+10    main (int argc, char * argv [])
+11    {
+12        struct stat st;
+13        int fd;
+14        FILE * fp;
+15
+16        if (argc != 3) {
+17            fprintf (stderr, "Uso : %s mensaje a archivo\n", argv [0]);
+18            exit(EXIT_FAILURE);
+19        }
+20        if ((fd = open (argv [1], O_WRONLY, 0)) &lt; 0) {
+21            fprintf (stderr, "No es posible abrir %s\n", argv [1]);
+22            exit(EXIT_FAILURE);
+23        }
+24        fstat (fd, &amp; st);
+25        if (st . st_uid != getuid ()) {
+26            fprintf (stderr, "&iexcl; %s no le pertenece !\n", argv [1]);
+27            exit(EXIT_FAILURE);
+28        }
+29        if (! S_ISREG (st . st_mode)) {
+30            fprintf (stderr, "%s no es un archivo normal\n", argv[1]);
+31            exit(EXIT_FAILURE);
+32        }
+33        if ((fp = fdopen (fd, "w")) == NULL) {
+34            fprintf (stderr, "No es posible abrirlo\n");
+35            exit(EXIT_FAILURE);
+36        }
+37        fprintf (fp, "%s", argv [2]);
+38        fclose (fp);
+39        fprintf (stderr, "Escritura exitosa\n");
+40        exit(EXIT_SUCCESS);
+41    }
+</PRE>
+<P>Como se puede ver, a partir de la l&iacute;nea 20 ning&uacute;n cambio del nombre del archivo (eliminaci&oacute;n,
+cambio de nombre, enlace) afectar&aacute; el comportamiento de nuestro programa. Es decir, el contenido
+del archivo f&iacute;sico original se conservar&aacute;. </P>
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Generalizaci&oacute;n</H2>
+
+<P>Al manipular un archivo es importante asegurarse que la asociaci&oacute;n entre
+su representaci&oacute;n interna y su contenido real permanezca constante. Preferentemente,
+usaremos las siguientes llamadas al sistema para manipular al archivo f&iacute;sico:
+</P>
+<TABLE border=3 frame=box>
+  <TBODY>
+  <TR>
+    <TD width="40%"><EM>Llamada al sistema</EM></TD>
+    <TD><EM>Uso</EM> </TD></TR>
+  <TR>
+    <TD><CODE>fchdir (int fd)</CODE></TD>
+    <TD>Va al directorio representado por <EM>fd</EM>. </TD></TR>
+  <TR>
+    <TD><CODE>fchmod (int fd, mode_t mode)</CODE></TD>
+    <TD>Modifica los permisos de acceso a un archivo.</TD></TR>
+  <TR>
+    <TD><CODE>fchown (int fd, uid_t uid, gid_t gif)</CODE></TD>
+    <TD>Cambia el propietario de un archivo.</TD></TR>
+  <TR>
+    <TD><CODE>fstat (int fd, struct stat * st)</CODE></TD>
+    <TD>Consulta la infomaci&oacute;n almacenada en el &iacute;nodo de un archivo f&iacute;sico.
+    </TD></TR>
+  <TR>
+    <TD><CODE>ftruncate (int fd, off_t length)</CODE></TD>
+    <TD>Trunca un archivo existente.</TD></TR>
+  <TR>
+    <TD><CODE>fdopen (int fd, char * mode)</CODE></TD>
+    <TD>Inicializa IO desde un descriptor ya abierto. Es una rutina de
+      la biblioteca <EM>stdio</EM> y no una llamada del sistema.
+</TD></TR></TBODY></TABLE>
+<P>Obviamente, debemos al principio abrir el archivo en el modo elegido
+invocando a <CODE>open()</CODE> (no olvidarse del tercer argumento al crear
+el nuevo archivo). Continuaremos hablando sobre <CODE>open()</CODE> m&aacute;s tarde
+cuando discutamos el problema de los archivos temporales.
+</P>
+<P>Debemos insistir en la importancia de verificar los c&oacute;digos de retorno de las
+llamadas al sistema. A pesar de no tener nada que ver con las <EM>condiciones de
+carrera</EM> mencionemos a modo de ejemplo un error encontrado en las primeras
+implementaciones de <CODE>/bin/login</CODE> debido a que no ten&iacute;a
+en cuenta una verificaci&oacute;n de un c&oacute;digo de error. Esta aplicaci&oacute;n, proporcionaba
+autom&aacute;ticamente acceso de <EM>root</EM> cuando no encontraba el archivo
+<CODE>/etc/passwd</CODE>. Este comportamiento puede resultar razonable en lo que
+respecta a la reparaci&oacute;n de un sistema de archivos da&ntilde;ado. En el otro extremo,
+el verificar que era imposible abrir el archivo en vez de comprobar su
+existencia, es menos aceptable. En efecto, bastaba con llamar a
+<CODE>/bin/login</CODE> despu&eacute;s de abrir el n&uacute;mero m&aacute;ximo de descriptores
+permitido para un usuario para obtener directamente el acceso <EM>root</EM>
+... Finalizemos esta disgresi&oacute;n insistiendo en la importancia de comprobar,
+antes de tomar cualquiern acci&oacute;n sobre la seguridad de un sistema, no s&oacute;lo si
+la llamada al sistema tuvo o no &eacute;xito sino tambi&eacute;n los c&oacute;digos de error</P>
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Accesos concurrentes al contenido de un archivo</H2>
+
+<P>Un programa vinculado con la seguridad de un sistema no debe depender del
+acceso exclusivo al contenido de un archivo. M&aacute;s precisamente es
+importante evaluar los riesgos que implican
+los accesos concurrentes a un mismo archivo. El mayor peligro proviene
+de un usuario ejecutando simult&aacute;neamente m&uacute;ltiples instancias de una aplicaci&oacute;n
+<EM>Set-UID root</EM> o estableciendo m&uacute;ltiples conexiones a la vez con el
+mismo demonio con la esperanza de crear una condici&oacute;n de carrera para
+modificar de una manera inusual el contenido de un archivo del sistema. </P>
+<P>Para evitar que un programa sea permeable a este tipo de situaci&oacute;n, es necesario
+implementar un mecanismo de acceso exclusivo a los datos del archivo. Este es el mismo
+problema que tienen las bases de datos en donde a varios usuarios se les
+permite consultar o cambiar el contenido de un archivo. El principio de bloqueo
+de un archivo resuelve este problema. </P>
+<P>Cuando un proceso quiere escribir en un archivo, le pide al kernel que bloquee
+al archivo o parte de &eacute;l. Mientras el proceso conserve el bloqueo ning&uacute;n otro proceso
+puede pedir el bloqueo del mismo archivo o parte de &eacute;l. De la misma manera, un
+proceso solicita un bloqueo antes de la lectura del contenido de un archivo para
+asegurarse que no habr&aacute;n cambios mientras dure el bloqueo.
+</P>
+<P>De hecho, el sistema es m&aacute;s listo que esto: el kernel distingue entre los
+bloqueos solicitados para la lectura de un archivo de aquellos reclamados
+para la escritura del mismo. Diversos procesos pueden retener un bloqueo
+de lectura en forma simult&aacute;nea ya que nadie intentar&aacute; modificar el contenido del
+archivo. No obstante, solo un proceso puede conservar un bloqueo para
+escritura en un determinado instante de tiempo  y ning&uacute;n otro
+puede hacerlo simult&aacute;neamente incluso para lectura.
+</P>
+<P>Existen dos tipos de bloqueos (en gral. incompatibles entre s&iacute;). El primero heredado
+del BSD se basa en la llamada al sistema <CODE>flock()</CODE>. Su primer
+argumento es el descriptor del archivo al que se desea acceder de manera  exclusiva
+y el segundo es una constante simb&oacute;lica que representa la operaci&oacute;n a realizar.
+Puede tener diferentes valores: <CODE>LOCK_SH</CODE> (bloqueo de lectura),
+<CODE>LOCK_EX</CODE> (bloqueo de escritura), <CODE>LOCK_UN</CODE> (para destrabar el bloqueo).
+La llamada al sistema mantendr&aacute; el bloqueo mientras la operaci&oacute;n solicitada
+no resulte posible. No obstante, a veces es posible agregar (mediante un OR <CODE>|</CODE>
+binario) la constante <CODE>LOCK_NB</CODE> para que la llamada d&eacute; error en vez de permanecer
+bloqueada.</P>
+<P>El segundo tipo de bloqueo proviene del Sistema V y se dundamenta en la
+llamada al sistema <CODE>fcntl()</CODE> cuya invocaci&oacute;n es un tanto complicada.
+Existe una funci&oacute;n de biblioteca llamada <CODE>lockf()</CODE> similar a la llamada al
+sistema pero que no ofrece todas las posibilidades de esta &uacute;ltima. El primer argumento
+de <CODE>fcntl()</CODE>es el descriptor del archivo a bloquear. El segundo representa
+la operaci&oacute;n a realizar:
+<CODE>F_SETLK</CODE> y <CODE>F_SETLKW</CODE> gestionan el bloqueo, la segunda
+permanece bloqueada hasta que la operaci&oacute;n resulte posible mientras que la primera
+retorna imediatamente en caso de error. <CODE>F_GETLK</CODE> consulta el estado de bloqueo
+de un archivo (lo cual normalmente carece de utilidad para las aplicaciones actuales).
+El tercer argumento es un puntero a una variable de tipo <CODE>struct flock</CODE>
+que describe el bloqueo.
+Los miembros m&aacute;s importante de la estructura <CODE>flock</CODE> son las siguientes: </P>
+<TABLE border=3 frame=border>
+  <TBODY>
+  <TR>
+    <TD><EM>Nombre</EM></TD>
+    <TD><EM>Tipo</EM></TD>
+    <TD><EM>Significado</EM></TD></TR>
+  <TR>
+    <TD><CODE>l_type</CODE></TD>
+    <TD><CODE>int</CODE></TD>
+    <TD>Acci&oacute;n esperada : <CODE>F_RDLCK</CODE> (bloqueo de lectura),
+      <CODE>F_WRLCK</CODE> (bloqueo de escritura) y <CODE>F_UNLCK</CODE>
+       (desbloqueo).</TD></TR>
+  <TR>
+    <TD><CODE>l_whence</CODE></TD>
+    <TD><CODE>int</CODE></TD>
+    <TD>Origen del campo <CODE>l_start</CODE> (generalmente
+  <CODE>SEEK_SET</CODE>).</TD></TR>
+  <TR>
+    <TD><CODE>l_start</CODE></TD>
+    <TD><CODE>off_t</CODE></TD>
+    <TD>Posici&oacute;n al comienzo del bloqueo (generalmente 0).</TD></TR>
+  <TR>
+    <TD><CODE>l_len</CODE></TD>
+    <TD><CODE>off_t</CODE></TD>
+    <TD>Duraci&oacute;n del bloqueo, 0 para alcanzar el final del arhivo.
+  </TD></TR></TBODY></TABLE>
+<P>Podemos ver que <CODE>fcntl()</CODE> puede bloquear porciones limitadas del archivo
+pero no es la &uacute;nica ventaja en relaci&oacute;n a <CODE>flock()</CODE>.
+Analicemos con detalle un peque&ntilde;o programa que nos pide hacer un bloqueo de lectura a una
+serie de archivos dados como argumento y que espera que el usuario presione la tecla
+Enter antes de finalizar y de esta manera destrabar el bloqueo. </P>
+<PRE>1    /* ex_03.c */
+2    #include &lt;fcntl.h&gt;
+3    #include &lt;stdio.h&gt;
+4    #include &lt;stdlib.h&gt;
+5    #include &lt;sys/stat.h&gt;
+6    #include &lt;sys/types.h&gt;
+7    #include &lt;unistd.h&gt;
+8
+9    int
+10   main (int argc, char * argv [])
+11   {
+12     int i;
+13     int fd;
+14     char buffer [2];
+15     struct flock lock;
+16
+17     for (i = 1; i &lt; argc; i ++) {
+18       fd = open (argv [i], O_RDWR | O_CREAT, 0644);
+19       if (fd &lt; 0) {
+20         fprintf (stderr, "No es posible abrir %s\n", argv [i]);
+21         exit(EXIT_FAILURE);
+22       }
+23       lock . l_type = F_WRLCK;
+24       lock . l_whence = SEEK_SET;
+25       lock . l_start = 0;
+26       lock . l_len = 0;
+27       if (fcntl (fd, F_SETLK, &amp; lock) &lt; 0) {
+28         fprintf (stderr, "No es posible destrabar %s\n", argv [i]);
+29         exit(EXIT_FAILURE);
+30       }
+31     }
+32     fprintf (stdout, "Presione Enter para destrabar el/los bloqueo(s)\n");
+33     fgets (buffer, 2, stdin);
+34     exit(EXIT_SUCCESS);
+35   }
+</PRE>
+<P>Primero ejecutamos el programa desde una primer consola donde quedar&aacute; a la espera:
+</P><PRE>$ <STRONG>cc -Wall ex_03.c -o ex_03</STRONG>
+$ <STRONG>./ex_03 mi_archivo</STRONG>
+Presione Enter para destrabar el/los bloqueo(s)
+</PRE>&gt;Desde otra terminal... <PRE>&nbsp;&nbsp;&nbsp;&nbsp;$ <STRONG>./ex_03 mi_archivo</STRONG>
+&nbsp;&nbsp;&nbsp;&nbsp;No es posible desbloquear mi_archivo &nbsp;&nbsp;&nbsp;&nbsp;$
+</PRE>Al presionar <CODE>Enter</CODE> en la primer consola, destrabamos el bloqueo.
+<P>Con este mecanismo es posible impedir accesos concurrentes a directorios
+y colas de impresi&oacute;n como lo hace el demonio <CODE>lpd</CODE> que usa un bloqueo
+<CODE>flock()</CODE> sobre el archivo <CODE>/var/lock/subsys/lpd</CODE> de manera
+de permitir una &uacute;nica instancia. Es posible asimismo administrar en forma segura
+el acceso a un archivo importante del sistema como ocurre con <CODE>/etc/passwd</CODE>
+que se bloquea mediante la funci&oacute;n <CODE>fcntl()</CODE> de la biblioteca <EM>pam</EM>
+cuando se modifican los datos del usuario.</P>
+<P>No obstante, hay que reconocer que esto s&oacute;lo protege de interferencias con aplicaciones
+que tienen un comportamiento correcto, es decir, que piden al kernel reservar el acceso adecuado
+antes de leer o escribir un archivo del sistema importante. En este caso, se habla de bloqueo cooperativo
+lo que expresa la responsabilidad de cada aplicaci&oacute;n sobre los accesos a los datos.
+Desafortunadamente un programa mal escrito es capaz de reemplazar el contenido de un
+archivo incluso si otro proceso con buen comportamiento tiene un bloqueo para escritura.
+Aqu&iacute; tenemos un ejemplo. Escribimos unas pocas palabras en un archivo y lo bloqueamos
+usando el programa anterior:
+</P><PRE>$ <STRONG>echo "PRIMERO" &gt; mi_archivo</STRONG>
+$ <STRONG>./ex_03 mi_archivo</STRONG>
+Presione Enter para destrabar el/los bloqueo(s)
+</PRE>&gt;Desde otra consola, podemos modificar al archivo:
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;$ <STRONG>echo "SEGUNDO" &gt; mi_archivo</STRONG>
+&nbsp;&nbsp;&nbsp;&nbsp;$
+</PRE>Volviendo a la primer consola, verificamos los "da&ntilde;os":
+<PRE>(<STRONG>Enter</STRONG>)
+$ <STRONG>cat mi_archivo</STRONG>
+SEGUNDO
+$
+</PRE>
+<P>Para solucionar este problema, el kernel de Linux brinda al administrador del
+sistema un mecanismo de bloqueo estricto heredado del System V. Por lo tanto, &uacute;nicamente
+se puede usar con los bloqueos de <CODE>fcntl()</CODE> y no con los de <CODE>flock()</CODE>.
+El administrador puede indicar al kernel que todos los bloqueos de <CODE>fcntl()</CODE>
+sean <EM>estrictos</EM> usando una combinaci&oacute;n determinada de permisos de acceso.
+De este modo, si un proceso bloquea un archivo para escritura otro proceso no podr&aacute;
+escribir en &eacute;l incluso siendo <EM>superusuario</EM> La combinaci&oacute;n particular consiste
+en usar el bit <EM>Set-GID</EM> mientras se quita al grupo el bit de ejecuci&oacute;n.
+Esto se logra con el comando:
+</P><PRE>$ <STRONG>chmod g+s-x mi_archivo</STRONG>
+$
+</PRE>Sin embargo, esto no es suficiente. Para que un archivo autom&aacute;ticamente
+se beneficie con bloqueos cooperativos estrictos se debe activar el atributo
+<EM>mandatory</EM> en la partici&oacute;n donde se encuentra. Generalmente,
+hay que modificar el archivo <CODE>/etc/fstab</CODE> agregando la opci&oacute;n
+<CODE>mand</CODE> en la cuarta columna o escribiendo en la l&iacute;nea de comandos:
+<PRE># <STRONG>mount</STRONG>
+/dev/hda5 on / type ext2 (rw)
+[...]
+# <STRONG>mount / -o remount,mand</STRONG>
+# <STRONG>mount</STRONG>
+/dev/hda5 on / type ext2 (rw,mand)
+[...]
+#
+</PRE>Ahora, podemos comprobar que es imposible realizar alg&uacute;n cambio
+desde otra consola:
+<PRE>$ <STRONG>./ex_03 mi_archivo</STRONG>
+Presionar Enter para destrabar el/los bloqueo(s)
+</PRE>&gt;Desde otra terminal:
+<PRE>&nbsp;&nbsp;&nbsp;&nbsp;$ <STRONG>echo "TERCERO" &gt; mi_archivo</STRONG>
+&nbsp;&nbsp;&nbsp;&nbsp;bash: mi_archivo: Recurso moment&aacute;neamente no disponible
+&nbsp;&nbsp;&nbsp;&nbsp;$
+</PRE>Y volviendo a la primer consola: <PRE>(<STRONG>Enter</STRONG>)
+$ <STRONG>cat mi_archivo</STRONG>
+SEGUNDO
+$
+</PRE>
+<P>Es el administrador y no el programador quien debe decidir si hace o no
+un bloqueo estricto a un archivo (por ejemplo, <CODE>/etc/passwd</CODE> o
+<CODE>/etc/shadow</CODE>). El programador tiene que controlar la manera en que
+se acceden los datos lo que asegurar&aacute; que su aplicaci&oacute;n administre los mismos
+en forma coherente al leer y que no resulte peligroso para otros procesos
+al escribir mientras se administre el entorno adecuadamente.  </P>
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Archivos temporales</H2>
+
+<P>A menudo un programa necesita almacenar datos en forma transitoria en
+un archivo. El caso m&aacute;s com&uacute;n ocurre cuando se desea insertar un registro
+en la mitad de un archivo ordenado en forma secuencial lo que implica
+hacer una copia del archivo original en un archivo temporal mientras
+se agrega el nuevo dato. A continuaci&oacute;n la llamada al sistema <CODE>unlink()</CODE>
+elimina el archivo original y <CODE>rename()</CODE> renombra al archivo temporal
+para reemplazarlo por el original.</P>
+<P>Si no se hace manera adecuada, la apertura de un archivo temporal
+es a menudo el origen de situaciones de concurrencia explotables por
+usuarios malintencionados. Recientemente se han descubierto agujeros de seguridad
+basados en archivos temporales en aplicaciones tales como
+<EM>Apache</EM>, <EM>Linuxconf</EM>, <EM>getty_ps</EM>, <EM>wu-ftpd</EM>,
+<EM>rdist</EM>, <EM>gpm</EM>, <EM>inn</EM>, etc. Recordemos unos pocos principios
+para evitar este tipo de inconvenientes. </P>
+<P>En general, la creaci&oacute;n de un archivo temporal se realiza en el directorio
+<CODE>/tmp</CODE>. Esto permite saber al administrador del sistema d&oacute;nde se almacenan
+los datos de corta duraci&oacute;n. Asimismo, tambi&eacute;n es posible programar una
+limpieza peri&oacute;dica (usando <CODE>cron</CODE>), usar una partici&oacute;n independiente
+formateada en tiempo de arranque, etc. En general, el administrador
+elige el lugar reservado para los archivos temporales en los archivos
+&lt;<CODE>paths.h</CODE>&gt; y &lt;<CODE>stdio.h</CODE>&gt;  mediante
+la definici&oacute;n de las constantes simb&oacute;licas <CODE>_PATH_TMP</CODE> y
+<CODE>P_tmpdir</CODE>.
+De hecho, el usar otro directorio diferente al predeterminado <CODE>/tmp</CODE>
+no es una buena idea pues implicar&iacute;a recompilar cada una de las aplicaciones
+incluyendo las bibliotecas de C. No obstante, mencionemos que
+el comportamiento de la rutina GlibC se puede definir mediante la variable de
+entorno <CODE>TMPDIR</CODE>. De esta forma, el usuario puede pedir que los
+archivos temporales se almacenen en un directorio propio en vez de hacerlo
+en el directorio predeterminado <CODE>/tmp</CODE>.
+Esto resulta a veces necesario cuando la partici&oacute;n donde se encuentra
+<CODE>/tmp</CODE> es demasiado peque&ntilde;a como para ejecutar aplicaciones que requieran
+de un almacenamiento temporal muy grande. </P>
+<P>El directorio <CODE>/tmp</CODE> del sistema es algo especial debido a sus
+permisos de acceso:
+</P><PRE>$ <STRONG>ls -ld /tmp</STRONG>
+drwxrwxrwt 7 root  root    31744 Feb 14 09:47 /tmp
+$
+</PRE>
+<P>El <EM>Sticky-Bit</EM> representado por la letra <CODE>t</CODE> al final o
+o por el valor 01000 en modo octal tiene un significado determinado cuando se aplica
+a un directorio:
+s&oacute;lo el propietario del directorio (el <EM>superusuario</EM>) y el propietario de un
+archivo que se encuentre en este directorio pueden eliminar al archivo.
+Puesto que el directorio tiene un acceso completo para escritura, cada usuario
+puede colocar sus archivos en &eacute;l con la seguridad que se encontrar&aacute;n protegidos
+al menos hasta que el administrador del sistema proceda a la pr&oacute;xima limpieza
+del sistema.</P>
+<P>Sin embargo, usar el directorio de almacenamiento temporal puede ocasionar
+algunos problemas. Comencemos con el caso m&aacute;s sencillo, el de una aplicaci&oacute;n
+Set-UID <EM>root</EM> que se comunica con un usuario. Imaginemos un cliente
+de correo. Si este proceso recibe una se&ntilde;al que le pide finalizar
+inmediatamente (<EM>SIGTERM</EM> o <EM>SIGQUIT</EM> durante el
+<EM>apagado</EM> del sistema, por ejemplo) puede intentar guardar
+al vuelo el correo ya escrito pero que a&uacute;n no ha sido enviado.
+En las primeras versiones, se creaba el archivo <CODE>/tmp/dead.letter</CODE>.
+Bastaba entonces con que el usuario creara (puesto que puede escribir en el directorio
+<CODE>/tmp</CODE>) un enlace f&iacute;sico al directorio <CODE>/etc/passwd</CODE> con
+el nombre <CODE>dead.letter</CODE> para que el cliente de correo (ejecut&aacute;ndose
+con UID efectivo <EM>root</EM>) escribiera en este archivo el contenido del
+mensaje a medio terminar (que conten&iacute;a, por casualidad, la l&iacute;nea "<CODE>root::1:99999:::::</CODE>"). </P>
+<P>El primer problema con este comportamiento es la naturaleza previsible
+del nombre del archivo. Basta con observar una &uacute;nica vez la aplicaci&oacute;n para deducir
+que usar&aacute; el nombre de archivo <CODE>/tmp/dead.letter</CODE>. Por lo tanto,
+el primer paso consiste en emplear un nombre de archivo especialmente concebido
+para la instancia del programa actual. Existen diversas funciones de biblioteca capaces de
+proporcionarnos un nombre de archivo temporal personal</P>
+<P>Supongamos que tenemos una funci&oacute;n de este tipo que nos proporcione
+un &uacute;nico nombre para nuestro archivo temporal.  Hay software libre disponible
+con su c&oacute;digo fuente (con su correspondiente biblioteca C). No obstante, el
+nombre del archivo resultante es previsible aunque bastante dif&iacute;cil de adivinar. Un
+atacante podr&iacute;a crear un enlace simb&oacute;lico al nombre proporcionado por la biblioteca C.
+Nuestra primer reacci&oacute;n es, por lo tanto, verificar que el archivo existe antes de abrirlo.
+Ingenuamente podr&iacute;amos escribir algo como :
+</P><PRE>  if ((fd = open (filename, O_RDWR)) != -1) {
+    fprintf (stderr, "%s ya existe\n", filename);
+    exit(EXIT_FAILURE);
+  }
+  fd = open (filename, O_RDWR | O_CREAT, 0644);
+  ...
+</PRE>
+<P>Obviamente, este es un t&iacute;pico caso de <EM>condici&oacute;n de carrera</EM> donde
+un usuario se las arregla para crear un enlace al <CODE>/etc/passwd</CODE> entre
+el primer <CODE>open()</CODE> y el segundo creando de esta manera un agujero
+de seguridad. Es necesario contar con un medio para efectuar estas dos operaciones
+pr&aacute;cticamente en forma simult&aacute;nea de modo que no pueda ocurrir ninguna manipulaci&oacute;n
+entre ellas. Existe una opci&oacute;n espec&iacute;fica de la llamada al sistema
+<CODE>open()</CODE> denominada <EM>O_EXCL</EM> y que se debe usar conjuntamente con
+<EM>O_CREAT</EM>. Esta opci&oacute;n hace que <EM>open()</EM> d&eacute; error si el archivo ya
+existe pero pero la verificaci&oacute;n de existencia est&aacute; &iacute;ntimamente ligada a la
+creaci&oacute;n.</P>
+<P>A prop&oacute;sito, la extensi&oacute;n Gnu '<CODE>x</CODE>' para los modos de apertura
+de la funci&oacute;n <CODE>fopen()</CODE> exige una creaci&oacute;n exclusiva del archivo y
+falla si el archivo ya existe:
+
+</P><PRE>  FILE * fp;
+
+  if ((fp = fopen (nombre_archivo, "r+x")) == NULL) {
+    perror ("No es posible crear el archivo.");
+    exit (EXIT_FAILURE);
+  }
+</PRE>
+<P></P>
+<P>Los permisos asociados a los archivos temporales juegan igualmente un rol
+importante. En efecto, si se debe escribir informaci&oacute;n confidencial y el archivo
+est&aacute; en modo 644 (lectura/escritura para el propietario, s&oacute;lo lectura para el
+resto de los usuarios) puede resultar un tanto molesto. La funci&oacute;n
+
+<PRE>	#include &lt;sys/types.h&gt;
+	#include &lt;sys/stat.h&gt;
+        mode_t umask(mode_t mask);
+</PRE>
+nos permite fijar los permisos que ser&aacute;n otorgados a un archivo  durante su creaci&oacute;n.
+De esta manera, luego de la llamada <CODE>umask(077)</CODE> el archivo se abrir&aacute;
+en modo 600 (lectura/escritura para el propietario, sin derechos para el resto
+de los usuarios).
+<P></P>
+<P>Generalmente, la creaci&oacute;n de archivos temporales se efect&uacute;a en tres etapas:
+<OL>
+  <LI>se crea un nombre &uacute;nico (al azar)&nbsp;;
+  <LI>se abre el archivo usando <CODE>O_CREAT | O_EXCL</CODE> con una pol&iacute;tica
+  de permisos lo m&aacute;s restrictiva posible;
+  <LI>se verifica el resultado al abrir el archivo y se act&uacute;a en consecuencia (ya sea
+  reintentar o abandonar). </LI></OL>
+<P>Detallemos ahora las posibilidades que existen para obtener un archivo temporal.
+Las funciones
+<PRE>      #include &lt;stdio.h&gt;
+
+      char *tmpnam(char *s);
+      char *tempnam(const char *dir, const char *prefix);
+
+</PRE>devuelven punteros a nombres creados al azar.
+<P></P>
+<P>La primera funci&oacute;n admite un argumento <CODE>NULL</CODE> en cuyo caso devuelve
+la direcci&oacute;n de un b&uacute;fer est&aacute;tico. Su contenido cambiar&aacute; en la siguiente llamada
+de <CODE>tmpnam(NULL)</CODE>. Si el argumento es una cadena asignada, el nombre
+se copia aqu&iacute; lo que requiere de una cadena de por lo menos <CODE>L-tmpnam</CODE>
+bytes. &iexcl;Tengan cuidado con los desbordamientos de b&uacute;fer! La p&aacute;gina del
+<CODE>manual</CODE> informa acerca de problemas cuando se usa esta funci&oacute;n con el
+par&aacute;metro <CODE>NULL</CODE> si se definen <CODE>_POSIX_THREADS</CODE> o
+<CODE>_POSIX_THREAD_SAFE_FUNCTIONS</CODE>.</P>
+<P>La funci&oacute;n <CODE>tempnam()</CODE> devuelve un puntero a una cadena. El
+directorio <CODE>dir</CODE> debe ser "apropiado" (la p&aacute;gina <CODE>man</CODE>
+describe el significado exacto de la palabra "apropiado"). Esta funci&oacute;n verifica que el
+archivo no exista antes de devolver su nombre. Sin embargo, una vez m&aacute;s
+la p&aacute;gina del manual (<CODE>man</CODE>) no recomienda su uso pues
+el t&eacute;rmino "apropiado" puede tener diferentes significados seg&uacute;n
+las implementaciones de la funci&oacute;n. Mencionemos que Gnome recomienda
+su uso de la siguiente manera :
+<PRE>  char *filename;
+  int fd;
+
+  do {
+    filename = tempnam (NULL, "foo");
+    fd = open (filename, O_CREAT | O_EXCL | O_TRUNC | O_RDWR, 0600);
+    free (filename);
+  } while (fd == -1);
+</PRE>El uso del bucle reduce algunos riesgos pero crea otros. Imaginen lo que
+suceder&iacute;a si la partici&oacute;n donde se desea crear el archivo temporal estuviese llena o
+si el sistema ya hubiera abierto el n&uacute;mero m&aacute;ximo de archivos disponible a la vez...
+<P></P>
+<P>La funci&oacute;n
+<PRE>       #include &lt;stdio.h&gt;
+
+       FILE *tmpfile (void);
+</PRE>crea un &uacute;nico nombre de archivo y lo abre. Este archivo se borra
+autom&aacute;ticamente al cerrarlo.
+<P></P>
+<P>En GlibC-2.1.3, esta funci&oacute;n usa un mecanismo similar a  <CODE>tmpnam()</CODE>
+para generar el nombre del archivo y abrir el correspondiente descriptor.
+El archivo luego es eliminado, pero Linux realmente no lo borrar&aacute; sino hasta
+que ning&uacute;n recurso lo utilice, es decir, cuando el descriptor del archivo
+se libere a trav&eacute;s de la llamada al sistema <CODE>close()</CODE>.
+</P><PRE>  FILE * fp_tmp;
+
+  if ((fp_tmp = tmpfile()) == NULL) {
+    fprintf (stderr, "No es posible crear un archivo temporal\n");
+    exit (EXIT_FAILURE);
+  }
+
+  /* ... uso del archivo temporal ... */
+
+  fclose (fp_tmp);  /* verdadera eliminaci&oacute;n del archivo por el sistema */
+</PRE>
+<P>Los casos m&aacute;s sencillos no requieren del cambio del nombre del archivo
+ni la transmici&oacute;n a otro proceso, sino &uacute;nicamente del almacenamiento y
+de la relectura de datos en un &aacute;rea temporal. Por lo tanto, generalmente no se necesita
+conocer el nombre del archivo temporal sino s&oacute;lo acceder a su contenido.
+La funci&oacute;n <CODE>tmpfile()</CODE> hace precisamente esto.</P>
+<P>La p&aacute;gina del <CODE>manual</CODE> no desaconseja su uso pero s&iacute; lo hace el
+Secure-Programs-HOWTO. Seg&uacute;n el autor, las especificaciones no garantizan la creaci&oacute;n
+del archivo y no ha podido verificar cada implementaci&oacute;n. A pesar de esta reserva,
+esta funci&oacute;n es la m&aacute;s eficiente. </P>
+<P>Por &uacute;ltimo, las funciones
+<PRE>       #include &lt;stdlib.h&gt;
+
+       char *mktemp(char *template);
+       int mkstemp(char *template);
+</PRE>crean un &uacute;nico nombre desde una plantilla que consta de una cadena que termina
+con la cadena "<CODE>XXXXXX</CODE>". Estas 'Xs' se reemplazan para obtener un
+nombre de archivo &uacute;nico.
+<P></P>
+<P>Segun las distintas versiones, <CODE>mktemp()</CODE> reemplaza las primeras cinco 'X' con
+el <EM>ID del proceso</EM> (PID) ...lo que hace f&aacute;cil suponer el nombre ya que
+&uacute;nicamente la &uacute;ltima 'X' es aleatoria. Algunas versiones permiten m&aacute;s de seis 'X'. </P>
+El Secure-Programs-HOWTO recomienda el uso de la funci&oacute;n <P><CODE>mkstemp()</CODE>
+
+Aqu&iacute; est&aacute; el m&eacute;todo propuesto:
+<PRE>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+ void failure(msg) {
+  fprintf(stderr, "%s\n", msg);
+  exit(1);
+ }
+
+/*
+ * Crea un archivo temporal y lo devuelve
+ * Esta rutina elimina el nombre del archivo del sistema de archivos
+ * con lo cual no volver&aacute; a aparecer al listar el contenido del directorio.
+ */
+FILE *create_tempfile(char *temp_filename_pattern)
+{
+  int temp_fd;
+  mode_t old_mode;
+  FILE *temp_file;
+
+  /* Crea un archivo con permisos restrictivos */
+  old_mode = umask(077);
+  temp_fd = mkstemp(temp_filename_pattern);
+  (void) umask(old_mode);
+  if (temp_fd == -1) {
+    failure("No se pudo abrir el archivo temporal");
+  }
+  if (!(temp_file = fdopen(temp_fd, "w+b"))) {
+    failure("No se pudo crear el descriptor del archivo temporal");
+  }
+  if (unlink(temp_filename_pattern) == -1) {
+    failure("No se pudo eliminar el enlace al archivo temporal");
+  }
+  return temp_file;
+}
+</PRE>
+<P>Estas funciones muestran los problemas relacionados con la abstracci&oacute;n y
+portabilidad.
+Es decir, se espera que las funciones de la biblioteca est&aacute;ndar
+proporcionen caracter&iacute;sticas (abstracci&oacute;n)...pero la forma de implementarlas
+var&iacute;a seg&uacute;n el sistema empleado (portabilidad). Por ejemplo, la funci&oacute;n
+<CODE>tmpfile()</CODE> abre un archivo temporal de distintas maneras
+(algunas versiones no usan <CODE>O_EXCL</CODE>) o <CODE>mkstemp()</CODE>
+maneja un n&uacute;mero variable de 'X' de acuerdo a determinadas implementaciones.
+<A NAME="lfindex7">&nbsp;</A>
+<H2>Conclusi&oacute;n</H2>
+
+<P>Hemos analizado la mayor&iacute;a de los problemas de seguridad relacionados
+con los accesos concurrentes a un mismo recurso. Tengamos presente que
+nunca se debe suponer que dos operaciones consecutivas siempre
+se procesan en forma secuencial en la CPU a menos que el kernel
+lo considere as&iacute;. Si bien las condiciones de carrera generan agujeros
+de seguridad no se deben despreciar los que se basan en otros recursos
+como las variables comunes entre diferentes hebras o
+los segmentos de memoria compartidos por intermedio de los mecanismos
+<CODE>shmget()</CODE>. Se deben implementar mecanismos de selecci&oacute;n de
+accesos (mediante sem&aacute;foros, por ejemplo) para evitar fallas dif&iacute;ciles
+de diagnosticar.
+</P>
+<A NAME="lfindex8">&nbsp;</A>
+<H2>Enlaces</H2>
+
+<UL>
+  <LI><EM>Secure-Programs-HOWTO</EM> por David A. Wheeler&nbsp;: <A
+  href="http://www.linuxdoc.org/HOWTO/Secure-Programs-HOWTO/">www.linuxdoc.org/HOWTO/Secure-Programs-HOWTO/</A>
+  </LI></UL>
+<HR>
+
+<P></P>
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://www.linuxfocus.org/cgi-bin/lftalkback?anum=198&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://www.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article198.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:pappy@users.sourceforge.net,ccb@club-internet.fr,grenier@nef.esiea.fr"><FONT COLOR="#FFFFFF">Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:georges.t@linuxfocus.org"><FONT COLOR="#FFFFFF">Georges Tarbouriech</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:sherm_pbody@yahoo.com"><FONT COLOR="#FFFFFF">Lorne Bailey</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:wecharri@yahoo.com"><FONT COLOR="#FFFFFF">Walter Echarri</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-09-24, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

@@ -1,0 +1,2177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<HTML
+><HEAD
+><TITLE
+>Programación Básica de Sockets en Unix para Novatos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN2"
+></A
+>Programación Básica de Sockets en Unix para Novatos</H1
+><HR
+WIDTH="75%"
+ALIGN="CENTER"
+COLOR="#000000"
+SIZE="1"></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+><A
+HREF="#INTRO"
+>Introducción</A
+></DT
+><DT
+><A
+HREF="#SOCKETS-DIFF"
+>Diferentes tipos de sockets en Internet</A
+></DT
+><DT
+><A
+HREF="#STRUCT"
+>Estructuras</A
+></DT
+><DT
+><A
+HREF="#CONV"
+>Conversiones</A
+></DT
+><DT
+><A
+HREF="#IP"
+>Direcciones IP</A
+></DT
+><DT
+><A
+HREF="#FUNC"
+>Funciones Importantes</A
+></DT
+><DT
+><A
+HREF="#DNS"
+>Algunas palabras sobre dns</A
+></DT
+><DT
+><A
+HREF="#SERVER-EX"
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Servidor de Flujos</I
+></A
+></DT
+><DT
+><A
+HREF="#CLIENT-EX"
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+></A
+></DT
+><DT
+><A
+HREF="#LASTWORDS"
+>Últimas Palabras</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="INTRO"
+></A
+>Introducción</H1
+><P
+>   ¿Estás tratando de aprender programación de sockets en C? ¿O piensas que es una tarea demasiado difícil? Si es así, debes leer este tutorial básico para aprender las ideas y conceptos 
+   básicos y así, empezar a trabajar con sockets. Tras leer este tutorial no esperes ser un &#8220;maestro&#8221; en la programación de sockets. Sólo lo serás si practicas y lees mucho. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="SOCKETS-DIFF"
+></A
+>Diferentes tipos de sockets en Internet</H1
+><P
+>En primer lugar deberé explicar qué es un socket. De un modo muy simple, se puede decir que es una manera de hablar con otra computadora. Para ser más preciso, es una manera de hablar con otras computadoras usando descriptores de ficheros estándar de Unix. En Unix, todas las acciones de entrada y salida son desempeñadas escribiendo o leyendo en uno de estos descriptores de fichero, los cuales son simplemente un número entero, asociado a un fichero abierto que puede ser una conexión de red, un terminal, o cualquier otra cosa<A
+NAME="AEN34"
+HREF="#FTN.AEN34"
+><SPAN
+CLASS="footnote"
+>[1]</SPAN
+></A
+></P
+><P
+>Ahora bien, sobre los diferentes tipos de sockets en Internet, hay muchos tipos pero sólo se describirán dos de ellos - Sockets de Flujo (<TT
+CLASS="VARNAME"
+>SOCK_STREAM</TT
+>) y Sockets de Datagramas (<TT
+CLASS="VARNAME"
+>SOCK_DGRAM</TT
+>). </P
+><P
+>Y &#8220;¿cuál es la diferencia entre estos dos tipos?&#8221;, podrías preguntarte. He aquí la respuesta:</P
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>Sockets de Flujo. </B
+></B
+> Están libres de errores: Si por ejemplo, enviáramos por el socket de flujo tres objetos "A, B, C", llegarán al destino en el mismo orden -- "A, B, C". Estos sockets usan <SPAN
+CLASS="ACRONYM"
+>TCP</SPAN
+> ("Transmission Control Protocol"<A
+NAME="AEN44"
+HREF="#FTN.AEN44"
+><SPAN
+CLASS="footnote"
+>[2]</SPAN
+></A
+>) y es este protocolo el que nos asegura el orden de los objetos durante la transmisión. </P
+></DIV
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>Sockets de Datagramas. </B
+></B
+>Éstos usan <SPAN
+CLASS="ACRONYM"
+>UDP</SPAN
+> (&#8220;User Datagram Protocol&#8221;<A
+NAME="AEN50"
+HREF="#FTN.AEN50"
+><SPAN
+CLASS="footnote"
+>[3]</SPAN
+></A
+>), y no necesitan de una conexión accesible como los Sockets de Flujo -- se construirá un paquete de datos con información sobre su destino y se  enviará afuera, sin necesidad de una conexión. </P
+></DIV
+><P
+>Mucho más podría explicarse aquí sobre estas dos clases de sockets, pero creo que esto es suficiente como para captar el concepto básico de socket. Entender qué es un socket y algo sobre estos dos tipos de sockets de Internet es un buen comienzo, pero lo más importante será saber cómo trabajar con ellos. Esto se aprenderá en las próximas secciones. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="STRUCT"
+></A
+>Estructuras</H1
+><P
+>El propósito de esta sección no es enseñar el concepto de <I
+CLASS="EMPHASIS"
+>estructuras</I
+> en programación, sino enseñar cómo se usan éstas en la programación de Sockets en C. Si no sabes lo que es una estructura, mi consejo es leer un buen tutorial de C. Por el momento, digamos simplemente que una estructura es un tipo de dato que es un conglomerado, o sea, que puede contener otros tipos de datos, los cuales son agrupados todos juntos en un único tipo definido por el programador. </P
+><P
+>Las estructuras son usadas en la programación de sockets para almacenar información sobre direcciones. La primera de ellas es <SPAN
+CLASS="TYPE"
+>struct</SPAN
+> <SPAN
+CLASS="STRUCTNAME"
+>sockaddr</SPAN
+>, la cual contiene información del socket. </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>struct sockaddr 
+{ 
+   unsigned short sa_family;  /* familia de la dirección */ 
+   char sa_data[14];          /* 14 bytes de la dirección del protocolo */  
+}; 
+
+    </PRE
+></TD
+></TR
+></TABLE
+><P
+>Pero, existe otra estructura, <SPAN
+CLASS="TYPE"
+>struct</SPAN
+> <SPAN
+CLASS="STRUCTNAME"
+>sockaddr_in</SPAN
+>, la cual nos ayuda a hacer referencia a los elementos del socket. </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>struct sockaddr_in 
+{ 
+   short int sin_family;        /* Familia de la Dirección              */ 
+   unsigned short int sin_port; /* Puerto                               */
+   struct in_addr sin_addr;     /* Dirección de Internet                */
+   unsigned char sin_zero[8];   /* Del mismo tamaño que struct sockaddr */ 
+}; 
+    </PRE
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>Nota. </B
+></B
+><SPAN
+CLASS="STRUCTNAME"
+>sin_zero</SPAN
+> puede ser configurada con ceros usando las funciones <TT
+CLASS="FUNCTION"
+>memset()</TT
+> o <TT
+CLASS="FUNCTION"
+>bzero()</TT
+> (Ver los ejemplos más abajo). </P
+></DIV
+><P
+>La siguiente estructura no es muy usada pero está definida como una unión. </P
+><P
+>Como se puede ver en los dos ejemplos de abajo (ver <A
+HREF="#SERVER-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Servidor de Flujos</I
+></I
+></A
+> y <A
+HREF="#CLIENT-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+></I
+></A
+>), cuando se declara, por ejemplo &#8220;client&#8221; para que sea del tipo <SPAN
+CLASS="STRUCTNAME"
+>sockaddr_in</SPAN
+>, luego se hace <TT
+CLASS="VARNAME"
+>client.sin_addr = (...)</TT
+>. </P
+><P
+>De todos modos, aquí está la estructura: </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    
+struct in_addr 
+{
+   unsigned   long s_addr;
+};</PRE
+></TD
+></TR
+></TABLE
+><P
+>Finalmente, creo que es mejor hablar sobre la estructura <SPAN
+CLASS="STRUCTNAME"
+>hostent</SPAN
+>. En el ejemplo de Cliente de Flujos (ver <A
+HREF="#CLIENT-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+></I
+></A
+>), se puede ver cómo se usa esta estructura, con la cual obtenemos información del nodo remoto<A
+NAME="AEN82"
+HREF="#FTN.AEN82"
+><SPAN
+CLASS="footnote"
+>[4]</SPAN
+></A
+>. </P
+><P
+>Aquí se puede ver su definición: </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    
+struct hostent 
+{   
+   char *h_name;                   /* El nombre oficial del nodo.               */
+   char **h_aliases;               /* Lista de Alias.                           */
+   int h_addrtype;                 /* Tipo de dirección del nodo.               */
+   int h_length;                   /* Longitud de la dirección.                 */
+   char **h_addr_list;             /* Lista de direcciones del nombre del       */
+                                   /* servidor.                                 */
+   #define h_addr  h_addr_list[0]  /* Dirección, para la compatibilidad con     */
+                                   /* anteriores.                               */
+};</PRE
+></TD
+></TR
+></TABLE
+><P
+>Esta estructura está definida en el fichero <TT
+CLASS="FILENAME"
+>netdb.h</TT
+>. </P
+><P
+>Al principio, es posible que estas estructuras nos confundan mucho. Sin embargo, después de  empezar a escribir algunas líneas de código, y tras ver
+los ejemplos que se incluyen en este tutorial, será mucho más fácil entenderlas. Para ver cómo se pueden usar estas estructuras, recomiendo ver los ejemplos de <A
+HREF="#SERVER-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Servidor de Flujos</I
+></I
+></A
+> y <A
+HREF="#CLIENT-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+></I
+></A
+>.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="CONV"
+></A
+>Conversiones</H1
+><P
+>Existen dos tipos de ordenamiento de bytes: <I
+CLASS="EMPHASIS"
+>bytes más significativos</I
+>, y <I
+CLASS="EMPHASIS"
+>bytes menos significativos</I
+>. Éste es llamado &#8220;Ordenación de Bytes para Redes&#8221;<A
+NAME="AEN98"
+HREF="#FTN.AEN98"
+><SPAN
+CLASS="footnote"
+>[5]</SPAN
+></A
+>, algunas máquinas utilizan este tipo de ordenación  para guardar sus datos internamente. </P
+><P
+>Existen dos tipos a los cuales seremos capaces de convertir: <SPAN
+CLASS="TYPE"
+>short</SPAN
+> y <SPAN
+CLASS="TYPE"
+>long</SPAN
+>
+		<A
+NAME="AEN104"
+HREF="#FTN.AEN104"
+><SPAN
+CLASS="footnote"
+>[6]</SPAN
+></A
+>. 
+		Imaginémonos que se quiere convertir una variable larga de Ordenación de Bytes para Nodos a una de Orden de Bytes para Redes. ¿Qué haríamos? Existe una función llamada <TT
+CLASS="FUNCTION"
+>htonl()</TT
+> que haría exactamente esta conversión. Las siguientes funciones son análogas a ésta y se encargan de hacer este tipo de conversiones: </P
+><P
+></P
+><UL
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>htons()</TT
+> -&#62; ``Nodo a variable corta de Red'' </P
+></LI
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>htonl()</TT
+> -&#62; ``Nodo a variable larga de Red'' </P
+></LI
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>ntohs()</TT
+> -&#62; ``Red a variable corta de Nodo'' </P
+></LI
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>ntohl()</TT
+> -&#62; ``Red a variable larga de Nodo'' </P
+></LI
+></UL
+><P
+>Estarás pensando ahora para qué necesitamos todas estas funciones, y el porqué de estos ordenamientos. Bien, cuando se termine de leer este documento todas estas dudas se aclararán (aunque sea un poco). Todo lo que necesitará es leer y practicar mucho. </P
+><P
+>Una cosa importante, es que <TT
+CLASS="VARNAME"
+>sin_addr</TT
+> y <TT
+CLASS="VARNAME"
+>sin_port</TT
+>, de la estructura <SPAN
+CLASS="STRUCTNAME"
+>sockaddr_in</SPAN
+>, deben ser del tipo Ordenación de Bytes para Redes. Se verá, en los ejemplos, las funciones que aquí se describen para realizar estas conversiones, y a ese punto se entenderán mucho mejor. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="IP"
+></A
+>Direcciones IP</H1
+><P
+>En <SPAN
+CLASS="ACRONYM"
+>C</SPAN
+>, existen algunas funciones que nos ayudarán a manipular <I
+CLASS="EMPHASIS"
+>direcciones IP</I
+>. En esta sección se hablará de las funciones <TT
+CLASS="FUNCTION"
+>inet_addr()</TT
+> y <TT
+CLASS="FUNCTION"
+>inet_ntoa()</TT
+>. </P
+><P
+>Por un lado, la función <TT
+CLASS="FUNCTION"
+>inet_addr()</TT
+> convierte una dirección IP en un entero largo sin signo (<SPAN
+CLASS="TYPE"
+>unsigned long int</SPAN
+>), por ejemplo: </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		     
+(...) 
+
+dest.sin_addr.s_addr = inet_addr("195.65.36.12"); 
+
+(...)
+
+/*Recordar que esto sería así, siempre que tengamos una estructura "dest" 
+del tipo sockaddr_in*/
+
+   </PRE
+></TD
+></TR
+></TABLE
+><P
+>Por otro lado, <TT
+CLASS="FUNCTION"
+>inet_ntoa()</TT
+> convierte a una cadena que contiene una dirección IP en un entero largo. Por ejemplo: </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>		      
+(...)
+
+char *ip;
+
+ip=inet_ntoa(dest.sin_addr);
+
+printf("La dirección es: %s\n",ip);
+
+(...)
+    </PRE
+></TD
+></TR
+></TABLE
+><P
+>Se deberá recordar también que la función <TT
+CLASS="FUNCTION"
+>inet_addr()</TT
+> devuelve la dirección en formato de Ordenación de Bytes para Redes por lo que no necesitaremos llamar a <TT
+CLASS="FUNCTION"
+>htonl()</TT
+>. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="FUNC"
+></A
+>Funciones Importantes</H1
+><P
+>En esta sección, (en la cual se nombrarán algunas de las funciones más utilizadas para la programación en <SPAN
+CLASS="ACRONYM"
+>C</SPAN
+> de sockets), se mostrará la sintaxis de la función, las bibliotecas necesarias a incluir para llamarla, y algunos pequeños comentarios. Además de las que se mencionan aquí, existen muchas funciones más, aunque sólo decidí incluir éstas. Tal vez sean incluidas en una futura versión de este documento<A
+NAME="AEN146"
+HREF="#FTN.AEN146"
+><SPAN
+CLASS="footnote"
+>[7]</SPAN
+></A
+>. Nuevamente, para ver ejemplos sobre el uso de estas funciones, se podrá leer <A
+HREF="#SERVER-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Servidor de Flujos</I
+></I
+></A
+> y <A
+HREF="#CLIENT-EX"
+>la sección de nombre <I
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+></I
+></A
+>,  en las cuales hay código fuente de un <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+> y un <I
+CLASS="EMPHASIS"
+>Servidor de Flujos</I
+>. </P
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="SOCKET"
+></A
+><TT
+CLASS="FUNCTION"
+>socket() </TT
+></H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>     
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int socket(int domain,int type,int protocol);
+     
+	</PRE
+></TD
+></TR
+></TABLE
+><P
+>Analicemos los argumentos: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>domain. </B
+></B
+>Se podrá establecer como <TT
+CLASS="VARNAME"
+>AF_INET</TT
+> (para usar los protocolos ARPA de Internet), o como <TT
+CLASS="VARNAME"
+>AF_UNIX</TT
+> (si se desea crear sockets para la comunicación interna del sistema). Éstas son las más usadas, pero no las únicas. Existen muchas más, aunque no se nombrarán aquí. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>type. </B
+></B
+>Aquí se debe especificar la clase de socket que queremos usar (de Flujos o de Datagramas). Las variables que deben aparecer son <TT
+CLASS="VARNAME"
+>SOCK_STREAM</TT
+> o <TT
+CLASS="VARNAME"
+>SOCK_DGRAM</TT
+> según querramos usar sockets de Flujo o de Datagramas, respectivamente. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>protocol. </B
+></B
+>Aquí, simplemente se puede establecer el protocolo a 0. </P
+></DIV
+></LI
+></UL
+><P
+>La función <TT
+CLASS="FUNCTION"
+>socket()</TT
+> nos devuelve un descriptor de socket, el cual podremos usar luego para llamadas al sistema. Si nos devuelve <I
+CLASS="EMPHASIS"
+>-1</I
+>, se ha producido un error (obsérvese que esto puede resultar útil para rutinas de verificación de errores). </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="BIND"
+></A
+>bind()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>     
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int bind(int fd, struct sockaddr *my_addr,int addrlen);
+      
+      </PRE
+></TD
+></TR
+></TABLE
+><P
+>Analicemos los argumentos: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Es el descriptor de fichero socket devuelto por la llamada a <TT
+CLASS="FUNCTION"
+>socket()</TT
+>. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>my_addr. </B
+></B
+>es un puntero a una estructura <SPAN
+CLASS="STRUCTNAME"
+>sockaddr</SPAN
+></P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>addrlen. </B
+></B
+>contiene la longitud de la estructura <SPAN
+CLASS="STRUCTNAME"
+>sockaddr</SPAN
+> a la cuál apunta el puntero <TT
+CLASS="VARNAME"
+>my_addr</TT
+>. Se debería establecer como <TT
+CLASS="FUNCTION"
+>sizeof(struct sockaddr)</TT
+>.</P
+></DIV
+></LI
+></UL
+><P
+>La llamada <TT
+CLASS="FUNCTION"
+>bind()</TT
+> se usa cuando los puertos locales de nuestra máquina están en nuestros planes (usualmente cuando utilizamos la llamada <TT
+CLASS="FUNCTION"
+>listen()</TT
+>). Su función esencial es asociar un socket con un puerto (de nuestra máquina). Análogamente <TT
+CLASS="FUNCTION"
+>socket()</TT
+>, devolverá -1 en caso de error. </P
+><P
+>Por otro lado podremos hacer que nuestra dirección IP y puerto sean elegidos automáticamente: </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    
+      server.sin_port = 0;                 /* bind() elegirá un puerto aleatoriamente */
+      server.sin_addr.s_addr = INADDR_ANY; /* pone la Ip del seridor automáticamente  */
+    
+      </PRE
+></TD
+></TR
+></TABLE
+><P
+>Un aspecto importante sobre los puertos y la llamada <TT
+CLASS="FUNCTION"
+>bind()</TT
+> es que todos los puertos menores que 1024 están reservados. Se podrá establecer un puerto, siempre que esté entre 1024 y 65535 (y siempre que no estén siendo usados por otros programas).</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="CONNECT"
+></A
+>connect()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>      
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int connect(int fd, struct sockaddr *serv_addr, int addrlen);
+ 
+      </PRE
+></TD
+></TR
+></TABLE
+><P
+>Analicemos los argumentos: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Debería configurarse como el fichero descriptor del socket, el cuál fue devuelto por la llamada a <TT
+CLASS="FUNCTION"
+>socket()</TT
+>. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>serv_addr. </B
+></B
+>Es un puntero a la estructura <SPAN
+CLASS="STRUCTNAME"
+>sockaddr</SPAN
+> la cuál contiene la dirección IP destino y el puerto. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>addrlen. </B
+></B
+>Análogamente de lo que pasaba con <TT
+CLASS="FUNCTION"
+>bind()</TT
+>, este argumento debería establecerse como <TT
+CLASS="FUNCTION"
+>sizeof(struct sockaddr)</TT
+>. </P
+></DIV
+></LI
+></UL
+><P
+>La función <TT
+CLASS="FUNCTION"
+>connect()</TT
+> se usa para conectarse a un puerto definido en una dirección IP. Devolverá -1 si ocurre algún error. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="LISTEN"
+></A
+>listen()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>      
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int listen(int fd,int backlog); 
+ 
+      </PRE
+></TD
+></TR
+></TABLE
+><P
+>Veamos los argumentos de <TT
+CLASS="FUNCTION"
+>listen()</TT
+>: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+> Es el fichero descriptor del socket, el cual fue devuelto por la llamada a <TT
+CLASS="FUNCTION"
+>socket()</TT
+></P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>backlog. </B
+></B
+>Es el número de conexiones permitidas.</P
+></DIV
+></LI
+></UL
+><P
+>La función <TT
+CLASS="FUNCTION"
+>listen()</TT
+> se usa si se están esperando conexiones entrantes, lo cual significa, si se quiere, que alguien pueda conectarse a nuestra máquina.</P
+><P
+>Después de llamar a <TT
+CLASS="FUNCTION"
+>listen()</TT
+>, se deberá llamar a <TT
+CLASS="FUNCTION"
+>accept()</TT
+>, para así aceptar las conexiones entrantes. La secuencia resumida de llamadas al sistema es:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>socket()</TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>bind() </TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>listen()</TT
+></P
+></LI
+><LI
+><P
+><TT
+CLASS="FUNCTION"
+>accept()</TT
+>/* En la próxima sección se explicará como usar esta llamada */</P
+></LI
+></OL
+><P
+>Como todas las funciones descritas arriba, listen() devolverá -1 en caso de error. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="AEN264"
+></A
+>accept()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+> 
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int accept(int fd, void *addr, int *addrlen);
+      </PRE
+></TD
+></TR
+></TABLE
+><P
+>Veamos los argumentos de la función: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Es el fichero descriptor del socket, que fue devuelto por la llamada a <TT
+CLASS="FUNCTION"
+>listen()</TT
+>. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>addr. </B
+></B
+>Es un puntero a una estructura <SPAN
+CLASS="STRUCTNAME"
+>sockaddr_in</SPAN
+> en la quel se pueda determinar qué nodo nos está contactando y desde qué puerto. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>addrlen. </B
+></B
+>Es la longitud de la estructura a la que apunta el argumento <TT
+CLASS="VARNAME"
+>addr</TT
+>, por lo que conviene establecerlo como <TT
+CLASS="FUNCTION"
+>sizeof(struct sockaddr_in)</TT
+>, antes de que su dirección sea pasada a <TT
+CLASS="FUNCTION"
+>accept()</TT
+>. </P
+></DIV
+></LI
+></UL
+><P
+>Cuando alguien intenta conectarse a nuestra computadora, se debe usar <TT
+CLASS="FUNCTION"
+>accept()</TT
+> para conseguir la conexión. Es muy fácil de entender: alguien sólo podrá conectarse (asóciese con <TT
+CLASS="FUNCTION"
+>connect()</TT
+>) a nuestra máquina, si nosotros aceptamos (asóciese con <TT
+CLASS="FUNCTION"
+>accept()</TT
+>) ;-) </P
+><P
+>A continuación, Se dará un pequeño ejemplo del uso de <TT
+CLASS="FUNCTION"
+>accept()</TT
+> para obtener la conexión, ya que esta llamada es un poco diferente de las demás. </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>      
+(...)
+
+sin_size=sizeof(struct sockaddr_in);
+/* En la siguiente línea se llama a accept() */ 
+if ((fd2 = accept(fd,(struct sockaddr *)&#38;client,&#38;sin_size))==-1){ 
+printf("accept() error\n");
+exit(-1);
+}
+
+(...)</PRE
+></TD
+></TR
+></TABLE
+><P
+>A este punto se usará la variable <TT
+CLASS="VARNAME"
+>fd2</TT
+> para añadir las llamadas <TT
+CLASS="FUNCTION"
+>send()</TT
+> y <TT
+CLASS="FUNCTION"
+>recv()</TT
+>. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="SEND"
+></A
+>send()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>      
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int send(int fd,const void *msg,int len,int flags);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Y sobre los argumentos de esta llamada: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Es el fichero descriptor del socket, con el cual se desea enviar datos. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>msg. </B
+></B
+>Es un puntero apuntando al dato que se quiere enviar.</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>len. </B
+></B
+>es la longitud del dato que se quiere enviar (en bytes).</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>flags. </B
+></B
+>deberá ser establecido a 0<A
+NAME="AEN318"
+HREF="#FTN.AEN318"
+><SPAN
+CLASS="footnote"
+>[8]</SPAN
+></A
+> . </P
+></DIV
+></LI
+></UL
+><P
+>El propósito de esta función es enviar datos usando sockets de flujo o sockets conectados de datagramas. Si se desea enviar datos usando sockets no conectados de datagramas debe usarse la llamada <TT
+CLASS="FUNCTION"
+>sendto()</TT
+>. Al igual que todas las demás llamadas que aquí se vieron, <TT
+CLASS="FUNCTION"
+>send()</TT
+> devuelve -1 en caso de error, o el número de bytes enviados en caso de éxito. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="RECV"
+></A
+>recv()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int recv(int fd, void *buf, int len, unsigned int flags);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Veamos los argumentos: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Es el descriptor del socket por el cual se leerán datos.</P
+></DIV
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>buf. </B
+></B
+>Es el búfer en el cual se guardará la información a recibir.</P
+></DIV
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>len. </B
+></B
+>Es la longitud máxima que podrá tener el búffer. </P
+></DIV
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>flags. </B
+></B
+>Por ahora, se deberá establecer como 0.</P
+></DIV
+></LI
+></UL
+><P
+>Al igual de lo que se dijo para <TT
+CLASS="FUNCTION"
+>send()</TT
+>, esta función es usada con datos en sockets de flujo o sockets conectados de datagramas. Si se deseara enviar, o en este caso, recibir datos usando sockets <I
+CLASS="EMPHASIS"
+>desconectados</I
+> de Datagramas, se debe usar la llamada <TT
+CLASS="FUNCTION"
+>recvfrom()</TT
+>. Análogamente a <TT
+CLASS="FUNCTION"
+>send()</TT
+>, <TT
+CLASS="FUNCTION"
+>recv()</TT
+> devuelve el número de bytes leídos en el búfer, o -1 si se produjo un error. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="RECVFROM"
+></A
+>recvfrom()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>     
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+
+int recvfrom(int fd,void *buf, int len, unsigned int flags
+struct sockaddr *from, int *fromlen);
+        
+	</PRE
+></TD
+></TR
+></TABLE
+><P
+>Veamos los argumentos:</P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Lo mismo que para <TT
+CLASS="FUNCTION"
+>recv()</TT
+></P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>buf. </B
+></B
+>Lo mismo que para <TT
+CLASS="FUNCTION"
+>recv()</TT
+></P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>len. </B
+></B
+>Lo mismo que para <TT
+CLASS="FUNCTION"
+>recv()</TT
+></P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>flags. </B
+></B
+>Lo mismo que para <TT
+CLASS="FUNCTION"
+>recv()</TT
+></P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>from. </B
+></B
+>Es un puntero a la estructura <SPAN
+CLASS="STRUCTNAME"
+>sockaddr</SPAN
+>. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fromlen. </B
+></B
+>Es un puntero a un entero local que debería ser inicializado a <TT
+CLASS="FUNCTION"
+>sizeof(struct sockaddr)</TT
+>.</P
+></DIV
+></LI
+></UL
+><P
+>Análogamente a lo que pasaba con <TT
+CLASS="FUNCTION"
+>recv()</TT
+>, <TT
+CLASS="FUNCTION"
+>recvfrom()</TT
+> devuelve el número de bytes recibidos, o -1 en caso de error. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="CLOSE"
+></A
+>close()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>#include &#60;unistd.h&#62;
+
+close(fd);</PRE
+></TD
+></TR
+></TABLE
+><P
+>La función <TT
+CLASS="FUNCTION"
+>close()</TT
+> es usada para cerrar la conexión de nuestro descriptor de socket. Si llamamos a <TT
+CLASS="FUNCTION"
+>close()</TT
+> no se podrá escribir o leer usando ese socket, y si alguien trata de hacerlo recibirá un mensaje de error. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="SHUTDOWN"
+></A
+>shutdown()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+#include &#60;sys/socket.h&#62;
+
+int shutdown(int fd, int how);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Veamos los argumentos: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>fd. </B
+></B
+>Es el fichero descritor del socket al que queremos aplicar esta llamada. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>how. </B
+></B
+>Sólo se podrá establecer uno de estos nombres:</P
+></DIV
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>0. </B
+></B
+>Prohibido recibir. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>1. </B
+></B
+>Prohibido enviar. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>2. </B
+></B
+>Prohibido recibir y enviar. </P
+></DIV
+></LI
+></UL
+></LI
+></UL
+><P
+>Es lo mismo llamar a <TT
+CLASS="FUNCTION"
+>close()</TT
+> que establecer <TT
+CLASS="FUNCTION"
+>how</TT
+> a 2. <TT
+CLASS="FUNCTION"
+>shutdown()</TT
+> devolverá 0 si todo ocurre bien, o -1 en caso de error. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="AEN422"
+></A
+>gethostname()</H2
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>#include &#60;unistd.h&#62;
+
+int gethostname(char *hostname, size_t size);</PRE
+></TD
+></TR
+></TABLE
+><P
+>Veamos de qué se tratan los argumentos: </P
+><P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>hostname. </B
+></B
+>Es un puntero a un array que contiene el nombre del nodo actual. </P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><B
+>size. </B
+></B
+>La longitud del array que contiene al nombre del nodo (en bytes). </P
+></DIV
+></LI
+></UL
+><P
+>La función <TT
+CLASS="FUNCTION"
+>gethostname()</TT
+> es usada para obtener el nombre de la máquina local. </P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="DNS"
+></A
+>Algunas palabras sobre dns</H1
+><P
+>Esta sección fue creada ya que el lector debería saber qué es un <I
+CLASS="EMPHASIS"
+>DNS</I
+>. </P
+><P
+>DNS son las siglas de <I
+CLASS="EMPHASIS"
+>&#8220;Domain Name Service&#8221;<A
+NAME="AEN443"
+HREF="#FTN.AEN443"
+><SPAN
+CLASS="footnote"
+>[9]</SPAN
+></A
+></I
+> y, básicamente es usado para traducir direcciones IP. Por ejemplo, necesito saber la dirección IP del servidor <A
+HREF="http://queima.ptlink.net"
+TARGET="_top"
+>queima.ptlink.net</A
+> y usando el DNS puedo obtener la dirección IP <A
+HREF="http://212.13.37.13"
+TARGET="_top"
+>212.13.37.13</A
+>. </P
+><P
+>Esto es importante en la medida de que las funciones que ya vimos (como <TT
+CLASS="FUNCTION"
+>bind()</TT
+> y <TT
+CLASS="FUNCTION"
+>connect()</TT
+>) son capaces de trabajar con direcciones IP. </P
+><P
+>Para mostrar cómo se puede obtener la dirección IP de un servidor, por ejemplo de <A
+HREF="http://queima.ptlink.net"
+TARGET="_top"
+>queima.ptlink.net</A
+>, utilizando C, el autor ha realizado un pequeño ejemplo: </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>&#13;#include &#60;stdio.h&#62;
+#include &#60;netdb.h&#62;   /* gethostbyname() necesita esta cabecera */
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+#include &#60;netinet/in.h&#62;
+
+  
+int main(int argc, char *argv[])
+{ 
+
+   struct hostent *he;
+
+   if (argc!=2) {
+      printf("Uso: %s &#38;lt;hostname&#38;gt;\n",argv[0]);
+      exit(-1);
+   }
+
+   if ((he=gethostbyname(argv[1]))==NULL) {
+      printf("error de gethostbyname()\n");
+      exit(-1);
+   }
+
+   printf("Nombre del host: %s\n",he-&#62;h_name);  
+      /* muestra el nombre del nodo */
+   printf("Dirección IP: %s\n",
+          inet_ntoa(*((struct in_addr *)he-&#62;h_addr)));
+      /* muestra la dirección IP */
+
+}
+
+	</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="SERVER-EX"
+></A
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Servidor de Flujos</I
+></H1
+><P
+>En esta sección, se describirá un bonito ejemplo de un servidor de flujos. El código fuente tiene muchos comentarios para que así, al leerlo, no nos queden dudas. </P
+><P
+>Empecemos:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>&#13;/* Estos son los ficheros de cabecera usuales */
+#include &#60;stdio.h&#62;          
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+#include &#60;netinet/in.h&#62;
+
+#define PORT 3550 /* El puerto que será abierto */
+#define BACKLOG 2 /* El número de conexiones permitidas */
+
+main()
+{
+
+   int fd, fd2; /* los ficheros descriptores */
+
+   struct sockaddr_in server; 
+   /* para la información de la dirección del servidor */
+
+   struct sockaddr_in client; 
+   /* para la información de la dirección del cliente */
+
+   int sin_size;
+
+   /* A continuación la llamada a socket() */
+   if ((fd=socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {  
+      printf("error en socket()\n");
+      exit(-1);
+   }
+
+   server.sin_family = AF_INET;         
+
+   server.sin_port = htons(PORT); 
+   /* ¿Recuerdas a htons() de la sección "Conversiones"? =) */
+
+   server.sin_addr.s_addr = INADDR_ANY; 
+   /* INADDR_ANY coloca nuestra dirección IP automáticamente */
+
+   bzero(&#38;(server.sin_zero),8); 
+   /* escribimos ceros en el reto de la estructura */
+
+
+   /* A continuación la llamada a bind() */
+   if(bind(fd,(struct sockaddr*)&#38;server,
+           sizeof(struct sockaddr))==-1) {
+      printf("error en bind() \n");
+      exit(-1);
+   }     
+
+   if(listen(fd,BACKLOG) == -1) {  /* llamada a listen() */
+      printf("error en listen()\n");
+      exit(-1);
+   }
+
+   while(1) {
+      sin_size=sizeof(struct sockaddr_in);
+      /* A continuación la llamada a accept() */
+      if ((fd2 = accept(fd,(struct sockaddr *)&#38;client,
+                        &#38;sin_size))==-1) {
+         printf("error en accept()\n");
+         exit(-1);
+      }
+
+      printf("Se obtuvo una conexión desde %s\n",
+             inet_ntoa(client.sin_addr) ); 
+      /* que mostrará la IP del cliente */
+
+      send(fd2,"Bienvenido a mi servidor.\n",22,0); 
+      /* que enviará el mensaje de bienvenida al cliente */
+
+      close(fd2); /* cierra fd2 */
+   }
+}&#13;</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="CLIENT-EX"
+></A
+>Un ejemplo de <I
+CLASS="EMPHASIS"
+>Cliente de Flujos</I
+></H1
+><P
+>Todo será análogo a lo visto en la sección anterior.</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    
+
+#include &#60;stdio.h&#62;
+#include &#60;sys/types.h&#62;
+#include &#60;sys/socket.h&#62;
+#include &#60;netinet/in.h&#62;
+#include &#60;netdb.h&#62;        
+/* netbd.h es necesitada por la estructura hostent ;-) */
+
+#define PORT 3550         
+/* El Puerto Abierto del nodo remoto */
+
+#define MAXDATASIZE 100   
+/* El número máximo de datos en bytes */
+
+int main(int argc, char *argv[])
+{
+   int fd, numbytes;       
+   /* ficheros descriptores */
+
+   char buf[MAXDATASIZE];  
+   /* en donde es almacenará el texto recibido */
+
+   struct hostent *he;         
+   /* estructura que recibirá información sobre el nodo remoto */
+
+   struct sockaddr_in server;  
+   /* información sobre la dirección del servidor */
+
+   if (argc !=2) { 
+      /* esto es porque nuestro programa sólo necesitará un
+      argumento, (la IP) */
+      printf("Uso: %s &#60;Dirección IP&#62;\n",argv[0]);
+      exit(-1);
+   }
+
+   if ((he=gethostbyname(argv[1]))==NULL){       
+      /* llamada a gethostbyname() */
+      printf("gethostbyname() error\n");
+      exit(-1);
+   }
+
+   if ((fd=socket(AF_INET, SOCK_STREAM, 0))==-1){  
+      /* llamada a socket() */
+      printf("socket() error\n");
+      exit(-1);
+   }
+
+   server.sin_family = AF_INET;
+   server.sin_port = htons(PORT); 
+   /* htons() es necesaria nuevamente ;-o */
+   server.sin_addr = *((struct in_addr *)he-&#62;h_addr);  
+   /*he-&#62;h_addr pasa la información de ``*he'' a "h_addr" */
+   bzero(&#38;(server.sin_zero),8);
+
+   if(connect(fd, (struct sockaddr *)&#38;server,
+      sizeof(struct sockaddr))==-1){ 
+      /* llamada a connect() */
+      printf("connect() error\n");
+      exit(-1);
+   }
+
+   if ((numbytes=recv(fd,buf,MAXDATASIZE,0)) == -1){  
+      /* llamada a recv() */
+      printf("Error en recv() \n");
+      exit(-1);
+   }
+
+   buf[numbytes]='\0';
+
+   printf("Mensaje del Servidor: %s\n",buf); 
+   /* muestra el mensaje de bienvenida del servidor =) */
+
+   close(fd);   /* cerramos fd =) */
+
+}
+&#13;</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="LASTWORDS"
+></A
+>Últimas Palabras</H1
+><P
+>En esta sección el autor de este documento, BracaMan, añadirá algunas palabras. Se lo puede encontrar mandando un correo electrónico a <A
+HREF="mailto:BracaMan@clix.pt"
+TARGET="_top"
+>&#60;BracaMan@clix.pt&#62;</A
+>. Su número ICQ es 41476410 y se puede visitar por URL en <A
+HREF="http://www.BracaMan.net"
+TARGET="_top"
+>http://www.BracaMan.net</A
+></P
+><P
+>Soy un simple humano, y como tal me equivoco, por lo que es casi seguro que haya errores en este documento. Y al decir errores me refiero a errores en el uso del Inglés<A
+NAME="AEN470"
+HREF="#FTN.AEN470"
+><SPAN
+CLASS="footnote"
+>[10]</SPAN
+></A
+> (no sería raro dado que éste no es mi lenguaje nativo), como también errores técnicos. Sería muy bueno que si se encuentran errores en este tutorial, yo sea notificado vía email. </P
+><P
+> Sin embargo, debe entenderse que ésta es simplemente la primera versión del documento, por lo que es natural que no esté muy completa (de hecho pienso que así es), y también es natural que existan errores estúpidos. Sea como sea, puedo asegurar que los fragmentos de código fuente que se encuentran en este documento funcionan perfectamente. Si se necesitara ayuda en lo que a esto respecta se puede contactarme mandando un email a <A
+HREF="mailto:BracaMan@clix.pt"
+TARGET="_top"
+>&#60;BracaMan@clix.pt&#62;</A
+>. </P
+><P
+>Agradecimientos especiales a: Ghost_Rider (mi viejo y querido camarada), Raven (por dejarme escribir este tutorial) y para todos mis amigos =)</P
+><P
+>Todos los copyrights están reservados. Se puede distribuir este tutorial libremente, siempre que no se cambie ningún nombre ni URL. No se podrá cambiar una o dos líneas del texto, o agregar algunas líneas y luego decir que el autor de este tutorial eres tú. Si se desea cambiar algo en el documento, por favor avísame enviando un email a &#60;BracaMan@clix.pt&#62;.</P
+><P
+>En cuanto al traductor de este documento al español, su nombre es Sebastián Gurin, y se puede entrar en contacto con él mandándole un correo a <A
+HREF="mailto:cancerbero_sgx@users.sourceforge.net"
+TARGET="_top"
+>cancerbero_sgx@users.sourceforge.net</A
+>. Él fue también quien ha dado formato usando <SPAN
+CLASS="PRODUCTNAME"
+>DocBook -- SGML, versión 3.1</SPAN
+> por lo que, si se encuentran errores tanto en el formato como en la traducción, se deberían enviar comentarios a la dirección de correo electrónico anterior. </P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN34"
+HREF="#AEN34"
+><SPAN
+CLASS="footnote"
+>[1]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Recuérdese uno de los primeros conceptos que aprendemos al usar UNIX, &#8220;En un sistema Unix, todo es un fichero&#8221;. Nota del T.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN44"
+HREF="#AEN44"
+><SPAN
+CLASS="footnote"
+>[2]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Protocolo de Control de Transmisión. Nota del T.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN50"
+HREF="#AEN50"
+><SPAN
+CLASS="footnote"
+>[3]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Protocolo de los Datagramas de Usuario. Nota del T. </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN82"
+HREF="#AEN82"
+><SPAN
+CLASS="footnote"
+>[4]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+><I
+CLASS="EMPHASIS"
+>&#8220;nodo&#8221;</I
+>'' será la traducción del término en inglés ``<I
+CLASS="EMPHASIS"
+>host</I
+>'', que se usará a lo largo de este texto. Nota del T.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN98"
+HREF="#AEN98"
+><SPAN
+CLASS="footnote"
+>[5]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>que es la traducción al español de Network Byte Order. El término también es conocido como <I
+CLASS="EMPHASIS"
+>&#8220;Big-Endian Byte Order&#8221;</I
+>. Tener en cuenta que, si no se habla de Ordenación de Bytes para Redes, se hablará de Ordenación de Bytes para Nodos. Nota del T.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN104"
+HREF="#AEN104"
+><SPAN
+CLASS="footnote"
+>[6]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>los cuales ocupan 2 y 4 bytes de memoria, respectivamente.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN146"
+HREF="#AEN146"
+><SPAN
+CLASS="footnote"
+>[7]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Se puede indagar más sobre éstas y las demás funciones relacionadas con Sockets en UNIX, leyendo las páginas de manual correspondientes a cada una. Nota del Traductor. </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN318"
+HREF="#AEN318"
+><SPAN
+CLASS="footnote"
+>[8]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>El argumento ``<I
+CLASS="EMPHASIS"
+>flags</I
+>'', también contenido en otras funciones de manejo de sockets, no es una característica propia del mensaje, y puede omitirse. En este caso, hace distinción entre los modos de enviar un paquete, además de otras cosas. Para más información, se puede leer el manual de send() (man 2 send). Nota del T.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN443"
+HREF="#AEN443"
+><SPAN
+CLASS="footnote"
+>[9]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>que se traduce como &#8220;Servicio de Nombres de Dominio&#8221;. Nota del T</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN470"
+HREF="#AEN470"
+><SPAN
+CLASS="footnote"
+>[10]</SPAN
+></A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Seguramente también los haya en la traducción ;-). Nota del T.</P
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

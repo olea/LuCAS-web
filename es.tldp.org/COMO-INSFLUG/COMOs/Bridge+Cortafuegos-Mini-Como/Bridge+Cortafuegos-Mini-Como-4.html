@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bridge+Cortafuegos Mini-COMO: Cortafuegos</TITLE>
+ <LINK HREF="Bridge+Cortafuegos-Mini-Como-5.html" REL=next>
+ <LINK HREF="Bridge+Cortafuegos-Mini-Como-3.html" REL=previous>
+ <LINK HREF="Bridge+Cortafuegos-Mini-Como.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bridge+Cortafuegos-Mini-Como-5.html">Página siguiente</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como-3.html">Página anterior</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="cortafuegos"></A> <A NAME="s4">4. Cortafuegos</A></H2>
+
+<P>
+<P>
+<H2><A NAME="softwareylecturas"></A> <A NAME="ss4.1">4.1 Software y lecturas </A>
+</H2>
+
+<P>
+<P>Lea el <I>Cortafuegos-Como</I>, <CODE>
+<A HREF="http://www.insflug.org/documentos/Cortafuegos-Como/">http://www.insflug.org/documentos/Cortafuegos-Como/</A></CODE>
+<P>Esto le dir&aacute; donde obtener <CODE>ipfwadm</CODE> si no lo tiene ya. Hay otras
+herramientas que puede obtener, pero no he hecho avances con ellas hasta que no
+prob&eacute; <CODE>ipfwadm</CODE>. ¡Est&aacute; muy bien, y es de bajo nivel! Puede ver
+exactamente lo que est&aacute; pasando.
+<P>
+<H2><A NAME="comprobacionespreliminares"></A> <A NAME="ss4.2">4.2 Comprobaciones preliminares </A>
+</H2>
+
+<P>
+<P>Ha compilado soporte de reenv&iacute;o IP y enmascaramiento en el kernel, as&iacute; que
+querr&aacute; comprobar que el cortafuegos est&aacute; en su estado por defecto (aceptando)
+con
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -l 
+ipfwadm -O -l 
+ipfwadm -F -l 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esto es respectivamente: mostrar las reglas que afecten entrantes o salientes o
+reenviando (enmascarando) hacia ambos lados del cortafuegos. El <CODE>-l</CODE>
+significa listar.
+<P>Si tambi&eacute;n ha compilado soporte de informes (accounting):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -A -l 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Deber&iacute;a ver que no hay reglas definidas y que por defecto se aceptan todos los
+paquetes. Puede volver a este estado en cualquier momento usando
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -f
+ipfwadm -O -f
+ipfwadm -F -f 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El <CODE>-f</CODE> significa «vaciar». Puede que necesite usarlo.
+<P>
+<H2><A NAME="reglaspordefecto"></A> <A NAME="ss4.3">4.3 Reglas por defecto </A>
+</H2>
+
+<P>
+<P>Quiero evitar a mi red llegar al mundo, y nada m&aacute;s, por lo que por lo menos
+dar&eacute; una regla &uacute;ltima (por defecto) que diga que el cortafuegos deber&iacute;a ignorar
+aquellos paquetes que vengan de la red interna dirigidos al exterior. Pongo las
+reglas (en este orden) en <CODE>/etc/rc.d/rc.firewall</CODE>y lo ejecuto desde
+<CODE>/etc/rc.d/rc.local</CODE> en el arranque. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -a reject -S 192.168.2.0/255.255.255.128 -D 0.0.0.0/0.0.0.0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El <CODE>-S</CODE> es la direcci&oacute;n/m&aacute;scara origen. El <CODE>-D</CODE> es la
+direcci&oacute;n/m&aacute;scara de destino. 
+<P>Este formato es demasiado largo. <CODE>ipfwadm</CODE> es suficientemente
+inteligente sobre temas de red y entiende algunas abreviaturas. Lea las p&aacute;ginas
+del manual. 
+<P>Posiblemente es m&aacute;s conveniente poner algunas o todas estas reglas en la parte
+saliente del cortafuegos usando <CODE>-O</CODE> en vez de <CODE>-I</CODE>, pero fijar&eacute;
+las reglas para la mitad entrante.
+<P>
+<H2><A NAME="huecospordireccion"></A> <A NAME="ss4.4">4.4 Huecos por direcci&oacute;n </A>
+</H2>
+
+<P>
+<P>Antes de la regla por defecto, tengo que poner algunas reglas que me sirvan
+como excepciones a esta denegaci&oacute;n de servicios externos general a los clientes
+internos.
+<P>Quiero tratar las direcciones internas de los cortafuegos en especial. He de
+evitar que la gente entre en el firewall a no ser que tengan un permiso
+especial, pero una vez que entren deber&iacute;an ser capaces de hablar con el resto
+del mundo.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -i accept -S 192.168.2.100/255.255.255.255 -D 0.0.0.0/0.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Tambi&eacute;n quiero que los clientes puedan hablar con el cortafuegos. ¡A lo mejor
+le convencen de que les deje salir!
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -i accept -S 192.168.2.0/255.255.255.128 -D 192.168.2.100/255.255.255.255
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Compruebe en este punto de que puede entrar en los clientes desde fuera del
+cortafuegos usando  <CODE>telnet</CODE>, pero que no puede salir. Esto deber&iacute;a
+significar que puede hacer el primer contacto, pero los clientes no pueden
+enviarle la l&iacute;nea de comandos. Debe ser capaz de llegar hasta el final si usa
+la m&aacute;quina cortafuegos como paso intermedio. Intente un <CODE>rlogin</CODE> y un
+<CODE>ping</CODE> tambi&eacute;n, con <CODE>tcpdump</CODE> ejecut&aacute;ndose en una tarjeta o en
+otra. Debe ser capaz de dar sentido a lo que ve.
+<P>
+<H2><A NAME="huecosporprotocolo"></A> <A NAME="ss4.5">4.5 Huecos por protocolo</A>
+</H2>
+
+<P>
+<P>Segu&iacute; relajando las reglas protocolo por protocolo. Quiero permitir los
+<CODE>ping</CODE> desde el exterior al interior para obtener un eco de respuesta,
+por ejemplo, as&iacute; que insert&eacute; la regla: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -i accept -P icmp -S 192.168.2.0/255.255.255.128 -D 0.0.0.0/0.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El par&aacute;metro <CODE>-P icmp</CODE> realiza la magia necesaria a nivel del protocolo.
+<P>Hasta que use un proxy <CODE>ftp</CODE> voy a permitir los ftp salientes con
+permisos espec&iacute;ficos de puerto. Esto se dirige a los puertos <CODE>20</CODE>
+<CODE>21</CODE> y <CODE>115</CODE> de las m&aacute;quinas exteriores. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -i accept -P tcp -S 192.168.2.0/255.255.255.128 \
+-D 0.0.0.0/0.0.0.0 20 21 115 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>No puedo hacer que <CODE>sendmail</CODE> funcione entre los clientes locales sin un
+servidor de nombres. En vez de instalar un servidor de nombres en el
+cortafuegos, lo levanto para las peticiones de servicio en el dominio tcp que
+se dirijan al servidor de nombres m&aacute;s cercano, poniendo esta direcci&oacute;n en los
+archivos  <CODE>/etc/resolv.conf</CODE> de los clientes.(<CODE>nameserver
+123.456.789.31</CODE> en una l&iacute;nea aparte). 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -i accept -P tcp -S 192.168.2.0/255.255.255.128 \
+ -D 123.456.789.31/255.255.255.255 54 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Puede encontrar el puerto y protocolo usado por un servicio con
+<CODE>tcpdump</CODE>. Lance el servicio con un <CODE>ftp</CODE> o un <CODE>telnet</CODE> o
+lo que sea a o desde la m&aacute;quina interna y mire lo que ocurre en los puertos de
+entrada y salida del cortafuegos con <CODE>tcpdump</CODE>: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tcpdump -i eth1 -e host client04 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>por ejemplo: El archivo <CODE>/etc/services</CODE> es otra fuente importante de
+pistas. Para permitir <CODE>telnet</CODE> y <CODE>ftp</CODE> entrantes al cortafuegos
+desde el exterior, debe permitir a los clientes locales llamadas salientes en
+un puerto espec&iacute;fico. Entiendo por qu&eacute; es necesario esto para para <CODE>ftp</CODE>
+(es el servidor el que establece el flujo de datos al final) pero no s&eacute; por qu&eacute;
+<CODE>telnet</CODE> tambi&eacute;n lo necesita.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipfwadm -I -i accept -P tcp -S 192.168.2.0/255.255.255.128 ftp telnet \
+ -D 0.0.0.0/0.0.0.0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Hay un problema espec&iacute;fico con algunos demonios que buscan el nombre del
+cortafuegos para buscar su direcci&oacute;n de red. <CODE>Rpc.yppasswdd</CODE> es uno con
+el que tuve problemas. Insiste en transmitir informaci&oacute;n que diga que est&aacute;
+fuera del cortafuegos (en la segunda tarjeta). Esto significa que los clientes
+de dentro no pueden contactar con &eacute;l.
+<P>En vez de empezar a hacer IP aliasing o cambiar el c&oacute;digo del demonio, he
+correspondido el nombre a la direcci&oacute;n de la tarjeta interna en los clientes,
+en el archivo <CODE>/etc/hosts</CODE>.
+<P>
+<H2><A NAME="ss4.6">4.6 Comprobaciones</A>
+</H2>
+
+<P>
+<P>Querr&aacute; comprobar que puede hacer <CODE>telnet</CODE>, <CODE>rlogin </CODE> y
+<CODE>ping</CODE> desde el exterior. Desde el interior deber&iacute;a poder hacer
+<CODE>ping</CODE> hacia fuera. Deber&iacute;a ser capaz tambi&eacute;n de hacer telnet a la
+m&aacute;quina cortafuegos desde el interior, y la &uacute;ltima deber&iacute;a ser incapaz de hacer
+nada.
+<P>Y ya est&aacute;. En este momento probablemente quiera aprender cosas sobre
+<CODE>rpc</CODE> y NIS/NYS (<I>P&aacute;ginas amarillas</I>) y la interacci&oacute;n con el
+archivo de contrase&ntilde;as. La red con cortafuegos debe funcionar sin que los
+usuarios normales tengan capacidad de entrar al cortafuegos y,
+consiguientemente, salir al exterior. ¡A lo mejor esto es otro COMO!
+<P>
+<HR>
+<A HREF="Bridge+Cortafuegos-Mini-Como-5.html">Página siguiente</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como-3.html">Página anterior</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como.html#toc4">Índice general</A>
+</BODY>
+</HTML>

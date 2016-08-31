@@ -1,0 +1,787 @@
+<HTML
+><HEAD
+><TITLE
+>Autentificación con PPP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Protocolo Punto-a-Punto"
+HREF="x-087-2-ppp.html"><LINK
+REL="PREVIOUS"
+TITLE="Consideraciones de Seguridad General"
+HREF="x7120.html"><LINK
+REL="NEXT"
+TITLE="Depurando su configuración de PPP"
+HREF="x7338.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x7120.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 8. El Protocolo Punto-a-Punto</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x7338.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-PPP.AUTHENTICATION">8.8. Autentificación con PPP</H1
+><P
+>&#13;
+
+
+
+
+Con el PPP, cada sistema puede obligar al otro ordenador a identificarse usando
+uno de los dos protocolos de autentificación disponibles. Estos son el Protocolo
+de Autentificación por Contraseña (PAP), y el Protocolo de Autentificación por
+Reto (CHAP). Cuando se establece una conexión, cada extremo puede pedir al otro
+que se autentifique, independientemente de que sea el llamante o el llamado. Más
+adelante, utilizaré relajadamente &ldquo;cliente&rdquo; y &ldquo;servidor&rdquo;
+cuando quiera distinguir entre el sistema autentificado y el autentificador. Un
+demonio PPP puede pedir a la otra máquina autentificación enviando otra petición
+más de configuración de LCP indicando el protocolo de autentificación deseado.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN7181">8.8.1. PAP frente a CHAP</H2
+><P
+>PAP, que es utilizado por muchos proveedores de Internet (ISP), funciona
+básicamente de la misma forma que el procedimiento normal de registro. El cliente
+se autentifica a sí mismo enviando un nombre de usuario y una contraseña
+(opcionalmente encriptada) al servidor, la cual es comparada por el servidor
+con su base de datos de claves o secrets. <A
+NAME="X-087-2-FNPP11"
+HREF="#FTN.X-087-2-FNPP11"
+>[1]</A
+>
+Esta técnica es vulnerable a los intrusos que pueden intentar obtener la
+contraseña escuchando en una línea  serie y a otros que hagan sucesivos
+intentos de ataque por el método de prueba y error.</P
+><P
+>CHAP no tiene estos defectos. Con  CHAP, el autentificador (i.e. el
+servidor) envía una cadena de &ldquo;reto&rdquo; generada aleatoriamente
+al cliente, junto a su nombre de ordenador. El cliente utiliza el nombre
+del ordenador para buscar la clave apropiada, la combina con el reto, y
+encripta la cadena utilizando una función de codificación de un solo
+sentido. El resultado es devuelto al servidor junto con el nombre del
+ordenador cliente. El servidor realiza ahora la misma computación, y
+advierte al cliente si obtiene el mismo resultado.</P
+><P
+>Otra característica de CHAP es que no solicita autentificación al cliente
+solamente al comienzo de la sesión, sino que envía retos a intervalos
+regulares para asegurarse de que el cliente no ha sido reemplazado por un
+intruso, por ejemplo cambiando la línea telefónica, o debido a una
+configuración errónea del módem que causa que el demonio PPP no se
+perciva que la llamada original de teléfono se ha cortado y algún
+otro se ha conectado.</P
+><P
+> 
+ 
+El <B
+CLASS="COMMAND"
+>pppd</B
+> mantiene las claves secretas para el CHAP y el PAP
+en dos ficheros separados, llamados <TT
+CLASS="FILENAME"
+>/etc/ppp/pap-secrets</TT
+>
+y <TT
+CLASS="FILENAME"
+>/etc/ppp/chap-secrets</TT
+> respectivamente. Si introduce un
+ordenador remoto en alguno de los dos ficheros, tendrá un buen control de cual
+de los protocolos CHAP o PAP se utilizará para autentificarnos con él y
+viceversa.</P
+><P
+>Por omisión, <B
+CLASS="COMMAND"
+>pppd</B
+> no pide autentificación al ordenador
+remoto, pero aceptará el autentificarse a sí mismo cuando se lo pida el
+ordenador remoto. Como  CHAP es mucho más fuerte que  PAP, el
+<B
+CLASS="COMMAND"
+>pppd</B
+> intenta usar el anterior siempre que es posible. Si
+el otro ordenador no lo acepta, o  <B
+CLASS="COMMAND"
+>pppd</B
+> no encuentra una
+clave CHAP para el sistema remoto en su fichero <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+>,
+cambia al PAP. Si tampoco tiene clave PAP para su compañero, renunciará a
+autentificarse. Como consecuencia de esto, se cerrará la conexión.</P
+><P
+>Este comportamiento puede ser modificado de varias formas. Por ejemplo, cuando
+se añade la palabra <TT
+CLASS="OPTION"
+>auth</TT
+>,  <B
+CLASS="COMMAND"
+>pppd</B
+> solicitará
+al otro ordenador que se autentifique.  <B
+CLASS="COMMAND"
+>pppd</B
+> aceptará el uso
+de CHAP o  PAP para ello, siempre y cuando tenga una clave para su compañero
+en su base de datos CHAP o PAP respectivamente. Hay otras opciones para activar o
+no un determinado protocolo de autentificación, pero no las describiré aquí. Puede
+leer la página de manual del pppd(8) para más detalles.</P
+><P
+> 
+Si todos los sistemas con los que conversa PPP están de acuerdo en
+autentificarse con usted, debería poner la opción <TT
+CLASS="OPTION"
+>auth</TT
+> en el
+fichero global <TT
+CLASS="FILENAME"
+>/etc/ppp/options</TT
+> y definir contraseñas
+para cada sistema en el fichero <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+>. Si un
+sistema no acepta  CHAP, añada una entrada para él al fichero
+<TT
+CLASS="FILENAME"
+>pap-secrets</TT
+>. De esta forma, puede asegurarse de que
+ningún sistema sin autentificar se conecta a su ordenador.</P
+><P
+>Las dos secciones siguientes hablan sobre los dos ficheros de claves de PPP,
+<TT
+CLASS="FILENAME"
+>pap-secrets</TT
+> y <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+>. Están
+situados en <TT
+CLASS="FILENAME"
+>/etc/ppp</TT
+> y contienen tripletes de clientes,
+servidores y contraseñas, seguidas opcionalmente por una lista de direcciones
+IP. La interpretación de los campos de servidor y cliente es distinta en 
+CHAP y  PAP, y también depende de si nos autentificamos nosotros con el otro
+ordenador, o si solicitamos al servidor que se autentifique con nosotros.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN7216">8.8.2. El fichero de claves CHAP</H2
+><P
+>&#13;
+ 
+
+Cuando tiene que autentificarse con algún servidor utilizando CHAP, 
+<B
+CLASS="COMMAND"
+>pppd</B
+> busca en el fichero <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+>
+una entrada cuyo campo de cliente sea igual al nombre del ordenador local, y
+cuyo campo de servidor sea igual al nombre del ordenador remoto enviado en el
+reto del CHAP. Cuando solicita a la otra máquina que se autentifique, los 
+roles son simplemente al revés: el pppd entonces buscará una entrada que tenga 
+el campo de cliente igual al nombre del ordenador remoto (enviado en la 
+respuesta del CHAP del cliente), y el campo de servidor igual al nombre del ordenador local.</P
+><P
+>El siguiente es un fichero de ejemplo de <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+>
+para <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>:<A
+NAME="X-087-2-FNPP12"
+HREF="#FTN.X-087-2-FNPP12"
+>[2]</A
+></P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # CHAP secrets for vlager.vbrew.com
+    #
+    # client         server           secret                addrs
+    #---------------------------------------------------------------------
+    vlager.vbrew.com  c3po.lucas.com   "Use The Source Luke" vlager.vbrew.com
+    c3po.lucas.com    vlager.vbrew.com "arttoo! arttoo!"     c3po.lucas.com
+    *                 vlager.vbrew.com "TuXdrinksVicBitter"  pub.vbrew.com</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Cuando se intenta establecer una conexión PPP con
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>, <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>
+pide a <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+> que se autentifique
+usando el CHAP mediante el envío de un reto de CHAP. El demonio <B
+CLASS="COMMAND"
+>pppd</B
+>
+entonces examina <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+> buscando una entrada cuyo
+campo de cliente sea igual a <SPAN
+CLASS="SYSTEMITEM"
+>vlager.vbrew.com</SPAN
+>
+y el campo de servidor sea <SPAN
+CLASS="SYSTEMITEM"
+>c3po.lucas.com</SPAN
+>,
+y encuentra la primera línea mostrada en el ejemplo.<A
+NAME="X-087-2-FNPP13"
+HREF="#FTN.X-087-2-FNPP13"
+>[3]</A
+>
+Entonces produce la respuesta de CHAP a partir de la cadena del reto y la
+clave (<TT
+CLASS="LITERAL"
+>Use The Source Luke</TT
+>), y la envía de vuelta a
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>.</P
+><P
+>Al mismo tiempo,  <B
+CLASS="COMMAND"
+>pppd</B
+> produce un reto del CHAP para
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>, conteniendo una única cadena
+de reto y su nombre de ordenador completo
+<SPAN
+CLASS="SYSTEMITEM"
+>vlager.vbrew.com</SPAN
+>.
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> construye una respuesta de CHAP
+de la manera que acabamos de decir, y se la devuelve a
+<SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>.
+<B
+CLASS="COMMAND"
+>pppd</B
+> extrae ahora el nombre del cliente
+(<SPAN
+CLASS="SYSTEMITEM"
+>c3po.vbrew.com</SPAN
+>) de la respuesta, y
+busca en el fichero <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+> una línea que tenga
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> como cliente y
+<SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+> como servidor. La segunda
+línea se corresponde con esto, así que el <B
+CLASS="COMMAND"
+>pppd</B
+> combina el
+reto del CHAP y la clave <TT
+CLASS="LITERAL"
+>arttoo! arttoo!</TT
+>, las encripta, y
+compara el resultado con la respuesta de CHAP de
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>.</P
+><P
+>&#13;
+
+El cuarto campo opcional lista las direcciones IP que son aceptables por los
+clientes nombrados en el primer campo. Las direcciones pueden ser dadas en
+notación cuaternaria o como nombres de ordenador que son resueltos
+posteriormente. Por ejemplo, si <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>
+solicita usar una dirección IP que no estáa en esta lista durante la negociación
+IPCP, la petición será rechazada, e IPCP se desconectará. En el fichero de ejemplo
+anterior, <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> está limitado a poder usar
+sólo su propia dirección. Si el campo de dirección está vacío, se permitirá
+cualquier dirección; un valor de &ldquo;<TT
+CLASS="LITERAL"
+>-</TT
+>&rdquo; evita el uso
+de una cierta dirección IP con un cliente.</P
+><P
+>La tercera línea del fichero <TT
+CLASS="FILENAME"
+>chap-secrets</TT
+> de prueba,
+permite a cualquier ordenador establecer un enlace PPP con
+<SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>, pues si aparece la expresión
+<TT
+CLASS="LITERAL"
+>*</TT
+> en los campos de cliente o servidor, será valido cualquier
+nombre. El único requisito es que sepa la clave, y utiliza la dirección de
+<SPAN
+CLASS="SYSTEMITEM"
+>pub.vbrew.com</SPAN
+>. Pueden aparecer
+perfectamente entradas con comodines en los nombres en cualquier lugar del
+fichero de claves, pues el <B
+CLASS="COMMAND"
+>pppd</B
+> siempre utilizará la entrada
+más específica que pueda ser aplicada a un par cliente/servidor.</P
+><P
+>Hay algunas cosas que decir sobre la manera en que <B
+CLASS="COMMAND"
+>pppd</B
+>
+encuentra los nombres de ordenadores que busca en el fichero de claves. Como
+se explicó anteriormente, el nombre del ordenador remoto es siempre
+proporcionado por el otro ordenador en el paquete de reto o respuesta del
+CHAP. El nombre del ordenador local será obtenido por omisión llamando a la
+función <TT
+CLASS="FUNCTION"
+>gethostname(2)</TT
+>. Si ha configurado el nombre del
+sistema como el nombre del ordenador sin calificar, entonces tendrá que dar al
+<B
+CLASS="COMMAND"
+>pppd</B
+> el nombre del dominio a añadir usando la opción
+<TT
+CLASS="OPTION"
+>domain</TT
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>pppd &hellip; domain vbrew.com</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto añadirá el nombre del dominio de la Cervecera a <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+> para todas las actividades relacionadas
+con la autentificación. Otras opciones que modifican la idea que tiene el
+<B
+CLASS="COMMAND"
+>pppd</B
+> del nombre del ordenador local son
+<TT
+CLASS="OPTION"
+>usehostname</TT
+> y <TT
+CLASS="OPTION"
+>name</TT
+>. Cuando da la dirección
+IP local en la línea de comando usando
+<B
+CLASS="COMMAND"
+><TT
+CLASS="REPLACEABLE"
+><I
+>local</I
+></TT
+>:<TT
+CLASS="REPLACEABLE"
+><I
+>remote</I
+></TT
+></B
+>
+y <TT
+CLASS="REPLACEABLE"
+><I
+>local</I
+></TT
+> es un nombre en vez de un cuarteto numérico, el
+<B
+CLASS="COMMAND"
+>pppd</B
+> utilizará éste como el nombre local.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN7301">8.8.3. El fichero de claves PAP</H2
+><P
+>&#13; 
+El fichero de claves PAP es muy similar al utilizado por  CHAP. Los dos
+primeros campos siempre contienen un nombre de usuario y un nombre de
+servidor; el tercero alberga la clave PAP. Cuando el sistema remoto envía
+una petición de autentificación,  <B
+CLASS="COMMAND"
+>pppd</B
+> usa la entrada
+en la que el campo de servidor es igual al nombre del ordenador local, y
+el campo de usuario igual al nombre de usuario enviado en la petición.
+Cuando se autentifica a sí mismo al otro ordenador,  <B
+CLASS="COMMAND"
+>pppd</B
+>
+toma la clave a enviar de la línea con el nombre de usuario igual al nombre
+del usuario local, y con el campo de servidor igual al nombre del ordenador
+remoto.</P
+><P
+>Un fichero de claves PAP sencillo puede parecerse a éste:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # /etc/ppp/pap-secrets
+    #
+    # user          server          secret          addrs
+    vlager-pap      c3po            cresspahl       vlager.vbrew.com
+    c3po            vlager          DonaldGNUth     c3po.lucas.com</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La primera línea se usa para autentificarnos a nosotros mismos cuando hablemos
+con <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>. La segunda línea describe
+como un usuario llamado <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> tiene
+que autentificarse con nosotros.</P
+><P
+>El nombre <SPAN
+CLASS="SYSTEMITEM"
+>vlager-pap</SPAN
+> de la primera
+columna es el nombre de usuario que nosotros mandamos a
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>. POr omisión,<B
+CLASS="COMMAND"
+>pppd</B
+> 
+tomará el nombre del ordenador local como el nombre de
+usuario, pero también se puede especificar un nombre diferente usando la opción
+<TT
+CLASS="OPTION"
+>user</TT
+>, seguida del nombre deseado.</P
+><P
+>Para escoger una de las entradas del fichero <TT
+CLASS="FILENAME"
+>pap-secrets</TT
+>
+para la autentificación con el compañero,  <B
+CLASS="COMMAND"
+>pppd</B
+> tiene
+que saber el nombre del ordenador remoto. Como no tiene manera de averiguarlo,
+tiene que especificarlo en la línea de órdenes usando la palabra 
+<TT
+CLASS="OPTION"
+>remotename</TT
+>, seguida por el nombre del ordenador remoto. Por
+ejemplo, para usar la entrada comentada anteriormente para la autentificación
+con <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>, tenemos que añadir la
+siguiente opción a la línea de órdenes del <B
+CLASS="COMMAND"
+>pppd</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>pppd ... remotename c3po user vlager-pap</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>En el cuarto campo (y todos los siguientes), puede especificar qué direcciones
+IP están permitidas para ese ordenador particular, de la misma forma que en el
+fichero de claves CHAP. El otro ordenador solo podrá pedir direcciones de
+esa lista. En el fichero de ejemplo, la entrada que
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> usará cuando llame a
+la linea donde <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> es el cliente, le
+permitirá usar su IP auténtica y no otra.</P
+><P
+>Dése cuenta de que  PAP es un método de autentificación bastante débil, y se
+recomienda utilizar el CHAP siempre que sea posible. Por eso, no explicaremos el
+PAP en gran profundidad aquí; si esta interesado en utilizar el PAP, encontrará
+algunas características más de éste comentadas en la página del manual del
+<TT
+CLASS="FILENAME"
+>pppd(8)</TT
+>.
+
+
+&#13;</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP11"
+HREF="x-087-2-ppp.authentication.html#X-087-2-FNPP11"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>&ldquo;secrets&rdquo; es sólo el nombre que da PPP a las contraseñas. Las
+contraseñas de PPP no tienen las mismas limitaciones de tamaño que las
+contraseñas de registro de Linux.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP12"
+HREF="x-087-2-ppp.authentication.html#X-087-2-FNPP12"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Las comillas no son parte de la contraseña, simplemente sirven para proteger el
+espacio en blanco del interior de la contraseña.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP13"
+HREF="x-087-2-ppp.authentication.html#X-087-2-FNPP13"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Este nombre de ordenador se toma del reto de CHAP.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x7120.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x7338.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Consideraciones de Seguridad General</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Depurando su configuración de PPP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

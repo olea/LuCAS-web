@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>FAQ sobre Linux para principiantes - es.comp.os.linux: Sobre LILO</TITLE>
+ <LINK HREF="FAQ_Linux-5.html" REL=next>
+ <LINK HREF="FAQ_Linux-3.html" REL=previous>
+ <LINK HREF="FAQ_Linux.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="FAQ_Linux-5.html">Next</A>
+<A HREF="FAQ_Linux-3.html">Previous</A>
+<A HREF="FAQ_Linux.html#toc4">Contents</A>
+<HR>
+<H2><A NAME="lilo"></A> <A NAME="s4">4. Sobre LILO</A></H2>
+
+<H2><A NAME="ss4.1">4.1 ¿Qué es LILO y para qué sirve?</A>
+</H2>
+
+<P>LILO, literalmente, <EM>el cargador de linux</EM> (LInux LOader) es un gestor de arranque muy versátil que permite iniciar un sistema operativo (SO) cargando el sector de arranque de una partición del disco duro (o de un disquete). 
+<P>Esto lo pueden hacer otros gestores de botado, pero sólo LILO puede cargar el kernel de linux y arrancar linux presentando además la posibilidad de pasar parámetros al kernel mediante líneas de comando.
+<P>LILO tiene una serie de componentes que se cargan de manera secuencial. En primer lugar, se carga la primera parte (el comienzo del código) del cargador en el sector de arranque. Cuando este primer tramo del cargador se ha iniciado, aparece una "L" en el monitor. Entonces, el resto (la mayor parte del código) del cargador (que junto con la primera parte del código se encuentra en el fichero <CODE>/boot/boot.b</CODE>) procede a iniciarse. Justo antes de que se cargue este segundo tramo de código, se presenta "I" en la pantalla. Si todo ha ido bien, después de haberse cargado, la siguiente letra de LILO, "L", aparecerá en la pantalla. Después de esto, se produce la carga de la tabla de descriptores a partir del fichero <CODE>/boot.map</CODE>, donde se establecerán las ubicaciones de los posibles kernels de linux así como los sectores de arranque correspondientes a otros SOs que también gestione LILO. Por último, se carga el SO seleccionado, que en principio será el kernel de linux. Si todo ha funcionado sin problemas, aparecerá una "O" en el monitor y se habrá escrito en la pantalla la palabra LILO. 
+<P>Si hubieren problemas en el proceso de arranque la presencia o ausencia de las letras de LILO junto con algunos otros mensajes serán claves para diagnosticar la causa del fallo.
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.2">4.2 ¿Dónde se instala LILO?</A>
+</H2>
+
+<P>Dependiendo de las necesidades que tengamos, podremos instalar LILO:
+<P>
+<UL>
+<LI>En el <EM>sector de arranque</EM> de un disquete (floppy) (<CODE>/dev/fd0</CODE>)
+</LI>
+<LI>En el <EM>sector de arranque</EM> (superbloque) de una partición raíz de linux (primaria o extendida) (<CODE>/dev/hda1</CODE>, p.ej. para (E)IDE ó <CODE>/dev/sda1</CODE> p.ej. para SCSI)
+</LI>
+<LI>En el <EM>MBR</EM> (Master Boot Record) o <EM>Sector Maestro de Arranque</EM> (primer sector) del primer disco duro (<CODE>/dev/hda</CODE>, p.ej. para (E)IDE ó <CODE>/dev/sda</CODE> p.ej. para SCSI)</LI>
+</UL>
+<P>La opción de instalar LILO en un disquete ("de arranque") es el procedimiento más seguro, pero también el más lento de cargar linux en nuestra máquina. 
+<P>Si solamente tenemos linux en nuestro ordenador, la opción idónea sería instalar LILO en el MBR del primer disco duro. Si vamos a disponer de otros SOs coexistiendo en nuestra máquina (MS-DOS, Windows), también podemos escoger la instalación de LILO en el MBR, y gestionar con él la carga de los SOs. Pero con esto hay que tener ciertas precauciones. 
+<P>Si ya tenemos un SO en una partición, p. ej. Windows 95, cuando instalemos LILO en el MBR, sobreescribiremos dicho sector y ya no podremos arrancar Windows 95, si no lo gestiona el propio LILO. Si tenemos linux instalado con LILO en el MBR y después instalamos p. ej., Windows 95, se borrará LILO del MBR y no podremos arrancar linux. En tal caso, para poder usar LILO como gestor común, habría que cargar linux con un disquete de arranque y reinstalar, desde linux LILO en el MBR. Por lo tanto, si vamos a meter varios SOs en nuestra máquina, es mejor instalar primero los otros y luego linux, usando después LILO como gestor de arranque de todos los SOs.
+<P>Si nos planteamos iniciar los diversos SOs, incluído linux desde otro gestor de arranque, como por ejemplo el moderno BootMagic del PartitionMagic 4.0 (Englobado ya en El Caldera OpenLinux 2.2), la mejor opción sería escribir LILO en el sector de arranque de la partición linux nativa correspondiente. En tal caso, cuando instalemos linux, deberemos marcar dicha partición raíz como activa (usando el comando "a" de <CODE>fdisk</CODE> o el "b" de <CODE>cfdisk</CODE>).
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.3">4.3 ¿Qué limitaciones impone el BIOS a LILO?</A>
+</H2>
+
+<P>Excepto en el caso de que LILO sea el gestor de otros SOs, será el BIOS u otro cargador el responsable de ejecutar el sector de arranque de la partición. El BIOS (Basic Input Output System) cuando encendemos el ordenador, lleva a cabo el POST (Power-On Self Test) para comprobar los parámetros de la configuración de hardware que se encuentran permanentemente salvados en el chip CMOS (Complementary Metal Oxyde Semiconductor) RAM (continuamente alimentado por una batería aunque el ordenador se apague): memoria instalada, disqueteras, discos duros, cd-roms,...
+<P>Despues del test, BIOS muestra en la pantalla los valores de los parámetros de hardware y procede a arrancar el SO. En el caso de un disco duro toma el MBR del disco primario y de él se cargará el programa gestor de arranque. Antaño, el MBR contenía el sistema de arranque del único sistema operativo instalado. Hoy día como es posible cargar más de un SO, para arrancar, hace falta un gestor de arranque múltiple, como por ejemplo LILO. Por lo tanto, LILO está limitado por las opciones del BIOS. Además, LILO depende del BIOS para cargar los ficheros /boot/boot.b; /boot.map; los diversos kernels; los sectores de arranque de los otros Sos y el mensaje de arranque de LILO si se ha definido. 
+<P>Las restricciones más importantes que afectan LILO eran en el caso de BIOS antiguos la limitación a los dos primeros discos duros y la imposibilidad de acceder más allá de 1024 cilindros por disco, lo cual se vulneraba en cuanto el disco duro superaba los 504 Mbytes, por lo que convenía tener la partición raíz que contuviera los kernels en las primeras posiciones de la tabla. Los BIOS de las modernas placas base ya soportan hasta cuatro dispositivos (discos duros o cdroms). Así, cuando la partición de arranque de linux se encuentra en el segundo, tercero o cuarto disco duro, LILO imprime un mensaje de precaución pero continúa. El límite de los 1024 cilindros no ha cambiado con los nuevos BIOS, pero los controladores de disco con soporte de LBA (Logical Block Address)o LARGE(IDEs con más de 1024 cilindros, la mayoría de EIDEs y todos los SCSI) pueden "traducir" o "remapear" la geometría del disco en otra equivalente de manera que parezca que el sistema tiene menos de los 1024 cilindros y se puedan gestionar hasta casi 8 Gbytes. Si la información acerca de la geometría del disco que hay en el menú del BIOS (remapeada con p.ej. LBA) no es la misma (en cuanto a cilindros/cabezas/sectores) que la que nos da fdisk, entonces se producirá un problema de "geometry mismatch" (no equivalencia de geometría) y LILO abortará el arranque a menos que se utilice la opción "linear" en la configuración de LILO.
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.4">4.4 ¿Cómo se configura e instala LILO?</A>
+</H2>
+
+<P>La configuración de LILO se hace en <CODE>/etc/lilo.conf</CODE>, pero antes que editar y escribir manualmente la configuración en este archivo, existen interfaces o programas capaces de preparar una configuración conveniente para el usuario, de manera que solamente en el caso de incorporar opciones avanzadas tenga que editar y modificar a mano el archivo. 
+<P>En primer lugar existe un programa llamado "Quickinst" que acompaña la distribución original del programa LILO. Se trata de un guión (shell script) que produce una configuración mínima de LILO que luego conviene actualizar. Por otra parte la mayor parte de las distribuciones proporcionan un asistente durante la instalación que ayuda a la configuración  de LILO. RedHat en su "INSTALL" dedica una parte importante a la configuración de LILO. El"SETUP" de Slackware también lo permite. Distribuciones como Caldera OpenLinux o SuSE disponen de herramientas de instalación que permiten una cómoda configuración de LILO para el usuario (LISA y LIZARD para OpenLinux 1.3 y 2.2, y YAST para SuSE). Quizá Debian ha sido un poco más espartana (al menos hasta Hamm 2.0) en su utilidad de instalación para la configuración de LILO: se limita a escribir una configuración básica de LILO sin soporte para otros SOs ni otros kernels. 
+<P>El fichero <CODE>/etc/lilo.conf</CODE> solo debería ser leído por el superusuario administrador, ya que podría contener contraseñas. En caso de duda, deberíamos hacer (como root) 
+<PRE>
+  chmod 600 /etc/lilo.conf
+</PRE>
+
+<B>Escribiendo /etc/lilo.conf</B>
+<P>El fichero <CODE>/etc/lilo.conf</CODE> comienza con una "global section" (sección general) seguida de una o más "system sections" (secciones para cada SO que LILO gestione) que comenzarán por image= (si es un kernel linux) u other= (si es otro SO). Los comentarios en el fichero comienzan con el símbolo de la almohadilla (#).
+<P>Consideremos a continuación las líneas más importantes de <CODE>/etc/lilo.conf</CODE>:
+<P><EM>Seccion general</EM>
+<P>
+<UL>
+<LI><CODE>boot=<EM>dispositivo</EM></CODE> indica el dispositivo donde se instalará LILO. <EM>dispositivo</EM> puede ser un disquete (<CODE>/dev/df0</CODE>), una partición (p.ej. <CODE>/dev/hdc2</CODE>) o el disco completo (p.ej <CODE>/dev/hda</CODE>) que corresponde a la instalación en el MBR
+<P>
+</LI>
+<LI><CODE>install=<EM>ficheroarranque</EM></CODE> instala el fichero especificado como nuevo sector de arranque. Por defecto es <CODE>/boot/boot.b</CODE>
+<P>
+</LI>
+<LI><CODE>map=<EM>ficheromapa</EM></CODE> establece la ubicación del fichero de mapeado. Por defecto es <CODE>/boot/map</CODE>.
+<P>
+</LI>
+<LI><CODE>prompt</CODE> ordena a LILO que muestre un indicador (boot:) al momento de iniciarse el arranque que permita seleccionar el SO a iniciar. Si en este punto pulsamos la tecla TAB, aparecerán los nombres dados a los correspondientes SOs.
+<P>
+</LI>
+<LI><CODE>timeout=<EM>tiempo</EM></CODE> indica el tiempo en décimas de segundo que LILO debe mostrar el indicador anterior. Si pasado ese tiempo, no se indicase nada, LILO cargaría el primer SO configurado.</LI>
+</UL>
+<P><EM>Seccion linux</EM>
+<P>
+<UL>
+<LI><CODE>image=<EM>kernelimagen</EM></CODE> donde introducimos el fichero que contiene el kernel, incluyendo la ruta de directorio. Lo más normal es que sea <CODE>/vmlinuz</CODE> o <CODE>/boot/vmlinuz</CODE>
+<P>
+</LI>
+<LI><CODE>label=<EM>nombre</EM></CODE> donde escribimos un nombre para el SO en cuestión, p. ej., "linux" para linux, pero para otros, puede ser "DOS", "win98"...como máximo pueden ser cadenas de 15 caracteres. Introduciendo ese nombre cuando LILO presenta el indicador (boot:) se selecciona el SO a iniciar.
+<P>
+</LI>
+<LI><CODE>root=<EM>partición root</EM></CODE> donde indicamos el nombre de la partición linux nativa de nuestro sistema linux, p. ej., /dev/hdc2.
+<P>
+</LI>
+<LI><CODE>read-only</CODE> indica al kernel que ha de montar inicialmente la partición raíz en modo de sólo lectura. Es necesario indicar esta opción para la partición donde se montará el sistema de ficheros raíz.</LI>
+</UL>
+<P><EM>Seccion otros SOs</EM>
+<P>
+<UL>
+<LI><CODE>other=<EM>partición</EM></CODE> donde indicamos esta vez la partición de inicio del SO en cuestión, p.ej., <CODE>/dev/hda1</CODE>.
+<P>
+</LI>
+<LI><CODE>label=<EM>nombre</EM></CODE> tal como se indicó antes, será el nombre con que etiquetemos dicho SO.
+<P>
+</LI>
+<LI><CODE>loader=<EM>gestor de arranque</EM></CODE> Para cargar el SO, LILO construye un pseudo MBR en su fichero de mapeo. Esta opción especifica el fichero donde tomar el código del pseudo MBR. Por defecto el fichero es <CODE>/boot.chain.b</CODE>        
+<P>
+</LI>
+<LI><CODE>table=<EM>tabla</EM></CODE> establece el dispositivo fuente para la tabla de partición escrita en el pseudo MBR, usualmente <CODE>/dev/hda</CODE> o <CODE>/dev/sda</CODE>.</LI>
+</UL>
+<P><EM>Otras opciones interesantes (solo algunas)</EM>
+<P>
+<UL>
+<LI><CODE>vga=<EM>modo</EM></CODE> selecciona el modo VGA al inicio. Los modos válidos son "normal" (80x25), "ext" (extendido, 80x50) o "ask" (preguntar).
+<P>
+</LI>
+<LI><CODE>linear</CODE> hace que las referencias a los sectores se escriban como direcciones lógicas en lugar de físicas. Se emplea cuando LILO no reconoce correctamente la geometría del disco duro (debido a un remapeado por parte del BIOS).
+<P>
+</LI>
+<LI><CODE>message=<EM>ficheromensaje</EM></CODE> establece el fichero cuyo texto se mostraría durante el arranque. No debe tener más de 24 líneas.
+<P>
+</LI>
+<LI><CODE>append=<EM>parámetro</EM></CODE> permite pasar parámetros y componentes de hardware al kernel como cadena de caracteres. Por ejemplo, si nuestra memoria RAM es superior a 64 Mbytes, por ejemplo, 128, debemos pasarle el dato al kernel durante el arranque mediante (no necesario a partir de la serie 2.2.x)
+<PRE>
+  append="mem=128M"
+</PRE>
+</LI>
+<LI><CODE>delay=<EM>tiempo</EM></CODE> establece el tiempo en décimas de segundo que LILO esperará antes de arrancar el primer SO. Generalmente se usa cuando se arranca un único SO, pues si no, la opción prompt es mucho mejor. Por defecto (sin la opción) LILO no espera y se inicia el SO inmediatamente.</LI>
+</UL>
+<P>Después de haber escrito el fichero <CODE>/etc/lilo.conf</CODE>, es necesario lanzar el "map installer" haciendo:
+<PRE>
+  /sbin/lilo
+</PRE>
+
+con lo cual LILO escribe un backup del sector de arranque, escribe la primera parte de su código en él y crea un nuevo fichero de mapeado (/boot/map). LILO anuncia entonces por la pantalla los SOs que gestiona, añadiendo una estrella al que se arrancará por defecto. Hay que recalcar que si cualquiera de los componentes de LILO cambia o se modifica su configuración mediante /etc/lilo.conf, es necesario volver a reinstalar LILO con /sbin/lilo.
+<P><B>Configuración mínima de LILO y configuración para gestionar linux y otro sistema operativo (win95)</B>
+<P>Consideremos el siguiente fichero <CODE>/etc/lilo.conf</CODE> únicamente para arrancar <B>linux</B>:
+<PRE>
+  #
+  #Fichero de configuración /etc/lilo.conf
+  #
+  # Sección general
+  boot=/dev/hda
+  delay=100
+  vga=normal
+
+  # Partición linux
+
+    image=/vmlinuz
+    root=/dev/hda1
+    label=linux
+    read-only  
+</PRE>
+
+Este ejemplo se interpreta de la siguiente forma: 
+<P>LILO se va a instalar en el MBR del disco duro <CODE>/dev/hda</CODE>. El modo de video EGA es 80x25, el sistema linux nativo se encuentra en la primera partición del disco duro (<CODE>/dev/hda1</CODE>) y la imagen del kernel se encuentra en el fichero /vmlinuz. Despues de 10 segundos, arrancará el sistema linux, cuyo nombre es "linux". Si hacemos <CODE>/sbin/lilo</CODE>, entonces aparecerá en el monitor:
+<PRE>
+  Added linux*
+</PRE>
+
+Veamos ahora otro fichero de configuración para gestionar linux y win95:
+<PRE>
+  #
+  # Fichero de configuración /etc/lilo.conf
+  #
+  # Sección general
+
+  boot=/dev/hda
+  prompt
+  timeout=100
+  vga=normal
+
+  # Partición linux
+
+    image=/vmlinuz
+    root=/dev/hdc1
+    label=linux
+    read-only  
+
+  # Partición Windows 95
+
+    other=/dev/hda1
+    label=win95
+    table=/dev/hda
+</PRE>
+
+En este caso, LILO también está en el MBR del primer disco duro (<CODE>/dev/hda</CODE>) y hay dos sistemas operativos: linux en la partición <CODE>/dev/hdc1</CODE> y Windows 95 en la partición <CODE>/dev/hda1</CODE>. La tabla de partición para el gestor de arranque corresponde al dispositivo <CODE>/dev/hda</CODE>.
+<P>si hacemos <CODE>/sbin/lilo</CODE>, aparecerá el mensaje:
+<PRE>
+  Added linux*
+  Added win95
+</PRE>
+<P>lo que significa que LILO va a gestionar los dos sistemas operativos y que por defecto el primero en arrancar será linux.
+<P>Cuando reinicialicemos el sistema, si todo ha ido bien aparecerá la palabra LILO seguida del indicador de arranque
+<P>
+<PRE>
+  LILO boot:
+</PRE>
+
+y así permanécera durante unos 10 segundos, pasados los cuales si no hemos escrito el nombre de uno de los SOs, cargará por defecto linux. 
+<P>Si antes del tiempo, pulsamos la tecla TAB, entonces aparecerán en pantalla los nombres de los SOs gestionados:
+<PRE>
+  linux       win95
+</PRE>
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.5">4.5 ¿Cómo desinstalo LILO?</A>
+</H2>
+
+<P>Hay razones para desear desinstalar LILO. Una, desinstalar el sistema linux de nuestra máquina. Otra imperativa: porque algo va mal. LILO es un programa que, mal manejado, puede hacer al sistema no arrancable si se instala en el MBR. Mal configurado, impedirá el acceso al cualquier SO. En tales casos es indispensable disponer de disquetes de arranque para dichos SO. Por lo tanto es conveniente hacer el disco de arranque de Windows y el de arranque de linux (en el momento adecuado de la instalación del sistema) de manera que nos permita acceder via disquetera al sistema correspondiente en caso de imposibilidad de arrancar. Nótese que en el BIOS el arranque deberá comenzar por defecto en la disquetera A:.
+<P>Una vez que hemos arrancado el SO, hay muchas maneras de desinstalar LILO del MBR. Si nos encontramos en DOS o Windows, basta con ejecutar el comando MS-DOS
+<P>
+<PRE>
+  FDISK /MBR (ó SYS C: si C: es el disco duro en cuyo MBR se instaló LILO)
+</PRE>
+
+si estamos en OS/2
+<PRE>
+  FDISK /NEWMBR
+</PRE>
+
+que escriben los primeros 446 bytes (el código de arranque) en el MBR y dejando las particiones ilesas.
+<P>si estamos en linux, basta con hacer
+<PRE>
+  /sbin/lilo -u 
+</PRE>
+
+para restaurar el MBR anterior a la instalación de LILO
+<P>Además de todo esto puede hacerse otra cosa: Cuando LILO sobreescribe el MBR, salva una copia de backup en <CODE>/boot/boot.xxxx</CODE>, donde <CODE>xxxx</CODE> es un número mágico del dispositivo donde se ha instalado. Veamos algunos ejemplos
+<PRE>
+  Disco         /dev/zzz                xxxx
+  IDE primario  /dev/hda                0300
+  SCSI primario /dev/sda                0800
+  floppy        /dev/fd0                0200
+</PRE>
+
+así, si queremos desinstalar LILO del sector de arranque de alguno de estos dispositivos, bastará con hacer:
+<PRE>
+  dd if=/boot/boot.xxxx of=/dev/zzz bs=446 count=1
+</PRE>
+
+Si LILO se ha instalado en una partición raíz, no hará no arrancable ningún otro sistema operativo. Únicamente, si está mal instalado, hará que no arranque linux. Si deseamos restaurar el sector de arranque de la partición /dev/yyyy (p.ej. /dev/hda1) podemos reescribir el sector de botado haciendo:
+<PRE>
+  dd if=/dev/yyyy of=New-file bs=512 count=1
+  dd if=Backup-Date of=/dev/yyyy
+</PRE>
+
+si lo que queremos es desinstalar linux, borraremos la partición root con fdisk.
+<P>
+<P>
+<P>
+<H2><A NAME="ss4.6">4.6 LILO no funciona bien. Diagnóstico de errores.</A>
+</H2>
+
+<P>Cuando LILO se inicia, si todo ha ido bien, presenta en la pantalla las cuatro letras "LILO". Como ya vimos, cada letra correspondía a una acción. Si LILO no ha funcionado, las letras que presente en pantalla junto con ciertos mensajes, serán la clave para saber donde está el problema. Veamos los más comunes:
+<P>
+<UL>
+<LI><B>"L" error</B>: El primer tramo del código ha sido cargado pero no el segundo. Esto se debe generalmente a un error físico en el sector de botado o a un problema de geometría del disco.
+<P>
+</LI>
+<LI><B>"LI"</B>:El segundo tramo del código ha sido invocado, pero no ha podido iniciarse. Esto sucede cuando hay un error de geometría de disco o se ha movido <CODE>/boot/boot.b</CODE> sin reinstalar LILO (<CODE>/sbin/lilo</CODE>).
+<P>
+</LI>
+<LI><B>"LIL"</B>:El segundo tramo del código se ha iniciado pero no puede ubicar los datos que necesita en el fichero de mapeado. Esto puede deberse a un error físico del dispositivo de arranque o a un problema en la geometría del disco.
+<P>
+</LI>
+<LI><B>"LIL?"</B>:El segundo tramo del código se ha cargado en una dirección de memoria equivocada. Esto se debe a un error en la geometría del disco o cuando se ha movido <CODE>/boot/boot.b</CODE> sin reinstalar LILO (<CODE>/sbin/lilo</CODE>).
+<P>
+</LI>
+<LI><B>"LIL-"</B>:Los datos en el fichero de mapeado no son válidos. Las causas son las mismas que en el caso anterior.</LI>
+</UL>
+<P>La mayor parte de las veces, no se trata de un problema físico del dispositivo de botado, sino errores debidos a la no equivalencia entre la geometría del disco que fdisk presenta y que el BIOS ha remapeado. En tal caso el uso del parámetro "linear" en <CODE>/etc/lilo.conf</CODE> puede funcionar. Otras veces puede deberse a que se ha intentado instalar LILO en una partición lógica. Y otras veces a causas más sutiles. Por ejemplo: Yo arranco linux junto a otros sistemas operativos con el gestor de arranque de Partition Magic y tengo LILO en una partición raíz. Una vez hice un "resize" y cambié el tamaño de mi partición linux nativa porque necesitaba espacio para instalar nuevos programas. Al terminar e intentar arrancar linux de su partición, apareció en la pantalla "LI". Eso se debió a que después de haber hecho el cambio de tamaño, había movido <CODE>/boot/boot.b</CODE> y no había lanzado el map installer <CODE>/sbin/lilo</CODE>. Cogí mi disquete de arranque de linux, y cuando entré ejecuté la orden y reinicié el sistema. Todo funcionó.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="FAQ_Linux-5.html">Next</A>
+<A HREF="FAQ_Linux-3.html">Previous</A>
+<A HREF="FAQ_Linux.html#toc4">Contents</A>
+</BODY>
+</HTML>

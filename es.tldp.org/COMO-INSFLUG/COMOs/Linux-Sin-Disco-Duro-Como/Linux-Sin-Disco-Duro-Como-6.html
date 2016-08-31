@@ -1,0 +1,372 @@
+<HTML>
+<HEAD>
+<TITLE>Linux sin disco Mini-COMO: Conceptos fundamentales</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Linux-Sin-Disco-Duro-Como-5.html">Anterior</A>
+<A HREF="Linux-Sin-Disco-Duro-Como-7.html">Siguiente</A>
+<A HREF="Linux-Sin-Disco-Duro-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="s6">6. Conceptos fundamentales</A></H2>
+
+
+<P>La idea fundamental es la siguiente:  el PC buscar&aacute; su direcci&oacute;n IP en el
+servidor de arranque v&iacute;a protocolo <CODE>bootp</CODE>, usando <CODE>0.0.0.0</CODE> como
+direcci&oacute;n IP inicial y recibiendo su n&uacute;cleo v&iacute;a el protocolo <CODE>tftp</CODE>.
+Arrancar a trav&eacute;s de segmentos (v&iacute;a un <I>router</I> o encaminador) no es
+simple: se puede o bien colocar ambos, servidor y las computadoras sin
+disco, en el mismo segmento de red o configurar un asistente de
+direcciones UDP en su encaminador hacia la direcci&oacute;n del servidor. 
+Refi&eacute;rase al manual de su encaminador para obtener m&aacute;s informaci&oacute;n. </P>
+<P>Para hacer esto siga los siguientes pasos:</P>
+
+<H2><A NAME="ss6.1">6.1 Configuraci&oacute;n del PC</A></H2>
+
+
+<P>Instale el paquete <CODE>nfsboot</CODE> (el paquete estar&aacute; disponible en su
+servidor Linux favorito en el directorio
+<CODE>/pub/Linux/system/Linux-boot</CODE>). Este paquete contiene la imagen de
+una EPROM de arranque para la tarjeta wd8013 que puede ser grabada
+directamente. </P>
+<P>Existen varias v&iacute;as alternativas para preparar el PC:</P>
+<P>
+<UL>
+<LI>si la m&aacute;quina no est&aacute; totalmente exenta de discos, entonces es
+posible utilizar un peque&ntilde;o programa DOS, o
+</LI>
+<LI>la imagen binaria del disquete contenida en el mismo paquete.  Si
+elije esta &uacute;ltima opci&oacute;n puede escribir la imagen en el disquete con el
+comando <CODE>dd</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=imagen of=/dev/fd0H1440
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+
+Estas im&aacute;genes contienen un cliente <CODE>bootp</CODE> y <CODE>tftp</CODE>. Es necesario
+preparar tambi&eacute;n un n&uacute;cleo de Linux, el cual tenga la opci&oacute;n <CODE>nfs-root</CODE>
+habilitada. 
+</LI>
+<LI>Si est&aacute; usando un n&uacute;cleo 1.2.13, es necesario poner al d&iacute;a el n&uacute;cleo
+con el parche inclu&iacute;do en el paquete <CODE>nfsboot</CODE>. Refi&eacute;rase a
+<CODE>patch(1)</CODE>
+</LI>
+<LI>Si est&aacute; usando uno de los &uacute;ltimos n&uacute;cleos (1.3.x o superior)  tiene
+que habilitar la opci&oacute;n <CODE>nfs-root</CODE>. </LI>
+</UL>
+</P>
+<P>Puede o no configurar soporte para dispositivos de sistemas de archivo
+(disquetes o discos duros), pero es obligatorio habilitar soporte TCP/IP,
+soporte para tarjeta ethernet y soporte de sistema de archivos nfs. Y, una
+vez realizado esto, recompilar el n&uacute;cleo de la manera acostumbrada.</P>
+
+
+<H2><A NAME="ss6.2">6.2 Instalaci&oacute;n de <CODE>bootpd</CODE> en el servidor</A></H2>
+
+
+<P>Bootpd puede encontrarse en el paquete <CODE>bootpd-2.4.tar.gz</CODE> (el cual
+se obtiene de su servidor favorito de software Linux en el directorio
+<CODE>/pub/Linux/system/Network/boot.net</CODE>).  Obtenga el paquete,
+comp&iacute;lelo e inst&aacute;lelo.  Si alguna m&aacute;quina Linux tiene la distribuci&oacute;n
+Slackware, es posible saltarse este paso instalando la distribuci&oacute;n
+normal conteniendo <CODE>bootpd</CODE>.  El demonio se puede ejecutar directamente
+utilizando el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+bootpd -s
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>o a trav&eacute;s de <CODE>inetd</CODE>.  En ese caso ser&aacute; necesario:</P>
+<P>
+<OL>
+<LI>editar <CODE>/etc/inetd.conf</CODE>, eliminando la marca de comentario
+(<CODE>#</CODE>) de las siguientes l&iacute;neas:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# tftp    dgram  udp  wait  root  /usr/sbin/in.tftpd   tftpd   /ex
+# bootps  dgram  udp  wait  root  /usr/sbin/in.bootpd  bootpd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>inserte o descomente las siguientes dos l&iacute;neas en el archivo
+<CODE>/etc/services</CODE>: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        bootps          67/tcp          # BOOTP server
+        tftp            69/udp          # TFTP server
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>reiniciar <CODE>inetd</CODE> usando
+
+<BLOCKQUOTE><CODE>
+<PRE>
+kill -HUP PID_de_inetd
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+</P>
+
+<H3>Configuraci&oacute;n de <CODE>bootpd</CODE> en el servidor</H3>
+
+
+<P>Lo primero de todo: <CODE>bootpd</CODE> tiene un archivo de configuraci&oacute;n llamado
+<CODE>bootptab</CODE> el cual usualmente se encuentra en <CODE>/etc</CODE>. Debe ser
+modificado insertando la direcci&oacute;n IP de su pasarela, servidor de nombres
+y la/s direcci&oacute;n/es ethernet de su/s m&aacute;quina/s sin disco.  Un ejemplo de
+<CODE>/etc/bootptab</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ global.prof:\
+     :sm=255.255.255.0:\
+     :ds=192.168.1.5:\
+     :gw=192.168.1.19:\
+     :ht=ethernet:\
+     :bf=linux:
+ machine1:hd=/export/root/machine1:tc=global.prof:ha=0000c0863d7a:ip=192.1
+ machine2:hd=/export/root/machine2:tc=global.prof:ha=0800110244e1:ip=192.1
+ machine3:hd=/export/root/machine3:tc=global.prof:ha=0800110244de:ip=192.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<UL>
+<LI><CODE>global.prof</CODE>: Archivo de esquema general para las
+configuraciones de cada m&aacute;quina, donde:
+
+<UL>
+<LI><CODE>sm</CODE>: Corresponde a la M&aacute;scara de subred</LI>
+<LI><CODE>ds</CODE>: Direcci&oacute;n del servidor de nombres (DNS)</LI>
+<LI><CODE>gw</CODE>: Direcci&oacute;n de la pasarela por defecto</LI>
+<LI><CODE>ht</CODE>: Tipo de hardware de red</LI>
+<LI><CODE>bf</CODE>: Nombre del archivo de arranque</LI>
+</UL>
+</LI>
+</UL>
+</P>
+<P>Despu&eacute;s de esto, cada m&aacute;quina debe tener una l&iacute;nea:</P>
+<P>
+<UL>
+<LI>El primer campo contiene el nombre de la m&aacute;quina</LI>
+<LI><CODE>hd</CODE> contiene el directorio del archivo de arranque</LI>
+<LI>el archivo de esquema general debe ser inclu&iacute;do en el campo <CODE>tc</CODE></LI>
+<LI><CODE>ha</CODE> contiene la direcci&oacute;n de hardware de la tarjeta de red</LI>
+<LI><CODE>ip</CODE> contiene la direcci&oacute;n ip que se asigna</LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss6.3">6.3 <CODE>tftp</CODE></A></H2>
+
+
+<P>TFTP (<I>Trivial File Transfer Protocol</I>) es un protocolo de
+transferencia de archivos, como lo es ftp, pero mucho m&aacute;s simple, a fin de
+que quepa en las EPROMs.  TFTP puede ser usado de dos maneras: </P>
+<P>
+<DL>
+
+<DT><B>tftp simple:</B><DD><P>El cliente puede acceder a la totalidad de su
+sistema de archivos.  Es simple pero puede generar un gran problema de
+seguridad (cualquiera puede obtener su archivo de claves v&iacute;a tftp). </P>
+
+<DT><B>tftp seguro:</B><DD><P>El servidor <CODE>tftp</CODE> utiliza un llamada de
+sistema <CODE>chroot.2</CODE> para cambiar a su propio directorio ra&iacute;z.  Cualquier
+cosa que est&eacute; fuera del nuevo directorio ra&iacute;z es completamente
+inaccesible, ya que el directorio que sufre el chroot se transforma en el
+nuevo directorio ra&iacute;z;  el campo <CODE>hd</CODE> del archivo <CODE>bootptab</CODE> debe
+reflejar esta nueva situaci&oacute;n.</P>
+<P>Por ejemplo:  cuando se utiliza <CODE>tftp</CODE> simple, el campo <CODE>hd</CODE>
+contiene el <I>path</I> o camino completo del directorio de arranque:
+<CODE>/export/root/machine1</CODE>. Cuando se utiliza <CODE>tftp</CODE> seguro con
+<CODE>/export</CODE> como directorio ra&iacute;z, entonces <CODE>/export</CODE> pasa a
+ser <CODE>/</CODE> y el campo <CODE>hd</CODE> debe ser <CODE>/root/machine1</CODE>. </P>
+
+</DL>
+</P>
+<P>Asimismo, cada implementaci&oacute;n Unix contiene el servidor <CODE>tftp</CODE> y,
+probablemente, no sea necesario que Usted instale su propio servidor. </P>
+
+
+<H2><A NAME="ss6.4">6.4 Servidor. Instalaci&oacute;n m&iacute;nima de Linux remota.</A></H2>
+
+
+<P>El servidor debe contener los paquetes <I>a</I>, <I>ap</I>, <I>n</I> y <I>x</I> de
+la distribuci&oacute;n Slackware.  No hay inconvenientes para instalar m&aacute;s cosas; 
+sin embargo, los paquetes mencionados son suficientes para los prop&oacute;sitos
+de una terminal X sin disco. </P>
+<P>Para la instalaci&oacute;n se necesita un sistema Linux funcionando.</P>
+<P>Buscar algo de espacio en disco para exportarlo para lectura-escritura en
+la m&aacute;quina remota. </P>
+<P>Montar el directorio exportado en alg&uacute;n lugar (por ej. <CODE>/mnt</CODE>) 
+sobre el sistema de archivos de la m&aacute;quina Linux.</P>
+<P>Iniciar la instalaci&oacute;n de Linux y cambiar el lugar de instalaci&oacute;n de
+<CODE>/</CODE> a <CODE>/mnt</CODE>. Instalar los paquetes referidos de la forma
+usual. Si se desea correr s&oacute;lo un Linux sin disco no son necesarios m&aacute;s
+cambios. De otra forma, si se planea utilizar m&aacute;s de una m&aacute;quina sin disco
+esta instalaci&oacute;n no funcionar&aacute; ya que algunos archivos y directorios deben
+ser privados para cada m&aacute;quina.  El problema puede ser solucionado
+moviendo <CODE>/usr</CODE> (que no contiene elementos privados) y creando
+subdirectorios separados para cada m&aacute;quina sin disco.  Por ejemplo, si
+<CODE>/export/linux/machine1</CODE> fue montado en <CODE>/mnt</CODE> entonces la
+estructura de directorios despu&eacute;s de la instalaci&oacute;n inicial se ver&aacute; as&iacute;:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/export/linux/machine1/bin
+/export/linux/machine1/sbin
+/export/linux/machine1/lib
+/export/linux/machine1/etc
+/export/linux/machine1/var
+/export/linux/machine1/usr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Y despu&eacute;s de los cambios debe de quedar:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/export/linux/machine1/bin
+/export/linux/machine1/sbin
+/export/linux/machine1/lib
+/export/linux/machine1/etc
+/export/linux/machine1/var
+/export/linux/usr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora es posible crear los subdirectorios para las otras m&aacute;quinas. 
+Asumimos que las m&aacute;quinas sin disco son llamadas <CODE>machine1</CODE>,
+<CODE>machine2</CODE>, <CODE>machine3</CODE>, etc.; puede utilizar el siguiente macro de
+bash para instalar los otros directorios: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        cd /export/linux
+        for x in machine2 machine3 ; do
+                mkdir $x; cd $x
+                (cd ../machine1; tar cf - *) | tar xvf -
+        done
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Una vez hecho esto, realice las siguientes exportaciones:</P>
+<P>
+<UL>
+<LI><CODE>/export/linux/usr</CODE>: S&oacute;lo lectura para todo el mundo</LI>
+<LI><CODE>/export/linux/machine1</CODE>: Solamente para <CODE>machine1</CODE> con
+permisos <CODE>rw,root</CODE></LI>
+<LI><CODE>/export/linux/machine2</CODE>: Solamente para <CODE>machine2</CODE> con
+derechos <CODE>rw,root</CODE></LI>
+<LI><CODE>/export/linux/machine3</CODE>: Solamente para <CODE>machine3</CODE> con
+derechos <CODE>rw,root</CODE></LI>
+</UL>
+</P>
+<P>como se indica a continuaci&oacute;n (el formato de este ejemplo est&aacute; en la
+sintaxis de SunOs 4.1.3 para <CODE>export</CODE>) </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        # Este archivo es /etc/export
+        # para terminales X con Linux remotas
+        # La siguiente linea es una unica:
+        /etc/root/usr                   -access=linuxnet
+        # Las siguientes lineas corresponden a una por cada maquina
+        /export/root/machine1           rw=machine1,root=machine1
+        /export/root/machine2           rw=machine2,root=machine2
+        /export/root/machine3           rw=machine3,root=machine3
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>No olvidar ejecutar <CODE>exportfs -a</CODE></P>
+
+
+<H2><A NAME="ss6.5">6.5 Configuraci&oacute;n del servidor <CODE>tftp</CODE></A></H2>
+
+
+<P>Ahora es el momento de configurar el servidor <CODE>tftp</CODE>.  Si no necesita
+seguridad en el protocolo <CODE>tftp</CODE> todo resultar&aacute; m&aacute;s simple para sus
+clientes ya que arrancar&aacute;n desde el directorio <CODE>/export</CODE>.</P>
+<P>Si utiliza seguridad con el protocolo <CODE>tftp</CODE> entonces se debe crear una
+estructura de directorio completa <CODE>/export/linux</CODE> bajo
+<CODE>/tftpboot</CODE> (con un n&uacute;cleo real y enlaces simb&oacute;licos para las otras
+m&aacute;quinas), o dejar que el directorio <CODE>/export</CODE> sea el directorio de
+arranque para el <CODE>tftp</CODE> seguro.  O, si dispone de un directorio
+<CODE>tftpboot</CODE> separado necesita, de igual forma, la estructura de
+directorios original con un n&uacute;cleo &uacute;nico y enlaces simb&oacute;licos para los
+otros. Se puede conseguir esta configuraci&oacute;n ejecutando lo siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir -p /tftpboot/export/linux/machine1
+cd /tftpboot/export/linux/machine1
+cp /export/linux/machine1/nombre_del_nucleo
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Teclee lo siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir -p /tftpboot/export/linux/machine2
+cd ../machine2
+ln -s ../machine1/nombre_del_nucleo
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss6.6">6.6 &Uacute;ltimos retoques</A></H2>
+
+
+<P>Para terminar, se debe insertar:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/mount nombre_servidor_nfs:/export/linux/usr /usr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>como la primera l&iacute;nea de</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/export/linux/machineX/etc/rc.d/rc.S
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss6.7">6.7 Requerimientos de memoria y espacio en disco; velocidad</A></H2>
+
+
+<P>Todo lo indicado ha sido comprobado &uacute;nicamente con Slackware 2.3; para
+otras distribuciones/versiones los datos que se indican a continuaci&oacute;n
+pueden variar.</P>
+<P>
+<UL>
+<LI>Espacio en disco:  28Mb + 6.5Mb/m&aacute;quina</LI>
+<LI>RAM: Yo utilizo X con 8Mb.  Para lo cual se necesita 4Mb de
+swap, el cual puede ser creado, separadamente para cada
+m&aacute;quina, mediante un fichero de swap en el directorio <CODE>/tmp</CODE>.  No
+olvide ponerlo a punto con <CODE>mkswap</CODE> y <CODE>swapon</CODE>.</LI>
+<LI>Velocidad: No he tenido problemas con un 486 DX2/66 con 8 Mb.</LI>
+</UL>
+</P>
+
+
+<HR>
+<A HREF="Linux-Sin-Disco-Duro-Como-5.html">Anterior</A>
+<A HREF="Linux-Sin-Disco-Duro-Como-7.html">Siguiente</A>
+<A HREF="Linux-Sin-Disco-Duro-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

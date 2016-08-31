@@ -1,0 +1,265 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt COMO: Comandos Externos</TITLE>
+ <LINK HREF="Bash-Prompt-Como-4.html" REL=next>
+ <LINK HREF="Bash-Prompt-Como-2.html" REL=previous>
+ <LINK HREF="Bash-Prompt-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bash-Prompt-Como-4.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-2.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="s3">3. Comandos Externos</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 <CODE>PROMPT_COMMAND</CODE></A>
+</H2>
+
+<P>
+<P><CODE>bash</CODE> proporciona otra variable de entorno llamada
+<CODE>PROMPT_COMMAND</CODE>. El contenido de esta variable se ejecuta como un
+comando <CODE>bash</CODE> normal justo antes de que <CODE>bash</CODE> muestre el prompt.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       [21:55:01][giles@nikola:~] PS1="[\u@\h:\w]\$ "
+       [giles@nikola:~] PROMPT_COMMAND="date +%H%M"
+       2155
+       [giles@nikola:~] d
+       bin   mail
+       2156
+       [giles@nikola:~]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Lo que ocurre arriba es que he cambiado <CODE>PS1</CODE> para que no incluya la
+secuencia de escape <CODE>\t</CODE>, de tal modo que la hora no forme parte del
+prompt.  Despu&eacute;s he usado <CODE>date +%H%M</CODE> para mostrar la
+hora en un formato que me gusta m&aacute;s. Pero aparece en una l&iacute;nea diferente a
+la del prompt. Esto se soluciona usando <CODE>echo -n</CODE> ... como se muestra
+debajo, funciona con <CODE>bash 2.0+</CODE>, pero parece que no lo hace con
+<CODE>bash 1.14.7</CODE>:  aparentemente el prompt se dibuja de manera diferente,
+y el m&eacute;todo mostrado a continuaci&oacute;n resulta en superposici&oacute;n de texto. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       2156
+       [giles@nikola:~] PROMPT_COMMAND="echo -n [$(date +%H%M)]"
+       [2156][giles@nikola:~]$
+       [2156][giles@nikola:~]$ d
+       bin   mail
+       [2157][giles@nikola:~]$ unset PROMPT_COMMAND
+       [giles@nikola:~]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P><CODE>echo -n </CODE>... controla la salida del comando <CODE>date</CODE> y suprime el
+caracter de nueva l&iacute;nea final, permitiendo que el prompt aparezca en una
+sola l&iacute;nea. Al final, uso el comando <CODE>unset</CODE> para eliminar la variable
+de entorno <CODE>PROMPT_COMMAND</CODE>.
+<P>N&oacute;tese que uso la convenci&oacute;n $(&lt;comando&gt;) para la sustituci&oacute;n
+de comandos, es decir
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       $(date +%H%M)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>significa «sustituye la salida de <CODE>date +%H%M</CODE> aqu&iacute;». 
+Esto funciona en <CODE>bash 2.0+</CODE>. En alguna versi&oacute;n antigua de <CODE>bash</CODE>,
+anterior a la <CODE>1.14.7</CODE>, puede ser necesario el uso de comillas simples
+graves (<CODE>`date +%H%M`</CODE>). Estas comillas pueden usarse en
+<CODE>bash 2.0+</CODE>, pero es preferible usar <CODE>$()</CODE>, que funciona
+mejor en el caso de anidamientos. Voy a usar esta convenci&oacute;n a lo largo de
+este documento.  Si utiliza una versi&oacute;n anterior de <CODE>bash</CODE>, normalmente
+podr&aacute; sustituir los <CODE>$()</CODE> por las comillas. Si la sustituci&oacute;n de
+comandos est&aacute; escapada (es decir, <CODE>\$(comando)</CODE> ), entonces
+deber&aacute; usar contrabarras para escapar AMBAS comillas (o sea,
+<CODE>\`comando\`</CODE> ). 
+<P>
+<H2><A NAME="ss3.2">3.2 Comandos externos en el prompt</A>
+</H2>
+
+<P>
+<P>Tambi&eacute;n se puede usar la salida de comandos regulares LiNUX directamente
+en el prompt. Obviamente, no es deseable insertar muchas cosas, o se
+crear&aacute; un prompt enorme. Adem&aacute;s ser&aacute; preferible usar un comando r&aacute;pido ya
+que se va a ejecutar cada vez que el prompt aparezca en pantalla, y
+retrasa la aparici&oacute;n de &eacute;ste lo que puede resultar muy molesto. (A
+diferencia del ejemplo anterior al que recuerda, esto funciona con
+<CODE>bash 1.14.7</CODE>) 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       [21:58:33][giles@nikola:~]$ PS1="[\$(date +%H%M)][\u@\h:\w]\$ "
+       [2159][giles@nikola:~]$ ls
+       bin   mail
+       [2200][giles@nikola:~]$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Es importante hacer notar la contrabarra anterior al signo de d&oacute;lar de la
+sustituci&oacute;n del comando. Sin ella, el comando externo se ejecuta
+exactamente una vez: cuando se lee la cadena almacenada en <CODE>PS1</CODE> del
+entorno. Para este prompt, eso significar&iacute;a que mostrar&iacute;a siempre la misma
+hora, sin importar cuanto tiempo se ha usado el prompt. La contrabarra
+protege los contenidos de <CODE>$()</CODE> de la interpretaci&oacute;n inmediata
+del shell, por lo que <CODE>date</CODE> es llamado cada vez que se genera un
+prompt.
+<P>LiNUX incluye muchas utilidades de peque&ntilde;o tama&ntilde;o como <CODE>date</CODE>,
+<CODE>grep</CODE> o <CODE>wc</CODE> que permiten la manipulaci&oacute;n de datos. Si se encuentra
+en la situaci&oacute;n de crear una combinaci&oacute;n compleja de estos programas
+dentro del prompt, podr&iacute;a ser m&aacute;s f&aacute;cil crear un <I>shell script</I> y
+llamarlo desde el prompt. En ocasiones son necesarias secuencias de escape
+en los scripts de <CODE>bash</CODE> para asegurar que las variables se expanden en
+el momento correcto (como se ha mostrado arriba con el comando <CODE>date</CODE>):
+esto llega a niveles mayores con la l&iacute;nea de prompt <CODE>PS1</CODE>, y es una
+buena idea evitarlo creando <I>scripts</I>. 
+<P>Un ejemplo de un peque&ntilde;o <I>shell script</I> usado dentro de un prompt es el
+siguiente: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+  #!/bin/bash
+  #     lsbytesum - suma del n&uacute;mero total de bytes de un ls
+  TotalBytes=0
+  for Bytes in $(ls -l | grep "^-" | cut -c30-41)
+  do
+      let TotalBytes=$TotalBytes+$Bytes
+  done
+  TotalMeg=$(echo -e "scale=3 \n$TotalBytes/1048576 \nquit" | bc)
+  echo -n "$TotalMeg"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A veces he mantenido ambos como funciones (mucho m&aacute;s eficiente, pero
+desafortunadamente, la explicaci&oacute;n de funciones en detalle va m&aacute;s all&aacute; de
+este documento), o como <I>scripts</I> en mi directorio <CODE>/bin</CODE>, que
+se encuentra en mi variable <CODE>PATH</CODE>. Utiliz&aacute;ndolo en un prompt:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       [2158][giles@nikola:~]$ PS1="[\u@\h:\w (\$(lsbytesum) Mb)]\$ "
+       [giles@nikola:~ (0 Mb)]$ cd /bin
+       [giles@nikola:/bin (4.498 Mb)]$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.3">3.3 Qu&eacute; poner en el prompt</A>
+</H2>
+
+<P>
+<P>Se habr&aacute; percatado de que yo pongo el nombre de usuario, el nombre de la
+m&aacute;quina, la hora y el directorio actual en la mayor&iacute;a de mis prompts. Con
+la excepci&oacute;n de la hora, son cosas muy normales de encontrar en un prompt,
+y la hora es posiblemente la adici&oacute;n m&aacute;s com&uacute;n. Pero lo que incluya cada
+uno es cosa de gusto personal. Aqu&iacute; hay ejemplos de personas que conozco
+que le pueden dar ideas.
+<P>El prompt de Dan es m&iacute;nimo pero muy efectivo, particularmente para su
+forma de trabajar. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       [giles@nikola:~]$ cur_tty=$(tty | sed -e "s/.*tty\(.*\)/\1/")
+       [giles@nikola:~]$ echo $cur_tty
+       p4
+       [giles@nikola:~]$ PS1="\!,$cur_tty,\$?\$ "
+       1095,p4,0$
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A Dan no le gusta que el hecho de tener el directorio actual de trabajo en
+el prompt pueda variar el tama&ntilde;o de &eacute;ste dr&aacute;sticamente mientras se pasa de
+un directorio a otro, as&iacute; que el mantiene la pista de esto en su cabeza (o
+usa <CODE>pwd</CODE>). El aprendi&oacute; Unix con <CODE>csh</CODE> y <CODE>tcsh</CODE>, as&iacute; que usa su
+hist&oacute;rico de comandos de forma intensiva (cosa que los adictos al
+<CODE>bash</CODE> no solemos hacer), as&iacute; que la primera cosa en el prompt es el
+n&uacute;mero del hist&oacute;rico. El segundo campo es el caracter significante de la
+tty (la salida de <CODE>tty</CODE> es recortada mediante sed), un dato que puede
+ser &uacute;til para los usuarios de <CODE>screen</CODE>. El tercer campo es el valor de
+retorno del &uacute;ltimo comando/tuber&iacute;a (n&oacute;tese que se muestra in&uacute;til para
+cualquier comando que se ejecuta dentro del prompt; se puede solucionar
+captur&aacute;ndolo en una variable). Finalmente, «<CODE>\$</CODE>» es un s&iacute;mbolo
+de d&oacute;lar para un usuario normal y cambia a <CODE>#</CODE> si el usuario es el
+<CODE>root.</CODE>
+<P>Torben Fjerdingstad me escribi&oacute; para decirme que a menudo suspende tareas,
+y despu&eacute;s se le olvidan, as&iacute; que usa su prompt para servir de recordatorio
+de las tareas suspendidas: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       [giles@nikola:~]$ function jobcount {
+       > jobs|wc -l| awk '{print $1}'
+       > }
+       [giles@nikola:~]$ export PS1='\W[`jobcount`]# '
+       giles[0]# man ls &amp;
+       [1] 4150
+
+       [1]+  Stopped (tty output)    man ls
+       giles[1]#
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Torben usa <CODE>awk</CODE> para evitar el espacio de la salida de <CODE>wc</CODE>,
+mientras que yo habr&iacute;a usado <CODE>sed</CODE> o <CODE>tr</CODE> - no porque sean mejor,
+sino porque me resultan m&aacute;s familiares. Probablemente existan m&aacute;s formas.
+Torben adem&aacute;s rodea sus cadenas <CODE>PS1</CODE> con comillas simples. lo que
+evita que el <CODE>bash</CODE> interprete inmediatamente las contrabarras, as&iacute; no
+tiene que escaparlas como yo hab&iacute;a dicho. 
+<P><B>NOTA</B>: existe un <I>bug</I> conocido en <CODE>bash 2.02</CODE> que provoca que
+el comando <CODE>jobs</CODE> no retorne nada a una tuber&iacute;a. Si intenta lo de
+arriba bajo <CODE>bash 2.02</CODE>, siempre obtendr&aacute; un «<CODE>0</CODE>»
+independientemente de los trabajos que haya suspendidos. Chet Ramey, uno
+de los responsables de <CODE>bash</CODE> me ha dicho que esto se soluciona en la
+<CODE>v2.03</CODE>.
+<P>
+<H2><A NAME="ss3.4">3.4 Entorno <CODE>bash</CODE> y funciones</A>
+</H2>
+
+<P>
+<P>Como he mencionado antes, <CODE>PS1</CODE>, <CODE>PS2</CODE>, <CODE>PS3</CODE>, <CODE>PS4</CODE> y
+<CODE>PROMPT_COMMAND</CODE> se almacenan todas en el entorno del <CODE>bash</CODE>. Para
+aquellos que provengan del DOS, la idea de almacenar gran cantidad de
+c&oacute;digo en el entorno es aterradora, ya que el entorno del DOS era peque&ntilde;o,
+y no creci&oacute; bien exactamente.  Posiblemente haya l&iacute;mites pr&aacute;cticos en lo
+que se puede y debe poner en el entorno, pero no los conozco, y
+probablemente se est&aacute; hablando de un par de &oacute;rdenes de magnitud mayores de
+a lo que est&aacute;n acostumbrados los usuarios de DOS. Como dijo Dan: 
+<P><I>En mi shell interactivo tengo 62 alias y 25 funciones. Mi regla es que
+si necesito algo &uacute;nicamente para uso interactivo y puedo escribirlo bien
+en bash, hago de ello una funci&oacute;n de shell (teniendo en cuenta que no
+pueda expresarse de manera sencilla como un alias). Si la gente se
+preocupa por la memoria no deber&iacute;an estar usando</I> <CODE>bash</CODE>. <CODE>bash</CODE>
+<I>es uno de los programas m&aacute;s grandes que ejecuto en mi m&aacute;quina LiNUX
+(aparte de Oracle).  Ejecute</I> <CODE>top</CODE> <I>alg&uacute;n tiempo y pulse
+«<CODE>M</CODE>» para ordenar por memoria, y compruebe lo cerca que est&aacute; bash de
+la cima de la lista. O sea, que es ¡mayor que sendmail!... Recomienda que
+utilicen mejor </I> <CODE>ash</CODE><I> o algo as&iacute;</I>.
+<P>Supongo que estaba usando la consola el d&iacute;a que prob&oacute; eso: ejecutando X y
+aplicaciones X obtendr&aacute; muchas cosas mayores que bash. Pero la idea es la
+misma: el entorno es algo para ser usado, sin preocupaci&oacute;n de desbordarlo. 
+<P>Me arriesgo a la censura de los gur&uacute;s de unix cuando digo esto (por el
+delito de supersimplificaci&oacute;n), pero las funciones son b&aacute;sicamente
+peque&ntilde;os <CODE>shell scripts</CODE> que se cargan en el entorno con el prop&oacute;sito
+de una mayor eficiencia. Citando a Dan de nuevo: <I>las funciones shell
+son lo m&aacute;s eficiente. El procedimiento es similar a un</I> <CODE>source</CODE>
+<I>de un shell script pero con el ahorro de las operaciones
+entrada/salida, ya que la funci&oacute;n se encuentra ya en memoria. Las
+funciones shell se cargan t&iacute;picamente del </I><CODE>.bashrc o
+.bash_profile</CODE> <I>dependiendo de si se las quiere en el shell inicial
+o en los sucesivos subshells tambi&eacute;n.</I>
+<P><I>Comp&aacute;rese esto con la ejecuci&oacute;n de un shell script: el shell realiza
+un </I> <CODE>fork</CODE><I>, el hijo lleva a cabo un </I><CODE>exec</CODE><I>,
+potencialmente se busca el</I> <CODE>path</CODE><I>, el kernel abre el fichero y
+examina la cantidad suficiente de bytes para saber c&oacute;mo ejecutarlo, en el
+caso de un shell script debe arrancarse un shell con el nombre del script
+como argumento. Comparado con una funci&oacute;n shell, cualquier cosa aparte de
+la ejecuci&oacute;n de las sentencias, puede considerarse una sobrecarga
+innecesaria.</I>
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-Como-4.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-2.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 14 Sprites RLE
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="14 Sprites RLE">14 Sprites RLE</a></h1>
+
+<ul>
+<li><a href="#destroy_rle_sprite">destroy_rle_sprite</a>
+<li><a href="#draw_lit_rle_sprite">draw_lit_rle_sprite</a>
+<li><a href="#draw_rle_sprite">draw_rle_sprite</a>
+<li><a href="#draw_trans_rle_sprite">draw_trans_rle_sprite</a>
+<li><a href="#get_rle_sprite">get_rle_sprite</a>
+</ul>
+
+<p>
+Ya que los bitmaps pueden ser usados de tantas maneras diferentes, la
+estructura bitmap es bastante complicada y contiene muchos datos. En muchas
+ocasiones, sin embargo, se encontrará almacenando imágenes que sólo son
+copiadas en la pantalla, en vez de pintar en ellas o usarlas como patrones
+de relleno, etc. Si este es el caso, sería mejor que usase estas imágenes en
+estructuras RLE_SPRITE o COMPILED_SPRITE en vez de bitmaps normales.
+
+<p>
+Los sprites RLE almacenan la imagen en un formato simple run-length, donde
+los pixels cero repetidos son sustituidos por un contador de longitud, y las
+series de pixels, que no son cero, son precedidos por un contador que da la
+longitud del recorrido sólido. Los sprites RLE son normalmente más pequeños
+que los bitmaps, tanto por la compresión run length como porque evitan la
+mayoría de sobrecarga de la estructura bitmap. También son normalmente más
+rápidos que bitmaps normales, porque en vez de tener que comparar cada pixel
+individual con cero para determinar si hay que dibujarlo, es posible
+saltarse una serie de ceros con una simple suma, o copiar una serie larga de
+pixels que no son cero con rápidas instrucciones de cadena.
+
+<p>
+Sin embargo no es oro todo lo que reluce, y hay una falta de flexibilidad
+con los sprites RLE. No puede dibujar en ellos, y no puede invertirlos,
+rotarlos o modificar su tamaño. De hecho, lo único que puede hacer con
+ellos es copiarlos en un bitmap con la función draw_rle_sprite(), que es
+equivalente a usar draw_sprite() con un bitmap normal. Puede convertir
+bitmaps en sprites RLE en tiempo real, o puede crear estructuras de sprites
+RLE en los ficheros de datos con el grabber, creando un nuevo objeto de tipo
+'RLE sprite'.
+
+<p><br>
+<b>RLE_SPRITE *<a name="get_rle_sprite">get_rle_sprite</a>(BITMAP *bitmap);</b><br>
+   Crea un sprite RLE basándose en el bitmap especificado (que debe ser un
+   bitmap de memoria).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg013.html#draw_sprite">draw_sprite</a>,
+<a class="xref" href="alleg013.html#stretch_blit">stretch_blit</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<b>void <a name="destroy_rle_sprite">destroy_rle_sprite</a>(RLE_SPRITE *sprite);</b><br>
+   Destruye una estructura de sprite RLE previamente creada por
+   get_rle_sprite().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_rle_sprite">get_rle_sprite</a>.</font></blockquote>
+<b>void <a name="draw_rle_sprite">draw_rle_sprite</a>(BITMAP *bmp, const RLE_SPRITE *sprite,</b>
+<b>       int x, int y);</b><br>
+   Dibuja un sprite RLE en el bitmap en la posición especificada.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_trans_rle_sprite">draw_trans_rle_sprite</a>,
+<a class="xref" href="#draw_lit_rle_sprite">draw_lit_rle_sprite</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>,
+<a class="xref" href="#get_rle_sprite">get_rle_sprite</a>,
+<a class="xref" href="alleg013.html#draw_sprite">draw_sprite</a>,
+<a class="xref" href="alleg015.html#draw_compiled_sprite">draw_compiled_sprite</a>.</font></blockquote>
+<b>void <a name="draw_trans_rle_sprite">draw_trans_rle_sprite</a>(BITMAP *bmp, const RLE_SPRITE *sprite,</b>
+<b>             int x, int y);</b><br>
+   Versión translúcida de draw_rle_sprite(). Vea la descripción de
+   draw_trans_sprite(). Sólo debe ser usado después de que haya creado
+   la tabla de color (para modos de 256 colores) o funciones de fundido
+   (para modos truecolor). El bitmap y el sprite deben, normalmente, tener
+   la misma profundidad de color, pero como caso especial puede dibujar
+   sprites en formato RGBA de 32 bits en cualquier bitmap hicolor o
+   truecolor, siempre y cuando llame a set_alpha_blender() antes.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_rle_sprite">draw_rle_sprite</a>,
+<a class="xref" href="#draw_lit_rle_sprite">draw_lit_rle_sprite</a>,
+<a class="xref" href="alleg013.html#draw_trans_sprite">draw_trans_sprite</a>,
+<a class="xref" href="alleg018.html#color_map">color_map</a>,
+<a class="xref" href="alleg018.html#set_trans_blender">set_trans_blender</a>,
+<a class="xref" href="alleg018.html#set_alpha_blender">set_alpha_blender</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<b>void <a name="draw_lit_rle_sprite">draw_lit_rle_sprite</a>(BITMAP *bmp, const RLE_SPRITE *sprite,</b>
+<b>           int x, y, color);</b><br>
+   Versión teñida de draw_rle_sprite(). Lea la descripción de
+   draw_lit_sprite(). Esta sólo debe usarse después de que haya construído
+   la tabla de color (para modos de 256 colores) o funciones de fundido
+   (para modos truecolor).
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_rle_sprite">draw_rle_sprite</a>,
+<a class="xref" href="#draw_trans_rle_sprite">draw_trans_rle_sprite</a>,
+<a class="xref" href="alleg013.html#draw_lit_sprite">draw_lit_sprite</a>,
+<a class="xref" href="alleg018.html#color_map">color_map</a>,
+<a class="xref" href="alleg018.html#set_trans_blender">set_trans_blender</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

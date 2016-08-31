@@ -1,0 +1,111 @@
+<pre>
+#!/usr/bin/perl -w
+# vim: set sw=4 ts=4 si et:
+#
+use strict;
+use vars qw($opt_h);
+use Getopt::Std;
+#
+my $oldstr="";
+my $str="";
+my $subres;
+#
+&getopts("h")||die "ERROR: No such option. -h for help.n";
+&help if ($opt_h);
+system("mtxorb /dev/lcd")&&die "ERROR: initialisation failed. Could not run mtxorb /dev/lcd\n";
+# called before program termination by init script:
+sub catch_sig{
+    print LCD chr(0xFE),"X"; # clear the display
+    $str="shutdown\n\n";
+	print LCD "$str";
+    exit 0;
+}
+$SIG{INT} = \&catch_sig;
+$SIG{HUP} = \&catch_sig;
+$SIG{TERM} = \&catch_sig;
+$SIG{QUIT} = \&catch_sig;
+#
+open(LCD,">/dev/lcd")||die "ERROR in lcdwriter: can not write to /dev/lcd\n";
+$|=1;
+my $i=0;
+while(1){
+    $i++;
+    if ($i < 5){
+        $subres=&getuptime;
+    }elsif($i < 9){
+        $subres=&getswap;
+    }else{
+        $subres=&getswap;
+        $i=0;
+    }
+    $str="LinuxFocus\n$subres\n";  # you can replace LinuxFocus with any string
+    if ($str ne $oldstr){
+        sleep(1);
+        print LCD chr(0xFE),"X"; # clear the display
+        $oldstr=$str;
+    }else{
+        sleep(3);
+    }
+    # write, just to be sure:
+    print LCD "$str";
+}
+#
+sub getuptime{
+    my ($ld,$ut,$uptime);
+    $ut="?";
+    $ld="?";
+    open(UPT,"/proc/uptime")||die "ERROR in lcdwriter: while reading /proc/uptime\n";
+    while(<UPT>){
+        if (/(\d+)/){
+            # uptime is in seconds:
+            $ut=$1 / 360;
+            $ut=int $ut;
+            $ut=$ut / 10;
+            last;
+        }
+    }
+    close UPT;
+    open(LDT,"/proc/loadavg")||die "ERROR in lcdwriter: while reading /proc/loadavg\n";
+    while(<LDT>){
+        if (/^([\.\d]+)/){
+            $ld=$1;
+            last;
+        }
+    }
+    close LDT;
+    "u:$ut l:$ld";
+}
+#
+sub getswap{
+    my ($total,$used,$free);
+    open(SWP,"/proc/meminfo")||die "ERROR in lcdwriter: while reading /proc/meminfo\n";
+    while(<SWP>){
+        if (/SwapTotal: *(\d+)/){
+            $total=$1;
+        }
+        if (/SwapFree: *(\d+)/){
+            $free=$1;
+        }
+        if ($free && $total){
+            $used=$total-$free;
+        }else{
+            $used="";
+        }
+    }
+    close SWP;
+    return "swp:$used Kb";
+}
+#
+sub help{
+    print "lcdwriter -- perl script to update the lcd display with
+some information on uptime, load and swap usage.
+USAGE: lcdwriter [-h]
+
+lcdwriter runs at startup the program mtxorb to initialize the
+serial line.
+\n";
+exit;
+}
+__END__ 
+
+</pre>

@@ -1,0 +1,1463 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML lang="es">
+<HEAD><META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <TITLE>LinuxFocus Noviembre 1997 -- Creaci&oacute;n de Bibliotecas Compartidas</TITLE>
+ <META name="Author" CONTENT="Miguel Angel Sepulveda">
+ <META name="Keywords" CONTENT="linux magazine opengl povray photoshop gimp">
+ <META name="Description" CONTENT="Free online magazine on Linux for users and developers">
+ <META name="Copyright" CONTENT="&copy; 1998 LinuxFocus">
+ <META name="Translator" CONTENT="">
+ <META name="Date" CONTENT="1998-02-91T00:00:00Z">
+
+
+</HEAD>
+
+<BODY bgcolor="#FFFFFF"  text="#000000" link="#ff0033" vlink="#FF3333">
+
+  <MAP name="navegator">
+  <AREA shape="rect" coords="0, 0, 65, 28" alt="Hogar" href="../">
+  <AREA shape="rect" coords="66, 0, 124, 28" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="125, 0, 193, 28" alt="Busqueda" href="../search.html">
+  <AREA shape="rect" coords="194, 0, 260, 28" alt="Enlaces" href="../links.html">
+  <AREA shape="rect" coords="261, 0, 350, 28" alt="Sobre Nosotros" href="../aboutus.html">
+  </MAP>
+
+
+
+ <TABLE border="0" width="100%" cellspacing="0" cellpadding="0">
+
+ <THEAD>
+   <TR align="center">
+      <TD colspan="2"><IMG src="../../common/images/border-short.jpg" width="407" height="88"></TD>
+   </TR>
+
+   <TR align="center">
+      <TD colspan="2" bgcolor="#660033"><IMG src="../../common/November1997/Navegator-bar.gif" ismap usemap="#navegator" border="0" width="351" height="28"></TD>
+   </TR>
+
+   <TR align="center">
+     <TD colspan="2">     
+           <TABLE  border="0" width="75%" cellspacing="0" cellpadding="5">
+		<TR bgcolor="#000000">
+		   <TD align="center">
+               <A href="../News/index.html"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Noticias</B></FONT></A>
+               <A href="../Archives/index.html"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Archivos</B></FONT></A>
+               <A href="../Companies/index.html"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Compa&ntilde;ias</B></FONT></A>
+               <A href="../Tips/index.html"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Consejos y Trucos &nbsp;</B></FONT></A> 
+               </TD>
+            </TR>
+            
+		<TR>
+            <!--   Here goes the Title of the article, authors name and abstract -->
+		   <TD align="center">
+ 			<FONT face="Helvetica,Arial" color="#660066"><H2>Creaci&oacute;n de Bibliotecas Compartidas</H2></FONT>
+ 			<FONT face="Helvetica,Arial" color="#000000"><H4>por <A href="mailto:luis@ctv2247.ctv.es"><FONT color="#000000">Luis Colorado</FONT></A></H4></FONT>
+                  <HR size="2" noshade>
+	         </TD>
+            </TR>
+
+           </TABLE>
+
+     </TD>
+   </TR>
+
+ </THEAD>
+
+
+
+ <TBODY>
+  
+ <TR>
+    <TD valign="top">
+           <H4><A HREF="#proceso">Procesos</A></H4>
+           <H4><A HREF="#historia">Historia</A></H4>
+           <H4><A HREF="#biblioteca">Biblioteca</A></H4>
+           <H4><A HREF="#tipos">Tipos</A></H4>
+           <H4><A HREF="#operacion">Operaciones de Enlazado</A></H4>
+           <H4><A HREF="#enlazado">Enlazado</A></H4>
+           <H4><A HREF="#soname">soname</A></H4>
+           <H4><A HREF="#ldconfig">ldconfig</A></H4>
+           <H4><A HREF="#crear">Creando una biblioteca</A></H4>
+           <H4><A HREF="#compilacion">Compilando</A></H4>
+           <H4><A HREF="#linkado">Enlazando</A></H4>
+           <H4><A HREF="#instalacion">Instalaci&oacute;n (Din&aacute;mica)</A></H4>
+           <H4><A HREF="#estatica">Est&aacute;tica</A></H4>
+           <H4><A HREF="#fuentes">Fuentes</A></H4>
+           <H4><A HREF="#instalacionbi">Instalaci&oacute;n (Est&aacute;tica)</A></H4>
+           <H4><A HREF="#din/estat">Enlazado Estatico vs. Din&aacute;mico</A></H4>
+
+
+    </TD>
+   
+    <TD align="center">
+       <TABLE border="0" width="80%" cellspacing="0" cellpadding="0">
+	  <TR>
+          <TD>
+
+
+<A NAME="proceso"></A>
+
+<H3>
+<FONT face="Helvetica,Arial" color="#660033">1.- El proceso de generaci&oacute;n de un
+     programa.  Introducci&oacute;n.</FONT></H3>
+
+
+
+
+Hoy en d&iacute;a el proceso de generaci&oacute;n de programas en entornos de desarrollo
+
+es el fruto de una evoluci&oacute;n de las costumbres y la experiencia sufrida por
+
+los propios programadores y dise&ntilde;adores de programas.<br><br>
+
+
+
+Este proceso consta de los siguientes pasos:
+
+
+
+<ul>
+
+<li><p>Creaci&oacute;n del c&oacute;digo fuente en lenguaje de alto nivel del programa con un
+
+   programa editor de textos.  Los programas muy grandes pueden llegar a ser
+
+   inmanejables si pretendemos meterlos &iacute;ntegros en un &uacute;nico fichero.  Por
+
+   esta raz&oacute;n, los programas se dividen en m&oacute;dulos funcionales, los cuales
+
+   estar&aacute;n compuestos por uno o varios ficheros con c&oacute;digo fuente.  Este
+
+   c&oacute;digo no tiene por qu&eacute; estar forzosamente escrito en el mismo lenguaje,
+
+   ya que ciertos lenguajes parecen mas apropiados para resolver ciertos
+
+   problemas.</p>
+
+
+
+<li><p>Una vez creados los ficheros con el c&oacute;digo del programa, estos han de
+
+   traducirse a segmentos de c&oacute;digo ejecutable por la m&aacute;quina, c&oacute;digo llamado
+
+   normalmente c&oacute;digo objeto.  Este c&oacute;digo hace normalmente lo mismo pero
+
+   est&aacute; escrito en un lenguaje especial, que es directamente ejecutable por
+
+   la m&aacute;quina.  Este proceso se llama compilaci&oacute;n.  La compilaci&oacute;n se realiza
+
+   por unidades y una sesi&oacute;n de compilaci&oacute;n normalmente incluir&aacute; una parte
+
+   del programa y en general, solamente un fichero o unos pocos.
+
+   El resultado de la compilaci&oacute;n suele ser (dependiendo del compilador) un
+
+   fichero con c&oacute;digo m&aacute;quina por cada fichero con c&oacute;digo fuente compilado.
+
+   El c&oacute;digo objeto compilado contiene un programa, una subrutina, variables,
+
+   etc. en general una parte del programa que ha sido traducida y que se
+
+   puede entregar a la siguiente fase.</p>
+
+
+
+<li><p> Una vez generados todos los ficheros con el c&oacute;digo m&aacute;quina del
+
+   programa, &eacute;stos se juntan en un proceso realizado por un programa
+
+   especial al efecto, llamado normalmente el linker.  En este proceso,
+
+   se 'resuelven' todas las referencias que el c&oacute;digo de un m&oacute;dulo hace a
+
+   c&oacute;digo perteneciente a otros m&oacute;dulos (como llamadas a subrutinas o
+
+   referencias a variables pertenecientes o definidas en otros m&oacute;dulos).
+
+   El resultado de este proceso es un programa que normalmente puede
+
+   cargarse y ejecutarse dir&eacute;ctamente.</p>
+
+
+
+<li><p>La ejecuci&oacute;n de un programa la realiza un trozo de software especial que
+
+   forma parte del sistema operativo y que en Linux la realiza la llamada al
+
+   sistema exec().  Esta funci&oacute;n localiza un fichero, asigna memoria al proceso
+
+   carga ciertas partes del contenido del fichero (las que contienen el c&oacute;digo
+
+   y los valores iniciales de las variables) y transfiere el control de la
+
+   cpu a un punto del 'texto' del programa que normalmente est&aacute; indicado en
+
+   el propio fichero con el ejecutable.</p>
+
+</ul>
+
+   
+<A NAME="historia"></A>
+
+<H3>
+<FONT face="Helvetica,Arial" color="#660033">2.- Breve historia del proceso de
+      generaci&oacute;n de programas.</FONT></H3>
+
+
+
+<p>El proceso de generaci&oacute;n de programas ha sufrido una evoluci&oacute;n constante con
+
+el fin de obtener siempre mayor eficiencia de los programas o mayor
+
+aprovechamiento de los recursos del sistema inform&aacute;tico.</p>
+
+
+
+<p>Inicialmente, los programas se realizaban en lenguaje de m&aacute;quina
+
+directamente.  Posteriormente, se vi&oacute; que la realizaci&oacute;n de programas
+
+en lenguajes de alto nivel y su traducci&oacute;n sistem&aacute;tica pod&iacute;a ser
+
+automatizada debido a que era una tarea sistematica.  Esto aumentaba
+
+la productividad de software.</p>
+
+
+
+<p>Conseguida la compilaci&oacute;n de programas (he reducido mucho la evoluci&oacute;n de la
+
+compilaci&oacute;n, ya que este paso fue muy dificil de dar, ya que la compilaci&oacute;n es
+
+un proceso muy complejo), El proceso de generaci&oacute;n de programas consist&iacute;a en
+
+generar un fichero con el programa, compilarlo y obtener el ejecutable para
+
+posteriormente ejecutarlo.</p>
+
+
+
+<p>Pronto se vi&oacute; (FORTRAN ya lo implementa) que el proceso de
+
+compilaci&oacute;n era una tarea costosa que consum&iacute;a muchos recursos y
+
+tiempo de CPU, y que muchas de las funciones utilizadas en los
+
+programas se utilizaban una y otra vez en diferentes programas.
+
+Adem&aacute;s, cuando alguien modificaba una parte, compilar todo el programa
+
+de nuevo supon&iacute;a lanzar el compilador para compilar otra vez un mont&oacute;n
+
+de c&oacute;digo id&eacute;ntico y solo compilar una vez el nuevo c&oacute;digo
+
+introducido.</p>
+
+
+
+<p>Por esta raz&oacute;n se introdujo la compilaci&oacute;n por m&oacute;dulos.  Esto consist&iacute;a en
+
+separar por un lado lo que era el programa principal, y por otro, aquellas
+
+funciones que se usaban una y otra vez, que ya estaban compiladas y se
+
+guardaban en un lugar especial (que llamaremos precursor de la biblioteca).
+
+</p>
+
+
+
+<p>Nosotros pod&iacute;amos desarrollar programas apoy&aacute;ndonos en aquellas funciones y
+
+no era necesario introducir el c&oacute;digo una y otra vez.
+
+
+
+A&uacute;n as&iacute;, el proceso era complejo, ya que al enlazar (linkar???) el programa,
+
+era necesario unir todos los trozos y &eacute;stos deb&iacute;an ser identificados por
+
+el programador (lo que a&ntilde;ad&iacute;a el coste adicional de que pod&iacute;amos estar usando
+
+una funci&oacute;n conocida pero que use/necesite de otras funciones que desconocemos)
+
+</p>
+
+
+<A NAME="biblioteca"></A>
+
+<H3>
+
+<FONT face="Helvetica,Arial" color="#660033">3.- Qu&eacute; es una biblioteca?</FONT></H3>
+
+
+
+
+<p>Esto condujo a la creaci&oacute;n de la biblioteca.  Esto no es mas que un tipo de
+
+fichero especial (realmente es un archivo, tipo tar(1) o cpio(1)) pero que es
+
+especial en el sentido de que el linker entiende su formato y cuando
+
+especificamos un archivo de biblioteca, EL LINKER SELECCIONA SOLAMENTE
+
+AQUELLOS MODULOS QUE EL PROGRAMA NECESITA, sin incluirlos todos.  Esto a&ntilde;adi&oacute;
+
+una ventaja, ahora se pod&iacute;an desarrollar programas que hicieran uso de grandes
+
+bibliotecas de rutinas y el programador no ten&iacute;a que conocer todas las
+
+dependencias de las funciones de la biblioteca.</p>
+
+
+
+<p>La biblioteca tal y como la hemos visto hasta este punto no ha evolucionado
+
+mas.  Tan solo se le ha a&ntilde;adido un fichero especial, que suele aparecer al
+
+comienzo del archivo, y que contiene una descripci&oacute;n de los m&oacute;dulos y los
+
+identificadores que va a poder resolver el linker sin necesidad de leerse
+
+toda la biblioteca (y de esta manera eliminar varias pasadas por la misma).
+
+Este proceso (el de a&ntilde;adir la tabla de s&iacute;mbolos al archivo de biblioteca) es
+
+realizado en Linux por el comando ranlib(1).  Estas bibliotecas son las que
+
+se conocen como BIBLIOTECAS EST&Aacute;TICAS.</p>
+
+
+
+<p>Un avance que se introdujo con los nuevos sistemas multitarea que estaban
+
+apareciendo es la compartici&oacute;n de c&oacute;digo.  Si en un sistema se lanzaban dos
+
+copias del mismo programa, parec&iacute;a interesante que, dado que normalmente un
+
+programa no modifica su c&oacute;digo, que los procesos compartieran el c&oacute;digo, sin
+
+necesidad de tener varias copias en memoria.  Esto ahorr&oacute; mucha memoria en
+
+sistemas grandes con muchos usuarios.</p>
+
+
+
+<p>Esto fue llevado un paso mas all&aacute;:  Alguien pens&oacute; (no se quien fu&eacute;, pero
+
+la idea fue bastante buena ;-), que era muy frecuente el caso de que muchos
+
+programas usaban la misma biblioteca, pero al ser programas diferentes,
+
+la parte de la biblioteca usada por un programa no ten&iacute;a porque ser la misma
+
+que la parte usada por otro programa y adem&aacute;s el c&oacute;digo principal no era el
+
+mismo (eran programas diferentes), por tanto el texto no se compart&iacute;a.
+
+A esta persona se le ocurri&oacute; que si programas diferentes que usaban la misma
+
+biblioteca, realmente pod&iacute;an compartir el c&oacute;digo de dicha biblioteca y de esa
+
+manera ahorrar algo en ocupaci&oacute;n de memoria.  Se invent&oacute; el proceso de carga
+
+din&aacute;mica y bibliotecas din&aacute;micas.  Ahora programas diferentes comparten el
+
+c&oacute;digo de la biblioteca, sin que el c&oacute;digo general del programa sea el mismo.
+
+</p>
+
+
+
+<p>Sin embargo, ahora el proceso es mas complejo.  El programa no se enlaza
+
+(&iquest;&iquest;&iquest;linka???) por completo, sino que las referencias a identificadores de
+
+bibliotecas compartidas se postponen para el proceso de carga del programa.
+
+El linker (el linker en Linux es ld(1)) reconoce que est&aacute; ante una biblioteca
+
+compartida y no incluye el c&oacute;digo de &eacute;sta en el programa.  El propio sistema
+
+(el kernel) cuando se hace el exec, reconoce que es un programa con bibliotecas
+
+compartidas y ejecuta un c&oacute;digo especial que se encarga de cargar la biblioteca
+
+(asignar memoria compartida para el texto de la misma, asignar memoria privada
+
+para los datos propios de la biblioteca, etc.)  Este proceso se realiza al
+
+cargar el programa en un proceso ahora mas complejo.</p>
+
+
+
+<p>Por supuesto, el linker ante una biblioteca normal sigue comportandose como
+
+antes.</p>
+
+
+
+<p>La biblioteca compartida no es un archivo con ficheros conteniendo c&oacute;digo
+
+objeto, sino mas bien un fichero que contiene c&oacute;digo objeto por s&iacute; mismo.
+
+Cuando se enlaza el programa con una biblioteca compartida, el linker no
+
+investiga por dentro de la biblioteca que m&oacute;dulos debe a&ntilde;adir al programa y
+
+cuales no, se limita a comprobar que referncias insatisfechas se resuelven y
+
+cuales hay que a&ntilde;adir a la lista por la inclusi&oacute;n de esta biblioteca.  Se
+
+podr&iacute;a crear un archivo ar(1) de biblioteca de bibliotecas compartidas, pero
+
+&eacute;sto no se suele hacer, ya que una biblioteca compartida puede ser el
+
+resultado de enlazar varios m&oacute;dulos y la biblioteca es necesaria luego, a la
+
+hora de ejecutar el programa.  Quiz&aacute; el nombre de una biblioteca compartida
+
+no sea adecuado y sea mas adecuado el nombre de objeto compartible. (sin
+
+embargo no usaremos este t&eacute;rmino por no estar extendido)</p>
+
+
+<A NAME="tipos"></A>
+
+<H3>
+
+<FONT face="Helvetica,Arial" color="#660033">4.- Tipos de bibliotecas.</FONT></H3>
+
+
+<p>Como hemos dicho, en Linux existen dos tipos de bibliotecas: las est&aacute;ticas
+
+y las compartibles.  Las bibliotecas est&aacute;ticas son colecciones de m&oacute;dulos
+
+introducidos en un archivo con la utilidad ar(1) e indexados sus s&iacute;mbolos con
+
+la utilidad ranlib(1).  Estos archivos suelen almacenarse en ficheros
+
+terminados en .a (no utilizar&eacute; el termino extensi&oacute;n, ya que en Linux no existe
+
+el concepto de extensi&oacute;n de un fichero) por convenio.  El linker ld(1) reconoce
+
+la terminaci&oacute;n .a en un nombre de fichero y realiza la b&uacute;squeda de m&oacute;dulos
+
+en el mismo como si se tratara de una biblioteca est&aacute;tica, seleccionando
+
+y a&ntilde;adiendo al programa aquellos que resuelvan referencias a&uacute;n no satisfechas.
+
+</p>
+
+
+
+<p>Las bibliotecas din&aacute;micas, por contraposici&oacute;n, no son archivos sino
+
+que son objetos reubicables, marcados con un c&oacute;digo especial (que los
+
+identifica como bibliotecas compartidas).  El linker ld(1), como hemos
+
+dicho, no a&ntilde;ade al c&oacute;digo del programa los m&oacute;dulos, sino que
+
+selecciona como resueltos los identificadores aportados por la
+
+biblioteca, a&ntilde;ade aquellos introducidos por &eacute;sta, y contin&uacute;a sin
+
+a&ntilde;adir el c&oacute;digo de la misma al programa, pero como si &eacute;ste hubiera
+
+sido a&ntilde;adido.  El linker ld(1) reconoce una biblioteca compartida por
+
+tener la terminaci&oacute;n .so (y no .so.xxx.yyy, volveremos sobre &eacute;sto mas
+
+adelante)</p>
+
+
+
+<A NAME="operacion"></A>
+
+<H3>
+
+<FONT face="Helvetica,Arial" color="#660033">5.- Operaci&oacute;n de enlazado en Linux.</FONT></H3>
+
+
+
+
+
+<p>Todo programa consta de m&oacute;dulos objeto, enlazados para conseguir 
+
+el ejecutable.
+
+Esta operaci&oacute;n la realiza ld(1), que es el linker de Linux.</p>
+
+
+
+<p><tt>ld(1)</tt> soporta varias opciones que permiten modificar su
+
+comportamiento, pero nos ce&ntilde;iremos aqu&iacute; a aquellas que tienen relaci&oacute;n
+
+con el uso de bibliotecas en general.  <tt>ld(1)</tt> no es llamado
+
+directamente por el usuario, sino mas bien por el propio compilador
+
+<tt>gcc(1)</tt>, en su fase final, pero un conocimiento superficial de su modo
+
+de operaci&oacute;n nos ayudar&aacute; a entender el uso de bibliotecas en Linux.</p>
+
+
+
+<p><tt>ld(1)</tt> requiere para su funcionamiento la lista de objetos
+
+que se van a unir para obtener un programa.  Estos objetos pueden
+
+darse en cualquier orden(*) y llamarse de cualquier manera, siempre
+
+que nos atengamos al convenio anterior, en el que dec&iacute;amos que una
+
+biblioteca compartida se indica por terminar su nombre en .so (y no
+
+.so.xx.yy) y una biblioteca est&aacute;tica por terminar su nombre en .a (y
+
+por supuesto, los objetos simples, cuyo nombre terminar&aacute; en .o).</p>
+
+
+
+<p><em>(*) Esto no es totalmente cierto.  ld(1) incluye solo
+
+aquellos m&oacute;dulos que resuelven referencias en el momento de la
+
+inclusi&oacute;n, con lo que podr&iacute;a haber alguna referencia provocada por la
+
+inclusi&oacute;n de un m&oacute;dulo posterior que, al no aparecer todav&iacute;a en el
+
+momento de la inclusi&oacute;n de la biblioteca, provoque que el orden de
+
+inclusi&oacute;n de las bibliotecas sea significativo.</em></p>
+
+
+
+<p>Por otro lado, <tt>ld(1)</tt> permite la inclusi&oacute;n de bibliotecas estandar
+
+por medio de las opciones -l y -L.</p>
+
+
+
+<p>Pero... Qu&eacute; entendemos por una biblioteca estandar, y que
+
+diferencia hay?  Ninguna.  Solo que <tt>ld(1)</tt> busca las
+
+bibliotecas estandar en lugares predeterminados mientras que las que
+
+aparecen como objetos en la lista de par&aacute;metros se buscan utilizando
+
+simplemente el nombre.</p>
+
+
+
+<p>Las bibliotecas se buscan por defecto en los directorios
+
+<tt>/lib</tt> y <tt>/usr/lib</tt> (aunque he oido que dependiendo de
+
+la versi&oacute;n/implementaci&oacute;n de <tt>ld(1)</tt> puede haber otros lugares,
+
+los citados se dan siempre).<tt>-L</tt> permite a&ntilde;adir directorios a
+
+los normales de b&uacute;squeda de bibliotecas, se har&aacute; poniendo una opci&oacute;n
+
+<tt>-L</tt> <tt><directorio></tt> por cada <tt><directorio></tt> que
+
+queramos a&ntilde;adir.  Las bibliotecas estandar se especifican con la
+
+opci&oacute;n <tt>-l <biblioteca></tt> (donde <tt><biblioteca></tt>
+
+especifica la biblioteca que vamos a cargar) y <tt>ld(1)</tt> buscar&aacute;,
+
+por &eacute;ste orden, en los directorios correspondientes, un fichero
+
+llamado lib<biblioteca>.so, y si no lo hay,
+
+<tt>lib<biblioteca>.a.</tt></p>
+
+
+
+<p>Si encuentra un fichero llamado <tt>lib<biblioteca>.so</tt>,
+
+enlazar&aacute; &eacute;sta como si se tratara de una biblioteca compartida,
+
+mientras que si encuentra una llamada lib<biblioteca>.a, enlazar&aacute; los
+
+m&oacute;dulos que obtenga de esta si resuelven alguna referencia
+
+insatisfecha.</p>
+
+
+<A NAME="enlazado"></A>
+
+<H3>
+
+<FONT face="Helvetica,Arial" color="#660033">6.- Enlazado din&aacute;mico y carga de
+     bibliotecas compartidas</FONT></H3>
+
+
+
+
+<p>El enlazado din&aacute;mico se realiza en el momento de la carga del
+
+ejecutable por parte de un m&oacute;dulo especi&aacute;l (de hecho, este m&oacute;dulo es
+
+una biblioteca compartida en s&iacute; mismo), llamado
+
+<tt>/lib/ld-linux.so</tt></p>
+
+
+
+<p>Realmente, existen dos m&oacute;dulos para el enlazado de bibliotecas
+
+din&aacute;micas: <tt>/lib/ld.so</tt> (para bibliotecas en el ant&iacute;guo formato
+
+a.out) y <tt>/lib/ld-linux.so</tt> (para las nuevas bibliotecas en el
+
+nuevo formato ELF).</p>
+
+
+
+<p>Estos m&oacute;dulos son especiales, y han de cargarse siempre que un
+
+programa est&eacute; enlazado din&aacute;micamente.  Su nombre no var&iacute;a (raz&oacute;n por
+
+la que no deben moverse del directorio <tt>/lib</tt>, ni cambiarse de
+
+nombre).  Si cambiaramos de nombre <tt>/etc/ld-linux.so</tt>,
+
+autom&aacute;ticamente dejar&iacute;amos de poder ejecutar todos los programas
+
+utilizasen bibliotecas compartidas, ya que este m&oacute;dulo est&aacute; encargado
+
+de resolver en el momento del arranque, todas las referencias que a&uacute;n
+
+no est&aacute;n resueltas.</p>
+
+
+
+<p>Este m&oacute;dulo se apoya en la existencia de un fichero, llamado
+
+<tt>/etc/ld.so.cache</tt>, que indica, para cada biblioteca, el fichero
+
+ejecutable mas apropiado conteniendo dicha biblioteca.  Volveremos
+
+sobre &eacute;sto mas adelante.</p>
+
+
+
+<A NAME="soname"></A>
+<H3><FONT face="Helvetica,Arial" color="#660033">7.- soname.  Versiones de bibliotecas
+     compartidas.  Compatibilidad.</FONT></H3>
+
+
+<p>Entramos ahora en el punto mas escabroso referente a las bibliotecas
+
+compartidas: Las versiones.</p>
+
+
+
+<p>Se habla a menudo de 'la biblioteca <tt>libX11.so.3</tt> no se
+
+encuentra' dej&aacute;ndonos con la frustraci&oacute;n de tener la biblioteca
+
+<tt>libX11.so.6</tt> y no poder hacer nada.  Como es posible que
+
+<tt>ld.so(8)</tt> reconozca como intercambiables las biblioteca
+
+<tt>libpepe.so.45.0.1</tt> y <tt>libpepe.so.45.22.3</tt> y no admita
+
+<tt>libpepe.so.46.22.3?</tt></p>
+
+
+
+<p>En Linux (y en todos los sistemas operativos que implementan
+
+formato ELF), las bibliotecas se identifican por una secuencia de
+
+caracteres que identifican dicha biblioteca: el soname.</p>
+
+
+
+<p>Esta secuencia de caracteres est&aacute; incluida dentro de la propia biblioteca y
+
+la secuencia se determina al enlazar los objetos de dicha biblioteca.  Cuando
+
+se crea una biblioteca compartida, hay que pasar a ld(1) una opci&oacute;n
+
+(<tt>-soname <nombre_de_la_biblioteca></tt>), para dar valor a esta cadena.</p>
+
+
+
+<p>Esta secuencia de caracteres se utiliza por parte del cargador din&aacute;mico para
+
+identificar la biblioteca compartida que hay que cargar e identificar al
+
+ejecutable.  El proceso aproximado es el siguiente:<br>
+
+
+
+<tt>Ld-linux.so</tt> identifica que el programa necesita una
+
+biblioteca compartida e identifica el soname de la misma.  Despu&eacute;s,
+
+entra en <tt>/etc/ld.so.cache</tt> con dicho soname y obtiene el nombre del
+
+fichero que la contiene.  Despu&eacute;s, compara el soname solicitado con el
+
+existente en la biblioteca, si coinciden, pues ya est&aacute;, y si no,
+
+seguiremos buscando hasta encontrarla o daremos un error.</p>
+
+
+
+<p>El soname permite identificar si una biblioteca es adecuada para
+
+ser cargada, ya que <tt>ld-linux.so</tt> comprueba que el soname
+
+pedido coincida con el contenido en el fichero seleccionado.  En caso
+
+de disconformidad obtenemos el famoso error de <tt>'libXXX.so.Y'
+
+not found</tt>.  Lo que se est&aacute; buscando es precisamente el soname y el
+
+error que se da es referente al soname.</p>
+
+
+
+<p>Esto produce mucho desconcierto cuando cambiamos el nombre de una
+
+biblioteca y el problema persiste.  Pero no es buena idea acceder al
+
+soname y cambiarlo, ya que existe un convenio en la comunidad Linux
+
+para asignar los sonames:</p>
+
+
+
+<p>El soname de una biblioteca, por convenio, debe identificar la biblioteca
+
+propiamente dicha, Y EL INTERFACE con dicha biblioteca.  Si realizamos
+
+modificaciones en una biblioteca que solamente afectan a su funcionamiento
+
+interno, pero todo el interface con la misma (n&uacute;mero de funciones, variables,
+
+par&aacute;metros a las funciones) permanece invariable, las dos bibliotecas ser&aacute;n
+
+intercambiables y en general diremos que el cambio realizado es un cambio
+
+menor (ambas bibliotecas a&uacute;n son compatibles y podremos sustituir una por
+
+la otra).  Cuando &eacute;sto ocurre, se suele variar el minor number del n&uacute;mero de
+
+versi&oacute;n (que no aparece en el soname) y la biblioteca puede sustituir sin
+
+problemas a la anterior.</p>
+
+
+
+<p>Sin embargo, cuando a&ntilde;adimos funciones, eliminamos funciones, y en
+
+general, VARIAMOS EL INTERFACE de la biblioteca, ya no es posible
+
+seguir diciendo que una biblioteca puede sustituir a la anterior (por
+
+ejemplo en el cambio de <tt>libX11.so.3</tt> a <tt>libX11.so.6</tt> se
+
+realiza la transici&oacute;n de X11R5 a X11R6 que define funciones nuevas y
+
+por tanto var&iacute;a el interface).  Sin embargo el cambio de X11R6-v3.1.2
+
+a X11R6-v3.1.3 probablemente no incluir&aacute; cambios en el interface y la
+
+biblioteca tendr&aacute; el mismo soname ---aunque para no machacar la
+
+ant&iacute;gua se llamar&aacute; diferente (por esta raz&oacute;n el n&uacute;mero de ver- si&oacute;n
+
+aparecer&aacute; completo en el nombre de la biblioteca, mientras que solo
+
+aparece el major number en el soname).</p>
+
+
+
+
+     <a name="ldconfig"></a><H3>
+<FONT face="Helvetica,Arial" color="#660033">8.- ldconfig(8)</FONT></H3>
+
+
+<p>El fichero <tt>/etc/ld.so.cache</tt> hemos dicho que permite a
+
+<tt>ld-linux.so</tt> convertir de soname a nombre de fichero conteniendo la
+
+biblioteca.  Este es un fichero binario para mayor eficiencia y se
+
+crea con la utilizaci&oacute;n de un programa llamado <tt>ldconfig(8)</tt>.</p>
+
+
+
+<tt>ldconfig(8)</tt> genera para cada biblioteca din&aacute;mica que
+
+encuentra en los directorios especificados en el fichero
+
+<tt>/etc/ld.so.conf</tt> un link simb&oacute;lico llamado con el soname de la
+
+biblioteca, de tal forma que cuando ld.so va a obtener el nombre del
+
+fichero, lo que hace es seleccionar en la lista de directorios, un
+
+fichero con el soname buscado, y de esta manera no hace falta ejecutar
+
+<tt>ldconfig(8)</tt> cada vez que a&ntilde;adimos una biblioteca, sino solo
+
+cuando a&ntilde;adimos un directorio a la lista.
+
+
+
+     <a name="crear"></a><H3>
+<FONT face="Helvetica,Arial" color="#660033">9.- Quiero Crear una Biblioteca Compartida.</FONT></H3>
+
+
+
+<p>Antes de crear una biblioteca din&aacute;mica debemos pensar si realmente
+
+ser&aacute; &uacute;til.  Las bibliotecas din&aacute;micas provocan una sobrecarga en el
+
+sistema debido a varios elementos:
+
+
+
+<ul>
+
+<li><p> La carga del programa se realiza en varios pasos, uno para el programa
+
+  principal, mas uno por cada biblioteca din&aacute;mica que use dicho programa
+
+  (veremos que si la biblioteca din&aacute;mica es apropiada, este &uacute;ltimo punto
+
+  deja de ser un inconveniente y pasa a ser una ventaja)</p>
+
+
+
+<li><p> Las bibliotecas din&aacute;micas deben contener c&oacute;digo reubicable, ya que la
+
+  posici&oacute;n de carga dentro del espacio de direcciones virtuales del proceso
+
+  no se sabr&aacute; hasta el momento de dicha carga.  Esto obliga al compilador a
+
+  reservar un registro para mantener la posici&oacute;n de carga de la biblioteca y
+
+  por tanto tenemos un registro menos para el optimizador de c&oacute;digo.  Este
+
+  caso es un mal menor, ya que la sobrecarga introducida por esta situaci&oacute;n
+
+  no representa mas de un 5% de sobrecarga en la mayor&iacute;a de los
+
+  casos.</p>
+
+</ul>
+
+
+
+<p>Para que una biblioteca din&aacute;mica sea apropiada debe ser utilizada
+
+la mayor parte del tiempo por alg&uacute;n programa (esto evita el problema de
+
+cargar el texto de la biblioteca, ya que permanece cargada en memoria, tras
+
+la muerte del proceso que la usa al haber otros procesos us&aacute;ndola)</p>
+
+
+
+<p>La biblioteca compartida se carga en memoria completa (no solo los m&oacute;dulos
+
+utilizados) as&iacute; que para que sea util, debe serlo en su totalidad.  No son
+
+buenas bibliotecas din&aacute;micas aquellas donde solo se usa una funcion y el
+
+noventa por ciento de la biblioteca no se usa la mayor parte del tiempo.</p>
+
+
+
+<p>Un buen ejemplo de biblioteca din&aacute;mica es la biblioteca estandar de
+
+C (la usan todos los programas escritos en C ;).  Por termino medio
+
+todas las funciones se utilizan en uno u otro caso.</p>
+
+
+
+<p>En una biblioteca est&aacute;tica suele importar poco incluir funciones cuyo uso
+
+sea infrecuente, siempre que dichas funciones ocupen un m&oacute;dulo propio, no
+
+ser&aacute;n enlazadas en aquellos programas que no las usen.</p>
+
+
+<A NAME="compilacion"></A>
+
+<H5><FONT face="Helvetica,Arial" color="#660033">9.1.- Compilaci&oacute;n de los fuentes.</FONT></H5>
+
+
+
+
+<p>La compilaci&oacute;n de los fuentes se realizar&aacute; de la misma manera que
+
+para compilar un fuente normal, salvo que utilizaremos la opci&oacute;n '-f
+
+PIC' (Position Independent Code ---C&oacute;digo Independiente de la
+
+Posici&oacute;n) para generar c&oacute;digo que pueda ser cargado en diferentes
+
+posiciones del espacio de direcciones virtuales de un proceso.</p>
+
+
+
+<p>Este paso es fundamental, ya que en un programa linkado
+
+est&aacute;ticamente, la posici&oacute;n de los objetos de una biblioteca se
+
+resuelve en el momento del linkaje, y por tanto es fija.  En los
+
+ant&iacute;guos ejecutables a.out, este paso era imposible de realizar y
+
+hab&iacute;a que colocar cada biblioteca compartida en una posici&oacute;n fija del
+
+espacio de direcciones virtuales de un proceso.  Esto provocaba
+
+conflictos cuando un programa quer&iacute;a usar dos bibliotecas preparadas
+
+para cargarse en regiones de memoria virtual solapadas.  Esto obligaba
+
+a mantener una lista, donde cuando alguien deseaba hacer una
+
+biblioteca din&aacute;mica, deb&iacute;a registrar el rango de direcciones que usaba
+
+para que nadie mas las usara.</p>
+
+
+
+<p>Bien, como hemos dicho, para una biblioteca din&aacute;mica, este registro en una
+
+lista oficial no es necesario pues cuando una biblioteca se carga, lo hace
+
+en posiciones que se determinan en ese momento, aunque para ello, el c&oacute;digo
+
+de la biblioteca debe ser reubicable.</p>
+
+
+
+<BR><A NAME="linkado"></A>
+<H5><FONT face="Helvetica,Arial" color="#660033">9.2.- Linkado de los objetos en la
+     biblioteca</FONT></H5>
+
+
+
+
+<p>Una vez tenemos todos los objetos compilados, hay que linkarlos con
+
+una opci&oacute;n especial, para que al final se genere un objeto cargable
+
+din&aacute;micamente.</p>
+
+
+
+<pre>
+
+gcc -shared -o lib<biblioteca>.so.xxx.yyy.zzz
+
+-Wl,-soname,lib<biblioteca>.so.xxx
+
+</pre>
+
+
+
+<p>Como puede verse, es una operaci&oacute;n de linkado normal, salvo que se
+
+introducen una serie de opciones especiales que conducir&aacute;n a la
+
+generaci&oacute;n de una biblioteca compartida.  Las explicaremos a
+
+continuaci&oacute;n, una por una:
+
+
+
+<ul>
+
+<li><p><tt>-shared</tt>.
+
+   <br>Esta fase indica al linker que debe generarse una
+
+   biblioteca compartida al final, y que por tanto, habr&aacute; un tipo de
+
+   ejecutable en el fichero de salida correspondiente a una biblioteca
+
+   compartida.</p>
+
+
+
+<li><p><tt>-o lib<biblioteca>.so.xxx.yyy.zzz</tt>.
+
+   <br>Es el nombre del fichero final.  No es
+
+   necesario seguir el convenio respecto al nombre, pero si queremos utilizar
+
+   dicha biblioteca como estandar en futuros desarrollos, es conveniente
+
+   hacerlo.</p>
+
+
+
+<li><p><tt>-Wl,-soname,lib<biblioteca>.so.xxx</tt>. 
+
+   <br>La opci&oacute;n <tt>-Wl</tt> indica a <tt>gcc(1)</tt> que
+
+   las opciones que vienen a continuaci&oacute;n
+
+   (separadas por coma para separar diferentes opciones) son para el
+
+   linker.  De esta forma, cuando <tt>gcc(1)</tt> llame a
+
+   <tt>ld(1)</tt>, para linkar, le pasar&aacute; los siguientes par&aacute;metros:<br>
+
+
+
+   <pre>
+
+   -soname lib<biblioteca>.so.xxx
+
+   </pre>
+
+
+
+   Esta opci&oacute;n fija el soname de la biblioteca, de tal forma que solo podr&aacute;
+
+   ser llamada por aquellos programas que requieran la biblioteca cuyo
+
+   soname sea el especificado.</p>
+
+</ul>
+
+
+<A NAME="instalacion"></A>
+
+<H5><FONT face="Helvetica,Arial" color="#660033">9.3.- Instalaci&oacute;n de la biblioteca</FONT></H5>
+
+
+
+
+
+<p>Bueno, ya tenemos el ejecutable correspondiente.  Ahora debemos instalar en
+
+un lugar apropiado la biblioteca, con el fin de poder usarla.</p>
+
+
+
+<p>Cuando compilemos un programa que deba usar esta biblioteca, lo haremos,
+
+indic&aacute;ndola en la l&iacute;nea de compilaci&oacute;n:
+
+
+
+<pre>
+
+gcc -o programa lib<biblioteca>.so.xxx.yyy.zzz
+
+</pre>
+
+
+
+o si la hemos instalado en el lugar apropiado <tt>(/usr/lib)</tt>, bastar&aacute; con:
+
+
+
+<pre>
+
+gcc -o programa -l<biblioteca>
+
+</pre>
+
+
+
+(si hubiera estado en /usr/local/lib, hubieramos a&ntilde;adido la opci&oacute;n
+
+'-L/usr/local/lib')</p>
+
+
+
+Para instalar la biblioteca haremos lo siguiente:
+
+
+
+<ul>
+
+ <li><p> Copiaremos la biblioteca al directorio <tt>/lib</tt> o
+
+ <tt>/usr/lib</tt>.  Si decidimos copiarla a otro directorio (por
+
+ ejemplo <tt>/usr/local/lib)</tt>, no tendremos la seguridad de que el
+
+ linker <tt>ld(1)</tt> la encuentre autom&aacute;ticamente al enlazar
+
+ programas.</p>
+
+
+
+ <li><p> Ejecutaremos <tt>ldconfig(1)</tt> para que se cree el link
+
+ simb&oacute;lico de <tt>lib<biblioteca>.so.xxx.yyy.zzz</tt> a
+
+ <tt>lib<biblioteca>.so.xxx.</tt>  Este paso nos indicar&aacute;, por la creaci&oacute;n
+
+ del link, si hemos realizado todos los pasos correctamente y la
+
+ biblioteca es reconocida como din&aacute;mica.  Este &uacute;ltimo paso no afecta a
+
+ como se linkan los programas, sino solamente la carga de bibliotecas
+
+ en tiempo de ejecuci&oacute;n.</p>
+
+
+
+ <li><p> Crearemos un link simb&oacute;lico de
+
+ <tt>lib<biblioteca>.so.xxx.yyy.zzz</tt> (o desde
+
+ <tt>lib<biblioteca>.so.xxx</tt>, el <tt>soname</tt>) a
+
+ <tt>lib<biblioteca>.so</tt>, con el fin de que el linker pueda
+
+ encontrarla con la opci&oacute;n -l.  Para que esto funcione despues, es
+
+ necesario que el nombre de la biblioteca se ajuste al patr&oacute;n
+
+ <tt>lib<biblioteca></tt>.so</p>
+
+</ul>
+
+
+
+
+<A NAME="estatica"></A>
+<H3><FONT face="Helvetica,Arial" color="#660033">10.- Quiero Crear La Libraria Est&aacute;tica</FONT></H3>
+
+
+
+
+
+<p>Si por el contrario, lo que queremos es crear una biblioteca est&aacute;tica (o
+
+queremos tener las dos versiones, para poder ofrecer copias linkadas
+
+est&aacute;ticamente), deberemos proceder como sigue.</p>
+
+
+
+<em>Nota: El linker, en su b&uacute;squeda de bibliotecas, busca primero un
+
+fichero llamado <tt>lib<biblioteca>.so</tt>, seguido de
+
+<tt>lib<biblioteca>.a.</tt> Si llamamos a las dos bibliotecas (la
+
+versi&oacute;n est&aacute;tica y la versi&oacute;n din&aacute;mica) por el mismo nombre, no
+
+podremos controlar de forma general cual es la que se va a linkar en
+
+cada caso (se linkar&aacute; siempre con la din&aacute;mica, al encontrarse
+
+primero).</em>
+
+
+
+
+
+<p>Por esta raz&oacute;n, se recomienda siempre que vayamos a tener las dos
+
+versiones de una misma biblioteca, nombrar a la biblioteca est&aacute;tica
+
+como <tt>lib<biblioteca>_s.a</tt>, mientras que a la din&aacute;mica la
+
+llamaremos <tt>lib<biblioteca>.so</tt>.  As&iacute; para linkar
+
+est&aacute;ticamente, haremos:
+
+
+
+<pre>gcc -o programa -l<biblioteca>_s</pre>
+
+
+
+para linkar con la versi&oacute;n est&aacute;tica, mientras que haremos:
+
+
+
+<pre>gcc -o programa -l<biblioteca></pre>
+
+
+
+para linkar con la versi&oacute;n din&aacute;mica.
+
+</p>
+
+
+<A NAME="fuentes"></A>
+
+<H5><FONT face="Helvetica,Arial" color="#660033">10.1.- Compilaci&oacute;n de las fuentes</FONT></H5>
+
+
+
+
+
+
+Para compilar los fuentes, no tomaremos ninguna medida especial.  As&iacute; como
+
+la posici&oacute;n de los objetos se decide en la fase de linkado, no es necesario
+
+compilar con la opci&oacute;n -f PIC (aunque es posible seguir haci&eacute;ndolo).
+
+
+
+<A NAME="indice"></A>&nbsp;
+
+<H5><FONT face="Helvetica,Arial" color="#660033">10.2.- Linkado de los objetos en la
+
+     biblioteca</FONT></H5>
+
+
+
+
+
+En el caso de las bibliotecas est&aacute;ticas, no se realiza la fase de
+
+linkado.  Por otro lado, se introducen todos los objetos en un archivo
+
+con el comando <tt>ar(1)</tt>.  Posteriormente, para resolver
+
+rapidamente todos los s&iacute;mbolos existentes en la biblioteca, es
+
+recomendable ejecutar el comando <tt>ranlib(1)</tt> sobre la biblioteca (aunque
+
+no es imprescindible, la no ejecuci&oacute;n de este comando puede dar lugar
+
+a m&oacute;dulos no enlazados en el ejecutable, debido a que cuando se
+
+proces&oacute; el m&oacute;dulo por parte del linker al procesar la biblioteca, a&uacute;n
+
+no se hab&iacute;a producido la dependencia ---indirecta--- de este m&oacute;dulo,
+
+por ser &eacute;ste requerido por otro m&oacute;dulo existente mas adelante en el
+
+archivo, &eacute;sto puede dar lugar a que se requieran varias pasadas de la
+
+misma biblioteca para que se resuelvan todas las referencias).
+
+
+
+<A NAME="instalacionbi"></A>&nbsp;
+
+<H5><FONT face="Helvetica,Arial" color="#660033">10.3.- Instalaci&oacute;n de la
+
+     biblioteca</FONT></H5>
+
+
+
+
+
+
+
+<p>Las bibliotecas est&aacute;ticas se llamar&aacute;n lib<biblioteca>.a, si
+
+solamente vamos a mantener la biblioteca est&aacute;tica, mientras que es
+
+recomendable llamarlas por otro nombre, en el caso de tener los dos
+
+tipos de bibliotecas (yo sugiero llamarlas
+
+<tt>lib<biblioteca>_s.a</tt>, con el fin de poder controlar si
+
+cargamos la biblioteca est&aacute;tica o la din&aacute;mica)</p>
+
+
+
+<p>El proceso de enlazado permite la introducci&oacute;n de la opci&oacute;n
+
+-static.  Esta opci&oacute;n controla la carga del m&oacute;dulo
+
+<tt>/lib/ld-linux.so</tt>, y no afecta al orden de b&uacute;squeda de
+
+bibliotecas, con lo que si ponemos <tt>-static</tt> y <tt>ld(1)</tt>
+
+encuentra una biblioteca din&aacute;mica, seguir&aacute; trabajando con ella (en vez
+
+de su versi&oacute;n est&aacute;tica).  Esto provocar&aacute; errores en tiempo de
+
+ejecuci&oacute;n (por la llamada a rutinas de una biblioteca que no est&aacute;n en
+
+el ejecutable---el m&oacute;dulo de carga din&aacute;mica no est&aacute; enlazado y por
+
+tanto no se puede realizar este proceso).</p>
+
+
+<A NAME="din/estat"></A>
+
+<H3><FONT face="Helvetica,Arial" color="#660033">11.- Enlazado din&aacute;mico vs. Enlazado
+
+     est&aacute;tico</FONT></H3>
+
+
+
+
+
+
+
+<p>Supongamos que queremos distribuir un programa que hace uso de una
+
+biblioteca, la cual estamos autorizados a distribuir incluida
+
+est&aacute;ticamente en un programa pero solo de esta forma.  (un ejemplo de
+
+esto son las aplicaciones desarrolladas con Motif).</p>
+
+
+
+<p>Para la realizaci&oacute;n de este tipo de software, tenemos dos opciones: Producir
+
+un ejecutable linkado est&aacute;ticamente (con todas las bibliotecas est&aacute;ticas,
+
+producto de archivos .a) y que no utilice el cargador din&aacute;mico para nada.
+
+Este tipo de programas se cargan de una sola vez, y no requieren de tener
+
+ninguna biblioteca instalada (ni siquiera <tt>/lib/ld-linux.so)</tt>.  Por el
+
+contrario, tienen el inconveniente de llevar todo el software necesario
+
+dentro del ejecutable y por esta raz&oacute;n, los binarios suelen ser inmensamente
+
+grandes.</p>
+
+
+
+<p>Por otro lado, podemos distribuir nuestro software enlazado din&aacute;micamente.
+
+Esto quiere decir que en el entorno donde se ejecute la aplicaci&oacute;n se deber&aacute;n
+
+aportar todas las bibliotecas din&aacute;micas correspondientes.  El ejecutable es
+
+muy peque&ntilde;o, aunque a veces no es posible tener todas las bibliotecas
+
+disponibles (por ejemplo para aquellas personas que no hayan comprado Motif,
+
+la no disponibilidad de la biblioteca compartida, puede provocar problemas
+
+para poder ejecutar el programa).</p>
+
+
+
+<p>Existe un tercer m&eacute;todo, mixto, en el que las bibliotecas se enlazan
+
+din&aacute;micamente, salvo aquella biblioteca conflictiva, en la que usaremos la
+
+biblioteca est&aacute;tica, en vez de la compartida.  En este caso se tiene una
+
+soluci&oacute;n mixta que permite la distribuci&oacute;n c&oacute;moda del software.</p>
+
+
+
+<p>Por ejemplo, yo podr&iacute;a compilar tres versiones de un programa del siguiente
+
+modo:
+
+
+
+<pre>
+
+gcc -static -o programa.estatico 
+
+programa.o -lm_s -lXm_s -lXt_s -lX11_s\
+
+-lXmu_s -lXpm_s
+
+
+
+gcc -o programa.dinamico programa.o
+
+-lm -lXm -lXt -lX11 -lXmu -lXpm
+
+
+
+gcc -o programa.mixto programa.o 
+
+-lm -lXm_s -lXt -lX11 -lXmu -lXpm
+
+</pre>
+
+
+
+<p>En el tercer caso, solo se linkar&aacute; est&aacute;ticamente la biblioteca de
+
+Motif <tt>(-lXm_s)</tt> enlaz&aacute;ndose din&aacute;micamente el resto.  El
+
+entorno donde se ejecute el programa deber&aacute; disponer de versiones
+
+din&aacute;micas de las bibliotecas <tt>libm.so.xx libXt.so.xx libX11.so.xx
+
+libXmu.so.xx y libXpm.so.xx</tt></p>
+
+
+
+
+
+
+
+
+
+
+
+
+          </TD>
+        </TR>
+	 </TABLE>
+
+     <HR size=2 noshade>
+
+    </TD>
+
+ </TR>
+
+ </TBODY>
+
+<TBODY>
+  <TR>
+    <TD colspan="2">
+    <B>For more information</B>:<BR>
+    <UL>
+      <LI>Consult ELF-HOWTO.</LI> 
+     <UL><BR><BR>
+    <TD>
+  </TR>
+</TBODY>
+
+ <TR bgcolor="#660033">
+   <TD colspan="2" align="center"><FONT face="Helvetica,Arial" color="#FFFFFF"><B>
+         &copy; 1998 Luis Colorado</B></FONT><BR>
+    <FONT color="#ffffff">This website is mantained by 
+    <A href="mailto:angel@mercury.chem.pitt.edu"><FONT color="#ffffff">Miguel A Sepulveda</FONT></A></FONT>.
+   </TD>
+ </TR>
+
+
+
+</TABLE>
+
+
+</BODY>
+</HTML>
+
+
+
+
+
+

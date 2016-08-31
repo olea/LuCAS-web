@@ -1,0 +1,187 @@
+<HTML>
+<HEAD>
+<TITLE>C&oacute;mo Intentar configurar un servidor de news con INN+SUCK: Comentarios</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Inn-Suck-Como-3.html">Anterior</A>
+<A HREF="Inn-Suck-Como-5.html">Siguiente</A>
+<A HREF="Inn-Suck-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. Comentarios</A></H2>
+
+
+
+<H2><A NAME="ss4.1">4.1 sucknewsrc </A></H2>
+
+
+<P>Este fichero contiene informaci&oacute;n sobre qu&eacute; grupos de noticias se deben
+transferir desde el servidor remoto de noticias + el mensaje m&aacute;s alto que
+se ha bajado, v.g. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+control 236
+junk 970
+test 1
+to 116
+es.comp.os.linux 16149
+es.comp.lenguajes.c 1235
+es.comp.lenguajes.c++ 1631
+es.comp.lenguajes.java 1819
+esp.comp.so.linux 1715
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss4.2">4.2 Caducidad de los mensajes:</A></H2>
+
+
+<P>Es importante estar seguro de que los art&iacute;culos caducan, que <I>expiran</I>. 
+De esto se
+encarga script <CODE>news.daily</CODE>. El fichero <CODE>expire.ctl</CODE>
+describe la duraci&oacute;n de los art&iacute;culos. Veamos algunos ejemplos de este
+fichero: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/remember/:20 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esta l&iacute;nea le dice a expire que mantenga las entradas de los art&iacute;culos en
+history al menos 20 d&iacute;as. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+*:A:1:7:21 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esta es la l&iacute;nea por defecto. Indica que por defecto, un articulo se tenga
+un m&iacute;nimo de un d&iacute;a, la expiraci&oacute;n es 7 d&iacute;as (se aplica si no hay cabecera
+<CODE>Expires</CODE>), y el m&aacute;ximo que es mantenido el art&iacute;culo que son 21
+d&iacute;as.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+local.*:A:1:14:28 
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>Esta l&iacute;nea s&oacute;lo se aplica a los grupos local. Por defecto los art&iacute;culos
+permanecer&aacute;n 14 d&iacute;as, 28 como m&aacute;ximo. </P>
+<P>Tiene que tener en cuenta que las l&iacute;nea de <CODE>expire.ctl</CODE> deben tener
+las entradas mes primero y las m&aacute;s espec&iacute;ficas al final. </P>
+<P>En mi RedHat 5.0 tengo </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ls -la /etc/cron.daily/
+
+total 12
+
+drwxr-xr-x   2 root     root         1024 Jun 12 17:41 .
+drwxr-xr-x  28 root     root         4096 Jul 26 12:21 ..
+-rwxr-xr-x   1 root     root           54 Oct 20  1997 inn-cron-expire
+-rwxr-xr--   1 root     root          732 Jun 12 17:40 internet
+-rwxr-xr-x   1 root     root           51 Oct 21  1997 logrotate
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y </P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cat /etc/cron.daily/inn-cron-expire
+
+#!/bin/sh
+su - news -c &quot;/usr/lib/news/bin/news.daily&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si por alguna circunstancia no queremos ejecutar <CODE>news.daily</CODE> mediante
+cron deberemos hacerlo a mano. Si no se ejecuta este programa se le
+notificar&aacute; al administrador mediante mail.</P>
+
+
+<H2><A NAME="ss4.3">4.3 Espacio en disco</A></H2>
+
+
+<P>Normalmente los art&iacute;culos se guardan en <CODE>/var/spool/news</CODE>. Debe
+prever espacio de almacenamiento. Esto habr&aacute; que estudiarlo para cada caso
+en particular. Si va a bajar s&oacute;lo unos pocos grupos entonces puede que no
+haya problemas. Si quiere dar acceso a una red local con muchos grupos de
+noticias puede que tenga que dedicar una partici&oacute;n a <CODE>/var/spool</CODE></P>
+
+
+<H2><A NAME="ss4.4">4.4 Otras cosas</A></H2>
+
+
+<P>Todo se ejecuta como usuario <CODE>news</CODE> salvo lanzar y detener el
+servicio con <CODE>rc.news</CODE>. </P>
+<P>En caso de que aparezca el mensaje : </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+inndstart: inndstart cant bind Address already in use 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>puede que o bien innd est&eacute; ya en uso o que el puerto est&eacute; ocupado. En este
+&uacute;ltimo caso habr&aacute; que comentar la l&iacute;nea corresppondiente a <CODE>nntp</CODE>
+en <CODE>/etc/inetd.conf</CODE> y reiniciar <CODE>inetd</CODE> con la se&ntilde;al
+<CODE>HUP</CODE> ( <CODE>kill -HUP pid_de_inetd</CODE>)</P>
+<P>Hay muchas cosas que quedan por configurar, pero para esto habr&aacute; que
+recurrir a</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+man suck
+man innd
+man inn.conf 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>etc&eacute;tera.</P>
+
+
+<H2><A NAME="ss4.5">4.5 Autor</A></H2>
+
+
+<P>El autor de este mini-como es Pedro Pablo F&aacute;brega Mart&iacute;nez
+(<CODE>
+<A HREF="mailto:pfabrega@arrakis.es">pfabrega@arrakis.es</A></CODE>) </P>
+<P>Este mini-como una recopilaci&oacute;n de documentos disponibles en internet y de
+mi propia experiencia.</P>
+<P>Tambi&eacute;n indicar que existen unas FAQ de innd: </P>
+<P><CODE>
+<A HREF="ftp://ftp.blank.org/pub/innfaq/">ftp://ftp.blank.org/pub/innfaq/</A></CODE></P>
+<P>y en Europa:</P>
+<P><CODE>
+<A HREF="ftp://ftp.xlink.net/pub/news/docs/">ftp://ftp.xlink.net/pub/news/docs/</A></CODE></P>
+<P>Se admiten comentarios para mejorar este documento.</P>
+<P>Los insultos y groser&iacute;as pueden redirigirse directamente a
+<CODE>/dev/null</CODE></P>
+
+
+<H2><A NAME="ss4.6">4.6 Derechos de Autor</A></H2>
+
+
+<P>Este documento est&aacute; a disposici&oacute;n de cualquiera bajo los t&eacute;rminos
+indicados en la licencia p&uacute;blica <CODE>GNU</CODE>. En resumen, puede copiar y
+usar este documento sin restricciones siempre que no se apropie
+intelectualmente de &eacute;l o de parte e imponer restricciones adicionales a su
+distribuci&oacute;n. </P>
+<P>Hay partes que son de otros autores y estos son, en consecuencia,
+propietarios intelectuales de su obra. Yo me reservo la propiedad de mis
+aportaciones. </P>
+
+
+<HR>
+<A HREF="Inn-Suck-Como-3.html">Anterior</A>
+<A HREF="Inn-Suck-Como-5.html">Siguiente</A>
+<A HREF="Inn-Suck-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

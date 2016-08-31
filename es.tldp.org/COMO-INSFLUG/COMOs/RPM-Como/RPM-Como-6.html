@@ -1,0 +1,639 @@
+<HTML>
+<HEAD>
+<TITLE>RPM COMO : Construyendo paquetes RPM</TITLE>
+</HEAD>
+<BODY>
+<A HREF="RPM-Como-5.html">Anterior</A>
+<A HREF="RPM-Como-7.html">Siguiente</A>
+<A HREF="RPM-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="s6">6. Construyendo paquetes RPM</A></H2>
+
+
+<P>Construir paquetes RPM es algo realmente f&aacute;cil de hacer, especialmente si
+puede conseguir que el software que intenta empaquetar pueda compilarse por
+s&iacute; mismo. </P>
+<P>El procedimiento b&aacute;sico es el siguiente:</P>
+<P>
+<UL>
+<LI>Aseg&uacute;rese que su <CODE>/etc/rpmrc</CODE> est&aacute; configurado para su
+sistema. </LI>
+<LI>H&aacute;gase con el c&oacute;digo fuente del software a empaquetar para ser
+compilado en su sistema.</LI>
+<LI>Haga un parche con todos los cambios que ha tenido que realizar para
+que los fuentes se compilen adecuadamente. </LI>
+<LI>Cree un fichero <CODE>.spec</CODE> para el paquete.</LI>
+<LI>Aseg&uacute;rese de que todo est&aacute; en su sitio.</LI>
+<LI>Construya el paquete usando RPM.</LI>
+</UL>
+</P>
+<P>En general, RPM construir&aacute; tanto el paquete binario como el de los fuentes.</P>
+
+<H2><A NAME="ss6.1">6.1 El fichero <CODE>rpmrc</CODE></A></H2>
+
+
+<P>En lo sucesivo, la &uacute;nica configuraci&oacute;n de RPM est&aacute; disponible en el
+fichero <CODE>/etc/rpmrc</CODE>. &Eacute;ste puede tener la siguiente apariencia: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+require_vendor: 1
+distribution: I roll my own!
+require_distribution: 1
+topdir: /usr/src/me
+vendor: Mickiesoft
+packager:  Mickeysoft Packaging Account &lt;packages@mickiesoft.com&gt;
+
+optflags: i386 -O2 -m486 -fno-strength-reduce
+optflags: alpha -O2
+optflags: sparc -O2
+
+signature: pgp
+pgp_name: Mickeysoft Packaging Account
+pgp_path: /home/packages/.pgp
+
+tmppath: /usr/tmp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La l&iacute;nea <CODE>require_vendor</CODE> obliga a RPM a requerir una l&iacute;nea de vendor
+(distribuidor). &Eacute;sta puede venir o bien del propio fichero
+<CODE>/etc/rpmrc</CODE> o de la cabecera del fichero <CODE>.spec</CODE>. Para desactivar
+este par&aacute;metro debe cambiarse el n&uacute;mero a <CODE>0</CODE>. Esto tambi&eacute;n se aplica a
+las l&iacute;neas <CODE>require_distribution</CODE> y <CODE>require_group</CODE>. </P>
+<P>La siguiente l&iacute;nea es la de <CODE>distribution</CODE>
+<SL>N.T.: 
+distribuci&oacute;n</SL>
+. Puede definirla bien aqu&iacute; o bien en el fichero
+<CODE>.spec</CODE>.  Cuando se empaqueta para una distribuci&oacute;n en concreto, es
+buena idea asegurarse de que esta l&iacute;nea es correcta, incluso cuando no se
+requiera.  La l&iacute;nea de <CODE>vendor</CODE>
+<SL>N.T.: distribuidor</SL>
+
+funciona de la misma manera, aunque puede contener cualquier cosa (ej.:
+<I>Joe's Software and Rock Music Emporium</I>).</P>
+<P>RPM tambi&eacute;n soporta ahora el empaquetado de paquetes para m&uacute;ltiples
+arquitecturas. El fichero <CODE>rpmrc</CODE> puede incluir una variable de
+opciones (<CODE>optflags</CODE>) que contiene par&aacute;metros espec&iacute;ficos a la
+arquitectura.  Lea secciones posteriores para saber c&oacute;mo usar esta
+variable.</P>
+<P>En adici&oacute;n a las macros anteriores, hay disponibles unas cuantas m&aacute;s.
+Puede usar: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rpm --showrc
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>para saber cu&aacute;l de sus etiquetas est&aacute;n configuradas y cu&aacute;les son los
+par&aacute;metros disponibles. </P>
+
+
+<H2><A NAME="ss6.2">6.2 El fichero <CODE>spec</CODE></A></H2>
+
+
+<P>Ahora hablaremos del fichero <CODE>.spec</CODE>. Estos ficheros son
+imprescindibles para construir un paquete. El fichero spec es una
+descripci&oacute;n del software acompa&ntilde;ado con instrucciones sobre c&oacute;mo
+construirlo y una lista de ficheros de todos los binarios instalados. </P>
+<P>Deber&iacute;a nombrar a sus ficheros spec de acuerdo a una convenci&oacute;n est&aacute;ndar. 
+Tal como nombre de paquete-gui&oacute;n-n&uacute;mero de versi&oacute;n-gui&oacute;n-n&uacute;mero de
+publicaci&oacute;n-punto-spec. </P>
+<P>A continuaci&oacute;n, un peque&ntilde;o fichero spec (<CODE>eject-1.4.spec</CODE>):       </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Summary: ejects ejectable media and controls auto ejection
+Name: eject
+Version: 1.4
+Release: 3
+Copyright: GPL
+Group: Utilities/System
+Source: sunsite.unc.edu:/pub/Linux/utils/disk-management/eject-1.4.tar.gz
+Patch: eject-1.4-make.patch
+Patch1: eject-1.4-jaz.patch
+%description
+This program allows the user to eject media that is autoejecting like
+CD-ROMs, Jaz and Zip drives, and floppy drives on SPARC machines.
+
+%prep
+%setup
+%patch -p1
+%patch1 -p1
+
+%build
+make RPM_OPT_FLAGS=&quot;$RPM_OPT_FLAGS&quot;
+
+%install
+install -s -m 755 -o 0 -g 0 eject /usr/bin/eject
+install -m 644 -o 0 -g 0 eject.1 /usr/man/man1
+
+%files
+%doc README COPYING ChangeLog
+
+/usr/bin/eject
+/usr/man/man1/eject.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss6.3">6.3 La Cabecera</A></H2>
+
+
+<P>La cabecera tiene unos cuantos campos est&aacute;ndar que usted necesita
+rellenar.  Tambi&eacute;n hay unas cuantas advertencias. Los campos deben ser
+rellenados tal como sigue: </P>
+<P>
+<UL>
+<LI><CODE>Summary:</CODE> Descripci&oacute;n en una s&oacute;la l&iacute;nea del paquete.</LI>
+<LI><CODE>Name:</CODE> La cadena que vaya a servir de nombre para el fichero
+rpm. 
+</LI>
+<LI><CODE>Version:</CODE> La cadena que vaya a ser el n&uacute;mero de versi&oacute;n para el
+fichero rpm.
+</LI>
+<LI><CODE>Release:</CODE> El n&uacute;mero de publicaci&oacute;n para un paquete dentro de un
+mismo n&uacute;mero de versi&oacute;n (ej.: si crea un paquete y lo encuentra
+ligeramente defectuoso y necesita generarlo de nuevo, el siguiente paquete
+deber&iacute;a tener 2 como n&uacute;mero de publicaci&oacute;n). 
+</LI>
+<LI><CODE>Icon:</CODE> El nombre del icono que podr&aacute;n usar interfaces de
+instalaci&oacute;n alto nivel (como Red Hat `<CODE>glint</CODE>''). Debe ser un fichero
+<CODE>.gif</CODE> y estar situado en el directorio <CODE>SOURCES</CODE>.
+</LI>
+<LI><CODE>Source:</CODE> Esta l&iacute;nea apunta a la localizaci&oacute;n HOME del fichero de
+fuentes original. Se usa si alguna vez quiere tener los fuentes de nuevo o
+chequear para nuevas versiones. Precauci&oacute;n: el nombre del fichero en esta
+l&iacute;nea DEBE coincidir con el nombre que tiene tal fichero en su sistema
+(ej.: no se haga con el fichero fuente y le cambie el nombre). Puede
+especificar m&aacute;s de un fichero fuente de esta forma: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+Source0: blah-0.tar.gz
+Source1: blah-1.tar.gz
+Source2: fooblah.tar.gz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Estos ficheros deben residir en el directorio <CODE>SOURCES</CODE>. (La estructura
+de directorios es discutida en una secci&oacute;n posterior, ``El &Aacute;rbol de
+Directorios de las Fuentes'', 
+<A HREF="#arbol">arbol</A>). 
+</LI>
+<LI><CODE>Patch:</CODE> El lugar donde podr&aacute;n encontrarse los parches si los
+necesita de nuevo. Precauci&oacute;n: el nombre debe coincidir con el de SUS
+propios parches. Puede especificar m&aacute;s de un fichero de parches de esta
+forma: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+Patch0: blah-0.patch
+Patch1: blah-1.patch
+Patch2: fooblah.patch
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Estos ficheros deben residir en el directorio <CODE>SOURCES</CODE>.
+</LI>
+<LI><CODE>Copyright:</CODE> Hace referencia al modelo de copyright al que se
+acoje el paquete. Puede tratarse de algo al estilo de GPL, BSD, MIT,
+<I>public domain</I>
+<SL>N.T.: dominio p&uacute;blico</SL>
+,
+<I>distributable</I>
+<SL> N.T.: distribuible</SL>
+ o
+<I>commercial</I>
+<SL>N.T.: comercial</SL>
+. 
+</LI>
+<LI><CODE>BuildRoot:</CODE> Hace referencia a un directorio que simular&aacute; el ra&iacute;z
+(<CODE>/</CODE>) para la construcci&oacute;n e instalaci&oacute;n de un nuevo paquete. Puede
+usarlo para probar su paquete antes de instalarlo en su m&aacute;quina. 
+</LI>
+<LI><CODE>Group:</CODE> Informa a un programa de instalaci&oacute;n de alto nivel (como
+Red Hat `<CODE>glint</CODE>'') d&oacute;nde situar este paquete en particular dentro de
+la jerarqu&iacute;a de <CODE>rpm</CODE>. Actualmente, esta jerarqu&iacute;a viene a ser:
+  
+<BLOCKQUOTE><CODE>
+<PRE>
+Applications            (aplicaciones)
+    Communications      (comunicaciones)
+    Editors             (editores)
+        Emacs           (Emacs)
+    Engineering         (ingenieria)
+    Spreadsheets        (hojas de calculo)
+    Databases           (bases de datos)
+    Graphics            (graficos)
+    Networking          (redes de comunicaciones)
+    Mail                (correo smtp)
+    Math                (matematicas)
+    News                (noticias nntp)
+    Publishing          (edicion)
+        TeX             (TeX)
+Base                    (basico)
+    Kernel              (nucleo)
+Utilities               (utilidades)
+    Archiving           (archivo)
+    Console             (consola)
+    File                (ficheros)
+    System              (sistema)
+    Terminal            (terminales)
+    Text                (texto)
+Daemons                 (demonios)
+Documentation           (documentacion)
+X11                     (X11)
+    XFree86             (XFree86)
+        Servers         (servidores)
+    Applications        (aplicaciones)
+        Graphics        (graficos)
+        Networking      (redes de comunicaciones)
+    Games               (juegos)
+        Strategy        (estrategia)
+        Video           (video juegos)
+    Amusements          (entretenimientos)
+    Utilities           (utilidades)
+    Libraries           (librerias)
+    Window Managers     (gestores de ventana)
+Libraries               (librerias)
+Networking              (redes de comunicaciones)
+    Admin               (administracion)
+    Daemons             (demonios)
+    News                (noticias nntp)
+    Utilities           (utilidades)
+Development             (desarrollo)
+    Debuggers           (depuradores)
+    Libraries           (librerias)
+        Libc            (libreria C)
+    Languages           (lenguajes)
+        Fortran         (fortran)
+        Tcl             (tcl)
+    Building            (Compilacion)
+    Version Control     (control de versiones)
+    Tools               (utiles)
+Shells                  (interpretes de comandos)
+Games                   (juegos)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI><CODE>%description</CODE> En realidad no es un elemento de la
+cabecera, pero debe ser descrito junto a sus otras partes. Necesita una
+etiqueta de descripci&oacute;n por cada paquete o subpaquete. Se trata de un
+campo multil&iacute;nea que debe ser usado para proporcionar una descripci&oacute;n
+comprensible del paquete. </LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss6.4">6.4 <CODE>%prep</CODE></A></H2>
+
+
+<P>Esta es la segunda secci&oacute;n del fichero spec. Se usa para tener las fuentas
+listas para compilar. Aqu&iacute; necesita hacer todo lo necesario para obtener
+los fuentes parcheadas y configuradas para ejecutar un <CODE>make</CODE> con
+ellas.</P>
+<P>Una cosa a se&ntilde;alar: Cada una de estas secciones es s&oacute;lo un lugar para
+ejecutar guiones de int&eacute;rprete de comandos
+<SL>N.T.: <EM>shell
+scripts</EM> en el original.</SL>
+. As&iacute; podr&aacute; crear un script simple para
+<CODE>sh</CODE> y colocarlo tras la etiqueta <CODE>%prep</CODE> para
+desempaquetar y parchear sus fuentes. En cualquier caso, hemos creado unas
+macros para ayudar en esto.</P>
+<P>La primera de estas macros es <CODE>%setup</CODE>. En su forma m&aacute;s simple 
+(sin par&aacute;metros en la l&iacute;nea de comandos), se limita a desempaquetar los
+fuentes y cambiar el directorio actual al de los fuentes. Puede tener
+alguna de las siguientes opciones: </P>
+<P>
+<UL>
+<LI><CODE>-n nombre</CODE> asignar&aacute; el nombre del directorio en construcci&oacute;n. 
+Por defecto es <CODE>$NAME-$VERSI&Oacute;N</CODE>. Otras posibilidades
+incluyen <CODE>$NAME</CODE>, <CODE>${NAME}${VERSI&Oacute;N}</CODE>, o
+cualquiera que use el fichero tar principal. (Aperc&iacute;bese de que estas
+variables ``$'' <EM>no</EM> son variables reales dentro del fichero
+spec.  S&oacute;lo se usan aqu&iacute; en lugar de un nombre ejemplo. Necesitar&aacute; usar el
+nombre real y la versi&oacute;n de su paquete, no una variable). 
+</LI>
+<LI><CODE>-c</CODE> crear&aacute; y cambiar&aacute; al directorio nombrado <EM>antes</EM> de
+desempaquetar con tar. 
+</LI>
+<LI><CODE>-b #</CODE> desempaquetar&aacute; con <CODE>tar</CODE> el fichero fuente
+<CODE>#</CODE> <EM>antes</EM> de cambiar al directorio (y esto no tiene sentido
+con <CODE>-c</CODE>, as&iacute; que no lo haga).  S&oacute;lo es &uacute;til cuando se usan varios
+archivos fuente. 
+</LI>
+<LI><CODE>-a #</CODE> desempaquetar&aacute; el fichero fuente <CODE>#</CODE>
+<EM>despu&eacute;s</EM> de cambiar al directorio.
+</LI>
+<LI><CODE>-T</CODE> Este par&aacute;metro anula la acci&oacute;n por defecto de desempaquetar
+el fichero fuente y requiere <BR> <CODE>-b 0</CODE> o <CODE>-a 0</CODE> para desempaquetar
+el fichero fuente principal. Necesitar&aacute; esto cuando hayan fuentes
+secundarias.
+</LI>
+<LI><CODE>-D</CODE> <EM>No</EM> borra el directorio antes de desempaquetar.  S&oacute;lo
+resulta &uacute;til cuando tenga m&aacute;s de una macro de configuraci&oacute;n. Deber&iacute;a ser
+usado <EM>solamente</EM> en macros de configuraci&oacute;n <EM>despu&eacute;s</EM> de la primera
+(pero nunca en la primera). </LI>
+</UL>
+</P>
+<P>La siguiente de las macros disponibles es <CODE>%patch</CODE>. Esta macro
+ayuda a automatizar el proceso de aplicaci&oacute;n de parches a los fuentes. 
+Necesita de varios par&aacute;metros, listadas a continuaci&oacute;n: </P>
+<P>
+<UL>
+<LI><CODE>#</CODE> aplicar&aacute; el parche Patch#.</LI>
+<LI><CODE>-p #</CODE> especifica el n&uacute;mero de directorios a evitar por el
+comando <CODE>patch(1)</CODE>. 
+</LI>
+<LI><CODE>-P</CODE> La acci&oacute;n por defecto es aplicar <CODE>Patch</CODE> (o <CODE>Patch0</CODE>). 
+Este par&aacute;metro inhibe dicha acci&oacute;n y requiere un <CODE>0</CODE> para tener
+desempaquetado el fichero fuente principal. Esta opci&oacute;n resulta &uacute;til en
+una segunda (o posterior) macro <CODE>%patch</CODE> que requiera par&aacute;metros
+distintos a la primera macro.
+</LI>
+<LI> Tambi&eacute;n puede hacer <CODE>%patch#</CODE> en lugar de hacer el
+comando real: <CODE>%patch # -P</CODE></LI>
+</UL>
+</P>
+<P>Estas deber&iacute;an ser todas las macros que necesite. En cuanto las tenga
+claras, podr&aacute; crear cualquier otra configuraci&oacute;n que necesite mediante
+guiones <CODE>sh</CODE>. Todo lo que incluya hasta la macro <CODE>%build</CODE>
+(discutida en la siguiente secci&oacute;n) es ejecutado v&iacute;a <CODE>sh</CODE>. Busque en el
+ejemplo anterior el tipo de cosas que puede querer incluir all&iacute;. </P>
+
+
+<H2><A NAME="ss6.5">6.5 <CODE>%build</CODE></A></H2>
+
+
+<P>En realidad no hay ninguna macro en esta secci&oacute;n. Solamente debe incluir
+todos los comandos que necesitar&iacute;a para construir y/o compilar el software
+una vez que haya desempaquetado y parcheado los fuentes, y se haya movido
+al directorio correcto. Es pues otra serie de comandos pasados a <CODE>sh</CODE>,
+as&iacute; que cualquier comando aceptable por <CODE>sh</CODE> podr&aacute; ir aqu&iacute; (incluidos
+los comentarios). <B>El directorio actual es reajustado en cada una de
+estas secciones al de mayor nivel en el directorio de fuentes</B>, as&iacute; que
+t&eacute;ngalo en cuenta. Puede moverse a trav&eacute;s de los subdirectorios si
+resultase necesario.</P>
+
+
+<H2><A NAME="ss6.6">6.6 <CODE>%install</CODE></A></H2>
+
+<P> </P>
+<P>En realidad no hay ninguna macro en esta secci&oacute;n.  B&aacute;sicamente debe
+incluir aqu&iacute; cualquier comando necesario para instalar. Si el paquete a
+construir tiene disponible un comando <CODE>make install</CODE>, incl&uacute;yalo aqu&iacute;.
+Si no, o bien puede parchear el fichero <CODE>Makefile</CODE> y a&ntilde;adirle la
+funcionalidad <CODE>make install</CODE> e incluir dicha sentencia en esta secci&oacute;n
+o bien instalarlo a mano mediante comandos <CODE>sh</CODE>. Puede considerar su
+directorio actual como el directorio superior del directorio de fuentes. </P>
+
+
+<H2><A NAME="ss6.7">6.7 Guiones opcionales pre y post Install/Uninstall</A></H2>
+
+
+<P>Puede incluir guiones que ser&iacute;an ejecutados antes y despu&eacute;s de la
+instalaci&oacute;n o desinstalaci&oacute;n de paquetes binarios. Una raz&oacute;n importante
+para esto es hacer cosas como ejecutar <CODE>ldconfig</CODE> tras la instalaci&oacute;n o
+eliminar paquetes que contienen librer&iacute;as compartidas. Las macros para
+cada uno de los guiones son: </P>
+<P>
+<UL>
+<LI><CODE>%pre</CODE> es la macro para los guiones pre-instalaci&oacute;n.</LI>
+<LI><CODE>%post</CODE> es la macro para los guiones post-instalaci&oacute;n.</LI>
+<LI><CODE>%preun</CODE> es la macro para los guiones pre-desinstalaci&oacute;n.</LI>
+<LI><CODE>%postun</CODE> es la macro para los guiones post-desinstalaci&oacute;n.</LI>
+</UL>
+</P>
+<P>Los contenidos de estas secciones deben ser solamente guiones <CODE>sh</CODE>,
+luego <EM>no</EM> resulta necesaria la l&iacute;nea <CODE>#!/bin/sh</CODE>. </P>
+
+
+<H2><A NAME="ss6.8">6.8 <CODE>%files</CODE></A></H2>
+
+
+<P>Esta es la secci&oacute;n donde <EM>debe</EM> listar los ficheros del paquete
+binario.  RPM no tiene forma de saber qu&eacute; ficheros binarios se han
+instalado tras ejecutar <CODE>make install</CODE>. <EM>NO</EM> hay forma de saberlo.</P>
+<P>Algunos han sugerido ejecutar un comando <CODE>find</CODE> antes y despu&eacute;s de la
+instalaci&oacute;n del paquete. En un sistema multiusuario, esto es inaceptable
+ya que pueden crearse otros ficheros durante la construcci&oacute;n del paquete
+que no tienen nada que ver con el mismo.</P>
+<P>Tambi&eacute;n hay algunas macros disponibles para hacer cosas especiales. Son
+las listadas a continuaci&oacute;n: </P>
+<P>
+<UL>
+<LI><CODE>%doc</CODE> se usa para se&ntilde;alar los ficheros de documentaci&oacute;n
+del paquete fuente que desea que sean instalados en una instalaci&oacute;n
+binaria. La documentaci&oacute;n ser&aacute; instalada en
+<CODE>/usr/doc/$NOMBRE-$VERSI&Oacute;N-$PUBLICACI&Oacute;N</CODE>.  La
+lista podr&aacute; incluir varios ficheros en una s&oacute;la l&iacute;nea o puede listarlos de
+forma separada con una macro para cada uno de ellos. 
+</LI>
+<LI><CODE>%config</CODE> se usa para se&ntilde;alar los ficheros de
+configuraci&oacute;n en un paquete. Ficheros as&iacute; pueden ser <CODE>sendmail.cf</CODE>,
+<CODE>passwd</CODE>, etc. Si posteriormente desinstala un paquete que incluye
+ficheros de configuraci&oacute;n, todos los ficheros sin modificar ser&aacute;n borrados
+y todos los ficheros modificados ser&aacute;n movidos a su nombre antiguo con el
+sufijo <CODE>.rpmsave</CODE> a&ntilde;adido a su nombre. Tambi&eacute;n puede incluir m&uacute;ltiples
+ficheros con esta macro.
+</LI>
+<LI><CODE>%dir</CODE> se&ntilde;ala a un &uacute;nico directorio en la lista como
+propiedad de un paquete. Por defecto, si incluye en la lista un nombre de
+directorio <EM>SIN</EM> una macro <CODE>%dir</CODE>, <EM>TODO</EM> el contenido de
+ese directorio es incluido en la lista de ficheros y posteriormente
+instalado como parte del paquete.
+</LI>
+<LI><CODE>%files -f &lt;nombredefichero&gt;</CODE> le permitir&aacute; tener la
+lista de ficheros contenida en un fichero situado en el directorio de las
+fuentes. Resulta &uacute;til en los casos en los que un paquete puede crear su
+propia lista de ficheros por s&iacute; mismo. En ese caso s&oacute;lo tendr&aacute; que incluir
+el nombre de ese fichero aqu&iacute; y no necesitar&aacute; especificar nada m&aacute;s. </LI>
+</UL>
+</P>
+<P>La mayor precacuci&oacute;n que debe tener en cuenta en la lista de ficheros es
+la inclusi&oacute;n de directorios. Si por accidente incluye <CODE>/usr/bin</CODE>, su
+paquete binario contendr&aacute; <EM>todos</EM> los ficheros contenidos en el
+directorio <CODE>/usr/bin</CODE> en su sistema. </P>
+
+
+<H2><A NAME="ss6.9">6.9 Construcci&oacute;n</A></H2>
+
+
+
+<H3><A NAME="arbol"></A> ``El &Aacute;rbol de Directorios de los Fuentes'' </H3>
+
+
+<P>Lo primero que necesita es un &aacute;rbol de directorios de compilaci&oacute;n
+configurado de forma apropiada. Esto se puede hacer mediante el fichero
+<CODE>/etc/rpmrc</CODE>. La mayor&iacute;a de la gente s&oacute;lo usar&aacute; <CODE>/usr/src</CODE>.</P>
+<P>Puede que necesite crear los siguientes directorios para organizar un
+&aacute;rbol de construcci&oacute;n: </P>
+<P>
+<UL>
+<LI><CODE>BUILD</CODE> es el directorio donde RPM lleva a cabo toda la
+construcci&oacute;n.  No tiene que llevar a cabo su prueba de construcci&oacute;n en
+ning&uacute;n sitio en particular; aqu&iacute; es donde RPM llevar&aacute; a cabo la
+compilaci&oacute;n y empaquetamiento. 
+</LI>
+<LI><CODE>SOURCES</CODE> es el directorio donde debe situar los ficheros fuente
+originales y los correspondientes parches. Es donde RPM buscar&aacute; por
+defecto. 
+</LI>
+<LI><CODE>SPECS</CODE> es el directorio donde deben ir situados los ficheros spec.</LI>
+<LI><CODE>RPMS</CODE> es donde RPM dejar&aacute; los paquetes RPM binarios una vez
+construidos.</LI>
+<LI><CODE>SRPMS</CODE> es donde RPM dejar&aacute; los paquetes RPM fuentes.</LI>
+</UL>
+</P>
+
+<H3>Prueba de construcci&oacute;n</H3>
+
+
+<P>Lo primero que querr&aacute; hacer es asegurarse que los fuentes se construyen
+adecuadamente sin usar RPM. Para ello, desempaquete los fuentes, sit&uacute;ese
+en el directorio <CODE>$NAME.orig</CODE>. De nuevo desempaquete los
+fuentes. Use &eacute;stos para compilar. Vaya al directorio de los fuentes y siga
+las instrucciones para construirlo. Si necesita editar algo, necesitar&aacute; un
+parche. Una vez que lo tenga compilado, limpie el directorio fuentes. </P>
+<P>Aseg&uacute;rese que borra todos los ficheros creados por alg&uacute;n gui&oacute;n de
+configuraci&oacute;n. Haga entonces un <CODE>cd</CODE> hacia arriba, al directorio
+paterno. Deber&aacute; hacer algo como: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+diff -uNr nombredirectorio.orig nombredirectorio &gt; ../SOURCES/nombredirectorio-linux.patch
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Lo que crear&aacute; un parche que podr&aacute; usar en su fichero spec. Advierta que el
+``linux'' que aparece en el nombre del parche es s&oacute;lo un identificador. 
+Usted probablemente querr&aacute; usar algo m&aacute;s descriptivo como ``config'' o
+``bugs'' para describir el <EM>porqu&eacute;</EM> del parche. Tambi&eacute;n es buena idea
+examinar el fichero parche que ha creado antes de usarlo para asegurarse
+de que no se han incluido binarios por error. </P>
+
+<H3>Creaci&oacute;n de la Lista de Ficheros</H3>
+
+
+<P>Ahora que tiene los fuentes listos para construir y sabe c&oacute;mo hacerlo,
+constr&uacute;yalo e inst&aacute;lelo. Examine la salida de la secuencia de instalaci&oacute;n
+y construya su lista de ficheros a partir de ah&iacute; para incluirla en el
+fichero spec. Normalmente nosotros construimos el fichero spec en paralelo
+a todos estos pasos. Usted puede crear uno inicial y rellenar las partes
+sencillas e ir rellenando el resto conforme vaya completando los
+diferentes pasos. </P>
+
+<H3>Construyendo el paquete con RPM</H3>
+
+
+<P>Una vez que tenga su fichero spec, est&aacute; listo para intentar construir su
+paquete. La forma m&aacute;s &uacute;til de hacerlo es con un comando como el siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        rpm -ba foobar-1.0.spec
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Hay otras opciones &uacute;tiles con el par&aacute;metro <CODE>-b</CODE> tales como:</P>
+<P>
+<UL>
+<LI><CODE>p</CODE> obliga a ejecutar solamente la secci&oacute;n <CODE>prep</CODE> del fichero
+spec. </LI>
+<LI><CODE>l</CODE> efect&uacute;a algunos chequeos en <CODE>%files</CODE>.
+</LI>
+<LI><CODE>c</CODE> ejecuta la secci&oacute;n <CODE>%prep</CODE> y compila. Resulta &uacute;til
+cuando no est&aacute; seguro de si sus fuentes compilan completamente. Puede
+parecer in&uacute;til porque usted tal vez quiera jugar solamente con los fuentes
+hasta que compilen y usar entonces RPM, pero una vez que se haya
+acostumbrado a usar RPM, encontrar&aacute; ocasiones en las que podr&aacute; usarla.
+</LI>
+<LI><CODE>i</CODE> ejecuta las secciones <CODE>prep</CODE>, <CODE>compile</CODE> e <CODE>install</CODE>.
+</LI>
+<LI><CODE>b</CODE> ejecuta las secciones <CODE>prep</CODE>, <CODE>compile</CODE> e <CODE>install</CODE>
+y construye el paquete binario. 
+</LI>
+<LI><CODE>a</CODE> ejecuta las secciones <CODE>prep</CODE>, <CODE>compile</CODE> e <CODE>install</CODE>
+y construye los paquetes binario y fuentes. </LI>
+</UL>
+</P>
+<P>Hay varios modificadores para el par&aacute;metro <CODE>-b</CODE>. Son los siguientes:</P>
+<P>
+<UL>
+<LI><CODE>--short-circuit</CODE> El proceso de construcci&oacute;n comenzar&aacute;
+directamente por la fase especificada, salt&aacute;ndose las previas a la
+indicada. (S&oacute;lo puede ser empleado en conjunci&oacute;n con <CODE>c</CODE> e <CODE>i</CODE>). 
+</LI>
+<LI><CODE>--clean</CODE> elimina el &aacute;rbol de construcci&oacute;n una vez que ha
+concluido.
+</LI>
+<LI><CODE>--keep-temps</CODE> mantendr&aacute; todos los ficheros temporales y los
+guiones que estuvieran en <CODE>/tmp</CODE>. Podr&aacute; saber qu&eacute; ficheros fueron
+creados all&iacute; usando el par&aacute;metro <CODE>-v</CODE>. 
+</LI>
+<LI><CODE>--test</CODE> No lleva a cabo ninguna fase realmente, pero mantiene
+todos los ficheros temporales. </LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss6.10">6.10 Prob&aacute;ndolo</A></H2>
+
+
+<P>Una vez que tenga los paquetes rpm binario y fuentes, necesitar&aacute;
+probarlos.  La mejor forma y la m&aacute;s sencilla es usar para el test una
+m&aacute;quina completamente diferente de la que us&oacute; para la construcci&oacute;n.
+Despu&eacute;s de todo, ha hecho un mont&oacute;n de <CODE>make install</CODE> en su m&aacute;quina por
+lo que deber&iacute;a haber quedado instalado de forma aceptable. </P>
+<P>Puede ejecutar un <CODE>rpm -u nombredepaquete</CODE> al paquete a probar, pero
+puede ser decepcionante porque en la construcci&oacute;n del paquete usted hizo
+un <CODE>make install</CODE>. Si se dej&oacute; algo fuera de la lista de ficheros, no
+ser&aacute; desinstalado. Reinstale entonces el paquete binario y su sistema
+estar&aacute; completo de nuevo, aunque no el paquete rpm. 
+Aseg&uacute;rese y tenga en mente que s&oacute;lo porque usted hace <CODE>rpm -ba
+package</CODE>; la mayor&iacute;a de la gente instalar&aacute; su paquete s&oacute;lo con <CODE>rpm -i
+package</CODE>. </P>
+<P>Aseg&uacute;rese tambi&eacute;n de que no hace nada en las secciones <CODE>build</CODE> o
+<CODE>install</CODE> que necesite hacerse cuando los binarios se instalan por
+s&iacute; mismos.  </P>
+
+
+<H2><A NAME="ss6.11">6.11 ¿Qu&eacute; hacer con los nuevos paquetes RPM?</A></H2>
+
+
+<P>Una vez que ha hecho su propio RPM de algo (asumiendo que no ha sido
+empaquetado en RPM con anterioridad), puede contribuir con su trabajo a
+otras personas (asumiendo igualmente que el paquete en RPM es libremente
+distribuible). Para hacerlo, puede querer subirlo a <CODE>
+<A HREF="ftp://ftp.redhat.com">ftp.redhat.com</A></CODE>. </P>
+
+
+<H2><A NAME="ss6.12">6.12 ¿Y ahora qu&eacute;?</A></H2>
+
+
+<P>Por favor mire las secciones anteriores sobre pruebas y qu&eacute; hacer con los
+nuevos RPM. Queremos todos los paquetes RPM disponibles que podamos
+conseguir, y queremos que est&eacute;n correctamente empaquetados. Por favor,
+t&oacute;mese el tiempo de probarlos adecuadamente y de subirlos para el
+beneficio de todos. </P>
+<P>Tambi&eacute;n, <EM>por favor</EM> aseg&uacute;rese de que no est&aacute; haciendo llegar solamente
+<EM>software de libre disposici&oacute;n</EM>. Software comercial y
+shareware
+<SL>N.T.: Probar antes de comprar</SL>
+ <EM>no</EM> deber&iacute;an ser
+subidos a menos que est&eacute; claramente permitido en alguna cl&aacute;usula de su
+licencia. Esto incluye el software de Netscape, ssh, pgp, etc.</P>
+
+
+<HR>
+<A HREF="RPM-Como-5.html">Anterior</A>
+<A HREF="RPM-Como-7.html">Siguiente</A>
+<A HREF="RPM-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

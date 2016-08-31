@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PPP C&oacute;mo: Configurando un servidor PPP</TITLE>
+ <LINK HREF="PPP-Como-27.html" REL=next>
+ <LINK HREF="PPP-Como-25.html" REL=previous>
+ <LINK HREF="PPP-Como.html#toc26" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PPP-Como-27.html">Página siguiente</A>
+<A HREF="PPP-Como-25.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc26">Índice general</A>
+<HR>
+<H2><A NAME="ppp-server"></A> <A NAME="s26">26. Configurando un servidor PPP</A></H2>
+
+<P>Como se mencion&oacute; antes, hay muchas maneras de hacer esto. La que presento es
+la manera de hacerlo con una tarjeta serie multipuerto Cyclades y una
+centralita rotativa que proporciona un juego de l&iacute;neas telef&oacute;nicas.
+<P>
+<P>Si no le gusta el m&eacute;todo que presento aqu&iacute;, si&eacute;ntase libre de hacerlo a su
+manera. Sin embargo, estar&iacute;a encantado de incluir m&eacute;todos adicionales en
+versiones futuras de este documento. Por lo que env&iacute;eme sus comentarios y
+m&eacute;todos.
+<P>
+<P>F&iacute;jese en que esta secci&oacute;n s&oacute;lo concierne a configurar Linux como un
+servidor PPP. No pretendo incluir informaci&oacute;n acerca de la configuraci&oacute;n de
+servidores de terminales especiales.
+<P>
+<P>Tambi&eacute;n, todav&iacute;a he de experimentar con contrase&ntilde;as shadow (pero lo har&eacute;
+dentro de poco). La informaci&oacute;n aqu&iacute; presentada NO incluye, por lo tanto,
+ninguna de las campanas ni silbatos requeridos por el juego de aplicaciones
+shadow.
+<P>
+<H2><A NAME="ss26.1">26.1 Compilaci&oacute;n del N&uacute;cleo</A>
+</H2>
+
+<P>Todos los comentarios anteriores acerca de la compilaci&oacute;n del n&uacute;cleo y de
+las versiones pppd frente a las del n&uacute;cleo siguen siendo v&aacute;lidos. Esta
+secci&oacute;n asume que usted ha leido tambi&eacute;n las otras secciones de este
+documento.
+<P>
+<P>Para un servidor PPP, <B>DEBE</B> incluir el soporte de autoenv&iacute;o IP
+(forwarding) en su n&uacute;cleo. Tambi&eacute;n puede desear incluir otras capacidades
+(tales como cortafuegos IP, cuentas, etc).
+<P>
+<P>Si est&aacute; utilizando una tarjeta serie multipuerto, entoces deber&aacute; incluir,
+obviamente, los controladores necesarios en su n&uacute;cleo.
+<P>
+<H2><A NAME="ss26.2">26.2 Visi&oacute;n general del sistema servidor</A>
+</H2>
+
+<P>Se ofrecer&aacute; cuentas de acceso PPP (y SLIP) y cuentas de shell utilizando el
+mismo par nombre/contrase&ntilde;a. Esto tiene las ventajas (para nosotros) de que
+el usuario s&oacute;lo necesita una cuenta y puede utilizarla para todo tipo de
+conectividad.
+<P>
+<P>como somos una organizaci&oacute;n educacional, no cobramos el acceso de nuestra
+plantilla ni de los estudiantes, por lo que no tenemos que preocuparnos de
+la tarificaci&oacute;n y de contadores.
+<P>
+<P>Levantaremos un cortafuegos entre nuestra m&aacute;quina e Internet, y esto
+restringir&aacute; el acceso a algunos usuarios debido a que las l&iacute;neas de
+conexi&oacute;n se encuentran dentro del cortafuegos (por razones obvias, los
+detalles de nuestros cortafuegos internos no se presentan aqu&iacute; y no son
+relevantes en ning&uacute;n caso).
+<P>
+<P>El proceso por el que un usuario pasa para establecer una conexi&oacute;n PPP a
+nuestro servidor (una vez que tiene una cuenta v&aacute;lida, por supuesto) es:-
+<UL>
+<LI>Conectarse con nuestra centralita rotatoria (esto es un n&uacute;mero
+telef&oacute;nico &uacute;nico que est&aacute; conectado a un banco de m&oacute;dems. El primer m&oacute;dem
+libre es el utilizado).</LI>
+<LI>Introducirse en el sistema mediante un par v&aacute;lido de
+nombre-contrase&ntilde;a.</LI>
+<LI>En la l&iacute;nea de &oacute;rdenes, ejecutar la orden <CODE>ppp</CODE> para arrancar
+PPP en el servidor.</LI>
+<LI>Arrancar PPP en el PC de ellos (puede estar ejecutando Windows, DOS,
+Linux, MAC OS o lo que sea - ese es su problema).</LI>
+</UL>
+<P>
+<P>El servidor utiliza ficheros <CODE>/etc/ppp/options.ttyXX</CODE> individuales
+para cada m&oacute;dem, cada uno con su propia direcci&oacute;n IP de manera que los
+usuarios remotos consigan una direcci&oacute;n din&aacute;mica. El servidor utiliza 
+encaminamiento proxyarp para los clientes remotos (configurado mediante la 
+opci&oacute;n adecuada de pppd). Esto evita la necesidad de routed o de gated.
+<P>
+<P>Cuando el usuario cuelga por su parte, pppd lo detecta y dice al m&oacute;dem que
+cuelgue, desconectando la conexi&oacute;n PPP a la vez.
+<P>
+<H2><A NAME="ss26.3">26.3 Conseguir el todo el software</A>
+</H2>
+
+<P>Necesitar&aacute; el siguiente software:-
+<UL>
+<LI>Linux, compilado adecuadamente para incluir las opciones necesarias.</LI>
+<LI>La versi&oacute;n apropiada de pppd para su n&uacute;cleo.</LI>
+<LI>Un programa 'getty' que maneje las comunicaciones del m&oacute;dem
+inteligentemente.<BR>
+Utilizamos getty_ps2.0.7h, pero mgetty es tami&eacute;n muy v&aacute;lido. Se que mgetty
+puede detectar una llamada que utilice pap/chap (pap es el est&aacute;ndar de
+Windows95) y llamar a pppd autom&aacute;ticamente, pero todav&iacute;a tengo que
+investigar esto.</LI>
+<LI>Un servidor de nombres de dominio (DNS) que funcione y que sea
+accesible para los usuarios que se conecten. <BR>
+Deber&iacute;a estar ejecutando su propio DNS si es posible...</LI>
+</UL>
+<P>
+<H2><A NAME="ss26.4">26.4 Configurar el acceso a cuentas por v&iacute;a telef&oacute;nica</A>
+</H2>
+
+<P>Antes de que pueda configurar su servidor PPP, su PC Linux debe ser capaz de
+manejar accesos de conexi&oacute;n est&aacute;ndar.
+<P>
+<P><B>Este documento NO trata esta configuraci&oacute;n. Por favor, lea la
+documentaci&oacute;n del programa getty de su elecci&oacute;n y del serial HOWTO para m&aacute;s
+informaci&oacute;n acerca de esto.</B>
+<P>
+<H2><A NAME="ss26.5">26.5 Configurando los ficheros de opciones PPP</A>
+</H2>
+
+<P>Necesitar&aacute; establecer un <CODE>/etc/ppp/options</CODE> general con las opciones
+comunes para todos los puertos de conexi&oacute;n. Las opciones que utilizamos
+son:-
+<P>
+<HR>
+<PRE>
+asyncmap 0
+netmask 255.255.254.0
+proxyarp
+lock
+crtscts
+modem
+</PRE>
+<HR>
+<P>
+<P>Nota - no utilizamos ning&uacute;n encaminamiento (obvio) y en particular no hay
+ninguna opci&oacute;n defautroute. La raz&oacute;n de esto es que todo lo que usted (como
+servidor PPP) debe hacer es encaminar paquetes <B>desde</B> el cliente ppp a
+su red local/Internet y encaminar paquetes <B>hacia</B> el cliente desde la
+red local o m&aacute;s all&aacute;.
+<P>
+<P>Todo lo necesario para esto es un un camino de m&aacute;quina a la m&aacute;quina del
+cliente y el uso de la opci&oacute;n 'proxyarp' con pppd
+<P>
+<P>La opci&oacute;n 'proxyarp' establece (sorpresa) una entrada proxy ARP en la tabla
+ARP del servidor que b&aacute;sicamente dice 'env&iacute;enme todos los paquetes destinados
+al cliente'. Esta es la manera m&aacute;s sencilla de configurar el encaminamiento
+para un solo cliente PPP - pero usted no puede utilizar esta opci&oacute;n si est&aacute;
+encaminando entre dos redes locales - debe a&ntilde;adir rutas adecuadas de red por
+lo que no puede utilizar proxy ARP.
+<P>
+<P>Casi seguro que desea dar una direcci&oacute;n IP din&aacute;mica a los usuarios de su
+servicio de conexi&oacute;n. Puede conseguir esto fijando una direcci&oacute;n IP a cada
+puerto de recepci&oacute;n de llamadas. Ahora, cree un
+<CODE>/etc/ppp/options.ttyXX</CODE> para cada puerto de conexi&oacute;n.
+<P>
+<P>En este, simplemente ponga la direcci&oacute;n IP del servidor local y la direcci&oacute;n
+IP que debe ser utilizada para ese puerto. Por ejemplo
+<P>
+<HR>
+<PRE>
+kepler:slip01
+</PRE>
+<HR>
+<P>En concreto, f&iacute;jese en que usted puede utilizar nombres de m&aacute;quinas v&aacute;lidos
+en este fichero (s&oacute;lo soy capaz de recordar las direcciones IP de las
+m&aacute;quinas importantes y de los dispositivos de mis redes - los nombres tienen
+m&aacute;s sentido).
+<P>
+<H2><A NAME="ss26.6">26.6 Configurar pppd para permitir que los usuarios puedan ejecutarlo</A>
+</H2>
+
+<P>Ya que arrancar un enlace ppp implica la reconfiguraci&oacute;n de un dispositivo
+del n&uacute;cleo (una interfaz de red) y la manipulaci&oacute;n de las tablas de
+encaminamiento del n&uacute;cleo, se necesitan privilegios especiales - de hecho se
+necesitan privilegios totales de root.
+<P>
+<P>Afortunadamente, pppd ha sido dise&ntilde;ado para ser 'seguro' mientras se ejecuta
+como root. Necesitar&aacute;
+<HR>
+<PRE>
+chmod u+s /usr/sbin/pppd
+</PRE>
+<HR>
+<P>
+<P>Cuando pida un listado del fichero, debr&iacute;a aparecer como
+<HR>
+<PRE>
+~
+-rwsr-xr-x   1 root     root        74224 Apr 28 07:17 /usr/sbin/pppd
+</PRE>
+<HR>
+<P>
+<P>Si no lo hace, los usuarios no podr&aacute;n establecer su conexi&oacute;n ppp.
+<P>
+<H2><A NAME="ss26.7">26.7 Configurando el alias global para pppd</A>
+</H2>
+
+<P>Para simplificar las cosas a los usuarios de su servicio de conexi&oacute;n PPP,
+crearemos un alias global (en /etc/bashrc) para que una orden simple
+arranque ppp en el servidor una vez que se han conectado.
+<P>
+<P>Esto debe ser como
+<HR>
+<PRE>
+alias ppp="exec /usr/sbin/pppd -detach"
+</PRE>
+<HR>
+<P>
+<P>Lo que hace es
+<UL>
+<LI>exec : quiere decir que reemplace el programa en ejecuci&oacute;n (en este
+caso el shell) con el programa que est&aacute; ejecutando.</LI>
+<LI>pppd -detach : comienza pppd y no se parte en el segundo plano. Esto
+asegura que cuando pppd salga no queden procesos colgando por ah&iacute;.</LI>
+</UL>
+<P>Cuando un usuario se introduce en un sistema como este, aparecer&aacute; en la
+salida de 'w':-
+<HR>
+<PRE>
+  6:24pm  up 3 days,  7:00,  4 users,  load average: 0.05, 0.03, 0.00
+User     tty       login@  idle   JCPU   PCPU  what
+hartr    ttyC0     3:05am  9:14                -
+</PRE>
+<HR>
+<P>
+<P>Y ya est&aacute;... Ya le coment&eacute; que este era un sistema servidor PPP b&aacute;sico.
+<P>
+<HR>
+<A HREF="PPP-Como-27.html">Página siguiente</A>
+<A HREF="PPP-Como-25.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc26">Índice general</A>
+</BODY>
+</HTML>

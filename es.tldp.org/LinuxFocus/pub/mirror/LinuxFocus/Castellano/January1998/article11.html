@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML lang="es">
+<HEAD><META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <TITLE>LF vol.2  Haciendo funcionar el <I>profile</i> en una Alpha</TITLE>
+ <META name="Author" CONTENT="Miguel Angel Sepulveda">
+ <META name="Keywords" CONTENT="linux alpha profile">
+ <META name="Description" CONTENT="">
+ <META name="Copyright" CONTENT="&copy; 1998 LinuxFocus">
+ <META name="Translator" CONTENT="">
+ <META name="Date" CONTENT="1998-02-03T00:00:00Z">
+
+
+</HEAD>
+
+<BODY bgcolor="#FFFFFF"  text="#000000" link="#ff0033" vlink="#FF3333">
+
+  <MAP name="navegator">
+      <AREA shape="rect" coords="0, 0, 65, 28" alt="Ir al Hogar" href="../">
+      <AREA shape="rect" coords="66, 0, 124, 28" alt="Ver &Iacute;ndice" href="../indice.html">
+      <AREA shape="rect" coords="125, 0, 193, 28" alt="Buscar" href="../search.html">
+      <AREA shape="rect" coords="194, 0, 260, 28" alt="Enlaces" href="../links.html">
+      <AREA shape="rect" coords="261, 0, 350, 28" alt="Acerda de nosotros" href="../aboutus.html">
+  </MAP>
+
+
+
+ <TABLE border="0" width="100%" cellspacing="0" cellpadding="0">
+
+ <THEAD>
+   <TR align="center">
+      <TD colspan="2"><IMG src="../../common/January1998/border-short.jpg" alt="[LinuxFocus Image]" width="407" height="88"></TD>
+   </TR>
+
+   <TR align="center">
+      <TD colspan="2" bgcolor="#660033"><IMG src="../../common/January1998/Navegator-bar.gif" ismap usemap="#navegator" border="0" width="351" height="28" alt="[Navegation Bar]"></TD>
+   </TR>
+
+   <TR align="center">
+     <TD colspan="2">     
+           <TABLE  border="0" width="75%" cellspacing="0" cellpadding="5">
+		<TR bgcolor="#000000">
+		   <TD align="center">
+
+		  <A href="../News/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Noticias</B></FONT></A>
+		  <A href="../Archives/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Archivos</B></FONT></A>
+		  <A href="../Companies/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Compa&ntilde;&iacute;as</B></FONT></A>
+		  <A href="../Tips/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Consejos&nbsp;</B></FONT></A> 
+               </TD>
+            </TR>
+            
+		<TR>
+            <!--   Here goes the Title of the article, authors name and abstract -->
+		   <TD align="center">
+           <H2><FONT face="Helvetica,Arial" color="#660033">  Haciendo funcionar el <I>profile</i> en una Alpha.</FONT></H2>
+
+	         </TD>
+            </TR>
+
+           </TABLE>
+
+     </TD>
+   </TR>
+
+ </THEAD>
+
+
+
+ <TBODY>
+  
+ <TR>
+    <TD valign="top" align="center">
+    </TD>
+   
+    <TD align="center">
+       <TABLE border="0" width="80%" cellspacing="0" cellpadding="0">
+	  <TR>
+          <TD>
+
+
+ 
+<PRE> 
+ 
+From hjstein@bfr.co.il Fri Dec 19 15:35:35 1997
+Date: 19 Nov 1997 11:55:52 +0200
+From: "Harvey J. Stein" <hjstein@bfr.co.il>
+To: Miguel A Sepulveda <sepulved+@pitt.edu>
+Cc: axp-list@redhat.com
+Subject: Re: Profiling under Linux Alpha ?
+
+Miguel A Sepulveda <sepulved+@pitt.edu> escribe:
+
+> Hola a todos.
+>
+> Estoy tratando de perfilar un programa hecho por mi en un Alpha 
+> con el kernel 2.0.30.
+> 
+> Compilo los fuentes con -g2 -pg, y entonces ejecuto el programa. 
+> Cuando la ejecución finaliza, se supone que debe generar un fichero 
+> gmon.out. Sin embargo, el programa peta y genera un fichero coredump.
+> El programa es correcto, porque sin la opción -pg funciona bien.
+
+Yo tuve que hacer unas cuantas cosas con Redhat 4.2 para que funionara
+el "profiling".
+
+Existen dos parches que se han enviado a esta lista que arreglan problemas
+del gcc. El primero (rth-gcc-2.7.2-970921.diff.gz) corrige un problema con 
+stack frames muy grandes. Parece ser que el segundo 
+(gcc-alpha-profiling-patch-2.7.2.1-toon-971001) arregla algunos problemas 
+con el profiling, pero yo no he comprobado que sea realmente necesario.
+
+En cualquier caso, aquí están. También está un fichero RPM Spec para 
+construir el gcc. Deberías obtener gcc-2.7.2.1-2.src.rpm, descomprimirlo, 
+sustituir el fichero spec de /usr/src/redhat/SPECS por el que incluyo,
+añadir los parches al directorio SOURCES, y recompilar gcc. Entonces
+ya puedes instalar gcc-2.7.2.1-2c.alpha.rpm. Incluyo aqui un fichero 
+empaquetado ( tar | gzip | uuencode ) llamado gcc-new-patches.tar.gz.uue
+que contiene los dos parches y el fichero spec.
+
+También necesitarás parchear el gprof. El procedimiento es el mismo 
+que antes, pero ahora con binutils-2.7.0.2-4.src.rpm. Sin embargo, 
+el package de binutils incluye ficheros que dan problemas con los 
+ficheros de headers de la libc. Lo mejor es reemplazar el fichero 
+gprof manualmente después de compilarlo. Añado también el fichero
+binutils-new-patches.tar.gz.uue.
+
+Finalmente, tienes que parchear algunas librerías. Creo que esto es 
+lo más importante. El parche está en el mailing list archive:
+
+   http://www.redhat.com/support/mailing-lists/archives/axp-list/1997-March/0464.html
+
+Te incluyo el parche aquí (pg-fixes.tar.gz.uue), así como un extracto 
+del mensaje de David Mosberger-Tang sobre cómo aplicarlo (bueno,
+realmente casi todo el mensaje):
+
+   Algunos de vosotros habéis avisado de problemas con el profiling
+   en RH4.1. Aquí está un fichero uuencoded con tres ficheros objeto.
+   La salida del md5sum es:
+
+   0854f6609580506aeea2595d7729e27b gmon.po
+   e2e3cdbace223a162efe90048e0ed661 ieee_get_fp_control.po
+   8340b52dc581956131e038d3946ba81b ieee_set_fp_control.po
+
+   Después de extraer los ficheros, sustituirlos en vuestra libc_p.a.
+   Por ejemplo:
+
+   ar rv /usr/lib/libc_p.a gmon.po ieee_{s,g}et_fp_control.po
+
+   y entonces el profiling funcionará de nuevo. Atención con el gprof
+   del binutils-2.7, que tiene un bug que a veces causa un SIGFPE. Mirad
+   mi mail anterior para un parche que lo arregla.
+
+   Finalmente, hay aún un problema al juntar profiling con enlace 
+   dinámico. Por ejemplo, con enlace dinámico, añadir -lm creará un 
+   binario que dará el error: Segmentation fault. Mientras no se 
+   encuentre una verdadera solución, deberemos añadir la opción -static.
+
+Buena suerte,
+
+-- 
+Harvey J. Stein
+Berger Financial Research
+hjstein@bfr.co.il
+  
+</PRE> 
+<A href="../../common/January1998/article11-atach.txt">Fichero de Patch</a>
+
+
+          </TD>
+        </TR>
+	 </TABLE>
+
+     <HR size=2 noshade>
+
+    </TD>
+
+ </TR>
+
+ </TBODY>
+
+<TBODY>
+  <TR>
+    <TD colspan="2">
+
+    <TD>
+  </TR>
+</TBODY>
+
+ <TR bgcolor="#660033">
+   <TD colspan="2" align="center">
+<br>
+    <FONT color="#ffffff">P&aacute;ginas web mantenidas por 
+    <A href="mailto:angel@mercury.chem.pitt.edu"><FONT color="#ffffff">Miguel A Sepulveda</FONT></A></FONT>.
+   </TD>
+ </TR>
+
+
+
+</TABLE>
+
+
+</BODY>
+</HTML>
+
+
+
+
+
+

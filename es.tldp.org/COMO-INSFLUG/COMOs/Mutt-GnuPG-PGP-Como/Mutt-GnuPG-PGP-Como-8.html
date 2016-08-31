@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Mutt-i, GnuPG y PGP Como: Algunas «recetas» para Procmail</TITLE>
+ <LINK HREF="Mutt-GnuPG-PGP-Como-9.html" REL=next>
+ <LINK HREF="Mutt-GnuPG-PGP-Como-7.html" REL=previous>
+ <LINK HREF="Mutt-GnuPG-PGP-Como.html#toc8" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Mutt-GnuPG-PGP-Como-9.html">Página siguiente</A>
+<A HREF="Mutt-GnuPG-PGP-Como-7.html">Página anterior</A>
+<A HREF="Mutt-GnuPG-PGP-Como.html#toc8">Índice general</A>
+<HR>
+<H2><A NAME="s8">8. Algunas «recetas» para Procmail</A></H2>
+
+<H2><A NAME="sec-procmail.1"></A> <A NAME="ss8.1">8.1 Configuraci&oacute;n de Procmail para devolver las claves p&uacute;blicas</A>
+autom&aacute;ticamente </H2>
+
+<P>
+<P>Aunque no es el objetivo de este Como, comentaremos que la forma m&aacute;s segura de
+obtener la clave p&uacute;blica de una persona es que ella misma nos la prov&eacute;a en
+mano.
+<P>Como en muchas ocasiones este m&eacute;todo no es posible (distancia que separa a los
+interesados) las personas se pueden enviar por correo electr&oacute;nico las claves
+p&uacute;blicas o buscarlas en un servidor de claves, pero ninguno de los m&eacute;todos
+garantiza que la clave obtenida sea realmente de quien parece ser su poseedor,
+a menos que mediante una comunicaci&oacute;n de otro tipo que consideremos
+«seguro» (buscar en la guia de tel&eacute;fonos al propietario y pedirle que nos lea
+la «huella» de su clave p&uacute;blica para confirmar que es la misma de la clave que
+hemos obtenido por el metono no seguro).
+<P>Lo que presentamos a continuaci&oacute;n es un ejemplo de «receta» para
+a&ntilde;adir en <CODE>.procmailrc</CODE> del procesador de correo Procmail para devolver
+autom&aacute;ticamente su clave p&uacute;blica al remitente cuando reciba un mensaje con un
+determinado texto en la l&iacute;nea <CODE>Asunto</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+:0 h
+* ^Subject:[    ]+\/(|enviar)[  ]+clave pub\>.*
+| mutt -s "Re: $MATCH" `formail -rtzxTo:` &lt;/clau/miclave.asc
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Lo que aqu&iacute; dice es lo siguiente:  tenemos una copia de nuestra clave p&uacute;blica
+en ASCII, en un directorio (en este caso el directorio <CODE>/clau</CODE>), en un
+fichero llamado <CODE>miclave.asc</CODE>;  as&iacute;, cuando procmail reciba un mensaje
+que lleve en la l&iacute;nea de <CODE>Asunto:</CODE> (<CODE>Subject:</CODE>) la frase
+«<B>enviar clave pub</B>», enviar el fichero al remitente.
+<P>IMPORTANTE: lo que va entre los corchetes es <B>un espacio</B> y <B>un
+tabulador</B>.
+<P>
+<H2><A NAME="sec-procmail.2"></A> <A NAME="ss8.2">8.2 Verificaci&oacute;n y descifrado autom&aacute;ticos de mensajes firmados sin PGP/MIME</A>
+</H2>
+
+<P>
+<P>Cuando recibimos un mensaje firmado digitalmente del tipo MIME/PGP y lo abrimos
+en nuestro lector de correo preferido (Mutt, ¿cu&aacute;l si no?), &eacute;ste nos lo
+reconoce como tal y comprueba la veracidad de la firma siempre que tengamos la
+clave p&uacute;blica del firmante.  Estos mensajes son los que llevan la letra «S» al
+lado:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+36  S  05/09 Andres Seco Her ( 12K) Al fin
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>mientras los mensajes codificados llevan la letra «P»:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+12  P  03/24 Andres Seco Her (6,3K) Re: FW: Re: Mutt - pgp/gnupg
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Pero si el mensaje viene firmado al estilo «application/pgp», nos encontraremos
+que al abrir el mensaje no habr&aacute; verificaci&oacute;n, y &eacute;ste vendr&aacute; con el texto
+rodeado con la firma digital, as&iacute;:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-----BEGIN PGP SIGNED MESSAGE-----
+
+Date: Tue, 25 May 1999 13:04:26 +0200
+From: La Corporaci&oacute;n &lt;bill@reboot.com>
+Subject: Actualizaci&oacute;n S.O.
+To: Sufrido Usuario &lt;pepe@casa.es>
+
+
+Sufrido usuario:
+
+le comunicamos que puede usted adquirir la &uacute;ltima actualizaci&oacute;n del
+programa O.E. con la adquisici&oacute;n de nuestro sistema operativo reboot99
+por el m&oacute;dico precio de ... etc.
+
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.3ia
+Charset: noconv
+
+iKBGNpUBX0235VapRBUy1KklAQGl9wQA3SBMio0bbbajHAnyKMOlx3tcgNG7/UVC
+AbqXcUnyGGOo13Nbas95G34Fee3wsXIFo1obEfgiRzqPzZPLWoZdAnyTlZyTwCHe
+6ifVpLTuaXvcn9/76rXoI6u9svN2cqHCgHuNASKHaK9034uq81PSdW4QdGLgLoeB
+vnGmxE+tGg32=
+=Xidf
+-----END PGP SIGNATURE-----
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para poder verificarlo tendr&iacute;amos que guardarlo en un fichero y hacerlo desde
+la l&iacute;nea de comandos.  Sin embargo, es posible convertir estos mensajes con
+<EM>Procmail</EM> para que <EM>Mutt</EM> los reconozca como <EM>MIME/PGP</EM>.  Basta
+con a&ntilde;adir a <CODE>.procmailrc</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+:0
+* !^Content-Type: message/
+* !^Content-Type: multipart/
+* !^Content-Type: application/pgp
+{
+    :0 fBw
+    * ^-----BEGIN PGP MESSAGE-----
+    * ^-----END PGP MESSAGE-----
+    | formail \
+        -i "Content-Type: application/pgp; format=text; x-action=encrypt"
+
+    :0 fBw
+    * ^-----BEGIN PGP SIGNED MESSAGE-----
+    * ^-----BEGIN PGP SIGNATURE-----
+    * ^-----END PGP SIGNATURE-----
+    | formail \
+        -i "Content-Type: application/pgp; format=text; x-action=sign"
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Como se puede ver esto sirve tanto para los mensajes firmados como para los
+cifrados con application/pgp.
+<P>
+<H2><A NAME="ss8.3">8.3 Cambio del tipo MIME para mensajes con claves p&uacute;blicas sin PGP/MIME</A>
+</H2>
+
+<P>
+<P>Cuando recibes una clave p&uacute;blica desde un MUA sin soporte PGP/MIME, debes
+salvar la clave en disco y despues insertarla en tu anillo p&uacute;blico de llaves,
+pero, incluyendo estas lineas en <CODE>.procmailrc</CODE> puedes realizar la inserci&oacute;n
+directamente desde el propio <EM>Mutt</EM>.
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+    :0 fBw
+    * ^-----BEGIN PGP PUBLIC KEY BLOCK-----
+    * ^-----END PGP PUBLIC KEY BLOCK-----
+    | formail -i "Content-Type: application/pgp-keys; format=text;"
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+<P>Gracias a Denis Alan por esta nota de <EM>Procmail</EM>.
+<P>
+<HR>
+<A HREF="Mutt-GnuPG-PGP-Como-9.html">Página siguiente</A>
+<A HREF="Mutt-GnuPG-PGP-Como-7.html">Página anterior</A>
+<A HREF="Mutt-GnuPG-PGP-Como.html#toc8">Índice general</A>
+</BODY>
+</HTML>

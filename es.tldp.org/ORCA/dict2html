@@ -1,0 +1,214 @@
+#! /usr/bin/perl
+# $Id: dict2html,v 1.1 2000/06/27 15:27:12 villate Exp $
+#
+# dict2html - program to create an html version of the orca glossary.
+# Copyright (C) Jaime Villate <villate@fe.up.pt>, 2000
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# Jaime Villate, Faculdade de Engenharia, Rua dos Bragas, 4050-123 Porto
+# Portugal
+#
+# The ORCA project <http://quark.fe.up.pt/orca/> 
+
+=head1 NAME 
+
+dict2html - Creates an HTML version of glosario.dict
+
+=head1 SYNOPSIS
+
+S<dict2html filename>
+
+=head1 DESCRIPTION
+
+This programs reads the glosario.dict text file and creates a HTML
+version of it.
+
+=head1 AUTHOR
+
+Jaime Villate E<lt>villate@fe.up.ptE<gt>.
+
+=cut
+use strict vars;
+use vars qw($info $short $url $author $version $first $letter);
+
+my $usage = "Usage: $0 <filename.dict>\n";
+
+my $keyw = '';
+my $text = '';
+my $word = '';
+my $item = 0;
+
+die $usage if ($#ARGV != 0);
+my $filehandle = $ARGV[0];
+die usage if ($filehandle =~ /^\-/);
+die "$0: cannot find $filehandle.\n" if ! -f $filehandle;
+(my $htmlname = $filehandle) =~ s/\.dict/\.html/;
+
+open(DICT, "< $filehandle");
+open(HTML,"> $htmlname");
+while (<DICT>)
+{
+    if (/^([^0\#\s])/)
+    {
+	chop;
+	$word = $_;
+	$first = uc($1);
+	if ($item == 0)
+	{
+	    preamble();
+	    $item = 1;
+	    $letter = $first;
+	    print HTML qq{<a name="$letter"><big><b>$letter</b></big></a> };
+	    print HTML qq{(ir al <a href="#indice">&iacute;ndice</a>)};
+	    print HTML qq{<br>\n<dl>\n};
+	}
+	else
+	{
+	    print HTML qq{<dt><b>$keyw</b></dt><dd>$text.</dd>\n};
+	    if ($first ne $letter)
+	    {
+		$letter = $first;
+		print HTML qq{</dl>\n<br><br>\n<a name="$letter">};
+		print HTML qq{<big><b>$letter</b></big></a> (ir al <a };
+		print HTML qq{href="#indice">&iacute;ndice</a>)<br>\n<dl>\n};
+	    }
+	}
+	$keyw = $word;
+	$text = '';
+    }
+    else
+    {
+	$text .= $_ if (/\S/); 
+    }
+    if ($item == 0)
+    {
+	$author  = $1, next if (/^\s*Autor:(.*)$/);
+	$version = $1, next if (/^\s*(Versión.*)$/);
+    }
+}
+close DICT;
+print HTML qq{<dt><b>$keyw</b></dt><dd>$text.</dd>\n} if ($keyw =~ /^[^0\#]/);
+print HTML qq{</dl>\n\n<h2><a name="Bibliograf&iacute;a">};
+print HTML qq{Bibliograf&iacute;a</a></h2> (ir al };
+print HTML qq{<a href="#indice">&iacute;ndice</a>)<br>\n<ol>\<li>\n  <p>\n\n};
+open (BIB, '<fuentes');
+$item = 1;
+while (<BIB>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	if ($item == 0)
+	{
+	    $item = 1;
+	    print HTML "  </p>\n</li>\n<li>\n  <p>\n";
+	}
+	print HTML "    $text";
+    }
+    else
+    {
+	$item = 0;
+    }
+}
+close BIB;
+print HTML qq{  </p>\n</li>\n</ol>\n\n<h2><a name="Colaboradores">};
+print HTML qq{Colaboradores</a></h2>(ir al };
+print HTML qq{<a href="#indice">&iacute;ndice</a>)<br>\n<ul>\n};
+
+open (COL, '<colaboradores');
+while (<COL>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	print HTML "  <li>\n    <p>$text</p>\n  </li>\n";
+    }
+}
+close COL;
+print HTML "</ul>\n</body>\n</html>\n";
+close HTML;
+exit;
+
+sub preamble
+{
+    $author = fmturl($author);
+    print HTML <<"EndPreamble";
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html> 
+  <head>
+    <title>Glosario de inform&aacute;tica Ingl&eacute;s-Espa&ntilde;ol</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <div align="center">
+      <h1>Glosario de inform&aacute;tica Ingl&eacute;s-Espa&ntilde;ol</h1>
+      ($version)<br><br>
+      <a  href="http://quark.fe.up.pt/orca/"><img src="orca-button.gif" alt="ORCA"
+	      border="0"></a><br>
+    </div>
+    <p>Copyright &copy; Jaime Villate, 2000. Este documento es libre.
+       Puede copiarlo, distribuirlo y/o modificarlo bajo los términos de la
+       <a href="http://www.fsf.org/copyleft/fdl.html">Licencia
+       GNU Para Documentación Libre</a>, versión 1.1 o cualquier versión
+       posterior publicada por la Free Software Foundation.
+    </p>
+
+<h2>Prefacio</h2>
+<p>
+EndPreamble
+
+open (PRE, '<Prefacio');
+while (<PRE>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	print HTML $text;
+    }
+    else
+    {
+	print HTML "</p>\n<p>\n";
+    }
+}
+print HTML "</p>\n";
+close PRE;
+
+    print HTML <<"Navigation";
+<h2><a name="indice">Glosario</a></h2>
+    <div align="center">
+      <table bgcolor="#ccccff" cellspacing="0" cellpadding="6" border="2"><tr>
+Navigation
+
+    foreach my $i ('A'..'M','Bibliograf&iacute;a')
+    {
+	print HTML qq{        <td><a href="\#$i"><b>$i</b></td>\n};
+    }
+    print HTML qq{      </tr><tr>\n};
+
+    foreach my $i ('N'..'Z','Colaboradores')
+    {
+	print HTML qq{        <td><a href="\#$i"><b>$i</b></td>\n};
+    }
+    print HTML qq{      </tr></table>\n    </div><br>\n};
+}
+
+sub fmturl {
+    (my $line) = @_;
+    $line =~ s/[\<\(]?([\w\.]+\@[\w\.]+)[\>\)]?/<a href=\"mailto:$1\">$1<\/a>/g;
+    $line =~ s/[\<\(]?(h?[tf]tp:\/\/[\w\/\.\~\%]+)[\>\)]?/<a href=\"$1\">$1<\/a>/g;
+    return $line;
+}
+
+

@@ -1,0 +1,261 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content="HTML Tidy, see www.w3.org">
+<title></title>
+</head>
+<body>
+<h1>A serial line computer shutdown button and LED</h1>
+
+<h4>ArticleCategory: [Choose a category for your article]</h4>
+
+Hardware 
+
+<h4>AuthorImage:[Here we need a little image from you]</h4>
+
+<img src="../../common/images/Guido-S.gif" alt=
+"[Photo of the Author]" height="164" width="173"> 
+
+<h4>TranslationInfo:[Author and translation history]</h4>
+
+<p>original in en <a href="mailto:guido@linuxfocus.org">Guido
+Socher</a>&nbsp;</p>
+
+<h4>AboutTheAuthor:[A small biography about the author]</h4>
+
+<p>Guido is a long time Linux fan. Most of the time he develops
+software or works for _LF_, but from time to time he likes to
+design hardware parts.</p>
+
+<h4>Abstract:[Here you write a little summary]</h4>
+
+In this article we design a little push button to connect to your
+server on the serial line. You can use it to shut the machine down
+when needed. 
+
+<h4>ArticleIllustration:[This is the title picture for your
+article]</h4>
+
+<img src="../../common/images/illustration186.gif" alt=
+"[Illustration]" hspace="10" width="250" height="232"> 
+
+<h4>ArticleBody:[The article body]</h4>
+
+<h2>Introduction</h2>
+
+<p>A real server machine does normally not need any keyboard,
+monitor or mouse. It needs a good operating system, like Linux, and
+a network card. External devices like mouse and keyboard disturb
+only. With Linux running on the machine, remote administration is
+the best and most convenient solution.</p>
+
+<p>When I buy a computer I always verify that it has an BIOS option
+to not check for keyboard at startup. All good motherboard
+manufactures have that option today. Some that still think people
+run only Windows on their machines require a keyboard at startup
+but that is a different story and I don't recommend to buy such
+hardware.</p>
+
+<p>Such a computer without keyboard and monitor is the perfect
+computer for a firewall, a web-server, a NFS file server, a
+mail-server, an ADSL gateway computer etc. It does not have to be a
+powerful machine. An old pentium 100Mhz with enough RAM will easily
+serve a hundred and more other machines.</p>
+
+<p>Having no keyboard connected is nice and convenient because the
+server is then just a small box that fits somewhere in the corner
+or on a shelf in the cellar. Sometimes you would however like to
+have a button to properly shut it down without logging first in and
+running the shutdown command. It could be that you are already in
+the server room and the next workstation is 100 meters away or you
+have somebody who has physical access to the machine but no root
+password and that person needs to shutdown the computer before
+taking away the power supply.</p>
+
+<p>Just powering it off is no good idea because you might loose
+data and the disk check during start up takes then very long
+time.</p>
+
+<p>The solution is the small and inexpensive serial device
+presented in this article.</p>
+
+<h2>The device</h2>
+
+We will build a small device with 2 LEDs and one pushbutton. A
+green LED will indicate when the pushbutton is active and a slowly
+blinking yellow LED indicates that the server is working or still
+in the process of shutting down. To shut down the server you press
+the pushbutton for 3 seconds. <br>
+<br>
+When you press the pushbutton then the green LED will go off
+indicating the shutdown is in progress. The command "/sbin/shutdown
+-t2 -h now" is now executing. The yellow LED continues blinking
+while the server is still shutting down. When the yellow LED stops
+blinking then you should still wait 10 seconds before you power off
+the computer. The yellow LED stops when all processes are killed
+and the disks are being unmounted. <br>
+If your computer supports automatic power off then you do not have
+to worry about the 10 seconds. Just wait until it has switched off
+it self. 
+
+<h2>The serial line</h2>
+
+The interesting thing about of the serial interface is that it has
+a number of pins which you can control via ioctl system calls. This
+means that you do not need to modify anything in the kernel to
+control a LED connected to the serial line or to read out the state
+of a push button. The serial line has just enough power to drive 2
+low power LEDs. We will use the RTS and DTR pins to connect the
+LEDs to and the Carrier Detect line will be used to read the state
+of the push button. <br>
+<img src="../../common/images/article186/9pin232.gif" alt=
+"9 PIN D-SUB MALE" width="83" height="65" align="right"> 
+
+<p>9 PIN D-SUB MALE at the Computer.</p>
+
+<table bgcolor="#f8dca8" border="1">
+<tr>
+<th>9 PIN-connector</th>
+<th>25 PIN-connector</th>
+<th>Name</th>
+<th>Dir</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>1</td>
+<td>8</td>
+<td>CD</td>
+<td>input</td>
+<td>Carrier Detect</td>
+</tr>
+
+<tr>
+<td>2</td>
+<td>3</td>
+<td>RXD</td>
+<td>input</td>
+<td>Receive Data</td>
+</tr>
+
+<tr>
+<td>3</td>
+<td>2</td>
+<td>TXD</td>
+<td>output</td>
+<td>Transmit Data</td>
+</tr>
+
+<tr>
+<td>4</td>
+<td>20</td>
+<td>DTR</td>
+<td>output</td>
+<td>Data Terminal Ready</td>
+</tr>
+
+<tr>
+<td>5</td>
+<td>7</td>
+<td>GND</td>
+<td>--</td>
+<td>System Ground</td>
+</tr>
+
+<tr>
+<td>6</td>
+<td>6</td>
+<td>DSR</td>
+<td>input</td>
+<td>Data Set Ready</td>
+</tr>
+
+<tr>
+<td>7</td>
+<td>4</td>
+<td>RTS</td>
+<td>output</td>
+<td>Request to Send</td>
+</tr>
+
+<tr>
+<td>8</td>
+<td>5</td>
+<td>CTS</td>
+<td>input</td>
+<td>Clear to Send</td>
+</tr>
+
+<tr>
+<td>9</td>
+<td>22</td>
+<td>RI</td>
+<td>input</td>
+<td>Ring Indicator</td>
+</tr>
+</table>
+
+<br>
+<br>
+ 
+
+<h2>The circuit</h2>
+
+<p>You need the following parts to build this shutdown button with
+LEDs.</p>
+
+<ul>
+<li>1 green low power LED (a normal LED will also work but it will
+not be as bright)</li>
+
+<li>1 yellow low power LED</li>
+
+<li>2 resistors 1.5K Ohm</li>
+
+<li>1 resistor 6.8K Ohm</li>
+
+<li>1 small push button</li>
+
+<li>1 female RS232 serial line connector with cable</li>
+</ul>
+
+<img src="../../common/images/article186/circuit.gif" alt=
+"circuit diagram" width="226" height="180" align="right"> The parts
+are connected together as shown in the circuit diagram. The voltage
+levels on the serial lines is +/- 10Volts. The 1.5K Ohm resistors
+are exactly right for low power LEDs but normal LEDs will also do.
+I don't recommend to change resistors or use external power supply
+since the serial line control chips are part of the motherboard's
+chip set. If you burn them then you will need to change the entire
+motherboard. <br>
+<br>
+ <br>
+<center><img src="../../common/images/article186/board.gif" alt=
+"pcb" width="180" height="280"></center>
+
+<p>The above image shows the etched circuit board. I don't have an
+exact board layout for you because I prefer to do small circuits as
+free hand drawing directly on the board with etch resistant
+ink.</p>
+
+<p>The final circuit with all parts is shown on the picture at the
+top of this article. You can carefully drill 3 holes into the front
+panel of your server. Two 3mm holes for the LEDs and one to screw
+in the push button. The whole circuit is very light and the screw
+of the push button will be enough to hold it.</p>
+
+<h2>The software</h2>
+
+The software is a small daemon process. Which can be started via a
+script from /etc/rc.d/rc3.d/. It uses the ioctl(fd, TIOCMSET,...)
+and ioctl(fd, TIOCMGET, ...) functions to read from and write to
+the serial port. You can <a href=
+"../../common/src/article186/">download sled-0.1.tar.gz</a>. A
+makefile and installation instructions are included. 
+
+<p>Happy soldering</p>
+
+<!-- vim: set sw=2 ts=2 et: -->
+</body>
+</html>
+

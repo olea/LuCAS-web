@@ -1,0 +1,157 @@
+<HTML>
+<HEAD>
+<TITLE>COMO Usar el sistema de Impresi&oacute;n en Linux: Imprimir bajo Linux</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Uso-Impresion-Como-1.html">Anterior</A>
+<A HREF="Uso-Impresion-Como-3.html">Siguiente</A>
+<A HREF="Uso-Impresion-Como.html#toc2">Indice</A>
+<HR>
+<H2><A NAME="s2">2. Imprimir bajo Linux</A></H2>
+
+
+<P>Esta secci&oacute;n comenta c&oacute;mo imprimir ficheros, examinar la cola de impresi&oacute;n, 
+eliminar trabajos de la cola, formatear ficheros antes de imprimirlos, y 
+configurar tu entorno de impresi&oacute;n.</P>
+
+
+<H2><A NAME="ss2.1">2.1 Hist&oacute;rico</A></H2>
+
+
+<P>El sistema de impresi&oacute;n de Linux (el sistema <CODE>lp</CODE>) es una adaptaci&oacute;n del c&oacute;digo 
+escrito por los <I>Regents</I> de la Universidad de California para la versi&oacute;n 
+<I>Berkeley Software Distribution</I> (<I>BSD</I>) del sistema operativo UNIX.</P>
+
+
+<H2><A NAME="ss2.2">2.2 Lo b&aacute;sico de imprimir</A></H2>
+
+
+<P>La forma m&aacute;s simple (con mucho) de imprimir en el sistema operativo Linux es 
+enviar el fichero a ser impreso directamente al dispositivo de impresi&oacute;n. Una 
+manera de hacer esto es usar el comando <CODE>cat</CODE>. Como usuario <CODE>root</CODE>, uno puede hacer
+lo siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cat tesis.txt &gt; /dev/lp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En este caso, <CODE>/dev/lp</CODE> es un enlace simb&oacute;lico al verdadero dispositivo 
+de impresi&oacute;n (una matricial, l&aacute;ser, tipogr&aacute;fica o <I>plotter</I>). Mira la p&aacute;gina del 
+man <CODE>ln(1)</CODE> para m&aacute;s informaci&oacute;n acerca de enlaces simb&oacute;licos.</P>
+<P>Para el prop&oacute;sito de la seguridad, s&oacute;lo el usuario <CODE>root</CODE> y los usuarios de su 
+mismo grupo como el demonio de impresi&oacute;n son capaces de escribir directamente 
+a la impresora. Es por esto por lo que se tienen que usar comandos como <CODE>lpr</CODE>, <CODE>lprm</CODE> y <CODE>lpq</CODE> para acceder a la impresora.</P>
+<P>Por esto, los usuarios tienen que usar <CODE>lpr</CODE> para imprimir un fichero. El 
+comando <CODE>lpr</CODE> es responsable de preocuparse por el trabajo inicial para 
+imprimir un fichero, pasando entonces el control a otro programa, <CODE>lpd</CODE>, el 
+<I>demonio</I> de las impresoras de l&iacute;neas. </P>
+<P>Este demonio le dice entonces a la impresora c&oacute;mo imprimir el fichero.</P>
+<P>Cuando <CODE>lpr</CODE> es ejecutado, primero copia el fichero a un cierto directorio 
+(el directorio de <CODE>spool</CODE>) donde el fichero permanece hasta que <CODE>lpd</CODE> lo 
+imprime. Una vez se le dice a <CODE>lpd</CODE> que hay un fichero para imprimir, crear&aacute;
+una copia de s&iacute; mismo (lo que los programadores llaman un '<CODE>fork</CODE>'). Esta 
+copia imprimir&aacute; nuestro fichero mientras la copia original queda esperando otras
+peticiones. Esto permite que hayan m&uacute;ltiples trabajos a la vez en una cola.</P>
+<P>Las sintaxis de <CODE>lpr(1)</CODE> es bastante familiar,</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpr [ opciones ] [ nombre_fichero ... ]
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si no se especifica un nombre de fichero, <CODE>lpr</CODE> asume que la entrada 
+ser&aacute; efectuada por la entrada est&aacute;ndar (normalmente el teclado o la salida de 
+otro programa). Esto permite que el usuario redirija la salida de un programa 
+al dispositivo de impresi&oacute;n. Por ejemplo:</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cat tesis.txt | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>o algo m&aacute;s potente, como</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pr -l60 tesis.txt | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El comando <CODE>lpr</CODE> acepta varios argumentos en la l&iacute;nea de comandos que 
+permiten al usuario controlar c&oacute;mo trabaja. Algunos de los argumentos m&aacute;s 
+ampliamente usados son: <CODE>-Pprinter</CODE> especifica la impresora a usar, <CODE>-h</CODE> 
+suprime la impresi&oacute;n de la p&aacute;gina, burst, <CODE>-s</CODE> crea un enlace simb&oacute;lico en 
+lugar de copiar el fichero completo al directorio de spooling (&uacute;til para 
+ficheros grandes), y <CODE>-#num</CODE> especifica el n&uacute;mero de copias a imprimir. 
+Un ejemplo de interacci&oacute;n con <CODE>lpr</CODE> podr&iacute;a ser algo como</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lpr -#2 -sP dj tesis.txt
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Este comando crear&iacute;a un enlace simb&oacute;lico al fichero <CODE>tesis.txt</CODE> en el 
+directorio de <I>spool</I> de la impresora llamada <CODE>dj</CODE>, donde deber&iacute;a ser 
+procesado por <CODE>lpd</CODE>. Adem&aacute;s deber&iacute;a imprimir una segunda copia de <CODE>tesis.txt</CODE>.</P>
+
+<P>Para ver un listado de todas las opciones que reconoce <CODE>lpr</CODE>, ver la p&aacute;gina 
+del man <CODE>lpr(1)</CODE>.</P>
+
+
+<H2><A NAME="ss2.3">2.3 Viendo la cola de impresi&oacute;n</A></H2>
+
+
+<P>Algunas veces es &uacute;til saber qu&eacute; trabajos est&aacute;n actualmente en una cola de 
+impresi&oacute;n particular. Esta es la &uacute;nica tarea del comando <CODE>lpq</CODE>.</P>
+<P>Para ver qu&eacute; hay en la cola de la impresora por defecto (definida por <CODE>/etc/printcap</CODE>), usa</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  $ lpq
+  lp is ready and printing
+  Rank   Owner      Job  Files                            Total Size
+  active mwf        31   tesis.txt                        682048 bytes
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss2.4">2.4 Cancelando un trabajo de impresi&oacute;n</A></H2>
+
+
+<P>Otra &uacute;til caracter&iacute;stica para cualquier sistema de impresi&oacute;n es la capacidad de
+cancelar un trabajo que ha sido 'encolado' anteriormente. Para hacer esto, 
+usa <CODE>lprm</CODE>.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ $ lprm -
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El comando anterior cancela todos los trabajos de impresi&oacute;n que son propiedad 
+del usuario que envi&oacute; el comando. Se puede cancelar un trabajo de forma 
+individual obteniendo primero el n&uacute;mero del trabajo usando <CODE>lpq</CODE>, dando 
+entonces el n&uacute;mero a <CODE>lprm</CODE>. Por ejemplo</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ lprm 31
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>cancelar&iacute;a el trabajo 31 (<CODE>tesis.txt</CODE>) en la impresora por defecto.</P>
+
+
+<HR>
+<A HREF="Uso-Impresion-Como-1.html">Anterior</A>
+<A HREF="Uso-Impresion-Como-3.html">Siguiente</A>
+<A HREF="Uso-Impresion-Como.html#toc2">Indice</A>
+</BODY>
+</HTML>

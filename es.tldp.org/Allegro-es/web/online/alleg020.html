@@ -1,0 +1,206 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 20 Acceso directo a la memoria de vídeo
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="20 Acceso directo a la memoria de vídeo">20 Acceso directo a la memoria de vídeo</a></h1>
+
+<p>
+La estructura bitmap es así:
+<blockquote class="code"><pre>
+   typedef struct BITMAP
+   {
+      int w, h;               - tamaño del bitmap en pixels
+      int clip;               - no-cero si recortar está activado
+      int cl, cr, ct, cb;     - límites de recorte izquierdo, derecho, superior
+                                e inferior
+      int seg;                - segmento para uso con los punteros a línea
+      unsigned char *line[];  - punteros al comienzo de cada línea
+   } BITMAP;
+</pre></blockquote>
+También hay otras cosas en la estructura, pero podrían cambiar, y no
+debería usar nada excepto lo de arriba. El rectángulo de recorte es
+inclusivo arriba a la izquierda (0 permite dibujar en la posición 0) pero
+exclusivo abajo a la derecha (10 permite dibujar en la posición 9, pero no
+en la 10). Fíjese que éste no es el mismo formato que el que se usa con
+set_clip(), el cual toma coordenadas inclusivas para las cuatro esquinas.
+
+<p>
+Hay varios modos de conseguir acceso directo a la memoria de imagen de un
+bitmap, variando en complejidad dependiendo del tipo de bitmap que use.
+<p><hr><p>
+<p>
+El modo más simple sólo servirá si trabaja con bitmaps de memoria
+(obtenidos con create_bitmap(), ficheros de datos, y ficheros de imágenes) y
+sub-bitmaps de bitmaps de memoria. Esto usa una tabla de punteros char,
+llamados 'line', la cual es parte de la estructura bitmap y contiene
+punteros al comienzo de cada línea de la imagen. Por ejemplo, una función
+putpixel simple para un bitmap de memoria es:
+<blockquote class="code"><pre>
+   void memory_putpixel(BITMAP *bmp, int x, int y, int color)
+   {
+      bmp-&gt;line[y][x] = color;
+   }
+</pre></blockquote><p><hr><p>
+Para modos truecolor, es necesario especificar el tipo del puntero de línea,
+por ejemplo:
+<blockquote class="code"><pre>
+   void memory_putpixel_15_or_16_bpp(BITMAP *bmp, int x, int y, int color)
+   {
+      ((short *)bmp-&gt;line[y])[x] = color;
+   }
+
+   void memory_putpixel_32(BITMAP *bmp, int x, int y, int color)
+   {
+      ((long *)bmp-&gt;line[y])[x] = color;
+   }
+</pre></blockquote><p><hr><p>
+Si quiere escribir en la pantalla y también en bitmaps de memoria, necesita
+usar algunas macros auxiliares, porque la memoria de vídeo puede no ser
+parte de su espacio de direcciones normal. Esta simple rutina funcionará para
+cualquier pantalla lineal, p.ej unos framebuffers lineales de VESA.
+<blockquote class="code"><pre>
+   void linear_screen_putpixel(BITMAP *bmp, int x, int y, int color)
+   {
+      bmp_select(bmp);
+      bmp_write8((unsigned long)bmp-&gt;line[y]+x, color);
+   }
+</pre></blockquote>
+Para los modos truecolor debería reemplazar bmp_write8() por bmp_write16(),
+bmp_write24(), o bmp_write32(), y multiplicar el desplazamiento x por el
+número de bytes por píxel. Por supuesto hay funciones similares para leer el
+valor de un pixel de un bitmap, y son bmp_read8(), bmp_read16(), bmp_read24()
+y bmp_read32().
+<p><hr><p>
+<p>
+Esto, sin embargo, seguirá sin funcionar en los modos de SVGA por bancos,
+o en plataformas como Windows, que hacen un procesado especial dentro de
+las funciones de cambio de banco. Para un acceso más flexible a los bitmaps
+de memoria, necesita llamar a las rutinas:
+
+<p><br>
+<b>unsigned long <a name="bmp_write_line">bmp_write_line</a>(BITMAP *bmp, int line);</b><br>
+   Selecciona la línea de un bitmap en la que va a dibujar.
+
+<p><br>
+<b>unsigned long <a name="bmp_read_line">bmp_read_line</a>(BITMAP *bmp, int line);</b><br>
+   Selecciona la línea de un bitmap de la que va a leer.
+
+<p><br>
+<b>unsigned long <a name="bmp_unwrite_line">bmp_unwrite_line</a>(BITMAP *bmp);</b><br>
+   Libera el bitmap de memoria despued de que haya acabado de trabajar con
+   él. Sólo necesita llamar a esta función una vez al final de una operación
+   de dibujado, incluso si ha llamado a bmp_write_line() o bmp_read_line()
+   diversas beces antes.
+
+<p>
+Estas están implementadas como rutinas de ensamblador en línea, por lo que no
+son tan ineficientes como podrían parecer. Si el bitmap no necesita cambio de
+banco (ejemplo: es un bitmap de memoria, pantalla en modo 13h, etc), estas
+funciones simplemente retornan bmp-&gt;line[line].
+
+<p>
+A pesar de que los bitmaps de SVGA usan bancos, Allegro permite acceso
+lineal a la memoria dentro de cada scanline, por lo que sólo necesita pasar
+una coordenada y a estas funciones. Varias posiciones x pueden ser obtenidas
+simplemente sumando la coordenada x a la dirección devuelta. El valor
+devuelto es un entero largo sin signo en vez de un puntero a caracter porque
+la memoria bitmap puede no estar en su segmento de datos, y necesita
+acceder a él con punteros far. Por ejemplo, una función putpixel usando
+funciones de cambio de banco es:
+<blockquote class="code"><pre>
+   void banked_putpixel(BITMAP *bmp, int x, int y, int color)
+   {
+      unsigned long address = bmp_write_line(bmp, y);
+      bmp_select(bmp);
+      bmp_write8(address+x, color);
+      bmp_unwrite_line(bmp);
+   }
+</pre></blockquote>
+Se dará cuenta de que Allegro tiene funciones separadas para seleccionar
+los bancos de lectura y escritura. Es importante que distinga entre estos,
+porque en algunas tarjetas de vídeo los bancos pueden ser seleccionados
+individualmente, y en otros la memoria de vídeo es leída y escrita en
+direcciones diferentes. No obstante, la vida nunca es tan simple como
+desearíamos que fuese (esto es verdad incluso cuando _no_ estamos hablando
+de programación de gráficos :-) y por supuesto algunas tarjetas de vídeo
+sólo pueden proveer un banco. En éstas, las funciones de lectura/escritura
+se comportarán idénticamente, por lo que no debería asumir que puede leer de
+una parte de la memoria de vídeo y escribir en otra al mismo tiempo. Puede
+llamar bmp_read_line(), y leer lo que quiera de la línea, entonces llamar
+bmp_write_line() con el mismo o diferente valor de línea, y escribir lo que
+quiera en ella, pero no debería llamar bmp_read_line() y bmp_write_line() a
+la vez y esperar poder leer una línea y escribir en otra simultáneamente.
+Sería bueno si esto fuese posible, pero si lo hace, su código no funcionará
+en tarjetas SVGA de un banco.
+<p><hr><p>
+<p>
+Y también está el modo-X. Si nunca antes había programado gráficos en este
+modo, probablemente no entienda esto, pero para aquellos que quieren saber
+cómo Allegro trabaja con los bitmaps de pantalla del modo-X, aquí va...
+
+<p>
+Los punteros a línea todavía están presentes, y contienen direcciones
+lineales, esto es, la dirección con la cual accedes al primer pixel de la
+línea. Está garantizada la alineación cada cuatro pixels de las direcciones,
+por lo que puede fijar el plano de escritura, dividir su coordenada entre
+cuatro, y añadirla al puntero de línea. Por ejemplo, un putpixel en modo-X
+es:
+<blockquote class="code"><pre>
+   void modex_putpixel(BITMAP *b, int x, int y, int color)
+   {
+      outportw(0x3C4, (0x100&lt;&lt;(x&amp;3))|2);
+      bmp_select(bmp);
+      bmp_write8((unsigned long)bmp-&gt;line[y]+(x&gt;&gt;2), color);
+   }
+</pre></blockquote><p><hr><p>
+Ah sí: el truco de djgpp del nearptr. Personalmente, no me gusta demasiado
+porque desactiva la protección de la memoria y no es portable a otras
+plataformas, pero hay mucha gente que suspira por él porque puede dar acceso
+directo a la memoria de pantalla via un puntero normal de C. ¡Aviso: Este
+método sólo funcionará con la librería djgpp, cuando esté usando el modo
+VGA 13h o un framebuffer lineal!
+
+<p>
+En su código de inicialización:
+<blockquote class="code"><pre>
+   #include &lt;sys/nearptr.h&gt;
+
+   unsigned char *screenmemory;
+   unsigned long screen_base_addr;
+
+   __djgpp_nearptr_enable();
+
+   __dpmi_get_segment_base_address(screen-&gt;seg, &amp;screen_base_addr);
+
+   screenmemory = (unsigned char *)(screen_base_addr +
+                                    screen-&gt;line[0] -
+                                    __djgpp_base_address);
+</pre></blockquote>
+Luego:
+<blockquote class="code"><pre>
+   void nearptr_putpixel(int x, int y, int color)
+   {
+      screenmemory[x + y*SCREEN_W] = color;
+   }
+</pre></blockquote>
+
+
+<p><br>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

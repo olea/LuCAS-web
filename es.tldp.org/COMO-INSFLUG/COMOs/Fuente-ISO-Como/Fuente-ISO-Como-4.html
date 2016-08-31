@@ -1,0 +1,259 @@
+<HTML>
+<HEAD>
+<TITLE>fuente_ISO-COMO: M&aacute;s gaitas</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Fuente-ISO-Como-3.html">Anterior</A>
+<A HREF="Fuente-ISO-Como-5.html">Siguiente</A>
+<A HREF="Fuente-ISO-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. M&aacute;s gaitas</A></H2>
+
+
+<P>Mientras esperamos el d&iacute;a en que las distribuciones de Linux traigan las
+diferentes definiciones de <CODE>locale</CODE> para su internacionalizaci&oacute;n, hay
+algunas cosillas que podemos afinar.</P>
+
+<H2><A NAME="ss4.1">4.1 Variables de entorno</A></H2>
+
+
+<P>Puedes ponerlas en <CODE>/etc/profile</CODE> o en tu <CODE>.profile</CODE>
+particular. He seguido la sintaxis de <CODE>bash</CODE>. Si usas otro shell
+posiblemente tengas que cambiar <CODE>export</CODE> por la orden equivalente.</P>
+
+<H3><CODE>less</CODE></H3>
+
+
+<P>Para visualizar con <CODE>less</CODE> ficheros que contengan caracteres de 8 bits:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+export LESSCHARDEF=8bcccbcc18b.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto har&aacute; que se consideren como imprimibles <B>todos</B> los caracteres desde
+el 32 hasta el 255, lo que puede acarrear problemas si se usa en una
+terminal <CODE>vt200</CODE>, por ejemplo, pero permite ver caracteres gr&aacute;ficos desde el
+PC. Si tienes una terminal en <CODE>ttySn</CODE> puedes poner esto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+export LESSCHARDEF=8bcccbcc18b.
+if [ &quot;`tty`&quot; = &quot;/dev/ttySn&quot; ]
+then
+   TERM=vt220d
+   unset LESSCHARDEF
+   export LESSCHARSET=latin1
+else
+   TERM=linux
+fi
+export TERM
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>lo que har&aacute; que si se entra por <CODE>ttySn</CODE>, <CODE>less</CODE> no considere como
+imprimibles los caracteres del 128 al 160 (los caracteres gr&aacute;ficos en la
+fuente <CODE>lat1-16.psf</CODE>, pero que son interpretados como caracteres de control
+por el <CODE>vt200</CODE>).</P>
+
+<H3><CODE>LANG, LC_CTYPE</CODE>, etc...</H3>
+
+
+<P>Estas variables son las que se usan para presentar el formato de la fecha,
+orden alfab&eacute;tico, etc. Desgraciadamente que yo sepa a&uacute;n no est&aacute;n
+implementadas en las distribuciones habituales de Linux. De todas formas
+puedes a&ntilde;adir esto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+export LANG=es_ES
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss4.2">4.2 <CODE>isprint</CODE></A></H2>
+
+
+<P>Esta es la funci&oacute;n del sistema que decide si un car&aacute;cter es imprimible o no.
+Si la distribuci&oacute;n soportase <CODE>locale</CODE>, deber&iacute;a funcionar bien, pero tal
+como est&aacute; ahora la cuesti&oacute;n, s&oacute;lo devuelve como imprimibles los caracteres
+<CODE>ASCII</CODE>. </P>
+<P>Esto provoca que muchos programas compilados con <CODE>#include
+&lt;ctype.h&gt;</CODE> no muestren correctamente los caracteres no ASCII. Como
+esto puede cambiar en un futuro, es importante que antes de aplicar el
+cambio que se propondr&aacute; a continuaci&oacute;n compruebes tu sistema con el
+siguiente programa:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;locale.h&gt;
+#include &lt;ctype.h&gt;
+
+void main(void)
+{
+unsigned char c;
+
+setlocale(LC_CTYPE,&quot;&quot;);
+
+for (c=191;c&lt;211;c++)
+        {
+        printf(&quot;%d - %c &quot;,c,c);
+        if (isprint(c)) puts(&quot;es imprimible&quot;);
+        else puts(&quot;no es imprimible&quot;);
+        }
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Graba el texto anterior con el original nombre de <CODE>prueba.c</CODE> y comp&iacute;lalo
+con</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gcc -s -o prueba prueba.c
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y pru&eacute;balo as&iacute;:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ export LC_CTYPE=ISO-8859-1
+$ ./prueba
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Seguramente saldr&aacute;n todos los caracteres como no imprimibles. Por si acaso
+aseg&uacute;rate antes probando con otros valores de <CODE>LC_CTYPE</CODE>, tales como
+<CODE>es_ES</CODE>, <CODE>fr_FR</CODE>, <CODE>pt_PT</CODE>, etc. Para saber m&aacute;s posibles valores de
+<CODE>LC_CTYPE</CODE>, consulta el fichero <CODE>locale.alias</CODE>, que tendr&aacute;s (si
+instalaste X) por <CODE>/var/X11R6/lib/locale</CODE> o alg&uacute;n otro directorio
+similar.</P>
+<P>Si, y <B>s&oacute;lo si</B>, el programa <CODE>prueba</CODE> clasifica como no imprimibles
+los caracteres que saca, puedes hacer el siguiente cambio en
+<CODE>/usr/include/ctype.h</CODE>.</P>
+<P>Primero haz copia de seguridad del fichero:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# cd /usr/include
+# cp -a ctype.h ctype.h.orig
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En la l&iacute;nea 150 aprox. cambia
+<BLOCKQUOTE><CODE>
+<PRE>
+#define      isprint(c)      __isctype((c), _ISprint)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>por</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define isprint(c)      (((c & 0xff) == 0x1b) || ((c & 0xff) &gt; 0x1f))
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Este cambio de <CODE>ctype.h</CODE> fue publicado por Pablo Saratxaga
+<CODE>
+<A HREF="mailto:srtxg@f2219.n293.z2.fidonet.org">&lt;srtxg@f2219.n293.z2.fidonet.org&gt;</A></CODE> en el difunto grupo <CODE>es.foro.unix.</CODE>
+Yo he recompilado con &eacute;l algunos programas como <CODE>ncftp</CODE> y <CODE>tin</CODE>, y ha funcionado
+muy bien.</P>
+
+
+<H2><A NAME="ss4.3">4.3 Configuraci&oacute;n de algunos programas</A></H2>
+
+
+
+<H3><CODE>dosemu</CODE></H3>
+
+
+<P>Si arrancamos dosemu en modo texto, los caracteres que ocupen una posici&oacute;n
+mayor que el 127 ya no se ver&aacute;n bien. Para remediarlo se puede habilitar el
+acceso a la VGA, con lo que <CODE>dosemu</CODE> usar&aacute; el juego de caracteres de nuestra
+tarjeta gr&aacute;fica, que es del tipo IBM, por lo menos si usamos Linux en un
+ix86. Esto se consigue poniendo lo siguiente en el fichero de configuraci&oacute;n
+(generalmente <CODE>/etc/dosemu.conf</CODE>):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+video { vga  console  graphics }
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tambi&eacute;n es conveniente que tengamos las siguiente opci&oacute;n:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+keyboard {  layout es-latin1  keybint on  rawkeyboard on  }
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Con esto y el programa <CODE>keybes.com</CODE> de Pedro Maicas, no deber&iacute;a haber
+ning&uacute;n problema para ver y teclear los caracteres mayores de 127.</P>
+
+<H3><CODE>pine</CODE></H3>
+
+
+<P>Se puede cambiar la configuraci&oacute;n desde el propio programa, o bien
+editar el siguiente cambio en el fichero <CODE>~/.pinerc</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+character-set=ISO-8859-1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Desde la versi&oacute;n 3.92, Pine ya permite poner art&iacute;culos con 8 bits en los
+grupos de noticias (en el correo depender&aacute; de la versi&oacute;n de sendmail y de
+c&oacute;mo est&eacute; configurado). Para habilitar esta opci&oacute;n, a&ntilde;adir
+<CODE>enable-8bit-nntp-posting</CODE> a la lista <CODE>feature-list</CODE> del fichero
+mencionado.</P>
+<P>Existe tambi&eacute;n un fichero que efect&uacute;a cambios globales (para todos los
+usuarios del sistema). El fichero se llama <CODE>pine.conf</CODE>, y su
+ubicaci&oacute;n depende de la distribuci&oacute;n que usemos.</P>
+
+<H3><CODE>ELM</CODE></H3>
+
+
+<P>A&ntilde;adir lo siguiente a <CODE>~/.elm/elmrc</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+charset=ISO-8859-1
+displaycharset=ISO-8859-1
+textencoding = 8bit
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tambi&eacute;n se pueden hacer estos cambios para todos los usuarios. Basta
+a&ntilde;adir lo mismo al fichero general de configuraci&oacute;n, que en la Slackware
+est&aacute; en <CODE>/var/lib/elm/elm.rc</CODE>.</P>
+
+<H3><CODE>TIN</CODE></H3>
+
+
+<P>A&ntilde;adir lo siguiente a <CODE>~/.tin/headers</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Algunas versiones modernas, como la 1.3 unoff, ya incorporan este tipo de
+cabeceras, por lo que la edici&oacute;n de este fichero es innecesaria.</P>
+
+
+<HR>
+<A HREF="Fuente-ISO-Como-3.html">Anterior</A>
+<A HREF="Fuente-ISO-Como-5.html">Siguiente</A>
+<A HREF="Fuente-ISO-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

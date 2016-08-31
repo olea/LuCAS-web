@@ -1,0 +1,244 @@
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>The seven second kernel compile</title><meta name="generator" content="DocBook XSL Stylesheets V1.50.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article"><div class="titlepage"><div><h1 class="title"><a name="id2752674"></a>The seven second kernel compile</h1></div><div><div class="author"><h3 class="author">Anton Blanchard</h3><div class="affiliation"><div class="address"><p>IBM OzLabs Linux Technology Center, &lt;anton@au.ibm.com&gt;</p></div></div></div></div><div><div class="legalnotice"><p>Copyright (c) 2002 Anton Blanchard. Verbatim copying, distribution and translation of this entire article is permitted in any medium, provided this copyright notice and copying permission statement are preserved.
+</p></div></div><div><div class="abstract"><p class="title"><b>Abstract</b></p><p>Kernel hackers like to optimise for the common case, and what could be more common to them than compiling kernels. </p><p>
+Timing a kernel compile is often a useful (if somewhat unscientific) metric when making Linux kernel changes. It has been used more recently to identify scalability problems - thus began the kernel compile benchmark wars. </p><p>
+This paper looks at the work required to achieve a seven second kernel compile using the 2.5 Linux kernel on a 32 way PowerPC64 machine as well as the ongoing scalability work to go below seven seconds on this important benchmark (this is a preliminary version, the final version for the Congress may still suffer some changes. The Editors).</p></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt>1. <a href="#id2754469">Introduction </a></dt><dt>2. <a href="#id2754489">Let the wars begin </a></dt><dt>3. <a href="#id2750936">Benchmark Hardware </a></dt><dd><dl><dt>3.1. <a href="#id2754686">POWER4 architecture </a></dt><dt>3.2. <a href="#id2754712">Logical Partitioning </a></dt></dl></dd><dt>4. <a href="#id2754744">The PowerPC64 empire strikes back </a></dt><dd><dl><dt>4.1. <a href="#id2754436">A look inside the kernel </a></dt></dl></dd><dt>5. <a href="#id2755217">2.5 Development </a></dt><dd><dl><dt>5.1. <a href="#id2755223">Linux memory management </a></dt><dt>5.2. <a href="#id2755255">PowerPC64 memory management rework </a></dt><dt>5.3. <a href="#id2755287">TLB invalidation batching </a></dt></dl></dd><dt>6. <a href="#id2755432">Current Record </a></dt><dt>7. <a href="#id2755459">Conclusions </a></dt><dt>8. <a href="#id2755479">References </a></dt></dl></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2754469"></a>1. Introduction </h2></div></div><p>
+The kernel compile benchmark is a benchmark often used by Linux kernel
+developers to assess the performance of changes they make. It has the
+the advantages of being both easy to run as well as having reasonably
+repeatable results. Although heavily CPU bound, it stresses a number
+of areas in the kernel, like the process, filesystem and virtual memory
+subsystems.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2754489"></a>2. Let the wars begin </h2></div></div><p>
+Martin Bligh kicked the latest round of kernel compile benchmarks off
+with the following email:
+</p><pre class="programlisting">
+ From: Martin J. Bligh &lt;fletch@aracnet.com&gt;
+ To: lse-tech@lists.sourceforge.net
+ Cc: linux-kernel@vger.kernel.org
+ Subject: [Lse-tech] 23 second kernel compile (aka which patches
+          help scalibility on NUMA)
+ Date: Fri, 08 Mar 2002 21:47:04 -0800
+</pre><pre class="programlisting">
+ &quot;time make -j32 bzImage&quot; is now down to 23 seconds.
+ (16 way NUMA-Q, 700MHz P3's, 4Gb RAM).
+ ...
+</pre><p>
+Martin managed to reduce the compile time from 47 seconds on the standard
+2.4.18 kernel down to 23 seconds with the help of a number of patches - 
+an impressive achievement. His email served to highlight the current problems
+with the 2.4 kernel on large NUMA machines and the gains that could be
+made by adding NUMA memory allocation and scheduling policies into the kernel.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2750936"></a>3. Benchmark Hardware </h2></div></div><p>
+The PowerPC benchmarking was undertaken on an IBM pSeries p690 server. These
+are POWER4 based servers which implement the PowerPC AS architecture. From a
+userspace point of view they are binary compatible with the 32 bit PowerPC
+architecture and existing PowerPC Linux distributions can run on these
+machines with only a change of kernel.
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754686"></a>3.1. POWER4 architecture </h3></div></div><p>
+A POWER4 chip contains two processors which share a level 2 cache, running
+at frequencies of up to 1.3GHz. Four of these chips can be combined into
+a multi chip module (MCM) forming an eight way SMP. There is an each way
+interconnect between these four chips and the level 3 cache; memory
+and IO sits behind the MCM.
+</p><p>
+A p690 combines up to 4 MCMs to form a 32 way SMP and a bus connects these
+MCMs together. [1]
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754712"></a>3.2. Logical Partitioning </h3></div></div><p>
+Logical partitioning allows a single machine to run a number of operating
+systems. For example a p690 can run up to 16 different operating system
+instances, either AIX or Linux. [2]
+</p><p>
+Logical partitioning introduces a layer above the operating system called
+a hypervisor. This provides a virtualisation layer between the hardware and
+operating system, allowing it to share resources. It also provides protection
+between operating systems such that one operating system cannot harm any
+of the others.
+</p><p>
+The p690 can run with logical partitioning on or off and all but the final
+run was done with it enabled.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2754744"></a>4. The PowerPC64 empire strikes back </h2></div></div><p>
+An initial run on a 24 way p690 resulted in the following post:
+</p><pre class="programlisting">
+ From: Anton Blanchard &lt;anton@samba.org&gt;
+ To: lse-tech@lists.sourceforge.net
+ Cc: linux-kernel@vger.kernel.org
+ Subject: [Lse-tech] 10.31 second kernel compile
+ Date: Wed, 13 Mar 2002 19:52:17 +1100
+</pre><pre class="programlisting">
+ Let the kernel compile benchmarks continue!
+</pre><pre class="programlisting">
+ hardware: 24 way logical partition, 1.1GHz POWER4, 60G RAM
+ kernel: 2.5.6 + ppc64 pagetable rework
+ kernel compiled: 2.4.18 x86 with Martin's config
+ compiler: gcc 2.95.3 x86 cross compiler
+</pre><pre class="programlisting">
+ # MAKE=&quot;make -j14&quot; /usr/bin/time make -j14 bzImage
+ ...
+ 130.63user 71.31system 0:10.31elapsed 1957%CPU
+         (0avgtext+0avgdata 0maxresident)k
+</pre><p>
+Thus the yardstick was 10.3 seconds. A number of interesting results could be
+distilled from the above information:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Averaged over the entire run, less than 20 CPUs (19.57) were used</p></li><li><p>The benchmark was significantly system bound (130.64 user vs 71.31 system)</p></li></ul></div><p>
+While most of the benchmark could be split across all CPUs, the final link
+stage was single threaded. This explained why we saw only 20 CPUs utilised.
+To answer the second question however, a closer look at the kernel was
+required.
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754436"></a>4.1. A look inside the kernel </h3></div></div><p>
+A simple but often very effective way of obtaining a breakdown of
+system time on a Linux system is to use the builtin profiler. To enable it
+a command line option is passed to the kernel: <tt>profile=2</tt>
+where 2 is the shift count applied to the address of each sample. As all instructions
+in the PowerPC64 architecture are 4 bytes, a shift count of two will result
+in a profile with single instruction resolution.
+</p><p>
+A userspace utility: <tt>readprofile</tt> is used to read the profiling
+information. The results showed a severe problem in
+<tt>__hash_page</tt> and to a lesser degree <tt>local_flush_tlb_range</tt> and
+<tt>local_flush_tlb_page</tt>:
+</p><pre class="programlisting">
+ 201150 total 
+ 129051 idled
+  43586 __hash_page
+   6714 local_flush_tlb_range
+   2773 local_flush_tlb_page 
+   2203 do_anonymous_page
+   2059 lru_cache_add
+   1379 __copy_tofrom_user
+   1220 hpte_create_valid_pSeriesLP 
+   1039 save_remaining_regs
+    871 do_page_fault
+    575 plpar_hcall 
+</pre><p>
+In the above readprofile output, column one shows the number of timer hits
+and column two shows the function that was being executed when the timer
+tick fired. Each CPU has its own local timer, so these results give a
+summary of where all CPUs spent their time.
+</p><p>
+An extension to readprofile by Andrew Tridgell takes the per instruction
+profiling information and places it on top of a disassembly of the function.
+In this way timer ticks can be attributed to particular instruction sequences
+and then back to the source code in question.
+</p><p>
+As a result of this analysis, the problem with <tt>__hash_page</tt> was clear.
+It was caused by contention on the <tt>hash_table_lock</tt> spinlock. In order
+to understand what the <tt>hash_table_lock</tt> protects, a quick background
+in Linux memory management is required.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755217"></a>5. 2.5 Development </h2></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755223"></a>5.1. Linux memory management </h3></div></div><p>
+The 2.5 Linux can run on 13 architectures and so must have a clean
+abstraction that every memory management unit can be hidden behind.
+Linux does this by always using a tree representation for pagetables
+even when the hardware does not. On some architectures like x86, the tree
+representation is shared by the hardware, whereas on other architectures it
+is used by Linux only.
+</p><p>
+PowerPC64 has a hashtable based MMU which is not compatible with the
+Linux pagetable approach. As a result the PowerPC64 hashtable is treated as
+an extended TLB with Linux software pagetables backing it. Whenever a
+Linux pagetable entry is modified, architecture specific code is 
+called to keep the PowerPC64 hashtable in sync. The architecture specific
+code must provide its own locking since the generic code does not.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755255"></a>5.2. PowerPC64 memory management rework </h3></div></div><p>
+In the 2.4 kernel, all operations on the PowerPC64 hashtable are serialised
+with a global lock. This lock is the <tt>hash_table_lock</tt> and as seen above
+is a significant bottleneck on large SMP.
+</p><p>
+While the global spinlock approach is easy to verify it was obvious that
+a different approach was required to improve SMP scalability in 2.5. The
+approach taken was to use a spare bit in each hashtable entry as a per
+PTE lock. Each operation on a hashtable entry first atomically sets this
+bit and if it succeeds it can continue to modify the entry. If it fails
+to atomically set the bit it must back off because another CPU is currently
+modifying the entry.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755287"></a>5.3. TLB invalidation batching </h3></div></div><p>
+The PowerPC64 architecture requires a sequence of instructions to invalidate
+a TLB entry:
+</p><pre class="programlisting">
+        ptesync
+        tlbie
+        eieio
+        tlbsync
+        ptesync
+</pre><p>
+The ptesync, eieio, tlbsync and ptesync are all synchronising instructions.
+The actual TLB invalidation is done with the tlbie instruction. This five
+instruction sequence can take a significant amount of time and it is possible
+to batch invalidations up:
+</p><pre class="programlisting">
+        ptesync
+        tlbie 1
+        tlbie 2
+        ...
+        eieio
+        tlbsync
+        ptesync
+</pre><p>
+In doing so we incur the overhead of the synchronising instructions once.
+Support in the generic Linux kernel is required to batch TLB invalidations
+and the 2.5 kernel has something called a ``TLB gather'' which does just
+this.
+</p><p>
+The PowerPC64 architecture also requires there to be only one outstanding TLB
+invalidate on the system at any time. As such all invalidations have to
+be serialised by a global spinlock.
+</p><p>
+There are two potential problems with such a global spinlock. Firstly if
+many CPUs are trying to get the spinlock, they will waste CPU cycles waiting
+for the lock to become free. Clearly nothing can be done about this problem
+since it is required by the architecture.
+</p><p>
+The second problem with a global spinlock is the potential for it to be
+bounced from CPU to CPU. It can take a large amount of time for a lock to
+move from one CPU to another and so a lock with an otherwise low amount of
+contention can become a bottleneck.
+</p><p>
+The solution for the second problem is to reduce the number of spinlock
+acquisitions. The TLB batching interface above was modified so the spinlock
+was taken once at the start of the invalidations and dropped at the end.
+This addresses the problem with <tt>local_flush_tlb_range</tt> and
+<tt>local_flush_tlb_page</tt>.
+</p><p>
+This set of changes plus the addition of eight more CPUs gave us
+a respectable 7.52s compile:
+</p><pre class="programlisting">
+ From: Anton Blanchard &lt;anton@samba.org&gt;
+ To: lse-tech@lists.sourceforge.net
+ Cc: linux-kernel@vger.kernel.org
+ Subject: [Lse-tech] 7.52 second kernel compile
+ Date: Sat, 16 Mar 2002 17:15:35 +1100
+</pre><pre class="programlisting">
+ &gt; Let the kernel compile benchmarks continue!
+</pre><pre class="programlisting">
+ I think Im addicted. I need help!
+</pre><pre class="programlisting">
+ In this update we added 8 CPUs and rewrote the ppc64 pagetable management
+ code to do lockless inserts and removals (there is still locking at
+ the pte level to avoid races).
+</pre><pre class="programlisting">
+ hardware: 32 way logical partition, 1.1GHz POWER4, 60G RAM
+ kernel: 2.5.7-pre1 + ppc64 pagetable rework
+ kernel compiled: 2.4.18 x86 with Martin's config
+ compiler: gcc 2.95.3 x86 cross compiler
+</pre><pre class="programlisting">
+ make[1]: Leaving directory `/home/anton/intel_kernel/linux/arch/i386/boot'
+ 128.89user 40.23system 0:07.52elapsed 2246%CPU (0avgtext+0avgdata 0maxresident)k
+ 0inputs+0outputs (437084major+572835minor)pagefaults 0swaps
+</pre><pre class="programlisting">
+ ...
+</pre></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755432"></a>6. Current Record </h2></div></div><p>
+The latest results were done on a 32way pSeries p690 with 1.3GHz CPUs and
+logical partitioning turned off (only one operating system was running):
+</p><pre class="programlisting">
+ 105.02user 14.50system 0:04.83elapsed 2474%CPU
+        (0avgtext+0avgdata 0maxresident)k0inputs+0outputs
+        (394245major+570713minor)pagefaults 0swaps
+</pre><p>
+4.8 seconds should keep even the most impatient of kernel hackers happy.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755459"></a>7. Conclusions </h2></div></div><p>
+The kernel compile benchmark has been a useful benchmark for isolating
+PowerPC64 Linux scalability issues. With the latest results the challenge
+is now open for other architectures to better it. 
+</p><p>
+And finally, its cool to have the worlds fastest Linux kernel compile
+machine :)
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755479"></a>8. References </h2></div></div><div class="orderedlist"><ol type="1"><li><p>Joel M. Tendler, Steve Dodson, Steve Fields, Hung Le and Balaram Sinharoy.    POWER4 System Microarchitecture. IBM Server Group, October 2001    (<a href="http://www-1.ibm.com/servers/eserver/pseries/hardware/whitepapers/power4.html" target="_top">http://www-1.ibm.com/servers/eserver/pseries/hardware/whitepapers/power4.html</a>)</p></li><li><p>IBM Corporation. Partitioning for the IBM eserver pSeries 690 System, 2001   (<a href="http://www-1.ibm.com/servers/eserver/pseries/hardware/whitepapers/lpar.html" target="_top">http://www-1.ibm.com/servers/eserver/pseries/hardware/whitepapers/lpar.html</a>).</p></li></ol></div></div></div></body></html>

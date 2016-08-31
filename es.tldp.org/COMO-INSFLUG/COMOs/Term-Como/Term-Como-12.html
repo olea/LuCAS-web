@@ -1,0 +1,127 @@
+<HTML>
+<HEAD>
+<TITLE>TERM Como: Term y la seguridad</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Term-Como-11.html">Anterior</A>
+<A HREF="Term-Como-13.html">Siguiente</A>
+<A HREF="Term-Como.html#toc12">Indice</A>
+<HR>
+<H2><A NAME="s12">12. <CODE>Term</CODE> y la seguridad</A></H2>
+
+
+<P>En esta secci&oacute;n puntualizar&eacute; algunos aspectos sobre la seguridad
+usando <CODE>TERM</CODE>. Los problemas ser&aacute;n expuestos junto a un
+mecanismo para aumentar su seguridad.</P>
+
+<H2><A NAME="ss12.1">12.1 <CODE>trsh</CODE>.</A></H2>
+
+
+<P><CODE>trsh</CODE> es inseguro si se usa para acceder al Linux local desde
+el sistema remoto. El problema con <CODE>TERM</CODE> y sus clientes es que
+en el otro extremo de la comunicaci&oacute;n el superusuario puede ejecutar
+programas de <CODE>TERM</CODE>.</P>
+<P>Esto tambi&eacute;n indica que el ``<CODE>root</CODE>'' del otro sistema puede ejecutar
+<CODE>trsh</CODE> y entrar con los privilegios del propietario de la conexi&oacute;n
+f&aacute;cilmente. Si este propietario es ``<CODE>root</CODE>'' la <I>habremos liado</I>. </P>
+<P>La soluci&oacute;n es simple: poner la siguiente l&iacute;nea en el fichero <CODE>termrc</CODE>
+de la m&aacute;quina local:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+denyrsh on
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Con esto, nadie podr&aacute; usar <CODE>trsh</CODE> desde el sistema remoto para entrar
+en el local. Cuando t&uacute; mismo quieras entrar, podr&aacute;s hacerlo a&uacute;n usando
+<CODE>telnet</CODE> y puertos redirigidos. </P>
+
+
+<H2><A NAME="ss12.2">12.2 <CODE>txconn</CODE> y <CODE>xauth</CODE></A></H2>
+
+
+<P><CODE>txconn</CODE> no es terriblemente seguro; cualquiera puede conectar al
+servidor local con <CODE>term</CODE> y hacer de todo. Si te preocupa, puedes
+usar <CODE>xauth</CODE> para establecer las autorizaciones de acceso. Mira el
+ejemplo de la siguiente secci&oacute;n. </P>
+
+
+<H2><A NAME="ss12.3">12.3 <CODE>sxpc</CODE>, <CODE>xhost</CODE> y <CODE>xauth</CODE></A></H2>
+
+
+<P><CODE>sxpc</CODE> en combinaci&oacute;n con <CODE>xhost +</CODE> es muy peligroso si no usas
+<CODE>xauth</CODE>. </P>
+<P>Usar <CODE>xauth</CODE> es muy importante para mantener la seguridad cuando se usa
+<CODE>sxpc</CODE>. Si no usas <CODE>xauth</CODE> al usar <CODE>sxpc</CODE>, ser&aacute; muy peligroso
+tener <CODE>xhost +</CODE>.  Algunos peligros son: </P>
+<P>
+<UL>
+<LI>Alguien puede saber lo que hay en tu pantalla</LI>
+<LI>Alguien puede saber lo que tecleas</LI>
+<LI>Alguien puede teclear sobre alguna de tus ventanas (por ejemplo,
+un comando que borre tus ficheros <CODE>:-(</CODE> )</LI>
+</UL>
+</P>
+<P><CODE>xauth</CODE> forma parte de las versiones R4 y posteriores de X. Aqu&iacute;
+describiremos c&oacute;mo usar b&aacute;sicamente el <CODE>xauth</CODE>. Esta configuraci&oacute;n es
+vulnerable al husmeo de la red, pero puede convivir con ella f&aacute;cilmente. </P>
+<P><B>NOTA:</B> cuando uses <CODE>xauth</CODE> aseg&uacute;rate que la variable
+<CODE>$DISPLAY</CODE> no tiene el valor <CODE>localhost</CODE> (o
+<CODE>localhost:loquesea</CODE>). Si tu variable <CODE>$DISPLAY</CODE> vale
+<CODE>localhost</CODE>, los clientes no podr&aacute;n encontrar la informaci&oacute;n de
+autorizaci&oacute;n. Lo mejor es usar el nombre real de la m&aacute;quina. Si sigues las
+instrucciones de compilaci&oacute;n del <CODE>README</CODE>, y compilas sin la variable
+<CODE>-DNOGETHOSTNAME</CODE> puede que todo funcione. </P>
+<P>Sea <I>C</I> la m&aacute;quina que ejecuta clientes, y <I>D</I> la m&aacute;quina que pone la 
+pantalla.</P>
+<P>Primero, elige una ``clave'', de hasta 16 pares de d&iacute;gitos hexadecimales
+(n&uacute;meros del rango 0-9 y a-f). Necesitar&aacute;s proporcionar esta clave en
+el lugar de <CODE>&lt;clave&gt;</CODE> en este ejemplo:</P>
+<P>En <I>C</I>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% xauth
+xauth:  creating new authority file $HOME/.Xauthority
+Using authority file $HOME/.Xauthority
+xauth&gt; add Nombre_de_C:8 MIT-MAGIC-COOKIE-1 &lt;clave&gt;
+xauth&gt; exit
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En <I>D</I>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+% xauth
+xauth:  creating new authority file $HOME/.Xauthority
+Using authority file $HOME/.Xauthority
+xauth&gt; add Nombre_de_D/unix:0 MIT-MAGIC-COOKIE-1 &lt;clave&gt;
+xauth&gt; add Nombre_de_D:0 MIT-MAGIC-COOKIE-1 &lt;clave&gt;
+xauth&gt; exit
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Cuando inicies el servidor X en <I>D</I> deber&iacute;as poner el par&aacute;metro
+<CODE>-auth $HOME/.Xauthority</CODE>. Puede que necesites crear o
+editar el fichero <CODE>$HOME/.xserverrc</CODE> para controlar el
+inicio del servidor X. Por ejemplo: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+exec X  -auth $HOME/.Xauthority $*
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aseg&uacute;rate que el fichero <CODE>.Xauthority</CODE> es legible s&oacute;lo por <CODE>C</CODE> y
+por <I>D</I>. </P>
+
+
+<HR>
+<A HREF="Term-Como-11.html">Anterior</A>
+<A HREF="Term-Como-13.html">Siguiente</A>
+<A HREF="Term-Como.html#toc12">Indice</A>
+</BODY>
+</HTML>

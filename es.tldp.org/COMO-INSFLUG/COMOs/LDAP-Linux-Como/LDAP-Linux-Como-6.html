@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP-Linux-Como: M&aacute;s informaci&oacute;n y caracter&iacute;sticas adicionales</TITLE>
+ <LINK HREF="LDAP-Linux-Como-7.html" REL=next>
+ <LINK HREF="LDAP-Linux-Como-5.html" REL=previous>
+ <LINK HREF="LDAP-Linux-Como.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="LDAP-Linux-Como-7.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-5.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc6">Índice general</A>
+<HR>
+<H2><A NAME="s6">6. M&aacute;s informaci&oacute;n y caracter&iacute;sticas adicionales</A></H2>
+
+<P>En esta secci&oacute;n hallar&aacute; informaci&oacute;n sobre el Libro de Direcciones de
+Netscape, un cliente LDAP que puede utilizar para consultar su
+Directorio; tambi&eacute;n presentamos los detalles sobre c&oacute;mo implementar
+acceso m&oacute;vil o itinerante (<EM>roaming access</EM>) utilizando el Netscape
+Navigator en sus versiones 4.5 y superiores m&aacute;s su servidor LDAP. Se
+ha vertido mucha tinta electr&oacute;nica en las listas de correo de
+<EM>OpenLDAP</EM> sobre el acceso itinerante, pues se trata de una
+caracter&iacute;stica todav&iacute;a no implementada totalmente. A muchas personas
+no les agrada la forma en que Netscape Navigator interact&uacute;a con el
+servidor LDAP a la hora de realizar grabaciones y recuperaciones de
+datos. As&iacute; pues, si tras la lectura de estas l&iacute;neas tiene la impresi&oacute;n
+de que el acceso itinerante no funciona de la forma que usted
+desear&iacute;a, no se preocupe; muchas personas tienen la misma impresi&oacute;n
+que usted. La finalidad de la introducci&oacute;n de esta caracter&iacute;stica ha
+sido principalmente dar a la gente una idea de las posibilidades del
+protocolo LDAP, m&aacute;s que otras consideraciones. Para terminar, ver&aacute;
+algunas informaciones sobre c&oacute;mo matar con seguridad el proceso
+<EM>slapd</EM> y sobre los ficheros de registro (logs) de <EM>slapd</EM>.
+<P>
+<H2><A NAME="ss6.1">6.1 Acceso itinerante (perfiles m&oacute;viles)</A>
+</H2>
+
+<P>
+<P>El objetivo del acceso itinerante (llamado en Netscape «perfiles
+m&oacute;viles») es que, desde cualquier lugar de la Red donde se encuentre,
+pueda obtener localmente sus marcadores de URL's, preferencias que
+personalizan la aplicaci&oacute;n, filtros de correo, etc&eacute;tera, mediante la
+utilizaci&oacute;n de un Navegador Netscape y un servidor LDAP.
+<P>Se trata de una caracter&iacute;stica muy conveniente. Imagine que desde
+cualquier lugar al que pueda acceder a la Web, pueda tener sus propias
+preferencias en el navegador. Si va a viajar y precisa acceder a ese
+sitio de cambio de divisas que tiene almacenado en sus marcadores
+personales (<EM>bookmarks</EM>), no se inquiete; simplemente cargue sus
+marcadores y otros ficheros de configuraci&oacute;n en un servidor LDAP y
+podr&aacute; recuperarlos todos despu&eacute;s con independencia del lugar en el que
+se encuentre. 
+<P>Para implementar acceso itinerante (en ingl&eacute;s <EM>roaming access</EM>) ha
+de seguir los pasos que se detallan a continuaci&oacute;n:
+<UL>
+<LI>Cambiar su fichero de descripci&oacute;n de atributos</LI>
+<LI>Cambiar su fichero de descripci&oacute;n de clases de objetos (<CODE>objectclass</CODE>).</LI>
+<LI>Cambiar el fichero LDIF para que incluya perfiles</LI>
+<LI>Configurar el Netscape Navigator para que utilice el servidor LDAP como el servidor de acceso itinerante.</LI>
+<LI>Reiniciar el servidor LDAP con la nueva configuraci&oacute;n.</LI>
+</UL>
+<P>- Cambiar el fichero de atributos
+Es preciso que a&ntilde;ada nuevos atributos a la lista existente en el
+fichero <CODE>slapd.at.conf</CODE>; es este el fichero que se incluye en su
+<CODE>slapd.conf</CODE> y que normalmente se localiza en
+/usr/local/etc/openldap (<B>N. del T.:</B> si ha instalado su distribuci&oacute;n
+OpenLDAP a partir de un fichero <CODE>.deb</CODE> o de un <CODE>.rpm</CODE>, el lugar
+m&aacute;s probable ser&aacute; <CODE>/etc/openldap/</CODE>)
+: 
+<BLOCKQUOTE><CODE>
+<PRE>
+attribute       nsLIPtrURL              ces 
+attribute       nsLIPrefs               ces 
+attribute       nsLIProfileName         cis 
+attribute       nsLIData                bin 
+attribute       nsLIElementType         cis 
+attribute       nsLIServerType          cis 
+attribute       nsLIVersion             cis 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>- Cambiar el fichero <CODE>objectclass</CODE>:
+Debe a&ntilde;adir algunas clases nuevas a su fichero <CODE>lapd.oc.conf</CODE> (es
+otro fichero que se incluye en su <CODE>slapd.conf</CODE> y que se localiza
+normalmente en <CODE>/usr/local/etc/openldap</CODE>, para habilitar el
+acceso itinerante (<B>N. del T.:</B> si ha instalado su distribuci&oacute;n
+OpenLDAP a partir de un fichero <CODE>.deb</CODE> o de un <CODE>.rpm</CODE>, el lugar
+m&aacute;s probable ser&aacute; <CODE>/etc/openldap/</CODE>):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+objectclass nsLIPtr 
+requires 
+        objectclass 
+allows 
+        nsliptrurl, 
+        owner 
+
+objectclass nsLIProfile 
+requires 
+        objectclass, 
+        nsliprofilename 
+allows 
+        nsliprefs, 
+        uid, 
+        owner 
+
+objectclass nsLIProfileElement 
+requires 
+        objectclass, 
+        nslielementtype 
+allows 
+        owner, 
+        nslidata, 
+        nsliversion 
+
+objectclass nsLIServer 
+requires 
+        objectclass, 
+        serverhostname 
+allows 
+        description, 
+        cn, 
+        nsserverport, 
+        nsliservertype, 
+        serverroot 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>- Cambiar el fichero LDIF: 
+Ahora ha de modificar el fichero LDIF, a&ntilde;adi&eacute;ndole entradas de
+perfiles relativas a cada usuario que desee probar la caracter&iacute;stica
+de perfiles m&oacute;viles del Netscape. Obs&eacute;rvese un ejemplo de un fichero
+LDIF sencillo con entradas de perfiles:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: o=myOrg,c=NL 
+o: myOrg 
+objectclass: organization 
+
+dn: cn=seallers,ou=People,o=myOrg,c=NL 
+cn: seallers 
+userpassword: MiClaVE 
+objectclass: top 
+objectclass: person 
+
+dn: nsLIProfileName=seallers,ou=Roaming,o=myOrg,c=NL 
+changetype: add 
+objectclass: top 
+owner: cn=seallers,ou=People,o=myOrg,c=NL 
+objectclass: top 
+objectclass: nsLIProfile 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+El paso siguiente es configurar Netscape para que habilite los
+perfiles m&oacute;viles basados en su servidor LDAP. S&oacute;lo tiene que seguir la
+secuencia:
+<P>- Vaya al men&uacute; Edit -&gt; Preferences -&gt; Roaming User 
+<P>Ahora tiene que activar el perfil m&oacute;vil (<EM>Roaming Access</EM>) para
+este perfil, haciendo click sobre la casilla de verificaci&oacute;n
+correspondiente a esta opci&oacute;n. 
+<P>- Rellene la caja del nombre de usuario (<EM>username</EM>) con el
+contenido apropiado, por ejemplo john 
+<P>Despliegue la flecha de la opci&oacute;n de Roaming User en la parte
+izquierda de la ventana de preferencias, para poder ver las opciones
+detalladas del acceso itinerante (perfiles m&oacute;viles).
+<P>- Haga click sobre Server Information, habilite la opci&oacute;n LDAP Server
+y rellene las cajas de di&aacute;logo con la siguiente informaci&oacute;n:
+<P>Address: ldap://myHost/nsLIProfileName=$USERID,ou=Roaming,o=myOrg,c=NL 
+<P>User DN: cn=$USERID,ou=People,o=myOrg,c=NL 
+<P><B>IMPORTANTE:</B> Netscape sustituye autom&aacute;ticamente la variable
+$USERID por el nombre del perfil que haya seleccionado al arrancar el
+navegador. De manera que si ha elegido el perfil <B>sanchez</B>, sustituir&aacute; 
+$USERID por sanchez, y si ha seleccionado el prefil <B>gonzalez</B>,
+sustituir&aacute; $USERID por gonzalez. Si no est&aacute; familiarizado con los
+perfiles, ejecute la aplicaci&oacute;n <EM>Profile Manager</EM> que se incluye en
+el paquete del Netscape Communicator (<B>N. del T.:</B> a partir de la
+versi&oacute;n 6.0, Netscape ha dejado otra vez de llamarse Communicator). El
+<EM>Profile Manager</EM> es una aplicaci&oacute;n dise&ntilde;ada para satisfacer a
+m&uacute;ltiples usuarios de un navegador en una misma m&aacute;quina, de manera que
+cada uno de ellos pueda tener sus propia configuraci&oacute;n en el
+navegador. 
+<P>
+<P>El &uacute;ltimo paso consiste en reiniciar el servidor; examine la 
+<A HREF="#6.3">secci&oacute;n 6.3</A> para ver la manera de hacerlo con
+seguridad, y la 
+<A HREF="LDAP-Linux-Como-4.html#4">section 4</A> para ver c&oacute;mo
+reiniciarlo. 
+<P>
+<H2><A NAME="ss6.2">6.2 Libreta de direcciones de Netscape (Address Book)</A>
+</H2>
+
+<P>Una vez que tenga su servidor LDAP configurado y en marcha, puede
+acceder a &eacute;l a trav&eacute;s de clientes muy diferentes (por ejemplo la
+utilidad de l&iacute;nea de &oacute;rdenes <EM>ldapsearch</EM>). Un cliente muy
+interesante es la Libreta de direcciones de Netscape (Address
+Book). Est&aacute; disponible a partir de la versi&oacute;n 4.x de Netscape pero,
+para interactuar de manera estable con su servidor LDAP, tendr&aacute; que
+usar la versi&oacute;n 4.5 o superiores (<B>N. del T.:</B> ya est&aacute; disponible el
+Netscape 6.0). 
+<P>S&oacute;lo tiene que seguir la secuencia:
+<P>Abra Netscape Navigator -&gt; Vaya al m&eacute;nu Communicator -&gt; Address Book
+<P>La libreta de direcciones (Address Book) de Netscape arrancar&aacute; con
+algunos directorios LDAP predeterminados. Ha de a&ntilde;adir tambi&eacute;n su
+propio directorio LDAP, evidentemente.
+<P>Vaya al men&uacute; File -&gt; New Directory 
+<P>Complete los cuadros de di&aacute;logo con la informaci&oacute;n de su servidor, por
+ejemplo: 
+<P>- Description : TUDelft 
+<P>- LDAP Server : dutedin.et.tudelft.nl 
+<P>- Server Root : o=TUDelft, c=NL 
+<P>El puerto por defecto para LDAP es 389; no debe cambiarlo, a menos que
+cambiara esta opci&oacute;n al compilar su servidor.
+<P>Realice ahora consultas sencillas a su servidor, unsando el cuadro de
+di&aacute;logo Show Names Containing, o consultas avanzadas, usando el bot&oacute;n
+Search for.
+<P>
+<H2><A NAME="6.3"></A> <A NAME="ss6.3">6.3 Matar al servidor LDAP </A>
+</H2>
+
+<P>Para matar con seguridad al servidor <EM>slapd</EM>, debe utilizar una
+l&iacute;nea de &oacute;rdenes como la siguiente:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+kill -TERM `cat $(ETCDIR)/slapd.pid` 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(<B>N. del T.:</B> en RedHat y distribuciones basadas en rh, como
+Mandrake y Esware, valdr&aacute; simplemente con <CODE>/etc/rc.d/init.d/opeldap
+stop</CODE>, mientras que en Debian y distribuciones basadas en Debian
+(Corel, Storm, Citius) bastar&aacute; con un <CODE>/etc/init.d/openldap
+stop</CODE>. En otras distribuciones el procedimiento es similar,
+buscando tal vez <CODE>slapd</CODE> en vez de <CODE>openldap</CODE>).  
+<P>Matar <I>slapd</I> de una manera m&aacute;s dr&aacute;stica puede provocar corrupci&oacute;n
+de las bases de datos, pues puede ser preciso vaciar ciertos tampones
+de almacenamiento intermedio antes de salir del servidor. N&oacute;tese que
+<EM>slapd</EM> escribe su PID en un fichero llamado <CODE>slapd.pid</CODE> en el
+directorio que haya configurado en el fichero <CODE>slapd.conf</CODE>, por
+ejemplo en <CODE>/var/pid/slapd.pid</CODE> (<B>N. del T.:</B> es &eacute;ste
+precisamente el caso de Debian). 
+<P>Puede cambiar la localizaci&oacute;n de este fichero PID cambiando la
+variable SLAPD_PIDFILE en <CODE>include/ldapconfig.h.edit</CODE>.
+<P><EM>slapd</EM> escribir&aacute; tambi&eacute;n sus argumentos en un fichero llamado
+<CODE>slapd.args</CODE> en el directorio que haya configurado en el fichero
+<CODE>slapd.conf</CODE> por ejemplo en <CODE>/usr/local/var/slapd.args</CODE>
+<P>Podr&aacute; cambiar la ubicaci&oacute;n del fichero <CODE>slapd.args</CODE> si cambia
+la variable SLAPD_ARGSFILE en <CODE>include/ldapconfig.h.edit</CODE>.
+<P>
+<H2><A NAME="ss6.4">6.4 Ficheros de registro (logs)</A>
+</H2>
+
+<P><EM>slapd</EM> utiliza el recurso <CODE>syslog(8)</CODE> para generar registros de
+sus actividad. El usuario predeterminado del recurso <CODE>the
+syslog(8)</CODE> es LOCAL4, pero se permiten valores que van de LOCAL0,
+LOCAL1, hasta LOCAL7.
+<P>Para habilitar la caracter&iacute;stica de generaci&oacute;n de archivos de registro
+(logs), debe editar el fichero <CODE>syslog.conf</CODE>, situado generalmente
+en el directorio <CODE>/etc</CODE>.
+<P>Cree una l&iacute;nea como la siguiente:
+<P>local4.*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/usr/adm/ldalog 
+<P>Esto har&aacute; que se utilice el usuario predeterminado LOCAL4 para el
+recurso <EM>syslog</EM>. Si no est&aacute; familiarizado con la sintaxis de esta
+l&iacute;nea, examine las p&aacute;ginas de manual de <CODE>syslog</CODE>,
+<CODE>syslog.conf(5)</CODE> y <CODE>syslogd(8)</CODE> para el recurso de syslog.  Si
+desea cambiar el usuario predeterminado o especificar el nivel de
+detalle de los registros generados (logs), tiene disponibles las
+siguientes opciones en el momento de arrancar <EM>slapd</EM>:
+<P>-s nivel-de-syslog
+Esta opci&oacute;n le dice a <EM>slapd</EM> en qu&eacute; nivel de detalle deben
+registrarse las informaciones sobre depuraci&oacute;n en el recurso
+<CODE>syslog(8)</CODE>. El nivel especifica la gravedad del mensaje, y
+representa una palabra clave tomada de la siguiente lista ordenada (de
+mayor a menor gravedad):  emerg, alert, crit, err, warning, notice,
+info, y debug.  Ejemplo:
+<CODE>slapd -f myslapd.conf -s debug</CODE>
+<P>-l usuario-local-de-syslog
+Selecciona el usuario local del recurso syslog(8). Los valores
+pueden ir desde LOCAL0, LOCAL1, y as&iacute; hasta LOCAL7. El valor
+predeterminado es LOCAL4. No obstante, esta opci&oacute;n se permite
+&uacute;nicamente en sistemas que soportan usuarios locales en el recurso
+syslog(8). 
+<P>Eche un vistazo en este momento a los registros generados (logs);
+pueden ayudarle a resolver problemas con consultas, actualizaciones,
+enganches (bindings), etc.
+<P>
+<HR>
+<A HREF="LDAP-Linux-Como-7.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-5.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc6">Índice general</A>
+</BODY>
+</HTML>

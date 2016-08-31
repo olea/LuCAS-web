@@ -1,0 +1,422 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 34 Detalles específicos de Windows
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="34 Detalles específicos de Windows">34 Detalles específicos de Windows</a></h1>
+
+<ul>
+<li><a href="#blit_from_hdc">blit_from_hdc</a>
+<li><a href="#blit_to_hdc">blit_to_hdc</a>
+<li><a href="#convert_bitmap_to_hbitmap">convert_bitmap_to_hbitmap</a>
+<li><a href="#convert_hbitmap_to_bitmap">convert_hbitmap_to_bitmap</a>
+<li><a href="#convert_hpalette_to_palette">convert_hpalette_to_palette</a>
+<li><a href="#convert_palette_to_hpalette">convert_palette_to_hpalette</a>
+<li><a href="#DIGI_*/Windows">DIGI_*/Windows</a>
+<li><a href="#draw_to_hdc">draw_to_hdc</a>
+<li><a href="#GFX_*/Windows">GFX_*/Windows</a>
+<li><a href="#MIDI_*/Windows">MIDI_*/Windows</a>
+<li><a href="#set_gdi_color_format">set_gdi_color_format</a>
+<li><a href="#set_palette_to_hdc">set_palette_to_hdc</a>
+<li><a href="#stretch_blit_from_hdc">stretch_blit_from_hdc</a>
+<li><a href="#stretch_blit_to_hdc">stretch_blit_to_hdc</a>
+<li><a href="#win_get_dc">win_get_dc</a>
+<li><a href="#win_get_window">win_get_window</a>
+<li><a href="#win_release_dc">win_release_dc</a>
+<li><a href="#win_set_window">win_set_window</a>
+<li><a href="#win_set_wnd_create_proc">win_set_wnd_create_proc</a>
+</ul>
+
+<p>
+Un programa para Windows que use Allegro sólo tiene que incluír uno o más
+ficheros del árbol include/allegro, o allegro.h; no obstante, si también
+necesita llamar directamente a funciones no portables del API Win32, deberá
+incluír el fichero de cabecera específico de Windows winalleg.h justo tras
+allegro.h, y antes de cualquier otro fichero de cabecera del API Win32. Por
+defecto winalleg.h incluye el fichero de cabecera principal windows.h del
+API Win32. Si por el contrario desea usar la interfaz C++ del API Win32 (es
+decir, las Microsoft Foundation Classes), defina el símbolo de preprocesador
+ALLEGRO_AND_MFC antes de incluír cualquier fichero de cabecera de Allegro
+para que afxwin.h sea incluído. Tenga en cuenta que en este último caso, las
+macros de depuración ASSERT() y TRACE() serán renombradas a AL_ASSERT() y
+AL_TRACE() respectivamente.
+
+<p>
+Las aplicaciones GUI de Windows empiezan con un punto de entrada WinMain(),
+en vez del punto de entrada estándar main(). Allegro está configurado para
+crear aplicaciones GUI por defecto y hacer unos trucos de magia para que la
+función regular main() funcione sin problemas, pero para esto necesita que
+escriba END_OF_MAIN() justo tras su función main(). Si no quiere hacer esto,
+puede incluír winalleg.h y escribir una función WinMain(). Note que estos
+trucos de magia pueden tener conflictos con algunos programas que hagan
+llamadas directas al API Win32; para estos programas, es imprescindible la
+función WinMain() y que los trucos de magia sean desactivados definiendo el
+símbolo de preprocesador ALLEGRO_NO_MAGIC_MAIN antes de incluír los ficheros
+de cabecera de Allegro.
+
+<p>
+Si quiere crear una aplicación de consola con Allegro, debe definir el
+símbolo de preprocesador USE_CONSOLE antes de incluir los ficheros de
+cabecera de Allegro; esto indicará a la librería que use características del
+modo consola y que desactive el procesado especial de la función main()
+descrito arriba.
+
+<p>
+Cuando crea la ventana principal, Allegro busca en el ejecutable un recurso
+de icono nombrado "allegro_icon". Si está presente, Allegro lo cargará y
+usará automáticamente como icono de aplicación. En caso contrario, Allegro
+usará el icono por defecto IDI_APPLICATION.
+
+<p>
+DirectX requiere que los bitmaps de vídeo y sistema estén bloqueados en
+memoria (locked) antes de que pueda dibujar en ellos. Esto se hará
+automáticamente, pero podrá conseguir habitualmente una ejecucíon más óptima
+haciéndolo usted mismo: mire la función acquire_bitmap() para más detalles.
+
+<p>
+Debido a un gran descuido en el diseño de DirectX, no hay manera de
+preservar los contenidos de la memoria de vídeo cuando el usuario cambia
+a otra ventana desde su programa. Necesita estar preparado para el hecho
+de que el contenido de su pantalla, y el contenido de cualquier bitmap en
+memoria de vídeo, puede ser destruido en cualquier momento. Puede usar la
+función set_display_switch_callback() para arreglárselas cuando ocurra esto.
+
+<p>
+En la plataforma Windows, los únicos valores de retorno de
+desktop_color_depth() son 8, 16, 24 y 32. Esto significa que no puede
+diferenciar escritorios de 15 o 16 bits, dado que ambos se muestran como
+escritorios de 16 bits. Lea abajo las consecuencias que tiene esto para los
+drivers en ventana y modos overlay.
+
+<p><br>
+<b>Drivers: <a name="GFX_*/Windows">GFX_*/Windows</a></b><br>
+   La biblioteca para Windows soporta los siguientes parámetros de tarjeta
+   para la función set_gfx_mode():
+<ul><li>
+   GFX_TEXT<br>
+      Esto cierra el modo gráfico abierto previamente con set_gfx_mode.
+<li>
+   GFX_AUTODETECT<br>
+      Deja que Allegro escoja un controlador gráfico apropiado.
+<li>
+   GFX_AUTODETECT_FULLSCREEN<br>
+      Autodetecta el driver gráfico, pero sólo usará drivers a pantalla
+      completa, fallando si no están disponibles en la plataforma actual.
+<li>
+   GFX_AUTODETECT_WINDOWED<br>
+      Igual que el anterior, pero sólo con drivers en ventana. Esto siempre
+      fallará bajo DOS.
+<li>
+   GFX_SAFE<br>
+      Controlador especial para cuando quiere establecer un modo gráfico
+      seguro y no le importa realmente en qué resolución o profundidad de
+      color. Mire para más detalles la documentación de set_gfx_mode().
+<li>
+   GFX_DIRECTX<br>
+      Igual que GFX_DIRECTX_ACCEL.
+<li>
+   GFX_DIRECTX_ACCEL<br>
+      El controlador normal DirectX a pantalla completa, corriendo con
+      aceleración por hardware.
+<li>
+   GFX_DIRECTX_SOFT<br>
+      Controlador a pantalla completa DirectX que sólo usa dibujado por
+      software, ignorando las características de aceleración por hardware.
+<li>
+   GFX_DIRECTX_SAFE<br>
+      Controlador a pantalla completa DirectX simplificado que no soporta
+      ninguna aceleración por hardware, bitmaps de vídeo o sistema, etc.
+<li>
+   GFX_DIRECTX_WIN<br>
+      El driver en ventana de DirectX, usando conversión de color cuando la
+      profindidad de color no sea igual a la del escritorio de Windows. La
+      conversión de color es mucho más lenta que dibujar directamente y no
+      está soportada en escritorios con una profundidad de color de 15 o
+      16 bits por pixel. Esta última limitación existe para resolver la
+      limitación de desktop_color_depth() (lea más arriba) y permite
+      seleccionar un modo de dibujado sin conversiones de forma segura en
+      escritorios que dicen ser de 16 bits:
+<blockquote class="code"><pre>
+         if (desktop_color_depth() == 16) {
+            set_color_depth(16);
+            if (set_gfx_mode(GFX_DIRECTX_WIN, 640, 480, 0, 0) != 0) {
+               set_color_depth(15);
+               if (set_gfx_mode(GFX_DIRECTX_WIN, 640, 480, 0, 0) != 0) {
+                  /* modo dibujado directo en 640x480 no soportado */
+                  goto Error;
+               }
+            }
+            /* ok, estamos en un modo de dibujado directo */
+         }
+</pre></blockquote>
+<li>
+   GFX_DIRECTX_OVL<br>
+      Controlador overlay de DirectX. Usa características especiales de
+      hardware para ejecutar su programa en modo ventana: no funciona con
+      todo el hardware, pero el rendimiento es excelente en las tarjetas que
+      son capaces de ello. Requiere que la profundidad de color sea igual a
+      la del escritorio de Windows. En vista de la limitación de
+      desktop_color_depth() (lea más arriba), la forma segura de seleccionar
+      el driver overlay en escritorios que dicen ser de 16 bits es:
+<blockquote class="code"><pre>
+         if (desktop_color_depth() == 16) {
+            set_color_depth(16);
+            if (set_gfx_mode(GFX_DIRECTX_OVL, 640, 480, 0, 0) != 0) {
+               set_color_depth(15);
+               if (set_gfx_mode(GFX_DIRECTX_OVL, 640, 480, 0, 0) != 0) {
+                  /* driver overlay en 640x480 no soportado */
+                  goto Error;
+               }
+            }
+            /* ok, estamos en modo overlay a 640x480 */
+         }
+</pre></blockquote>
+<li>
+   GFX_GDI<br>
+      Controlador GDI en modo ventana. Es extremadamente ineficiente, pero
+      está garantizado que funcionará con cualquier hardware, así que puede
+      ser útil para situaciones en las que quiere ejecutar su programa en
+      una ventana y no le importe el rendimiento. Tenga en cuenta que este
+      driver usa una emulación hardware del cursor del ratón para acelerar
+      las operaciones básicas de éste (como operaciones GUI).
+</ul>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg007.html#set_gfx_mode">set_gfx_mode</a>.</font></blockquote>
+<b>Drivers: <a name="DIGI_*/Windows">DIGI_*/Windows</a></b><br>
+   Las funciones de sonido para Windows soportan las siguientes tarjetas
+de sonido digitales:
+<blockquote class="text"><pre>
+      DIGI_AUTODETECT      - Allegro elige un controlador de sonido digital.
+      DIGI_NONE            - sin sonido digital.
+      DIGI_DIRECTX(n)      - usa el dispositivo DirectSound #n (siendo 'n'
+                             mayor o igual que cero) con mezclado directo
+      DIGI_DIRECTAMX(n)    - usa el dispositivo DirectSound #n (siendo 'n'
+                             mayor o igual que cero) con el mezclador de
+                             Allegro
+      DIGI_WAVOUTID(n)     - alta (n=0) o baja (n=1) calidad del dispositivo
+                             WaveOut
+</pre></blockquote>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg022.html#detect_digi_driver">detect_digi_driver</a>,
+<a class="xref" href="alleg022.html#install_sound">install_sound</a>,
+<a class="xref" href="alleg026.html#install_sound_input">install_sound_input</a>.</font></blockquote>
+<b>Drivers: <a name="MIDI_*/Windows">MIDI_*/Windows</a></b><br>
+   Las funciones de sonido de Windows soportan las siguientes tarjetas de
+sonido MIDI:
+<blockquote class="text"><pre>
+      MIDI_AUTODETECT      - Allegro escoge un controlador de sonido MIDI.
+      MIDI_NONE            - sin sonido MIDI
+      MIDI_WIN32MAPPER     - usa el mapeador MIDI win32
+      MIDI_WIN32(n)        - usa el dispositivo win32 #n (siendo 'n' mayor o
+                             igual que cero)
+      MIDI_DIGMID          - reproductor wavetable basado en samples
+</pre></blockquote>
+
+<p>
+Las siguientes funciones proveen una interfaz específica de la plataforma
+para integrar Allegro sin problemas con cualquier programa Win32 de propósito
+general. Para usar estas rutinas, debe incluir winalleg.h tras otros ficheros
+de cabecera de Allegro.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg022.html#detect_midi_driver">detect_midi_driver</a>,
+<a class="xref" href="alleg022.html#install_sound">install_sound</a>,
+<a class="xref" href="alleg026.html#install_sound_input">install_sound_input</a>.</font></blockquote>
+<b>HWND <a name="win_get_window">win_get_window</a>(void);</b><br>
+   Recupera el handle de la ventana usada por Allegro. Note que Allegro usa
+   una ventana incluso si no ha activado ningún modo gráfico, a no ser que
+   haya instalado el driver de sistema neutral (SYSTEM_NONE).
+
+<p><br>
+<b>void <a name="win_set_window">win_set_window</a>(HWND wnd);</b><br>
+   Hace que Allegro use una ventana creada por el usuario. Esta función debe
+   ser llamada *antes* de iniciar la librería con allegro_init() o
+   instalando el driver de sistema con autodetección (SYSTEM_AUTODETECT). Le
+   permite enganchar Allegro a una ventana ya existente y evita que la
+   librería crée la suya, dejándole el control total de la ventana; en
+   particular, usted será responsable de manejar los eventos como siempre
+   (Allegro monitorizará automáticamente algunos de ellos, pero no los
+   filtrará). Puede usar cualquier componente de la librería (ratón, teclado,
+   sonido, temporización, etc) excepto el subsistema gráfico.
+
+<p><br>
+<b>void <a name="win_set_wnd_create_proc">win_set_wnd_create_proc</a>(HWND (*proc)(WNDPROC));</b><br>
+   Hace que Allegro use una función definida por el usuario para crear su
+   ventana. Esta función debe ser llamada *antes* de iniciar la librería
+   con allegro_init() o instalando el driver de sistema con autodetección
+   (SYSTEM_AUTODETECT). Le permite personalizar la ventana de Allegro pero
+   sólo en su creación: a diferencia de win_set_window(), no tendrá control
+   sobre la ventana una vez sea creada (en particular, no será responsable
+   de procesar los eventos). A la función registrada se le pasará un
+   procedimiento de ventana (objeto WNDPROC) que debe hacer el procedimiento
+   de la nueva ventana y debe devolver el hadle a la nueva ventana. Puede
+   usar la librería sin restricciones de la forma habitual.
+
+<p><br>
+<b>HDC <a name="win_get_dc">win_get_dc</a>(BITMAP *bmp);</b><br>
+   Recupera el handle del dispositivo de contexto del vídeo DirectX o un
+   bitmap de sistema.
+
+<p><br>
+<b>void <a name="win_release_dc">win_release_dc</a>(BITMAP *bmp, HDC dc);</b><br>
+   Libera el handle del dispositivo de contexto del bitmap que fue
+   previamente recuperado por win_get_dc().
+
+<p>
+<br><center><h2><a name="Rutinas GDI">Rutinas GDI</a></h2></center><p>
+
+<p>
+Estas rutinas GDI son algo muy específico de la plataforma, para permitir
+dibujar mapas de bits en memoria de Allegro sobre un contexto de un
+dispositivo de Windows. Cuando usted quiera usarlas, necesitará instalar el
+driver de sistema neutral (SYSTEM_NONE) si llama a install_allegro() o
+enganchar Allegro a una ventana externa con win_set_window() si llama a
+allegro_init().
+
+<p>
+Existen dos formas de dibujar sus mapas de bits de Allegro sobre la GDI de
+Windows. Cuando usted está usando mapas de bits estáticos (por ejemplo unos
+pocos dibujos cargados de un archivo de datos), usted puede convertirlos a
+DDB (bitmaps dependientes del dispositivo) con convert_bitmap_to_hbitmap() y
+luego usar simplemente el BitBlt() de Win32 para dibujarlos.
+
+<p>
+Cuando usted usa mapas de bits dinámicos (por ejemplo elementos que
+reaccionan según la entrada del usuario), es mejor usar las funciones
+set_pallette_to_hdc y blit_to_hdc(), que funcionan con DIB (mapas de bits
+independientes del dispositivo).
+
+<p>
+Existen además funciones para hacer blit desde un contexto de dispositivo en
+un BITMAP de Allegro, así que usted puede realizar cosas como captura la
+pantalla.
+
+<p>
+Todas las funciones de dibujo y conversión usan la paleta actual como una
+tabla de conversión de colores. Usted puede alterar la paleta actual con las
+funciones set_palette_to_hdc() o select_palette(). Advertencia: cuando la
+paleta de colores del sistema es cambiada explícitamente, (por ejemplo, por
+otra aplicación) ¡la paleta actual de Allegro no es actualizada con ello!
+
+<p>
+Para usar estas rutinas debe incluir winalleg.h tras los demás ficheros de
+cabecera de Allegro.
+
+<p><br>
+<b>void <a name="set_gdi_color_format">set_gdi_color_format</a>(void);</b><br>
+   Le dice a Allegro que use el mapa de colores del GDI para imágenes de
+   color verdadero. Esto es opcional, pero hará que las conversiones
+   funcionen más rápido. Si usted va a llamar a ésta función, debería hacerlo
+   después de iniciar Allegro y ántes de crear gráficos.
+
+<p><br>
+<b>void <a name="set_palette_to_hdc">set_palette_to_hdc</a>(HDC dc, PALETTE pal);</b><br>
+   Selecciona y realiza una paleta de Allegro sobre el contexto de
+   dispositivo específico.
+
+<p><br>
+<b>HPALETTE <a name="convert_palette_to_hpalette">convert_palette_to_hpalette</a>(PALETTE pal);</b><br>
+   Convierte una paleta de Allegro a una paleta de Windows y devuelve su
+   manejador. Usted debería llamar a DeleteObject() cuando no la necesite
+   más.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#convert_hpalette_to_palette">convert_hpalette_to_palette</a>.</font></blockquote>
+<b>void <a name="convert_hpalette_to_palette">convert_hpalette_to_palette</a>(HPALETTE hpal, PALETTE pal);</b><br>
+   Convierte una paleta de Windows en una paleta de Allegro.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#convert_palette_to_hpalette">convert_palette_to_hpalette</a>.</font></blockquote>
+<b>HBITMAP <a name="convert_bitmap_to_hbitmap">convert_bitmap_to_hbitmap</a>(BITMAP *bitmap);</b><br>
+   Convierte un mapa de bits de memoria en un DDB de Windows y devuelve su
+   manejador. Este mapa de bits usa su propia memoria, así que puede destruir
+   el original sin afectar al convertido. Usted debería llamar DeleteObject()
+   cuando no necesite más este mapa de bits.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#convert_hbitmap_to_bitmap">convert_hbitmap_to_bitmap</a>.</font></blockquote>
+<b>BITMAP *<a name="convert_hbitmap_to_bitmap">convert_hbitmap_to_bitmap</a>(HBITMAP bitmap);</b><br>
+   Crea un bitmap de Allegro en memoria desde un DDB de Windows.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#convert_bitmap_to_hbitmap">convert_bitmap_to_hbitmap</a>.</font></blockquote>
+<b>void <a name="draw_to_hdc">draw_to_hdc</a>(HDC dc, BITMAP *bitmap, int x, int y);</b><br>
+   Dibuja todo un bitmap de Allegro en un contexto de dispositivo de Windows,
+   usando los mismos parámetros que la función draw_sprite().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#blit_to_hdc">blit_to_hdc</a>,
+<a class="xref" href="#stretch_blit_to_hdc">stretch_blit_to_hdc</a>,
+<a class="xref" href="alleg013.html#draw_sprite">draw_sprite</a>.</font></blockquote>
+<b>void <a name="blit_to_hdc">blit_to_hdc</a>(BITMAP *bitmap, HDC dc, int sx, sy, dx, dy, w, h);</b><br>
+   Realiza un blit de un mapa de bits de Allegro a un contexto de dispositivo
+   de Windows, usando los mismos parámetros que la función blit().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_to_hdc">draw_to_hdc</a>,
+<a class="xref" href="#stretch_blit_to_hdc">stretch_blit_to_hdc</a>,
+<a class="xref" href="#blit_from_hdc">blit_from_hdc</a>,
+<a class="xref" href="alleg013.html#blit">blit</a>.</font></blockquote>
+<b>void <a name="stretch_blit_to_hdc">stretch_blit_to_hdc</a>(BITMAP *bitmap, HDC dc, int sx, sy, sw, sh,</b>
+<b>                                                 int dx, dy, dw, dh);</b><br>
+   Realiza un blit de un mapa de bits de Allegro a un contexto de dispositivo
+   de Windows, usando los mismos parámetros que la función stretch_blit().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_to_hdc">draw_to_hdc</a>,
+<a class="xref" href="#blit_to_hdc">blit_to_hdc</a>,
+<a class="xref" href="#stretch_blit_from_hdc">stretch_blit_from_hdc</a>,
+<a class="xref" href="alleg013.html#stretch_blit">stretch_blit</a>.</font></blockquote>
+<b>void <a name="blit_from_hdc">blit_from_hdc</a>(HDC hdc, BITMAP *bitmap, int sx, sy, dx, dy, w, h);</b><br>
+   Realiza un blit de un mapa de bits de Allegro a un contexto de dispositivo
+   de Windows, usando los mismos parámetros que la función blit(). Vea
+   stretch_blit_from_hdc() para más detalles.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#stretch_blit_from_hdc">stretch_blit_from_hdc</a>,
+<a class="xref" href="#blit_to_hdc">blit_to_hdc</a>,
+<a class="xref" href="alleg013.html#blit">blit</a>.</font></blockquote>
+<b>void <a name="stretch_blit_from_hdc">stretch_blit_from_hdc</a>(HDC hcd, BITMAP *bitmap, int sx, sy, sw, sh,</b>
+<b>                                                    int dx, dy, dw, dh);</b><br>
+   Realiza un blit de un mapa de bits de Allegro a un contexto de dispositivo
+   de Windows, usando los mismos parámetros que la función stretch_blit().
+   Usa la paleta actual de Allegro y realiza una conversión a ésta paleta,
+   sin importar la paleta DC actual. Así que si usted está realizando un blit
+   desde el modo de 8 bits, debería primero actualizar la paleta DC con la
+   función set_palette_to_hdc().
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#blit_from_hdc">blit_from_hdc</a>,
+<a class="xref" href="#stretch_blit_to_hdc">stretch_blit_to_hdc</a>,
+<a class="xref" href="alleg013.html#stretch_blit">stretch_blit</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

@@ -1,0 +1,1232 @@
+<HTML>
+<HEAD>
+<TITLE>TERM Como: Poniendo a punto las cosas.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Term-Como-3.html">Anterior</A>
+<A HREF="Term-Como-5.html">Siguiente</A>
+<A HREF="Term-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. Poniendo a punto las cosas.</A></H2>
+
+
+
+<H2><A NAME="ss4.1">4.1 Qu&eacute; necesitas tener de antemano.</A></H2>
+
+
+<P>Antes de comenzar a construir y usar el <CODE>TERM</CODE> debes asegurarte de que 
+tienes incluido el soporte <I>TCP/IP</I> en el kernel. Adem&aacute;s, aseg&uacute;rate de
+que est&eacute; activo el interface <I>loopback</I> de <I>TCP/IP</I>. Si &eacute;ste es tu 
+caso, puedes seguir con el resto de esta secci&oacute;n.</P>
+
+
+<H2><A NAME="ss4.2">4.2 Explicaci&oacute;n de conceptos.</A></H2>
+
+
+<P>En las versiones nuevas del <CODE>term</CODE> han aparecido dos conceptos
+nuevos. Estos dos conceptos se explican en los siguientes apartados. </P>
+
+<H3><I>``Sharing''</I> (compartici&oacute;n). </H3>
+
+<P> </P>
+<P>A partir de la versi&oacute;n 1.16 aparece el concepto de compartir la conexi&oacute;n
+<CODE>TERM</CODE> con otros usuarios. Esto significa que cuando habilitas la
+caracter&iacute;stica <I>``shared''</I> (compartida), m&aacute;s gente podr&aacute; usar la misma
+conexi&oacute;n <CODE>TERM</CODE> que t&uacute; est&aacute;s usando, es decir, cuando est&aacute;s
+trabajando en tu m&aacute;quina remota a trav&eacute;s de tu conexi&oacute;n <CODE>TERM</CODE> (has
+usado <CODE>trsh</CODE> en tu m&aacute;quina local para acceder, por ejemplo) otra
+persona en tu m&aacute;quina local podr&aacute; usar la misma conexi&oacute;n <CODE>TERM</CODE> al
+mismo tiempo para transmitir un fichero con <CODE>ftp</CODE> a su cuenta en tu
+m&aacute;quina local desde un <CODE>ftp</CODE> <I>site</I> de cualquier lugar del mundo.</P>
+<P>Cuando deshabilitas la caracter&iacute;stica <I>``shared''</I> (compartida) (o sea,
+ejecutas <CODE>TERM</CODE> en modo privado) t&uacute; y solo t&uacute; (sin contar a
+<CODE>root</CODE> :-) puede usar la conexi&oacute;n <CODE>TERM</CODE>. </P>
+<P>Por supuesto, s&oacute;lo necesitas instalar el <I>``shared''</I> <CODE>TERM</CODE> en
+el extremo en el que quieres permitir a la gente usar la misma conexi&oacute;n
+<CODE>TERM</CODE> que t&uacute; est&eacute;s usando. As&iacute; que, si otra gente tiene cuenta en
+tu m&aacute;quina local y quieren usarlo desde alg&uacute;n lugar de tu red remota
+habilitas la caracter&iacute;stica shared en el extremo remoto de tu conexi&oacute;n
+<CODE>TERM</CODE>. De esta forma toda esta gente puede acceder a tu m&aacute;quina a
+la vez compartiendo la misma conexi&oacute;n <CODE>TERM</CODE> entre s&iacute; y contigo
+mismo. (NOTA: el primer ejemplo necesitaba habilitar la caracter&iacute;stica
+shared en el extremo local de la conexi&oacute;n <CODE>TERM</CODE>).</P>
+<P><B>NOTA para la instalaci&oacute;n como <CODE>root</CODE></B>: </P>
+<P>Cuando instalas <CODE>TERM</CODE> como <CODE>root</CODE>, primero debes crear un grupo
+<CODE>TERM</CODE> (antes de compilar) sin miembros, a&ntilde;adiendo la siguiente
+l&iacute;nea en <CODE>/etc/group</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+term::16:root
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>o cualquier otro <CODE>GID</CODE> no usado en lugar del 16 si &eacute;ste ya est&aacute; en uso.</P>
+<P>Despu&eacute;s de compilar e instalar coloca al <CODE>TERM</CODE> y sus clientes el
+<CODE>SGID</CODE> <I>term</I>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chgrp term &lt;cliente_term&gt;
+chmod g+s &lt;cliente_term&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tambi&eacute;n cualquier programa que hagas utilizable con <CODE>TERM</CODE> debe tener 
+SGID <CODE>TERM</CODE>.</P>
+
+<H3>``<I>Full TERM networking</I>'' (conexi&oacute;n de red completamente TERM) </H3>
+
+
+<P>A partir de la versi&oacute;n <CODE>2.0.0</CODE> de <CODE>TERM</CODE> se usa el concepto
+<I>full TERM networking</I> (conexi&oacute;n de red totalmente TERM). Cuando tu
+&uacute;nica conexi&oacute;n con el mundo exterior es una conexi&oacute;n <CODE>TERM</CODE>, tienes
+una red <I>full TERM</I> (completamente TERM) y deber&iacute;as compilar el
+<CODE>TERM</CODE> con full <CODE>TERM</CODE> networking.  En este caso se ha
+puesto un fichero llamado <CODE>termnet</CODE> en el directorio compartido.
+Esto dice a <CODE>TERM</CODE> que tu &uacute;nica conexi&oacute;n con el exterior es a
+trav&eacute;s del <CODE>TERM</CODE>. </P>
+<P>Cuando tambi&eacute;n tienes alg&uacute;n otro tipo de conexi&oacute;n de red adem&aacute;s de los
+programas (pasados a <CODE>TERM</CODE>) de la conexi&oacute;n <CODE>TERM</CODE>, primero
+intenta que realicen su trabajo usando esta otra conexi&oacute;n. Si &eacute;sta falla
+entonces se invoca el <CODE>TERM</CODE> y se intenta realizar el trabajo a
+trav&eacute;s de la conexi&oacute;n <CODE>TERM</CODE>. Para aclarar esto, ahora se da un
+ejemplo en el que el se usa <CODE>telnet</CODE> hecho utilizable en <CODE>TERM</CODE>.
+Este <CODE>telnet</CODE> deber&iacute;a funcionar con y sin <CODE>TERM</CODE>. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+telnet localhost
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>no usa el <CODE>TERM</CODE> para conectar, pero</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+telnet zeus.cs.kun.nl
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>usar&aacute; el <CODE>TERM</CODE> s&oacute;lo si no tienes otro tipo de conexi&oacute;n de red.</P>
+<P>El full TERM networking tambi&eacute;n implica el mentir sobre el nombre del
+host local, diciendo que es el host remoto en su lugar. Adem&aacute;s, provoca que
+<CODE>bind (0)</CODE> act&uacute;e siempre en el host remoto. En esencia hace que muchos
+programas puedan usarse sin ir a trav&eacute;s del <CODE>TERM</CODE> mientras el
+<CODE>TERM</CODE> est&aacute; corriendo. Desafortunadamente, la mayor&iacute;a de programas
+y demonios <CODE>UDP</CODE> no funcionar&aacute;n con <CODE>TERM</CODE> sin estos inc&oacute;modos
+trucos.</P>
+
+
+<H2><A NAME="ss4.3">4.3 Compilaci&oacute;n del <CODE>TERM</CODE></A></H2>
+
+
+<P>Si tienes suerte esto s&oacute;lo debe implicar un <CODE>make</CODE>. Sin embargo, lo
+m&aacute;s probable es que necesites hacer m&aacute;s. Debido a nuevas opciones en las
+versiones nuevas del <CODE>TERM</CODE> (<CODE>sharing</CODE>, <CODE>configure</CODE>) ahora es
+un poco m&aacute;s complicado crear el ejecutable del <CODE>TERM</CODE>. Hoy en d&iacute;a
+pueden seguirse un par de caminos para obtener el ejecutable. </P>
+<P>Para cubrir todos los caminos a seguir con los que puede construirse el 
+<CODE>TERM</CODE> vamos a dividir esta secci&oacute;n en tres partes:</P>
+<P>
+<OL>
+<LI>Construir el <CODE>TERM</CODE> hasta la versi&oacute;n 1.15</LI>
+<LI>Construir el <CODE>TERM</CODE>, versiones 1.16 hasta 1.19</LI>
+<LI>Construir el <CODE>TERM</CODE>, versiones 2.0.0 y superiores</LI>
+</OL>
+</P>
+
+<H3>Construir el <CODE>term</CODE> hasta la versi&oacute;n 1.15</H3>
+
+
+<P>Para estas versiones del <CODE>term</CODE>, la compilaci&oacute;n no deber&iacute;a implicar 
+ejecutar m&aacute;s que estos comandos</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+make DO=install OS-type
+make installman
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Encontrar&aacute;s el <CODE>term</CODE>, sus clientes y las p&aacute;ginas de manual
+(<CODE>man</CODE>)  c&oacute;modamente construidas e instaladas y listas para usar
+despu&eacute;s de esto. </P>
+<P>Adem&aacute;s, necesitar&aacute;s crear un directorio <CODE>$HOME/term</CODE>. Este
+directorio lo usar&aacute; el <CODE>term</CODE> para buscar su fichero
+<CODE>termrc</CODE>. </P>
+<P>La &uacute;nica cosa que puedes querer hacer es cambiar algunos de los paths
+en el <CODE>Makefile</CODE>, o cambiar alguna opci&oacute;n del compilador.</P>
+
+<H3>Construir el <CODE>term</CODE>, versiones 1.16 hasta 1.19 </H3>
+
+<P> </P>
+<P>Para construir el <CODE>term</CODE> ahora puedes elegir una de las siguientes
+formas: </P>
+<P>
+<OL>
+<LI>Como un usuario normal, construir el <CODE>term</CODE> en modo privado</LI>
+<LI>Como un usuario normal, construir el <CODE>term</CODE> en modo shared</LI>
+<LI>Como <CODE>root</CODE>, construir el <CODE>term</CODE> en modo privado</LI>
+<LI>Como <CODE>root</CODE>, construir el <CODE>term</CODE> en modo shared</LI>
+</OL>
+</P>
+<P>Abajo se explicar&aacute; c&oacute;mo habilitar/deshabilitar la opci&oacute;n <CODE>shared</CODE>
+durante la compilaci&oacute;n del <CODE>term</CODE></P>
+<P>
+<OL>
+<LI>Eres un usuario normal (sin acceso de <CODE>root</CODE>) y NO quieres
+COMPARTIR (SHARE) la conexi&oacute;n <CODE>term</CODE> con otros usuarios.
+
+Como usuario que no quiere compartir la conexi&oacute;n <CODE>term</CODE> con otros
+usuarios deber&iacute;as hacer lo siguiente para construir el <CODE>term</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make DO=install OS-type
+   make installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Despu&eacute;s de esto, el <CODE>term</CODE>, sus clientes y las p&aacute;ginas de manual est&aacute;n
+generados e instalados.
+
+Adem&aacute;s, necesitar&aacute;s crear un directorio <CODE>$HOME/term</CODE>. Este
+directorio lo usar&aacute; el <CODE>term</CODE> para buscar su fichero
+<CODE>termrc</CODE>.
+
+La &uacute;nica cosa que puedes querer hacer es cambiar algunos de los paths
+en el <CODE>Makefile</CODE> o cambiar alg&uacute;n par&aacute;metro del compilador.
+</LI>
+<LI>Eres un usuario normal (sin acceso de <CODE>root</CODE>) y SI quieres COMPARTIR
+(SHARE) la conexi&oacute;n <CODE>term</CODE> con otros usuarios.
+
+Como usuario que quiere compartir la conexi&oacute;n <CODE>term</CODE> con otros
+usuarios deber&iacute;as hacer lo siguiente para construir el <CODE>term</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make DO=installshare USERSHARE=$HOME/term OS-type
+   make installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Despu&eacute;s de esto, el <CODE>term</CODE>, sus clientes y las p&aacute;ginas de manual 
+estar&aacute;n compiladas e instaladas.
+
+Adem&aacute;s, tendr&aacute;s un directorio <CODE>$HOME/term</CODE> (por defecto) con
+permisos <CODE>drwxrwxr-x</CODE>. En este directorio encontrar&aacute;s al menos el
+<I>socket</I> usado por el <CODE>term</CODE> para sus conexiones
+(<CODE>tmp/private/socket=</CODE>).
+</LI>
+<LI>Eres <CODE>root</CODE> y NO quieres COMPARTIR (SHARE) la conexi&oacute;n <CODE>term</CODE> con
+otros usuarios.
+
+Como <CODE>root</CODE> que no quiere compartir la conexi&oacute;n <CODE>term</CODE> con otros
+usuarios deber&iacute;as hacer lo siguiente para construir el <CODE>term</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make DO=install OS-type
+   make installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Despu&eacute;s de esto, el <CODE>term</CODE>, sus clientes y las p&aacute;ginas de manual 
+estar&aacute;n compiladas e instaladas.
+
+Adem&aacute;s, tendr&aacute;s un directorio llamado <CODE>/usr/local/lib/term</CODE> (por
+defecto) con permisos <CODE>drwxr-xr-x</CODE>. En este directorio encontrar&aacute;s
+al menos el <I>socket</I> usado por el <CODE>term</CODE> para sus conexiones
+(<CODE>tmp/private/socket=</CODE>).
+</LI>
+<LI>Eres <CODE>root</CODE> y quieres COMPARTIR (SHARE) la conexi&oacute;n <CODE>term</CODE>.
+
+Primero, aseg&uacute;rate de haber le&iacute;do la secci&oacute;n sobre ``sharing'' anterior.
+
+Como <CODE>root</CODE> que quiere compartir la conexi&oacute;n <CODE>term</CODE> deber&iacute;as hacer lo
+siguiente:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make DO=installshare OS-type
+   make installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Despu&eacute;s de esto, el <CODE>term</CODE>, sus clientes y las p&aacute;ginas de manual
+estar&aacute;n compiladas e instaladas.
+
+Adem&aacute;s, tendr&aacute;s un directorio llamado <CODE>/usr/local/lib/term</CODE> (por
+defecto) con permisos <CODE>drwxrwxr-x</CODE>. En este directorio encontrar&aacute;s
+al menos el <I>socket</I> usado por el <CODE>term</CODE> para sus conexiones
+(<CODE>tmp/private/socket=</CODE>). 
+</LI>
+</OL>
+</P>
+
+<H3>Construir el <CODE>TERM</CODE>, versiones <CODE>2.0.0</CODE> y superiores</H3>
+
+
+<P>Primero aseg&uacute;rate de haber le&iacute;do la secci&oacute;n sobre ``full term networking''
+de arriba.</P>
+<P>Para las versiones de <CODE>term 2.0.0</CODE> y superiores hay muchas formas
+de generar el binario del <CODE>term</CODE> y los clientes. Todo esto puede
+hacerse tanto por <CODE>root</CODE> como por un usuario cualquiera: </P>
+<P>
+<OL>
+<LI>Generar el <CODE>term</CODE> en modo privado sin full term networking</LI>
+<LI>Generar el <CODE>term</CODE> en modo privado con full term networking</LI>
+<LI>Generar el <CODE>term</CODE> en modo shared sin full term networking</LI>
+<LI>Generar el <CODE>term</CODE> en modo shared con full term networking</LI>
+</OL>
+</P>
+<P>En estas versiones de <CODE>term</CODE> ha aparecido una nueva forma de
+compilar, usando el script <CODE>configure</CODE>. Cuando se ejecuta <CODE>configure</CODE>
+&eacute;ste chequea en que sistema operativo est&aacute;s tratando de instalar el
+<CODE>term</CODE>, si el directorio origen est&aacute; disponible o no, y si hay
+puesta alguna opci&oacute;n <I>runtime</I>.  De acuerdo con las cosas encontradas
+<CODE>configure</CODE> crea entonces un <CODE>Makefile</CODE> usando <CODE>Makefile.in</CODE> que
+se entrega con el paquete del <CODE>term</CODE>. </P>
+<P>Dos de las opciones m&aacute;s importantes para <CODE>configure</CODE> son <CODE>--root</CODE> y
+<CODE>--user</CODE> que establecen si el <CODE>term</CODE> ser&aacute; instalado por
+<CODE>root</CODE> o por un usuario cualquiera. Se pueden usar otras opciones para
+instalar el <CODE>term</CODE> de la forma que quieras (con paths no est&aacute;ndar,
+por ejemplo). </P>
+<P>
+<OL>
+<LI>Generar el <CODE>term</CODE> en modo privado sin full term networking
+
+Para generar el <CODE>term</CODE> de este modo necesitas ejecutar los siguientes 
+comandos (tanto para <CODE>root</CODE> como para cualquiera):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make install installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Esto genera los binarios, instal&aacute;ndolos junto con las p&aacute;ginas de manual.
+</LI>
+<LI>Generar el <CODE>term</CODE> en modo privado con full term networking
+
+Para generar el <CODE>term</CODE> de este modo necesitas ejecutar los siguientes 
+comandos (tanto para el <CODE>root</CODE> como para cualquiera):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make installnet installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Esto genera los binarios, instal&aacute;ndolos junto con las p&aacute;ginas de manual.
+</LI>
+<LI>Generar el <CODE>term</CODE> en modo shared sin full term networking
+   
+Para generar el <CODE>term</CODE> de este modo necesitas ejecutar los siguientes 
+comandos (tanto para el <CODE>root</CODE> como para cualquiera):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make share installman
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Esto genera los binarios e instala estos binarios y las p&aacute;ginas de manual.
+</LI>
+<LI>Generar el <CODE>term</CODE> en modo shared con full term networking
+
+Para generar el <CODE>term</CODE> de este modo necesitas ejecutar los siguientes 
+comandos (tanto para el <CODE>root</CODE> como para cualquiera):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   make share installnet installman  
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Esto genera los binarios e instala estos binarios y las p&aacute;ginas de manual.
+</LI>
+</OL>
+</P>
+
+
+<H2><A NAME="ss4.4">4.4 <CODE>client.a, libtermnet.a, libtermnet.sa, libtermnet.so</CODE></A></H2>
+
+
+<P>Con el <CODE>term</CODE> se suministra una librer&iacute;a con funciones para
+clientes <CODE>term</CODE>. </P>
+<P>Hasta la versi&oacute;n 1.16 esta libreria se llamaba <CODE>client.a</CODE>. Durante la
+compilaci&oacute;n de <CODE>term</CODE> se generaba esta librer&iacute;a, que despu&eacute;s se
+usaba en la compilaci&oacute;n de los clientes <CODE>term</CODE>. No se instalaba en
+otro directorio. </P>
+<P>A partir de la versi&oacute;n 1.16 se cambi&oacute; el nombre de la librer&iacute;a por
+<CODE>libtermnet.a</CODE>. Hasta la versi&oacute;n 1.19 esta librer&iacute;a se crea en el
+directorio <CODE>term</CODE> y despu&eacute;s se usa durante la compilaci&oacute;n de los
+clientes <CODE>term</CODE>. No se instala en otro directorio.</P>
+<P>A partir de la versi&oacute;n 2.0.0, adem&aacute;s de <CODE>libtermnet.a</CODE> tambi&eacute;n se crean
+<CODE>libtermnet.so</CODE> y <CODE>libtermnet.sa</CODE> (libreria <I>shared</I> y librer&iacute;a
+<I>exported initialized</I>) durante la instalaci&oacute;n del paquete
+<CODE>term</CODE>. Durante la instalaci&oacute;n de todas las partes del paquete,
+estos tres ficheros de librer&iacute;as se instalan en el directorio
+<CODE>/usr/local/lib</CODE> (por defecto).  Y despu&eacute;s se hace un enlace desde
+<CODE>libtermnet.so.2</CODE> a <CODE>libtermnet.so.2.x.x</CODE>. </P>
+<P>Finalmente se ejecuta <CODE>ldconfig</CODE> para crear los enlaces necesarios y el
+cach&eacute; (para uso del enlazador din&aacute;mico, <CODE>ld.so</CODE>) para las librer&iacute;as
+compartidas m&aacute;s recientes que se encuentran en los directorios
+especificados en la l&iacute;nea de comandos, en el fichero
+<CODE>/etc/ld.so.conf</CODE>, y en los directorios permitidos
+(<CODE>/usr/lib</CODE> y <CODE>/lib</CODE>). </P>
+<P>Si la instalaci&oacute;n se hace correctamente, los tres ficheros de librer&iacute;a
+podr&aacute;n ser usados por los clientes de <CODE>term</CODE> que son generados con
+librer&iacute;as din&aacute;micas en lugar de est&aacute;ticas. Estas librer&iacute;as tambi&eacute;n se
+pueden usar ahora para portar tu software propio a fin de poderlo usar con
+el <CODE>term</CODE> (ver m&aacute;s adelante).</P>
+
+
+<H2><A NAME="ss4.5">4.5 Estableciendo variables de entorno.</A></H2>
+
+
+<P><CODE>term</CODE> reconoce un par de variables de entorno que pueden definir los
+usuarios. Las tres primeras de &eacute;stas que se explicar&aacute;n son:</P>
+<P>
+<UL>
+<LI><CODE>TERMDIR</CODE></LI>
+<LI><CODE>TERMSHARE</CODE></LI>
+<LI><CODE>TERMMODE</CODE></LI>
+</UL>
+</P>
+<P>Definiendo estas variables puedes controlar el modo en que se ejecuta el 
+<CODE>term</CODE>.</P>
+<P>Para versiones del <CODE>term</CODE> hasta la 1.15 s&oacute;lo es importante la
+variable <CODE>TERMDIR</CODE> (estas versiones no reconocen el modo <I>shared</I>).
+Para estas versiones <CODE>TERMDIR</CODE> se deber&iacute;a definir como sigue: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+setenv TERMDIR $HOME     # csh o tcsh
+export TERMDIR=$HOME     # bash
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>A partir de la versi&oacute;n 1.16 <CODE>term</CODE> tambi&eacute;n reconoce las variables
+<CODE>TERMSHARE</CODE> y <CODE>TERMMODE</CODE>. Con estas variables se le puede indicar al
+<CODE>term</CODE> que funcione en modo privado o en modo compartido. 
+Explicaremos como definir las variables para ambos modos.</P>
+<P>
+<OL>
+<LI> Ejecutar <CODE>term</CODE> en modo privado puede hacerse
+definiendo las variables <CODE>TERMDIR</CODE> y <CODE>TERMMODE</CODE> de la siguiente forma:
+
+Para <CODE>csh</CODE> o <CODE>tcsh</CODE>:
+<BLOCKQUOTE><CODE>
+<PRE>
+   setenv TERMDIR $HOME
+   setenv TERMMODE 0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Para <CODE>bash</CODE>: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+export TERMDIR=$HOME export TERMMODE=0 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ </LI>
+<LI>Si quieres usar el <CODE>term</CODE> en modo compartido hay dos formas
+de definir las variables:
+
+<OL>
+<LI> Si <CODE>term</CODE> se instala como un programa <CODE>SUID</CODE> s&oacute;lo se debe 
+definir <CODE>TERMMODE</CODE>. (<CODE>README</CODE> en el paquete del <CODE>term</CODE>).
+
+<BLOCKQUOTE><CODE>
+<PRE>
+      setenv TERMMODE 'numero'    # csh o tcsh
+      export TERMMODE='numero'    # bash
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+En <CODE>'numero'</CODE> debe ponerse 1 si se est&aacute; usando una versi&oacute;n del
+<CODE>term</CODE> entre la 1.16 y la 1.19 (<CODE>README.share</CODE> en el paquete del
+<CODE>term</CODE>) y 2 si se est&aacute; usando la versi&oacute;n de <CODE>term</CODE> <CODE>2.0.0</CODE> o
+superior (<CODE>README.security</CODE> en el paquete del <CODE>term</CODE>). 
+</LI>
+<LI> Si <CODE>term</CODE> se instala como un programa <CODE>SGID</CODE> las variables se 
+deben definir del siguiente modo:
+
+Para <CODE>csh</CODE> o <CODE>tcsh</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+      setenv TERMMODE 1
+      setenv TERMDIR /usr/local/lib/term
+      setenv TERMSHARE $TERMDIR
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+
+Para <CODE>bash</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   export TERMMODE=1
+   export TERMDIR=/usr/local/lib/term
+   export TERMSHARE=$TERMDIR
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Poniendo las variables de esta forma har&aacute; posible que se ejecuten clientes
+viejos (<I>linkados</I> con una versi&oacute;n antigua del <CODE>client.a</CODE>) en modo 
+compartido (shared).
+</LI>
+</OL>
+ 
+</LI>
+</OL>
+</P>
+<P>A partir de la versi&oacute;n <CODE>2.0.0</CODE>, <CODE>term</CODE> tambi&eacute;n reconoce la variable
+<CODE>TERMSERVER</CODE>.  Se necesita definir esta variable cuando se tienen
+varios m&oacute;dems y mas de una conexi&oacute;n a la vez. Para especificar que
+conexi&oacute;n usar, se debe ejecutar el <CODE>term</CODE> con un nombre de
+servidor: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+nohup term -v /dev/modem1 Connection1 & nohup term -v /dev/modem2 Connection2 &
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>Los usuarios deber&iacute;an definir la variable <CODE>TERMSERVER</CODE> con el nombre
+de conexi&oacute;n que quieran usar:  </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+setenv TERMSERVER Connection1           # csh o tcsh  
+export TERMSERVER=Connection2           # bash  
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss4.6">4.6 Probar el <CODE>TERM</CODE></A></H2>
+
+<P> </P>
+<P>Haz un <CODE>make test</CODE> (o <CODE>make termtest</CODE> para versiones nuevas
+del <CODE>term</CODE>) para generar el demonio de prueba del <CODE>term</CODE>. 
+<CODE>(term)test</CODE> funciona ejecutando dos copias del <CODE>term</CODE> en tu
+sistema, una ``local'' y una ``remota''. Ambas leer&aacute;n tu <CODE>termrc</CODE>; de
+modo que puedas ajustar su comportamiento. Ahora ejecuta
+<CODE>(term)test</CODE>. Deber&iacute;as poder hacer un <CODE>trsh</CODE> y un
+<CODE>tupload</CODE>.  Prueba con:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ tupload ./term /usr/tmp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>deber&iacute;as de conseguir tener una copia del binario <CODE>term</CODE> en
+<CODE>/usr/tmp</CODE> ). La salida del <CODE>term</CODE> local deber&iacute;a aparecer en
+<CODE>local.log</CODE> y la remota en <CODE>remote.log</CODE>. Puedes ejecutar
+<CODE>term</CODE> con el par&aacute;metro <CODE>-d255</CODE> para poder registrar lo que
+ocurra en estos ficheros, o habilitar el <I>debugging</I> en tu <CODE>termrc</CODE>.</P>
+<P>NOTA: Ejecuta el <CODE>test</CODE> como <CODE>./test</CODE> para evitar el
+<CODE>test</CODE> del sistema. </P>
+
+
+<H2><A NAME="ss4.7">4.7 <CODE>TERM</CODE> y los programas de comunicaciones.</A></H2>
+
+
+<P>Antes de poder usar <CODE>term</CODE>, tienes que establecer una conexi&oacute;n v&iacute;a
+m&oacute;dem usando un programa de comunicaciones como <CODE>kermit</CODE> o <CODE>seyon</CODE>.
+En la documentaci&oacute;n del programa encontrar&aacute;s qu&eacute; tienes que hacer para
+conectarte con la m&aacute;quina remota. </P>
+<P>Cuando hayas establecido la conexi&oacute;n y quieras ejecutar <CODE>term</CODE>,
+necesitas suspender o salir del programa de comunicaciones sin cerrar la
+conexi&oacute;n. </P>
+<P>A continuaci&oacute;n explicar&eacute; c&oacute;mo hacer esto con algunos programas de
+comunicaciones.</P>
+
+<H3><CODE>kermit</CODE></H3>
+
+
+<P>Iniciar <CODE>term</CODE> cuando se usa <CODE>kermit</CODE> es f&aacute;cil. En el
+<I>prompt</I> local de <CODE>kermit</CODE> se teclea ``<I>suspend</I>'', de modo que
+volver&aacute;s al prompt de Linux. Desde este prompt puedes ya establecer la
+conexi&oacute;n <CODE>term</CODE>.</P>
+
+<H3><CODE>seyon</CODE></H3>
+
+
+<P>Una forma de iniciar chequeo de l&iacute;nea o <CODE>TERM</CODE> cuando usas
+<CODE>seyon</CODE> es poner <CODE>linecheck</CODE> y <CODE>TERM</CODE> en el men&uacute;
+<CODE>Transfer</CODE> (controlado por el fichero 
+<CODE>$HOME/.seyon/protocols</CODE>). </P>
+<P>A&ntilde;ade al fichero <CODE>$HOME/.seyon/protocols</CODE> lo siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&quot;Line check&quot; &quot;$cd /tmp; linecheck&quot;
+&quot;Term&quot; &quot;$term -c off -w 10 -t 150 -s 38400 -l $HOME/tlog&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora, cuando inicies <CODE>linecheck</CODE> o <CODE>term</CODE> en la m&aacute;quina local,
+selecciona en el men&uacute; <CODE>Transfer</CODE> el &iacute;tem ``<CODE>Line Check</CODE>'' o
+``<CODE>Term</CODE>''. </P>
+<P>Por supuesto, tambi&eacute;n podr&iacute;as usar el bot&oacute;n de comando de shell y
+teclear en el cuadro de di&aacute;logo que se te abrir&aacute; los comandos <CODE>linecheck</CODE> o
+<CODE>term</CODE>. Esto mismo hace redirecci&oacute;n autom&aacute;tica al comando.</P>
+
+
+<H2><A NAME="ss4.8">4.8 Hacer un enlace transparente.</A></H2>
+
+
+<P>Presumiblemente, puedes establecer una conexi&oacute;n m&oacute;dem entre tus hosts 
+local y remoto. T&iacute;picamente lo que haces es, llamar a alg&uacute;n tipo de 
+servidor de terminales y conectas con tu host remoto a trav&eacute;s de &eacute;l. </P>
+<P>Tambi&eacute;n sueles usar para ello software de terminal, como <CODE>kermit</CODE> o
+<CODE>seyon</CODE> para comunicar con tu m&oacute;dem (los ejemplos de este documento
+usan el <CODE>kermit</CODE>, ya que es el que usa el autor). Si est&aacute;s teniendo
+problemas con el m&oacute;dem, o con el software de terminal, echa una ojeada al
+<I>Serial HOWTO</I>; esto deber&iacute;a ayudarte. </P>
+<P>Una vez establecido el enlace, querr&aacute;s hacerlo lo m&aacute;s transparente
+posible.  Comprueba los comandos en el servidor de terminal (<CODE>help</CODE> o
+<CODE>?</CODE> suele ser un buen comienzo). Busca la opci&oacute;n <I>8 bits</I> siempre
+que sea posible. Esto puede implicar cambiar la forma en que accedes a tu
+sistema, por ejemplo, si el servidor usa <CODE>rlogin</CODE>, tendr&aacute;s que usarlo
+poniendo el par&aacute;metro <CODE>-8</CODE> para hacerlo transparente. </P>
+<P>Especialmente vigila el control de flujo por <I>xon/xoff</I>. No lo
+necesitas. Intenta habilitar el control de flujo por hardware,
+<I>rts/cts</I>. Puede que tengas que mirar la documentaci&oacute;n de tu m&oacute;dem para
+saber c&oacute;mo configurarlo para hacer comunicaciones <I>rts/cts</I> de 8
+bits. </P>
+
+
+<H2><A NAME="ss4.9">4.9 Ejecutar <CODE>linecheck</CODE></A></H2>
+
+
+<P><B>ATENCI&Oacute;N:</B> En algunos documentos las opciones de l&iacute;nea de comandos
+para <CODE>linecheck</CODE> se citan en orden incorrecto. He comprobado esto y
+he hallado que el orden de las opciones que menciono aqu&iacute; abajo es el
+correcto. </P>
+<P><B>NOTA:</B> a partir de la versi&oacute;n de <CODE>term</CODE> 2.3.0
+<CODE>linecheck</CODE> ya no necesitar&aacute; tener el nombre del fichero de log en la
+l&iacute;nea de comandos.  Escribir&aacute; su salida al fichero <CODE>linecheck.log</CODE> en
+el directorio desde el que se ejecute <CODE>linecheck</CODE>.</P>
+<P><CODE>linecheck</CODE> es un programa que se entrega con el <CODE>term</CODE>.
+Comprueba la transparencia de un enlace, produciendo informaci&oacute;n de
+configuraci&oacute;n que necesita el <CODE>term</CODE> para funcionar correctamente.
+<CODE>linecheck</CODE> manda todos los 256 caracteres de 8 bits posibles sobre el
+enlace y verifica que cada uno se transmite correctamente. </P>
+<P>Hay que configurar <CODE>term</CODE> para manejar caracteres que no pueden ser
+transmitidos por el enlace, y <CODE>linecheck</CODE> determina cu&aacute;les son estos
+caracteres. Debes usar <CODE>linecheck</CODE> despu&eacute;s de haber establecido un
+enlace m&oacute;dem lo m&aacute;s transparente posible. Para correr <CODE>linecheck</CODE> haz
+lo siguiente:</P>
+<P>
+<OL>
+<LI>En el sistema remoto, ejecuta  <CODE>linecheck linecheck.log</CODE>
+</LI>
+<LI>Vuelve a tu sistema local y suspende tu programa de comunicaciones
+(<CODE>^Z</CODE> en <CODE>kermit</CODE>) (si no te robar&aacute; caracteres del <CODE>linecheck</CODE>).
+</LI>
+<LI>En el sistema local ejecuta 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+linecheck linecheck.log &gt; /dev/modem &lt; /dev/modem
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</OL>
+</P>
+<P>Cuando termine <CODE>linecheck</CODE> encontrar&aacute;s un conjunto de n&uacute;meros al final
+de los ficheros <CODE>linecheck.log</CODE>. Estos son los que deber&iacute;as poner como
+'escape' en el <CODE>termrc</CODE> al otro lado del enlace. Por ejemplo, mi
+<CODE>linecheck.log</CODE> local dec&iacute;a que 'escape' era el 29 y 157. As&iacute; que, mi
+<CODE>termrc</CODE> local escapa (evita) estos caracteres y mi <CODE>termrc</CODE> remoto
+ninguno. Si se escapa (evita) un car&aacute;cter en un extremo, tambi&eacute;n debo
+ignorarlo (ignore) en el otro; as&iacute; que, en este ejemplo, deber&iacute;a ignorar
+29 y 157 en mi sistema remoto. </P>
+<P>Si <CODE>linecheck</CODE> se cuelga, prueba a usar</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linecheck linecheck.log 17 19
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en el sistema remoto, y </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linecheck linecheck.log 17 19 &gt; /dev/modem &lt; /dev/modem
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en el sistema local. Esto evitar&aacute; tus caracteres de <I>xon/xoff</I>
+(control de flujo), que colgar&aacute;n tu l&iacute;nea si tienes control de flujo por
+software. Si soluciona los problemas de cuelgues, tendr&aacute;s que
+escapar/ignorar 17/19 en ambos <CODE>termrc</CODE>. Si tu servidor de terminal
+tiene otros caracteres que lo cuelguen, prueba a correr <CODE>lineckeck</CODE> con
+esos caracteres escapados como el ejemplo de arriba. Puedes marcar esos
+caracteres si <CODE>linecheck</CODE> se cuelga.  Si es este el caso, m&aacute;talo, y
+luego mira en los logs. Los &uacute;ltimos caracteres transmitidos es probable
+que sean los culpables. Vuelve a intentarlo escapando estos caracteres. </P>
+<P>En resumen, mi <CODE>termrc</CODE> local tiene las l&iacute;neas:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+escape 29
+escape 157
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y mi <CODE>termrc</CODE> remoto tiene las l&iacute;neas:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ignore 29
+ignore 157
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>ya que mi <CODE>linecheck.log</CODE> remoto dec&iacute;a que 'escape 29 y 157'.</P>
+
+
+<H2><A NAME="ss4.10">4.10 Prueba a correr el <CODE>TERM</CODE> </A></H2>
+
+<P> </P>
+<P>Accede a tu sistema remoto, haciendo el enlace lo m&aacute;s transparente posible
+(si no lo has hecho a&uacute;n).  Arranca <CODE>term</CODE> en el extremo remoto. Yo
+lo hago as&iacute;: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+exec term -r -l $HOME/tlog -s 38400 -c off -w 10 -t 150
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>Vamos a desgranar las opciones una por una (ten en cuenta que con igual
+facilidad podr&iacute;a poner estas opciones en mi <CODE>termrc</CODE>. Lo hice as&iacute;
+porque evitaba tener que editar un fichero mientras pon&iacute;a a punto el
+<CODE>term</CODE>).</P>
+<P><CODE>exec</CODE> implica destruir la <I>shell</I> actual, corriendo en su lugar
+el programa indicado. Ejecuto las cosas con <CODE>exec</CODE> porque no pretendo
+usar mi <I>shell</I> de login de nuevo; estar&iacute;a desperdiciando memoria. Si
+est&aacute;s depurando el enlace y eres capaz de abortar el <CODE>term</CODE> remoto,
+puede que no quieras hacer el <CODE>exec</CODE>.</P>
+<P>La opci&oacute;n <CODE>-r</CODE> es necesaria s&oacute;lo en un extremo. <CODE>term</CODE> ver&aacute; a
+este extremo como el remoto de la conexi&oacute;n (ten en cuenta que el extremo
+remoto del <CODE>term</CODE> puede ser tu propia m&aacute;quina local). Si no usas
+esta opci&oacute;n en un extremo los clientes de <CODE>term</CODE> se caer&aacute;n
+espont&aacute;neamente. </P>
+<P><CODE>-l $HOME/tlog</CODE>. Esto registra los errores en el fichero
+<CODE>tlog</CODE> en mi directorio <I>home</I>. Muy &uacute;til para depurar. No hay raz&oacute;n
+para no ponerlo. </P>
+<P><CODE>-s 38400</CODE> : Tengo un m&oacute;dem 14400, con compresi&oacute;n. Para ratios de
+compresi&oacute;n &oacute;ptimos, necesito poder mandar bits al <I>pipe</I> lo m&aacute;s r&aacute;pido
+posible. Para un m&oacute;dem m&aacute;s lento, deber&iacute;a ser un n&uacute;mero menor. F&iacute;jate que
+si tienes una <I>UART</I> 16450 en tu puerto serie, las velocidades altas
+pueden provocar p&eacute;rdida de datos por desbordamiento del chip de tu puerto
+serie.  <CODE>term</CODE> se recuperar&aacute; de esto, pero si ves muchos mensajes
+en tu log, (o recibes <I>``overrun warnings''</I> en versiones del kernel
+<CODE>0.99pl15</CODE> en adelante) necesitar&aacute;s reducir este n&uacute;mero. </P>
+<P><CODE>-c off</CODE> : Desactiva la compresi&oacute;n de datos. Tengo un m&oacute;dem con
+compresi&oacute;n, y no necesito comprimir las cosas dos veces.</P>
+<P><CODE>-w 10 -t 150</CODE> : De nuevo estas son opciones para optimizar mi
+enlace de m&oacute;dem r&aacute;pido. Pongo mi <I>ventana</I> a 10 y mi <I>timeout</I> a 150.
+Esto lo hago de acuerdo con la recomendaci&oacute;n de la p&aacute;gina de manual de
+<CODE>term_setup</CODE>. </P>
+<P>Vuelve sobre tu m&aacute;quina local y suspende tu programa de comunicaciones
+(<CODE>^Z</CODE> en <CODE>kermit</CODE>). No querr&aacute;s que est&eacute; corriendo a la vez que
+<CODE>term</CODE>, ya que luchar&iacute;a con el <CODE>term</CODE> por el puerto serie.
+Si puedes convencer a tu m&oacute;dem de que no cuelgue cuando salgas de tu
+programa de comunicaciones (cuando cambia el <CODE>DTR</CODE>), podr&iacute;as salir del
+programa en este punto.</P>
+<P>Ahora lanza el <CODE>term</CODE> local. Yo uso:  </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+term -c off -l $HOME/tlog -s 38400 -w 10 -t 150 &lt; /dev/modem &gt; /dev/modem &
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Necesito decirle al <CODE>term</CODE> donde est&aacute; el m&oacute;dem; As&iacute; que apunto
+tanto la entrada como la salida est&aacute;ndar a <CODE>/dev/modem</CODE> (eso es lo
+que hacen <CODE>&lt;</CODE> y <CODE>&gt;</CODE>).  Tambi&eacute;n lo hago correr en
+<I>background</I>; de modo que puedo usar esta consola para otra cosa si la
+necesito. </P>
+<P><CODE>term</CODE> deber&iacute;a de funcionar ya <CODE>:-)</CODE>. Prueba con <CODE>trsh</CODE>,
+a ver qu&eacute; pasa. Si se cuelga, o el enlace parece lento, echa una ojeada a
+tu <CODE>tlog</CODE> en ambos extremos. ¿Tienes <I>timeouts</I> o mensajes de error?
+Si es as&iacute;, entonces es que has configurado algo mal. Vu&eacute;lvelo a intentar
+(despu&eacute;s de que hayas terminado de leer esto <CODE>:-)</CODE>. Observa que la
+conexi&oacute;n no parecer&aacute; muy r&aacute;pida, especialmente si usas compresi&oacute;n - ser&aacute;
+un poco a saltos. La velocidad real aparece durante transmisiones de
+ficheros y similares.</P>
+
+
+<H2><A NAME="ss4.11">4.11 Terminar tu conexi&oacute;n <CODE>term</CODE> </A></H2>
+
+<P> </P>
+<P>Muy probablemente, una vez que hayas hecho un mont&oacute;n de trabajo usando el
+<CODE>term</CODE>, querr&aacute;s terminar el trabajo y deshacer tu conexi&oacute;n
+<CODE>term</CODE>. Para poder hacer esto hay cuatro formas: </P>
+<P>
+<OL>
+<LI>Matar (<CODE>kill</CODE>) los programas <CODE>term</CODE> a ambos lados de la
+conexi&oacute;n. Esta es la forma menos recomendada de terminar tu conexi&oacute;n.</LI>
+<LI>Una forma mejor es ejecutar el siguiente comando localmente:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   echo '00000' &gt; /dev/modem
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Esto terminar&aacute; la conexi&oacute;n <CODE>term</CODE> correctamente. Funcionar&aacute; en
+todas las versiones del <CODE>term</CODE>. Hay que asegurarse de que la
+secuencia contiene al menos cinco ceros. 
+</LI>
+<LI>En el <CODE>termrc</CODE> de versiones 2.0.0 y superiores se puede incluir
+una sentencia <CODE>terminate &lt;cualquier cadena&gt;</CODE>. Esto establece
+una cadena que har&aacute; que salga del <CODE>term</CODE> (``<CODE>00000</CODE>'' por
+defecto). Debe ser de una longitud de 5 caracteres por lo menos, para
+evitar terminaciones accidentales. 
+</LI>
+<LI>A partir de la versi&oacute;n 1.14 existe el programa <CODE>tshutdown</CODE>
+(realmente para la versi&oacute;n 1.14 est&aacute; disponible como <I>patch</I>, para
+versiones m&aacute;s recientes se incluye en el paquete). Ejecutando
+<CODE>tshutdown</CODE>, la conexi&oacute;n <CODE>term</CODE> finalizar&aacute; perfectamente. 
+</LI>
+</OL>
+</P>
+
+
+<H2><A NAME="ss4.12">4.12 C&oacute;mo eliminar <CODE>TERM</CODE> de tus particiones.</A></H2>
+
+
+<P>Ok, me hab&eacute;is preguntado por esto. As&iacute; que voy a presentar los pasos a
+seguir para desinstalar <CODE>term</CODE>:</P>
+<P>
+<UL>
+<LI>Eliminar directorios con su contenido. Dependiendo de c&oacute;mo hayas
+instalado <CODE>term</CODE>, tendr&aacute;s uno o m&aacute;s de los siguientes directorios:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+$HOME/.term/termrc
+$HOME/.term/termrc.&lt;servidor&gt;
+$HOME/term/termrc
+$HOME/term/termrc.&lt;servidor&gt;
+/usr/local/lib/term/termrc
+/usr/local/lib/term/termrc.&lt;servidor&gt;
+/etc/termrc
+/etc/termrc.&lt;servidor&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Estos directorios pueden eliminarse con su contenido, usando 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/bin/rm -rf 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>El grupo <I>term</I>. En alg&uacute;n momento de la instalaci&oacute;n tuviste que
+crear un grupo llamado <I>term</I>. Busca en <CODE>/etc/group</CODE> una l&iacute;nea
+con ese grupo y b&oacute;rrala. 
+</LI>
+<LI>Los ejecutables y paquetes del <CODE>term</CODE>. Esta es la parte m&aacute;s
+dif&iacute;cil. Para los ejecutables, busca en el directorio
+<CODE>/usr/local/bin</CODE> o <CODE>$HOME/bin</CODE>. 
+
+Con otros ejecutables que hiciste compatibles con <CODE>term</CODE> no puedo
+ayudarte. Necesitas saber qu&eacute; ejecutables modificaste para saber cu&aacute;les
+borrar. No olvides ficheros de configuraci&oacute;n y otros que vengan con esos
+ejecutables. 
+</LI>
+<LI>Ficheros de librer&iacute;a. Lo mejor es teclear lo siguiente:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /
+find . -name libtermnet* -exec /bin/rm {} \;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Esto encontrar&aacute; y borrar&aacute; todos los ficheros de librer&iacute;a relacionados
+por todo tu disco duro.
+</LI>
+<LI>Ficheros <CODE>include</CODE>. De nuevo, lo mejor es que teclees esto:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /
+find . -name termnet.h -exec /bin/rm {} \;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Manuales en l&iacute;nea. Cuando instalaste <CODE>term</CODE> los manuales
+se colocaron en uno de los directorios siguientes:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/local/man/man1
+/usr/local/man/cat1
+$HOME/man/man1
+$HOME/man/cat1
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Debes buscar por lo menos las siguientes p&aacute;ginas de manual:  <CODE>term,
+term_clients, term_setup, tdownload, linecheck, trdate, trdated, termrc,
+termtest, tmon, tredir, trsh, tshutdown, tudpredir, tupload,
+txconnand</CODE> y por &uacute;ltimo, <CODE>tiptest</CODE>. 
+</LI>
+<LI>Directorio temporal del usuario. Borra el directorio
+<CODE>/usr/tmp/private</CODE> y sus contenidos. 
+</LI>
+</UL>
+</P>
+<P>Despu&eacute;s de todo este ejercicio, podr&aacute;s estar bastante seguro de que
+has borrado todo lo relacionado con <CODE>term</CODE>.</P>
+
+
+<H2><A NAME="optimizando"></A> <A NAME="ss4.13">4.13 Optimizaci&oacute;n de la conexi&oacute;n </A></H2>
+
+<P> </P>
+<P>Una vez que consigues ejecutar el <CODE>term</CODE>, puede que quieras intentar
+optimizar las cosas. Una buena forma de medir la velocidad de tu enlace es
+corriendo <CODE>tmon</CODE> en una ventana mientras transfieres un fichero en
+otra. Intenta con ficheros de texto y ficheros comprimidos suficientemente
+grandes; el texto a secas deber&iacute;a dar un factor del doble de r&aacute;pido que el
+comprimido. Los par&aacute;metros que querr&aacute;s ajustar son <CODE>baudrate</CODE>
+[velocidad del puerto]  (<CODE>-s</CODE>), <CODE>compression</CODE>
+(<CODE>-c</CODE>), <CODE>windows</CODE> [tama&ntilde;o de ventana]  (<CODE>-w</CODE>),
+<CODE>timeout</CODE> [tiempo de espera] (<CODE>-t</CODE>) y <CODE>retrain</CODE>
+(<CODE>-A</CODE>). </P>
+<P>Cuidado con el par&aacute;metro <CODE>retrain</CODE>. Con la versi&oacute;n 1.19 del
+<CODE>term</CODE> obtengo peor rendimiento, que va de un 80% a un 90%
+comparado con la ejecuci&oacute;n del <CODE>term</CODE> sin el par&aacute;metro
+<CODE>retrain</CODE>. No est&aacute; claro si se trata de un <I>bug</I> en la versi&oacute;n 1.19
+y si este problema existe s&oacute;lo en la versi&oacute;n 1.19 del <CODE>term</CODE>. </P>
+<P><CODE>Baudrate</CODE>: el n&uacute;mero m&aacute;ximo de bits por segundo que el
+<CODE>term</CODE> intentar&aacute; enviar a trav&eacute;s del enlace serie. <CODE>term</CODE>
+evitar&aacute; enviar caracteres a una velocidad superior a &eacute;sta. Por defecto se
+usa la velocidad del puerto serie del ordenador, pero hay que avisar 
+que &eacute;sta puede ser demasiado alta si el m&oacute;dem funciona a una velocidad
+menor sobre la l&iacute;nea telef&oacute;nica. La opci&oacute;n <CODE>baudrate</CODE> est&aacute; indicada
+para sistemas que almacenan en <I>buffer</I> la salida al m&oacute;dem. Durante la
+configuraci&oacute;n y el ajuste es mejor usar un <CODE>baudrate</CODE> peque&ntilde;o que uno
+que sea demasiado grande. Para enlaces de alta velocidad (&gt; 38400),
+ponerlo sin l&iacute;mite ser&aacute; probablemente ventajoso. Esto se consigue usando
+el valor <I>off</I>. <CODE>term</CODE> confiar&aacute; entonces solamente en el kernel
+para controlar el flujo.</P>
+<P><CODE>Compression</CODE>: necesitar&aacute;s poner en <I>on</I> si no tienes un m&oacute;dem
+con compresi&oacute;n. Si tienes un m&oacute;dem de &eacute;stos, pon <I>compression off</I>, de
+lo contrario estar&aacute;s comprimiendo las cosas dos veces, lo que
+habitualmente <I>incrementa</I> la cantidad de datos transmitidos. Los
+m&oacute;dems con compresi&oacute;n son aquellos que usan los protocolos <I>MNP-5</I> o
+<I>V42.bis</I>. Observa la documentaci&oacute;n del m&oacute;dem y el mensaje del m&oacute;dem
+cuando conecta. </P>
+<P><CODE>Windows</CODE>: este es el n&uacute;mero de unidades de datos, o paquetes, que
+el <CODE>term</CODE> enviar&aacute; por la l&iacute;nea antes de obtener reconocimiento
+(<I>ack</I>) desde el <CODE>term</CODE> remoto. Para m&oacute;dems r&aacute;pidos, aumentar
+esto puede ser una mejora; para enlaces m&aacute;s lentos esto puede saturar el
+extremo remoto.</P>
+<P><CODE>Timeout</CODE>: el tiempo que el <CODE>term</CODE> esperar&aacute; a un <I>ack</I>.
+Si has aumentado <CODE>windows</CODE> y est&aacute;s teniendo <CODE>timeouts</CODE> en el fichero
+de log, prueba a aumentar este valor. </P>
+<P>Para un <I>14400/V42.bis</I>, yo uso <CODE>-c off -w 10 -t 150</CODE>. Consigo
+unos 1700 <I>cps</I> en ficheros comprimidos y 3500 <I>cps</I> en ficheros
+ASCII usando <CODE>tupload</CODE>.</P>
+
+
+<H2><A NAME="ss4.14">4.14 Resoluci&oacute;n de problemas</A></H2>
+
+
+<P>En esta secci&oacute;n se dan algunas opiniones sobre qu&eacute; comprobar cuando se
+tienen problemas ejecutando el <CODE>term</CODE> o alguno de sus clientes.</P>
+<P>
+<UL>
+<LI>¿Has borrado la estructura de directorios del <CODE>term</CODE>? En las
+nuevas versiones del term ha cambiado un par de veces la estructura del
+&aacute;rbol de directorios bajo <CODE>/usr/local/lib/term</CODE>. Si no te has dado
+cuenta de ello, puedes haber causado todo tipo de mensajes de error.  Lo
+mejor es borrar el &aacute;rbol de directorios bajo <CODE>/usr/local/lib/term</CODE>
+(salvando tu <CODE>termrc</CODE>) y entonces instalar la nueva versi&oacute;n. De esta
+forma evitas pelearte con un &aacute;rbol de directorios lioso. 
+</LI>
+<LI>¿Borraste los <I>sockets</I> antiguos? Cuando pongas al d&iacute;a tu versi&oacute;n
+del <CODE>term</CODE> borra todos los <I>sockets</I> (llamados <CODE>socket=</CODE>) creados
+por el <CODE>term</CODE>. El no hacer esto puede causar extra&ntilde;os problemas.
+Para averiguar qu&eacute; <I>socket</I> est&aacute; atendiendo el <CODE>term</CODE>, puedes
+usar el programa <CODE>netstat</CODE>. 
+</LI>
+<LI> ¿El <CODE>term</CODE> no compila correctamente en SunOS 4.1.3? Has
+configurado el <CODE>term</CODE> con <CODE>./configure --user</CODE>. Durante la
+compilaci&oacute;n est&aacute;s teniendo un error de ensamblador, relacionado con que el
+par&aacute;metro <CODE>-k</CODE> no es reconocido.  La raz&oacute;n de este error es
+desconocida. La soluci&oacute;n es configurar el <CODE>term</CODE> con librer&iacute;as
+est&aacute;ticas. Es decir, tendr&aacute;s que hacer <CODE>./configure --user
+--static</CODE> y entonces seguir con el proceso de compilaci&oacute;n como sueles
+hacerlo normalmente. Ahora el <CODE>term</CODE> deber&iacute;a compilar correctamente.
+</LI>
+<LI>¿El <CODE>termtest</CODE> te est&aacute; presentando el error: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+Term: failed to connect to term socket '/root/.term/sockettest'
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+(Term: falla la conexi&oacute;n al socket de <CODE>term '/root/.term/sockettest'</CODE>) 
+
+Cuando <CODE>termtest</CODE> corre espera que el ejecutable <CODE>term</CODE> est&eacute; en el
+mismo sitio que &eacute;ste. Cuando haces un <CODE>make install</CODE> antes de ejecutar
+<CODE>termtest</CODE>, el binario de <CODE>TERM</CODE> es movido a <CODE>/usr/local/bin</CODE>
+(u otro similar). 
+
+Para ello hay que hacer algo parecido a esto:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ln -s /usr/local/bin/term /usr/src/term-&lt;numero_de_version&gt;/term
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+<LI>¿Est&aacute;s usando el binario adecuado? El <CODE>term</CODE> se ha modificado
+bastante, y muchos sistemas tienen versiones diferentes de los programas
+rondando por ellos. Aseg&uacute;rate de que est&aacute;s usando la versi&oacute;n correcta.
+Esto tambi&eacute;n se aplica al <CODE>linecheck</CODE>. Puede usarse una orden del tipo
+<CODE>bash -a</CODE>, o el comando <CODE>whereis</CODE> para saber qu&eacute; programa se est&aacute;
+ejecutando. Las versiones de <CODE>term</CODE> posteriores a 1.11 deber&iacute;an
+mostrar su n&uacute;mero de versi&oacute;n al comenzar. (Aunque la versi&oacute;n 1.14 dice ser
+la 1.12. Sigh.) 
+</LI>
+<LI>¿Tienes el <CODE>termrc</CODE> correcto en el lugar adecuado? Dependiendo de
+la versi&oacute;n de <CODE>term</CODE> que est&eacute;s corriendo y el modo en que
+instalaste el <CODE>term</CODE> (siendo <CODE>root</CODE> o usuario) este fichero debe
+estar en uno de los siguientes directorios: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   /usr/local/lib/term/termrc
+   /usr/local/lib/term/termrc.&lt;servidor&gt;
+   /etc/termrc
+   /etc/termrc.&lt;servidor&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+  
+
+Algunos sistemas tienen <CODE>termrc</CODE>'s preinstalados; aseg&uacute;rate de que no
+est&eacute;n antes de instalar. Si est&aacute;s ejecutando cosas como <CODE>root</CODE>, busca
+en <CODE>/.term</CODE>. 
+
+El <CODE>term</CODE> crea ficheros (<I>sockets</I> en realidad) mientras se
+ejecuta;  de modo que tiene su propio directorio, <CODE>~/.term</CODE>,
+donde est&aacute; el fichero <CODE>termrc</CODE> (n&oacute;tese, ¡no hay un punto precediendo a
+<CODE>termrc</CODE>!). 
+</LI>
+<LI>¿Encuentra el <CODE>term</CODE> su fichero <CODE>termrc</CODE>? Cuando inicias
+<CODE>term</CODE> a ambos lados, deber&iacute;as ver mensajes como este de abajo: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   Term version: 2.2.9
+   Reading file:  /usr/local/lib/term/termrc
+   Using shared mode.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Cuando falta la segunda l&iacute;nea el <CODE>term</CODE> no puede encontrar su
+fichero <CODE>termrc</CODE> y sabes que algo ha ido mal durante la instalaci&oacute;n (a no
+ser que no est&eacute;s usando el fichero <CODE>termrc</CODE> y est&eacute;s introduciendo todas
+las opciones en l&iacute;nea de comandos <CODE>:-)</CODE>. Comprueba la localizaci&oacute;n y
+los permisos del fichero <CODE>termrc</CODE> en el lugar donde <CODE>term</CODE> no
+puede encontrar su fichero <CODE>termrc</CODE>.</LI>
+<LI>¿Es correcta la sintaxis de las entradas en el <CODE>termrc</CODE>? Un
+problema com&uacute;n es que la gente que necesite usar el escape e ignorar
+ciertos caracteres, los introduzca as&iacute; en el fichero <CODE>termrc</CODE>: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+escape 1,4,30,255
+ignore 1,4,30,255
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Aunque si <CODE>term</CODE> no reconoce lo anterior tampoco avisar&aacute; de
+ello. Simplemente lo ignorar&aacute;.
+
+Cuando tienes que ignorar o ``escapar'' caracteres, tendr&aacute;s que ponerlos
+en diferentes l&iacute;neas del fichero <CODE>termrc</CODE>, cada l&iacute;nea comenzando por la
+palabra <CODE>escape</CODE> o <CODE>ignore</CODE>. S&oacute;lo cuando haya que hacerlo
+con varios caracteres deber&aacute; hacerse de la siguiente forma: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+escape 16-19      # escapar caracteres 16, 17, 18, 19
+escape 23         # 23
+escape 255        # ...y 255
+ignore 16-19      # ignorar caracteres 16, 17, 18, 19
+ignore 23         # 23
+ignore 255        # ...y 255
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>¿Est&aacute; montado tu directorio <CODE>term</CODE> o <CODE>.term</CODE> con <I>NFS</I>? Si
+tu directorio <CODE>term</CODE> o <CODE>.term</CODE> est&aacute; montado con <I>NFS</I> necesitas
+poner el par&aacute;metro <CODE>-DTERM_NFS_DIR</CODE> en la l&iacute;nea
+<CODE>CFLAGS</CODE> del <CODE>Makefile</CODE>. Aunque, al autor el usar este par&aacute;metro
+le produce un error de compilaci&oacute;n al compilar <CODE>term</CODE> 1.19 en una
+m&aacute;quina con <I>SunOS 4.*</I>. 
+</LI>
+<LI>¿Pertenecen los ficheros y directorios al usuario y grupo correcto y
+tienen los permisos adecuados? Esto no deber&iacute;a ser problema ya que estos
+permisos se ponen durante la fase de instalaci&oacute;n. Sin embargo, cuando
+portas tus propios programas a <CODE>term</CODE> debes prevenirte de ello.
+Tambi&eacute;n cuando se cambia el modo en que esta trabajando <CODE>term</CODE> (por
+ejemplo de modo privado a modo shared) deben adaptarse las propiedades y
+permisos de ficheros y directorios. 
+</LI>
+<LI>¿Est&aacute;s obteniendo el error <CODE>gethostbyname: &lt;hostname&gt;:
+Non-authoritative `host not found', o `server failed'</CODE>?
+
+Para resolver esto tienes que chequear las siguientes cosas:
+
+<OL>
+<LI>¿Est&aacute; configurado correctamente el fichero <CODE>/etc/hosts</CODE>? 
+<CODE>&lt;hostname&gt;</CODE> no es el nombre de tu host (las versiones viejas de SLS y
+algunas viejas y nuevas versiones Slackware se entregan con el
+<CODE>hostname</CODE> <I>darkstar</I>, por ejemplo). Cambia esto en el fichero. Debe
+contener al menos una l&iacute;nea como la que sigue (el formato se describe
+encima de ella): 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# Formato del fichero:
+#  IP_NUMBER            HOSTNAME        ALIASES
+#
+# Este es el nombre de tu maquina, en primer lugar, seguido de aliases
+#
+127.0.0.1       localhost       linuxpc.dominio  linuxpc
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Cuando tu &uacute;nica conexi&oacute;n con el exterior se hace mediante <CODE>term</CODE>,
+la l&iacute;nea anterior es la &uacute;nica que debe aparecer en <CODE>/etc/hosts</CODE>. No
+pongas otros nodos de Internet en ese fichero, pues <CODE>term</CODE> no
+trabajar&aacute; con ellos. 
+</LI>
+<LI>¿Puede leer todo el mundo tus ficheros <CODE>/etc/rc*</CODE> y
+<CODE>/etc/resolv.conf</CODE>? 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod ugo+r
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Por &uacute;ltimo, aseg&uacute;rate de haber instalado el <I>loopback-interface</I>
+de <I>TCP/IP</I> en tu m&aacute;quina. Puedes comprobarlo ejecutando el comando
+<CODE>ifconfig</CODE>. Cuando est&aacute; instalado dicho interface, se ver&aacute; lo siguiente
+en pantalla: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Bcast:127.255.255.255  Mask:255.255.255.0
+          UP BROADCAST LOOPBACK RUNNING  MTU:2000  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0
+          TX packets:4984 errors:0 dropped:0 overruns:0
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Durante el arranque tambi&eacute;n puedes ver qu&eacute; protocolos se utilizan. En
+mi m&aacute;quina aparece lo siguiente:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+IP Protocols: ICMP, UDP, TCP
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Para m&aacute;s informaci&oacute;n sobre c&oacute;mo instalar el <I>loopback-interface</I>, l&eacute;ete
+el <I>NET-HOWTO</I>.
+</LI>
+</OL>
+
+</LI>
+<LI>¿Est&aacute;s obteniendo todo tipo de mensajes <CODE>timed out</CODE> en tus
+ficheros log de <CODE>term</CODE>? Esto significa que tu conexi&oacute;n de
+<CODE>term</CODE> no est&aacute; optimizada. Un peque&ntilde;o n&uacute;mero de esos mensajes nunca
+es problema. Estos son debidos muy posiblemente a que los factores
+temporales influyen en la conexi&oacute;n f&iacute;sica entre tus <I>hosts</I> remoto y
+local. 
+
+Cuando tienes un mont&oacute;n de estos mensajes todo el tiempo, tu conexi&oacute;n se
+ralentizar&aacute; considerablemente. Tienes que ajustar los par&aacute;metros
+mencionados en la anterior secci&oacute;n 
+<A HREF="#optimizando">optimizando</A>. Adem&aacute;s, esta
+parte de la instalaci&oacute;n es un proceso de prueba y error. No se pueden dar
+unas reglas fijas sobre los valores a colocar en los variados par&aacute;metros
+ya que son muchos los factores que influyen en la conexi&oacute;n.  Estos
+factores difieren entre las conexiones e incluso en el tiempo. 
+
+</LI>
+<LI>¿No te funcionan los <CODE>ftp</CODE> con puertos redirigidos? Es un
+problema habitual con <CODE>ftp</CODE>, que necesita trabajar con los puertos 20 y
+21. La &uacute;nica soluci&oacute;n es usar una versi&oacute;n <CODE>TERM</CODE>ificada de <CODE>ftp</CODE>
+o <CODE>ncftp</CODE>. Sin embargo, algunas de estas aplicaciones adaptadas tampoco
+funcionar&aacute;n. 
+</LI>
+</UL>
+</P>
+
+
+<HR>
+<A HREF="Term-Como-3.html">Anterior</A>
+<A HREF="Term-Como-5.html">Siguiente</A>
+<A HREF="Term-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,868 @@
+<HTML
+><HEAD
+><TITLE
+>Montando un Volumen NetWare Remoto</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="IPX y el Sistema de Ficheros NCP"
+HREF="x-087-2-ipx.html"><LINK
+REL="PREVIOUS"
+TITLE="Configurando un Encaminador IPX"
+HREF="x-087-2-ipx.router.html"><LINK
+REL="NEXT"
+TITLE="Explorando Algunas de las Otras Herramientas IPX"
+HREF="x-087-2-ipx.othertools.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ipx.router.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 15. IPX y el Sistema de Ficheros NCP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ipx.othertools.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-IPX.NCPFS.CLIENT">15.6. Montando un Volumen NetWare Remoto</H1
+><P
+>IPX se usa comúnmente para montar volúmenes NetWare en el sistema
+de ficheros de Linux. Esto permite comparticiones de datos basadas
+en ficheros entre otros sistemas operativos y Linux. Volker Lendecke
+ha desarrollado el cliente NCP para Linux y un juego de herramientas
+asociadas que hacen posible la compartición de datos.</P
+><P
+>En un entorno NFS, hemos usado la orden <B
+CLASS="COMMAND"
+>mount</B
+> de Linux
+para montar el sistema de ficheros remoto. Desafortunadamente, el sistema
+de ficheros NCP posee requisitos propios que hacen poco práctico
+integrarlo dentro del <B
+CLASS="COMMAND"
+>mount</B
+> normal. Linux tiene un orden
+<B
+CLASS="COMMAND"
+>ncpmount</B
+> que es el que usaremos en su lugar. El
+orden <B
+CLASS="COMMAND"
+>ncpmount</B
+> es una de las herramientas del
+paquete <TT
+CLASS="FILENAME"
+>ncpfs</TT
+> de Volker, que está disponible
+preempaquetado en la mayoría de las distribuciones modernas o en
+código fuente en el directorio <TT
+CLASS="FILENAME"
+>/pub/linux/misc/ncpfs/</TT
+>
+de <SPAN
+CLASS="SYSTEMITEM"
+>ftp.gwdg.de</SPAN
+>. La versión
+actual en el momento de escribir esto es la 2.2.0.</P
+><P
+>Antes de poder montar volúmenes NetWare, debe asegurarse de que su interfaz
+de red IPX está configurada correctamente (como se ha descrito anteriormente).
+Luego debe conocer sus detalles de ingreso (login) en el servidor NetWare que
+quiere montar; esto incluye la ID de usuario y la contraseña. Finalmente, necesita
+saber qué volumen desea montar y sobre qué directorio local quiere montarlo.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12255">15.6.1. Un Sencillo Ejemplo de ncpmount</H2
+><P
+>&#13;Un sencillo ejemplo del uso de <B
+CLASS="COMMAND"
+>ncpmount</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ncpmount -S ALES_F1 -U rick -P d00-b-gud /mnt/cerveceria</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Este orden monta todos los volúmenes del servidor de ficheros
+<TT
+CLASS="LITERAL"
+>ALES_F1</TT
+> sobre el directorio
+<TT
+CLASS="FILENAME"
+>/mnt/cerveceria</TT
+>, utilizando el nombre de
+ingreso <TT
+CLASS="LITERAL"
+>rick</TT
+> con la contraseña
+<TT
+CLASS="LITERAL"
+>d00-b-gud</TT
+>.</P
+><P
+>Normalmente, se pone el setuid dla orden <B
+CLASS="COMMAND"
+>ncpmount</B
+>
+a <SPAN
+CLASS="SYSTEMITEM"
+>root</SPAN
+>, y así puede ser
+utilizado por cu alquier usuario de Linux. Por defecto, ese usuario
+posee la conexión y sólo él o <SPAN
+CLASS="SYSTEMITEM"
+>root</SPAN
+>
+podrá desmontarla.</P
+><P
+>NetWare incorpora la noción de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>volumen</I
+></SPAN
+>, que es
+análoga a un sistema de ficheros en Linux. Un volumen NetWare es la
+representación lógica de una sistema de ficheros NetWare, que puede
+ser una partición de disco individual o estar diseminada por muchas
+particiones. Por defecto, el soporte de NCPFS de Linux trata a los
+volúmenes como subdirectorios de una sistema de ficheros lógico
+mayor representado por todo el servidor de ficheros. la orden
+<B
+CLASS="COMMAND"
+>ncpmount</B
+> hace que todos los volúmenes NetWare
+del servidor de ficheros montado aparezcan como un subdirectorio
+sobre el punto de montaje. Esto es conveniente si quiere acceso a
+todo el servidor, pero por razones técnicas complejas no podrá
+reexportar estos directorios usando NFS, en el caso de que desee
+hacerlo. En un momento discutiremos una alternativa más compleja
+que resuelve este problema.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12275">15.6.2. La Orden ncpmount en Detalle</H2
+><P
+>&#13;<B
+CLASS="COMMAND"
+>ncpmount</B
+> tiene una gran número de opciones de línea de
+ordens que le ofrecen bastante flexibilidad a la hora de administrar
+sus montajes NCP. La más importante de todas se describe en la
+<A
+HREF="x-087-2-ipx.ncpfs.client.html#X-087-2-IPX.NCPMOUNT.ARGS"
+>Tabla 15-2</A
+>.</P
+><DIV
+CLASS="TABLE"
+><A
+NAME="X-087-2-IPX.NCPMOUNT.ARGS"><P
+><B
+>Tabla 15-2. Argumentos dla orden ncpmount</B
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Argumento</TH
+><TH
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Descripción</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&ndash;S <TT
+CLASS="REPLACEABLE"
+><I
+>server</I
+></TT
+></P
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>El nombre del servidor de ficheros a montar.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&ndash;U <TT
+CLASS="REPLACEABLE"
+><I
+>user_name</I
+></TT
+></P
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>La ID del usuario NetWare a utilizar al ingresar en el servidor de ficheros.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&ndash;P  <TT
+CLASS="REPLACEABLE"
+><I
+>password</I
+></TT
+></P
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>La contraseña a utilizar para el ingreso NetWare.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;n</TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Se debe utilizar esta opción para los ingresos NetWare que no tienen
+asociados una contraseña.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;C</TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Este argumento desactiva la conversión automática de contraseñas a mayúsculas.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;c <TT
+CLASS="REPLACEABLE"
+><I
+>client_name</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar quién posee la conexión al servidor
+de ficheros. Esto es útil para imprimir con NetWare, de lo que hablaremos
+luego con más detalle.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;u <TT
+CLASS="REPLACEABLE"
+><I
+>uid</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>La ID de usuario de GNU/Linux que debe mostrarse como dueño de los
+ficheros en el directorio montado. Si no se especifica, se toma
+por defecto la ID de usuario que invoca a la orden
+<B
+CLASS="COMMAND"
+>ncpmount</B
+>.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;g <TT
+CLASS="REPLACEABLE"
+><I
+>gid</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>La ID de grupo que debe mostrarse como dueño de los ficheros del
+directorio montado. Si no se especifica, se toma por defecto el ID
+de grupo del usuario que invoca a la orden
+<B
+CLASS="COMMAND"
+>ncpmount</B
+>.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;f <TT
+CLASS="REPLACEABLE"
+><I
+>file_mode</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar el modo de fichero (permisos)
+que deben tener los ficheros del directorio montado. El valor se
+debe especificar en octal, p. ej., <TT
+CLASS="LITERAL"
+>0664</TT
+>. Los
+permisos que tendrá realmente son los permisos de fichero especificados
+con esta opción enmascarados con los permisos que tiene su ID de NetWare
+para los ficheros del servidor de ficheros. Debe poseer privilegios
+en el servidor y los privilegios especificados por esta opción para
+poder acceder a un fichero. El valor predeterminado se deriva del
+<TT
+CLASS="LITERAL"
+>umask</TT
+>actual.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;d <TT
+CLASS="REPLACEABLE"
+><I
+>dir_mode</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar los permisos de directorio en
+el directorio montado. Se comporta de la misma manera que la
+opción <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>&ndash;f</I
+></SPAN
+>, excepto en que los permisos
+predeterminados se derivan del <TT
+CLASS="LITERAL"
+>umask</TT
+> actual. Se
+concede el permiso de ejecución cuando se concede el acceso de
+lectura.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;V <TT
+CLASS="REPLACEABLE"
+><I
+>volume</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar el nombre de un volumen
+NetWare individual a montar bajo el punto de montaje, en lugar
+de montar todos los volúmenes del servidor de destino. Esta opción
+es necesaria si desea reexportar un volumen NetWare montado utilizando
+NFS.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;t <TT
+CLASS="REPLACEABLE"
+><I
+>time_out</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar el tiempo que esperará el cliente NCPFS
+a la respuesta de un servidor. El valor predeterminado es 60ms y el tiempo
+de espera se especifica en centésimas de segundo. Si experimenta algún
+problema de estabilidad al montar con NCP, pruebe a incrementar este valor.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="120"
+ALIGN="LEFT"
+VALIGN="TOP"
+>&ndash;r <TT
+CLASS="REPLACEABLE"
+><I
+>retry_count</I
+></TT
+></TD
+><TD
+WIDTH="312"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>El código de cliente de NCP intenta reenviar datagramas al servidor
+un número de veces antes de decidir que la conexión está muerta. Esta
+opción le permite cambiar el número de reintentos, que por omisión es
+5.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12365">15.6.3. Escondiendo Su Clave de Acceso NetWare</H2
+><P
+>&#13;Es un problema de seguridad poner una clave en la línea de orden,
+como hicimos con la orden <B
+CLASS="COMMAND"
+>ncpmount</B
+>. Otros usuarios
+activos y concurrentes podrían ver la clave si se les ocurre ejecutar
+un programa como <B
+CLASS="COMMAND"
+>top</B
+> o <B
+CLASS="COMMAND"
+>ps</B
+>. Para
+reducir el riesgo de que otros vean y roben claves de acceso NetWare,
+<B
+CLASS="COMMAND"
+>ncpmount</B
+> es capaz de leer ciertos detalles de un
+fichero en el directorio raíz de un usuario. En este fichero, el
+usuario mantiene el nombre de acceso y la clave asociada a cada
+uno de los sistemas de ficheros que él o ella tiene intención de
+montar. El fichero se llama <TT
+CLASS="FILENAME"
+>~/.nwclient</TT
+> y debe
+tener los permisos <TT
+CLASS="LITERAL"
+>0600</TT
+> para asegurar que no
+puedan leerlo otros. Si los permisos no son correctos, la orden
+<B
+CLASS="COMMAND"
+>ncpmount</B
+> rehusará utilizarlo.</P
+><P
+>El fichero tiene una sintaxis muy simple. Cualquier línea que
+empieze por un carácter # es considerada como un comentario y
+se ignora. El resto de las líneas tienen la sintaxis:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="REPLACEABLE"
+><I
+>servidor</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>id</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>clave</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+El <TT
+CLASS="REPLACEABLE"
+><I
+>servidor</I
+></TT
+> es el nombre del servidor
+de ficheros que contiene los volúmenes que se desean montar. La
+<TT
+CLASS="REPLACEABLE"
+><I
+>id</I
+></TT
+> es el nombre de acceso de su cuenta
+en ese servidor. El campo <TT
+CLASS="REPLACEABLE"
+><I
+>clave</I
+></TT
+> es
+opcional. Si no es proporcionado, la orden
+<B
+CLASS="COMMAND"
+>ncpmount</B
+> le pide al usuario la clave cuando
+intenta montar. Si se especifica el campo
+<TT
+CLASS="REPLACEABLE"
+><I
+>clave</I
+></TT
+> con un carácter &ndash;, no se
+utiliza ninguna clave; esto es equivalente al argumento de línea
+de orden <TT
+CLASS="LITERAL"
+>&ndash;n</TT
+>.</P
+><P
+>Puede proporcionar cualquier número de entradas, pero el servidor
+de ficheros debe ser único. La primera entrada tiene una significación
+especial. la orden <B
+CLASS="COMMAND"
+>ncpmount</B
+> utiliza el argumento
+de línea de orden <TT
+CLASS="LITERAL"
+>&ndash;S</TT
+> para determinar qué
+entrada de <TT
+CLASS="FILENAME"
+>~/.nwclient</TT
+> usar. Si no se especifica
+ningún servidor utilizando el argumento <TT
+CLASS="LITERAL"
+>&ndash;S</TT
+>,
+se considera la primera entrada de <TT
+CLASS="FILENAME"
+>~/.nwclient</TT
+>,
+y es tratada como su servidor preferido. Debe situar el servidor de
+ficheros que monte más frecuentemente en la primera posición del
+fichero.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12395">15.6.4. Un Ejemplo Más Complejo De ncpmount</H2
+><P
+>&#13;
+Veamos un ejemplo más complejo de <B
+CLASS="COMMAND"
+>ncpmount</B
+> que utilice
+unas cuantas de las características que hemos descrito. Primero,
+construyamos un fichero <TT
+CLASS="FILENAME"
+>~/.nwclient</TT
+> simple:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # Detalles de acceso NetWare para la Cervecera y la Vinatera Virtuales
+    #
+    # Acceso a la Cervecera
+    ALES_F1/MATT staoic1
+    #
+    # Acceso a la Vinatera
+    REDS01/MATT staoic1
+    #</PRE
+></TD
+></TR
+></TABLE
+>
+Asegúrese de que los permisos son correctos:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>chmod 600 ~/.nwclient</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><P
+>Montemos un volumen del servidor de la Vinatera bajo un subdirectorio
+de un directorio compartido, especificando unos permisos de fichero y
+directorio tales que otros puedan compartir los datos situados en él:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ ncpmount -S REDS01 -V RESEARCH -f 0664 -d 0775 /usr/share/vinatera/datos/</PRE
+></TD
+></TR
+></TABLE
+>
+
+Esta orden, en combinación con el fichero <TT
+CLASS="FILENAME"
+>~/.nwclient</TT
+>
+mostrado, montaría el volumen <TT
+CLASS="LITERAL"
+>RESEARCH</TT
+> del servidor
+<TT
+CLASS="LITERAL"
+>REDS01</TT
+> en el directorio
+<TT
+CLASS="FILENAME"
+>/usr/share/vinatera/datos/</TT
+> utilizando la ID de
+acceso NetWare de <TT
+CLASS="LITERAL"
+>MATT</TT
+> y la clave obtenida del fichero
+<TT
+CLASS="FILENAME"
+>~/.nwclient</TT
+>. Los permisos de los ficheros montados
+son <TT
+CLASS="LITERAL"
+>0664</TT
+> y los permisos de directorio son
+<TT
+CLASS="LITERAL"
+>0775</TT
+>.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-ipx.router.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-ipx.othertools.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Configurando un Encaminador IPX</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ipx.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Explorando Algunas de las Otras Herramientas IPX</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

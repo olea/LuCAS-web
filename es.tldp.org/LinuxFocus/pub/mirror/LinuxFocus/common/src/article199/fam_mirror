@@ -1,0 +1,170 @@
+#!/usr/bin/perl
+# Author: Atif Ghaffar <atif@developer.ch>
+# version 0.1
+# You may find the later versions of this program at
+# http://atif.developer.ch
+
+
+use strict;
+BEGIN {
+	my $usage=qq|
+	Normal USAGE:
+	----------------
+	$0 directory [directory2] [directory3] ... [directoryN]
+
+	To create a set of identical directories on the remote host if they dont exists
+	-------------------------------------------------------------------------------
+	CREATE_DIRS=1  $0 directory [directory2] [directory3] ... [directoryN]
+
+	To mirror all files to the remote host. This can be done as the initial setup.
+	------------------------------------------------------------------------------
+	INIT_MIRROR=1 $0 directory [directory2] [directory3] ... [directoryN]
+
+	To have VERBOSE messages about what this script is doing
+	--------------------------------------------------------
+	DEBUG=1 [INIT_MIRROR=1] [CREATE_DIRS=1]  $0 directory [directory2] [directory3] ... [directoryN]
+	\n|;
+	if (@ARGV){
+		for (@ARGV){
+			unless (-d $_ && -e $_ ){ # check if the argument is a directory
+				print "$_ is not a directory\n"; 
+				print $usage;
+				exit;
+			}
+		}
+	} else {
+		# show the usage unless a directory is speocified
+		print $usage;
+		exit;
+	}
+}
+use vars qw($directory $cmd $event $dir $file $filepath $dirname);
+
+#load some modules.
+use File::PathConvert qw(realpath);
+use File::Basename;
+use File::Find;
+use SGI::FAM;
+
+#start a fam object
+my $fam=new SGI::FAM;
+my $event;
+
+#define the rsh command. This could be rsh, ssh or whatever
+my $rsh="ssh -l root ";
+#define the rsync command with the flags that you want
+my $rsync="rsync -rlopgztC --delete  -e 'ssh -l root'  ";
+
+#define replica hosts separated by space
+my @replicaHosts=qw(host1 host2 host3);
+
+#fill up the @directories list
+my @directories;
+find(sub { -d && -e && push @directories, $File::Find::name; }, @ARGV);
+
+
+for (@directories){
+	#convert symlinks to realpath
+	$directory=realpath($_);
+	#get some stats about this directory
+	my ($dev,$ino,$mode,$nlink,$uid,$gid) = stat($directory);
+	$mode=sprintf "%04o", $mode & 07777; 
+
+	#create identical directories on replica hosts if environment variable CREATE_DIRS is set.
+	if ($ENV{'CREATE_DIRS'} || $ENV{'INIT_MIRROR'}){
+		for my $host(@replicaHosts){
+			$cmd="$rsh $host 'mkdir -p $directory; chmod $mode $directory; chown $uid.$gid $directory'";
+			print "$cmd\n" if $ENV{'DEBUG'};
+			system ("$cmd 2>/dev/null");
+		}
+	}
+
+	print "setting monitor on $directory\n"  if $ENV{'DEBUG'};
+	$fam->monitor(realpath($_));
+}
+
+
+# if there is a request to initiate a mirror then lets do it.
+# directories must already have had been created above
+if ($ENV{'INIT_MIRROR'}){
+	for (@ARGV){
+		$directory=realpath($_);
+		for my $host(@replicaHosts){
+			$cmd ="$rsync $directory $host:$directory";
+			system ("$cmd 2>/dev/null");
+			print "$cmd\n"  if $ENV{'DEBUG'};
+		}
+	}
+}
+
+# now running the main loop which will recieve events from fam
+# this should actually be forked into a background process.
+# for the timebeing you can run it with & 
+# perhaps I will use POE at somepoint with this
+
+while (1) {
+	do {
+		$event=$fam->next_event;
+		$dir=$fam->which($event);
+		$file=$event->filename;
+		#dont copy swap files
+		next if $file=~/(\.swp|\~)$/;
+		if ($dir eq $file){
+			$file="";
+		}
+
+		#set correct filename. dir/file
+		my $filepath="$dir/$file";
+
+		#remove multiple / from filepath
+		$filepath=~s/\/+/\//g;
+	
+		#set dirname
+		$dirname=dirname($filepath);
+
+
+
+		# if there a change or create event then
+		# rsync the file to the replica hosts
+
+		if ($event->type =~/^(change|create)$/){
+			for my $host(@replicaHosts){
+				$cmd="$rsync $filepath $host:$dirname/";
+				print "$cmd\n"  if $ENV{'DEBUG'};
+				system ("$cmd 2>&1 >/dev/null");
+			}
+		}
+	
+		# if the file or directory is deleted
+		# then delete it on the server too
+		# This needs some testing
+		if ($event->type =~/^(delete)$/){
+			for my $host(@replicaHosts){
+				if (-d $filepath){
+					$cmd="$rsh $host 'rm -rf $filepath'";
+				} else {
+					$cmd="$rsh $host 'rm $filepath'";
+				}
+				print "$cmd\n"  if $ENV{'DEBUG'}; 
+				system ("$cmd 2>&1 >/dev/null");
+			}
+		}
+
+	
+
+	} while $fam->pending;
+}
+
+
+
+__END__
+
+
+For more info see
+perldoc
+	SGI::FAM
+Man pages
+	fam(1m)
+	fam(3x)
+	monitor(1)
+

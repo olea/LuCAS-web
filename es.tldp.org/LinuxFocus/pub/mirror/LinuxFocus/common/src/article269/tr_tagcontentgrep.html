@@ -1,0 +1,135 @@
+<HTML>
+<HEAD>
+<TITLE>tr_tagcontentgrep</TITLE>
+</HEAD>
+<BODY BGcolor=#030303 TEXT=#ffffff>
+<PRE>
+<FONT color=#ff40ff>#!/usr/bin/perl -w</FONT>
+<FONT color=#ffff00>my</FONT> <FONT color=#00ffff>$VERSION</FONT> = <FONT color=#ff6060>&quot;</FONT><FONT color=#ff6060>0.13</FONT><FONT color=#ff6060>&quot;</FONT>;
+<FONT color=#8080ff># vim: set sw=4 ts=4 si et: </FONT>
+<FONT color=#8080ff># Copyright: GPL</FONT>
+<FONT color=#8080ff># Author: Guido Socher</FONT>
+<FONT color=#8080ff>#</FONT>
+<FONT color=#00ffff>use</FONT> <FONT color=#00ffff>strict</FONT>;
+<FONT color=#00ffff>use</FONT> <FONT color=#00ffff>vars</FONT> <FONT color=#ff6060>qw(</FONT><FONT color=#ff6060>$opt_h $opt_l</FONT><FONT color=#ff6060>)</FONT>;
+<FONT color=#00ffff>use</FONT> <FONT color=#00ffff>Getopt::Std</FONT>;
+<FONT color=#8080ff># </FONT>
+<FONT color=#ffff00>sub</FONT><FONT color=#00ffff> </FONT><FONT color=#00ffff>help</FONT><FONT color=#00ffff>()</FONT>;
+<FONT color=#8080ff>#------------------</FONT>
+<FONT color=#00ffff>getopts</FONT>(<FONT color=#ff6060>&quot;</FONT><FONT color=#ff6060>lh</FONT><FONT color=#ff6060>&quot;</FONT>)||<FONT color=#ffff00>die</FONT> <FONT color=#ff6060>&quot;</FONT><FONT color=#ff6060>ERROR: No such option. -h for help.</FONT><FONT color=#ff40ff>\n</FONT><FONT color=#ff6060>&quot;</FONT>;
+<FONT color=#00ffff>help</FONT>() <FONT color=#ffff00>if</FONT> (<FONT color=#00ffff>$opt_h</FONT>);
+<FONT color=#00ffff>help</FONT>() <FONT color=#ffff00>unless</FONT>(<FONT color=#00ffff>$ARGV</FONT>[<FONT color=#ff6060>0</FONT>]);
+<FONT color=#ffff00>my</FONT> <FONT color=#00ffff>$pattern</FONT>=<FONT color=#ffff00>shift</FONT>;
+<FONT color=#00ffff>$/</FONT>=<FONT color=#ff6060>'</FONT><FONT color=#ff6060>&lt;</FONT><FONT color=#ff6060>'</FONT>; <FONT color=#8080ff># record seperator, normally &quot;\n&quot; but in html &quot;\n&quot; means nothing</FONT>
+<FONT color=#ffff00>my</FONT> <FONT color=#00ffff>$i</FONT>=<FONT color=#ff6060>1</FONT>;
+<FONT color=#ffff00>my</FONT> <FONT color=#00ffff>$l</FONT>=<FONT color=#ff6060>1</FONT>;
+<FONT color=#ffff00>while</FONT>(&lt;&gt;){
+    <FONT color=#ffff00>while</FONT>(<FONT color=#ffff00>s/</FONT><FONT color=#ff40ff>\r</FONT><FONT color=#ff40ff>?</FONT><FONT color=#ff40ff>\n</FONT><FONT color=#ffff00>/</FONT><FONT color=#ff6060> </FONT><FONT color=#ffff00>/</FONT>){
+        <FONT color=#8080ff># keep track of line numbers</FONT>
+        <FONT color=#00ffff>$i</FONT>++;
+    }
+    <FONT color=#8080ff># take away the end tag:</FONT>
+    <FONT color=#ffff00>s/</FONT><FONT color=#ff6060>&gt;</FONT><FONT color=#ff40ff>.*</FONT><FONT color=#ffff00>//</FONT>;
+    <FONT color=#8080ff># kill multiple space</FONT>
+    <FONT color=#ffff00>s/</FONT><FONT color=#ff6060>[ </FONT><FONT color=#ff40ff>\t</FONT><FONT color=#ff6060>]</FONT><FONT color=#ff40ff>+</FONT><FONT color=#ffff00>/</FONT><FONT color=#ff6060> </FONT><FONT color=#ffff00>/g</FONT>;
+    <FONT color=#ffff00>if</FONT>(<FONT color=#ffff00>/</FONT><FONT color=#00ffff>$pattern</FONT><FONT color=#ffff00>/io</FONT>){
+        <FONT color=#8080ff># matches this tag. Print filename:linenumber: matched tag</FONT>
+        <FONT color=#ffff00>print</FONT> <FONT color=#ff6060>&quot;</FONT><FONT color=#ff6060>${ARGV}:${i}: </FONT><FONT color=#ff6060>&quot;</FONT> <FONT color=#ffff00>if</FONT> (<FONT color=#00ffff>$opt_l</FONT>);
+        <FONT color=#ffff00>print</FONT> <FONT color=#ff6060>&quot;</FONT><FONT color=#ff6060>&lt;</FONT><FONT color=#00ffff>$_</FONT><FONT color=#ff6060>&gt;</FONT><FONT color=#ff40ff>\n</FONT><FONT color=#ff6060>&quot;</FONT>;
+        <FONT color=#00ffff>$l</FONT>=<FONT color=#00ffff>$i</FONT>; <FONT color=#8080ff># we want to count the line where the tag starts</FONT>
+        <FONT color=#ffff00>next</FONT>;
+    }
+    <FONT color=#00ffff>$l</FONT>=<FONT color=#00ffff>$i</FONT>; <FONT color=#8080ff># we want to count the line where the tag starts</FONT>
+}
+<FONT color=#8080ff>#</FONT>
+<FONT color=#ffff00>sub</FONT><FONT color=#00ffff> </FONT><FONT color=#00ffff>help</FONT><FONT color=#00ffff>()</FONT>{
+    <FONT color=#ffff00>print</FONT> <FONT color=#ff6060>&quot;</FONT><FONT color=#ff6060>tr_tagcontentgrep -- grep for a xml/sgml/html tag</FONT>
+
+<FONT color=#ff6060>USAGE: tr_tagcontentgrep [-hl] regexp-pattern [file ...]</FONT>
+
+<FONT color=#ff6060>tr_tagcontentgrep opens all files provided on the command line</FONT>
+<FONT color=#ff6060>and searches for the given pattern in the tags. The search</FONT>
+<FONT color=#ff6060>is not case sensitive.</FONT>
+
+<FONT color=#ff6060>All space in the tags is reduced to max. one space. You can</FONT>
+<FONT color=#ff6060>search for </FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060>a href</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060> even if the original tag had</FONT>
+<FONT color=#ff6060>multiple spaces between </FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060>a</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060> and </FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060>href</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060>.</FONT>
+
+<FONT color=#ff6060>OPTIONS: </FONT>
+<FONT color=#ff6060>     -h this help</FONT>
+
+<FONT color=#ff6060>     -l list filename and line number</FONT>
+
+<FONT color=#ff6060>EXAMPLE:</FONT>
+<FONT color=#ff6060>    tr_tagcontentgrep -l img file.html</FONT>
+
+<FONT color=#ff6060>would e.g print something like:</FONT>
+
+<FONT color=#ff6060>index.html:53: &lt;IMG src=</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060>../images/transpix.gif</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060> alt=</FONT><FONT color=#ff40ff>\&quot;\&quot;</FONT><FONT color=#ff6060>&gt;</FONT>
+<FONT color=#ff6060>index.html:257: &lt;IMG SRC=</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060>../Logo.gif</FONT><FONT color=#ff40ff>\&quot;</FONT><FONT color=#ff6060> width=128 height=53&gt;</FONT>
+
+<FONT color=#ff6060>tr_tagcontentgrep is part of the HTML::TagReader package</FONT>
+<FONT color=#ff6060>but is an example that you can also do 'reading by tag'</FONT>
+<FONT color=#ff6060>without HTML::TagReader. tr_tagcontentgrep uses plain perl</FONT>
+<FONT color=#ff6060>and sets the </FONT><FONT color=#ff40ff>\$</FONT><FONT color=#ff6060>/ variable. </FONT>
+<FONT color=#ff6060>Working without HTML::TagReader causes however problems when working</FONT>
+<FONT color=#ff6060>with faulty html code where single '&lt;'-characters appear </FONT>
+<FONT color=#ff6060>somewhere in the text.</FONT>
+
+<FONT color=#ff6060>version </FONT><FONT color=#00ffff>$VERSION</FONT>
+<FONT color=#ff6060>&quot;</FONT>;
+    <FONT color=#ffff00>exit</FONT>(<FONT color=#ff6060>0</FONT>);
+}
+<FONT color=#00ffff>__END__</FONT> 
+
+<FONT color=#8080ff>=head1 NAME</FONT>
+
+<FONT color=#8080ff>tr_tagcontentgrep -- grep for a xml/sgml/html tag</FONT>
+
+<FONT color=#8080ff>=head1 SYNOPSIS</FONT>
+
+<FONT color=#8080ff> tr_tagcontentgrep [-hl] regexp-pattern [file ...]</FONT>
+
+<FONT color=#8080ff>=head1 DESCRIPTION</FONT>
+
+<FONT color=#8080ff>tr_tagcontentgrep opens all files provided on the command line</FONT>
+<FONT color=#8080ff>and searches for the given pattern in the tags. The search</FONT>
+<FONT color=#8080ff>is not case sensitive.</FONT>
+
+<FONT color=#8080ff>tr_tagcontentgrep is part of the HTML::TagReader package</FONT>
+<FONT color=#8080ff>but is an example that you can also do 'reading by tag'</FONT>
+<FONT color=#8080ff>without HTML::TagReader. tr_tagcontentgrep uses plain perl</FONT>
+<FONT color=#8080ff>and sets the $/ variable. </FONT>
+<FONT color=#8080ff>Working without HTML::TagReader causes however problems when working</FONT>
+<FONT color=#8080ff>with faulty html code where single '&lt;'-characters appear </FONT>
+<FONT color=#8080ff>somewhere in the text.</FONT>
+
+<FONT color=#8080ff>All space in the tags is reduced to max. one space. You can</FONT>
+<FONT color=#8080ff>search for &quot;a href&quot; even if the original tag had </FONT>
+<FONT color=#8080ff>multiple spaces between &quot;a&quot; and &quot;href&quot;.</FONT>
+
+<FONT color=#8080ff>=head1 OPTIONS</FONT>
+
+<FONT color=#8080ff> -h this help</FONT>
+
+<FONT color=#8080ff> -l list filename and line number</FONT>
+
+<FONT color=#8080ff>=head1 EXAMPLE</FONT>
+
+<FONT color=#8080ff>tr_tagcontentgrep -l img file.html</FONT>
+
+<FONT color=#8080ff>would e.g print something like:</FONT>
+
+<FONT color=#8080ff>index.html:53: &lt;IMG src=&quot;../images/transpix.gif&quot; alt=&quot;&quot;&gt;</FONT>
+<FONT color=#8080ff>index.html:257: &lt;IMG SRC=&quot;../Logo.gif&quot; width=128 height=53&gt;</FONT>
+
+<FONT color=#8080ff>=head1 AUTHOR</FONT>
+
+<FONT color=#8080ff>tr_tagcontentgrep is part of the HTML::TagReader package and was written by</FONT>
+<FONT color=#8080ff>Guido Socher [guido(at)linuxfocus.org]</FONT>
+
+<FONT color=#8080ff>=cut</FONT>
+
+</PRE>
+</BODY>
+</HTML>

@@ -1,0 +1,389 @@
+<HTML
+><HEAD
+><TITLE
+>NNTP y elDemonio nntpd</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="Herramientas y Tareas de Mantenimiento"
+HREF="x-087-2-cnews.maint.html"><LINK
+REL="NEXT"
+TITLE="El Protocolo NNTP"
+HREF="x-087-2-nntp.protocol.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-cnews.maint.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nntp.protocol.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="X-087-2-NNTP">Capítulo 22. NNTP y elDemonio nntpd</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>22.1. <A
+HREF="x-087-2-nntp.protocol.html"
+>El Protocolo NNTP</A
+></DT
+><DT
+>22.2. <A
+HREF="x-087-2-nntp.nntpd.html"
+>Instalar el servidor NNTP</A
+></DT
+><DT
+>22.3. <A
+HREF="x-087-2-nntp.access.html"
+>Restringir el acceso con NNTP</A
+></DT
+><DT
+>22.4. <A
+HREF="x-087-2-nntp.authorize.html"
+>Autorización NNTP</A
+></DT
+><DT
+>22.5. <A
+HREF="x-087-2-nntp.interact.html"
+>Interacción de nntpd con C News</A
+></DT
+></DL
+></DIV
+><P
+>El Protocolo para la Transferencia de Noticias en Red (NNTP) ofrece un
+acercamiento al intercambio de noticias muy diferente al de C News y al de
+otros nuevos servidores sin soporte nativo para NNTP. Antes que confiar
+en una tecnología por lotes como UUCP para transferir los artículos entre
+máquinas, permite intercambiar los artículos mediante una conexión de red
+interactiva. NNTP no es un paquete de software en particular, sino un
+estándar de Internet descrito en el RFC-977. Está basado en conexiones
+continuas, normalmente sobre TCP, entre un cliente en cualquier parte de una 
+red y un servidor en una máquina que almacena las noticias en disco. Una
+conexión de este tipo permite que cliente y servidor negocien de manera 
+interactiva la transferencia de artículos sin apenas retrasos manteniendo 
+al mismo tiempo el número de artículos duplicados muy bajo. Junto con las 
+altas tasas de transferencia de Internet, esto conforma una nueva manera de
+transportar noticias que supera con creces a las redes UUCP originales. 
+Mientras hace algunos años no era extraño que un artículo tardase dos 
+semanas o más en llegar al último rincón de Usenet; ahora lo hace a menudo
+en menos de dos días. En cuanto a Internet en sí, eso implica un plazo de 
+apenas unos minutos.</P
+><P
+>Varias órdenes permiten a los clientes descargar, enviar y publicar artículos.
+La diferencia entre enviar y publicar es que lo último puede afectar a 
+artículos con información incompleta en las cabeceras; esto significa
+generalmente que el usuario acaba de escribir el artículo.
+<A
+NAME="X-087-2-FNNN01"
+HREF="#FTN.X-087-2-FNNN01"
+>[1]</A
+>
+La descarga de artículos pueden llevarla a cabo tanto los clientes de
+transferencia de noticias como los lectores de noticias. Esto hace de NNTP 
+una excelente herramienta para dotar de acceso a las noticias a muchos 
+clientes de una red local sin tener que pasar por las complicaciones de usar 
+NFS.</P
+><P
+>&#13;
+ 
+ 
+
+
+NNTP también proporciona un método activo y otro pasivo de transferir noticias,
+conocidos coloquialmente como &ldquo;empujar&rdquo;(pushing) y &ldquo;tirar&rdquo;(pulling). Pushing es 
+básicamente lo mismo que el protocolo ihave/sendme que usa C News (descrito en <A
+HREF="x-087-2-cnews.html"
+>Capítulo 21</A
+>). 
+El cliente ofrece un artículo al servidor mediante la orden <B
+CLASS="COMMAND"
+>IHAVE msgid</B
+>, y el servidor devuelve un código 
+de respuesta que indica si quiere el artículo o si ya lo tiene. Si el servidor quiere el artículo, el cliente se lo envía 
+haciéndolo acabar con un punto en una línea aparte.</P
+><P
+>Empujar noticias tiene la única desventaja que supone una gran carga para
+el sistema servidor, al tener éste que buscar en la base de datos de
+su historial cada artículo de manera individual.</P
+><P
+>&#13;
+La técnica opuesta es seleccionar noticias, en la que el cliente solicita una 
+lista con todos los artículos (disponibles) de un grupo que hayan llegado tras
+una fecha especificada. Esta petición la realiza la orden
+<B
+CLASS="COMMAND"
+>NEWNEWS</B
+>. De los IDs de los mensajes de la lista devuelta,
+el cliente elige aquellos artículos que aún no tenga usando la orden
+<B
+CLASS="COMMAND"
+>ARTICLE</B
+> para cada uno de ellos.</P
+><P
+>Seleccionar noticias necesita de un estricto control por parte del servidor
+en lo que se refiere a qué grupos y distribuciones se permite solicitar a 
+un cliente. Por ejemplo, tiene que asegurarse de no enviar material 
+confidencial de un grupo de noticias local a clientes no autorizados.</P
+><P
+>Hay algunas órdenes convenientes para los lectores de noticias que les
+permiten descargar las cabeceras y los cuerpos de los artículos de manera
+separada, o incluso líneas sueltas de las cabeceras de un determinado 
+rango de artículos. Esto le permite mantener todas las noticias en una
+máquina central, con todos los usuarios de la red (presumiblemente local)
+usando clientes basados en NNTP para leer y publicar. Esto es una alternativa
+a exportar los directorios de noticias mediante NFS, tal y como se describe 
+en <A
+HREF="x-087-2-cnews.html"
+>Capítulo 21</A
+>.</P
+><P
+>&#13;
+Un problema global de NNTP es que permite a una persona conocida
+insertar artículos en el flujo de noticias con las especificaciones del
+remitente falseadas. A esto se lo conoce como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>falsear noticias</I
+></SPAN
+> o 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>spoofing</I
+></SPAN
+>.<A
+NAME="X-087-2-FNNN02"
+HREF="#FTN.X-087-2-FNNN02"
+>[2]</A
+>
+Una extensión de NNTP le permite requerir una autentificación al usuario para 
+ciertas órdenes, ofreciendo algunas medidas de protección contra la gente que 
+pueda abusar de esta manera de su servidor de noticias. </P
+><P
+>&#13;
+
+Existen diferentes paquetes NNTP. Uno de los más conocidos es el demonio NNTP,
+también conocido como la <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>implementación de referencia</I
+></SPAN
+>.
+Lo escribieron originalmente Stan Barber y Phil Lapsley para ilustrar los 
+detalles del RFC-977. Como la mayoría del software de calidad disponible hoy 
+en día, puede encontrarlo empaquetado para su distribución de Linux, o puede
+obtener las fuentes para compilarlo usted mismo. Si elige compilarlo usted
+mismo, necesitará estar familiarizado con su distribución para poder
+asegurarse de que configura todas las rutas de ficheros de manera correcta.</P
+><P
+>El paquete <B
+CLASS="COMMAND"
+>nntpd</B
+> tiene un servidor, dos clientes para
+empujar y seleccionar noticias, y un sustituto de <B
+CLASS="COMMAND"
+>inews</B
+>. 
+Habitan un entorno B News, pero con unos pocos retoques también se contentarán
+con C News. De todos modos, si piensa usar NNTP para algo más que ofrecer 
+acceso de los clientes de noticias al servidor, la implementación de
+referencia realmente no es una opción. Sólo discutiremos aquí el demonio
+NNTP que contiene el paquete <B
+CLASS="COMMAND"
+>nntpd</B
+> prescindiendo de 
+los clientes.</P
+><P
+>&#13;
+Si piensa poner en marcha un sitio de noticias de gran tamaño, debería echar
+un vistazo al paquete <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>InterNet News</I
+></SPAN
+> o INN, que escribió
+Rich Salz. Proporciona transporte de noticias basado tanto en NNTP como en UUCP. El 
+transporte de noticias es definitivamente mejor que <B
+CLASS="COMMAND"
+>nntpd</B
+>. Discutiremos 
+INN en detalle en <A
+HREF="x-087-2-inn.html"
+>Capítulo 23</A
+>.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNN01"
+HREF="x-087-2-nntp.html#X-087-2-FNNN01"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> Cuando se publica un artículo por NNTP,
+el servidor siempre añade al menos un campo a la cabecera,
+<TT
+CLASS="LITERAL"
+>NNTP-Posting-Host:</TT
+>. El campo contiene el nombre de la
+máquina del cliente.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNN02"
+HREF="x-087-2-nntp.html#X-087-2-FNNN02"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Existe el mismo problema con el Protocolo para la Transferencia Sencilla de 
+Correo (SMTP), aunque muchos agentes transportadores de correo ya ofrecen 
+mecanismos para prevenir el "spoofing".</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-cnews.maint.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nntp.protocol.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Herramientas y Tareas de Mantenimiento</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>El Protocolo NNTP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

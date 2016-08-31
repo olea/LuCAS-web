@@ -1,0 +1,692 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf164, System Administration: NFS - Sistema de Ficheros en Red</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<img SRC="../../common/images/Frederic_Raynal.png" >
+<BR>por  <a href="mailto:frederic.raynal@inria.fr">Fr&eacute;d&eacute;ric Raynal</a>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<p><a href="mailto:frederic.raynal@inria.fr">Fr&eacute;d&eacute;ric Raynal</a>
+est&aacute; preparando una tesis en inform&aacute;tica sobre el tatuaje en el <a href="http://www.inria.fr">INRIA</a>.
+Est&aacute; leyendo una buena novela polic&iacute;aca en la que aparece Th.Roosevelt
+a principios de siglo cuando era precepto de polic&iacute;a. La atm&oacute;sfera es
+muy l&uacute;gubre. Trata de la investigaci&oacute;n que lleva a cabo un grupo de personas
+para encontrar a un asesino en serie que ataca a ni&ntilde;os. Este grupo se
+ayuda de las nuevas tecnolog&iacute;as (psicolog&iacute;a, huellas dactilares, etc...)
+para solucionar el caso. Esta novela de Caleb Carr, L&aacute;nge des t&eacute;n&egrave;bres,
+pinta un asombroso retrato del comienzo del &uacute;ltimo siglo.
+</p>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Presentaci&oacute;n general y no exhaustiva de los sistemas de ficheros</A></LI>
+  <LI><A HREF="#lfindex1">El protocolo NFS</A></LI>
+  <LI><A HREF="#lfindex2">Instalaci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex3">El servidor</A></LI>
+  <LI><A HREF="#lfindex4">
+El cliente</A></LI>
+  <LI><A HREF="#lfindex5">Precauciones</A></LI>
+  <LI><A HREF="#lfindex6">Usando NIS, NFS y autofs</A></LI>
+  <LI><A HREF="#lfindex7">Referencias</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=164&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>NFS - Sistema de Ficheros en Red</H2>
+ <img SRC="../../common/images/illustration164.gif" heigth="100" >
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+<p>
+Un <i>Sistema de Ficheros en Red</i> (NFS-Net File System)permite manejar
+ficheros de distintos ordenadores dentro de una red como si estuvieran en
+el disco duro local. Es decir, no se necesita saber d&oacute;nde est&aacute;n localizados
+f&iacute;sicamente los ficheros para poder acceder a ellos.
+</P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<h1>Introducci&oacute;n</h1>
+NFS permite compartir datos entre varios ordenadores de una forma sencilla.
+Por ejemplo, un usuario validado en una red no necesitar&aacute; hacer login a un
+ordenador espec&iacute;fico: v&iacute;a NFS, acceder&aacute; a su <i>directorio personal</i> (que
+llamaremos exportado) en la m&aacute;quina en la que est&eacute; trabajando.
+<p>
+Pero NFS no es un protocolo demasiado eficiente y es muy lento para
+conexiones mediante m&oacute;dem. Est&aacute; dise&ntilde;ado para redes locales, siendo muy
+flexible. Ofrece muchas posibilidades tanto a usuarios como a administradores.
+<p>
+Deber&aacute; administrar este servicio con precauci&oacute;n. Permitir a cualquiera
+escribir en su red puede que realmente no sea una buena decisi&oacute;n ;-) Algunas
+acciones b&aacute;sicas pueden reducir los riesgos.
+<p>
+Este art&iacute;culo comienza con una cort&iacute;sima introducci&oacute;n a los sistemas de
+ficheros. Despu&eacute;s veremos el protocolo NFS. Luego se ir&aacute; a la parte menos
+te&oacute;rica instalando un servidor y un cliente NFS. Tambi&eacute;n echaremos un vistazo
+a las m&iacute;nimas medidas de seguridad que deber&aacute; tomar. Despu&eacute;s, con un
+ejemplo, ilustraremos como combinar NFS, NIS y autofs.
+
+<A NAME="lfindex0">&nbsp;</A>
+<H3>Presentaci&oacute;n general y no exhaustiva de los <i>sistemas de ficheros</i></H3>
+
+Antes de hablar de NFS, deber&aacute; entender el concepto <i>sistema de ficheros</i>.
+Un sistema de ficheros es la forma de almacenar datos en un medio, la manera
+en que se organizan y manejan. Hay muchos sistemas de ficheros, algunos
+m&aacute;s utilizados que otros (New Technology FileSystem (NTFS), High Performance
+FileSystem (HPFS),DOS, FAT 12/16/32, VFAT, Macintosh Hierarchical Filesystem (HFS),
+ISO 9660(para CD-ROM), extended file systems (Ext, Ext2, Ext3), y muchos otros).
+<p>
+Por ejemplo, podemos considerar que cada medio f&iacute;sico para datos (como un
+disco duro) es un conjunto de peque&ntilde;as unidades que contienen la informaci&oacute;n:
+estamos hablando de los <i>bloques</i>. Cada sistema de ficheros maneja estos
+bloques de forma distinta. Por ejemplo en la figura <a href="#frag">1</a> ,
+se quiere insertar un fichero que consta de dos bloques. En la ilustraci&oacute;n
+superior, el fichero se ha puesto despu&eacute;s del &uacute;ltimo bloque ocupado, dejando
+espacios vac&iacute;os al principio. En la parte inferior de la figura (un sistema
+de ficheros diferente), se ha puesto en el primer lugar libre. Tal decisi&oacute;n
+influye en cu&aacute;nto se va fragmentando el disco. Algunos sistemas de ficheros
+impiden autom&aacute;ticamente la fragmentaci&oacute;n, mientras que otros necesitan ser
+defragmentados manualmente.
+<br>
+<center>
+<p><a NAME="frag"></a>
+<p><img SRC="../../common/images/image164-1.png" height=387 width=461>
+<br>Fig. 1 : Dos formas distintas de colocar bloques.</center>
+
+<p>
+El sistema de ficheros m&aacute;s com&uacute;n en Linux se llama <i>ext2fs</i> (extended
+2 file system). Cada fichero est&aacute; representado por un <i>&iacute;nodo<a NAME="foot1" href="#foot1"></a><a NAME="foot1" href="#foot1"></a></i><sup><a href="#foot1" NAME="foot1">1</a></sup>.
+Los directorios contienen la lista de ficheros y el acceso al dispositivo se
+hace mediante operaciones como lectura/escritura en ficheros espec&iacute;ficos.
+<p>La tarea de un servidor NFS es dar a sus clientes los &iacute;nodos a los que
+quiere acceder. &iexcl;Sin embargo, un cliente no podr&iacute;a trabajar demasiado bien
+con &uacute;nicamente el &iacute;nodo del fichero! Un servidor NFS provee una capa de red
+adicional permitiendo a m&aacute;quinas remotas manejar los &iacute;nodos.
+
+<A NAME="lfindex1">&nbsp;</A>
+<H3>El protocolo NFS</H3>
+
+Lo que com&uacute;nmente se llama NFS est&aacute; formado por 4 protocolos distintos.
+Cada uno depende de las <i>Remote Procedure Calls</i>(RPC) y de <font face="Courier New,Courier">portmap</font> (tambi&eacute;n llamado <font face="Courier New,Courier">rpc.portmap</font>). Un portmapper
+convierte n&uacute;meros de programa RPC en n&uacute;meros de puerto. Cuando un servidor
+RPC se inicia, dice a <font face="Courier New,Courier">portmap</font>
+qu&eacute; puerto usar&aacute; y el n&uacute;mero de programa RPC manejado. Cuando un cliente
+quiere enviar una petici&oacute;n RPC a un n&uacute;mero de programa dado, primero contacta
+con el servidor <font face="Courier New,Courier">portmap</font>
+para tomar el n&uacute;mero de puerto dando acceso al programa deseado. Despu&eacute;s,
+dirige los paquetes RPC al puerto correspondiente.
+<p>
+Los 4 servicios que permiten funcionar a  NFS son:
+<table BORDER WIDTH="100%" BGCOLOR="#9999BB" NOSAVE >
+<tr>
+<td><b><font size=+1>Protocolo</font></b></td>
+<td>
+<center><b><font size=+1>Descripci&oacute;n</font></b></center>
+</td>
+<td>
+<center><b><font size=+1>Demonio</font></b></center>
+</td>
+</tr>
+<tr>
+<td><b>nfs</b></td>
+<td>Este protocolo es el b&aacute;sico y permite crear, buscar, leer o escribir
+ficheros. Este protocolo tambi&eacute;n maneja autentificaci&oacute;n y estad&iacute;sticas
+de ficheros.</td>
+<td>
+<center>nfsd</center>
+</td>
+</tr>
+<tr>
+<td><b>mountd</b></td>
+<td>&Eacute;ste se encarga de montar sistemas exportados para acceder a ellos con
+<b>nfs</b>. El servidor recibe peticiones como <font face="Courier New,Courier">mount</font>
+y <font face="Courier New,Courier">umount</font> debiendo mantener informaci&oacute;n
+sobre los sistemas de ficheros exportados.</td>
+<td>
+<center>mountd</center>
+</td>
+</tr>
+<tr>
+<td><b>nsm</b>
+<br>(Network Status Monitor)&nbsp;</td>
+<td>Se usa para monitorizar los nodos de la red y as&iacute; conocer el estado de una
+m&aacute;quina (cliente o servidor). Informa, por ejemplo, de un rearranque.</td>
+<td>
+<center>statd</center>
+</td>
+</tr>
+<tr>
+<td><b>nlm</b>
+<br>(Network Lock Manager)&nbsp;</td>
+<td>Para impedir modificaciones de los datos por varios clientes al mismo tiempo,
+este protocolo maneja un sistema de bloqueo. As&iacute;, con la ayuda del protocolo <b>Nsm</b>
+es posible conocer cu&aacute;ndo se est&aacute; reiniciando un cliente. Nsm libera todos los bloqueos del cliente antes de devolverlos.</td>
+<td>
+<center>lockd</center>
+</td>
+</tr>
+</table>
+
+<p>
+El demonio <font face="Courier New,Courier">knfsd</font>,
+disponible con las &uacute;ltimas versiones del n&uacute;cleo, soporta directamente
+los protocolos <b>nfs</b> y <b>nlm</b>. Por otro lado, <b>mountd</b> y <b>nsm</b>
+no est&aacute;n todav&iacute;a soportados. Cuando el servidor NFS est&aacute; instalado y arrancado,
+podemos verificar que todo est&eacute; funcionando con el comando:
+<br>&nbsp;
+<blockquote><font face="Courier New,Courier">>> ps auxwww | egrep "nfs|mount|lock|stat"</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1370&nbsp; 0.0&nbsp; 0.2&nbsp; 1176&nbsp; 580 ?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+S&nbsp;&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 rpc.mountd --no-nfs-version
+3</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1379&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1380&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1381&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1382&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1383&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1384&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1385&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1386&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [nfsd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1399&nbsp; 0.0&nbsp; 0.0&nbsp;&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp; 0
+pts/0&nbsp;&nbsp;&nbsp; SW&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 [lockd]</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1409&nbsp; 0.0&nbsp; 0.2&nbsp; 1156&nbsp; 560 ?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+S&nbsp;&nbsp;&nbsp; 22:28&nbsp;&nbsp; 0:00 rpc.statd</font>
+<br><font face="Courier New,Courier">root&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1652&nbsp; 0.0&nbsp; 0.1&nbsp; 1228&nbsp; 484 pts/3&nbsp;&nbsp;&nbsp; S&nbsp;&nbsp;&nbsp;
+22:49&nbsp;&nbsp; 0:00 egrep nfs|mount|lock|stat</font></blockquote>
+Por el momento, est&aacute;n disponibles dos versiones de NFS (versiones 2 y 3, que para distinguirlas denotaremos NFSv2 y NFSv3, respectivamente). Los servidores
+NFS de Linux s&oacute;lo soportan la versi&oacute;n 2 (de aqu&iacute; la opci&oacute;n en la l&iacute;nea <font face="Courier New,Courier">mountd</font> del ejemplo anterior).
+
+<p>
+NFS trata con una estructura de datos llamada <i>file handle</i>.
+Es una serie de bits bastante esot&eacute;rica que permite identificar de forma
+&uacute;nica cada objeto del sistema de ficheros (como un fichero, pero no tan s&oacute;lo ficheros).
+Contiene por ejemplo el &iacute;nodo del fichero y tambi&eacute;n una entrada representando el dispositivo
+donde se localizan. Por tanto, podemos ver NFS como un sistema de ficheros
+dentro de otro sistema de ficheros.
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Instalaci&oacute;n</H2>
+
+
+<A NAME="lfindex3">&nbsp;</A>
+<H3>El servidor</H3>
+
+La primera cosa a hacer, como ya hemos visto, es iniciar <font face="Courier
+New,Courier">portmap</font>
+ya que este protocolo es necesario para NFS .
+<blockquote><font face="Courier New,Courier">root >>/usr/sbin/rpcinfo -p</font>
+<br><font face="Courier New,Courier">rpcinfo: can't contact portmapper:
+RPC: Remote system error - Connection refused</font>
+<br><font face="Courier New,Courier">root >>/sbin/portmap</font>
+<br><font face="Courier New,Courier">root >>/usr/sbin/rpcinfo -p</font>
+<br><font face="Courier New,Courier">&nbsp;&nbsp; program vers proto&nbsp;&nbsp;
+port</font>
+<br><font face="Courier New,Courier">&nbsp;&nbsp;&nbsp; 100000&nbsp;&nbsp;&nbsp;
+2&nbsp;&nbsp; tcp&nbsp;&nbsp;&nbsp; 111&nbsp; portmapper</font>
+<br><font face="Courier New,Courier">&nbsp;&nbsp;&nbsp; 100000&nbsp;&nbsp;&nbsp;
+2&nbsp;&nbsp; udp&nbsp;&nbsp;&nbsp; 111&nbsp; portmapper</font></blockquote>
+El comando <font face="Courier New,Courier">rpcinfo</font> muestra los servicios
+RPCs en la m&aacute;quina especificada como argumento (opci&oacute;n <font face="Courier
+New,Courier">-p</font>). Notamos que <font face="Courier
+New,Courier">portmap</font> todav&iacute;a no est&aacute; funcionando: lo iniciamos (la mayor&iacute;a
+de las distribuciones Linux proveen scripts para automatizar esto en el arranque) y
+comprobamos que funciona. Otra raz&oacute;n com&uacute;n para que <font face="Courier New,Courier">rpcinfo</font> responda negativamente es que el portmapper no permita
+la respuesta a causa de la restricci&oacute;n de seguridad en los ficheros <font face="Courier New,Courier">/etc/hosts.{allow, deny}</font>. En este caso, a&ntilde;ada una entrada "portmap: hosts" en el fichero hosts.allow.
+<p>Antes de que NFS se inicie por s&iacute; mismo, debe ser configurado. Existe un &uacute;nico
+fichero de configuraci&oacute;n que se llama <font face="Courier New,Courier">/etc/exports</font>.
+Cada l&iacute;nea muestra la ruta exportada seguido de una lista de clientes a los que
+se permite el acceso. Se pueden a&ntilde;adir opciones al final de cada nombre de cliente.
+La p&aacute;gina de manual exports (<font face="Courier New,Courier">man exports</font>)
+explica la sintaxis para los nombres de cliente y las opciones.
+<p>Se aceptan como nombres de cliente:
+<ul>
+<li>nombre de la m&aacute;quina</li>
+<li>caracteres comod&iacute;n en un nombre de dominio (v.gr. : linux-*.mondomaine.fr)</li>
+<li>un <i>netgroup</i> ( <font face="Courier New,Courier">@grupo</font>) si se usa NIS</li>
+<li>una direcci&oacute;n IP...</li>
+</ul>
+No vamos a detallar aqu&iacute; todas las opciones de montaje disponibles, pero algunas de las
+m&aacute;s importantes son:
+<ul>
+<li><font face="Courier New,Courier">rw</font> (lectura/escritura) : el cliente
+puede leer y escribir en el sistema exportado</li>
+<li><font face="Courier New,Courier">ro</font>&nbsp; (s&oacute;lo lectura) : el cliente
+s&oacute;lo puede leer el sistema exportado</li>
+<li><font face="Courier New,Courier">root_squash</font> : es preferible
+que un usuario <i>root</i> del cliente no pueda escribir con permisos
+de <i>root</i>. Para impedirlo, UID/GID 0 (i.e. <i>root</i>) en el lado del cliente
+se traduce en el usuario <i>nobody</i>.
+Esta opci&oacute;n est&aacute; activada por defecto, pero se puede cancelar con <font face="Courier New,Courier">no_root_squash</font></li>
+<li><font face="Courier New,Courier">all_squash</font> : todos los clientes que acceden
+al sistema exportado utilizan el UID/GID de <I>nobody</I></li>
+<li><font face="Courier New,Courier">anonuid</font>, <font face="Courier
+New,Courier">anongid</font>:
+el usuario <i>nobody</i> ahora usa los  UID y GID definidos por estas opciones.</li>
+</ul>
+Ahora tenemos que iniciar los demonios <font face="Courier New,Courier">rpc.mountd</font>
+y <font face="Courier New,Courier">rpc.nfs</font> para tener funcionando el servidor
+NFS. Comprobamos nuevamente que todo est&aacute; funcionando con el comando
+<font face="Courier
+New,Courier">rpcinfo</font>.
+Incluso podemos inicializar el servidor para los protocolos
+<b>nsm</b> y <b>nlm</b> (<font face="Courier New,Courier">rpc.statd</font>
+y <font face="Courier
+New,Courier">rpc.lockd</font>, respectivamente).
+No hay ninguna premisa para arrancar un servidor NFS...
+pero es altamente recomendable que se reinicie por s&iacute; mismo, en caso de que la m&aacute;quina falle, etc...
+<p>
+Cuando modificamos el fichero de configuraci&oacute;n <font face="Courier New,Courier">/etc/exports</font>,
+debemos avisar a los demonios implicados que se deben hacer los cambios.
+El comando <font face="Courier New,Courier">exportfs</font> transmite
+esta informaci&oacute;n a nuestros servidores. La opci&oacute;n <font face="Courier New,Courier">-r</font>
+sincroniza el fichero <font face="Courier New,Courier">/etc/mtab<a NAME="foot2" href="#foot2"></a><a NAME="foot2" href="#foot2"></a></font><sup><a href="#foot2" NAME="foot2">2</a></sup>
+con el fichero <font face="Courier
+New,Courier">/etc/exports</font> file.
+La opci&oacute;n <font face="Courier New,Courier">-v</font>
+muestra juntos todos los sistemas de ficheros exportados junto con sus opciones.
+<p>Despu&eacute;s de ponerse en marcha el servidor NFS, los siguientes ficheros contienen informaci&oacute;n importante:
+<ul>
+<li>
+<font face="Courier New,Courier">/var/lib/nfs/rmtab</font> : cada l&iacute;nea
+muestra el nombre del cliente y el sistema de ficheros importado desde este servidor;</li>
+<li><font face="Courier New,Courier">/var/lib/nfs/etab</font>: el fichero <font face="Courier New,Courier">/etc/exports</font>
+s&oacute;lo contiene una lista de peticiones. etab est&aacute; creado por <font face="Courier New,Courier">exportfs</font>.
+Contiene en cada l&iacute;nea informaci&oacute;n detallada sobre las opciones usadas cuando
+se exporta un sistema de ficheros a un solo cliente. Es el fichero de referencia usado por <font face="Courier New,Courier">rpc.mountd</font> cuando es arrancado</li>
+<li><font face="Courier New,Courier">/proc/fs/nfs/exports</font> contiene la
+lista de clientes conocida por el n&uacute;cleo</li>
+<li><font face="Courier New,Courier">/var/lib/nfs/xtab</font>: Se usa por precisi&oacute;n
+cuando <font face="Courier New,Courier">etab</font> contiene nombres de clientes
+y grupos de m&aacute;quinas con comodines. Este fichero s&oacute;lo contiene nombres expl&iacute;citos de m&aacute;quinas.</li>
+</ul>
+Cuando un cliente quiere acceder a un sistema de ficheros, empieza haciendo una petici&oacute;n <font face="Courier New,Courier">mountd</font>.
+Entonces se busca en <font face="Courier New,Courier">etab</font> si la petici&oacute;n
+est&aacute; disponible. Se comprueba el n&uacute;cleo para saber si el cliente tiene permitida
+la petici&oacute;n (comprobando <font face="Courier New,Courier">hosts</font>.{<font face="Courier New,Courier">allow</font>,
+<font face="Courier New,Courier">deny</font>},
+reglas de cortafuegos, ...). El n&uacute;cleo utiliza <font face="Courier New,Courier">exportfs</font>
+para la comprobaci&oacute;n, permitiendo actualizar el fichero <font face="Courier New,Courier">/var/lib/nfs/etab</font>.
+Si, en este fichero, el sistema exportado tiene permitido ser exportado al grupo
+al que pertenece el cliente, entonces <font face="Courier New,Courier">mountd</font>
+informa al n&uacute;cleo que actualice <font face="Courier New,Courier">xtab</font>
+con este nuevo host.
+
+<A NAME="lfindex4">&nbsp;</A>
+<H3>
+El cliente</H3>
+
+No hay que hacer nada ... normalmente. El acceso al sistema de ficheros
+exportado por NFS est&aacute; controlado directamente por el n&uacute;cleo. &Eacute;ste tiene
+que haber sido compilado para soportar NFS. El fichero <font face="Courier New,Courier">/proc/filesystems</font> contiene una lista con todos los
+sistemas de ficheros soportados directamente por el n&uacute;cleo. Entonces,
+lo &uacute;nico que tiene que hacer es decir al n&uacute;cleo que quiere acceder a un sistema exportado
+por NFS.
+<p>
+El comando <font face="Courier New,Courier">mount</font> permite acceder
+a diferentes sistemas de ficheros. Informa al n&uacute;cleo que est&aacute; disponible un
+nuevo sistema de ficheros indicando su tipo, su <I>dispositivo</I> y su punto de montaje.
+Se puede usar la opci&oacute;n <font face="Courier New,Courier">-t</font>&nbsp; para indicar el
+tipo del sistema de ficheros a usar. Para NFS, escribimos: <font face="Courier New,Courier">-t
+nfs</font>.
+<p>
+<font face="Courier New,Courier">mount</font> tiene sus propias opciones
+para NFS. Por ejemplo, se pueden utilizar las opciones <font face="Courier New,Courier">rsize</font>
+y <font face="Courier New,Courier">wsize</font> para cambiar el tama&ntilde;o de
+los bloques para lectura o escritura. Puede combinar opciones espec&iacute;ficas de
+NFS con opciones m&aacute;s generales como <font face="Courier New,Courier">intr</font>,
+<font face="Courier
+New,Courier">noexec</font> o <font face="Courier New,Courier">nosuid</font>.
+La p&aacute;gina de manual <font face="Courier New,Courier">mount</font> muestra todas
+esas opciones.
+<p>
+Supongamos que la m&aacute;quina <i>charly</i> tiene un servidor NFS y exporta
+su directorio
+<font face="Courier New,Courier">/usr/local</font>. Cuando quiera acceder desde la m&aacute;quina <i>jill</i>, tendr&aacute; que montar el directorio exportado de <i>charly</i> a <i>jill</i>:
+<blockquote><font face="Courier New,Courier">root@jill >> mount -t nfs
+-o nosuid,hard,intr charly:/usr/local /usr/local</font></blockquote>
+El comando indica que estamos montando un sistema de ficheros NFS (<font face="Courier New,Courier">-t
+nfs</font>), con las opciones <font face="Courier New,Courier">nosuid</font>, <font face="Courier New,Courier">hard</font>
+e <font face="Courier New,Courier">intr</font>. Los dos &uacute;ltimos argumentos son los
+m&aacute;s interesantes. El primero de ellos especifica el <I>dispositivo</I> a montar.
+Para NFS la sintaxis es distinta de la l&iacute;nea <font face="Courier
+New,Courier">mount</font> habitual, donde se especifica
+dispositivo y directorio. Aqu&iacute; especificamos servidor:directorio_exportado en vez
+de dispositivo. El &uacute;ltimo argumento indica la localizaci&oacute;n del sistema de ficheros en la
+parte cliente. Hemos compartido exactamante el
+<font face="Courier New,Courier">/usr/local</font> de <i>charly</i>
+con
+<i>jill</i> y as&iacute; podemos evitar el tener que instalar programas en <font face="Courier New,Courier">/usr/local</font> m&aacute;s de una vez. Para hacer esta configuraci&oacute;n permanente,
+podemos especificarlo en el fichero
+<font face="Courier
+New,Courier">/etc/fstab</font> de <i>jill</i>. fstab contiene todos los dispositivos
+que ser&aacute;n montados en el arranque. La sintaxis para <font face="Courier New,Courier">/etc/fstab</font>
+es:
+<br>&nbsp;
+<blockquote><font face="Courier New,Courier">#&nbsp;&nbsp;&nbsp; device&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+mount point&nbsp;&nbsp; file system&nbsp;&nbsp; options&nbsp;&nbsp;&nbsp;&nbsp;
+dump&nbsp; fsckorder</font>
+<br><font face="Courier New,Courier">charly:/usr/local&nbsp;&nbsp;&nbsp;
+/usr/local&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; nfs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+nosuid,hard,intr&nbsp;&nbsp;&nbsp; 0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0</font></blockquote>
+
+<p>Sin embargo, deber&aacute; tener cuidado con una entrada permanente. S&oacute;lo podr&aacute; usarlo
+cuando el servidor (<i>charly</i>) est&eacute; siempre encendido, o cuando encienda <i>charly</i>
+antes que <i>jill</i>.
+
+<A NAME="lfindex5">&nbsp;</A>
+<H3>Precauciones</H3>
+
+Uno de los mayores problemas con NFS viene del hecho de que exista por defecto
+una relaci&oacute;n de confianza entre un cliente y un servidor NFS. En el caso de que
+la cuenta <i>root</i> del servidor est&eacute; comprometida, la del cliente tambi&eacute;n lo estar&aacute;.
+El NFS-COMO describe un conjunto de medidas esenciales que debe tomarse para conseguir
+cierta seguridad..
+<p>
+Un cliente no debe confiar ciegamente en un servidor, por ello debemos especificar
+opciones restrictivas cuando usamos el comando <font face="Courier New,Courier">mount</font>.
+Ya hemos mencionado la primera de ellas: <font face="Courier New,Courier">nosuid</font>.
+Cancela el efecto de los bits SUID y GID. Con esto alguien que est&eacute; como <i>root</i> en
+el servidor primero debe hacer login en el cliente como un usuario normal y despu&eacute;s hacerse  <i>root</i>.
+Otra opci&oacute;n, m&aacute;s restrictiva, es <font face="Courier New,Courier">noexec</font>.
+Proh&iacute;be ejecutar programas en sistema de ficheros exportado. Esta opci&oacute;n &uacute;nicamente
+se utiliza en sistemas que s&oacute;lo contengan datos.
+<p>
+En el lado del servidor NFS, podemos especificar que no conf&iacute;e en la cuenta
+<i>root</i> del cliente. Tenemos que especificarlo en <font face="Courier
+New,Courier">/etc/exports</font>
+con la opci&oacute;n <font face="Courier
+New,Courier">root_squash</font>. Entonces si un usuario con
+UID 0 (<i>root</i>) en el cliente accediese al sistema de ficheros exportado por el servidor,
+tomar&iacute;a el UID <i>nobody</i> para consultar ficheros.
+Esta opci&oacute;n est&aacute; activada por defecto bajo Linux pero se puede desactivar con la opci&oacute;n
+<font face="Courier
+New,Courier">no_root_squash</font>.
+Se puede especificar qu&eacute; opciones deben aplicarse en un conjunto de UIDs. Recuerde tambi&eacute;n
+que las opciones <font face="Courier
+New,Courier">anonuid</font> y
+<font face="Courier New,Courier">anongid</font> permiten cambiar los UID/GID de <i>nobody</i> por los de otro usuario diferente.
+<p>
+Algunas opciones son m&aacute;s generales y se efect&uacute;an por el <font face="Courier
+New,Courier">portmapper</font>.
+Por ejemplo, prohibimos el acceso a todas las m&aacute;quinas con la siguiente l&iacute;nea en el fichero <font face="Courier New,Courier">/etc/hosts.deny</font>:
+<br>&nbsp;
+<blockquote><font face="Courier New,Courier"># hosts.deny : absolute prohibition
+for every one to</font>
+<br><font face="Courier New,Courier">#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+use the portmap</font>
+<br><font face="Courier New,Courier">portmap: ALL</font></blockquote>
+
+<p>
+Despu&eacute;s en el fichero <font face="Courier New,Courier">/etc/hosts.allow</font>
+esta estricta prohibici&oacute;n se puede contrarrestar permitiendo el acceso a las m&aacute;quinas deseadas.
+<p>
+Unas buenas reglas de cortafuegos tambi&eacute;n contribuyen a una protecci&oacute;n mejor. Observe
+los puertos usados por los diferentes servicios y los protocolos utilizados:
+<br>&nbsp;
+<center><table BORDER WIDTH="60%" BGCOLOR="#9999BB" NOSAVE >
+<tr>
+<td><b>Servicio RPC</b></td>
+<td><b>Puerto</b></td>
+<td><b>Protocolos</b></td>
+</tr>
+<tr>
+<td>portmap</td>
+<td>111</td>
+<td>upd / tcp</td>
+</tr>
+<tr>
+<td>nfsd</td>
+<td>2049</td>
+<td>udp</td>
+</tr>
+<tr>
+<td>mountd</td>
+<td>variable</td>
+<td>udp / tcp</td>
+</tr>
+</table></center>
+
+<A NAME="lfindex6">&nbsp;</A>
+<H3>Usando NIS, NFS y autofs</H3>
+
+Fij&eacute;monos ahora en una red algo m&aacute;s complicada, como la que podr&aacute; encontrar e.g en una empresa. En una peque&ntilde;a red en su casa probablemente pueda vivir sin NIS.
+El Servicio de Informaci&oacute;n en Red, NIS (Network Information Service) es una forma de
+distribuir ficheros de configuraci&oacute;n (e.g en /etc) a otras m&aacute;quinas.
+<br>El servidor principal en nuestra red se llamar&aacute; "<i>charly</i>" y otras 3
+m&aacute;quinas de la red ser&aacute;n "<i>sabrina</i>", "<i>jill</i>" y "<i>kelly</i>".
+Configuramos <i>charly</i> como un servidor NIS para el dominio <i>bosley</i>. Las
+otras m&aacute;quinas son tan s&oacute;lo clientes NIS de <i>charly</i> (podr&iacute;amos tener un
+servidor NIS secundario, pero hoy no es &eacute;se nuestro prop&oacute;sito).
+<p>
+Primero, veamos la configuraci&oacute;n de nuestro servidor <i>charly</i>. Empezamos
+definiendo algunos mapas NIS que contienen toda la informaci&oacute;n necesaria.
+<p>
+El fichero <font face="Courier New,Courier">/etc/netgroup</font> contiene los
+grupos de m&aacute;quinas con caracter&iacute;sticas comunes (una misma arquitectura, por ejemplo).
+Un mapa NIS es muy &uacute;til para NFS. S&oacute;lo tenemos que reunir todas las m&aacute;quinas permiti&eacute;ndoles acceder al mismo sistema de ficheros exportado. Entonces se usa este grupo en el fichero <font face="Courier New,Courier">/etc/exports</font> en lugar de especificar todos los
+clientes uno a uno:
+<blockquote><font face="Courier New,Courier"># /etc/netgroup</font>
+<br><font face="Courier New,Courier">charlysangels (sabrina,,) (jill,,)
+(kelly)</font></blockquote>
+&nbsp;Por lo que concierne a NFS, sabemos que la configuraci&oacute;n es bastante restrictiva. El fichero <font face="Courier New,Courier">/etc/exports</font> de <i>charly</i>
+contiene:
+<blockquote><font face="Courier New,Courier"># /etc/exports</font>
+<br><font face="Courier New,Courier">/usr/local&nbsp;&nbsp;&nbsp; @charlysangels(ro)</font></blockquote>
+Decidimos utilizar <font face="Courier New,Courier">automount</font> para acceder
+al directorio exportado <font face="Courier New,Courier">/usr/local</font>.
+En vez de montar el sistema en el arranque, se hace autom&aacute;ticamente cuando un usuario
+accede a un fichero de este directorio.&nbsp; Creamos el fichero <font face="Courier New,Courier">/etc/auto.map</font> para decidir qu&eacute; ser&aacute; accesible por
+<font face="Courier New,Courier">automount</font> y NIS:
+<blockquote><font face="Courier New,Courier"># /etc/auto.map</font>
+<br><font face="Courier New,Courier">charly&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+charly:/usr/local</font></blockquote>
+Como queremos integrar esta informaci&oacute;n (el nuevo <font face="Courier
+New,Courier">auto.map</font>
+y los ficheros <font face="Courier
+New,Courier">netgroup</font>) en la base de datos NIS,
+tenemos que modificar el <font face="Courier New,Courier">Makefile</font> antes de reconstruirlo. Debemos estar seguros
+de qu&eacute; grupo acceder&aacute; a la base. Por lo que respecta a <font face="Courier New,Courier">auto.map</font>, este fichero no est&aacute; definido por defecto.
+S&oacute;lo tenemos que a&ntilde;adir una entrada en el
+<font face="Courier New,Courier">Makefile</font>, con la regla asociada (usando la
+existente como un modelo):
+<blockquote>#To be added in the Yellow Pages Makefile</blockquote>
+
+<blockquote>AUTO_MAP&nbsp;&nbsp;&nbsp; = $(YPSRCDIR)/auto.map
+<br># ...
+<br>#...
+<br><font face="Courier New,Courier">auto.map: $(AUTO_MAP) $(YPDIR)/Makefile</font></blockquote>
+
+<blockquote><font face="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+@echo "Updating $@..."</font>
+<br><font face="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+-@sed -e "/^#/d" -e s/#.*$$// $(AUTO_MAP) | $(DBLOAD) \</font>
+<br><font face="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+-i $(AUTO_MAP) -o $(YPMAPDIR)/$@ - $@</font>
+<br><font face="Courier New,Courier">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+-@$(NOPUSH) || $(YPPUSH) -d $(DOMAIN) $@</font></blockquote>
+Esta regla borra comentarios, a&ntilde;ade una nueva entrada a la base de datos y despu&eacute;s
+transmite la informaci&oacute;n a cada servidor
+<p>
+S&oacute;lo tenemos que ejecutar <font face="Courier New,Courier">make</font> desde el
+directorio <font face="Courier New,Courier">/var/yp</font>.
+<p>
+Ahora, tenemos tres clientes: <i>sabrina</i>, <i>jill</i> y <i>kelly</i>.
+Aqu&iacute;, no hay que hacer nada :) Tenemos que decir a  <font face="Courier
+New,Courier">autofs</font>
+que controle un nuevo mapa dado por YPs. En el fichero
+<font face="Courier New,Courier">/etc/auto.master</font>
+de cada cliente la siguiente l&iacute;nea informa de la presencia de una asignaci&oacute;n
+auto.map obtenida v&iacute;a los servicios de YP.
+<blockquote><font face="Courier New,Courier">#/etc/auto.master</font>
+<br><font face="Courier New,Courier">/usr/local&nbsp;&nbsp;&nbsp; yp auto.map&nbsp;&nbsp;&nbsp;
+--intr,nosuid,nodev</font></blockquote>
+Despu&eacute;s tenemos que reiniciar <font face="Courier New,Courier">autofs</font>
+para hacer este nuevo mapa efectivo.
+<p>Ahora tenemos un &uacute;nico directorio f&iacute;sico <font face="Courier New,Courier">/usr/local</font>
+en <i>charly</i>. Entonces, cuando se instale un programa espec&iacute;fico
+en <i>charly</i>, todas las m&aacute;quinas lo podr&aacute;n usar.
+<p>Este ejemplo podr&iacute;a llevarse m&aacute;s lejos con la instalaci&oacute;n de un &uacute;nico sistema <font face="Courier New,Courier">/usr</font>, <font face="Courier
+New,Courier">/usr/doc</font> u otros, pero la pr&aacute;ctica muestra que no ser&iacute;a
+buena idea. Las instalaciones a menudo necesitan modificar ficheros en el directorio
+ <font face="Courier
+New,Courier">/etc</font> o en otros. Tendr&iacute;amos que actualizar todas las m&aacute;quinas para actualizar ficheros no exportados, lo que ser&iacute;a tremendamente pesado.
+<br>&nbsp;
+
+<A NAME="lfindex7">&nbsp;</A>
+<H3>Referencias</H3>
+
+<u>Sistemas de Ficheros</u>
+<ul>
+<li>Filesystem-HOWTO :&nbsp; <a href="http://www.linuxdoc.org">www.linuxdoc.org</a></li>
+<li>Design and Implementation of the Second Extended Filesystem : una excelente
+novela de R&eacute;my Card, Th&eacute;odore Ts&oacute; et Stephen Tweedie, creadores
+de ext2fs : <a href="http://khg.redhat.com/HyperNews/get/fs/ext2intro.html">http://khg.redhat.com/HyperNews/get/fs/ext2intro.html</a></li>
+</ul>
+
+<p><u>NFS</u>
+<ul>
+<li>NFS-HOWTO :&nbsp; <a href="http://www.linuxdoc.org">www.linuxdoc.org</a></li>
+<li>The Linux kernel NFSD implementation : to go (much) further, a good and
+complete programming and running description of Linux's NFS: <a href="http://www.cse.unsw.edu.au/&ntilde;eilb/oss/linux-commentary/nfsd.html">http://www.cse.unsw.edu.au/&ntilde;eilb/oss/linux-commentary/nfsd.html</a></li>
+</ul>
+
+<hr>
+<p>
+<h4>Notas</h4>
+
+<dl>
+<dt>
+<a NAME="foot1"></a>... &iacute;nodo<a NAME="foot1" href="#foot1"></a><a NAME="foot1" href="#foot1"></a><sup><a href="#foot1" NAME="foot1">1</a></sup></dt>
+<dd>
+Es un descriptor de fichero (una serie de bits) conteniendo, entre otros,
+permisos de acceso al fichero, propietario, direcciones de bloques f&iacute;sicos que
+contienen los datos, etc...</dd>
+</dl>
+<dl>
+<dt>
+<a NAME="foot2"></a>... /etc/mtab<a NAME="foot2" href="#foot2"></a><a NAME="foot2" href="#foot2"></a><sup><a href="#foot2" NAME="foot2">2</a></sup></dt>
+<dd>
+Este fichero contiene la lista de todos los sistemas de ficheros montados por el n&uacute;cleo, tanto via mount, como los sistemas descritos en fstab, como via <font face="Courier New,Courier">autofs</font>/<font face="Courier New,Courier">automount</font>.</dd>
+</dl>
+<hr>
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=164&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Fr&eacute;d&eacute;ric Raynal, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article164.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:frederic.raynal@inria.fr"><FONT COLOR="#FFFFFF">Fr&eacute;d&eacute;ric Raynal</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:philippe.trbich@free.fr"><FONT COLOR="#FFFFFF">Philippe Trbich</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:rhernando@mundofree.com"><FONT COLOR="#FFFFFF">Roberto Hernando</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-07-02, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

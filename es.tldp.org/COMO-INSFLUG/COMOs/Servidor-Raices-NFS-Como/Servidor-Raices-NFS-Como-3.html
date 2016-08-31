@@ -1,0 +1,325 @@
+<HTML>
+<HEAD>
+<TITLE>Servidor De Ra&iacute;ces NFS Mini-COMO: Creaci&oacute;n del directorio ra&iacute;z de los clientes</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Servidor-Raices-NFS-Como-2.html">Anterior</A>
+<A HREF="Servidor-Raices-NFS-Como-4.html">Siguiente</A>
+<A HREF="Servidor-Raices-NFS-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Creaci&oacute;n del directorio ra&iacute;z de los clientes</A></H2>
+
+
+
+<H2><A NAME="ss3.1">3.1 Creaci&oacute;n del &aacute;rbol de directorios</A></H2>
+
+
+<P>Antes que nada, es necesario crear la estructura de directorios en s&iacute;. Yo
+creo todos los clientes bajo <CODE>/clients/nombre-maquina</CODE> y usar&eacute; esto
+en los ejemplos que cito a continuaci&oacute;n.  No obstante, se puede cambiar
+por cualquier otro nombre.  La primera etapa por tanto, consiste en crear
+los directorios relevantes en el que ser&aacute; directorio ra&iacute;z del cliente.  Se
+deben crear los siguientes directorios: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/bin 
+/dev
+/etc
+/home
+/lib
+/mnt
+/proc
+/sbin
+/server
+/tmp
+/usr
+/var
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y cualquier otro directorio que desee tener en su sistema.</P>
+<P>Los directorios locales <CODE>/proc</CODE> y <CODE>/dev</CODE> deben ser
+utilizados separadamente por cada m&aacute;quina, a diferencia del resto de
+directorios, que pueden estar compartidos parcial o completamente con el
+resto de los clientes.</P>
+
+
+<H2><A NAME="ss3.2">3.2 Creaci&oacute;n del sistema de archivos m&iacute;nimo para arrancar</A></H2>
+
+
+
+<H3>Creaci&oacute;n del directorio <CODE>/dev</CODE></H3>
+
+
+<P>Si bien el directorio <CODE>/dev</CODE> puede ser compartido, es mejor crearlo
+separado para cada cliente.  Puede crear dicho directorio en el cliente
+con la macro <CODE>MAKEDEV</CODE>; sin embargo, en muchos casos resulta m&aacute;s
+simple copiarlo del servidor:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cp -a /dev /clients/nombre-maquina
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Debe recordar que <CODE>/dev/mouse</CODE>, <CODE>/dev/cdrom</CODE> y
+<CODE>/dev/modem</CODE> son enlaces simb&oacute;licos a los dispositivos actuales y
+por tanto, asegurarse de que queden enlazados correctamente para apuntar
+al hardware correspondiente del cliente. </P>
+
+<H3>Copia de los binarios necesarios</H3>
+
+
+<P>Aunque montemos todo desde el servidor, existe un grupo de binarios que
+necesitamos copiar para cada cliente.  Para empezar, necesitamos
+"<CODE>init</CODE>", ya que nuestro sistema no podr&aacute; ejecutar nada antes de
+inicializarse (como su autor indica en los comentarios sobre el programa).</P>
+<P>Por tanto, primero deber&aacute; copiar <CODE>/sbin/init</CODE> al directorio
+<CODE>/sbin</CODE> del cliente y como ejecutar&aacute; <CODE>rc.S</CODE>, necesitar&aacute;
+copiar <CODE>/bin/sh</CODE> al directorio <CODE>/bin</CODE> del cliente. Para
+poder montar necesitar&aacute; copiar <CODE>/sbin/mount</CODE> al directorio
+<CODE>/sbin</CODE> del cliente. </P>
+<P>Esto es lo m&iacute;nimo, asumiendo que la primera l&iacute;nea de su <CODE>rc.S</CODE> es
+<CODE>mount -av</CODE>.  No obstante, recomiendo copiar algunos archivos m&aacute;s: 
+<CODE>update, ls, rm, cp</CODE> y <CODE>umount</CODE>, y as&iacute; disponer de las
+herramientas b&aacute;sicas en caso de que el cliente tenga problemas para
+montar.  Si elige tener el swap habilitado antes de montar, tambi&eacute;n
+tendr&iacute;a que copiar el binario <CODE>swapon</CODE>. </P>
+<P>Ya que muchos de estos binarios est&aacute;n por defecto compilados
+din&aacute;micamente, necesitar&aacute; copiar una peque&ntilde;a parte de <CODE>/lib:</CODE></P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cp -a /lib/ld.* /lib/libc.* /lib/libcurses.* /client/nombre-maquina/lib
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tambi&eacute;n es posible enlazar los binarios a s&iacute; mismos, en lugar de
+copiarlos. Por favor, lea mis comentarios de la secci&oacute;n 
+<A HREF="Servidor-Raices-NFS-Como-2.html#sec21">sec21</A>
+de este documento.</P>
+<P>Tenga en cuenta que estamos asumiendo que el n&uacute;cleo ha recibido todos los
+par&aacute;metros de red mientras se iniciaba. Si planea utilizar <CODE>rarp</CODE> o
+<CODE>bootp</CODE>, posiblemente necesite copiar tambi&eacute;n los binarios relevantes
+para esto.</P>
+<P>Generalmente, se necesitar&aacute; tener un m&iacute;nimo de archivos disponibles para
+configurar la red y ejecutar <CODE>rc.S</CODE> hasta el momento en que se monta el
+resto del sistema de archivos.</P>
+
+<H3>El directorio <CODE>/var</CODE></H3>
+
+
+<P>El directorio <CODE>/var</CODE>, en muchos casos, puede ser separado para cada
+cliente. Sin embargo, gran parte de la informaci&oacute;n puede estar compartida.
+Cree bajo el directorio del servidor un directorio llamado <CODE>var</CODE>. 
+Montaremos el directorio <CODE>/var</CODE> de all&iacute;. Para crear el directorio
+local <CODE>/var</CODE>, simplemente escriba: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cp -a /var /clients/nombre-maquina
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora, tiene la posibilidad de elegir lo que desea separar, y lo que desea
+compartir.  Para compartir cualquier directorio/archivo, elim&iacute;nelo
+simplemente del directorio <CODE>/var</CODE> del cliente y enl&aacute;celo en al
+directorio <CODE>/server/var</CODE>.  Tenga en cuenta que debe enlazar tanto
+para <CODE>/server/var</CODE> como para <CODE>../server/var</CODE> pero
+<B>NO</B> para <CODE>/clients/nombre-maquina/server/var</CODE> ya que esto
+no funcionar&aacute; cuando cambie el directorio ra&iacute;z en cada cliente. </P>
+<P>Generalmente recomiendo separar <CODE>/var/run</CODE>, <CODE>/var/lock</CODE>,
+<CODE>/var/spool</CODE> y <CODE>/var/log</CODE>.</P>
+
+<H3>El resto de los directorios</H3>
+
+
+<P>
+<UL>
+<LI><CODE>/etc</CODE> se explica en la siguiente secci&oacute;n.</LI>
+<LI><CODE>/mnt</CODE> y <CODE>/proc</CODE> son para prop&oacute;sitos locales de cada
+cliente</LI>
+<LI><CODE>/usr</CODE> y <CODE>/home</CODE> son solamente para montar</LI>
+<LI><CODE>/tmp</CODE> depende de Usted.  Se puede crear un directorio
+<CODE>tmp</CODE> diferente para cada cliente, o crear un directorio
+<CODE>/clients/tmp</CODE> y montarlo para cada cliente en <CODE>/tmp</CODE>.  Yo
+recomiendo darle a cada cliente un directorio <CODE>tmp</CODE> separado. </LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss3.3">3.3 Preparaci&oacute;n del directorio <CODE>/etc</CODE> y configuraci&oacute;n de los</A>clientes</H2>
+
+
+<P>Tenga en cuenta lo siguiente: esta secci&oacute;n se refiere a la creaci&oacute;n del
+directorio <CODE>etc</CODE> que est&aacute; preferentemente compartido entre los
+clientes. Si sus clientes sin disco tienen administradores de sistema
+diferentes, lo mejor es configurar un directorio <CODE>etc</CODE> para cada
+cliente. </P>
+
+<H3>Creaci&oacute;n del &aacute;rbol <CODE>etc</CODE> de los clientes</H3>
+
+
+<P>Aunque separemos el directorio <CODE>etc</CODE> para los clientes, mantendremos
+compartida una gran parte de los archivos que all&iacute; se encuentran.  Creo
+que compartir los archivos con el <CODE>/etc</CODE> del servidor es mala idea,
+y recomiendo crear un directorio <CODE>/clients/etc</CODE> que contenga la
+informaci&oacute;n compartida entre los clientes.  Para arrancar con esto,
+simplemente copie el contenido del <CODE>/etc</CODE> del servidor en el
+directorio <CODE>/clients/etc</CODE>.</P>
+<P>Se deber&aacute; colocar en este directorio todos los archivos de configuraci&oacute;n
+que no sean espec&iacute;ficos para una m&aacute;quina, como pueden ser <CODE>motd</CODE>,
+<CODE>issue</CODE>, etc. y no los que sean espec&iacute;ficos del cliente, como
+<CODE>inittab</CODE> o <CODE>fstab</CODE>.</P>
+<P>El cambio m&aacute;s importante que deberemos realizar estar&aacute; bajo el directorio
+<CODE>rc.d</CODE>. Primero, deberemos cambiar <CODE>rc.inet1</CODE> para que refleje la
+configuraci&oacute;n local. Yo paso al n&uacute;cleo todos los par&aacute;metros de red usando
+LILO/Loadlin, por lo que quito todo lo relacionado del archivo
+<CODE>rc.inet1</CODE>.  Lo &uacute;nico que dejo all&iacute; son los binarios <CODE>ifconfig</CODE> y
+<CODE>route</CODE> del cliente.  Si utiliza <CODE>rarp</CODE> o <CODE>bootp</CODE>, necesitar&aacute;
+crearlo acorde a esto. </P>
+<P>En segundo lugar, deber&aacute; editar su <CODE>rc.S</CODE> y eliminar todas las partes
+responsables de la comprobaci&oacute;n por parte de <CODE>fsck</CODE> que tiene lugar
+cuando arranca el servidor.  Debe encontrar la l&iacute;nea que monta su 
+<CODE>fstab</CODE>, que se parecer&aacute; a: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -avt nonfs
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El par&aacute;metro <CODE>-t nonfs</CODE> se debe a que los clientes normales
+ejecutan primero <CODE>rc.S</CODE>, usando despu&eacute;s <CODE>rc.inet1</CODE> para configurar
+la red.  Como esto provoca que no sea montada ninguna partition NFS, la
+l&iacute;nea es ignorada, y por ello, se debe cambiar a <CODE>mount -av</CODE>.  Si
+necesita ejecutar <CODE>rarp/bootp</CODE> para configurar la red, h&aacute;galo en
+<CODE>rc.S</CODE> (o incluya una llamada a alguna macro desde <CODE>rc.S</CODE>), antes de
+montar, y aseg&uacute;rese de que sus directorios <CODE>/bin</CODE> y <CODE>/sbin</CODE>
+tengan disponibles los archivos necesarios.</P>
+<P>Una vez se lleva a cabo <CODE>mount -av</CODE>, tendr&aacute; un sistema de archivos
+funcionando.  Cree un <CODE>fstab</CODE> general, luego puede copiarlo en cada
+cliente.  Su <CODE>fstab</CODE> debe ser aproximadamente como este: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  server/nfs                                    default  1 1
+  server:/bin           /bin            nfs     default  1 1
+  server:/usr           /usr            nfs     default  1 1
+  server:/sbin          /sbin           nfs     default  1 1
+  server:/home          /home           nfs     default  1 1
+  server:/lib           /lib            nfs     default  1 1
+  server:/clients/etc   /server/etc     nfs     default  1 1
+  server:/clients/var   /server/var     nfs     default  1 1
+  none                  /proc           proc    default  1 1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aseg&uacute;rese tambi&eacute;n de que el <CODE>/etc/exports</CODE> del servidor sea algo
+como:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  /clients/&lt;nombre-m&aacute;quina&gt;      maquina.dominio(rw,no_root_squash)
+  /clients/etc                  maquina.dominio(ro,no_root_squash)
+  /clients/var                  maquina.dominio(ro,no_root_squash)
+  /usr                          maquina.dominio(ro,no_root_squash)
+  /sbin                         maquina.dominio(ro,no_root_squash)
+  /bin                          maquina.dominio(ro,no_root_squash)
+  /lib                          maquina.dominio(ro,no_root_squash)
+  /home                         maquina.dominio(ro,no_root_squash)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Con excepci&oacute;n de la primera l&iacute;nea, que debe ser &uacute;nica para cada m&aacute;quina,
+el resto de las l&iacute;neas pueden ser reemplazadas por nombres que engloben a
+todas las m&aacute;quinas (por ejemplo <CODE>pc*.dominio</CODE>).  Le sugiero crear la
+mayor&iacute;a de los directorios como s&oacute;lo lectura, aunque esto es decisi&oacute;n
+suya. La indicaci&oacute;n <CODE>no_root_squash</CODE> har&aacute; que los usuarios
+administradores de los clientes tengan tambi&eacute;n los permisos vigentes de
+root sobre <CODE>nfsd</CODE>. Revise la p&aacute;gina <CODE>man exports(5)</CODE>.  Si desea que
+los usuarios puedan ejecutar <CODE>passwd</CODE> desde los clientes, aseg&uacute;rese que
+<CODE>/etc</CODE> est&eacute; con permisos <CODE>rw</CODE> y no <CODE>ro</CODE>.  Aunque esto no es
+obligatorio.</P>
+<P>Por favor, tenga en cuenta otro detalle en el archivo <CODE>rc.S</CODE>.  En
+Slackware, por defecto, se crea un nuevo <CODE>/etc/issue</CODE> y
+<CODE>/etc/motd</CODE> cada vez que se ejecuta.  Esta funci&oacute;n <B>DEBE</B>
+ser deshabilitada si dichos archivos son montados como s&oacute;lo lectura desde
+el servidor, y recomiendo que est&eacute;n deshabilitados en todos los casos.</P>
+<P>Finalmente, si desea mantener la misma base de usuarios tanto en el
+servidor como en los clientes, deber&aacute; elegir entre:</P>
+<P>
+<OL>
+<LI>usar NIS (P&aacute;ginas Amarillas - revise el <I>NIS-Como</I>), cada cliente
+deber&aacute; disponer, por separado, de un <CODE>/etc/passwd</CODE> y un
+<CODE>/etc/group</CODE> tal y como lo recibe del servidor NIS. 
+</LI>
+<LI>En la mayor&iacute;a de los casos, ser&aacute; suficiente con un simple enlace
+simb&oacute;lico.  Por lo tanto, necesitar&aacute; o bien un enlace r&iacute;gido
+(<I>hardlink</I>) de <CODE>/clients/etc/passwd</CODE> a <CODE>/etc/passwd</CODE>, o
+si prefiere, un enlace simb&oacute;lico, enlazando <CODE>/etc/passwd</CODE> a
+<CODE>/clients/etc/passwd</CODE> (y no de la otra forma, ya que los clientes
+no montar&aacute;n el directorio <CODE>/etc</CODE> del servidor).  Haga lo mismo para
+<CODE>/etc/group</CODE>. </LI>
+</OL>
+</P>
+
+<H3>Creaci&oacute;n del directorio <CODE>/etc</CODE> del cliente</H3>
+
+
+<P>Generalmente, la mayor&iacute;a de los archivos en el <CODE>/etc</CODE> del cliente
+estar&aacute;n enlazados simb&oacute;licamente con el directorio <CODE>/server/etc</CODE>.
+Sin embargo, algunos archivos son diferentes para cada m&aacute;quina, y otros
+solamente tienen que estar all&iacute; cuando el n&uacute;cleo los carga.  Lo m&iacute;nimo que
+se necesita en el directorio <CODE>/etc</CODE> es lo siguiente: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+resolv.conf
+hosts
+inittab
+rc.d/rc.S
+fstab
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ya que estos cinco archivos pueden ser id&eacute;nticos para todos los clientes,
+los puede simplemente enlazar r&iacute;gidamente o copiarlos una y otra vez.  No
+obstante, con los archivos <CODE>rc.S</CODE> y <CODE>fstab</CODE> debe tener presente que
+se necesita una copia separada para cada cliente.  Tambi&eacute;n necesitar&aacute;
+separar el <CODE>/etc/HOSTNAME</CODE> de cada cliente.  Yo personalmente
+recomiendo tener todos los archivos de <CODE>rc.d</CODE> separados para cada
+cliente, ya que la configuraci&oacute;n de hardware puede variar de uno a otro. </P>
+<P>Para cada cliente, agregue en el <CODE>fstab</CODE> una l&iacute;nea apropiada para el
+archivo de intercambio: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   /dev/particion_swap              swap    swap    default 1 1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Con el resto de los archivos del <CODE>/etc</CODE> del cliente, puede o bien
+enlazarlos r&iacute;gidamente a los archivos <CODE>/clients/etc/*</CODE> o bien
+simb&oacute;licamente con <CODE>/server/etc</CODE> (ya que es el punto de montaje de
+<CODE>/clients/etc/</CODE>) </P>
+<P>Aseg&uacute;rese de que su m&aacute;quina puede resolver apropiadamente, tanto a trav&eacute;s
+de <CODE>named</CODE> como de <CODE>etc/hosts</CODE>.  No es mala idea mantener el
+n&uacute;mero IP del servidor en <CODE>/etc/hosts</CODE>, en lugar de contar con
+resolverlo.  Si conf&iacute;a resolverlo con <CODE>named</CODE> solamente, cualquier
+problema con <CODE>named</CODE> puede impedir que sus clientes arranquen.</P>
+
+<H3>Arrancando</H3>
+
+
+<P>Ahora, todo lo que necesita hacer es iniciar su m&aacute;quina, cruzar los dedos
+y esperar que todo funcione como debe :-). </P>
+
+
+<HR>
+<A HREF="Servidor-Raices-NFS-Como-2.html">Anterior</A>
+<A HREF="Servidor-Raices-NFS-Como-4.html">Siguiente</A>
+<A HREF="Servidor-Raices-NFS-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

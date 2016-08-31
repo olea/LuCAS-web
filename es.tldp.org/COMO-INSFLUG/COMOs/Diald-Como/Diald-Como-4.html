@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Diald Como: Notas sobre la identificaci&oacute;n en el momento de la conexi&oacute;n</TITLE>
+ <LINK HREF="Diald-Como-5.html" REL=next>
+ <LINK HREF="Diald-Como-3.html" REL=previous>
+ <LINK HREF="Diald-Como.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Diald-Como-5.html">Página siguiente</A>
+<A HREF="Diald-Como-3.html">Página anterior</A>
+<A HREF="Diald-Como.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="s4">4. Notas sobre la identificaci&oacute;n en el momento de la conexi&oacute;n</A></H2>
+
+<P>
+<P>Siempre que nos conectemos a un proveedor de acceso a internet, ser&aacute;
+necesario enviar un nombre de usuario y una contrase&ntilde;a. Para ello hay
+diversas posibilidades que nos vendr&aacute;n impuestas por el proveedor.
+<P>Adem&aacute;s de las 3 opciones expuestas, tambi&eacute;n es posible que la conexi&oacute;n no
+necesite autentificaci&oacute;n (normalmente cuando el destino de la llamada es
+otro ordenador tambi&eacute;n nuestro y no deseamos autentificar).
+<P>
+<H2><A NAME="ss4.1">4.1 Usuario y contrase&ntilde;a - Login y password</A>
+</H2>
+
+<P>
+<P>Actualmente no es un m&eacute;todo muy utilizado en entornos de acceso a
+internet.
+<P>La identificaci&oacute;n se realiza antes de lanzar el demonio <CODE>pppd</CODE>, y es el
+propio programa marcador, normalmente <CODE>chat</CODE>, el que env&iacute;a los
+identificadores de usuario y clave. Este env&iacute;o de usuario y clave se
+realiza «en claro», por lo que no puede ser considerado seguro.
+<P>Un ejemplo de script para el programa <CODE>chat</CODE> en el que sea necesario
+indicar usuario y contrase&ntilde;a antes de lanzar <CODE>pppd</CODE> podr&iacute;a ser el
+siguiente: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ABORT BUSY
+ABORT "NO CARRIER"
+ABORT VOICE
+ABORT "NO DIALTONE" 
+ABORT "NO ANSWER"
+"" ATZ
+OK ATDT_NumeroDeTelefono_
+CONNECT \d\c
+ogin _NombreUsuario_
+assword _Contrase&ntilde;a_
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Las 2 ultimas lineas son las que definen el nombre del usuario y la
+contrase&ntilde;a y cuando deben ser enviadas (despu&eacute;s de recibir
+«ogin» y «assword» respectivamente. No se suelen
+poner las primeras letras de dichas palabras para no preocuparse de que
+unos servidores las env&iacute;en en may&uacute;sculas y otros en min&uacute;sculas).
+<P>Este script suele estar en un fichero en el directorio
+<CODE>/etc/chatscripts</CODE>, y, suponiendo que el fichero de script se llama
+<CODE>provider</CODE>, puede ser llamado con la linea siguiente:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/sbin/chat -v -f /etc/chatscripts/provider
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.2">4.2 PAP - Password Authentication Protocol</A>
+</H2>
+
+<P>
+<P>En caso de que el servidor de acceso al que nos conectamos requiera PAP
+como protocolo para realizar la autentificaci&oacute;n de nuestra conexi&oacute;n,
+durante el establecimiento de la sesi&oacute;n LCP de PPP se negociar&aacute; dicho
+protocolo, es decir, una vez establecida la conexi&oacute;n de <CODE>chat</CODE> y
+lanzado <CODE>pppd</CODE>, ser&aacute; este quien realice el envio del nombre de
+usuario y clave, buscando en el fichero <CODE>/etc/ppp/pap-secrets</CODE> los
+valores que debe usar. Este fichero tiene acceso de lectura y escritura
+solo para <CODE>root</CODE>, de modo que nadie que no sea el administrador vea su
+contenido con las claves.
+<P>PAP es un protocolo poco seguro, ya que env&iacute;a la clave sin cifrar, como
+texto libre, por lo que puede ser le&iacute;da por alguien que analice la linea
+de transmisi&oacute;n.
+<P>Ejemplo de contenido de <CODE>/etc/ppp/pap-secrets</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+_NombreUsuario_ * _Contrase&ntilde;a_
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.3">4.3 CHAP - Challenge Authentication Protocol</A>
+</H2>
+
+<P>
+<P>En caso de que el servidor de acceso al que nos conectamos requiera CHAP
+como protocolo para realizar la autentificaci&oacute;n de nuestra conexi&oacute;n,
+durante el establecimiento de la sesi&oacute;n LCP de PPP se negociar&aacute; dicho
+protocolo, es decir, una vez establecida la conexi&oacute;n de <CODE>chat</CODE> y
+lanzado <CODE>pppd</CODE>, ser&aacute; este quien realice el envio del nombre de
+usuario y clave, buscando en el fichero <CODE>/etc/ppp/chap-secrets</CODE> los
+valores que debe usar. Este fichero tiene acceso de lectura y escritura
+solo para <CODE>root</CODE>, de modo que nadie que no sea el administrador vea
+su contenido con las claves.
+<P>CHAP es un protocolo m&aacute;s seguro que PAP, ya que nunca se env&iacute;a la clave
+por la linea de transmisi&oacute;n sin cifrar. En su lugar, el equipo que realiza
+la autentificaci&oacute;n env&iacute;a un identificador aleatorio con el que codificar
+la clave en el lado del cliente para despu&eacute;s enviar esta clave codificada.
+<P>Ejemplo de contenido de <CODE>/etc/ppp/chap-secrets</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+_NombreUsuario_ * _Contrase&ntilde;a_
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Es posible que un proveedor de acceso en ocasiones utilice PAP y en otras
+ocasiones utilice CHAP, por lo que es com&uacute;n definir en ambos sitios el
+usuario y la clave a utilizar.
+<P>
+<HR>
+<A HREF="Diald-Como-5.html">Página siguiente</A>
+<A HREF="Diald-Como-3.html">Página anterior</A>
+<A HREF="Diald-Como.html#toc4">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,460 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PPP C&oacute;mo: Automatizando sus conexiones - Creando los scripts de conexi&oacute;n</TITLE>
+ <LINK HREF="PPP-Como-16.html" REL=next>
+ <LINK HREF="PPP-Como-14.html" REL=previous>
+ <LINK HREF="PPP-Como.html#toc15" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PPP-Como-16.html">Página siguiente</A>
+<A HREF="PPP-Como-14.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc15">Índice general</A>
+<HR>
+<H2><A NAME="automate"></A> <A NAME="s15">15. Automatizando sus conexiones - Creando los scripts de conexi&oacute;n</A></H2>
+
+<P>Aunque usted pueda seguir conect&aacute;ndose a mano tal y como se mostr&oacute; antes, es
+mucho mejor configurar algunos scripts que permitan hacer esto
+autom&aacute;ticamente.
+<P>
+<P>Un conjunto de scripts automatiza la conexi&oacute;n y el arranque de PPP de manera
+que todo lo que tenga que hacer (como root o como miembro del grupo PPP) es
+ejecutar una &uacute;nica orden que inicie su conexi&oacute;n.
+<P>
+<H2><A NAME="ss15.1">15.1 Scripts de conexi&oacute;n para autentificaci&oacute;n tipo Nombre de</A>
+usuario/Contrase&ntilde;a</H2>
+
+<P>Si su ISP no necesita el uso de PAP/CHAP, estos son los scripts para usted.
+<P>
+<P>Si el paquete ppp est&aacute; instalado correctamente, deber&iacute;a tener dos ficheros
+de ejemplo. Para PPP 2.1.2 est&aacute;n situados en <CODE>/usr/sbin</CODE>
+y para PPP 2.2 est&aacute;n en <CODE>/etc/ppp/scripts</CODE>. En Red Hat Linux se
+encuentran en el subdirectorio /scripts del directorio de documentaci&oacute;n del
+paquete ppp (<CODE>/usr/doc/ppp-x.x.x/</CODE>) Se denominan
+<P>
+<P>en PPP-2.1.2
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ppp-on
+ppp-off
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>en PPP-2.2 o superiores
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ppp-off
+ppp-on
+ppp-on-dialer
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Ahora, si utiliza PPP 2.1.2, le recomiendo que borre los ficheros de
+ejemplo. Hay grandes problemas potenciales con ellos - (y no me diga que
+funcionan bien). Yo los us&eacute; durante a&ntilde;os (incluso los recomendaba en las
+primeras versiones de este documento COMO).
+<P>
+<P>Para el beneficio de los usuarios PPP 2.1.2, aqu&iacute; dejo disponibles versiones
+de plantilla MEJORES, tomadas de la distribuci&oacute;n PPP 2.2. Le sugiero que los
+copie y utilice estos scripts <B>en lugar de</B> los antiguos scripts de
+PPP-2.1.2.
+<P>
+<H2><A NAME="ss15.2">15.2 El script ppp-on</A>
+</H2>
+
+<P>Este es el primero de un PAR de scripts que inicializan la conexi&oacute;n.
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# El script para iniciar la conexi&oacute;n PPP. Esta es la primera parte del 
+# par de scripts. No es un par de scripts seguro ya que los c&oacute;digos son 
+# visibles con la orden 'ps'. Sin embargo, es simple.
+#
+# Estos son los par&aacute;metros. Modif&iacute;quelos seg&uacute;n lo necesite.
+TELEPHONE=555-1212      # El n&uacute;mero de tel&eacute;fono para la conexi&oacute;n
+ACCOUNT=george          # La cuenta de acceso para la conexi&oacute;n
+PASSWORD=gracie         # La clave para esta cuenta de acceso
+LOCAL_IP=0.0.0.0        # Direcci&oacute;n IP local, si se conoce. Din&aacute;mica = 0.0.0.0
+REMOTE_IP=0.0.0.0       # Direcci&oacute;n IP remota, si desea. Usualmente = 0.0.0.0
+NETMASK=255.255.255.0   # La m&aacute;scara de red si es necesaria
+#
+# Exportar las necesarias para que esten disponibles por 'ppp-on-dialer'
+export TELEPHONE ACCOUNT PASSWORD
+#
+# Esta es la parte del script que marca el tel&eacute;fono y se conecta. Por favor,
+# utilice el nombre de fichero absoluto ya que la variable $PATH no se usa
+# la opci&oacute;n de conexi&oacute;n. (Hacer esto con una cuenta de root ser&iacute;a un agujero
+# de seguridad).
+#
+DIALER_SCRIPT=/etc/ppp/ppp-on-dialer
+#
+# Iniciar la conexi&oacute;n
+#
+#
+exec /usr/sbin/pppd debug /dev/ttySx 38400 \
+        $LOCAL_IP:$REMOTE_IP \
+        connect $DIALER_SCRIPT
+</PRE>
+<HR>
+<P>
+<P>Este es el c&oacute;digo del script ppp-on-dialer:-
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# Esta es la segunda parte del script ppp-on. Realiza el protocolo de
+# conexi&oacute;n para la conexi&oacute;n deseada
+#
+/usr/sbin/chat -v                                                 \
+        TIMEOUT         3                               \
+        ABORT           '\nBUSY\r'                      \
+        ABORT           '\nNO ANSWER\r'                 \
+        ABORT           '\nRINGING\r\n\r\nRINGING\r'    \
+        ''              \rAT                            \
+        'OK-+++\c-OK'   ATH0                            \
+        TIMEOUT         30                              \
+        OK              ATDT$TELEPHONE                  \
+        CONNECT         ''                              \
+        ogin:--ogin:    $ACCOUNT                        \
+        assword:        $PASSWORD
+</PRE>
+<HR>
+<P>
+<P>Para PPP-2.2, el script <CODE>ppp-off</CODE> tiene este aspecto:-
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+##############################################################
+########
+#
+# Determina el dispositivo a finalizar
+#
+if [ "$1" = "" ]; then
+        DEVICE=ppp0
+else
+        DEVICE=$1
+fi
+
+##############################################################
+########
+#
+# Si el fichero pid de ppp0 est&aacute; presente cuando el programa se ejecuta,
+# pararlo.
+if [ -r /var/run/$DEVICE.pid ]; then
+        kill -INT `cat /var/run/$DEVICE.pid`
+#
+# Si la detenci&oacute;n no funcion&oacute; entonces no hab&iacute;a ning&uacute;n proceso ejecut&aacute;ndose
+# con ese pid. Puede tambi&eacute;n significar que el fichero de bloqueo
+# permanecer&aacute;. Puede desear eliminar el fichero de bloqueo al mismo tiempo.
+        if [ ! "$?" = "0" ]; then
+                rm -f /var/run/$DEVICE.pid
+                echo "ERROR: Eliminado fichero de bloqueo hu&eacute;rfano"
+                exit 1
+        fi
+#
+# Exito. Hagamos que pppd quite sus cosas de enmedio.
+        echo "Enlace PPP a $DEVICE finalizado."
+        exit 0
+fi
+#
+# El proceso ppp no est&aacute; ejecut&aacute;ndose para ppp0
+echo "ERROR: El enlace PPP no est&aacute; activo para $DEVICE"
+exit 1
+</PRE>
+<HR>
+<P>
+<H2><A NAME="ss15.3">15.3 Editar los scripts de inicio PPP suministrados</A>
+</H2>
+
+<P>Ya que los nuevos scripts vienen en dos partes, los editaremos por turnos.
+<P>
+<H3>El script ppp-on</H3>
+
+<P>Necesitar&aacute; editar el script para que refleje SU nombre de usuario en su ISP,
+SU contrase&ntilde;a en su ISP y el n&uacute;mero de tel&eacute;fono de su ISP.
+<P>
+<P>Cada una de las l&iacute;neas como <CODE>TELEPHONE=</CODE> realmente establecen variables
+que contienen la informaci&oacute;n a la derecha de '=' (excluyendo los
+comentarios, por supuesto). Edite cada uno de esos ficheros para que sea
+correcto para su ISP y conexi&oacute;n.
+<P>
+<P>As&iacute; mismo, como usted configura la direcci&oacute;n IP (si necesita hacerlo) en el
+fichero <CODE>/etc/ppp/options</CODE>, BORRE la l&iacute;nea que dice
+<P>
+<HR>
+<PRE>
+$LOCAL_IP:$REMOTE_IP \
+</PRE>
+<HR>
+<P>
+<P>Tambi&eacute;n, aseg&uacute;rese de que la variable DIALER_SCRIPT apunta a la ruta y
+nombre completos del script de marcado que realmente va a utilizar. Por
+tanto, si ha movido o renombrado este script, aseg&uacute;rese de que edita esta
+l&iacute;nea correctamente en el script <CODE>ppp-on</CODE>.
+<P>
+<H3>El script ppp-on-dialer</H3>
+
+<P>Este es el segundo de los scripts que arranca la conexi&oacute;n ppp
+<P>
+<P>Nota: un script chat suele escribirse en una sola l&iacute;nea. Las barras inversas
+se emplean para permitir continuaciones a lo largo de varias l&iacute;neas f&iacute;sica
+(para permitir legibilidad humana) y no forman parte del script mismo.
+<P>
+<P>Sin embargo, es muy util mirarlo en detalle para que entendamos qu&eacute; es lo
+que (se supone que) hace.
+<P>
+<H2><A NAME="ss15.4">15.4 Qu&eacute; quiere decir un script Chat...</A>
+</H2>
+
+<P>Un script chat es una secuencia de parejas <CODE>&quot;</CODE>cadena esperada
+<CODE>&quot;</CODE> <CODE>&quot;</CODE>cadena enviada<CODE>&quot;</CODE>. 
+En particular, f&iacute;jese que <B>SIEMPRE</B> esperamos <B>algo</B> antes de
+enviar nada.
+<P>
+<P>Si vamos a enviar algo <B>SIN</B> recibir nada antes, debemos usar una cadena
+esperada vac&iacute;a (indicada por
+<CODE>&quot;</CODE><CODE>&quot;</CODE>) y de manera similar al esperar algo sin
+enviar nada. Tambi&eacute;n, si una cadena est&aacute; formada por varias palabras (como
+NO CARRIER), debe entrecomillar la cadena para que sea vista como una sola
+por chat.
+<P>
+<P>La l&iacute;nea de chat en nuestra plantilla es:-
+<P>
+<HR>
+<PRE>
+exec /usr/sbin/chat -v
+</PRE>
+<HR>
+<P>Al llamar a chat, la opci&oacute;n -v hace que chat copie toda su I/O al registro
+del sistema (normalmente /var/log/messages). Una vez que sabe que el script
+chat funciona bien, edite esa l&iacute;nea para quitar la -v y ahorrar informaci&oacute;n
+innecesaria de su syslog.
+<P>
+<HR>
+<PRE>
+TIMEOUT         3
+</PRE>
+<HR>
+
+Esto ajusta el retardo para la recepci&oacute;n de entradas esperadas a tres
+segundos. Puede necesitar incrementar esta a 5 o 10 segundos si utiliza un
+m&oacute;dem realmente lento.
+<P>
+<HR>
+<PRE>
+ABORT           '\nBUSY\r'
+</PRE>
+<HR>
+<P>Si se recibe la cadena BUSY, abortar la operaci&oacute;n.
+<P>
+<HR>
+<PRE>
+ABORT           '\nNO ANSWER\r'
+</PRE>
+<HR>
+<P>Si se recibe la cadena NO ANSWER, abortar la operaci&oacute;n.
+<P>
+<HR>
+<PRE>
+ABORT           '\nRINGING\r\n\r\nRINGING\r'
+</PRE>
+<HR>
+<P>Si se recibe la cadena (repetida) RINGING, abortar la operaci&oacute;n. Eso es
+porque alguien esta llamando a su tel&eacute;fono.
+<P>
+<HR>
+<PRE>
+&quot;              \rAT
+</PRE>
+<HR>
+<P>No esperar nada del m&oacute;dem y enviar la cadena AT.
+<P>
+<HR>
+<PRE>
+OK-+++\c-OK   ATH0
+</PRE>
+<HR>
+<P>Esto es algo m&aacute;s complicado ya que utiliza alguna de las capacidades de
+recogida de errores de chat.
+<P>
+<P>Lo que quiere decir es... Esperar OK. Si no se recibe (porque el m&oacute;dem no
+est&aacute; en modo de &oacute;rdenes) entonces enviar +++ (la cadena que hace que un
+m&oacute;dem compatible con el est&aacute;ndar Hayes pase a modo de &oacute;rdenes) y esperar un
+OK. Entonces enviar ATH0 (el m&oacute;dem descuelga). Esto permite a su script
+tomar la situaci&oacute;n si su modem estaba atascado en l&iacute;nea.
+<P>
+<HR>
+<PRE>
+TIMEOUT         30
+</PRE>
+<HR>
+<P>Ajustar el retardo a 30 segundos para el resto del script. Si experimenta
+problemas con el script chat que aborta debido a finalizaciones del tiempo
+de espera, incremente esto a 45 segundos o m&aacute;s.
+<P>
+<HR>
+<PRE>
+OK              ATDT$TELEPHONE
+</PRE>
+<HR>
+<P>
+<P>Esperar OK (la respuesta del m&oacute;dem al comando ATH0) y marcar el n&uacute;mero de
+tel&eacute;fono al que deseamos llamar.
+<P>
+<HR>
+<PRE>
+CONNECT         ''
+</PRE>
+<HR>
+<P>Esperar CONNECT (que es lo que nuestro m&oacute;dem env&iacute;a cuando el m&oacute;dem remoto
+contesta) y no enviar nada como respuesta.
+<P>
+<HR>
+<PRE>
+ogin:--ogin:    $ACCOUNT
+</PRE>
+<HR>
+<P>De nuevo, tenemos una tecnolog&iacute;a de recuperaci&oacute;n de errores. Esperamos el
+la petici&oacute;n de entrada al sistema (...ogin:) pero si no recibimos esto
+debido a la finalizaci&oacute;n del tiempo de espera, enviar un retorno de carro y
+entonces buscar de nuevo la petici&oacute;n de entrada al sistema. Cuando se &eacute;sta
+se reciba, enviar el nombre de usuario (guardado en la variable
+$ACCOUNT).
+<P>
+<HR>
+<PRE>
+assword:        $PASSWORD
+</PRE>
+<HR>
+<P>
+<P>Esperar la petici&oacute;n de contrase&ntilde;a y enviar nuestra contrase&ntilde;a (otra vez,
+guardada en una variable).
+<P>
+<P>Este script chat tiene una capacidad razonable de recuperaci&oacute;n de errores.
+Chat tiene muchas m&aacute;s caracter&iacute;sticas que las aqu&iacute; demostradas. Para m&aacute;s
+informaci&oacute;n consulte la p&aacute;gina de manual de chat (<CODE>man 8 chat</CODE>).
+<P>
+<H3>Arrancando PPP en el lado del servidor</H3>
+
+<P>Aunque el script ppp-on-dialer es adecuado para los servidores que arrancan
+autom&aacute;ticamente pppd una vez que usted ha entrado en el sistema, algunos
+servidores requieren que usted arranque expl&iacute;citamente PPP.
+<P>
+<P>Si necesita ejecutar una orden para arrancar PPP en el servidor,
+TAMBIEN necesita editar el script ppp-on-dialer.
+<P>
+<P>Al FINAL del script (despu&eacute;s de la l&iacute;nea de contrase&ntilde;a) a&ntilde;ada un par
+adicional <B>esperado enviado</B> - este deber&iacute;a ser como su l&iacute;nea de &oacute;rdenes
+(cuidado con los caracteres que tienen un significado especial en el shell
+Bourne - como el $ y [ o ] (los corchetes).
+<P>
+<P>Una vez que chat haya encontrado la l&iacute;nea de &oacute;rdenes de su shell, deber&aacute;
+ejecutar la orden que arranque ppp en el servidor PPP de su ISP.
+<P>
+<P>En mi caso, mi servidor PPP utiliza la l&iacute;nea de &oacute;rdenes est&aacute;ndar de Bash
+para Linux
+<HR>
+<PRE>
+[hartr@kepler hartr]$
+</PRE>
+<HR>
+<P>
+<P>y requiere que teclee
+<P>
+<HR>
+<PRE>
+ppp
+</PRE>
+<HR>
+<P>
+<P>para arrancar PPP en el servidor.
+<P>
+<P>Es una buena idea permitir aqu&iacute; una recuperaci&oacute;n de errores, por lo que en
+mi caso utilizo
+<HR>
+<PRE>
+ hartr--hartr    ppp
+</PRE>
+<HR>
+<P>
+<P>Esto es,  si no recibo la l&iacute;nea de &oacute;rdenes en el tiempo del retardo, env&iacute;o
+un retorno de carro y busco de nuevo la l&iacute;nea de &oacute;rdenes.
+<P>
+<P>Una vez que se recibe la l&iacute;nea de &oacute;rdenes, env&iacute;o la cadena <CODE>ppp</CODE>.
+<P>
+<P>Nota: no olvide a&ntilde;adir una \ al final de la l&iacute;nea anterior para que
+chat todav&iacute;a piense que el script chat est&aacute; en una sola l&iacute;nea.
+<P>
+<P>Desafortunadamente, algunos servidores producen un juego muy variable de
+l&iacute;neas de &oacute;rdenes. Puede que necesite conectar muchas veces utilizando
+minicom para comprender qu&eacute; sucede y escoger las cadenas
+&quot;esperadas&quot; estables.
+<P>
+<H2><A NAME="ss15.5">15.5 Un script chat para conexiones autentificadas por PAP/CHAP</A>
+</H2>
+
+<P>Si su ISP utiliza PAP/CHAP, su script chat es mucho m&aacute;s simple. Todo lo que
+el script chat debe hacer es marcar el tel&eacute;fono, esperar la conexi&oacute;n y dejar
+que pppd maneje la entrada en el sistema.
+<P>
+<HR>
+<PRE>
+#!/bin/sh
+#
+# Esta es la segunda parte del script ppp-on. Realiza el protocolo de
+# conexi&oacute;n para la conexi&oacute;n deseada.
+#
+exec /usr/sbin/chat -v                                  \
+        TIMEOUT         3                               \
+        ABORT           '\nBUSY\r'                      \
+        ABORT           '\nNO ANSWER\r'                 \
+        ABORT           '\nRINGING\r\n\r\nRINGING\r'    \
+        ''              \rAT                            \
+        'OK-+++\c-OK'   ATH0                            \
+        TIMEOUT         30                              \
+        OK              ATDT$TELEPHONE                  \
+        CONNECT         ''                              \
+</PRE>
+<HR>
+<P>
+<P>
+<P>
+<H2><A NAME="ss15.6">15.6 Las opciones de pppd <CODE>debug</CODE> y <CODE>file fichero_opciones</CODE></A>
+</H2>
+
+<P>Como ya hemos visto, puede conectar la informaci&oacute;n de registro de 
+depuraci&oacute;n si arranca pppd con la opci&oacute;n -d. La opci&oacute;n "debug" es
+equivalente a esta.
+<P>
+<P>Ya que estamos estableciendo una nueva conexi&oacute;n con un nuevo script, deje la
+opci&oacute;n de depuraci&oacute;n por ahora. (Atenci&oacute;n: si tiene poco espacio en el disco
+duro, registrar los intercambios de pppd puede hacer ampliar su fichero de
+registro de sistema y meterle en problemas - pero para hacerlo debe fallar
+su conexi&oacute;n y seguir intent&aacute;ndolo durante bastantes minutos).
+<P>
+<P>Una vez que usted sabe que todo funciona adecuadamente, usted puede eliminar
+esta opci&oacute;n.
+<P>
+<P>Si ha llamado a su fichero de opciones ppp de alguna manera distinta a
+<CODE>/etc/ppp/options</CODE> o <CODE>/etc/ppp/options.ttySx</CODE>, especifique el
+nombre de fichero a pppd con la opci&oacute;n <CODE>file</CODE>.
+<P>
+<HR>
+<PRE>
+exec /usr/sbin/pppd debug file options.miservidor /dev/ttyS0 38400 \
+</PRE>
+<HR>
+<P>
+<HR>
+<A HREF="PPP-Como-16.html">Página siguiente</A>
+<A HREF="PPP-Como-14.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc15">Índice general</A>
+</BODY>
+</HTML>

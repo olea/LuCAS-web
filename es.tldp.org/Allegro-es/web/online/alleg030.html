@@ -1,0 +1,424 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 30 Rutinas matemáticas 3D
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="30 Rutinas matemáticas 3D">30 Rutinas matemáticas 3D</a></h1>
+
+<ul>
+<li><a href="#apply_matrix">apply_matrix</a>
+<li><a href="#apply_matrix_f">apply_matrix_f</a>
+<li><a href="#cross_product">cross_product</a>
+<li><a href="#cross_product_f">cross_product_f</a>
+<li><a href="#dot_product">dot_product</a>
+<li><a href="#dot_product_f">dot_product_f</a>
+<li><a href="#get_align_matrix">get_align_matrix</a>
+<li><a href="#get_align_matrix_f">get_align_matrix_f</a>
+<li><a href="#get_camera_matrix">get_camera_matrix</a>
+<li><a href="#get_camera_matrix_f">get_camera_matrix_f</a>
+<li><a href="#get_rotation_matrix">get_rotation_matrix</a>
+<li><a href="#get_rotation_matrix_f">get_rotation_matrix_f</a>
+<li><a href="#get_scaling_matrix">get_scaling_matrix</a>
+<li><a href="#get_scaling_matrix_f">get_scaling_matrix_f</a>
+<li><a href="#get_transformation_matrix">get_transformation_matrix</a>
+<li><a href="#get_transformation_matrix_f">get_transformation_matrix_f</a>
+<li><a href="#get_translation_matrix">get_translation_matrix</a>
+<li><a href="#get_translation_matrix_f">get_translation_matrix_f</a>
+<li><a href="#get_vector_rotation_matrix">get_vector_rotation_matrix</a>
+<li><a href="#get_vector_rotation_matrix_f">get_vector_rotation_matrix_f</a>
+<li><a href="#get_x_rotate_matrix">get_x_rotate_matrix</a>
+<li><a href="#get_x_rotate_matrix_f">get_x_rotate_matrix_f</a>
+<li><a href="#get_y_rotate_matrix">get_y_rotate_matrix</a>
+<li><a href="#get_y_rotate_matrix_f">get_y_rotate_matrix_f</a>
+<li><a href="#get_z_rotate_matrix">get_z_rotate_matrix</a>
+<li><a href="#get_z_rotate_matrix_f">get_z_rotate_matrix_f</a>
+<li><a href="#identity_matrix">identity_matrix</a>
+<li><a href="#identity_matrix_f">identity_matrix_f</a>
+<li><a href="#matrix_mul">matrix_mul</a>
+<li><a href="#matrix_mul_f">matrix_mul_f</a>
+<li><a href="#normalize_vector">normalize_vector</a>
+<li><a href="#normalize_vector_f">normalize_vector_f</a>
+<li><a href="#persp_project">persp_project</a>
+<li><a href="#persp_project_f">persp_project_f</a>
+<li><a href="#polygon_z_normal">polygon_z_normal</a>
+<li><a href="#polygon_z_normal_f">polygon_z_normal_f</a>
+<li><a href="#qscale_matrix">qscale_matrix</a>
+<li><a href="#qscale_matrix_f">qscale_matrix_f</a>
+<li><a href="#qtranslate_matrix">qtranslate_matrix</a>
+<li><a href="#qtranslate_matrix_f">qtranslate_matrix_f</a>
+<li><a href="#set_projection_viewport">set_projection_viewport</a>
+<li><a href="#vector_length">vector_length</a>
+<li><a href="#vector_length_f">vector_length_f</a>
+</ul>
+
+<p>
+Allegro también contiene algunas funciones de ayuda de 3d para manipular
+vectores, construir o usar matrices de transformación, y hacer proyecciones
+de perspectiva de un espacio 3d en la pantalla. Estas funciones no son, y
+nunca serán, una librería 3d total (mi objetivo es dar rutinas de soporte
+genéricas, y no código gráfico muy especializado :-) pero estas funciones
+pueden serle útiles para desarrollar su propio código 3d.
+
+<p>
+Allegro usa el sistema de coordenadas de mano derecha, es decir, si apunta
+con el dedo gordo de su mano derecha al eje positivo x, y con el índice al
+eje positivo y, su dedo corazón apuntará en la dirección positiva del eje z.
+Esto también significa que para las rotaciones, si hace que el dedo gordo
+de su mano derecha siga el eje de rotación, sus dedos se curvarán en la
+dirección positiva de la rotación.
+
+<p>
+Hay dos versiones de todas las funciones matemáticas de 3d: una usando
+aritmética de punto fijo, y la otra usando coma flotante. La sintaxis para
+ambas es idéntica, pero las funciones y estructuras de coma flotante tienen
+el sufijo '_f'. Ejemplo: la función cross_product() de punto fijo tiene el
+equivalente de coma flotante en cross_product_f(). Si está programando en
+C++, Allegro también sobrecarga estas funciones para que las use con la
+clase "fija".
+
+<p>
+La transformación 3d se realiza modelando una matriz. Esta es un array de
+4x4 números que pueden ser multiplicados con un punto 3d para producir otro
+punto 3d. Si ponemos los valores correctos en la matriz, podemos usarla para
+varias operaciones como translación, rotación y escalado. El truco consiste
+en que puede multiplicar dos matrices para producir una tercera, y esta
+tendrá el mismo efecto en los puntos 3d que aplicando las dos matrices
+originales una después de la otra. Por ejemplo, si tiene una matriz que
+rota un punto, y otra que lo mueve en una dirección, puede combinarlas para
+producir una matriz que realizara la rotación y translación en un paso.
+Puede crear transformaciones extremadamente complejas de este modo,
+teniendo que multiplicar cada punto 3d por una sola matriz.
+
+<p>
+Allegro hace trampa al implementar la estructura de la matriz. La rotación y
+el escalado de un punto 3d puede ser realizado con una matriz simple de 3x3,
+pero para trasladar el punto y proyectarlo en la pantalla, la matriz tiene
+que ser extendida a 4x4, y el punto extendido a una cuarta dimensión, al
+añadir una coordenada extra: w=1. Esto es algo malo en términos de
+eficiencia, pero afortunadamente, es posible realizar una optimización. Dada
+la siguiente matriz 4x4:
+<blockquote class="text"><pre>
+   ( a, b, c, d )
+   ( e, f, g, h )
+   ( i, j, k, l )
+   ( m, n, o, p )
+</pre></blockquote>
+se puede observar un patrón de qué partes hacen qué. La rejilla 3x3 de
+arriba a la izquierda implementa la rotación y el escalado. Los tres valores
+de arriba de la cuarta columna (d, h y l) implementan la translación, y
+siempre y cuando la matriz sea usada sólo para transformaciones afines, m, n
+y o serán siempre cero y p siempre será 1. Si no sabe que significa 'afín',
+lea a Foley &amp; Van Damme: básicamente cubre el escalado, la translación y
+rotación del objeto pero no la proyección. Ya que Allegro usa una función
+aparte para la proyección, las funciones de matriz sólo tienen que servir
+para la transformación afín, lo que significa que no hay que guardar la fila
+inferior de la matriz. Allegro asume que esta contiene (0,0,0,1), y por eso
+optimiza las funciones de manipulación de matrices.
+
+<p>
+Las matrices se almacenan en estructuras:
+<blockquote class="code"><pre>
+   typedef struct MATRIX     - matriz de punto fijo
+   {
+      fixed v[3][3];         - componente 3x3 de escalado y rotación
+      fixed t[3];            - componente x/y/z de translación
+   } MATRIX;
+   
+   typedef struct MATRIX_f   - matriz de coma flotante
+   {
+      float v[3][3];         - componente 3x3 de escalado y rotación
+      float t[3];            - componente x/y/z de translación
+   } MATRIX_f
+</pre></blockquote>
+<b>extern MATRIX <a name="identity_matrix">identity_matrix</a>;</b><br>
+<b>extern MATRIX_f <a name="identity_matrix_f">identity_matrix_f</a>;</b><br>
+   Variable global que contiene la matriz con identidad 'vacía'. Multiplicar
+   por la matriz de identidad no tiene ningún efecto.
+
+<p><br>
+<b>void <a name="get_translation_matrix">get_translation_matrix</a>(MATRIX *m, fixed x, fixed y, fixed z);</b><br>
+<b>void <a name="get_translation_matrix_f">get_translation_matrix_f</a>(MATRIX_f *m, float x, float y, float z);</b><br>
+   Construye una matriz de translación, guardándola en m. Si se aplica a un
+   punto (px, py, pz), esta matriz producirá el punto (px+x, py+y, pz+z). En
+   otras palabras: mueve las cosas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_transformation_matrix">get_transformation_matrix</a>,
+<a class="xref" href="#qtranslate_matrix">qtranslate_matrix</a>.</font></blockquote>
+<b>void <a name="get_scaling_matrix">get_scaling_matrix</a>(MATRIX *m, fixed x, fixed y, fixed z);</b><br>
+<b>void <a name="get_scaling_matrix_f">get_scaling_matrix_f</a>(MATRIX_f *m, float x, float y, float z);</b><br>
+   Construye una matriz de escalado, almacenándola en m. Cuando se aplica a
+   un punto (px, py, pz), esta matriz produce un punto (px*x, py*y, pz*z).
+   En otras palabras, agranda o empequeñece las cosas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_transformation_matrix">get_transformation_matrix</a>,
+<a class="xref" href="#qscale_matrix">qscale_matrix</a>.</font></blockquote>
+<b>void <a name="get_x_rotate_matrix">get_x_rotate_matrix</a>(MATRIX *m, fixed r);</b><br>
+<b>void <a name="get_x_rotate_matrix_f">get_x_rotate_matrix_f</a>(MATRIX_f *m, float r);</b><br>
+   Construye las matrices de rotación del eje X, almacenándolas en m. Cuando
+   se aplican a un punto, estas matrices lo rotarán sobre el eje X el ángulo
+   especificado (en binario, 256 grados hacen un círculo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_rotation_matrix">get_rotation_matrix</a>,
+<a class="xref" href="#get_y_rotate_matrix">get_y_rotate_matrix</a>,
+<a class="xref" href="#get_z_rotate_matrix">get_z_rotate_matrix</a>.</font></blockquote>
+<b>void <a name="get_y_rotate_matrix">get_y_rotate_matrix</a>(MATRIX *m, fixed r);</b><br>
+<b>void <a name="get_y_rotate_matrix_f">get_y_rotate_matrix_f</a>(MATRIX_f *m, float r);</b><br>
+   Construye las matrices de rotación del eje Y, almacenándolas en m. Cuando
+   se aplican a un punto, estas matrices lo rotarán sobre el eje Y el ángulo
+   especificado (en binario, 256 grados hacen un círculo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_rotation_matrix">get_rotation_matrix</a>,
+<a class="xref" href="#get_x_rotate_matrix">get_x_rotate_matrix</a>,
+<a class="xref" href="#get_z_rotate_matrix">get_z_rotate_matrix</a>.</font></blockquote>
+<b>void <a name="get_z_rotate_matrix">get_z_rotate_matrix</a>(MATRIX *m, fixed r);</b><br>
+<b>void <a name="get_z_rotate_matrix_f">get_z_rotate_matrix_f</a>(MATRIX_f *m, float r);</b><br>
+   Construye las matrices de rotación del eje Z, almacenándolas en m. Cuando
+   se aplican a un punto, estas matrices lo rotarán sobre el eje Z el ángulo
+   especificado (en binario, 256 grados hacen un círculo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_rotation_matrix">get_rotation_matrix</a>,
+<a class="xref" href="#get_x_rotate_matrix">get_x_rotate_matrix</a>,
+<a class="xref" href="#get_y_rotate_matrix">get_y_rotate_matrix</a>.</font></blockquote>
+<b>void <a name="get_rotation_matrix">get_rotation_matrix</a>(MATRIX *m, fixed x, fixed y, fixed z);</b><br>
+<b>void <a name="get_rotation_matrix_f">get_rotation_matrix_f</a>(MATRIX_f *m, float x, float y, float z);</b><br>
+   Construye una matriz de transformación que rotará puntos en todos los
+   ejes los grados especificados. (en binario, 256 grados hacen un círculo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_transformation_matrix">get_transformation_matrix</a>,
+<a class="xref" href="#get_vector_rotation_matrix">get_vector_rotation_matrix</a>,
+<a class="xref" href="#get_align_matrix">get_align_matrix</a>,
+<a class="xref" href="#get_x_rotate_matrix">get_x_rotate_matrix</a>,
+<a class="xref" href="#get_y_rotate_matrix">get_y_rotate_matrix</a>,
+<a class="xref" href="#get_z_rotate_matrix">get_z_rotate_matrix</a>.</font></blockquote>
+<b>void <a name="get_align_matrix">get_align_matrix</a>(MATRIX *m, fixed xfront, yfront, zfront,</b>
+<b>                                 fixed xup, fixed yup, fixed zup);</b><br>
+   Rota la matriz de tal forma que la alinea sobre las coordenadas de los
+   vectores especificados (estos no tienen que ser normalizados o
+   perpendiculares, pero up y front no pueden ser iguales). Un vector front
+   de 1,0,0 y un vector up de 0,1,0 devolverán la matriz de identidad.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_camera_matrix">get_camera_matrix</a>.</font></blockquote>
+<b>void <a name="get_align_matrix_f">get_align_matrix_f</a>(MATRIX *m, float xfront, yfront, zfront,</b>
+<b>                                   float xup, yup, zup);</b><br>
+   Versión en coma flotante de get_align_matrix().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_align_matrix">get_align_matrix</a>.</font></blockquote>
+<b>void <a name="get_vector_rotation_matrix">get_vector_rotation_matrix</a>(MATRIX *m, fixed x, y, z, fixed a);</b><br>
+<b>void <a name="get_vector_rotation_matrix_f">get_vector_rotation_matrix_f</a>(MATRIX_f *m, float x, y, z, float a);</b><br>
+   Construye una matriz de transformación que rotará puntos sobre todos los
+   vectores x,y,z un ángulo especificado (en binario, 256 grados hacen un
+   círculo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_rotation_matrix">get_rotation_matrix</a>,
+<a class="xref" href="#get_align_matrix">get_align_matrix</a>.</font></blockquote>
+<b>void <a name="get_transformation_matrix">get_transformation_matrix</a>(MATRIX *m, fixed scale,</b>
+<b>                               fixed xrot, yrot, zrot, x, y, z);</b><br>
+   Construye una matriz de transformación que rotará puntos en todos los
+   ejes los ángulos especificados (en binario, 256 grados hacen un círculo),
+   escalará el resultado (pasa el valor 1 si no quiere cambiar la escala),
+   y entonces los trasladará a la posición x, y, z requerida.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_rotation_matrix">get_rotation_matrix</a>,
+<a class="xref" href="#get_scaling_matrix">get_scaling_matrix</a>,
+<a class="xref" href="#get_translation_matrix">get_translation_matrix</a>.</font></blockquote>
+<b>void <a name="get_transformation_matrix_f">get_transformation_matrix_f</a>(MATRIX_f *m, float scale,</b>
+<b>                                 float xrot, yrot, zrot, x, y, z);</b><br>
+   Versión en coma flotante de get_transformation_matrix().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_transformation_matrix">get_transformation_matrix</a>.</font></blockquote>
+<b>void <a name="get_camera_matrix">get_camera_matrix</a>(MATRIX *m, fixed x, y, z, xfront, yfront, zfront,</b>
+<b>                       fixed xup, yup, zup, fov, aspect);</b><br>
+   Construye la matriz de cámara para trasladar objetos del espacio a una
+   vista normalizada del espacio, preparada para la proyección de
+   perspectiva. Los parámetros x, y, z especifican la posición de la cámara,
+   xfront, yfront y zfront son los vectores 'de frente' que especifican
+   hacia adonde apunta la cámara (estos pueden ser de cualquier tamaño, no
+   es necesaria la normalización), y xup, yup y zup son los vectores de la
+   dirección 'arriba'. El parámetro fov especifica el campo de visión (el
+   ancho del foco de la cámara) en binario, haciendo 256 grados un círculo.
+   Para proyecciones típicas, un campo de visión de entre 32 a 48 trabajara
+   bien. Finalmente, la razón de aspecto es usada para el escalado en la
+   dimensión Y relativamente al eje X, para que pueda ajustar las
+   proporciones de la imagen final (ponga a uno para no escalar).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>,
+<a class="xref" href="#get_align_matrix">get_align_matrix</a>.</font></blockquote>
+<b>void <a name="get_camera_matrix_f">get_camera_matrix_f</a>(MATRIX_f *m, float x, y, z, xfront, yfront,zfront,</b>
+<b>                         float xup, yup, zup, fov, aspect);</b><br>
+   Versión en coma flotante de get_camera_matrix().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_camera_matrix">get_camera_matrix</a>.</font></blockquote>
+<b>void <a name="qtranslate_matrix">qtranslate_matrix</a>(MATRIX *m, fixed x, fixed y, fixed z);</b><br>
+<b>void <a name="qtranslate_matrix_f">qtranslate_matrix_f</a>(MATRIX_f *m, float x, float y, float z);</b><br>
+   Rutina optimizada para trasladar una matriz ya generada: esto
+   simplemente añade el 'offset' de translación, por lo que no hay que crear
+   dos matrices temporales y multiplicarlas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_translation_matrix">get_translation_matrix</a>.</font></blockquote>
+<b>void <a name="qscale_matrix">qscale_matrix</a>(MATRIX *m, fixed scale);</b><br>
+<b>void <a name="qscale_matrix_f">qscale_matrix_f</a>(MATRIX_f *m, float scale);</b><br>
+   Rutina optimizada para escalar una matriz ya generada: esto simplemente
+   añade el factor de escalación, por lo que no hay que crear dos matrices
+   temporales y multiplicarlas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_scaling_matrix">get_scaling_matrix</a>.</font></blockquote>
+<b>void <a name="matrix_mul">matrix_mul</a>(const MATRIX *m1, MATRIX *m2, MATRIX *out);</b><br>
+<b>void <a name="matrix_mul_f">matrix_mul_f</a>(const MATRIX_f *m1, MATRIX_f *m2, MATRIX_f *out);</b><br>
+   Multiplica dos matrices, guardando el resultado en out (que puede ser
+   un duplicado de una de las dos mátrices de entrada, pero es más rápido
+   cuando las entradas y la salida son todas distintas). La matriz
+   resultante tendrá el mismo efecto que la combinación de m1 y m2, p.ej
+   cuando son aplicadas en un punto, (p * out) = ((p * m1) * m2). Cualquier
+   número de transformaciones se puede concatenar de esta forma. Fíjese que
+   la multiplicación de matrices no es communtaiva, así
+   matrix_mul(m1,m2) != matrix_mul(m2,m1).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#apply_matrix">apply_matrix</a>.</font></blockquote>
+<b>fixed <a name="vector_length">vector_length</a>(fixed x, fixed y, fixed z);</b><br>
+<b>float <a name="vector_length_f">vector_length_f</a>(float x, float y, float z);</b><br>
+   Calcula la longitud del vector (x, y, z), usando ese buen teorema de
+   Pitágoras.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#normalize_vector">normalize_vector</a>.</font></blockquote>
+<b>void <a name="normalize_vector">normalize_vector</a>(fixed *x, fixed *y, fixed *z);</b><br>
+<b>void <a name="normalize_vector_f">normalize_vector_f</a>(float *x, float *y, float *z);</b><br>
+   Convierte un vector (*x, *y, *z) a un vector normalizado. Este apunta en
+   la misma dirección que el vector original, pero tiene una longitud de
+   uno.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#vector_length">vector_length</a>,
+<a class="xref" href="#dot_product">dot_product</a>,
+<a class="xref" href="#cross_product">cross_product</a>.</font></blockquote>
+<b>fixed <a name="dot_product">dot_product</a>(fixed x1, y1, z1, x2, y2, z2);</b><br>
+<b>float <a name="dot_product_f">dot_product_f</a>(float x1, y1, z1, x2, y2, z2);</b><br>
+   Calcula el producto escalar (x1, y1, z1) . (x2, y2, z2), devolviendo el
+   resultado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#cross_product">cross_product</a>,
+<a class="xref" href="#normalize_vector">normalize_vector</a>.</font></blockquote>
+<b>void <a name="cross_product">cross_product</a>(fixed x1, y1, z1, x2, y2, z2, *xout, *yout, *zout);</b><br>
+<b>void <a name="cross_product_f">cross_product_f</a>(float x1, y1, z1, x2, y2, z2, *xout, *yout, *zout);</b><br>
+   Calcula el producto vectorial (x1, y1, z1) x (x2, y2, z2), almacenando el
+   resultado en (*xout, *yout, *zout). El resultado es perpendicular a los
+   dos vectores de entrada, para que pueda ser usado para generar las
+   normales de los polígonos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#dot_product">dot_product</a>,
+<a class="xref" href="#polygon_z_normal">polygon_z_normal</a>,
+<a class="xref" href="#normalize_vector">normalize_vector</a>.</font></blockquote>
+<b>fixed <a name="polygon_z_normal">polygon_z_normal</a>(const V3D *v1, V3D *v2, V3D *v3);</b><br>
+<b>float <a name="polygon_z_normal_f">polygon_z_normal_f</a>(const V3D_f *v1, V3D_f *v2, V3D_f *v3);</b><br>
+   Encuentra la componente Z de la normal de un vector de tres vértices
+   especificados (que deben ser parte de un polígono convexo). Esto es usado
+   principalmente en la ocultación de caras. Las caras traseras de un
+   poliedro cerrado nunca son visibles al espectador, y por tanto no
+   necesitan ser dibujadas. Esto puede ocultar aproximadamente la mitad de
+   los polígonos de una escena. Si la normal es negativa, el polígono se
+   puede eliminar, si es cero, el polígono está perpendicular a la pantalla.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#cross_product">cross_product</a>.</font></blockquote>
+<b>void <a name="apply_matrix">apply_matrix</a>(const MATRIX *m, fixed x, y, z, *xout, *yout, *zout);</b><br>
+<b>void <a name="apply_matrix_f">apply_matrix_f</a>(const MATRIX_f *m, float x, y, z, *xout, *yout, *zout);</b><br>
+   Multiplica el punto (x, y, z) por la transformación de la matriz m,
+   almacenando el resultado en el punto (*xout, *yout, *zout).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#matrix_mul">matrix_mul</a>.</font></blockquote>
+<b>void <a name="set_projection_viewport">set_projection_viewport</a>(int x, int y, int w, int h);</b><br>
+   Ajusta el punto de visión usado para escalar la salida de la función
+   persp_project(). Pase las dimensiones de la pantalla y el área donde la
+   quiere dibujar, que típicamente será 0, 0, SCREEN_W, SCREEN_H.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#persp_project">persp_project</a>.</font></blockquote>
+<b>void <a name="persp_project">persp_project</a>(fixed x, y, z, *xout, *yout);</b><br>
+<b>void <a name="persp_project_f">persp_project_f</a>(float x, y, z, *xout, *yout);</b><br>
+   Proyecta el punto 3d (x, y, z) del espacio sobre una pantalla 2d,
+   almacenando el resultado en (*xout, *yout) usando los parámetros
+   anteriormente ajustados por set_projection_viewport(). Esta función
+   proyecta desde la pirámide de vista normalizada, que tiene una cámara en
+   el origen apuntando al eje z positivo. El eje x va de izquierda a
+   derecha, y va de arriba a abajo, y z se incrementa con la profundidad de
+   la pantalla. La cámara tiene un ángulo de visión de 90 grados, es
+   decir, los planos x=z y -x=z serán los bordes izquierdo y derecho de la
+   pantalla, y los planos y=z y -y=z serán la parte superior e inferior de
+   la pantalla. Si quiere un campo de visión diferente a la posición de la
+   cámara, debería transformar todos sus objetos con la matriz de visión
+   apropiada. Ejemplo, para obtener el efecto de haber girado la cámara 10
+   grados a la izquierda, rote todos sus objetos 10 grados a la derecha.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_projection_viewport">set_projection_viewport</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

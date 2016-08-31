@@ -1,0 +1,525 @@
+<HTML
+><HEAD
+><TITLE
+>Configuración del hardware de red </TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="Resolución de nombres de puesto"
+HREF="x-087-2-issues.resolving.html"><LINK
+REL="NEXT"
+TITLE="Configuracion del núcleo"
+HREF="x-087-2-hardware.kernel.config.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-issues.resolving.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-hardware.kernel.config.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="X-087-2-HARDWARE">Capítulo 3. Configuración del hardware de red </H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>3.1. <A
+HREF="x-087-2-hardware.kernel.config.html"
+>Configuracion del núcleo</A
+></DT
+><DT
+>3.2. <A
+HREF="x-087-2-hwconfig.tour.html"
+>Un vistazo a los dispositivos de red de Linux</A
+></DT
+><DT
+>3.3. <A
+HREF="x-087-2-hardware.controllers.ethernet.html"
+>Instalación de una Ethernet</A
+></DT
+><DT
+>3.4. <A
+HREF="x-087-2-hardware.controllers.plip.html"
+>El controlador PLIP</A
+></DT
+><DT
+>3.5. <A
+HREF="x-087-2-hardware.controladores.slip.html"
+>Los controladores PPP y SLIP</A
+></DT
+><DT
+>3.6. <A
+HREF="x-087-2-hardware.other.html"
+>Otros tipos de redes</A
+></DT
+></DL
+></DIV
+><P
+>Hasta ahora, hemos estado hablando bastante sobre las interfaces de
+red pero sin explicar realmente qué es lo que pasa cuando el &ldquo;código de red&rdquo;
+del núcleo accede a una parte del hardware. Para ello, y antes que nada,
+tenemos que hablar un poco sobre los conceptos de interfaz y controladores.</P
+><P
+>Primero, evidentemente, está el hardware por sí mismo; por ejemplo,
+una tarjeta Ethernet, FDDI o Token Ring: es una oblea de silicio, atiborrada
+de montones de pequeños chips con extraños números encima e insertada en
+una ranura de su PC. Esto es lo que por lo general denominamos un dispositivo físico.</P
+><P
+>&#13; Para poder utilizar
+una tarjeta de red son necesarias una serie de funciones especiales definidas en el
+núcleo de Linux que seran capaces de entender la forma particular de acceso al dispositivo.
+Al software que implementa estas funciones se le llama <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>controlador</I
+></SPAN
+>(N. del T.: Con frecuencia, la bibliografía especializada en español
+también los llama <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>manejadores</I
+></SPAN
+> o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>drivers</I
+></SPAN
+>).
+Linux tiene controladores para muchos tipos de tarjetas de red: ISA, PCI, MCA, EISA,
+puerto paralelo, PCMCIA, y más recientemente, USB.</P
+><P
+>¿Pero qué es lo que queremos decir con que un controlador &ldquo;gestione&rdquo; un dispositivo?
+Vamos a tratar sobre esto con una tarjeta Ethernet. El controlador tiene que ser capaz de comunicarse
+de alguna forma con la lógica interna de la tarjeta: tiene que enviar órdenes y datos a la
+tarjeta, mientras que la tarjeta debe transmitir al controlador cualquier dato recibido.</P
+><P
+>En un PC compatible, esta comunicación se establece por medio de una serie de direcciones de
+E/S que son mapeadas a los registros de la tarjeta y/o a través de transferencias directas
+o compartidas a memoria. Todos las órdenes y datos que el núcleo envía
+a la tarjeta tienen que ir a estas direcciones. Las direcciones de memoria y E/S son obtenidas
+generalmente por medio del arranque o de las <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>direcciones base</I
+></SPAN
+>.
+Las direcciones base típicas para las tarjetas Ethernet por bus ISA son
+<TT
+CLASS="LITERAL"
+>0x280</TT
+> o <TT
+CLASS="LITERAL"
+>0x300</TT
+>. Las tarjetas de red por bus
+PCI generalmente ya tienen asignada automáticamente su dirección de E/S.</P
+><P
+>Normalmente no hay que preocuparse por asuntos de hardware como las
+direcciones base porque al arrancar el núcleo intenta detectar la localización de
+la tarjeta. Esto es llamado <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>autoverificación</I
+></SPAN
+>
+(N. del T.: Del inglés autoprobe), que significa que el núcleo lee varias posiciones
+de memoria y compara los datos que ha encontrado con los que esperaría ver si una tarjeta
+de red en concreto estuviese instalada en esa posición. De todas maneras, puede haber
+tarjetas de red que no puedan ser detectadas automáticamente; esto ocurre a veces con
+tarjetas de red baratas que no son réplicas exactas de tarjetas estándar de otros
+fabricantes. Por otro lado, el núcleo intentará detectar solamente un único dispositivo de
+red al arrancar. Si está usando más de una tarjeta, tendrá que informar al núcleo de las
+otras tarjetas explícitamente.</P
+><P
+>&#13;<A
+NAME="AEN2186"
+HREF="#FTN.AEN2186"
+>[1]</A
+>
+Otro de los parámetros del que puede tener que informar al núcleo es
+la línea de petición de interrupción. Los componentes hardware normalmente
+interrumpen al núcleo cuando tienen la necesidad de que éste se ocupe de ellos,
+por ejemplo, cuando han llegado datos o se presenta una condición especial.
+En un bus ISA, las interrupciones pueden ocurrir en uno de los 15 canales de
+interrupción numerados asi: 0, 1, y del 3 al 15. Al número de interrupción
+asignado a un componente hardware se le denomina número de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>petición de interrupción</I
+></SPAN
+> (IRQ)..<A
+NAME="X-087-2-FNHW01"
+HREF="#FTN.X-087-2-FNHW01"
+>[2]</A
+>&#13;</P
+><P
+>&#13;
+Como se describe en <A
+HREF="x-087-2-issues.html"
+>Capítulo 2</A
+>, el núcleo accede a un dispositivo
+mediante lo que llamamos un <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>interfaz</I
+></SPAN
+>. Los interfaces ofrecen un
+conjunto abstracto de funciones que es el mismo para todo tipo de hardware. Por ejemplo,
+las funciones para enviar o recibir datagramas.</P
+><P
+>&#13;
+Los interfaces se identifican por medio de nombres.
+En muchos sistemas operativos tipo Unix, el interfaz de red se implementa
+como un fichero de dispositivo especial en el directorio <TT
+CLASS="FILENAME"
+>/dev/</TT
+>.
+Si usted teclea la orden <TT
+CLASS="LITERAL"
+>ls -las /dev/</TT
+>, verá como aparecen sus ficheros
+de dispositivos. En la columna de permisos de los ficheros (segunda) verá que los ficheros
+de dispositivos comienzan con una letra en vez del guión visto con los ficheros
+normales. Este carácter indica el tipo de dispositivo. Los tipos de dispositivos más
+comunes son los <TT
+CLASS="LITERAL"
+>b</TT
+>, que indica que es un dispositivo
+de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>bloque</I
+></SPAN
+> y maneja grandes bloques de datos
+cada vez que lee y escribe, y <TT
+CLASS="LITERAL"
+>c</TT
+>, que indica
+que el dispositivo es un dispositvo de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>carácter</I
+></SPAN
+>
+y maneja datos de un solo carácter cada vez. Donde normalmente desearía
+ver el tamaño del fichero en la salida de <B
+CLASS="COMMAND"
+>ls</B
+>,
+en vez de eso verá dos números, llamados los números de dispositivo
+"major" y "minor" (primario y secundario). Estos números indican el dispositivo
+actual al que está asociado el fichero de dispositivo.</P
+><P
+>Cada controlador de dispositivo registra un unico número primario para el núcleo.
+En cada <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>caso</I
+></SPAN
+> los registros de dispositivos
+tienen un único número secundario para dicho dispositivo primario.
+Los interfaces <TT
+CLASS="LITERAL"
+>tty</TT
+>,&thinsp;<TT
+CLASS="FILENAME"
+>/dev/tty*</TT
+>, son
+unos dispositivos  de modo carácter por lo que indica la &ldquo;<TT
+CLASS="LITERAL"
+>c</TT
+>&rdquo;,
+y tienen un maximo número de <TT
+CLASS="LITERAL"
+>4</TT
+>, pero
+<TT
+CLASS="FILENAME"
+>/dev/tty1</TT
+> tiene un número menor de
+<TT
+CLASS="LITERAL"
+>1</TT
+>, y <TT
+CLASS="FILENAME"
+>/dev/tty2</TT
+> tiene un número
+menor de <TT
+CLASS="LITERAL"
+>2</TT
+>. Los ficheros de dispositivos son muy útiles para
+muchos tipos de dispositivos, pero pueden ser pesados de usar cuando
+intentamos encontrar un dispositivo sin usar para abrir.</P
+><P
+>Los nombres de las interfaces de Linux son definidos internamente en el núcleo y no
+son ficheros de dispositivos del directorio  <TT
+CLASS="FILENAME"
+>/dev</TT
+>.
+Algunos nombres de dispositivos típicos serán listados después en <A
+HREF="x-087-2-hwconfig.tour.html"
+>Sección 3.2</A
+>.&rdquo; La asignación de interfaces
+a los dispositivos depende normalmente del orden en que los dispositivos
+son configurados. Por ejemplo, la primera tarjeta Ethernet instalada será
+<TT
+CLASS="FILENAME"
+>eth0</TT
+>, la siguiente <TT
+CLASS="FILENAME"
+>eth1</TT
+>, y así
+sucesivamente. Las interfaces SLIP son manejadas de forma diferente a otras
+porque éstas son asignadas dinámicamente. Cuando se establece
+una conexion SLIP, una interfaz es asignada al puerto serie.</P
+><P
+><A
+HREF="x-087-2-hardware.html#X-087-2-HARDWARE.FIG.CONTROLADORES"
+>Figura 3-1</A
+> Ilustra la relación entre el
+hardware, los controladores de dispositivos, y las interfaces.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-HARDWARE.FIG.CONTROLADORES"><P
+><B
+>Figura 3-1. Relación entre controladores, interfaces, y hardware</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0301.jpg"></P
+></DIV
+></DIV
+><P
+>Al arrancar, el núcleo muestra los dispositivos detectados y las interfaces
+que instala. Lo siguiente es un extracto de la pantalla de arranque:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>     .
+     .  This processor honors the WP bit even when in supervisor mode./
+        Good.
+    Swansea University Computer Society NET3.035 for Linux 2.0
+    NET3: Unix domain sockets 0.13 for Linux NET3.035.
+    Swansea University Computer Society TCP/IP for NET3.034
+    IP Protocols: IGMP,ICMP, UDP, TCP
+    Swansea University Computer Society IPX 0.34 for NET3.035
+    IPX Portions Copyright (c) 1995 Caldera, Inc.
+    Serial driver version 4.13 with no serial options enabled
+    tty00 at 0x03f8 (irq = 4) is a 16550A
+    tty01 at 0x02f8 (irq = 3) is a 16550A
+    CSLIP: code copyright 1989 Regents of the University of California
+    PPP: Version 2.2.0 (dynamic channel allocation)
+    PPP Dynamic channel allocation code copyright 1995 Caldera, Inc.
+    PPP line discipline registered.
+    eth0: 3c509 at 0x300 tag 1, 10baseT port, address 00 a0 24 0e e4 e0,/
+        IRQ 10.
+    3c509.c:1.12 6/4/97 becker@cesdis.gsfc.nasa.gov
+    Linux Version 2.0.32 (root@perf) (gcc Version 2.7.2.1)
+    #1 Tue Oct 21 15:30:44 EST 1997
+     .
+     .</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Este ejemplo muestra que el núcleo ha sido compilado con el TCP/IP
+activado e incluyendo controladores para SLIP, CSLIP, y PPP. La tercera línea
+empezando desde abajo muestra que una tarjeta Ethernet 3C509 ha sido
+detectada e instalada como la interfaz <TT
+CLASS="FILENAME"
+>eth0</TT
+>. Si tiene
+algún otro tipo de tarjeta de red; quizás un adaptador de bolsillo D-Link, por
+ejemplo&mdash;el núcleo  normalmente mostrará una línea que empieza con
+el nombre del dispositivo&mdash;<TT
+CLASS="FILENAME"
+>dl0</TT
+> en el caso del ejemplo
+del D-Link&mdash;seguido por el tipo de tarjeta detectada. Si tiene una
+tarjeta de red instalada pero no aparece ningún mensaje similar significa que
+el núcleo es incapaz de detectar su tarjeta correctamente. Esta situación
+será tratada más adelante en la sección&ldquo;Ethernet Autoprobing.&rdquo;</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN2186"
+HREF="x-087-2-hardware.html#AEN2186"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>N. del T.: Del inglés Interrupt ReQuest</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNHW01"
+HREF="x-087-2-hardware.html#X-087-2-FNHW01"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> Las IRQs 2 y 9 son las mismas porque el diseño del IBM PC tiene 2
+procesadores de interrupciones en cascada con 8 IRQs cada uno, el procesador
+secundario es conectado a la IRQ 2 del primario.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-issues.resolving.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-hardware.kernel.config.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Resolución de nombres de puesto</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Configuracion del núcleo</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,292 @@
+<HTML>
+<HEAD>
+<TITLE>RDSI COMO : Instalaci&oacute;n y configuraci&oacute;n de software de aplicaci&oacute;n</TITLE>
+</HEAD>
+<BODY>
+<A HREF="RDSI-Como-6.html">Anterior</A>
+<A HREF="RDSI-Como-8.html">Siguiente</A>
+<A HREF="RDSI-Como.html#toc7">Indice</A>
+<HR>
+<H2><A NAME="s7">7. Instalaci&oacute;n y configuraci&oacute;n de software de aplicaci&oacute;n</A></H2>
+
+
+<P><I>Mi tarjeta parece que ya est&aacute; lista. ¿Puedo usar los scripts de
+conexi&oacute;n a Infov&iacute;a que usaba hasta ahora?</I></P>
+<P>No tal cual;  necesitar&aacute; hacer ciertas modificaciones. Usaremos otro
+m&eacute;todo para conectarnos a iNET. En vez de usar el pppd as&iacute;ncrono de toda
+la vida, usaremos un pppd especial, s&iacute;ncrono, que permite algunas
+<I>lindezas</I>: el <CODE>ipppd</CODE>. </P>
+<P>Arranque su cliente ftp favorito, y dir&iacute;jase a <CODE>
+<A HREF="ftp://ftp.franken.de/pub/isdn4linux/v2.0/isdn4linux*.tar.gz">ftp://ftp.franken.de/pub/isdn4linux/v2.0/isdn4linux*.tar.gz</A></CODE>
+que es el sitio oficial del ISDN4Linux. Ah&iacute; tiene una m&aacute;gnifica (aunque
+algo falta de actualizaci&oacute;n) FAQ en un perfecto ingl&eacute;s que deber&iacute;a tener
+al menos como punto de referencia. </P>
+<P>Le remitir&iacute;amos a ella, pero si ha llegado hasta aqu&iacute; y hacemos eso igual
+empezamos a sentir agudos pitidos en los oidos... ;-) </P>
+<P>Descomprimimos, configuramos, compilamos e instalamos. De la lista de
+utilidades las que m&aacute;s nos interesan, son <CODE>isdnctrl</CODE> (directorio
+<CODE>isdn</CODE>) y el <CODE>ipppd</CODE> (directorio <CODE>ppp4i4k/ipppd/version</CODE>)
+porque son las que usaremos en el m&eacute;todo que describiremos despu&eacute;s.</P>
+<P>Normalmente, casi todas las distribuciones suelen llevar un paquete de
+utilidades RDSI que incluyen los programas que mencionamos, am&eacute;n de
+abundante documentaci&oacute;n y scripts de ejemplo. Busque en su distribuci&oacute;n
+favorita. </P>
+<P>No obstante, si por alguna raz&oacute;n no consigue compilar los elementos
+necesarios, en <CODE>
+<A HREF="ftp://ftp.insflug.org/pub/RDSI/">ftp://ftp.insflug.org/pub/RDSI/</A></CODE> tiene a su disposici&oacute;n el 
+software m&iacute;nimo necesario ya compilado.</P>
+<P>Como en todo sistema UN*X la comunicaci&oacute;n con los dispositivos f&iacute;sicos
+(tarjetas, discos...) se realiza por medio de ficheros. Necesitaremos
+crear los dispositivos que har&aacute;n que el kernel pueda trabajar con la
+tarjeta RDSI. Si usa un paquete de una distribuci&oacute;n es casi seguro que
+crear&aacute;, si no lo est&aacute;n ya, las entradas necesarias en el directorio
+<CODE>/dev</CODE>, si no es as&iacute;, ejecute <CODE>make devices</CODE> en el
+directorio ra&iacute;z de las <CODE>isdn4utils</CODE> que baj&oacute; antes, ser&aacute; sufiente.</P>
+
+<H2><A NAME="ss7.1">7.1 Pero bueno, ¡¿qu&eacute; c&oacute;mo conectooo?!</A></H2>
+
+
+<P>Vamos con ello. Dos m&eacute;todos, uno de ellos mencionado someramente. Se basa
+en aprovechar los scripts de conexi&oacute;n (que suponemos le funcionan) usados
+con un m&oacute;dem anal&oacute;gico normal. Las variaciones son m&iacute;nimas. A&ntilde;ada en el
+gui&oacute;n de chat la cadena de inicio</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ATS14=3&xxxxxxxxx (siendo xxxxxxxxx el numero de su linea RDSI)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y sustituya donde corresponda el dispositivo <CODE>/dev/modem</CODE> por
+<CODE>/dev/ttyI0</CODE>. Usaremos el <CODE>pppd</CODE> normal y corriente que us&aacute;bamos
+antes con el m&oacute;dem. Nada m&aacute;s que decir de este m&eacute;todo, salvo que no haga
+uso del par&aacute;metro <CODE>+ua</CODE> en el fichero <CODE>options</CODE>, est&aacute; obsoleto
+en las &uacute;ltimas versiones del paquete <CODE>pppd</CODE>.  . </P>
+<P>El segundo hace uso de las utilidades que nos bajamos anteriormente, y nos
+permitir&aacute; conseguir llamadas bajo demanda (<I>dial on demand</I>, DoD). </P>
+<P>Opci&oacute;n &eacute;sta muy interesante en redes donde se vaya a usar la conexi&oacute;n RDSI
+para dar servicio iNET, por medio del enmascaramiento IP, a varios puestos
+de una red local, pues posibilitar&aacute; el que la llamada se efect&uacute;e
+autom&aacute;ticamente por tr&aacute;fico de paquetes (abrir un navegador, lanzar el
+programa de correo, hacer un ping, etc.).</P>
+<P>La parte m&aacute;s importante de este m&eacute;todo reside en los scripts usados para
+configurar la conexi&oacute;n. Los hay de m&uacute;ltiples formas, m&aacute;s o menos
+"sofisticados". Los incluidos en este documento puede que no sean para
+ganar un Nobel, pero funcionan bastante bien. En este sentido, estamos
+abiertos (no hace falta decirlo) a modificaciones y/o comentarios, pero de
+eso hablaremos m&aacute;s tarde. </P>
+<P>Unos puntos a destacar. Si queremos usar <I>DoD</I>, necesitaremos tener dos
+scripts en <CODE>/etc/ppp</CODE> tambi&eacute;n incluidos, para asegurarnos que la
+ruta por defecto <I>apunte</I> siempre a una direcci&oacute;n de iNET y al
+dispositivo RDSI.</P>
+<P>Esto, y, por supuesto, NO tener ninguna ruta por defecto a la(s) 
+tarjeta(s) de red (ethernet normalmente) que ya tuvi&eacute;ramos en nuestro
+sistema: el demonio de PPP (pppd o ipppd) no reemplaza la ruta por
+defecto, es un problema muy com&uacute;n en los grupos de noticias y en los
+canales de Linux de IRC.</P>
+<P>El s&iacute;ntoma es que la conexi&oacute;n se establece, pero no podemos <I>salir</I> a
+iNET porque no tenemos <I>se&ntilde;alizado</I> por d&oacute;nde hacerlo. No es el
+prop&oacute;sito de este documento extenderse demasiado en temas de rutado, pero
+en condiciones normales, no necesitaremos ruta por defecto, podemos usar
+rutas est&aacute;ticas;  dejaremos que el (i)pppd la establezca cuando as&iacute; sea
+necesario.</P>
+<P>Y ser&aacute; uno de los scripts (<CODE>ip-down</CODE>) el que se encargar&aacute; de que en
+todo momento haya una ruta por defecto a iNET por la tarjeta RDSI.</P>
+
+
+<H2><A NAME="ss7.2">7.2 Scripts</A></H2>
+
+
+<P>Hace cosa de un mes fueron enviados a la lista de correo (¿a&uacute;n no est&aacute;
+suscrito? ¿a qu&eacute; espera? ;-) del SLUG (<CODE>
+<A HREF="mailto:l-linux@calvo.teleco.ulpgc.es">l-linux@calvo.teleco.ulpgc.es</A></CODE>), de modo que si est&aacute; suscrito
+y no borra los mensajes, imagino que los tendr&aacute;.</P>
+<P>Pero como no todo el mundo est&aacute; en dicha lista (y este Como, que duda cabe,
+no ser&iacute;a tal sin ellos), aqu&iacute; van: </P>
+
+<H3><CODE>rc.isdn</CODE> para un solo canal </H3>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#
+# Thanks to Rainer Birkenmaier &lt;rainer@kirk.mop.uni.ulm.de&gt;
+# Hacked by Antonio Verdejo Garcia &lt;averdejog.galileo@nexo.es&gt;
+# & Francisco J Montilla &lt;pacopepe@insflug.org&gt;
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+LOCAL_NUMBER=&quot;xxxxxxxxx&quot;
+REMOTE_NUMBER=&quot;xxx&quot;
+LOCAL_IP=&quot;195.76.154.169&quot; # IP falsa por la que establecer ruta por
+                          # defecto, a fin de que salte el DoD
+DEVICE=&quot;ippp0&quot;
+USER=&quot;user@ISP&quot;
+
+isdnctrl addif  $DEVICE                 # Creamos un interfaz nuevo,'DEVICE'
+isdnctrl addphone $DEVICE out $REMOTE_NUMBER    # Numero al que llamar
+isdnctrl eaz $DEVICE $LOCAL_NUMBER      # EAZ: el numero de su RDSI
+isdnctrl l2_prot $DEVICE hdlc           # para PPP sincrono
+isdnctrl l3_prot $DEVICE trans          # 
+isdnctrl encap $DEVICE syncppp          # encapsulacion de paquetes IP en
+                                        # en  tramas PPP 
+isdnctrl huptimeout $DEVICE 300         # tiempo de inactividad tras el que
+                                        # desconectar: 300 sec. -&gt; 5min
+isdnctrl chargehup $DEVICE off          # Colgar antes del siguiente paso
+isdnctrl secure $DEVICE on              # Aceptar llamadas de numeros
+                                        # autorizados solamente
+ifconfig $DEVICE $LOCAL_IP
+route add -net 195.76.154.0 $DEVICE
+route add default $DEVICE
+
+/sbin/ipppd user $USER remotename infovia -d defaultroute noipdefault \
+ipcp-accept-local ipcp-accept-remote mru 1500 mtu 1500 lock -bsdcomp -pc -ac /dev/ippp0 &
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>las &uacute;ltimas dos l&iacute;neas son una en realidad; puede indicar que se
+interprete como una sola tal y como se hace en el script con el
+<CODE>\</CODE>; o bien ponerlo en una sola l&iacute;nea sin retorno de carro.</P>
+<P>Aseg&uacute;rese de que <CODE>ipppd</CODE> est&aacute; en <CODE>/sbin</CODE> si transcribe tal
+cual este script; si no es as&iacute;, modifique el path en el script.</P>
+<P>Vea la secci&oacute;n 
+<A HREF="#expl">expl</A> para una explicaci&oacute;n acerca de qu&eacute;
+par&aacute;metros ha de modificar y una explicaci&oacute;n sobre este script. </P>
+
+<H3><A NAME="isdn2"></A> <CODE>rc.isdn</CODE> para dos canales </H3>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#
+# Thanks to Rainer Birkenmaier &lt;rainer@kirk.mop.uni.ulm.de&gt;
+# Hacked by Antonio Verdejo Garcia &lt;averdejog.galileo@nexo.es&gt;
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+LOCAL_NUMBER=&quot;xxxxxxxxx&quot;
+REMOTE_NUMBER=&quot;xxx&quot;             
+LOCAL_IP=&quot;195.76.154.169&quot; # dummy; the IPCP negotiation overwrite it
+DEVICE=&quot;ippp0&quot;
+USER=&quot;user@ISP&quot;
+
+# additional for channel bundling:
+DEVICE1=&quot;ippp128&quot;
+
+isdnctrl addif  $DEVICE                 # Create new interface 'DEVICE'
+isdnctrl addphone $DEVICE out $REMOTE_NUMBER    # Set outgoung phone-number
+isdnctrl eaz $DEVICE $LOCAL_NUMBER      # Set local EAZ .. 
+isdnctrl l2_prot $DEVICE hdlc           # for sync PPP: set Level 2 to HDLC
+isdnctrl l3_prot $DEVICE trans          # not really necessary, 'trans' is default
+isdnctrl encap $DEVICE syncppp          # encap the IP Pakets in PPP frames
+isdnctrl huptimeout $DEVICE 300         # Hangup-Timeout is 300 sec. -&gt; 5 min
+isdnctrl chargehup $DEVICE off          # Hangup before next Charge-Info
+isdnctrl secure $DEVICE on              # Accept only configured phone-number
+
+# additional for channel bundling:
+isdnctrl addslave $DEVICE $DEVICE1      # Create new slave interface 'DEVICE1'
+isdnctrl addphone $DEVICE1 out $REMOTE_NUMBER   # Set outgoung phone-number
+isdnctrl eaz $DEVICE1 $LOCAL_NUMBER     # Set local EAZ ..
+isdnctrl l2_prot $DEVICE1 hdlc          # for sync PPP: set Level 2 to HDLC
+isdnctrl l3_prot $DEVICE1 trans         # not really necessary, 'trans' is default
+isdnctrl encap $DEVICE1 syncppp         # encap the IP Pakets in PPP frames
+isdnctrl huptimeout $DEVICE1 300        # Hangup-Timeout is 300 sec. -&gt; 5 min
+isdnctrl chargehup $DEVICE1 off         # Hangup before next Charge-Info
+isdnctrl secure $DEVICE1 on             # Accept only configured phone-number
+
+ifconfig $DEVICE $LOCAL_IP
+route add -net 195.76.154.0 $DEVICE
+route add default $DEVICE
+
+/sbin/ipppd user $USER remotename infovia -d defaultroute noipdefault ipcp-accept-local \
+ipcp-accept-remote mru 1500 mtu 1500 +mp lock -bsdcomp -pc -ac /dev/ippp0 /dev/ippp1 &
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3><A NAME="expl"></A> Explicaci&oacute;n de los scripts </H3>
+
+
+<P>Los scripts no necesitan demasiadas explicaciones. Sustituir <CODE>user</CODE> e
+<CODE>ISP</CODE> por su nombre de usuario y el nombre de su proveedor
+(<CODE>pepe@arrakis</CODE> por ejemplo) y poner los valores adecuados en
+<CODE>LOCAL_NUMBER</CODE> (el n&uacute;mero de su RDSI) y en <CODE>REMOTE_NUMBER</CODE> (<CODE>055</CODE>
+si usa Infov&iacute;a).</P>
+<P>La direcci&oacute;n de <CODE>LOCAL_IP</CODE> es una direcci&oacute;n falsa, la negociaci&oacute;n IPCP
+la sobreescribe, pero por una simple raz&oacute;n de coherencia, conviene darle
+una IP v&aacute;lida del rango de su proveedor, y asignarle a ella la ruta por
+defecto, (lo mismo se aplica para la direcci&oacute;n de red de la ruta del final
+del script) esto es necesario para que funcione el DoD. </P>
+<P>Las direcciones del ejemplo son de Intercom, pero valen de cualquier
+manera (funciona tambi&eacute;n usando las mismas con otros proveedores).  Estas
+direcciones son las mismas que aparecen en los scripts <CODE>ip-up</CODE> e
+<CODE>ip-down</CODE>: </P>
+
+<H3><CODE>ip-up</CODE></H3>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+/sbin/route del default
+/sbin/route add default ippp0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3><CODE>ip-down</CODE></H3>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+#!/bin/sh
+/sbin/route del default
+/sbin/ifconfig ippp0 down
+/sbin/ifconfig ippp0 195.176.154.169
+/sbin/route add -net 195.176.154.0 ippp0
+/sbin/route add default ippp0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Es posible que alguno de los comandos que aparecen en estos dos &uacute;ltimos
+guiones sean redundantes. De nuevo, estamos abiertos a sugerencias.</P>
+<P>El <CODE>rc.isdn</CODE> de la secci&oacute;n 
+<A HREF="#isdn2">isdn2</A> est&aacute; preparado para el uso
+de dos canales y por lo tanto una conexi&oacute;n a 128 Kbps, usando uno de los
+canales como esclavo del primero. La opci&oacute;n <CODE>+mp</CODE> es necesaria en este
+caso, adem&aacute;s de que haya seleccionado en la compilaci&oacute;n del kernel, en la
+secci&oacute;n general de RDSI, <I>Support Generic MP (RFC 1717)</I>. (Compruebe
+que exista la l&iacute;nea <CODE>CONFIG_ISDN_MPP=y</CODE> en el fichero
+<CODE>/usr/src/linux/.config</CODE>, que es donde se almacena por defecto la
+configuraci&oacute;n del n&uacute;cleo). </P>
+<P>Tenga en cuenta que, como es l&oacute;gico, pagar&aacute; el <I>doble</I>... Aunque esto
+en empresas no suele ser un problema, cuidado en casa, o ver&aacute; como las
+facturas de Telef&oacute;nica tienden a infinito... ;-) </P>
+<P>Para lanzar manualmente el segundo canal, ejecute <CODE>isdnctrl addslave
+ippp128</CODE>;  colgar&aacute; autom&aacute;ticamente tras un periodo sin tr&aacute;fico,
+tardando lo que hayamos especificado en el par&aacute;metro <CODE>huptimeout</CODE> del
+<CODE>rc.isdn</CODE> (en segundos). </P>
+<P>Con determinados proveedores no se nota demasiado el lanzar el segundo
+canal (Arrakis), con otros sin embargo, y tambi&eacute;n dependiendo del origen
+de nuestro tr&aacute;fico, si se nota, y bastante... </P>
+<P>Hay un demonio que se encarga de disparar/colgar el segundo canal seg&uacute;n el
+tr&aacute;fico y la saturaci&oacute;n que detecte; puede obtenerse de <CODE>
+<A HREF="http://www.compound.se">http://www.compound.se</A></CODE>. </P>
+<P>En futuras versiones, tendr&aacute; secci&oacute;n propia; por ahora, si tiene
+un trabajo donde permitirse eso, se supone que tendr&aacute; nivel como para 
+manejarse con &eacute;l sin problemas.</P>
+
+
+<HR>
+<A HREF="RDSI-Como-6.html">Anterior</A>
+<A HREF="RDSI-Como-8.html">Siguiente</A>
+<A HREF="RDSI-Como.html#toc7">Indice</A>
+</BODY>
+</HTML>

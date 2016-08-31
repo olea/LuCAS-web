@@ -1,0 +1,813 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.1">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>System Administration : Multicast</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/AngelLopez.jpg" ALT="[Photo of the Author]" HEIGHT=147 WIDTH=122>
+<BR>por  <A HREF="mailto:alogo@mx2.redestb.es">Angel Lopez</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>
+Angel est&aacute; finalizando sus estudios de Ingenier&iacute;a Inform&aacute;tica. Actualmente
+trabaja como instructor en <A HREF="http://www.sun.com">Sun Microsystems</A>,
+impartiendo
+clases de administraci&oacute;n de redes y sistemas Sun Solaris. Recientemente a
+publicado en la editorial <A HREF="http://www.ra-ma.es/">Ra-Ma</A> el
+libro titulado <EM>Protocolos de Internet. Dise&ntilde;o e Implementaci&oacute;n en
+Sistemas UNIX</EM>. Sus
+principales &aacute;reas de inter&eacute;s son las redes, la seguridad, la programaci&oacute;n
+de sistemas/redes Unix y &uacute;ltimamente el "Linux kernel hacking" le est&aacute;
+quitando algunas horas de sue&ntilde;o ;)
+</P>
+<P><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex1">
+Direcciones Multicast</A></LI>
+  <LI><A HREF="#lfindex2">
+Funcionamiento del Multicast</A></LI>
+  <LI><A HREF="#lfindex3">
+API de programaci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex4">
+IP_ADD_MEMBERSHIP</A></LI>
+  <LI><A HREF="#lfindex5">
+IP_DROP_MEMBERSHIP</A></LI>
+  <LI><A HREF="#lfindex6">
+IP_MULTICAST_IF</A></LI>
+  <LI><A HREF="#lfindex7">
+IP_MULTICAST_TTL</A></LI>
+  <LI><A HREF="#lfindex8">
+IP_MULTICAST_LOOP</A></LI>
+  <LI><A HREF="#lfindex9">
+Ejemplo pr&aacute;ctico</A></LI>
+  <LI><A HREF="#lfindex10">
+Servidor</A></LI>
+  <LI><A HREF="#lfindex11">
+Cliente</A></LI>
+  <LI><A HREF="#lfindex12">
+Multicast y el Kernel</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=144&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Multicast</H2>
+ <IMG SRC="../../common/images/lfmeta.gif" ALT="[Ilustration]" HSPACE=10 HEIGHT=100 WIDTH=100><P><i>Resumen</i>:
+<P>
+<P>
+El art&iacute;culo pretende ser una introducci&oacute;n a la tecnolog&iacute;a multicast en
+redes TCP/IP. Adem&aacute;s de tratar los conceptos te&oacute;ricos b&aacute;sicos de las
+comunicaciones multicast, se detalla el API de Linux que podemos usar
+como programadores para la realizaci&oacute;n de aplicaciones multicast. Se
+dan a conocer tambi&eacute;n las funciones del kernel que implementan esta
+tecnolog&iacute;a, para obtener de esta manera una visi&oacute;n global del soporte
+multicast en Linux. El art&iacute;culo finaliza con un sencillo ejemplo pr&aacute;ctico
+de sockets en C, en el que se ilustra c&oacute;mo realizar una aplicaci&oacute;n
+multicast.
+</P></P><HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n</H2>
+
+A la hora de direccionar un host (interface) dentro de una red, se puede
+hacer uso de tres tipos diferentes de direcciones:
+<UL>
+<LI>
+<B>Direcci&oacute;n unicast</B>. Este tipo de direcci&oacute;n hace referencia
+a un &uacute;nico host (interface) dentro de la subred. Un ejemplo de direcci&oacute;n
+IP unicast es 192.168.100.9. Una direcci&oacute;n MAC unicast es, por ejemplo,
+80:C0:F6:A0:4A:B1.</LI>
+
+<LI>
+<B>Direcci&oacute;n broadcast</B>. Con una direcci&oacute;n de este tipo
+se consigue direccionar a todos los hosts (interfaces) dentro de una subred.
+Una direcci&oacute;n IP broadcast es 192.168.100.255 y una direcci&oacute;n
+MAC broadcast es FF:FF:FF:FF:FF:FF.</LI>
+
+<LI>
+<B>Direcci&oacute;n multicast</B>. Este tipo de direcciones permite direccionar
+a un grupo concreto de hosts (interfaces) dentro de una subred.</LI>
+</UL>
+Se usar&aacute;n direcciones multicast cuando el destinatario de la informaci&oacute;n
+no sea una &uacute;nica maquina, pero tampoco se quiera hacer un broadcast
+a toda la red. Este escenario ser&aacute; t&iacute;pico de situaciones
+en las que se requiera el env&iacute;o de informaci&oacute;n mutimedia
+(audio o video en tiempo real) a varios hosts de la red. En casos como
+este no es &oacute;ptimo, en t&eacute;rminos de ancho de banda, establecer
+un env&iacute;o unicast a cada uno de los clientes que quieran recibir
+la emisi&oacute;n multimedia. Establecer un env&iacute;o broadcast tampoco
+es la soluci&oacute;n, sobretodo si alguno de los clientes est&aacute;n
+fuera de la subred local desde la cual se realiza el env&iacute;o.
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>
+Direcciones Multicast</H2>
+
+Como el lector ya sabr&aacute;, el espacio de direccionamiento IP se distribuye
+en tres grupos o clases de direcciones, las direcciones de clase A, B y
+C. Hay una cuarta clase, la clase D, reservada para las direcciones multicast.
+La clase D tiene reservado el rango de direcciones IPv4 entre la 224.0.0.0
+y la 239.255.255.255.
+<P>Los 4 bits de mayor peso de la direcci&oacute;n IP permiten direccionar
+entre el valor 224 y el 239. Los 28 bits restantes de menor peso, est&aacute;n
+reservados para el identificador del grupo multicast, tal y como se muestra
+en el siguiente gr&aacute;fico:
+<BR>&nbsp;
+<P><BR>
+<CENTER>
+<P><IMG SRC="../../common/images/article144/mcast1.gif" HEIGHT=134 WIDTH=402></CENTER>
+
+<BR>&nbsp;
+<P><BR>
+<P>Las direcciones multicast IPv4 a nivel de red, deben mapearse sobre
+las direcciones f&iacute;sicas correspondientes al tipo de red con el se
+est&eacute; trabajando. Si se estuviese trabajando con direcciones a nivel
+de red unicast, se obtendr&iacute;a la direcci&oacute;n f&iacute;sica asociada
+haciendo uso del protocolo ARP, en el caso de direcciones de red multicast,
+no se puede usar ARP y habr&aacute; que obtener la direcci&oacute;n f&iacute;sica
+asociada mediante un procedimiento diferente. Se han definido varios documentos
+RFC <I>(Request For Comments)</I> que especifican la forma de realizar
+este mapeo:
+<UL>
+<LI>
+Correspondencia de direcciones multicast IPv4 a direcciones f&iacute;sicas
+Ethernet: RFC 1112.</LI>
+
+<LI>
+Correspondencia a redes FDDI: RFC 1390.</LI>
+
+<LI>
+Correspondencia a redes Token-Ring: RFC 1469.</LI>
+</UL>
+En las redes Ethernet, que son las redes m&aacute;s comunes, el mapeo se
+realiza colocando en los 24 bits de mayor peso de la direcci&oacute;n Ethernet
+los valores 01:00:5E. El siguiente bit siempre tiene un valor de 0 y los
+23 bits de menor peso restantes contienen el valor de los 23 bits de menor
+peso de la direcci&oacute;n multicast IPv4. Este proceso se muestra en
+el siguiente gr&aacute;fico:
+<CENTER>
+<P><IMG SRC="../../common/images/article144/mcast2.gif" HEIGHT=196 WIDTH=763></CENTER>
+
+<P>Por ejemplo, la direcci&oacute;n multicast IPv4 224.0.0.5 se corresponder&iacute;a
+con la direcci&oacute;n f&iacute;sica Ethernet 01:00:5E:00:00:05.
+<BR>Hay algunas direcciones multicast IPv4 especiales:
+<UL>
+<LI>
+La direcci&oacute;n 224.0.0.1 identifica a todos los hosts de una subred.
+Cualquier host con capacidades multicast que se encuentre en una subred
+deber&aacute; unirse a este grupo.</LI>
+
+<LI>
+La direcci&oacute;n 224.0.0.2 identifica a todos los routers con capacidades
+multicast de una subred.</LI>
+
+<LI>
+El rango de direcciones 224.0.0.0 - 224.0.0.255 est&aacute; reservado para
+protocolos de bajo nivel. Los datagramas destinados a direcciones dentro
+de este rango nunca ser&aacute;n encaminados por routers multicast.</LI>
+
+<LI>
+El rango de direcciones 239.0.0.0 - 239.255.255.255 est&aacute; reservado
+para usos administrativos. Las direcciones en este rango se asignan de
+forma local por cada organizaci&oacute;n pero no se asegura que no existan
+otras direcciones como esas fuera de la red de la organizaci&oacute;n.
+Los routers de la organizaci&oacute;n no deber&aacute;n encaminar los datagramas
+destinados a direcciones dentro de este rango fuera de la red corporativa.</LI>
+</UL>
+Hay m&aacute;s direcciones multicast reservadas que las aqu&iacute; mostradas,
+para una referencia completa consultar la &uacute;ltima versi&oacute;n
+disponible del RFC "Assigned Numbers".
+<P>La siguiente tabla muestra el espacio de direccionamiento multicast
+completo, junto con las denominaciones comunes para cada rango y el TTL
+asociado a cada uno de ellos. El TTL en el multicast IPv4 tiene un doble
+significado. Por un lado controla el tiempo de vida de un datagrama en
+la red, como el lector ya sabr&aacute;, para evitar que un datagrama entre
+en un bucle infinito, en caso de que exista una mala configuraci&oacute;n
+de las tablas de encaminamiento. Si adem&aacute;s estamos trabajando con
+multicast, el TTL define el &aacute;mbito del datagrama, es decir, c&oacute;mo
+de lejos llegar&aacute;. De esta&nbsp; forma se puedan definir varios &aacute;mbitos
+de alcance de los datagramas seg&uacute;n la categoria a la que pertenezcan:
+<BR>&nbsp;
+<CENTER><TABLE BORDER >
+<TR BGCOLOR="#000000">
+<TD>
+<CENTER><B><FONT COLOR="#FFFFFF">Ambito</FONT></B></CENTER>
+</TD>
+
+<TD>
+<CENTER><B><FONT COLOR="#FFFFFF">TTL</FONT></B></CENTER>
+</TD>
+
+<TD>
+<CENTER><B><FONT COLOR="#FFFFFF">Rango de Direcciones</FONT></B></CENTER>
+</TD>
+
+<TD>
+<CENTER><B><FONT COLOR="#FFFFFF">Descripci&oacute;n</FONT></B></CENTER>
+</TD>
+</TR>
+
+<TR>
+<TD>Nodo</TD>
+
+<TD>0</TD>
+
+<TD></TD>
+
+<TD>El datagrama est&aacute; restringido al propio host. No saldr&aacute;
+por ninguno de sus interfaces de red.</TD>
+</TR>
+
+<TR>
+<TD>Enlace</TD>
+
+<TD>1</TD>
+
+<TD>224.0.0.0 - 224.0.0.255</TD>
+
+<TD>El datagrama est&aacute; restringido a la subred local al host que
+lo env&iacute;a, no ser&aacute; encaminado por ning&uacute;n router.</TD>
+</TR>
+
+<TR>
+<TD>Departamento</TD>
+
+<TD>&lt; 32</TD>
+
+<TD>239.255.0.0 - 239.255.255.255</TD>
+
+<TD>Restringido a un departamento concreto dentro de la organizaci&oacute;n.</TD>
+</TR>
+
+<TR>
+<TD>Organizaci&oacute;n</TD>
+
+<TD>&lt; 64</TD>
+
+<TD>239.192.0.0 - 239.195.255.255</TD>
+
+<TD>Restringido a una organizaci&oacute;n concreta.</TD>
+</TR>
+
+<TR>
+<TD>Global</TD>
+
+<TD>&lt; 255</TD>
+
+<TD>224.0.1.0 - 238.255.255.255&nbsp;</TD>
+
+<TD>Sin restricci&oacute;n. Su &aacute;mbito es global.</TD>
+</TR>
+</TABLE></CENTER>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>
+Funcionamiento del Multicast</H2>
+
+En una LAN, un interface de red de un host subir&aacute; a niveles superiores
+todas aquellas tramas que considere que van destinadas a &eacute;l. Estas
+tramas ser&aacute;n aquellas que tengan como direcci&oacute;n de destino
+la direcci&oacute;n f&iacute;sica asociada al interface, o aquellas tramas
+cuya direcci&oacute;n de destino sea la direcci&oacute;n de broadcast.
+<P>Si el host se ha unido a un grupo multicast, el interface de red deber&aacute;
+reconocer tambi&eacute;n como tramas destinadas a &eacute;l, todas aquellas
+cuya direcci&oacute;n de destino sea la correspondiente al grupo&nbsp;
+de multicast al cual se haya unido el host.
+<P>Por tanto, si un host de una red tiene un interface cuya direcci&oacute;n
+f&iacute;sica es 80:C0:F6:A0:4A:B1 y adem&aacute;s se ha unido al grupo
+224.0.1.10, las tramas que reconocer&aacute; como destinadas a &eacute;l
+ser&aacute;n aquellas cuya direcci&oacute;n de destino sea alguna de las
+siguientes:
+<UL>
+<LI>
+La direcci&oacute;n del interface: 80:C0:F6:A0:4A:B1</LI>
+
+<LI>
+La direcci&oacute;n de broadcast: FF:FF:FF:FF:FF:FF</LI>
+
+<LI>
+La direcci&oacute;n asociada al grupo: 01:00:5E:00:01:0A</LI>
+</UL>
+En el caso de querer trabajar con multicast en WAN, se necesitan routers
+con soporte multicast que se comuniquen entre ellos mediante alg&uacute;n
+protocolo de encaminamiento que contemple el multicast. Cuando un proceso
+en un host de una subred se asocia a un grupo multicast, este host envia
+un mensaje IGMP a todos los routers multicast de su subred, inform&aacute;ndoles
+que cuando reciban un mensaje multicast destinado al grupo al cual &eacute;l
+se ha asociado, lo env&iacute;en a la subred para que pueda recibirlo.
+Estos routers le comunicar&aacute;n esta informaci&oacute;n al resto de
+routers multicast de tal forma que todos los routers sepan a qui&eacute;n
+deber&aacute;n encaminar los mensajes multicast que le lleguen.
+<P>Los routers adem&aacute;s env&iacute;an de forma peri&oacute;dica mensajes
+IGMP al grupo 224.0.0.1 solicitando a los hosts informaci&oacute;n sobre
+los grupos a los cuales est&aacute;n asociados. Un host, al recibir este
+mensaje inicializa un temporizador con un valor aleatorio, y no contestar&aacute;
+hasta que este temporizador llegue a cero. Con esto se evita que todos
+los hosts contesten a la vez, produciendo una sobrecarga innecesaria en
+la red. Cuando el temporizador de alguno de los hosts llegue a cero, enviar&aacute;
+su contestaci&oacute;n a la direcci&oacute;n del grupo multicast concreto
+del cual est&eacute; informando, por lo que el resto de hosts asociado
+a ese grupo ver&aacute;n la contestaci&oacute;n, y anular&aacute;n su temporizador
+no generando por tanto su respuesta. Esto se hace porque con un host que
+conteste es suficiente, al router &uacute;nicamente le hace falta saber
+que hay un host interesado en determinado grupo en esa subred, con eso
+le basta para redirigir los mensajes multicast destinados al grupo, el
+resto de hosts los recibir&aacute;n y no es necesario por tanto que tambi&eacute;n
+contesten ellos.
+<P>Si todos los hosts que estaban en un determinado grupo, se quitan del
+mismo, entonces ninguno contestar&aacute; a los mensajes del router, qui&eacute;n
+al ver que ya no hay nadie interesado en determinado grupo en una subred,
+dejar&aacute; de encaminar a la misma los mensajes destinados a ese grupo.
+Otra opci&oacute;n, implementada en IGMPv2, es que el propio host indique
+a los routers que ha abandonado un determinado grupo, enviando para ello
+un mensaje a la direcci&oacute;n 224.0.0.2.
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>
+API de programaci&oacute;n</H2>
+
+Si el lector tiene experiencia previa en la programaci&oacute;n de sockets,
+&uacute;nicamente le ser&aacute; necesario conocer cinco opciones nuevas
+de los sockets para el manejo de las opciones multicast. Se usar&aacute;n
+las funciones <I>setsockopt()</I> y <I>getsockopt()</I> para establecer
+o leer el valor de estas opciones. La tabla siguiente muestra las opciones
+disponibles para multicast, junto con el tipo de datos que maneja y su
+descripci&oacute;n:
+<BR>&nbsp;
+<CENTER><TABLE BORDER >
+<TR BGCOLOR="#000000">
+<TD><B><FONT COLOR="#FFFFFF">Opci&oacute;n IPv4</FONT></B></TD>
+
+<TD><B><FONT COLOR="#FFFFFF">Tipo de Datos</FONT></B></TD>
+
+<TD><B><FONT COLOR="#FFFFFF">Descripci&oacute;n</FONT></B></TD>
+</TR>
+
+<TR>
+<TD>IP_ADD_MEMBERSHIP</TD>
+
+<TD>struct ip_mreq</TD>
+
+<TD>Unirse a un grupo multicast.</TD>
+</TR>
+
+<TR>
+<TD>IP_DROP_MEMBERSHIP</TD>
+
+<TD>struct ip_mreq</TD>
+
+<TD>Abandonar un grupo multicast.</TD>
+</TR>
+
+<TR>
+<TD>IP_MULTICAST_IF</TD>
+
+<TD>struct ip_mreq</TD>
+
+<TD>Especificar un interface de red concreto para el env&iacute;o de mensajes
+multicast.</TD>
+</TR>
+
+<TR>
+<TD>IP_MULTICAST_TTL</TD>
+
+<TD>u_char</TD>
+
+<TD>Especificar un TTL para el env&iacute;o de mensajes multicast.</TD>
+</TR>
+
+<TR>
+<TD>IP_MULTICAST_LOOP</TD>
+
+<TD>u_char</TD>
+
+<TD>Activar o desactivar el loopback para los mensajes multicast.</TD>
+</TR>
+</TABLE></CENTER>
+
+<P>La estructura <I>ip_mreq</I> se define de la siguiente forma en el fichero
+de cabecera <I>&lt;linux/in.h></I>:
+<P><TT>struct ip_mreq {</TT>
+<BR><TT>&nbsp;struct in_addr imr_multiaddr; /* IP multicast address of
+group */</TT>
+<BR><TT>&nbsp;struct in_addr imr_interface; /* local IP address of interface
+*/</TT>
+<BR><TT>};</TT>
+<P>Las opciones multicast se definen en este fichero de la siguiente forma:
+<P><TT>#define IP_MULTICAST_IF&nbsp; 32</TT>
+<BR><TT>#define IP_MULTICAST_TTL 33</TT>
+<BR><TT>#define IP_MULTICAST_LOOP 34</TT>
+<BR><TT>#define IP_ADD_MEMBERSHIP 35</TT>
+<BR><TT>#define IP_DROP_MEMBERSHIP 36</TT>
+
+<A NAME="lfindex4">&nbsp;</A>
+<H3>
+IP_ADD_MEMBERSHIP</H3>
+
+Un proceso puede unirse a un grupo multicast usando esta opci&oacute;n
+sobre un socket con la funci&oacute;n <I>setsockopt()</I>. Como par&aacute;metro
+se indica una estructura de tipo <I>ip_mreq</I>. En el primer campo de
+la estructura, <I>imr_multiaddr</I>, se indica la direcci&oacute;n multicast
+del grupo al cual queremos unirnos. En el segundo campo,<I> imr_interface</I>,
+se indica la direcci&oacute;n IPv4 del interface de red que queremos usar.
+
+<A NAME="lfindex5">&nbsp;</A>
+<H3>
+IP_DROP_MEMBERSHIP</H3>
+
+Mediante esta opci&oacute;n, un proceso puede abandonar un grupo multicast.
+Los campos de la estructura <I>ip_mreq</I> se usan de igual forma que en
+el caso anterior.
+
+<A NAME="lfindex6">&nbsp;</A>
+<H3>
+IP_MULTICAST_IF</H3>
+
+Esta opci&oacute;n permite establecer el interface de red que ser&aacute;
+usado para enviar los mensajes multicast que sean escritos en el socket.
+El interface se indicar&aacute; en la estructura<I> ip_mreq</I> como en
+las opciones anteriores.
+
+<A NAME="lfindex7">&nbsp;</A>
+<H3>
+IP_MULTICAST_TTL</H3>
+
+Establece el TTL <I>(Time To Live)</I> de los datagramas que contendr&aacute;n
+los mensajes multicast que sean enviados por el socket. Por defecto, el
+TTL asignado es de 1, es decir, el datagrama no saldr&aacute; de la subred
+local.
+
+<A NAME="lfindex8">&nbsp;</A>
+<H3>
+IP_MULTICAST_LOOP</H3>
+
+Cuando un proceso env&iacute;a un mensaje a un grupo multicast, si el interface
+de salida del mensaje pertenece al grupo, el mensaje ser&aacute; recibido
+por el propio proceso emisor como si hubiese llegado por la red. Con esta
+opci&oacute;n se puede activar o desactivar este comportamiento.
+
+<A NAME="lfindex9">&nbsp;</A>
+<H2>
+Ejemplo pr&aacute;ctico</H2>
+
+Para probar las ideas que se han comentado en este art&iacute;culo, se
+muestra a continuaci&oacute;n un ejemplo simple, en el cual tenemos un
+proceso que env&iacute;a mensajes a un grupo multicast concreto, y varios
+procesos que se asocian a ese grupo y reciben los mensajes, mostr&aacute;ndolos
+por pantalla.
+<P>El siguiente c&oacute;digo corresponde a un servidor que env&iacute;a
+al grupo multicast 224.0.1.1 todo aquello que recibe por la entrada est&aacute;ndard.
+Como se puede comprobar en el c&oacute;digo, no hay que realizar ninguna
+acci&oacute;n especial para enviar informaci&oacute;n a un grupo multicast,
+con indicar como direcci&oacute;n de destino la del grupo es suficiente.
+<P>Se podrian haber cambiado las opciones de loopback y TTL si los valores
+que toman por defecto no fuesen adecuados para la aplicaci&oacute;n que
+se est&eacute; desarrollando.
+<A NAME="lfindex10">&nbsp;</A>
+<H2>
+Servidor</H2>
+
+La informaci&oacute;n recibida por su entrada est&aacute;ndar la env&iacute;a
+al grupo de multicast 224.0.1.1
+<P><TT>#include &lt;sys/types.h></TT>
+<BR><TT>#include &lt;sys/socket.h></TT>
+<BR><TT>#include &lt;netinet/in.h></TT>
+<BR><TT>#include &lt;arpa/inet.h></TT>
+<BR><TT>#include &lt;string.h></TT>
+<BR><TT>#include &lt;stdio.h></TT><TT></TT>
+<P><TT>#define MAXBUF 256</TT>
+<BR><TT>#define PUERTO 5000</TT>
+<BR><TT>#define GRUPO "224.0.1.1"</TT><TT></TT>
+<P><TT>int main(void) {</TT>
+<BR><TT>&nbsp; int s;</TT>
+<BR><TT>&nbsp; struct sockaddr_in srv;</TT>
+<BR><TT>&nbsp; char buf[MAXBUF];</TT><TT></TT>
+<P><TT>&nbsp; bzero(&amp;srv, sizeof(srv));</TT>
+<BR><TT>&nbsp; srv.sin_family = AF_INET;</TT>
+<BR><TT>&nbsp; srv.sin_port = htons(PUERTO);</TT>
+<BR><TT>&nbsp; if (inet_aton(GRUPO, &amp;srv.sin_addr) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("inet_aton");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT>
+<BR><TT>&nbsp; if ((s = socket(AF_INET, SOCK_DGRAM, 0)) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("socket");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT><TT></TT>
+<P><TT>&nbsp; while (fgets(buf, MAXBUF, stdin)) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; if (sendto(s, buf, strlen(buf), 0, (struct sockaddr
+*)&amp;srv, sizeof(srv)) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; perror("recvfrom");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; } else {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fprintf(stdout, "Enviado a %s: %s\n",
+GRUPO, buf);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; }</TT>
+<BR><TT>&nbsp; }</TT>
+<BR><TT>}</TT>
+<BR>&nbsp;
+<A NAME="lfindex11">&nbsp;</A>
+<H2>
+Cliente</H2>
+
+El c&oacute;digo que se muestra a continuaci&oacute;n corresponde al cliente,
+el cual recibe la informaci&oacute;n que el servidor env&iacute;a al grupo
+multicast. Los mensajes recibidos los muestra por su salida est&aacute;ndard.
+La &uacute;nica particularidad de este c&oacute;digo, es el establecimiento
+de la opci&oacute;n IP_ADD_MEMBERSHIP. El resto del c&oacute;digo es el
+est&aacute;ndar para un proceso que desee recibir mensajes UDP.
+<P><TT>#include &lt;sys/types.h></TT>
+<BR><TT>#include &lt;sys/socket.h></TT>
+<BR><TT>#include &lt;netinet/in.h></TT>
+<BR><TT>#include &lt;arpa/inet.h></TT>
+<BR><TT>#include &lt;stdio.h></TT><TT></TT>
+<P><TT>#define MAXBUF 256</TT>
+<BR><TT>#define PUERTO 5000</TT>
+<BR><TT>#define GRUPO "224.0.1.1"</TT><TT></TT>
+<P><TT>int main(void) {</TT>
+<BR><TT>&nbsp; int s, n, r;</TT>
+<BR><TT>&nbsp; struct sockaddr_in srv, cli;</TT>
+<BR><TT>&nbsp; struct ip_mreq mreq;</TT>
+<BR><TT>&nbsp; char buf[MAXBUF];</TT><TT></TT>
+<P><TT>&nbsp; bzero(&amp;srv, sizeof(srv));</TT>
+<BR><TT>&nbsp; srv.sin_family = AF_INET;</TT>
+<BR><TT>&nbsp; srv.sin_port = htons(PUERTO);</TT>
+<BR><TT>&nbsp; if (inet_aton(GRUPO, &amp;srv.sin_addr) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("inet_aton");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT><TT></TT>
+<P><TT>&nbsp; if ((s = socket(AF_INET, SOCK_DGRAM, 0)) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("socket");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT><TT></TT>
+<P><TT>&nbsp; if (bind(s, (struct sockaddr *)&amp;srv, sizeof(srv)) &lt;
+0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("bind");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT><TT></TT>
+<P><TT>&nbsp; if (inet_aton(GRUPO, &amp;mreq.imr_multiaddr) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("inet_aton");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT>
+<BR><TT>&nbsp; mreq.imr_interface.s_addr = htonl(INADDR_ANY);</TT><TT></TT>
+<P><TT>&nbsp; if (setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, &amp;mreq,
+sizeof(mreq)) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; perror("setsockopt");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; return 1;</TT>
+<BR><TT>&nbsp; }</TT><TT></TT>
+<P><TT>&nbsp; n = sizeof(cli);</TT>
+<BR><TT>&nbsp; while (1) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; if ((r = recvfrom(s, buf, MAXBUF, 0, (struct
+sockaddr *)&amp;cli, &amp;n)) &lt; 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; perror("recvfrom");</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; } else {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; buf[r] = 0;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fprintf(stdout, "Mensaje desde %s:
+%s\n", inet_ntoa(cli.sin_addr), buf);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp; }</TT>
+<BR><TT>&nbsp; }</TT>
+<BR><TT>}</TT>
+
+<A NAME="lfindex12">&nbsp;</A>
+<H2>
+Multicast y el Kernel</H2>
+
+Como se acaba de ver, cuando un proceso se quiere unir a un grupo, usa
+la funci&oacute;n <I>setsockopt()</I> para establecer en el nivel de IP
+la opci&oacute;n IP_ADD_MEMBERSHIP. La implementaci&oacute;n de esta funci&oacute;n
+se puede encontrar en <I>/usr/src/linux/net/ipv4/ip_sockglue.c</I>. El
+c&oacute;digo que se ejecuta dentro de esta funci&oacute;n, para esta opci&oacute;n
+y para la opci&oacute;n IP_DROP_MEMBERSHIP es el siguiente:
+<P><TT>struct ip_mreqn mreq;</TT><TT></TT>
+<P><TT>if (optlen &lt; sizeof(struct ip_mreq))</TT>
+<BR><TT>&nbsp;return -EINVAL;</TT>
+<BR><TT>if (optlen >= sizeof(struct ip_mreqn)) {</TT>
+<BR><TT>&nbsp;if(copy_from_user(&amp;mreq,optval,sizeof(mreq)))</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return -EFAULT;</TT>
+<BR><TT>} else {</TT>
+<BR><TT>&nbsp;memset(&amp;mreq, 0, sizeof(mreq));</TT>
+<BR><TT>&nbsp;if (copy_from_user(&amp;mreq,optval,sizeof(struct ip_mreq)))</TT>
+<BR><TT>&nbsp;&nbsp; return -EFAULT;</TT>
+<BR><TT>}</TT>
+<BR><TT>if (optname == IP_ADD_MEMBERSHIP)</TT>
+<BR><TT>&nbsp;return ip_mc_join_group(sk,&amp;mreq);</TT>
+<BR><TT>else</TT>
+<BR><TT>&nbsp;return ip_mc_leave_group(sk,&amp;mreq);</TT>
+<P>Las primeras l&iacute;neas de c&oacute;digo comprueban que el par&aacute;metro
+de entrada, la estructura<I> ip_mreq</I>, tiene una longitud adecuada y
+se puede obtener copiar correctamente desde la zona de usuario a la zona
+del kernel. Una vez obtenido el par&aacute;metro, se invoca a <I>ip_mc_join_group()</I>
+para unirse a un grupo nulticast, o a <I>ip_mc_leave_group()</I> para abandonarlo.
+<P>El c&oacute;digo de estas funciones se puede encontrar en<I> /usr/src/linux/net/ipv4/igmp.c.</I>
+<BR>El c&oacute;digo para unirse a un grupo es el siguiente:
+<P><TT>int ip_mc_join_group(struct sock *sk , struct ip_mreqn *imr)</TT>
+<BR><TT>{</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int err;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; u32 addr = imr->imr_multiaddr.s_addr;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; struct ip_mc_socklist
+*iml, *i;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; struct in_device *in_dev;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int count = 0;</TT>
+<P>Lo primero es comprobar, mediante la macro MULTICAST, si la direcci&oacute;n
+del grupo es correcta deacuerdo a los rangos definidos para las direcciones
+de este tipo. Simplemente se comprueba que el byte de mayor peso de la
+direcci&oacute;n IP tiene un valor de 224.
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!MULTICAST(addr))</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+return -EINVAL;</TT><TT></TT>
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rtnl_shlock();</TT>
+<P>A continuaci&oacute;n&nbsp; se establece el interface de red al cual
+se asociar&aacute; el grupo multicast indicado. Si no se puede acceder
+al interface por &iacute;ndice, como es habitual en IPv6, se llama a la
+funci&oacute;n <I>ip_mc_find_dev()</I> que encuentra el dispositivo asociado
+a una direcci&oacute;n IP concreta. Este camino ser&aacute; el que se tome
+para el ejemplo del art&iacute;culo, ya que se trabaja con IPv4. Si como
+direcci&oacute;n se indic&oacute; INADDR_ANY, el kernel deber&aacute; encontrar
+por s&iacute; mismo el interface de red adecuado, para ello mirar&aacute;
+en la tabla de rutas para ver cu&aacute;l es el interface adecuado teniendo
+en cuenta la direcci&oacute;n del grupo y las rutas actuales establecidas.
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!imr->imr_ifindex)</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+in_dev = ip_mc_find_dev(imr);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+in_dev = inetdev_by_index(imr->imr_ifindex);</TT><TT></TT>
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!in_dev) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+iml = NULL;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+err = -ENODEV;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+goto done;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</TT>
+<P>El c&oacute;digo siguiente reserva memoria para una estructura de tipo
+<I>ip_mc_socklist</I>. Y compara la direcci&oacute;n de cada grupo e interface
+asociado al socket, con los datos de entrada a la funci&oacute;n. Si alguna
+de las entradas asociadas al socket con anterioridad coincide, salimos
+directamente ya que no tiene sentido asociarse dos veces a la mismo grupo
+e interface. Si no se indic&oacute; INADDR_ANY como direcci&oacute;n para
+el interface de red, entonces se aumenta el contador de referencias a esta
+entrada antes de salir de la funci&oacute;n.
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iml = (struct ip_mc_socklist
+*)sock_kmalloc(sk, sizeof(*iml),</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GFP_KERNEL);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err = -EADDRINUSE;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=sk->ip_mc_list;
+i; i=i->next) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if (memcmp(&amp;i->multi, imr, sizeof(*imr)) == 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+/* New style additions are reference counted */</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if (imr->imr_address.s_addr == 0) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+i->count++;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+err = 0;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+}</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+goto done;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+}</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+count++;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err = -ENOBUFS;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (iml == NULL || count
+>= sysctl_igmp_max_memberships)</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+goto done;</TT>
+<P>Si se llega a este punto, significa que se quiere enlazar un socket
+a un grupo nuevo, por lo que hay que crear una nueva entrada y enlazar
+la al comienzo de la lista de grupos perteneciente al socket. La memoria
+se reserv&oacute; anteriormente, &uacute;nicamente queda establecer los
+valores correctos a los campos de las estructuras de datos involucradas.
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; memcpy(&amp;iml->multi,
+imr, sizeof(*imr));</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iml->next = sk->ip_mc_list;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iml->count = 1;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sk->ip_mc_list = iml;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ip_mc_inc_group(in_dev,
+addr);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; iml = NULL;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; err = 0;</TT>
+<BR><TT>done:</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rtnl_shunlock();</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (iml)</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+sock_kfree_s(sk, iml, sizeof(*iml));</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return err;</TT>
+<BR><TT>}</TT>
+<P>La funci&oacute;n <I>ip_mc_leave_group()</I> usada para abandonar un
+grupo multicast, es m&aacute;s simple que la funci&oacute;n anterior. Recibida
+la direcci&oacute;n del interface y el grupo, se buscan estos datos entre
+las entradas asociadas al socket que se est&eacute; manejando. Una vez
+encontrada la entrada, se decrementa el n&uacute;mero de referencias, ya
+que hay un proceso menos asociado al grupo. Si al decrementar el n&uacute;mero
+de referencias, toma el valor cero, la entrada se elimina.
+<P><TT>int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)</TT>
+<BR><TT>{</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; struct ip_mc_socklist
+*iml, **imlp;</TT><TT></TT>
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (imlp=&amp;sk->ip_mc_list;
+(iml=*imlp)!=NULL; imlp=&amp;iml->next) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if (iml->multi.imr_multiaddr.s_addr==imr->imr_multiaddr.s_addr</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp; &amp;&amp; iml->multi.imr_address.s_addr==imr->imr_address.s_addr
+&amp;&amp;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+(!imr->imr_ifindex ||</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+iml->multi.imr_ifindex==imr->imr_ifindex)) {</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+struct in_device *in_dev;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if (--iml->count)</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+return 0;</TT><TT></TT>
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+*imlp = iml->next;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+synchronize_bh();</TT><TT></TT>
+<P><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+in_dev = inetdev_by_index(iml->multi.imr_ifindex);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if (in_dev)</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ip_mc_dec_group(in_dev,</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+imr->imr_multiaddr.s_addr);</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+sock_kfree_s(sk, iml, sizeof(*iml));</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+return 0;</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+}</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</TT>
+<BR><TT>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return -EADDRNOTAVAIL;</TT>
+<BR><TT>}</TT>
+<P>El resto de opciones multicast vistas son muy simples, ya que se limitan
+a establecer directamente ciertos valores en campos de datos de la estructura
+interna asociada al socket que estemos manejando. Estas asignaciones se
+realizan directamente en la funci&oacute;n <I>ip_setsockopt()</I>.
+<BR>&nbsp;
+
+
+
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=144&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Angel Lopez, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article144.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<!-- OLD FORMAT, NO TRANSLATION INFO -->
+</TR></TABLE></CENTER>
+<p><font size=1>2001-01-05, generated by lfparser version 2.1</font></p>
+</BODY>
+</HTML>

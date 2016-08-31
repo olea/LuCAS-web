@@ -1,0 +1,70 @@
+<HTML>
+<HEAD>
+<TITLE>Gravis ULTRASOUND Plug n' Play Mini-Como : Investigaci&oacute;n del Driver</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Gravis-UltraSound-Como-2.html">Anterior</A>
+<A HREF="Gravis-UltraSound-Como-4.html">Siguiente</A>
+<A HREF="Gravis-UltraSound-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Investigaci&oacute;n del Driver</A></H2>
+
+
+<P>No soy un buen programador, pero se suficiente C para observar los fuentes de un
+driver y ver qu&eacute; pasa (especialmente cuando est&aacute; bien comentado).</P>
+<P>Mir&eacute; el fichero <CODE>gus_card.c</CODE>, pero no encontr&eacute; nada interesante.
+Entonces mir&eacute; en <CODE>gus_wave.c</CODE>, y v&iacute; esto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  * Value 255 means pre-3.7 which don't have mixer.
+  * Values 5 thru 9 mean v3.7 which has a ICS2101 mixer.
+  * 10 and above is GUS MAX which has the CS4231 codec/mixer.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>que significa:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  * el Valor 255 se refiere a pre-3.7 la cual no tiene mixer.
+  * los Valores 5 a 9 se refiere a v3.7 los cuales tienen un mixer ICS2101.
+  * 10 y superior es GUS MAX la cual tiene el codec/mixer CS4231.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>¡Genial!, solo tengo que forzar el valor a 10, y funcionar&aacute; ...
+¡No!</P>
+<P>haciendo esto har&iacute;a que el kernel pensase que se tiene una GUS MAX, pero ¡no
+reconocer&aacute; el chip Codec!</P>
+<P>Por lo que ten&iacute;a que forzar la detecci&oacute;n del Codec tambi&eacute;n ...</P>
+<P>No fue tan f&aacute;cil encontrar qu&eacute; hacer, pero finalmente descubr&iacute; una posisbilidad:
+En el fichero <CODE> gus_wave.c</CODE>, hab&iacute;a una l&iacute;nea:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+if (ad1848_detect (gus_base + 0x10c, NULL, hw_config-&gt;osp))
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>lo que significaba que el kernel estaba intentando auto-detectar el chip
+AD1848, pens&eacute; que no lo podr&iacute;a detectar con la GUS PnP, y ¡estaba en lo
+cierto! Simplemente cambi&eacute; la l&iacute;nea a:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+if (!(ad1848_detect (gus_base + 0x10c, NULL, hw_config-&gt;osp)))
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>recompil&eacute; el kernel, y ¡¡¡hey, Quake funcion&oacute; de maravilla!!!</P>
+<P>Por cierto hay una etiqueta <CODE>gus_pnp_flag</CODE> en <CODE>gus_card.c</CODE>,
+pero no he notado ninguna diferencia con ella activada o desactivada <CODE>8(</CODE>
+(quiz&aacute;s hice algo mal)</P>
+
+<HR>
+<A HREF="Gravis-UltraSound-Como-2.html">Anterior</A>
+<A HREF="Gravis-UltraSound-Como-4.html">Siguiente</A>
+<A HREF="Gravis-UltraSound-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,505 @@
+<HTML
+><HEAD
+><TITLE
+>Configuración de Linux como cortafuegos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="¿Qué es el filtrado de IP?"
+HREF="x-087-2-firewall.filtering.html"><LINK
+REL="NEXT"
+TITLE="Las tres formas posibles de filtrado"
+HREF="x-087-2-firewall.filteringmethods.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.filtering.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.filteringmethods.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.HOWTO">9.4. Configuración de Linux como cortafuegos</H1
+><P
+>&#13;
+Para poder construir un cortafuegos IP con Linux, es necesario disponer
+de un núcleo compilado con soporte de cortafuegos de IP y de la utilidad
+de configuración adecuada. En todos los núcleos  anteriores a la serie
+2.2 se usaba la utilidad
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>. 
+Los núcleos 2.2.x supusieron el lanzamiento de la tercera generación
+de cortafuegos de IP para Linux que se denominó 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>'IP Chains'</I
+></SPAN
+>. 'IP chains'
+utiliza un programa similar a
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> que se llama <B
+CLASS="COMMAND"
+>ipchains</B
+>. 
+Los núcleos de Linux 2.3.15 y siguientes soportan la cuarta generación
+de cortafuegos de IP de Linux que se denomina
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>. El código de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>  es el resultado de un gran rediseño del
+flujo en el manejo de paquetes en Linux.
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Netfilter</I
+></SPAN
+> es una criatura con múltiples
+caras, pues proporciona un soporte compatible hacia atrás
+tanto con
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> como con
+<B
+CLASS="COMMAND"
+>ipchains</B
+> además de una nueva orden alternativa que se
+llama <B
+CLASS="COMMAND"
+>iptables</B
+>. En las próximas secciones
+se hablará de las diferencias entre los tres.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.HOWTO.KERNEL">9.4.1. Núcleo configurado con cortafuegos de IP</H2
+><P
+>El núcleo de Linux debe configurarse para que dé soporte a las  funciones de
+cortafuegos de IP. Sólo hay que seleccionar las opciones
+adecuadas cuando se realiza un
+<TT
+CLASS="LITERAL"
+>make menuconfig</TT
+> del núcleo.
+<A
+NAME="X-087-2-FW-FN02"
+HREF="#FTN.X-087-2-FW-FN02"
+>[1]</A
+>
+En el
+<A
+HREF="x-087-2-hardware.html"
+>Capítulo 3</A
+> se describe cómo hacerlo.
+En los núcleos 2.2, las siguientes opciones deberían ser seleccionadas:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    Networking options  ---&#62;
+    	[*] Network firewalls
+    	[*] TCP/IP networking
+    	[*] IP: firewalling
+    	[*] IP: firewall packet logging</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>En cambio, en los núcleos 2.4.0 y posteriores se deberían seleccionar
+estas opciones:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>      Networking options  ---&#62;
+         [*] Network packet filtering (replaces ipchains)
+             IP: Netfilter Configuration  ---&gt;
+                  .
+                 &lt;M&gt; Userspace queueing via NETLINK (EXPERIMENTAL)
+                 &lt;M&gt; IP tables support (required for filtering/masq/NAT)
+                 &lt;M&gt;   limit match support
+                 &lt;M&gt;   MAC address match support
+                 &lt;M&gt;   netfilter MARK match support
+                 &lt;M&gt;   Multiple port match support
+                 &lt;M&gt;   TOS match support
+                 &lt;M&gt;   Connection state match support
+                 &lt;M&gt;   Unclean match support (EXPERIMENTAL)
+                 &lt;M&gt;   Owner match support (EXPERIMENTAL)
+                 &lt;M&gt;   Packet filtering
+                 &lt;M&gt;     REJECT target support
+                 &lt;M&gt;     MIRROR target support (EXPERIMENTAL)
+                  .
+                 &lt;M&gt;   Packet mangling
+                 &lt;M&gt;     TOS target support
+                 &lt;M&gt;     MARK target support
+                 &lt;M&gt;   LOG target support
+                 &lt;M&gt; ipchains (2.2-style) support
+                 &lt;M&gt; ipfwadm (2.0-style) support
+      </PRE
+></TD
+></TR
+></TABLE
+>
+  </P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.HOWTO.IPFWADM">9.4.2. La utilidad ipfwadm</H2
+><P
+>&#13;La utilidad<B
+CLASS="COMMAND"
+> ipfwadm</B
+> (el administrador del cortafuegos de IP)
+es la herramienta que se utiliza para construir las reglas del cortafuegos para
+todos los núcleos anteriores al 2.2.0. La sintaxis de las órdenes puede
+resultar muy confusa porque permite realizar un amplio espectro de cosas;
+aquí se proporcionarán algunos ejemplos comunes que ilustrarán las variaciones
+más importantes dentro de ese espectro.</P
+><P
+>La utilidad
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>  se incluye en la mayoría de las distribuciones
+modernas de Linux, aunque quizás no por defecto. Puede que haya
+un paquete de 'software' específico que tenga que instalar.
+Si su distribución no la incluye, puede obtener el paquete con el código fuente de
+<SPAN
+CLASS="SYSTEMITEM"
+>ftp.xos.nl</SPAN
+> dentro del directorio
+<TT
+CLASS="FILENAME"
+>/pub/linux/ipfwadm/</TT
+>, y compilarla usted mismo. </P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.HOWTO.IPCHAINS">9.4.3. La utilidad ipchains</H2
+><P
+>&#13;Al igual que la utilidad
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, la utilidad
+<B
+CLASS="COMMAND"
+>ipchains</B
+> puede resultar algo desconcertante al principio.
+Proporciona toda la flexibilidad de <B
+CLASS="COMMAND"
+>ipfwadm</B
+> 
+con una sintaxis simplificada, y además proporciona un mecanismo
+de &ldquo;encadenamiento&rdquo; 
+que le permite gestionar múltiples conjuntos de reglas y enlazarlas
+conjuntamente.  Se cubrirá el encadenamiento de reglas en una
+sección independiente cerca del final de este capítulo, porque
+resulta un concepto avanzado en la mayoría de las situaciones.</P
+><P
+>&#13;La orden <B
+CLASS="COMMAND"
+>ipchains</B
+>  aparece en la mayoría de las
+distribuciones de Linux basadas en los núcleos 2.2. Si desea compilarla
+usted mismo, puede encontrar el paquete con el código fuente en
+el sitio de desarrollo
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>http://www.rustcorp.com/linux/ipchains/</I
+></SPAN
+>.
+Con el paquete del código fuente se incluye un guión
+<A
+NAME="X-087-2-FW-TFN10"
+HREF="#FTN.X-087-2-FW-TFN10"
+>[2]</A
+>
+denominado
+<B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+> que imita a la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, pero que realmente invoca la orden
+<B
+CLASS="COMMAND"
+>ipchains</B
+>. La migración de una configuración
+preexistente de cortafuegos
+resulta menos costosa gracias a este complemento.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.HOWTO.IPTABLES">9.4.4. La utilidad iptables</H2
+><P
+>&#13;La sintaxis de la utilidad <B
+CLASS="COMMAND"
+>iptables</B
+> es bastante
+similar a la de
+<B
+CLASS="COMMAND"
+>ipchains</B
+>.
+Los cambios consisten en mejoras y en el resultado del rediseño de 
+la herramienta
+para que sea extensible a través de bibliotecas dinámicas.
+Al igual que en el caso de <B
+CLASS="COMMAND"
+>ipchains</B
+>, se presentarán los
+equivalentes de los ejemplos con
+<B
+CLASS="COMMAND"
+>iptables</B
+> de tal forma que pueda comparar
+y contrastar su sintaxis con la de las otras utilidades.</P
+><P
+>La utilidad <B
+CLASS="COMMAND"
+>iptables</B
+> se incluye en el paquete de
+código fuente de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> que está disponible en
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>http://www.samba.org/netfilter/</I
+></SPAN
+>.
+También estará incluído en cualquier distribución basada en la serie
+de núcleos 2.4.</P
+><P
+>Se hablará un poco del importante paso hacia delante que
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> representa en una sección dedicada más adelante
+en este capítulo.</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-FN02"
+HREF="x-087-2-firewall.howto.html#X-087-2-FW-FN02"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>'firewall packet logging'
+(N. del T.: "registro de paquetes del
+cortafuegos" en español)
+es una característica especial que permite escribir una línea
+de información en un dispositivo especial y visible para usted
+por cada datagrama que coincida con un regla del cortafuegos. </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN10"
+HREF="x-087-2-firewall.howto.html#X-087-2-FW-TFN10"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: 'script' en el original en inglés</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.filtering.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.filteringmethods.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>¿Qué es el filtrado de IP?</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Las tres formas posibles de filtrado</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

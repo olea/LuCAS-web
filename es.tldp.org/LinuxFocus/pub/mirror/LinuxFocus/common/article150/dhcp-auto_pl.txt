@@ -1,0 +1,178 @@
+#!/usr/bin/perl
+#/**********************************************************************
+# * File  : dhcp-auto.pl
+# * Author: Eric SEIGNE
+# *         mailto:erics@rycks.com
+# *         http://www.rycks.com/erics/linux/
+# * Date  : 26/03/2000
+# *
+# * Description:
+# * ------------
+# * Convertisseur automatique de dhcpd.leases vers un dhcp fixe
+# *
+# * 27/03/2000 Modification, si on ne fait pas de dns, il faut mettre
+# * les ip dans le dhcp fixe.
+# * Sortie des fichiers dns classés par ordre croissant d'ip
+# *
+# * Attention, si il y a plusieurs réseaux ip dans le fichier leases
+# * seul un fichier de dns ne sera créé. Vous devrez ensuite le répartir
+# * entre vos différents fichiers dns.
+# *
+# *********************************************************************/
+
+use Getopt::Long; #pour le getoptions
+use DB_File; 
+
+$choix = "";
+$dns = 0;
+GetOptions ("f:s",\$fichier,"d:s",\$domaine,"h",\$help,"dns",\$dns);
+if($help){
+    print "\n\n";
+    print "dhcp-auto\t\t\t\t\tUn utilitaire rycks.com\n---------\t\t\t\t\terics\@rycks.com\n\n";
+    print "Constitution du dhcpd.conf à partir du fichier dhcpd.leases\n";
+    print "Options:\n";
+    print "\t-f [fichier] donne le dhcpd.leases à utiliser\n";
+    print "\t-d [domaine] donne le nom de domaine dans lequel on se situe\n";
+    print "\t-dns si vous voulez creer les fichiers dns\n";
+    print "\t ils porteront les noms named.\$domaine et named.\$domaine.rev\n";
+    print "\t-h affiche cet écran d'aide\n\n";
+    exit;
+}
+
+#si on a pas de parametre
+while ($fichier eq "") {
+    print STDERR "Ou est votre fichier dhcpd.leases ?:";
+    $fichier = <STDIN>;
+    chomp $fichier;
+}
+#si on constitue un dns et qu'on ne sait pas dans quel domaine on se trouve
+while ($dns && $domaine eq "") {
+    print STDERR "Quel est le nom de votre domaine ?:";
+    $domaine = <STDIN>;
+    chomp $domaine;
+}
+
+#on ouvre le fichier en lecture
+open(IN,"<$fichier");
+
+#lecture du fichier
+my $ip = "";
+my $hostname = "";
+my $mac = "";
+my $pos = 0;
+
+#on ouvre la table de hash
+my %h;
+
+while (<IN>) {
+#    print $_;
+    #on cherche l'ip
+    my ($t, $lease) = split("lease ",$_);
+    if($lease){
+	($ip,$t) = split(" ",$lease);
+    }
+
+    #puis la hardware ethernet
+    my ($t, $hard) = split("hardware ethernet ",$_);
+    if($hard){
+	($mac,$t) = split(";",$hard);
+    }
+
+    #et enfin, le nom de la machine
+    my ($t, $nom) = split("client-hostname \"",$_);
+    if($nom){
+	($hostname,$t) = split("\"",$nom);
+    }
+
+    if($ip && $hostname && $mac){
+	#on met les noms en minuscules
+	$hostname = lc $hostname;
+	#print "$mac/$ip/$hostname\n";
+	#on ajoute tout ca dans la table de hash
+	#pour eviter d'avoir des doublons
+	$h{"$mac"} = "$ip/$hostname";
+	$ip = $mac = $hostname = "";
+    }
+}
+
+#on referme le fichier
+close(IN);
+
+#On affiche ce qu'il faut rajouter à la fin du dhcpd.conf
+open(OUT,">dhcpd.conf.ajouter");
+while (($mac, $v) = each %h){
+    my ($ip, $hostname) = split("\/",$v);
+    #si on ne fait pas de dns, il faut les adresses IP
+    #des machines
+    if($dns){
+	print OUT "host {
+        hardware ethernet $mac;
+        fixed-address \"$hostname.$domaine\";\n}\n\n";
+    }
+    else{
+	print OUT "host {
+        hardware ethernet $mac;
+        fixed-address \"$ip\";\n}\n\n";	
+    }
+}
+print "\n\n\t\t\tRESULTATS:\n\t\t\t----------\n\n";
+print "1 - Ajoutez dans votre fichier dhcpd.conf les lignes qui\n";
+print "    se trouvent dans le fichier dhcpd.conf.ajouter\n\n";
+close(OUT);
+
+if($dns){
+    #on classe le tableau par ordre croissant des ip
+    #pour facilité la lecture du fichier de dns
+    tie(%classe, 'DB_File', undef, O_RDWR|O_CREAT, 0, $DB_BTREE);
+    while (($mac, $v) = each %h){
+	my ($ip, $hostname) = split("\/",$v);
+	$classe{"$ip"} = "$hostname";
+    }
+    
+    #on ouvre le fichier de dns classique
+    open(OUT,">named.$domaine.ajouter");
+    print OUT "; Constitution automatique du dns à partir du dhcpd.leases\n";
+    print OUT "; Eric Seigne <erics\@rycks.com>\n";
+    print OUT "; merci de controler ce fichier et d'ajouter son contenu à votre dns\n\n";
+    while (($ip, $hostname) = each %classe){
+	# on envoie ce qu'il faut dans le fichier de dns
+	# et les tabulations correctes pour éviter des
+	# non alignements 
+	if(length($hostname)<8){
+	    print OUT "$hostname\t\tIN\tA\t$ip\n";
+	}
+	else{
+	    print OUT "$hostname\tIN\tA\t$ip\n";
+	}
+    }
+    #on ferme ce fichier
+    close(OUT);
+
+    #on passe au reverse dns
+    open(OUT,">named.$domaine.rev.ajouter");
+    print OUT "; Constitution automatique du dns inversé à partir du dhcpd.leases\n";
+    print OUT "; Eric Seigne <erics\@rycks.com>\n";
+    print OUT "; merci de controler ce fichier et d'ajouter son contenu à votre dns inversé\n";
+    while (($ip, $hostname) = each %classe){
+	print OUT "$ip\t\tIN\tPTR\t$hostname.\n";
+    }
+    #on ferme ce fichier
+    close(OUT);
+
+    #les commentaires
+    print "2 - Pensez à ajoutez dans votre fichier named.conf les lignes qui\n";
+    print "    correspondent à vos domaines\n\n";
+    print "3 - Ajoutez dans votre fichier named.$domaine les lignes qui\n";
+    print "    se trouvent dans le fichier named.$domaine.ajouter\n\n";
+    print "4 - Ajoutez dans votre fichier named.$domaine.rev les lignes qui\n";
+    print "    se trouvent dans le fichier named.$domaine.rev.ajouter\n\n";
+}
+#on "libere" h ...
+untie %h;
+untie %classe;
+#au revoir
+print "Pensez ensuite à relancer les serveurs dhcp et dns si nécessaire !\n";
+
+
+
+

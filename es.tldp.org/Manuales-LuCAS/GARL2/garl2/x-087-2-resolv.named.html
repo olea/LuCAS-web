@@ -1,0 +1,2228 @@
+<HTML
+><HEAD
+><TITLE
+>Ejecución de named</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El servicio de nombres y su configuración"
+HREF="x-087-2-resolv.html"><LINK
+REL="PREVIOUS"
+TITLE="Cómo funciona el DNS"
+HREF="x-087-2-resolv.howdnsworks.html"><LINK
+REL="NEXT"
+TITLE="SLIP: IP por línea serie"
+HREF="x-087-2-slip.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-resolv.howdnsworks.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 6. El servicio de nombres y su configuración</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-slip.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-RESOLV.NAMED">6.3. Ejecución de named</H1
+><P
+><B
+CLASS="COMMAND"
+>named</B
+> (pronúnciese <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>n'eim-di:</I
+></SPAN
+>)
+es el servidor DNS en casi todas las máquinas Unix. Es un programa desarrollado
+originalmente para BSD. La versión 4 se ha usado mucho tiempo y venía
+con cualquier distribución GNU/Linux. La nueva edición, la versión 8,
+se ha introducido después y supone grandes cambios desde la
+anterior.<A
+NAME="X-087-2-FNDN01"
+HREF="#FTN.X-087-2-FNDN01"
+>[1]</A
+>
+Tiene muchas características nuevas, como el soporte de actualización
+dinámica del DNS, notificaciones de cambios, mejoras
+importantes de rendimiento y una nueva sintaxis de fichero de
+configuración. Para más detalle debemos comprobar la documentación
+que viene con el código fuente.</P
+><P
+>Esta sección requiere ideas acerca de cómo funciona el Sistema de
+Nombres y Dominios (DNS). Si lo que sigue a continuación le suena a
+chino, puede releer el capítulo <A
+HREF="x-087-2-resolv.howdnsworks.html"
+>Sección 6.2</A
+>,
+que le dará información acerca de cómo funciona básicamente el DNS.</P
+><P
+>  <B
+CLASS="COMMAND"
+>named</B
+> suele iniciarse
+al arrancar la máquina, y ejecutarse hasta que se apaga. Las versiones
+anteriores de BIND hasta la 8 obtienen la información que necesitan de
+un fichero llamado <TT
+CLASS="FILENAME"
+>/etc/named.boot</TT
+>. Las nuevas versiones
+usan el fichero <TT
+CLASS="FILENAME"
+>/etc/named.conf</TT
+>. Además,
+hay que configurar los ficheros de zona.</P
+><P
+>Para ejecutar <B
+CLASS="COMMAND"
+>named</B
+>, sólo tiene que teclear:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>/usr/sbin/named</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><P
+>El programa <B
+CLASS="COMMAND"
+>named</B
+> se iniciará y leerá el fichero
+<B
+CLASS="COMMAND"
+>named.boot</B
+> y los ficheros de zona que se especifiquen en él. Su
+número de proceso será anotado en ASCII en el fichero
+<TT
+CLASS="FILENAME"
+>/var/run/named.pid</TT
+>, recibirá ficheros de zona de los servidores
+principales si es necesario y comenzará a escuchar las peticiones de
+DNS por el puerto 53.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN5393">6.3.1. El fichero named.boot</H2
+><P
+> El
+fichero de configuración para los BIND anteriores a la 8
+tenían una estructura muy simple. En la versión 8
+el fichero se llama <TT
+CLASS="FILENAME"
+>/etc/named.conf</TT
+> y es
+totalmente distinto. Nos pararemos en ambas versiones
+y veremos las diferencias, y cómo convertir del formato
+antiguo al nuevo.</P
+><P
+>El fichero <B
+CLASS="COMMAND"
+>named.boot</B
+> suele ser muy pequeño y contiene punteros
+a ficheros con información de zonas y a otros servidores de
+nombres. Los comentarios en este fichero comienzan con un punto y coma
+y se extienden hasta el siguiente fin de línea. Antes de que veamos
+con más detalle el formato de este fichero, observaremos el ejemplo
+para la máquina <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+> dado
+en <A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.BOOT"
+>Ejemplo 6-8</A
+>.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-RESOLV.FIG.NAMED.BOOT"><P
+><B
+>Ejemplo 6-8. Fichero named.boot para vlager</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ;
+    ; Fichero /etc/named.boot para vlager.vbrew.com
+    ;
+    directory     /var/named
+    ;
+    ;             domain                   file
+    ;-----------------
+    caché         .                        named.ca
+    primary       vbrew.com                named.hosts
+    primary       0.0.127.in-addr.arpa     named.local
+    primary       16.172.in-addr.arpa      named.rev</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>Veamos cómo es el fichero. La palabra <SPAN
+CLASS="SYSTEMITEM"
+>directory</SPAN
+> indica a
+<B
+CLASS="COMMAND"
+>named</B
+> el directorio donde están los demás
+ficheros de configuración (los ficheros de zona).</P
+><P
+>Los comandos <SPAN
+CLASS="SYSTEMITEM"
+>caché</SPAN
+> y <SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+> sirven para cargar
+información en \prog{named}. Esta información se obtiene de los
+ficheros espeficados en el segundo argumento. Contienen
+representaciones textuales de los registros DNS, que veremos a continuación.</P
+><P
+>En este ejemplo, se configura <B
+CLASS="COMMAND"
+>named</B
+> como el servidor de nombres
+principal para tres dominios: los que se indican con la orden
+<SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+>. La primera línea dice que <B
+CLASS="COMMAND"
+>named</B
+> actúe como
+servidor principal para <SPAN
+CLASS="SYSTEMITEM"
+>vbrew.com</SPAN
+>, tomando la información de
+zona del fichero <B
+CLASS="COMMAND"
+>named.hosts</B
+>.</P
+><P
+>La entrada iniciada con la palabra <SPAN
+CLASS="SYSTEMITEM"
+>caché</SPAN
+> es muy especial y
+debe estar presente en casi todas las máquinas que ejecuten un
+servidor de nombres. Su función es doble: indica a
+<B
+CLASS="COMMAND"
+>named</B
+> que active su <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>caché</I
+></SPAN
+>, y también  que cargue la
+información de los servidores raíz del fichero indicado (en este caso,
+<TT
+CLASS="FILENAME"
+>named.ca</TT
+>). Regresaremos a este concepto más tarde.</P
+><P
+>A continuación se presenta una lista de las opciones más importantes
+que podemos poner en el fichero <TT
+CLASS="FILENAME"
+>named.boot</TT
+>&thinsp;:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>directory</SPAN
+></DT
+><DD
+><P
+> 
+Especifica un directorio donde estén los ficheros de
+zona. Pueden ponerse varios directorios repitiendo el comando
+<SPAN
+CLASS="SYSTEMITEM"
+>directory</SPAN
+>. De acuerdo con el estándar de sistema de ficheros
+para Linux, el directorio debería ser <TT
+CLASS="FILENAME"
+>/var/named</TT
+>.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+></DT
+><DD
+><P
+>&#13;
+Los argumentos que lleva son un nombre de dominio y un
+nombre de fichero, declarando el servidor local primario para
+el dominio de named. Como servidor primario, <B
+CLASS="COMMAND"
+>named</B
+> carga la
+información de zona del fichero dado.</P
+><P
+>Normalmente, siempre habrá por lo menos una orden
+<SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+> en cada fichero <TT
+CLASS="FILENAME"
+>named.boot</TT
+>, para traducción
+inversa del IP <TT
+CLASS="FILENAME"
+>127.0.0.1</TT
+>, que es el interfaz de
+bucle o «loopback», como ya sabemos.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>secondary</SPAN
+></DT
+><DD
+><P
+>&#13;
+Esta sentencia tiene como parámetros un nombre de
+dominio, una lista de direcciones y un nombre de
+fichero. Declara el servidor local como servidor maestro secundario
+para el dominio indicado.</P
+><P
+>Un servidor secundario mantiene también información
+«autorizada» como el primario, pero en lugar de obtenerla de un
+fichero, la intenta obtener de un servidor primario. Debe
+proporcionarse al menos una dirección IP de servidor primario en la lista
+de direcciones. El servidor local irá contactando con cada uno de
+ellos hasta que transfiera con éxito la base datos de zona, que será
+almacenada en el fichero de respaldo -copia de seguridad o backup- dado en
+el tercer argumento del comando. Si ninguno de los servidores primarios
+responde, se obtendrá la información de zona del fichero de respaldo.</P
+><P
+><B
+CLASS="COMMAND"
+>named</B
+> intentará entonces refrescar los datos
+almacenados regularmente. Esto se explica después cuando se vean las
+entradas SOA de los ficheros.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>caché</SPAN
+></DT
+><DD
+><P
+>&#13;
+Tiene como argumentos un dominio y un nombre de
+fichero. Contiene la lista de servidores de nombres raíz. Sólo
+se reconocerán registros NS y A. El argumento domain es normalmente
+el nombre del dominio raíz (.).</P
+><P
+>Esta información es fundamental: si la orden <SPAN
+CLASS="SYSTEMITEM"
+>caché</SPAN
+>
+no existiera, <B
+CLASS="COMMAND"
+>named</B
+> no haría una <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>caché</I
+></SPAN
+> local. Esto
+degradaría de forma importante el rendimiento e incrementaría
+la carga de la red si los nombres que se buscan no están en la red local.
+Además, <B
+CLASS="COMMAND"
+>named</B
+> tampoco será capaz de contactar con cualquier
+servidor de nombres raíz, y por ello, no podrá resolver ninguna
+dirección excepto aquellas para las que esté autorizado. Una
+excepción a esta regla, ocurre cuando se usan servidores redirigidos (con
+la opción <SPAN
+CLASS="SYSTEMITEM"
+>forwarders</SPAN
+> explicada a continuación).</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>forwarders</SPAN
+></DT
+><DD
+><P
+>Esta opción lleva una lista de direcciones como
+argumento. Las direcciones IP en la lista especifican servidores de
+nombres a los que <B
+CLASS="COMMAND"
+>named</B
+> puede preguntar si falla una traducción
+de un nombre mediante su <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>caché</I
+></SPAN
+> local. Se intenta preguntar a
+todos en orden hasta que uno de ellos responda.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>slave</SPAN
+></DT
+><DD
+><P
+>&#13;Esta opción hace que el servidor sea <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>esclavo</I
+></SPAN
+>. Esto
+significa que nunca realizará consultas recursivas, sino que las
+redirigirá a los servidores especificados con <SPAN
+CLASS="SYSTEMITEM"
+>forwarders</SPAN
+>.</P
+></DD
+></DL
+></DIV
+><P>
+
+Hay dos opciones adicionales que no vamos a describir:
+<SPAN
+CLASS="SYSTEMITEM"
+>sortlist</SPAN
+> y <SPAN
+CLASS="SYSTEMITEM"
+>domain</SPAN
+>. Además, hay dos directivas que
+pueden aparecer en los ficheros de zona. Son <SPAN
+CLASS="SYSTEMITEM"
+>&dollar;INCLUDE</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>&dollar;ORIGIN</SPAN
+>, que tampoco
+vamos a describir, ya que raramente se utilizan.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN5499">6.3.2. El fichero named.conf de BIND 8</H2
+><P
+>En la versión 8 de BIND se han incluido nuevas características, lo
+cual ha requerido una nueva sintaxis del fichero de configuración
+principal. El fichero <TT
+CLASS="FILENAME"
+>named.boot</TT
+> ha sido
+reemplazado por otro, de nombre <TT
+CLASS="FILENAME"
+>named.conf</TT
+>,
+que tiene una sintaxis similar a la del programa <B
+CLASS="COMMAND"
+>gated</B
+>
+y recuerda a la del lenguaje C.</P
+><P
+>La nueva sintaxis es más compleja, pero por suerte disponemos
+de una utilidad para convertir automáticamente los ficheros
+<TT
+CLASS="FILENAME"
+>named.boot</TT
+> de sintaxis antigua.
+
+Esta utilidad es un script de PERL llamado
+<B
+CLASS="COMMAND"
+>named-bootconf.pl</B
+>, que encontraremos en el código
+fuente de BIND 8; y lee un fichero en sintaxis antigua, devolviendo
+por su salida estándar el fichero en sintaxis nueva. Naturalmente,
+para utilizarlo es necesario tener correctamente instalado
+el intérprete de lenguaje PERL.</P
+><P
+>Al script lo invocaremos, por ejemplo, así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>cd /etc</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>named-bootconf.pl &lt;named.boot &gt;named.conf</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+El script produce entonces un fichero similar al que se muestra en
+<A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.CONF"
+>Ejemplo 6-9</A
+>, donde hemos eliminado
+algunos comentarios que produce adicionalmente el script.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-RESOLV.FIG.NAMED.CONF"><P
+><B
+>Ejemplo 6-9. Fichero named.conf para usar BIND 8 con vlager</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    // 
+    // /etc/named.boot para vlager.vbrew.com
+    options {
+    	directory "/var/named";
+    };
+    
+    zone "." {
+    	type hint;
+    	file "named.ca";
+    };
+    
+    zone "vbrew.com" {
+    	type master;
+    	file "named.hosts";
+    };
+    
+    zone "0.0.127.in-addr.arpa" {
+    	type master;
+    	file "named.local";
+    };
+    
+    zone "16.172.in-addr.arpa" {
+    	type master;
+    	file "named.rev";
+    };</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>Si observamos el ejemplo, veremos que cada línea de
+<TT
+CLASS="FILENAME"
+>named.boot</TT
+> ha sido convertida a un bloque
+en estilo C, encerrado entre llaves (signos { y }&thinsp;).</P
+><P
+>Los comentarios del fichero se escriben ahora en notación similar
+a C++, es decir, dos barras (signo //&thinsp;).</P
+><P
+>La sentencia <SPAN
+CLASS="SYSTEMITEM"
+>directory</SPAN
+> va ahora
+dentro del bloque <SPAN
+CLASS="SYSTEMITEM"
+>options</SPAN
+>, junto
+a otras posibles opciones globales de configuración.</P
+><P
+>Las sentencias <SPAN
+CLASS="SYSTEMITEM"
+>caché</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+> se convierten en
+bloques de zona, con sentencias <SPAN
+CLASS="SYSTEMITEM"
+>type</SPAN
+>
+específicas, de valor <SPAN
+CLASS="SYSTEMITEM"
+>hint</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>master</SPAN
+>, respectivamente.</P
+><P
+>Los ficheros de zona no necesitan modificarse, ya que su sintaxis
+sigue siendo la de antes.</P
+><P
+>La nueva sintaxis de configuración se ha pensado para poder
+incluir muchas más opciones de configuración, en las que no vamos
+a detenernos. Si deseamos conocerlas, la mejor fuente de información
+es la que viene con el paquete de fuentes de BIND 8.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN5534">6.3.3. Ficheros de base de datos DNS</H2
+><P
+> Los
+ficheros incluidos con <B
+CLASS="COMMAND"
+>named</B
+>, como <B
+CLASS="COMMAND"
+>named.hosts</B
+>,
+siempre tienen un dominio asociado a ellos llamado <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>origen</I
+></SPAN
+>.
+Este es el nombre de dominio especificado con los comandos <SPAN
+CLASS="SYSTEMITEM"
+>caché</SPAN
+> y <SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+>. En un fichero maestro,
+se pueden especificar nombres de máquinas y dominios relativos a este
+dominio. Un nombre dado en un fichero de configuración se considera
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>absoluto</I
+></SPAN
+> si termina con un punto. En caso contrario se considera
+relativo al origen. Al origen en sí mismo nos podemos referir con
+«<SPAN
+CLASS="SYSTEMITEM"
+>@</SPAN
+>».</P
+><P
+>&#13;
+ Todos
+los datos en un fichero principal se dividen en <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>registros
+de recursos</I
+></SPAN
+> o RRs. Son la unidad de información del DNS. Cada RR
+tiene un tipo. Los registros de tipo A, por ejemplo, asocian un nombre
+a una dirección IP. Los registros de tipo CNAME asocian un alias de
+una máquina con su nombre oficial. Como ejemplo, obsérvese <A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.HOSTS"
+>Ejemplo 6-11</A
+>, que muestra el fichero
+<TT
+CLASS="FILENAME"
+>named.hosts</TT
+> para nuestro sistema.</P
+><P
+>La representación de los RRs en los ficheros utiliza el siguiente formato:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    [<TT
+CLASS="REPLACEABLE"
+><I
+>domain</I
+></TT
+>] [<TT
+CLASS="REPLACEABLE"
+><I
+>ttl</I
+></TT
+>] [<TT
+CLASS="REPLACEABLE"
+><I
+>class</I
+></TT
+>] <TT
+CLASS="REPLACEABLE"
+><I
+>type</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>rdata</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Los campos se separan por espacios o tabulaciones. Una entrada puede
+continuarse en varias líneas si se abre un paréntesis antes del primer
+fin de línea y el último campo es seguido de un cierre de
+paréntesis. Cualquier cosa entre un punto y coma y el siguiente salto
+de línea será un comentario.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>domain</I
+></TT
+></DT
+><DD
+><P
+>Aquí va el nombre del dominio que se aplica al RR actual. Si
+no se da nombre de dominio, se asume el mismo que se puso para el RR anterior.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>ttl</I
+></TT
+></DT
+><DD
+><P
+>&#13;Con el fin de forzar al sistema DNS a descartar información
+después de cierto tiempo, cada RR lleva asociado un <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>tiempo de
+vida</I
+></SPAN
+> o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ttl</I
+></SPAN
+><A
+NAME="AEN5582"
+HREF="#FTN.AEN5582"
+>[2]</A
+>. El campo
+<TT
+CLASS="REPLACEABLE"
+><I
+>ttl</I
+></TT
+> especifica, en segundos,
+el tiempo de validez de la
+información desde que se obtiene del servidor. Es un número decimal de
+hasta ocho dígitos.</P
+><P
+>Si no se especifica ningún valor, tomará uno por defecto del
+campo <TT
+CLASS="REPLACEABLE"
+><I
+>minimum</I
+></TT
+> del registro SOA precedente.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>class</I
+></TT
+></DT
+><DD
+><P
+>Aquí se indica la clase de dirección: IN para direcciones IP,
+HS para objetos de la clase Hesiod. Trabajando con redes TCP/IP debe usarse
+siempre la clase IN.</P
+><P
+>Si no se especifica ningún valor, se toma el valor del RR anterior.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>type</I
+></TT
+></DT
+><DD
+><P
+>Describe el tipo de RR. Los tipos habituales son A, SOA, PTR y
+NS. En las siguientes secciones comentaremos estos tipos de RRs.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>rdata</I
+></TT
+></DT
+><DD
+><P
+>Contiene los datos asociados al RR. El formato depende del
+tipo, y se describirán más adelante.</P
+></DD
+></DL
+></DIV
+><P
+>A continuación se presenta una lista incompleta de RRs que se utilizan
+en los ficheros de DNS. Hay algunos más que no vamos a comentar. Son
+experimentales, y de escaso uso.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>SOA</I
+></SPAN
+></DT
+><DD
+><P
+>&#13;
+
+
+Describe una zona de autoridad (SOA significa «Start of Authority»,
+es decir, «Comienzo de Autoridad»). Señala que los registros
+siguientes contienen información «autorizada» para el dominio. Cada
+fichero incluido en la opción <SPAN
+CLASS="SYSTEMITEM"
+>primary</SPAN
+>
+debe tener un registro SOA para esta zona. Los datos asociados
+contienen los siguientes campos:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>origin</I
+></TT
+></DT
+><DD
+><P
+>Nombre canónico del servidor de nombres primario para este
+dominio. Se suele dar como nombre absoluto.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>contact</I
+></TT
+></DT
+><DD
+><P
+>Dirección de correo electrónico de la persona responsable de
+mantener el dominio, reemplazando el carácter «<SPAN
+CLASS="SYSTEMITEM"
+>@</SPAN
+>» por un
+punto. Por ejemplo, si el responsable de nuestra red fuese
+<SPAN
+CLASS="SYSTEMITEM"
+>janet</SPAN
+>, este campo contendrá:
+<SPAN
+CLASS="SYSTEMITEM"
+>janet.vbrew.com</SPAN
+>.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>serial</I
+></TT
+></DT
+><DD
+><P
+>Este es el número de versión del fichero de zona, expresado
+con un número decimal. Cuando se cambien datos del fichero, deberá
+incrementarse este número. Se suele expresar como número
+de versión en el día actual, es decir, en el formato
+AAAAMMDDnn siendo AAAA el año, MM el mes, DD el día y nn el número de
+revisión de ese día (01 si no hay más de una). Por ejemplo,
+2001072201 para el 22 de julio de 2001.</P
+><P
+>El número de versión es utilizado por los servidores
+secundarios para saber cuándo la información de una zona ha
+cambiado. Para mantenerse actualizados, los servidores secundarios
+piden cada cierto tiempo el registro SOA del primario, y comparan el
+número de versión con el que tienen en la <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>caché</I
+></SPAN
+>. Si ha cambiado,
+el servidor secundario pedirá de nuevo la información de zona al primario.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>refresh</I
+></TT
+></DT
+><DD
+><P
+>Especifica el intervalo, en segundos, que esperan los
+servidores secundarios entre peticiones de registros SOA a los
+primarios. De nuevo, se trata de un número decimal de hasta ocho
+dígitos.</P
+><P
+>Normalmente, la topología de la red no cambia mucho, con lo
+que este número será como poco de un día para grandes redes, y de mucho
+más tiempo para redes pequeñas.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>retry</I
+></TT
+></DT
+><DD
+><P
+>Este número determina los intervalos de tiempo entre
+reintentos de comunicación con servidores primarios cuando una
+petición de una zona falla. No debe ser pequeño ya que un fallo
+temporal del servidor primario hará que el secundario cargue
+inútilmente la red. Buenas elecciones son una hora o como poco media hora.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>expire</I
+></TT
+></DT
+><DD
+><P
+>Especifica el tiempo, en segundos, que tardará el servidor en
+descartar los datos de zona si no ha podido contactar con el servidor
+primario. Normalmente se pondrá un valor grande, de por lo menos una
+semana (604800 segundos), aunque si se incrementa a un mes o más será
+incluso más razonable.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>minimum</I
+></TT
+></DT
+><DD
+><P
+>Valor predeterminado para el valor del <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ttl</I
+></SPAN
+> en los
+registros de
+recursos que no lo especifiquen. Sirve para indicar a otros servidores de
+nombres que descarten el RR tras cierto tiempo. No tiene efecto, sin embargo,
+sobre el tiempo en el que un servidor secundario intenta actualizar la
+información de zona.</P
+><P
+>El valor de <TT
+CLASS="REPLACEABLE"
+><I
+>minimum</I
+></TT
+> debe ser grande, en especial para
+redes locales con topologías poco cambiantes. Una buena elección puede
+ser de una semana o un mes. En el caso de que haya registros RR que
+cambien con frecuencia, siempre podrá asignarle valores particulares
+de <TT
+CLASS="REPLACEABLE"
+><I
+>ttl</I
+></TT
+>.</P
+></DD
+></DL
+></DIV
+><P>&#13;</P
+></DD
+><DT
+>A</DT
+><DD
+><P
+>&#13;
+Asocia direcciones IP con nombres. El campo de datos contiene la
+dirección separando los octetos por puntos, como es habitual.</P
+><P
+>&#13;
+
+
+
+Para cada máquina sólo puede haber un registro A, que se considera
+nombre oficial o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>canónico</I
+></SPAN
+>. Cualquier otro nombre será un alias
+y debe ser incluido con registros CNAME.</P
+></DD
+><DT
+>NS</DT
+><DD
+><P
+>Apunta a un servidor de nombres maestro de una zona subordinada. El
+campo de datos contiene el nombre del servidor. Para
+traducir ese nombre debe proporcionarse un registro A adicional, que
+se conoce como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>glue</I
+></SPAN
+>, al proporcionar la dirección
+IP del servidor.</P
+><P
+>Hay que incluir registros NS en dos casos: primero, cuando delegamos
+la autoridad a una zona subordinada. Segundo, en la base de datos del
+servidor principal de cualquier zona. Los servidores NS especificados
+en el fichero de zona deben coincidir exactamente con los que
+especifica la zona padre que delega.</P
+><P
+>El registro NS especifica el nombre del servidor de nombres primario
+y los secundarios para una zona. Estos nombres deben poderse resolver
+para poderse usar. A veces los servidores pertenecen al mismo dominio
+que sirven, lo que ocasiona un problema de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>el huevo o la
+gallina</I
+></SPAN
+>: no podemos obtener el servidor de nombres hasta
+que accedamos al dominio, pero para acceder el dominio hay que conocer
+la IP del servidor de nombres... Para resolver este problema se crean
+registros A directamente en la zona padre, para resolver esas
+direcciones. Estos son los que ya comentamos antes, los
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>registros glue</I
+></SPAN
+> (podríamos traducirlos como
+registros-pegamento), puesto que
+unen o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>pegan</I
+></SPAN
+> la zona hija a la zona padre.</P
+></DD
+><DT
+>CNAME</DT
+><DD
+><P
+>Asocia un alias con su <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>nombre canónico</I
+></SPAN
+>. El nombre canónico se
+determina con un registro A. Los alias son indicados mediante
+registros CNAME.</P
+></DD
+><DT
+>PTR</DT
+><DD
+><P
+>&#13;Se usa para asociar nombres del dominio
+<SPAN
+CLASS="SYSTEMITEM"
+>in-addr.arpa</SPAN
+> con sus
+nombres normales. Se usa para obtener nombres a partir de
+direcciones IP (traducción inversa). El nombre de la máquina debe
+ser el canónico.</P
+></DD
+><DT
+>MX</DT
+><DD
+><P
+>&#13;Especifica el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>servidor de correo</I
+></SPAN
+> para un dominio. En la
+sección <A
+HREF="x-087-2-mail.routing.html#X-087-2-MAIL.ROUTING.INTERNET"
+>Sección 17.4.1</A
+> se explica
+por qué son necesarios estos servidores. La sintaxis del registro MX
+es:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    [<TT
+CLASS="REPLACEABLE"
+><I
+>domain</I
+></TT
+>] [<TT
+CLASS="REPLACEABLE"
+><I
+>ttl</I
+></TT
+>] [<TT
+CLASS="REPLACEABLE"
+><I
+>class</I
+></TT
+>] MX <TT
+CLASS="REPLACEABLE"
+><I
+>preference</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>host</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>host</I
+></TT
+> nombra el servidor de correo para el
+dominio <TT
+CLASS="REPLACEABLE"
+><I
+>domain</I
+></TT
+>. Cada servidor tiene asociado un
+valor de
+<TT
+CLASS="REPLACEABLE"
+><I
+>preference</I
+></TT
+> (preferencia). Cuando un agente
+de transferencia de mensajes quiere entregar correo al dominio, intentará
+conectarse a esos servidores hasta conseguir entregar el mensaje;
+empezando por el que tenga menor valor de preferencia.</P
+></DD
+><DT
+>HINFO</DT
+><DD
+><P
+>Este registro da información sobre el hardware y el software de la
+máquina. Su sintaxis es:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    [<TT
+CLASS="REPLACEABLE"
+><I
+>domain</I
+></TT
+>] [<TT
+CLASS="REPLACEABLE"
+><I
+>ttl</I
+></TT
+>] [<TT
+CLASS="REPLACEABLE"
+><I
+>class</I
+></TT
+>] HINFO <TT
+CLASS="REPLACEABLE"
+><I
+>hardware software</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El campo <TT
+CLASS="REPLACEABLE"
+><I
+>hardware</I
+></TT
+> identifica el hardware
+usado en este nodo. Para indicarlo, se siguen ciertas convenciones,
+especificadas en el RFC 1700. Si el campo contiene blancos, debe
+encerrarse entre comillas dobles. El campo <TT
+CLASS="REPLACEABLE"
+><I
+>software</I
+></TT
+>
+indica el sistema operativo que ejecuta el nodo, que también está normalizado.&#13;</P
+><P
+>Por ejemplo, un registro <TT
+CLASS="LITERAL"
+>HINFO</TT
+> para describir un
+sistema Intel ejecutando Linux podría ser:
+
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    tao	 36500  IN  HINFO  IBM-PC  LINUX2.2</PRE
+></TD
+></TR
+></TABLE
+>
+
+y para el caso de que se tratara de un sistema basado en Motorola
+68000:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    cevad 36500 IN  HINFO  ATARI-104ST LINUX2.0
+    jedd  36500 IN  HINFO  AMIGA-3000  LINUX2.0</PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-RESOLV.NAMED-CACHINGONLY">6.3.4. Configuración de named sólo para caché</H2
+><P
+>Hay una clase especial de configuración de <TT
+CLASS="FILENAME"
+>named</TT
+>,
+que nos servirá para introducirnos en su funcionamiento. Se llama
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>sólo-caché</I
+></SPAN
+>. No sirve ningún dominio propio, pero
+actúa como repetidor de otros DNS para nuestra red local. Cuando
+se repitan peticiones a un mismo nodo, el servidor responderá
+con la información que ya tiene, evitando peticiones repetidas
+que ocupen ancho de banda en Internet. Esto es especialmente útil
+cuando contamos con una conexión de banda estrecha, como las
+que veremos en <A
+HREF="x-087-2-slip.html"
+>Capítulo 7</A
+> y <A
+HREF="x-087-2-ppp.html"
+>Capítulo 8</A
+>.</P
+><P
+>El fichero <TT
+CLASS="FILENAME"
+>named.boot</TT
+> para un servidor sólo de
+caché, es similar a éste:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ; named.boot para servidor de sólo caché
+    directory                            /var/named
+    primary       0.0.127.in-addr.arpa   named.local ; red local
+    caché         .                      named.ca    ; servidores raiz</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Además de este fichero, hay que tener el correspondiente
+<TT
+CLASS="FILENAME"
+>named.ca</TT
+>, con una lista válida de servidores
+raíz. Debemos copiar y usar <A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.CACHE"
+>Ejemplo 6-10</A
+> para esto. No se requieren
+otros ficheros para una configuración de sólo caché.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN5770">6.3.5. Cómo hacer los ficheros maestros</H2
+><P
+><A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.CACHE"
+>Ejemplo 6-10</A
+>,
+<A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.HOSTS"
+>Ejemplo 6-11</A
+>,
+<A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.LOCAL"
+>Ejemplo 6-12</A
+>, y
+<A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.REV"
+>Ejemplo 6-13</A
+> muestran ficheros de
+ejemplo para un servidor de nombres de la Cervecera Virtual,
+localizada en <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>. Debido
+a la naturaleza de la red propuesta (una simple LAN), el ejemplo
+es muy simple también.</P
+><P
+>&#13;
+
+El fichero de caché <TT
+CLASS="FILENAME"
+>named.ca</TT
+> mostrado en
+<A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.CACHE"
+>Ejemplo 6-10</A
+> contiene ejemplos
+de registros de servidores raíz. Un fichero típico de caché contiene
+como una docena de servidores de esta clase. Se puede obtener una
+lista de los servidores raíz usando la utilidad 
+The <TT
+CLASS="FILENAME"
+>named.ca</TT
+> caché file shown in
+<B
+CLASS="COMMAND"
+>nslookup</B
+> mostrada en la siguiente sección.
+<A
+NAME="X-087-2-FNDN03"
+HREF="#FTN.X-087-2-FNDN03"
+>[3]</A
+>&#13;</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-RESOLV.FIG.NAMED.CACHE"><P
+><B
+>Ejemplo 6-10. El fichero named.ca</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ;
+    ; /var/named/named.ca          Fichero de caché para la cervecera.
+    ;                Al no estar en Internet no necesitamos servidores
+    ;                raiz. Si no fuera asi, descomentense.
+    ;
+    ;.                        3600000  IN  NS    A.ROOT-SERVERS.NET.
+    ;A.ROOT-SERVERS.NET.      3600000      A     198.41.0.4
+    ;.                        3600000      NS    B.ROOT-SERVERS.NET.
+    ;B.ROOT-SERVERS.NET.      3600000      A     128.9.0.107
+    ;.                        3600000      NS    C.ROOT-SERVERS.NET.
+    ;C.ROOT-SERVERS.NET.      3600000      A     192.33.4.12
+    ;.                        3600000      NS    D.ROOT-SERVERS.NET.
+    ;D.ROOT-SERVERS.NET.      3600000      A     128.8.10.90
+    ;.                        3600000      NS    E.ROOT-SERVERS.NET.
+    ;E.ROOT-SERVERS.NET.      3600000      A     192.203.230.10
+    ;.                        3600000      NS    F.ROOT-SERVERS.NET.
+    ;F.ROOT-SERVERS.NET.      3600000      A     192.5.5.241
+    ;.                        3600000      NS    G.ROOT-SERVERS.NET.
+    ;G.ROOT-SERVERS.NET.      3600000      A     192.112.36.4
+    ;.                        3600000      NS    H.ROOT-SERVERS.NET.
+    ;H.ROOT-SERVERS.NET.      3600000      A     128.63.2.53
+    ;.                        3600000      NS    I.ROOT-SERVERS.NET.
+    ;I.ROOT-SERVERS.NET.      3600000      A     192.36.148.17
+    ;.                        3600000      NS    J.ROOT-SERVERS.NET.
+    ;J.ROOT-SERVERS.NET.      3600000      A     198.41.0.10
+    ;.                        3600000      NS    K.ROOT-SERVERS.NET.
+    ;K.ROOT-SERVERS.NET.      3600000      A     193.0.14.129 
+    ;.                        3600000      NS    L.ROOT-SERVERS.NET.
+    ;L.ROOT-SERVERS.NET.      3600000      A     198.32.64.12
+    ;.                        3600000      NS    M.ROOT-SERVERS.NET.
+    ;M.ROOT-SERVERS.NET.      3600000      A     202.12.27.33
+    ;</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-RESOLV.FIG.NAMED.HOSTS"><P
+><B
+>Ejemplo 6-11. El Fichero named.hosts</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ;
+    ; /var/named/named.hosts       Nodos de la cervecera
+    ;                               El origen es vbrew.com
+    ;
+    @                IN  SOA   vlager.vbrew.com. janet.vbrew.com. (
+                               2000012601 ; serie
+                               86400      ; refresco: uno al dia
+                               3600       ; reintento: una hora
+                               3600000    ; caducidad:  42 dias
+                               604800     ; minimo: 1 semana
+                               )
+                     IN  NS    vlager.vbrew.com.
+    ;
+    ; Correo local se entrega a vlager
+                     IN  MX    10 vlager
+    ;
+    ; direccion `loopback'
+    localhost.       IN  A     127.0.0.1
+    ;
+    ; La ethernet de la cervecera virtual
+    vlager           IN  A     172.16.1.1
+    vlager-if1       IN  CNAME vlager
+    ; vlager es tambien servidor de noticias
+    news             IN  CNAME vlager
+    vstout           IN  A     172.16.1.2
+    vale             IN  A     172.16.1.3
+    ;
+    ; Ethernet de la vinatera virtual
+    vlager-if2       IN  A     172.16.2.1
+    vbardolino       IN  A     172.16.2.2
+    vchianti         IN  A     172.16.2.3
+    vbeaujolais      IN  A     172.16.2.4
+    ;
+    ; Ethernet (subsidiaria) de los Espiritus Virtuales
+    vbourbon         IN  A     172.16.3.1
+    vbourbon-if1     IN  CNAME vbourbon</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-RESOLV.FIG.NAMED.LOCAL"><P
+><B
+>Ejemplo 6-12. Fichero named.local</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ;
+    ; /var/named/named.local      Resolucion inversa de 127.0.0
+    ;                             El origen es 0.0.127.in-addr.arpa.
+    ;
+    @             IN  SOA   vlager.vbrew.com. joe.vbrew.com. (
+                            1          ; serie
+                            360000     ; refresco: 100 horas
+                            3600       ; reintento:   una hora
+                            3600000    ; caducidad:  42 dias
+                            360000     ; minimo: 100 horas
+                            )
+                  IN  NS    vlager.vbrew.com.
+    1             IN  PTR   localhost.</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-RESOLV.FIG.NAMED.REV"><P
+><B
+>Ejemplo 6-13. Fichero named.rev</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ;
+    ; /var/named/named.rev         Resolucion inversa de nuestras IPs
+    ;                               El origen es 16.172.in-addr.arpa.
+    ;
+    @             IN  SOA   vlager.vbrew.com. joe.vbrew.com. (
+                              16         ; serie
+                              86400      ; refresco: una vez diaria
+                              3600       ; reintento: una hora
+                              3600000    ; caducidad:  42 dias
+                              604800     ; minimo: 1 semana
+                              )
+                  IN  NS    vlager.vbrew.com.
+    ; cervecera
+    1.1           IN  PTR   vlager.vbrew.com.
+    2.1           IN  PTR   vstout.vbrew.com.
+    3.1           IN  PTR   vale.vbrew.com.
+    ; vinatera
+    1.2           IN  PTR   vlager-if2.vbrew.com.
+    2.2           IN  PTR   vbardolino.vbrew.com.
+    3.2           IN  PTR   vchianti.vbrew.com.
+    4.2           IN  PTR   vbeaujolais.vbrew.com.</PRE
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-RESOLV.NSLOOKUP">6.3.6. Cómo verificar la configuración</H2
+><P
+><B
+CLASS="COMMAND"
+>nslookup</B
+> es una estupenda utilidad para comprobar
+el funcionamiento de un servidor de nombres. Se puede usar
+interactivamente o pasándole la pregunta por la línea de órdenes. En
+este último caso podemos invocar la orden así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>nslookup</B
+></TT
+>
+    <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+><TT
+CLASS="LITERAL"
+>nombre-de-host</TT
+></I
+></SPAN
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+><B
+CLASS="COMMAND"
+>nslookup</B
+> envía sus peticiones al servidor citado en
+<TT
+CLASS="FILENAME"
+>resolv.conf</TT
+>. Si este fichero tiene más de un
+servidor, <B
+CLASS="COMMAND"
+>nslookup</B
+> eligirá uno al azar.</P
+><P
+>El modo interactivo es mucho más interesante. No sólo sirve para
+buscar la IP de un nodo, sino que también podemos interrogar acerca de
+cualquier tipo de registro DNS y transferirnos toda la información de
+una zona si queremos.</P
+><P
+>Si se invoca sin argumentos, <B
+CLASS="COMMAND"
+>nslookup</B
+> muestra el
+nombre del servidor elegido y entra en modo interactivo. En el
+prompt <B
+CLASS="COMMAND"
+>&gt;</B
+> podemos escribir cualquier nombre de
+dominio. Al principio preguntará sólo por registros A, es decir,
+obtención de la IP asociada.</P
+><P
+>Podemos elegir un tipo de registro diferente con la orden:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>set type=</B
+></TT
+><TT
+CLASS="LITERAL"
+>tipo</TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>donde <TT
+CLASS="REPLACEABLE"
+><I
+>tipo</I
+></TT
+> es uno de los tipos de RR
+descritos antes, o ANY.</P
+><P
+>Veamos una posible sesión de <B
+CLASS="COMMAND"
+>nslookup</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>nslookup</B
+></TT
+>
+    Default Server:  tao.linux.org.au
+    Address:  203.41.101.121
+    
+    &#62; <TT
+CLASS="USERINPUT"
+><B
+>metalab.unc.edu</B
+></TT
+>
+    Server:  tao.linux.org.au
+    Address:  203.41.101.121
+    
+    Name:    metalab.unc.edu
+    Address:  152.2.254.81
+    
+    &#62;</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La salida muestra el servidor DNS interrogado y el resultado obtenido.</P
+><P
+>Si preguntamos por algo que no tiene IP asociada pero sí otros
+registros de otra clase, el programa nos devolverá una advertencia del
+tipo <TT
+CLASS="LITERAL"
+>No type A records found</TT
+>. Sin embargo, podemos
+usar el citado comando <B
+CLASS="COMMAND"
+>set type</B
+> para buscar
+registros de otras clases. Por ejemplo, el registro SOA de un dominio
+puede ser pedido así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    &#62; <TT
+CLASS="USERINPUT"
+><B
+>unc.edu</B
+></TT
+>
+    Server:  tao.linux.org.au
+    Address:  203.41.101.121
+    
+    *** No address (A) records available for unc.edu
+    &#62; <TT
+CLASS="USERINPUT"
+><B
+>set type=SOA</B
+></TT
+>
+    &#62; <TT
+CLASS="USERINPUT"
+><B
+>unc.edu</B
+></TT
+>
+    Server:  tao.linux.org.au
+    Address:  203.41.101.121
+    
+    unc.edu
+            origin = ns.unc.edu
+            mail addr = host-reg.ns.unc.edu
+            serial = 1998111011
+            refresh = 14400 (4H)
+            retry   = 3600 (1H)
+            expire  = 1209600 (2W)
+            minimum ttl = 86400 (1D)
+    unc.edu name server = ns2.unc.edu
+    unc.edu name server = ncnoc.ncren.net
+    unc.edu name server = ns.unc.edu
+    ns2.unc.edu     internet address = 152.2.253.100
+    ncnoc.ncren.net internet address = 192.101.21.1
+    ncnoc.ncren.net internet address = 128.109.193.1
+    ns.unc.edu      internet address = 152.2.21.1</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>De manera parecida, para preguntar por registros MX haremos:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    &#62; <TT
+CLASS="USERINPUT"
+><B
+>set type=MX</B
+></TT
+>
+    &#62; <TT
+CLASS="USERINPUT"
+><B
+>unc.edu</B
+></TT
+>
+    Server:  tao.linux.org.au
+    Address:  203.41.101.121
+    
+    unc.edu preference = 0, mail exchanger = conga.oit.unc.edu
+    unc.edu preference = 10, mail exchanger = imsety.oit.unc.edu
+    unc.edu name server = ns.unc.edu
+    unc.edu name server = ns2.unc.edu
+    unc.edu name server = ncnoc.ncren.net
+    conga.oit.unc.edu       internet address = 152.2.22.21
+    imsety.oit.unc.edu      internet address = 152.2.21.99
+    ns.unc.edu      internet address = 152.2.21.1
+    ns2.unc.edu     internet address = 152.2.253.100
+    ncnoc.ncren.net internet address = 192.101.21.1
+    ncnoc.ncren.net internet address = 128.109.193.1</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Con el tipo ANY obtendremos todos los registros existentes asociados
+al nombre dado.</P
+><P
+>&#13;
+Una aplicación práctica de <B
+CLASS="COMMAND"
+>nslookup</B
+>, para depurar
+un servidor, es obtener la lista de servidores raíz. Para ello no hay
+más que pedir los NS del registro raíz (.):
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    &#62; <TT
+CLASS="USERINPUT"
+><B
+>set type=NS</B
+></TT
+>
+    &#62; <TT
+CLASS="USERINPUT"
+><B
+>.</B
+></TT
+>
+    Server:  tao.linux.org.au
+    Address:  203.41.101.121
+    
+    Non-authoritative answer:
+    (root)  name server = A.ROOT-SERVERS.NET
+    (root)  name server = H.ROOT-SERVERS.NET
+    (root)  name server = B.ROOT-SERVERS.NET
+    (root)  name server = C.ROOT-SERVERS.NET
+    (root)  name server = D.ROOT-SERVERS.NET
+    (root)  name server = E.ROOT-SERVERS.NET
+    (root)  name server = I.ROOT-SERVERS.NET
+    (root)  name server = F.ROOT-SERVERS.NET
+    (root)  name server = G.ROOT-SERVERS.NET
+    (root)  name server = J.ROOT-SERVERS.NET
+    (root)  name server = K.ROOT-SERVERS.NET
+    (root)  name server = L.ROOT-SERVERS.NET
+    (root)  name server = M.ROOT-SERVERS.NET
+    
+    Authoritative answers can be found from:
+    A.ROOT-SERVERS.NET      internet address = 198.41.0.4
+    H.ROOT-SERVERS.NET      internet address = 128.63.2.53
+    B.ROOT-SERVERS.NET      internet address = 128.9.0.107
+    C.ROOT-SERVERS.NET      internet address = 192.33.4.12
+    D.ROOT-SERVERS.NET      internet address = 128.8.10.90
+    E.ROOT-SERVERS.NET      internet address = 192.203.230.10
+    I.ROOT-SERVERS.NET      internet address = 192.36.148.17
+    F.ROOT-SERVERS.NET      internet address = 192.5.5.241
+    G.ROOT-SERVERS.NET      internet address = 192.112.36.4
+    J.ROOT-SERVERS.NET      internet address = 198.41.0.10
+    K.ROOT-SERVERS.NET      internet address = 193.0.14.129
+    L.ROOT-SERVERS.NET      internet address = 198.32.64.12
+    M.ROOT-SERVERS.NET      internet address = 202.12.27.33</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Para ver el conjunto completo de comandos, podemos usar
+<B
+CLASS="COMMAND"
+>help</B
+> dentro de <B
+CLASS="COMMAND"
+>nslookup</B
+>.</P
+><P
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN5878">6.3.7. Otras Utilidades Interesantes</H2
+><P
+>Hay algunas utilidades que pueden ayudarnos en nuestro trabajo como
+administradores de BIND. Vamos va ver algunas de ellas. Para cualquier
+detalle adicional se recomienda consultar la documentación específica
+de dichas utilidades.</P
+><P
+>   <B
+CLASS="COMMAND"
+>hostcvt</B
+> le ayuda 
+con la configuración inicial de  BIND convirtiendo su fichero
+<TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> en ficheros maestros para
+<B
+CLASS="COMMAND"
+>named</B
+>. Genera tanto las entradas del mapeado directo (A) como
+el mapeado inverso (PTR), y toma en cuenta los alias. Por supuesto,
+no hará todo el trabajo por usted, así que todavía tendrá que ajustar los
+palores de temporización el el registro SOA, por ejemplo, a añadir registros MX.
+También, le puede ayudar a ahorrarse algunas aspirinas. <B
+CLASS="COMMAND"
+>hostcvt</B
+>
+es parte de las fuentes BIND, pero puede encontrase como 
+un paquete individual en unos pocos servidores FTP. </P
+><P
+>  
+ Tras la puesta en marcha del
+servidor, normalmente habrá que probarla. Algunas utilidades facilitan
+la vida para esto. Una de ellas es <B
+CLASS="COMMAND"
+>dnswalk</B
+>, que
+está basada en Perl. La segunda es <B
+CLASS="COMMAND"
+>nslint</B
+>. Ambas
+recorren la base de datos DNS buscando errores habituales y
+verificando que la información que encuentran es consistente. Otras
+dos utilidades interesantes son <B
+CLASS="COMMAND"
+>host</B
+> y
+<B
+CLASS="COMMAND"
+>dig</B
+>, que vienen con el paquete BIND y pueden usarse
+para una inspección manual del las bases de datos.</P
+><P
+>Estas utilidades suelen venir empaquetadas.
+<B
+CLASS="COMMAND"
+>dnswalk</B
+> y <B
+CLASS="COMMAND"
+>nslint</B
+> están
+disponibles en fuentes en <SPAN
+CLASS="SYSTEMITEM"
+>http://www.visi.com/~barr/dnswalk/</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>ftp://ftp.ee.lbl.gov/nslint.tar.Z</SPAN
+>. En cuanto a
+<B
+CLASS="COMMAND"
+>host</B
+> y <B
+CLASS="COMMAND"
+>dig</B
+>, el código fuente se
+encuentra en <SPAN
+CLASS="SYSTEMITEM"
+>ftp://ftp.nikhef.nl/pub/network/</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>ftp://ftp.is.co.za/networking/ip/dns/dig/</SPAN
+>.</P
+><P
+>&#13;
+
+
+
+
+
+&#13;</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNDN01"
+HREF="x-087-2-resolv.named.html#X-087-2-FNDN01"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>BIND 4.9 fue desarrollado por Paul Vixie,
+<SPAN
+CLASS="SYSTEMITEM"
+>paul@vix.com</SPAN
+>,
+aunque actualmente lo mantiene el Consorcio de Software para Internet,
+en <SPAN
+CLASS="SYSTEMITEM"
+>bind-bugs@isc.org</SPAN
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN5582"
+HREF="x-087-2-resolv.named.html#AEN5582"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>N. del T.: Time to Live</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNDN03"
+HREF="x-087-2-resolv.named.html#X-087-2-FNDN03"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Nótese que no podemos preguntar esto a nuestro servidor de nombres
+si no tenemos entradas de servidores raíz instaladas. Para evitar
+esto, podemos usar <B
+CLASS="COMMAND"
+>nslookup</B
+> para interrogar a un
+servidor de nombres externo, o usar como fichero de caché el mostrado
+en <A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.FIG.NAMED.CACHE"
+>Ejemplo 6-10</A
+> y de ahí
+obtener una lista completa.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-resolv.howdnsworks.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-slip.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Cómo funciona el DNS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-resolv.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>SLIP: IP por línea serie</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

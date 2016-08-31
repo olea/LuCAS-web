@@ -1,0 +1,1077 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML lang="es">
+<HEAD><META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <TITLE>LF vol. 2 Gestión y Administración de Redes con Linux</TITLE>
+ <META name="Author" CONTENT="David Guerrero">
+ <META name="Keywords" CONTENT="linux administration router hub network management">
+ <META name="Description" CONTENT="Article of Network Management under Linux">
+ <META name="Copyright" CONTENT="&copy; 1998 David Guerrero">
+ <META name="Translator" CONTENT="">
+ <META name="Date" CONTENT="1998-02-03T00:00:00Z">
+
+
+</HEAD>
+
+  <BODY bgcolor="#FFFFFF" text="#000000" link="#ff0033" vlink="#FF3333">
+
+    <MAP name="navegator">
+     <AREA shape="rect" coords="0, 0, 65, 28" alt="Ir al Hogar" href="../">
+      <AREA shape="rect" coords="66, 0, 124, 28" alt="Ver &Iacute;ndice" href="../indice.html">
+      <AREA shape="rect" coords="125, 0, 193, 28" alt="Buscar" href="../search.html">
+      <AREA shape="rect" coords="194, 0, 260, 28" alt="Enlaces" href="../links.html">
+    </MAP>
+
+
+
+    <TABLE border="0" width="100%" cellspacing="0" cellpadding="0">
+      
+      <THEAD>
+	<TR align="center">
+	  <TD colspan="2"><IMG src="../../common/January1998/border-short.jpg" alt="[LinuxFocus Image]" width="407" height="88"></TD>
+	</TR>
+
+	<TR align="center">
+	  <TD colspan="2" bgcolor="#660033"><IMG src="../../common/January1998/Navegator-bar.gif" ismap usemap="#navegator" border="0" width="351" height="28" alt="[Navegation Bar]"></TD>
+	</TR>
+	
+	<TR align="center">
+	  <TD colspan="2">     
+	    <TABLE  border="0" width="75%" cellspacing="0" cellpadding="5">
+	      <TR bgcolor="#000000">
+		<TD align="center">
+		  <A href="../News/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Noticias</B></FONT></A>
+		  <A href="../Archives/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Archivos</B></FONT></A>
+		  <A href="../Companies/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Compa&ntilde;&iacute;as</B></FONT></A>
+		  <A href="../Tips/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Consejos&nbsp;</B></FONT></A> 
+		  
+		</TD>
+	      </TR>
+	      
+	      <TR>
+		<!--   Here goes the Title of the article, authors name and abstract -->
+		<TD align="center">
+		  <FONT face="Helvetica,Arial" color="#660066">
+		  <H3>Administración y Mantenimiento<BR>
+		    de Redes con Linux: <EM>Algunas herramientas sencillas y prácticas para
+		      administrar las "omnipresentes" redes de ordenadores</EM></H3></FONT>
+		  <FONT face="Helvetica,Arial" color="#000000"><H3>por <A href="mailto:david@mec.es"><FONT color="#000000">David Guerrero</FONT></A></H3></FONT>
+		  
+                  <HR size="2" noshade>
+		</TD>
+	      </TR>
+	      
+	    </TABLE>
+	    
+	  </TD>
+	</TR>
+	
+      </THEAD>
+
+
+
+      <TBODY>
+	
+	<TR>
+	  <TD valign="top" align="center">
+
+	    <H4><A href="#introduction">Introducción</A></H4>
+	    <H4><A href="#snmp">¿Qué es SNMP?</A></H4>
+	    <H4><A href="#security">La cuestión de la Seguridad</A></H4>
+	    <H4><A href="#mib">¿Qué es el MIB?</A></H4>
+	    <H4><A href="#future">¿Cuál es el futuro de SNMP?</A></H4>
+	    <H4><A href="#snmpl">SNMP en Linux</A></H4>
+	    <H4><A href="#mrtg">MRTG: Multi Router Traffic Grapher</a></H4>
+	    <H4><A href="#other">Otros Programas</A></H4>
+	    <H4><A href="#conclusions">Conclusiones</A></H4>
+
+
+
+	  </TD>
+	  
+	  <TD align="center">
+	    <TABLE border="0" width="80%" cellspacing="0" cellpadding="0">
+	      <TR>
+		<TD>
+		  
+		  <P ALIGN=RIGHT><I>Este art&iacute;culo apareci&oacute; por primera vez
+		      en  Linux Journal.<BR>
+		      Lo hemos reimpreso y traducido con permiso del autor</I></P>
+		  
+		  
+		  <A name="introduction"></A>
+		  <H3><FONT face="Helvetica,Arial" color="#660033">Introducción</FONT></H3>
+
+    <p>
+      En el mundo  actual, en el que la  informática gira  en torno al
+      concepto de red, el  trabajo de los administradores de  sistemas
+      es muy complejo.  Su misión  consiste en mantener en funcionamiento
+      recursos    tales como   encaminadores (routers), concentradores
+      (hubs),  servidores,   así como   cada dispositivo   crítico que
+      conforma la red.</p>
+    <p>
+      Hay  gran cantidad  de  motivos por los cuales  un administrador
+      necesita monitorizar entre otros : la
+      utilización  del ancho de banda, el  estado de funcionamiento de
+      los   enlaces, la detección de cuellos  de botella, detectar y
+      solventar problemas con el  cableado, administrar la información
+      de encaminamiento entre máquinas,  etc.  La monitorización de la
+      red es también un buen punto desde el que comenzar el estudio de
+      los problemas de seguridad.</p>
+    <p>
+      En   muchos casos, la   red   de una organización está  enlazada
+      mediante costosos enlaces a redes de área extensa (WAN) o con la
+      Internet, y cuyos costes dependen del volumen de tráfico. Es muy
+      importante mantener   un registro  estadístico  del tráfico  que
+      circula por estos enlaces. Ésta  situación es bastante común  en
+      Europa, donde los enlaces X.25 son  todavía de uso corriente. La
+      tarificación  de este tipo  de líneas se  realiza en función del
+      número de paquetes enviados y recibidos.</p>
+    <p>
+      Otros tipos  de enlaces, como los punto   a punto (Frame relay),
+      son de   tarifa plana.  En éstos  la  compañía  telefónica ha de
+      garantizar   un  ancho de    banda, el   cual  es  importante
+      monitorizar.</p>
+    <p>
+      En la última parte de este artículo, se presenta una herramienta
+      que permite hacer  un  seguimiento  gráfico del tráfico   en los
+      encaminadores   (router).  Ésta es  fácilmente configurable para
+      poder monitorizar otras clases de información de la red.</p>
+
+
+	     <A name="snmp"></A>
+           <H3><FONT face="Helvetica,Arial" color="#660033">¿ Qué es SNMP ?</FONT></H3>
+
+
+    La   respuesta  a todas   las necesidades  antes  expuestas, es el
+    protocolo llamado   Simple Network  Management  Protocol   (SNMP).
+    Diseñado en los años 80, su principal objetivo  fue el integrar la
+    gestión de diferentes tipos de redes mediante un diseño sencillo y
+    que produjera poca sobrecarga en la red.
+    <p>
+      SNMP opera en el nivel de aplicación, utilizando el protocolo de
+      transporte TCP/IP, por   lo que ignora  los aspectos específicos
+      del hardware sobre el que funciona.  La gestión  se lleva a cabo
+      al nivel de IP, por lo que se  pueden controlar dispositivos que
+      estén conectados en cualquier red accesible desde la Internet, y
+      no únicamente  aquellos localizados   en  la propia  red  local.
+      Evidentemente, si alguno  de los  dispositivos de encaminamiento
+      con el dispositivo remoto a controlar no funciona correctamente,
+      no será posible su monitorización ni reconfiguración.</p>
+    <p>
+      El  protocolo SNMP está  compuesto por  dos elementos: el agente
+      (agent),   y    el  gestor (manager).   Es     una  arquitectura
+      cliente-servidor, en  la  cual el agente  desempeña  el papel de
+      servidor y el gestor hace el de cliente.</p>
+    <p>
+      El agente es un programa que ha de ejecutase en cada nodo de red
+      que se  desea  gestionar o monitorizar.   Ofrece  un interfaz de
+      todos los elementos que se pueden configurar. Estos elementos se
+      almacenan en  unas  estructuras  de datos   llamadas "Management
+      Information Base" (MIB), se  explicarán más adelante. Representa
+      la parte del servidor, en la medida que tiene la información que
+      se desea gestionar y espera comandos por parte del cliente.</p>
+    <p>
+      El gestor es el software que se ejecuta en la estación encargada
+      de monitorizar  la red,  y su  tarea consiste en   consultar los
+      diferentes agentes que se encuentran en los nodos de la red los
+      datos que estos han ido obteniendo. <!-- Representa el cliente
+      --></p>
+    <p>
+      Hay  un comando especial   en  SNMP, llamado <tt>trap</tt>,  que
+      permite a un agente enviar datos  que no han sido solicitados de
+      forma explícita al gestor,  para informar de eventos tales como:
+      errores, fallos en la alimentación eléctrica, etc.</p>
+    <p>
+      En  esencia,  el SNMP es  un  protocolo muy sencillo  puesto que
+      todas las    operaciones  se  realizan  bajo  el   paradigma  de
+      carga-y-almacenamiento (load-and-store), lo que permite un juego
+      de comandos  reducido. Un gestor puede  realizar  sólo dos tipos
+      diferentes de operaciones  sobre un agente:  leer o  escribir un
+      valor de    una variable  en   el  MIB   del agente.  Estas  dos
+      operaciones  se conocen como petición-de-lectura (get-request) y
+      petición-de-escritura    (set-request).    Hay  un comando  para
+      responder a una petición-de-lectura llamado respuesta-de-lectura
+      (get-response), que es utilizado únicamente por el agente.</p>
+    <p>
+      La posibilidad  de ampliación   del protocolo está  directamente
+      relacionado  con la    capacidad del  MIB  de almacenar   nuevos
+      elementos. Si un fabricante quiere  añadir un nuevo comando a un
+      dispositivo, como puede  ser un encaminador,  tan sólo tiene que
+      añadir las variables correspondientes   a   su base de     datos
+      (MIB).</p>
+    <p>
+      Casi todos los fabricantes implementan  versiones agente de SNMP
+      en sus dispositivos:  encaminadores, hubs, sistemas  operativos,
+      etc.  Linux no es una   excepción,  existen varios agentes  SNMP
+      disponibles públicamente en  la Internet.</p> 
+
+
+    <A name="security"></A>
+    <H3>
+      <FONT face="Helvetica,Arial" color="#660033">
+         La cuestión de la seguridad
+      </FONT>
+    </H3>
+
+
+      SNMP ofrece muy poco soporte  para la autentificación. Tan  sólo
+      ofrece el esquema de dos   palabras clave (two-passwords).    La
+      clave pública permite   a  los gestores realizar  peticiones  de
+      valores  de  variables, mientras  que  la clave  privada permite
+      realizar peticiones de escritura. A  estas palabras clave se les
+      llama  en SNMP  <i>communities</i>.  Cada dispositivo  conectado
+      con  una red gestionada con SNMP, ha de tener configuradas estas
+      dos <i>communities</i>.
+    <p>
+      Es muy  común tener asignando  por defecto el valor  "public" al
+      <i>community</i> público, y "private" al privado.  Por lo que es
+      muy importante cambiar estos  valores para proteger la seguridad
+      de tu red.</p>
+
+
+
+    <A name="mib"></A>
+    <H3>
+      <FONT face="Helvetica,Arial" color="#660033">
+        ¿ Qué es el  MIB ?
+      </FONT>
+    </H3>
+
+
+      SNMP define un estándar separado  para los datos gestionados por
+      el protocolo.  Este estándar define los  datos mantenidos por un
+      dispositivo de  red,   así  como  las operaciones   que    están
+      permitidas. Los datos están  estructurados en forma de árbol; en
+      el    que   sólo  hay un  camino    desde   la raíz  hasta  cada
+      variable.  Esta    estructura en    árbol se   llama  Management
+      Information  Base (MIB) y  se  puede encontrar información sobre
+      ella en varios RFC's.
+    <p>
+      La versión actual de TCP/IP MIB es  la 2 (MIB-II) y se encuentra
+      definida en el RFC-1213. En ella se divide la información que un
+      dispositivo  debe   mantener  en ocho    categorías (ver   Tabla
+      1). Cualquier variable ha de estar en una de estas categorías.
+
+
+<CENTER>
+<TABLE><CAPTION>Tabla 1. Categorías TCP/IP</CAPTION>
+<TR><TH BGCOLOR="Aqua">Categoría</TH>                <TH BGCOLOR="Aqua">Información</TH></TR>
+
+<TR><TD BGCOLOR="Silver">system</TD>                 <TD BGCOLOR="Silver">Información del host del sistema de encaminamiento</TD></TR>
+<TR><TD BGCOLOR="Silver">interfaces</TD>              <TD BGCOLOR="Silver">Información de los interfaces de red</TD></TR>
+<TR><TD BGCOLOR="Silver">addr-translation</TD>        <TD BGCOLOR="Silver">Información de traducción de direcciones</TD></TR>
+<TR><TD BGCOLOR="Silver">ip</TD>                      <TD BGCOLOR="Silver">Información sobre el protocolo IP</TD></TR>
+<TR><TD BGCOLOR="Silver">icmp</TD>                    <TD BGCOLOR="Silver">Información sobre el protocolo ICMP</TD></TR>
+<TR><TD BGCOLOR="Silver">tcp</TD>                     <TD BGCOLOR="Silver">Información sobre el protocolo TCP</TD></TR>
+<TR><TD BGCOLOR="Silver">udp</TD>                     <TD BGCOLOR="Silver">Información sobre el protocolo UDP</TD></TR>
+<TR><TD BGCOLOR="Silver">egp</TD>                     <TD BGCOLOR="Silver">Información sobre el protocolo (Exterior Gateway)</TD></TR>
+</TABLE>
+</CENTER>
+
+      
+      La    definición de    un elemento  concreto    MIB  implica  la
+      especificación del tipo de dato que puede contener. Normalmente,
+      los  elementos  de   un  MIB son  enteros,   pero también pueden
+      almacenar cadenas de caracteres o estructuras más complejas como
+      tablas.  A  los elementos de un MIB  se les llama "objetos". Los
+      objetos son los nodos  hoja del árbol   MIB, si bien, un  objeto
+      puede  tener más de una   instancia, como por  ejemplo un objeto
+      tabla.  Para  referirse al  valor contenido en  un objeto, se ha
+      de añadir  el número  de la instancia.    Cuando sólo exista una
+      instancia del objeto, está es la instancia cero.</p>
+    <p>
+      Por ejemplo,   el  objeto   <tt>ifNumber</tt>  de  la  categoría
+      "interfaces" es un entero que representa el número de interfaces
+      presentes   en     el    dispositivo;   mientras     el   objeto
+      <tt>ipRoutingTable</tt> de  la categoría "ip" contiene  la tabla
+      de encaminamiento del dispositivo.</p>
+    <p>
+      Hay   que acordarse de utilizar el   número de la instancia para
+      leer el   valor  de un   objeto. En  este    caso, el número  de
+      interfaces presentes  en  un   encaminador puede ser   observado
+      mediante la instancia <tt>ifNumber.0</tt>.</p>
+    <p>
+      En el caso de ser un objeto tabla, se ha de utilizar el índice a
+      la tabla como último número para  especificar la instancia (fila
+      de la tabla).</p>
+    <p>
+      Existe otro estándar que define  e identifica las variables MIB,
+      llamado "Structure   of  Management  Information"   (SMI).   SMI
+      especifica las   variables MIB, éstas  se  declaran empleando un
+      lenguaje formal ISO llamado ASN.1,  que hace que tanto la  forma
+      como los contenidos de estas variables sean no ambiguos.</p>
+    <p>
+      El  espacio  de nombres  ISO  (árbol) está situado dentro  de un
+      espacio  de nombres junto con otros  árboles de otros estándares
+      de otras organizaciones.  Dentro del  espacio de nombres ISO hay
+      una rama específica para la información MIB. Dentro de esta rama
+      MIB, los objetos están a su vez jerarquizados en subárboles para
+      los  distintos  protocolos y  aplicaciones,  de  forma que  esta
+      información puede representarse unívocamente.</p>
+    <p>
+      La Figura 1 muestra el espacio de nombres del MIB del TCP/IP,
+      éste está situado justo bajo el espacio del IAB "mgmt". La
+      jerarquía también específica el número para cada nivel.
+
+
+<CENTER>
+<TABLE BORDER=1 WIDTH="480" CELLPADDING=3 CELLSPACING=0>
+<CAPTION>Figura 1. TCP/IP Organizational Tree</CAPTION>
+<TR><TD>
+<IMG SRC="../../common/January1998/figure13.gif">
+</TD></TR>
+</TABLE>
+</CENTER>
+
+
+
+      Es importante constatar que la mayor parte del software necesita
+      el punto raíz (.) para localizar  el objeto en el  MIB. Si no se
+      incluye el punto raíz,  se asume que el  path es  relativo desde
+      <tt>.iso.org.dod.internet.mgmt.mib-2</tt>.</p>
+    <p>
+      De esta forma, el objeto <tt>ifNumber</tt> de la categoría
+      "interfaces" se puede llamar:</p>
+      
+    <blockquote>
+      .iso.org.dod.internet.mgmt.mib-2.interfaces.ifnumber
+    </blockquote>
+
+    o el equivalente numérico:
+    
+    <blockquote>
+      .1.3.6.1.2.1.2.1
+    </blockquote>
+    
+    y la instancia es:
+
+    <blockquote>
+      .iso.org.dod.internet.mgmt.mib-2.interfaces.ifnumber.0
+    </blockquote>
+    
+    o el equivalente numérico:
+    
+    <blockquote>
+      .1.3.6.1.2.1.2.1.0
+    </blockquote>
+    
+    Adicionales MIB  se   pueden añadir  a  este   árbol  conforme los
+    vendedores definen  nuevos objetos y publican los correspondientes
+    RFC.<BR><BR>
+
+
+
+    <A name="future"></A>
+    <H3>
+      <FONT face="Helvetica,Arial" color="#660033">
+        ¿ Cuál es el futuro de SNMP ?
+      </FONT>
+    </H3>
+
+   <p>Una  nueva especificación  llamada  SNMPv2  está  actualmente en
+      rápido desarrollo.  Esta  versión trata de solucionar la  laguna
+      existente en   cuestiones  de  seguridad del   protocolo  actual
+      mediante   mecanismos que   se   centran en  la privacidad,   la
+      autentificación y el   control de acceso.  También permitirá  un
+      complejo   mecanismo de especificación   de  variables, así como
+      algunos comandos nuevos. El problema del SNMPv2 es que aún no es
+      un estándar ampliamente aceptado, a diferencia del SNMPv1. No es
+      fácil  encontrar versiones de  SNMPv2 de agentes  ni de software
+      que haga uso de los nuevos comandos.  Dejemos que pase el tiempo
+      y ya veremos que sucede en el futuro próximo...</p>
+
+   
+ 
+   <A name="snmpl"></A>
+   <H3>
+     <FONT face="Helvetica,Arial" color="#660033">
+       SNMP en Linux
+     </FONT>
+   </H3>
+
+
+      Uno  de  los      paquetes más  populares    de    SNMP   es  el
+      CMU-SNMP. Diseñado originalmente en  la Universidad de  Carnegie
+      Mellon, ha sido transportado a Linux por Juergen Schoenwaelder y
+      Erik Schoenfelder.  Es completamente  compatible con el estándar
+      SNMPv1   e incluye algunas de     las nuevas funcionalidades  de
+      SNMPv2.
+    <p>
+      La   distribución contiene algunas   herramientas de gestión que
+      permiten,   desde la  línea  de  comandos,   enviar peticiones a
+      dispositivos que ejecuten   agentes SNMP.  También contiene   un
+      programa agente SNMP, diseñado para ejecutarse sobre Linux, que
+      ofrece a gestores ejecutándose en la red (o en el propio sistema), 
+
+      <!-- (N.T.: No le encuentro el sentido a esta frase ??) -->
+
+      información  sobre el    estado  de los  interfaces, tablas   de
+      encaminamiento,   instante de  inicio  (uptime), información  de
+      contacto, etc.</p>
+    <p>
+      Una valiosa característica añadida que  viene con CMU-SNMP es un
+      SNMP C-API, que permite a  los programadores construir complejas
+      herramientas de gestión basadas en las  capacidades de red de la
+      distribución.</p>
+    <p>
+      La instalación en un  sistema Linux  es  sencilla, si bien  algo
+      diferente  de la instalación  original.  Existe una distribución
+      con los   ejecutables pre-compilados  de  las  herramientas   de
+      gestión, el demonio y la biblioteca API.</p>
+    <p>
+      Lo primero  que se   ha de  hacer es   decidir si "bajarse"   la
+      distribución con  los    fuentes,  o la  distribución   con  los
+      ejecutables. No   es  difícil   encontrar  este paquete    en la
+      Internet.  La distribución  binaria   se instala  y  ejecuta sin
+      problema alguno   en los  Linux   que  soporten ELF.   Si   bien
+      explicaremos cómo instalar la distribución binaria, es una buena
+      práctica  el  bajarse las  distribuciones binarias únicamente de
+      servidores Internet de confianza para evitar caballos de Troya y
+      otros problemas de seguridad.</p>
+    <p>
+      Copia   el fichero  <b>cmu-snmp-linux-3.4-bin.tar.gz</b>  en  el
+      directorio raíz (/). Descomprímelo  y extrae los fichero del tar
+      con con la siguiente orden:</p>
+
+    <blockquote>
+      tar zxvf cmu-snmp-linux-3.4-bin.tar.gz
+    </blockquote>
+    
+    Ahora tendrás  todas  las  utilidades  y bibliotecas correctamente
+    instaladas en el sistema, a excepción del fichero de configuración
+    del agente:  <tt>/etc/snmpd.conf</tt>. Lo  puedes crear ejecutando
+    el siguiente "script":
+    
+    <blockquote>
+      /tmp/cmu-snmp-linux-3.4/etc/installconf
+    </blockquote>
+
+    con los siguientes parámetros:
+
+    <blockquote>
+      /tmp/cmu-snmp-linux-3.4/etc/installconf -mini <tt>password</tt>
+    </blockquote>
+
+    donde     <tt>password</tt>   es  la      palabra  clave   pública
+    (<i>community</i>)  que se vaya  a utilizar. Ahora se puede editar
+    el nuevo fichero de configuración <tt>/etc/snmpd.conf</tt>. En él,
+    se pueden cambiar el  valor de puerto UDP  empleado por el agente,
+    las variables <tt>systemContact</tt>,   <tt>sysLocation</tt>     y
+    <it>sysName</tt>,  así  como   los  parámetros  de velocidad   del
+    interface para las tarjetas de red y los puertos PPP.
+    <p>
+      Las herramientas más importantes de gestión de este paquete son:</p>
+
+    <ul>
+      <li>
+	<b><tt>/usr/bin/snmpget</tt></b>   Un  programa diseñado  para
+	consultar un valor concreto  a un agente  MIB  de la red  (una
+	encaminador, un hub, etc).  <p></p></li>
+	  
+      <li>
+ 	<b><tt>/usr/bin/snmpgetnext</tt></b> Permite leer el siguiente
+ 	objeto de un árbol  MIB  sin necesidad  de conocer el  nombre.
+ 	<p></p></li>
+	  
+      <li>
+ 	<b><tt>/usr/bin/snmpset</tt></b> Una herramienta para escribir
+ 	valores en los objetos de agentes remotos.  <p></p></li>
+	  
+      <li>
+ 	<b><tt>/usr/bin/snmpwalk</tt></b> Herramienta   que    lee  un
+ 	objeto completo  o  una  serie de  objetos   sin necesidad  de
+ 	especificar la instancia  exacta. Es  útil para pedir  objetos
+ 	tipo tabla.  <p></p></li>
+	  
+      <li>
+ 	<b><tt>/usr/bin/snmpnetstat</tt></b>
+	<p></p></li>
+	  
+      <li>
+ 	<b><tt>/usr/bin/snmptrapd</tt></b> Demonio   que  escucha  los
+ 	"traps"de los agentes.  <p></p></li>
+	  
+      <li>
+ 	<b><tt>/usr/bin/snmptest</tt></b>   Herramienta    interactiva
+ 	diseñada   para  demostrar    las   posibilidades   del   API.
+ 	<p></p></li>
+    </ul>
+    <p>
+      
+      El     agente       se     encuentra    en       el   directorio
+      <tt>/usr/sbin/snmpd</tt>.</p>
+    <p>
+      CMU_SNMP      también    instala      un     fichero    MIB   en
+      <tt>/usr/lib/mib.txt</tt>. Éste es un buen lugar en donde buscar
+      qué tipo  de información se le  puede pedir a  un dispositivo de
+      red.</p>
+    <p>
+      El agente se  tiene que  lanzar a  ejecución cuando se  pone  en
+      marcha la máquina.  Ésto  se puede hacer añadiendo  el siguiente
+      comando  en alguno de  los ficheros de  arranque (por ejemplo en
+      <tt>/etc/rc.f/rc.local</tt>):</p>
+      
+    <blockquote>
+      /usr/sbin/snmpd -f ; echo 'Arrancando snmpd'
+    </blockquote>
+    
+    Una vez se tiene el agente SNMP  en ejecución en la máquina Linux,
+    se  puede   comprobar  su  funcionamiento     con alguna  de   las
+    herramientas de gestión, por ejemplo:
+
+    <blockquote>
+      /usr/bin/snmpget localhost public interfaces.ifNumber.0
+    </blockquote>
+
+    la  cual  retornará  el  número de interfaces  configurados  en el
+    sistema, y:
+
+    <blockquote>
+      /usr/bin/snmpwalk localhost public system
+    </blockquote>
+    
+    devuelve todos los valores en el subárbol "system" del MIB. (Véase 
+    en la Figura 2 el resultado de esta orden).
+
+
+    <center>
+      <TABLE BORDER=1 BGCOLOR="#00FFFF">
+	<caption>Figura 2</caption>
+	<tr>
+	  <td>
+dragon:~$ /usr/bin/snmpwalk<BR>
+<BR>
+usage: snmpwalk gateway-name community-name object-identifier<BR>    
+<BR>	      
+dragon:~$ /usr/bin/snmpwalk  localhost public system<BR>
+<BR>	      
+	      system.sysDescr.0 = "Linux version 2.0.24 (root@dragon)<BR> 
+	      (gcc version 2.7.2) #6 Mon Nov 25 15:08:40 MET 1996"<BR>
+system.sysObjectID.0 = OID: enterprises.tubs.ibr.linuxMIB<BR>
+system.sysUpTime.0 = Timeticks: (39748002) 4 days, 14:24:40<BR>
+system.sysContact.0 = "David Guerrero"<BR>
+system.sysName.0 = "dragon "<BR>
+system.sysLocation.0 = "Madrid (SPAIN)"<BR>
+system.sysServices.0 = 72<BR>
+system.sysORLastChange.0 = Timeticks: (39748006) 4 days, 14:24:40<BR>
+system.sysORTable.sysOREntry.sysORID.1 = OID: enterprises.tubs.ibr.linuxMIB.linuxAgents.1<BR>
+system.sysORTable.sysOREntry.sysORDescr.1 = "LINUX agent"<BR>
+system.sysORTable.sysOREntry.sysORUpTime.1 = Timeticks: (39748007) 4 days, 14:24:40<BR>
+<BR>
+dragon:~$<BR>
+ </td>
+</tr>
+</table>
+    </center>
+    
+    El C-API está en el directorio /lib/libsnmp.so.3.4.
+    <p>
+      Se  pueden ojear  los  ficheros de cabecera  relacionados con la
+      biblioteca en :</p>
+    <ul>
+      <li>
+ 	/usr/include/snmp/snmp.h</li>
+      <li>
+ 	/usr/include/snmp/snmp_impl.h</li>
+      <li>
+ 	/usr/include/snmp/asn1.h</li>
+      <li>
+ 	/usr/include/snmp/snmp_api.h</li>
+    </ul>
+
+    Se  puede encontrar más   información  en  las páginas del   manual
+    snmp_api(3) y varibles(5).
+    <p>
+      Existe también un módulo Perl de  interface con CMU C_API con el
+      que se pueden  realizar  fácilmente llamadas a  esta  biblioteca
+      desde programas Perl (Perl-scripts).</p>
+
+
+    
+    <A name="mrtg"></A>
+    <H3>
+      <FONT face="Helvetica,Arial" color="#660033">
+        MRTG: Multi Router Traffic Grapher
+      </FONT>
+    </H3>
+
+      MRTG es una avanzada utilidad gráfica escrita por Tobias Oetiker
+      y Dave  Rand para representar   gráficamente los datos  que  los
+      gestores SNMP  leen de los  agentes SNMP.  Produce unas vistosas
+      págimas  HTML con gráficos  GIF  sobre  el  tráfico  entrante  y
+      saliente en los interfaces de red prácticamente tiempo real. Con
+      esta herramienta se evita el tener que trabajar directamente con
+      las  utilidades CMU-SNMP mediante línea  de comandos. Ésta es la
+      herramienta más potente y fácil de utilizar que he encontrado en
+      la Internet.
+    <p>
+      MRTG utiliza una implemantación de SNMP escrita completamente en
+      Perl, por tanto,  no es necesario   instalar otros paquetes.  El
+      programa principal está escrito en "C"  para acelerar el proceso
+      de toma de muestras y la generación de imágenes GIF. Los gráficos
+      son  generados con la  ayuda de   la biblioteca  GD escrita  por
+      Thomas Boutell, autor de la FAQ WWW.</p>
+    <p>
+      El paquete contiene   algunas   utilidades para   analizar   los
+      interfaces de enlace,  extraer sus características y generar los
+      ficheros  de configuración base, que   luego se pueden modificar
+      para adaptarlos a las necesidades concretas.</p>
+    <p>
+      Otra característica   interesante  del MRTG   es  la cantidad de
+      información que produce. Permite cuatro  niveles de detalle para
+      cada interface:  tráfico  en las  últimas   24 horas,  la última
+      semana, el último  mes y un  gráfico anual. Ésto permite recoger
+      información para    realizar  estadísticas.   Guarda   toda esta
+      información  en una base  de   datos utilizando un algoritmo  de
+      consolidación  que impide  que   los ficheros crezcan  de  forma
+      desmesurada.</p>
+    <p>
+      
+      También genera una   página principal que  contiene las imágenes
+      GIF de los detalles  diarios de cada interface del  encaminador,
+      lo que permite  hacerse una idea general de  qué es  lo que está
+      pasando en el encaminador con un  sólo vistazo.  Se puede ver la
+      página principal generada por MRTG en las Figuras 3 y 4.</p>
+    <p>
+
+
+<TABLE ALIGN=CENTER WIDTH=70% BORDER=0>
+<TR>
+ <th align=left>Figura 3. Interfaz de la página principal</th>
+ <th align=left>Figura 4. Interfaz de la página detallada del interface</th>
+</TR>
+<TR>
+ <TD ALIGN=LEFT>
+<A HREF="../../common/January1998/fig3.gif"><IMG SRC="../../common/January1998/fig3.gif" WIDTH=200 HEIGHT=300 BORDER=0></A>
+ </TD>
+ <TD ALIGN=RIGHT>
+<A HREF="../../common/January1998/fig4.gif"><IMG SRC="../../common/January1998/fig4.gif" WIDTH=200 HEIGHT=300 BORDER=0></A>
+ </TD>
+</TR>
+<TR>
+ <TH COLSPAN=2 ALIGN=CENTER>
+  Haz click en las figuras para verlas en grande.
+ </TD>
+</TR>
+</TABLE>
+
+
+      Veamos el procedimiento básico de instalación. Lo primero que se
+      necesita es  la distribución.  En  el  momento de escribir  este
+      artículo,  la última versión  es  la 2.5.1  (está  disponible en
+      castellano  (español)  y  pre-compilada); puedes   encontrar   la
+      dirección URL del servidor principal al final de este artículo.
+    </p>
+    <p>
+      Antes de comenzar la instalación  del MRTG es necesario instalar
+      la   biblioteca GD la dirección  URL   también está al final del
+      artículo.  La   versión actual es  la 1.2   y no deberían  haber
+      problemas en compilarla e   instalarla.  Sencillamente hay   que
+      ejecutar     <tt>make</tt> en el  directorio   en  el  que se ha
+      desempaquetado la distribución y  se  genera como resultado   el
+      fichero llamado  <tt>libgd.a</tt>.   Se copia   este fichero  al
+      directorio  <tt>/usr/local/lib</tt> y los ficheros con extensión
+      <tt>.h</tt> al directorio <tt>/usr/local/include/gd</tt>.</p>
+    <p>
+      En  este  punto   el   paquete  GD  debe  estar    correctamente
+      instalado.  Ahora se puede compilar el  paquete MRTG.  Extrae la
+      distribución  y edita el  fichero ../../common/January1998/Makefile para indicar donde se
+      encuentra la biblioteca  y los archivos de  cabecera de GD, así
+      como cual es el fichero  ejecutable  Perl 5.003: normalmente  se
+      encuentra          en    <tt>/usr/bin/perl</tt>       o       en
+      <tt>/usr/local/bin/perl</tt>.</p>
+    <p>
+      Construye el  programa principal tecleando <tt>make rateup</tt>;
+      cuando  termine  la compilación, teclea <tt>make substitute</tt>
+      para  incluir el  path correcto del   interprete de  Perl en los
+      scripts de Perl que utiliza MRTG.</p>
+    <p>
+      Copia los siguientes  ficheros su directorio  destino final (por
+      ejemplo:       <tt>/usr/local/mrtg</tt>):       <tt>BER.pm</tt>,
+      <tt>SNMP_Session.pm</tt>,   <tt>mrtg</tt>  y    <tt>rateup</tt>.
+      También se han de copiar en este  directorio los dos ficheros de
+      configuración: <tt>indexmaker</tt> y <tt>cfgmaker</tt>.</p>
+    <p>
+      Asegúrese que todos  los programas tienen permiso  de ejecución.
+      Ya  está  todo listo   para  crear un  fichero  de configuración
+      sencillo.    Es necesario  tener   acceso  SNMP  de  lectura  al
+      encaminador. Para  un encaminador de la  marca Cisco, las líneas
+      de configuración que dan permiso son:</p> 
+    
+    <blockquote>
+      <tt>
+	access-list 99 permit 193.147.0.8<br>
+	access-list 99 permit 193.147.0.9<br>
+	access-list 99 permit 193.147.0.130<br>
+	snmp-server community public RO 99<br>
+      </tt>
+    </blockquote>
+    
+    Esto  permite peticiones  de  sólo lectura  desde las  direcciones
+    especificadas en la lista 99,  empleando la palabra clave "public"
+    como <i>community</i>.  Si lo que se  quiere es permitir el acceso
+    desde cualquier  máquina   en modo sólo  lectura   al encaminador,
+    entonces la línea ha de ser la siguiente:
+    
+    <blockquote>
+      <tt>
+	snmp-server community public RO<br>
+      </tt>
+    </blockquote>
+    <p>
+      
+      Si el encaminador de la  red es de otra marca,  entonces se ha de
+      consultar  el manual para determinar   cómo  permitir el  acceso
+      SNMP.</p>
+    <p>
+      El script  <tt>cfgmaker</tt>   simplifica  mucho la   tarea   de
+      construir el fichero de configuración. Todo lo que hay que hacer
+      es ejecutarlo con los siguientes parámetros:</p>
+
+    <blockquote>
+      <tt>
+	cfgmaker &lt;community&gt;@&lt;router-host-name or IP&gt;
+      </tt>
+    </blockquote>
+    
+    Por ejemplo:
+
+    <blockquote>
+      <tt>
+	cfgmaker public@mec-router.rediris.es &gt; mrtg.cfg
+      </tt>
+    </blockquote>
+    
+      Localizará       todos   los   interfaces     del    encaminador
+      <tt>mec-router.rediris.es</tt> y  escribirá  una sección   en el
+      fichero con  las especificaciones   del número   de  interfaces,
+      velocidad máxima, descripción, etc., junto con algunas etiquetas
+      HTML para que puedan  ser incluidas en  la página detallada.  Es
+      posible  editar este fichero  HTML para  traducirlo  al idioma y
+      preferencias propias.  Se puede ver en  la Figura 5 la salida de
+      uno de los interfaces de mi encaminador.
+  
+
+    <center>
+      <TABLE BORDER=1 BGCOLOR="Aqua">
+	<caption>Figura 5</caption>
+	<tr>
+	  <td>
+Target[mec-router.1]: 1:public@mec-router<BR>
+MaxBytes[mec-router.1]: 1250000<BR>
+Title[mec-router.1]: mec-router.rediris.es (mec-router.mec.es): Ethernet0<BR>
+PageTop[mec-router.1]: &lt;H1&gt;Estadisticas del puerto Ethernet0&lt;BR&gt;<BR>
+Red del MEC (MECNET)&lt;/H1&gt;<BR>
+&lt;TABLE&gt;<BR>
+&lt;TR&gt;&lt;TD&gt;System:&lt;/TD&gt;&lt;TD&gt;mec-router.rediris.es en RedIRIS &lt;/TD&gt;&lt;/TR&gt;<BR>
+&lt;TR&gt;&lt;TD&gt;Maintainer:&lt;/TD&gt;&lt;TD&gt;david@mec.es&lt;/TD&gt;&lt;/TR&gt;<BR>
+&lt;TR&gt;&lt;TD&gt;Interface:&lt;/TD&gt;&lt;TD&gt;Ethernet0 (1)&lt;/TD&gt;&lt;/TR&gt;<BR>
+&lt;TR&gt;&lt;TD&gt;IP:&lt;/TD&gt;&lt;TD&gt;mec-router.mec.es (193.147.0.1)&lt;/TD&gt;&lt;/TR&gt;<BR>
+&lt;TR&gt;&lt;TD&gt;Max Speed:&lt;/TD&gt;<BR>
+  &lt;TD&gt;1250.0 kBytes/s (ethernetCsmacd)&lt;/TD&gt;&lt;/TR&gt;<BR>
+&lt;/TABLE&gt;<BR>
+	    </pre>
+	  </td>
+	</tr>
+      </table>
+      
+    </center>
+
+
+
+    <p>
+      Ahora se puede   ejecutar el programa <tt>mrtg</tt>  por primera
+      vez.  Sencillamente ejecuta:</p>
+    <blockquote>
+      <tt>
+	./mrtg mrtg.cfg
+      </tt>
+    </blockquote>
+    <p>
+      Si todo  va  bien, el programa  se   pondrá en contacto  con  el
+      encaminador, pedirá algunos  valores y generará algunos ficheros
+      de registro  y algunos ficheros  GIF en el directorio actual. No
+      hay  que sorprenderse  por  las quejas  respecto los ficheros de
+      registro y de gráficos que no ha encontrado, esto sólo sucede la
+      primera vez que se ejecuta. Elimina los ficheros de gráficos que
+      genera y  vuelve a ejecutar  el  programa otra  vez.  El gráfico
+      generado mostrará el tráfico producido  en el intervalo desde la
+      última ejecución del programa.  También genera páginas HTML para
+      cada interface.</p>
+    <p>
+      Ahora vamos a indicarle  a MRTG como ejecutarse adecuadamente en
+      el sistema.  Primero  se ha  de crear  un directorio  dentro del
+      directorio principal   del web servidor   (suponiendo  que en el
+      sistema haya un   servidor web en funcionamiento) para  contener
+      las  páginas y   gráficos que MRTG    generará cada  vez  que se
+      ejecute.   Añade este directorio  en  la cabecera del fichero de
+      configuración     con      la        directiva      <tt>WorkDir:
+      /usr/local/web/mrtg</tt> (suponiendo que el directorio raíz está
+      situado en <tt>/usr/local/web</tt>).  La próxima vez que MRTG se
+      ejecute, creará  los ficheros de registro y  de gráficos en este
+      directorio,         pudiendo             accederse           vía
+      <tt>http://your_host.domain/mrtg</tt>.</p>        
+
+    <p>
+      Ahora vamos   a construir  la página   principal  para todos los
+      interfaces como la que  aparece en la  Figura 3.  Ésto se  puede
+      llevar a cabo con la utilidad indexmaker. Ejecuta:
+    </p>
+
+    <blockquote>
+      <tt>
+	indexmaker   mrtg.cfg   &lt;router-name    regexp&gt;     &gt;
+	<tt>/usr/local/web/mrtg/index.html</tt>
+      </tt>
+    </blockquote>
+    <p>
+      Se generará un  documento HTML con  gráficos diarios de aquellos
+      interfaces cuyo nombre de encaminador  coincida con la expresión
+      regular    anterior  y los  enlaza    con  la página  individual
+      detallada.</p>
+    <p>
+      Como se puede  imaginar, el programa  MRTG  se ha de ejecutar  a
+      intervalos  regulares  para recoger datos   en  cada intervalo y
+      generar   los  gráficos periódicamente,   de forma   que   de la
+      impresión  de ser una  monitorización  en tiempo real.  Esto  se
+      puede conseguir  mediante   la siguiente   línea  en el  fichero
+      <tt>/etc/crontab</tt>  (suponiendo  <tt>/usr/local/mrtg-bin</tt>
+      como el directorio donde  reside el programa <tt>mrtg</tt>):</p>
+      <p></p>
+    <blockquote>
+      <tt>
+	0,5,10,15,20,25,30,35,40,45,50,55 * * * *  \ <br>
+	/usr/local/mrtg-bin/mrtg \ <br>
+	/usr/local/mrtg-bin/mrtg.cfg  &gt; \ <br>
+	/dev/null 2>&1 <br>
+      </tt>
+    </blockquote>
+    <p>
+      En caso de tratarse de una distribución Red Hat, la línea que se
+      tendría que añadir sería:</p>
+    <blockquote>
+      <tt>
+	0,5,10,15,20,25,30,35,40,45,50,55 * * * *  root \ <br>
+	/usr/local/mrtg-bin/mrtg \ <br>
+	/usr/local/mrtg-bin/mrtg.cfg &gt; \ <br>
+	/dev/null 2>&1 <br>
+      </tt>
+    </blockquote>
+    <p>
+      Si no se  ha producido ningún  problema, ahora se  puede dedicar
+      algún  tiempo  para acabar de    configurar y ajustar  la página
+      índice HTML. Una buena mejora consiste en  incluir en la sección
+      de  cabecera  de esta página  un código  &lt;META .....&gt; para
+      obligar  al  visor  web   a recargar  la  información  cada  300
+      segundos.</p>
+    <p>
+      Otra mejora que se puede  incluir en el fichero de configuración
+      es la directiva <tt>WriteExpire</tt>,  que fuerza a MRTG a crear
+      ficheros ".meta" para cada fichero GIF y página HTML, eliminando
+      innecesarias  operaciones de   "cache" tanto en   los servidores
+      proxy   como en los propios visores   web.  Para ello también es
+      necesario configurar el servidor Apache (suponiendo que sea éste
+      el  servidor)  para  que   lea estos  ficheros ".meta"  y  envíe
+      correctamente  las cabeceras     "Expire"   con  la    directiva
+      <tt>MetaDir</tt>en el fichero XXXX.</p>
+    <p>
+      Se  pueden   encontrar   más directivas     en   el fichero   de
+      configuración ejemplo que  viene  con la distribución; que   por
+      cierto,  está muy   bien documentado.  Es  posible modificar  la
+      disposición de las imágenes generadas por MRTG.</p>
+    <p>
+      Espero que te  guste  este programa, si  es así,  enviarle  a los
+      autores una tarjeta; puedes encontrar su  dirección en la página
+      web de MRTG.</p> <p></p>
+
+
+    
+    <A name="other"></A>
+    <H3>
+      <FONT face="Helvetica,Arial" color="#660033">
+        Otros Programas
+      </FONT>
+    </H3>
+
+
+    Existe un programa similar  llamado Router-Stats, escrito por Iain
+    Lea,  el    autor   del   famoso    programa   lector  de   correo
+    "tin". Router-Stats  actualiza los  gráficos   una vez al  día   y
+    muestra  información    estadística  muy  interesante    sobre  la
+    utilización por horas y otros  aspectos. El único problema es  que
+    se  apoya en muchos programas externos.  (SMU-SNMP para las tareas
+    con SNMP,  GNUPLOT  para trazar  gráficos,  NetPBM  y GIFTOOL para
+    trabajar  con    gráficos).  
+    <p>
+      Hay  otra categoría de software que  da un  paso  más allá en la
+      tarea de gestión de redes, ofreciendo una solución completa tanto
+      para monitorizar como para configurar  toda la red. Este tipo de
+      solución permite obtener  una compleja representación gráfica de
+      la red y ojear fácilmente los nodos que la componen, verificando
+      detalles de  configuración  específicos y  otras cuestiones   de
+      interés.</p>
+    <p>
+      A este nivel    podemos  hablar de dos  soluciones   comerciales
+      ampliamente  utilizadas:  "HP-OpenView"  de   Hewlett-Packard  y
+      "SunNet Manager"   de  Sun.   Estas  herramientas   ofrecen  una
+      plataforma integrada para la  gestión de los  recursos de red, a
+      través  de  impresionantes   interfaces  gráficos.   Entre otras
+      utilidades, disponen de herramientas para localizar los nodos de
+      la  red en  los   que se  están ejecutándo  agentes  SNMP.  Otra
+      característica importante es la  capacidad de integrar productos
+      de otros fabricantes, como el CiscoWork de Cisco, que permite al
+      administrador  mantener  una base    de  datos con   todas   las
+      configuraciones   de  los   encaminadores e  incluso monitorizar
+      gráficamente los paneles traseros de los encaminadores con todas
+      sus conexiones.</p>
+    <p>
+      Los dos inconvenientes  fundamentales de estos  productos es que
+      son comerciales y  no  están disponibles  para Linux.   Pero por
+      supuesto que existen soluciones disponibles públicamente con una
+      funcionalidad más  o menos similar.  Uno de  los paquetes que he
+      encontrado es el Scotty. Scotty es  un paquete basado en TCL que
+      permite crear programas específicos  a las necesidades de la red
+      propia,  empleando   un  API  de   alto   nivel de   cadenas  de
+      caracteres. Un paquete similar es el Tkined. Es un editor de red
+      que  ofrece  extensiones   para  crear  un  entorno  de  trabajo
+      completo, integrando  algunas  herramientas para localizar redes
+      IP,   soporte  para el  proceso  de  instalación   de la   red o
+      resolución   de  problemas   en  redes  IP   utilizando  SNMP en
+      combinación   con    otras  utilidades estándar    (por  ejemplo
+      <tt>traceroute</tt>).   Scotty  también incluye un visor gráfico
+      MIB que permite explorar fácilmente información MIB.</p>
+    <p>
+      Puedes encontrar referencias  tanto de paquetes comerciales como
+      de software libre al final del artículo.</p>
+
+
+    
+    <A name="conclusions"></A>
+    <H3>
+      <FONT face="Helvetica,Arial" color="#660033">
+        Conclusiones
+      </FONT>
+    </H3>
+
+
+      SNMP es un  protocolo sencillo pero  potente que puede ayudar  a
+      monitorizar los   recursos   de red  sin  sobrecargar   mucho la
+      red.  Quizás  las  extensiones  que  se  están   llevando a cabo
+      actualmente incrementarán la  complejidad y las posibilidades de
+      esta   herramienta  pero  a   cambio  incrementará  los recursos
+      necesarios para implementarla.
+    <p>
+      En  este artículo,  se  han presentado dos  herramientas  que se
+      pueden  encontrar en  la   Internet.   Existe una  multitud   de
+      herramientas que  se están desarrollando continuamente. Consulta
+      el grupo de noticias de Usenet <tt>comp.protocols.snmp</tt> para
+      estar al tanto sobre anuncios sobre nuevo software y MIBs.
+
+
+    </TD>
+    </TR>
+</TABLE>
+
+
+<BR><BR><BR>
+
+<CENTER>
+         <TABLE BORDER=1 BGCOLOR="#AAFFFF">
+         <CAPTION>
+         <FONT SIZE=+1><B>Enlaces de interés</B></FONT>
+         </CAPTION>
+<TR><TD>
+<p>CMU-SNMP for Linux:<BR>
+<a href="ftp://sunsite.unc.edu/pub/Linux/system/network/admin/cmu-snmp-linux-3.2-bin.tar.gz"> 
+ftp://sunsite.unc.edu/pub/Linux/system/network/admin/cmu-snmp-linux-3.2-bin.tar.gz</a>
+
+<p>Módulo de extensiones de PERL 5 para CMU-SNMP:<br>
+<a href="ftp:/ftp.wellfleet.com/netman/snmp/perl5/SNMP.tar.gz">
+ftp:/ftp.wellfleet.com/netman/snmp/perl5/SNMP.tar.gz</a>
+
+<p>Multi Router Traffic Grapher (MRTG):<br>
+
+<a href="http://ee-staff.ethz.ch/~oetiker/webtools/mrtg/mrtg.html">
+http://www.ee.ethz.ch/~oetiker/webtools/mrtg/mrtg.html</a>
+
+<p>GD Biblioteca gráfica: (necesaria para el MRTG)<br>
+<a href="http://www.boutell.com/gd/">http://www.boutell.com/gd/</A>
+
+<p>Perl 5.003: (necesario para el MRTG)<br>
+
+<a href="http://www.perl.com/perl/info/software.html">   http://www.perl.com/perl/info/software.html</A>
+
+<p>Lista de correo de MRTG:<br>
+<DL>
+<DT> Lista de discusión
+<DD>
+ Envía un correo-e a  mrtg-request@list.ee.ethz.ch
+                   with "subscribe" in the subject
+<DT>
+ Lista de anuncios
+<DD>
+ Envía un correo-e a mrtg-announce-request@list.ee.ethz.ch
+                   with "subscribe" in the subject
+</DL>
+</BLOCKQUOTE>
+
+<P>Router Stats:<br>
+<A href="http://www.scn.de/~iain/router-stats/">http://www.scn.de/~iain/router-stats/</A>
+
+<p>Software de gestión de red SNMP:<br>
+<a href="http://wwwsnmp.cs.utwente.nl/software/">http://wwwsnmp.cs.utwente.nl/software/</A>
+
+<p>Scotty:<br>
+<a href="http://wwwsnmp.cs.utwente.nl/~schoenw/scotty/">http://wwwsnmp.cs.utwente.nl/~schoenw/scotty/</A>
+
+<P>Scotty + Tkined para Linux:<BR>
+<a href="ftp://sunsite.unc.edu/pub/Linux/system/network/admin/tkined-1.3.4+scotty-ELF.tar.gz">
+ftp://sunsite.unc.edu/pub/Linux/system/network/admin/tkined-1.3.4+scotty-ELF.tar.gz</A>
+
+          </TD>
+        </TR>
+	 </TABLE>
+
+     <HR size=2 noshade>
+     <P align="left"><I>Traducido por <A href="mailto:iripoll@disca.upv.es">Ismael Ripoll</A></I></P>
+
+    </TD>
+
+ </TR>
+
+ </TBODY>
+
+<TBODY>
+  <TR>
+    <TD colspan="2">
+    <B>Para más información</B>:<BR>
+    <UL>
+      <LI>Consulta el "Guía de Administracion de Redes" que se 
+puede otener en castellano gracias la proyecto <a href="http://www.infor.es">LuCAS</A>. </LI>
+
+     <UL><BR><BR>
+    <TD>
+  </TR>
+</TBODY>
+
+ <TR bgcolor="#660033">
+   <TD colspan="2" align="center"><FONT face="Helvetica,Arial" color="#FFFFFF"><B>
+         &copy; 1997 David Guerrero</B></FONT><BR>
+    <FONT color="#ffffff">P&aacute;ginas web mantenidas por 
+    <A href="mailto:angel@mercury.chem.pitt.edu"><FONT color="#ffffff">Miguel A Sepulveda</FONT></A></FONT>.
+   </TD>
+ </TR>
+
+
+
+</TABLE>
+
+
+</BODY>
+</HTML>
+
+
+
+
+
+

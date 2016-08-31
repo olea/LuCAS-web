@@ -1,0 +1,205 @@
+<HTML>
+<HEAD>
+<TITLE>Serie COMO de Linux: Eliminando problemas</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Serie-Como-12.html">Anterior</A>
+<A HREF="Serie-Como-14.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc13">Indice</A>
+<HR>
+<H2><A NAME="s13">13. Eliminando problemas</A></H2>
+
+<H2><A NAME="ss13.1">13.1 Me dice: ``line <EM>NNN</EM> of inittab invalid''</A></H2>
+
+
+<P>Aseg&uacute;rese de estar usando la sintaxis correcta para su versi&oacute;n de
+<CODE>init</CODE>. Las diferentes versiones de <CODE>init</CODE> que hay por ah&iacute; usan
+sintaxis diferentes en el fichero <CODE>/etc/inittab</CODE>.  Aseg&uacute;rese de
+estar usando la sintaxis correcta para su versi&oacute;n de <CODE>getty</CODE>. </P>
+
+
+<H2><A NAME="ss13.2">13.2 Cuando intento llamar, dice: ``/dev/cua<EM>N</EM>: Device or resource</A>busy'' (dispositivo o recurso ocupado) </H2>
+
+
+<P>Este problema puede surgir cuando DCD o DTR no est&aacute;n activados
+correctamente. DCD s&oacute;lo debe activarse cuando haya una conexi&oacute;n en curso
+(ej: alguien ha llamado a este sistema), no cuando <CODE>getty</CODE> est&eacute;
+vigilando el puerto. Compruebe el m&oacute;dem para asegurarse de que est&aacute;
+configurado para activar DCD s&oacute;lo cuando haya una conexi&oacute;n. DTR debe estar
+activo siempre que alguien est&eacute; usando, o vigilando la l&iacute;nea, como
+<CODE>getty</CODE>, <CODE>kermit</CODE>, o alg&uacute;n otro programa de comunicaciones. </P>
+<P>Otra causa com&uacute;n de los errores de ``device busy'' (dispositivo ocupado),
+es que haya configurado el puerto serie con una interrupci&oacute;n que ya est&eacute;
+siendo usada. Cuando cada dispositivo se inicializa, le pide permiso a
+Linux para usar las interrupciones hardware.  Linux sigue la pista de a
+qui&eacute;n se le ha asignado cada interrupci&oacute;n, y si la interrupci&oacute;n ya est&aacute;
+siendo usada ser&aacute; imposible que el dispositivo se inicialice
+correctamente. El dispositivo realmente no tiene muchas formas de avisarle
+de que esto est&aacute; ocurriendo, excepto que cuando intente usarlo, dar&aacute; un
+mensaje de error ``device busy''.  Compruebe las interrupciones de todas
+las placas (serie, ethernet, SCSI, etc). Busque conflictos de IRQ. </P>
+
+
+<H2><A NAME="ss13.3">13.3 Me dice: ``Id S<EM>N</EM> respawning too fast: disabled for 5 minutes''</A>(Id S<EM>N</EM> reiniciado demasiado r&aacute;pido: desconectado durante 5 minutos) Aseg&uacute;rese de que el m&oacute;dem est&aacute; configurado correctamente. Mire losregistros <CODE>E</CODE> y <CODE>Q</CODE>.Esto puede ocurrir cuando el m&oacute;dem est&aacute; negociando con <CODE>getty</CODE>.Aseg&uacute;rese de estar llamando correctamente a <CODE>getty</CODE> desde<CODE>/etc/inittab</CODE>. Si usa una sintaxis o nombre de dispositivoincorrectos puede causar graves problemas. Esto tambi&eacute;n puede ocurrir cuando est&eacute; fallando la inicializaci&oacute;n de<CODE>uugetty</CODE>. </H2>
+
+
+<H2><A NAME="ss13.4">13.4 Los dispositivos serie son lentos, o los dispositivo serie s&oacute;lo</A>pueden enviar en una direcci&oacute;n</H2>
+
+<P>     </P>
+<P>Probablemente tenga un conflicto de IRQ. Aseg&uacute;rese de que no se est&aacute;n
+compartiendo IRQs. Compruebe todas las placas (serie, ethernet, SCSI,
+etc). Aseg&uacute;rese de que los puentes, y los par&aacute;metros de <CODE>setserial</CODE> son
+los correctos en todos los dispositivos serie.  Revise tambi&eacute;n
+<CODE>/proc/ioports</CODE> y <CODE>/proc/interrupts</CODE> por si hubiera
+conflictos. </P>
+
+
+<H2><A NAME="ss13.5">13.5 Mi m&oacute;dem se bloquea despu&eacute;s de colgar, o <CODE>uugetty</CODE> no se reinicia.</A></H2>
+
+<P>     </P>
+<P>Esto puede ocurrir cuando no se reinicia el m&oacute;dem al desactivar el DTR. He
+visto que los LEDs RD y SD de mi m&oacute;dem se vuelven locos cuando esto
+ocurre. Debe tener el m&oacute;dem reiniciado. Muchos m&oacute;dems compatible Hayes
+hacen esto con <CODE>&amp;D3</CODE>, pero en mi USR Courier, he tenido que poner
+<CODE>&amp;D2</CODE> y <CODE>S13=1</CODE>. Mire en el manual de su m&oacute;dem. </P>
+
+
+<H2><A NAME="ss13.6">13.6 Tengo un terminal conectado al PC, pero despu&eacute;s de escribir un</A>nombre de registro, s&oacute;lo se bloquea</H2>
+
+
+<P>
+<UL>
+<LI>Si est&aacute; usando <CODE>getty</CODE>:  Probablemente no tendr&aacute; puesto
+<CODE>CLOCAL</CODE> en ninguna l&iacute;nea de <CODE>/etc/gettydefs</CODE> para el terminal,
+y probablemente no est&aacute; usando un cable completo de m&oacute;dem nulo. Necesita
+<CODE>CLOCAL</CODE>, el cual le dice a Linux que ignore las se&ntilde;ales del control
+del m&oacute;dem.  Deber&iacute;a parecerse a esto: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# 38400 bps, entrada para un Terminal no inteligente
+DT38400# B38400 CS8 CLOCAL # B38400 SANE -ISTRIP CLOCAL #@S @L login: #DT38400
+
+# 19200 bps, entrada para un Terminal no inteligente
+DT19200# B19200 CS8 CLOCAL # B19200 SANE -ISTRIP CLOCAL #@S @L login: #DT19200
+
+# 9600 bps, entrada para un Terminal no inteligente
+DT9600# B9600 CS8 CLOCAL # B9600 SANE -ISTRIP CLOCAL #@S @L login: #DT9600
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Despu&eacute;s, elimine el proceso <CODE>getty</CODE> con el comando <CODE>kill</CODE> y se
+generar&aacute; un proceso nuevo con la nueva entrada. 
+</LI>
+<LI>Si est&aacute; usando <CODE>agetty</CODE>:  A&ntilde;ada el par&aacute;metro <CODE>-L</CODE> a la l&iacute;nea
+de <CODE>agetty</CODE> en <CODE>/etc/inittab</CODE>. Esto har&aacute; que ignore las se&ntilde;ales
+de control del m&oacute;dem. Despu&eacute;s ejecute de nuevo <CODE>init</CODE> escribiendo
+<CODE>init q</CODE>.  La l&iacute;nea deber&iacute;a ser como esta: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+s1:345:respawn:/sbin/agetty -L 9600 ttyS1 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss13.7">13.7 A velocidades altas, mi m&oacute;dem pierde datos</A></H2>
+
+
+<P>Si est&aacute; intentando usar el m&oacute;dem a m&aacute;s de 38400 bps, y no tiene una UART
+16550A, debe conseguirla. Vea la secci&oacute;n 
+<A HREF="Serie-Como-12.html#uart">¿Qu&eacute; son las UARTs?</A> para saber m&aacute;s sobre las UARTs. </P>
+
+
+<H2><A NAME="ss13.8">13.8 Al arrancar, linux no informa a los dispositivos serie de c&oacute;mo los</A>he configurado</H2>
+
+
+<P>Esto es verdad. Linux no realiza ninguna detecci&oacute;n de IRQ al arrancar,
+s&oacute;lo hace la detecci&oacute;n de los dispositivos serie. As&iacute; que no haga caso de
+lo que diga sobre las IRQs, ya que asume que son las IRQs est&aacute;ndar. Esto
+se hace porque la detecci&oacute;n de IRQs no es fiable, y puede ser falsa. </P>
+<P>As&iacute;, a&uacute;n cuando tengo mi <CODE>ttyS2</CODE> en la IRQ5, me sale</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Jan 23 22:25:28 misfits vmunix: tty02 at 0x03e8 (irq = 4) is a 16550A
+</PRE>
+</CODE></BLOCKQUOTE>
+
+cuando Linux arranca.</P>
+<P>Tiene que usar <CODE>setserial</CODE> para decirle a Linux la IRQ que est&aacute; usando.
+Despu&eacute;s de que Linux arranque, puede mirar en el fichero
+<CODE>/proc/interrupts</CODE> para ver que IRQs se han configurado realmente. </P>
+
+
+<H2><A NAME="ss13.9">13.9 <CODE>rz</CODE> y/o <CODE>sz</CODE> no funcionan cuando llamo a mi m&aacute;quina linux</A>con un m&oacute;dem</H2>
+
+
+<P>Si Linux busca <CODE>/dev/modem</CODE> cuando intenta enviar un fichero, mire
+en <CODE>/etc/profile</CODE>, y <CODE>/etc/csh.cshrc</CODE>. Algunas
+distribuciones definen ah&iacute; muchos alias, sobre todo Slackware. Estos alias
+echan a perder los programas zmodem. Elim&iacute;nelos o corr&iacute;jalos. </P>
+
+
+<H2><A NAME="ss13.10">13.10 En mi pantalla est&aacute;n saliendo caracteres muy graciosos</A></H2>
+
+
+<P>Esto ocurre en las consolas virtuales cuando env&iacute;a datos binarios a la
+pantalla, o a veces en conexiones serie.  La forma de arreglar esto es
+escribiendo <CODE>echo ^v^[c</CODE>. Para los que son incapaces de identificar
+los caracteres de control, es: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linux% echo &lt;ctrl&gt;v&lt;esc&gt;c
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="nowork"></A> <A NAME="ss13.11">13.11 <CODE>getty</CODE> o <CODE>uugetty</CODE> no funciona todavia</A></H2>
+
+
+<P>Existe la opci&oacute;n <CODE>DEBUG</CODE> que viene con <CODE>getty_ps</CODE>. Edite el fichero
+de configuraci&oacute;n <CODE>/etc/conf.{uu}getty.ttyS</CODE><EM>N</EM> y a&ntilde;ada
+<CODE>DEBUG=</CODE><EM>NNN</EM>. Donde <EM>NNN</EM> es una de las combinaciones num&eacute;ricas
+siguiente, dependiendo de lo que quiera depurar: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+D_OPT   001            activacion de las opciones
+D_DEF   002            procesamiento del fichero de opciones por defecto
+D_UTMP  004            procesamiento de utmp/wtmp
+D_INIT  010            inicializacion de la linea (INIT)
+D_GTAB  020            procesamiento del fichero gettytab
+D_RUN   040            otros diagnosticos de ejecucion
+D_RB    100            depuracion de rellamada
+D_LOCK  200            procesamiento de bloqueo de uugetty
+D_SCH   400            procesamiento de tareas
+D_ALL   777            todo lo anterior
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Poniendo <CODE>DEBUG=010</CODE> es una buena forma de empezar.</P>
+<P>Si est&aacute; ejecutando <CODE>syslogd</CODE>, la informaci&oacute;n de depuraci&oacute;n aparecer&aacute; en
+los ficheros log. Si no est&aacute; usando <CODE>syslogd</CODE> la informaci&oacute;n aparecer&aacute;
+en <CODE>/tmp/getty:tyyS</CODE><EM>N</EM> si depura <CODE>getty</CODE> y
+<CODE>/tmp/uugetty:ttyS</CODE><EM>N</EM> si usa <CODE>uugetty</CODE>, y en
+<CODE>/var/adm/getty.log</CODE>. Mire la informaci&oacute;n de depuraci&oacute;n y vea que
+est&aacute; ocurriendo. Probablemente necesitar&aacute; ajustar algunos par&aacute;metros del
+fichero de configuraci&oacute;n, y reconfigurar el m&oacute;dem. </P>
+<P>Tambi&eacute;n lo puede intentar con <CODE>mgetty</CODE>. Algunas personas tienen mejores
+resultados con &eacute;l. </P>
+
+
+<HR>
+<A HREF="Serie-Como-12.html">Anterior</A>
+<A HREF="Serie-Como-14.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc13">Indice</A>
+</BODY>
+</HTML>

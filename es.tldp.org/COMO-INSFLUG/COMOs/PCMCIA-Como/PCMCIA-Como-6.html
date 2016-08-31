@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA COMO : Problemas con tarjetas no soportadas </TITLE>
+ <LINK HREF="PCMCIA-Como-7.html" REL=next>
+ <LINK HREF="PCMCIA-Como-5.html" REL=previous>
+ <LINK HREF="PCMCIA-Como.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PCMCIA-Como-7.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-5.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc6">Índice general</A>
+<HR>
+<H2><A NAME="unsupp"></A> <A NAME="s6">6. Problemas con tarjetas no soportadas </A></H2>
+
+<P>
+<P>
+<H2><A NAME="configurando"></A> <A NAME="ss6.1">6.1 Configuraci&oacute;n de tarjetas no reconocidas</A>
+</H2>
+
+<P>
+<P>Asumiendo que su tarjeta est&aacute; soportada por alg&uacute;n controlador existente,
+todo lo que se necesita hacer es a&ntilde;adir una entrada a
+<CODE>/etc/pcmcia/config</CODE> para decirle a <CODE>cardmgr</CODE> c&oacute;mo identificar
+la tarjeta, y qu&eacute; controlador(es) necesitan ser asociados a esta tarjeta. 
+Consulte la p&aacute;gina del manual de <CODE>pcmcia</CODE> para m&aacute;s informaci&oacute;n acerca
+del formato del archivo de configuraci&oacute;n. Si inserta una tarjeta
+desconocida, <CODE>cardmgr</CODE> normalmente almacenar&aacute; parte de informaci&oacute;n de
+la identificaci&oacute;n en el registro del sistema, lo cual puede usarse para
+elaborar la entrada de configuraci&oacute;n. Esta informaci&oacute;n puede mostrarse
+tambi&eacute;n con el comando <CODE>cardctl ident</CODE>. 
+<P>He aqu&iacute; un ejemplo de c&oacute;mo avisa <CODE>cardmgr</CODE> de una tarjeta no soportada
+en <CODE>/usr/adm/messages</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  cardmgr[460]: unsupported card in socket 1
+  cardmgr[460]: product info: "MEGAHERTZ", "XJ2288", "V.34 PCMCIA MODEM"
+  cardmgr[460]: manfid: 0x0101, 0x1234  function: 2 (serial)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La entrada correspondiente en <CODE>/etc/pcmcia/config</CODE> podr&iacute;a ser:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       card "Megahertz XJ2288 V.34 Fax Modem"
+         version "MEGAHERTZ", "XJ2288", "V.34 PCMCIA MODEM"
+         bind "serial_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>o usar los c&oacute;digos de ID m&aacute;s compactos del producto:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       card "Megahertz XJ2288 V.34 Fax Modem"
+         manfid 0x0101, 0x1234
+         bind "serial_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Puede usar <CODE>*</CODE> para comparar cadenas que no necesiten concordar
+exactamente, como los n&uacute;meros de versi&oacute;n. Cuando haga nuevas entradas en
+la configuraci&oacute;n, hay que ser cuidadosos para copiar las cadenas
+exactamente, preservando may&uacute;sculas y min&uacute;sculas, y espacios en blanco.
+Aseg&uacute;rese tambi&eacute;n de que la entrada en la configuraci&oacute;n tiene el m&iacute;smo
+n&uacute;mero de cadenas que aparecen en el archivo de registro.
+<P>Tenga en cuenta que puede especificar cualquier controlador para una
+tarjeta, pero si s&oacute;lo est&aacute; dando palos de ciego, no hay mucha raz&oacute;n para
+esperar que esto resulte productivo. Puede tener suerte y encontrar que su
+tarjeta est&aacute; soportada por un controlador existente. Sin embargo, el
+resultado m&aacute;s probable es que el controlador no funcione, y puede tener
+efectos laterales desafortunados como el congelamiento de su sistema. A
+diferencia de la mayor&iacute;a de los controladores de dispositivos, los cuales
+comprueban la pressencia de la tarjeta apropiada, el sondeo para un
+dispositivo PCMCIA se hace con <CODE>cardmgr</CODE>, y el controlador por s&iacute; mismo
+puede no verificar antes de intentar comunicarse con el dispositivo. 
+<P>Despu&eacute;s de editar <CODE>/etc/pcmcia/config</CODE>, env&iacute;e una se&ntilde;al a
+<CODE>cardmgr</CODE> para recargar el archivo con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       kill -HUP `cat /var/run/cardmgr.pid`
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si configura una entrada para una tarjeta nueva, por favor, env&iacute;eme una
+copia para que pueda incluirla en el archivo de configuraci&oacute;n est&aacute;ndar.
+<P>
+<H2><A NAME="ne2000"></A> <A NAME="ss6.2">6.2 Soporte para una tarjeta ethernet compatible con NE2000</A>
+</H2>
+
+<P>
+<P>Antes de empezar: este procedimiento s&oacute;lo funcionar&aacute; para tarjetas
+ethernet simples. Las tarjetas multifunci&oacute;n (por ejemplo, las tarjetas
+«combo» ethernet/m&oacute;dem) tienen una capa extra de complejidad en relaci&oacute;n a
+c&oacute;mo est&aacute;n integradas las dos funciones, y generalmente no pueden
+soportarse sin obtener algo de informaci&oacute;n de la configuraci&oacute;n provista
+por el fabricante de la tarjeta. Usar el procedimiento siguiente con una
+tarjeta multifunci&oacute;n no resultar&aacute; productivo en absoluto. 
+<P>Primero, compruebe si la tarjeta es reconocida por <CODE>cardmgr</CODE>. Algunas
+tarjetas que no est&aacute;n listadas en <CODE>SUPPORTED.CARDS</CODE> son realmente
+versiones OEM de tarjetas que s&iacute; est&aacute;n soportadas. Si encuentra una
+tarjeta como &eacute;sta, h&aacute;gamelo saber para que pueda a&ntilde;adirla a la lista. 
+<P>Si su tarjeta no es reconocida, siga las instrucciones en la secci&oacute;n 
+<A HREF="#configurando">Configuraci&oacute;n de tarjetas no reconocidas</A> para
+crear una entrada en la configuraci&oacute;n para su tarjeta, y relacionar la
+tarjeta con el controlador <CODE>pcnet_cs</CODE>. Reinicie <CODE>cardmgr</CODE> para
+utilizar el archivo de configuraci&oacute;n actualizado.
+<P>Si el controlador <CODE>pcnet_cs</CODE> dice que no puede determinar la direcci&oacute;n
+ethernet del hardware de la tarjeta, edite su nueva entrada en la
+configuraci&oacute;n para relacionar la tarjeta con el controlador de memoria
+<CODE>memory_cs</CODE>. Reinicie <CODE>cardmgr</CODE> para utilizar el nuevo archivo de
+configuraci&oacute;n actualizado. Necesitar&aacute; conocer la direcci&oacute;n ethernet del
+hardware de la tarjeta. Esta direcci&oacute;n es una serie de seis n&uacute;meros
+hexadecimales de dos d&iacute;gitos, impresos normalmente en la misma tarjeta. Si
+no est&aacute;n impresos en la tarjeta, puede usar un controlador de DOS para
+mostrar la direcci&oacute;n. En cualquier caso, una vez que la sepa, ejecute:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       dd if=/dev/mem0a count=20 | od -Ax -t x1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>y busque el volcado de informaci&oacute;n de su tarjeta. S&oacute;lo los bytes pares
+est&aacute;n definidos, as&iacute; que ignore los bytes impares del volcado. Anote el
+desplazamiento hexadecimal del primer byte de la direcci&oacute;n. Ahora, edite
+<CODE>clients/pcnet_cs.c</CODE> y busque la estructura <CODE>hw_info</CODE>. 
+Necesitar&aacute; crear una nueva entrada para la tarjeta. El primer campo es el
+desplazamiento de memoria. Los siguientes tres campos son los primeros
+tres bytes de la direcci&oacute;n de hardware. El campo final contiene algunos
+indicadores de caracter&iacute;sticas especiales de la tarjeta; para empezar,
+pruebe estableci&eacute;ndola a <CODE>0</CODE>. 
+<P>Despu&eacute;s de editar <CODE>pcnet_cs.c</CODE>, compile e instale el nuevo m&oacute;dulo. 
+Edite nuevamente <CODE>/etc/pcmcia/config/</CODE>, y cambie la relaci&oacute;n de
+<CODE>memory_cs</CODE> con <CODE>pcnet_cs</CODE>. Siga las instrucciones para recargar el
+archivo de configuraci&oacute;n, y habr&aacute; terminado. Por favor m&aacute;ndeme copias de
+sus nuevas entradas de configuraci&oacute;n a <CODE>hw_info</CODE>.
+<P>Si no puede encontrar la direcci&oacute;n hardware de su tarjeta en el vaciado
+hexadecimal, como un &uacute;ltimo recurso, puede «forzar» la direcci&oacute;n cuando se
+inicializa el m&oacute;dulo <CODE>pcnet_cs</CODE>. Edite <CODE>/etc/pcmcia/config.opts</CODE>
+y a&ntilde;ada una opci&oacute;n <CODE>hw_addr</CODE>, como esta: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       module "pcnet_cs" opts "hw_addr=0x00,0x80,0xc8,0x01,0x02,0x03"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Por supuesto, sustituya su propia direcci&oacute;n de hardware de la tarjeta en
+el punto apropiado. Tenga en cuenta que si ha tenido que hacer esto, es
+muy dif&iacute;cil que su tarjeta sea genuinamente compatible con NE2000. De
+hecho, no estoy seguro de la existencia de tarjetas que no sean manejadas
+por alguno de los dos primeros m&eacute;todos. 
+<P>
+<H2><A NAME="floppy"></A> <A NAME="ss6.3">6.3 Tarjetas PCMCIA para unidades de disquete </A>
+</H2>
+
+<P>
+<P>La interfaz para disquete PCMCIA que se usa en los <I>Compaq Aero</I> y
+otros equipos todav&iacute;a no est&aacute; soportada por este paquete. La dificultad
+para soportar el disquete Aero radica en que el Aero parece usar un
+controlador PCMCIA personalizado para soportar DMA en el disquete. Sin
+saber ex&aacute;ctamente c&oacute;mo se hace esto, no hay forma de implementar soporte
+bajo Linux. 
+<P>Si la tarjeta del adaptador de disquete est&aacute; presente cuando se inicia, la
+BIOS configurar&aacute; la tarjeta, y Linux la identificar&aacute; como una unidad de
+disquete normal. Cuando se cargan los controladores PCMCIA de Linux,
+notar&aacute;n que la tarjeta ya est&aacute; configurada y conectada al controlador de
+Linux, y este socket se dejar&aacute; solo. As&iacute; que, la unidad puede usarse si
+est&aacute; presente al momento de iniciar, pero la tarjeta no se puede
+intercambiar en caliente.
+<P>
+<H2><A NAME="xircom"></A> <A NAME="ss6.4">6.4 ¿Qu&eacute; hay de las tarjetas Xircom? </A>
+</H2>
+
+<P>
+<P>El paquete actual PCMCIA incluye un controlador para las tarjetas ethernet
+y ethernet/modem de Xircom, gracias al trabajo de Werner Koch. He
+dispuesto un foro especialmente para la discusi&oacute;n del desarrollo del
+controlador Xircom, en <CODE>
+<A HREF="http://hyper.stanford.edu/HyperNews/get/pcmcia/xircom.html">http://hyper.stanford.edu/HyperNews/get/pcmcia/xircom.html</A></CODE>. 
+<P>Durante mucho tiempo, las tarjetas Xircom no fueron soportadas porque
+Xircom ten&iacute;a como pol&iacute;tica de la compa&ntilde;&iacute;a no divulgar informaci&oacute;n t&eacute;cnica
+acerca de sus tarjetas. Sin embargo, han modificado sus reglas, y ahora,
+distribuyen informaci&oacute;n de los controladores... 
+<P>
+<HR>
+<A HREF="PCMCIA-Como-7.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-5.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc6">Índice general</A>
+</BODY>
+</HTML>

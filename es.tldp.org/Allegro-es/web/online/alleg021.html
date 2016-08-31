@@ -1,0 +1,208 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 21 Rutinas FLIC
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="21 Rutinas FLIC">21 Rutinas FLIC</a></h1>
+
+<ul>
+<li><a href="#close_fli">close_fli</a>
+<li><a href="#fli_bitmap">fli_bitmap</a>
+<li><a href="#fli_bmp_dirty_from">fli_bmp_dirty_from</a>
+<li><a href="#fli_bmp_dirty_to">fli_bmp_dirty_to</a>
+<li><a href="#fli_frame">fli_frame</a>
+<li><a href="#fli_pal_dirty_from">fli_pal_dirty_from</a>
+<li><a href="#fli_pal_dirty_to">fli_pal_dirty_to</a>
+<li><a href="#fli_palette">fli_palette</a>
+<li><a href="#fli_timer">fli_timer</a>
+<li><a href="#next_fli_frame">next_fli_frame</a>
+<li><a href="#open_fli">open_fli</a>
+<li><a href="#open_memory_fli">open_memory_fli</a>
+<li><a href="#play_fli">play_fli</a>
+<li><a href="#play_memory_fli">play_memory_fli</a>
+<li><a href="#reset_fli_variables">reset_fli_variables</a>
+</ul>
+
+<p>
+Hay dos funciones de alto nivel para reproducir animaciones FLI/FLC:
+play_fli(), la cual lee datos directamente del disco, y play_memory_fli(),
+la cual usa datos que ya están cargados en la RAM. Aparte de las diferentes
+fuentes de las que se sacan los datos, estas dos funciones se comportan de
+forma idéntica. Ambas dibujan la animación en el bitmap especificado, que
+debería ser normalmente screen. Los cuadros se alinearán con la esquina
+superior izquierda del bitmap: si quiere posicionarlos en otra parte de la
+pantalla tendrá que crear un sub-bitmap y decirle al reproductor FLI que
+dibuje allí la animación. Si loop está activado, el reproductor volverá al
+principio de la animación cuando ésta acabe, de otro modo, reproducirá la
+animación una vez. Si la función callback no es NULL, será llamada por cada
+frame, permitiéndole realizar tareas en segundo plano. La rutina de callback
+debe devolver cero: si retorna un valor que no es cero, el reproductor se
+parará (este es el único modo de parar una animación que esté siendo
+repetida). El reproductor FLI devuelve FLI_OK si ha llegado al final del
+fichero, FLI_ERROR si hubo problemas, y el valor de la función callback, si
+fue ésta la que paró la reproducción. Si necesita distinguir entre
+diferentes valores de retorno, su rutina de callback debería devolver
+enteros positivos, ya que FLI_OK es cero y FLI_ERROR negativo. Tome nota de
+que el reproductor FLI sólo funcionará si se instaló el módulo de
+temporización, y que alterará la paleta de colores según la del fichero de
+animación.
+
+<p>
+Ocasionalmente podría necesitar un control más detallado sobre la
+reproducción FLI, por ejemplo si quiere sobreimprimir algún texto sobre la
+animación, o reproducirla a una velocidad diferente. Puede hacer ambas
+cosas usando las funciones de bajo nivel descritas abajo.
+
+<p><br>
+<b>int <a name="play_fli">play_fli</a>(const char *filename, BITMAP *bmp, int loop, int (*callback)());</b><br>
+   Reproduce un fichero FLI o FLC del Autodesk Animator, leyendo los datos
+   del disco según se necesiten.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#play_memory_fli">play_memory_fli</a>,
+<a class="xref" href="alleg004.html#install_timer">install_timer</a>,
+<a class="xref" href="#fli_frame">fli_frame</a>.</font></blockquote>
+<b>int <a name="play_memory_fli">play_memory_fli</a>(const void *fli_data, BITMAP *bmp, int loop,</b>
+<b>           int (*callback)());</b><br>
+   Reproduce una animación FLI o FLC del AutoDesk Animator, leyendo los datos
+   de una copia de un fichero que se almacena en memoria. Puede obtener el
+   puntero fli_data reservando un bloque de memoria con malloc y copiando el
+   fichero FLI allí, o importando un FLI en un fichero de datos con el
+   grabber. Reproducir animaciones desde la memoria es obviamente más rápido
+   que desde disco, y es particularmente útil con animaciones FLI pequeñas
+   que se repiten. Sin embargo, las animaciones pueden fácilmente llegar a
+   ser grandes, por lo que en la mayoría de los casos sería mejor que use
+   play_fli().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#play_fli">play_fli</a>,
+<a class="xref" href="alleg004.html#install_timer">install_timer</a>,
+<a class="xref" href="#fli_frame">fli_frame</a>.</font></blockquote>
+<b>int <a name="open_fli">open_fli</a>(const char *filename);</b><br>
+<b>int <a name="open_memory_fli">open_memory_fli</a>(const void *fli_data);</b><br>
+   Abre un fichero FLI para reproducirlo, leyendo los datos del disco o de
+   la memoria respectivamente. Devuelve FLI_OK con éxito. La información del
+   FLI actual está almacenada en variables globales, por lo que sólo puede
+   tener una animación abierta a la vez.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#close_fli">close_fli</a>,
+<a class="xref" href="#next_fli_frame">next_fli_frame</a>.</font></blockquote>
+<b>void <a name="close_fli">close_fli</a>();</b><br>
+   Cierra un FLI cuando haya acabado con él.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#open_fli">open_fli</a>.</font></blockquote>
+<b>int <a name="next_fli_frame">next_fli_frame</a>(int loop);</b><br>
+   Lee el siguiente cuadro de la animación actual. Si loop está activado, el
+   reproductor volverá al principio cuando llegue al final del fichero, o
+   devolverá FLI_EOF si loop está desactivado. Devuelve FLI_OK con éxito,
+   FLI_ERROR o FLI_NOT_OPEN si hubo error, y FLI_EOF al alcanzar el final del
+   fichero. El cuadro es leído y almacenado en las variables globales
+   fli_bitmap y fli_palette.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#open_fli">open_fli</a>,
+<a class="xref" href="#fli_bitmap">fli_bitmap</a>,
+<a class="xref" href="#fli_palette">fli_palette</a>,
+<a class="xref" href="#fli_timer">fli_timer</a>,
+<a class="xref" href="#fli_frame">fli_frame</a>.</font></blockquote>
+<b>extern BITMAP *<a name="fli_bitmap">fli_bitmap</a>;</b><br>
+   Contiene el cuadro actual de la animación FLI/FLC.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#next_fli_frame">next_fli_frame</a>,
+<a class="xref" href="#fli_bmp_dirty_from">fli_bmp_dirty_from</a>,
+<a class="xref" href="#fli_palette">fli_palette</a>.</font></blockquote>
+<b>extern PALETTE <a name="fli_palette">fli_palette</a>;</b><br>
+   Contiene la paleta del FLI actual.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#next_fli_frame">next_fli_frame</a>,
+<a class="xref" href="#fli_pal_dirty_from">fli_pal_dirty_from</a>,
+<a class="xref" href="#fli_bitmap">fli_bitmap</a>.</font></blockquote>
+<b>extern int <a name="fli_bmp_dirty_from">fli_bmp_dirty_from</a>;</b><br>
+<b>extern int <a name="fli_bmp_dirty_to">fli_bmp_dirty_to</a>;</b><br>
+   Estas variables son fijadas por next_fli_frame() para indicar qué parte
+   de fli_bitmap ha cambiado desde la última llamada a
+   reset_fli_variables(). Si fli_bmp_dirty_from es mayor que
+   fli_bmp_dirty_to, el bitmap no cambió. De otro modo, las líneas de
+   fli_bmp_dirty_from a fli_bmp_dirty_to (inclusive) fueron alteradas.
+   Puede usar estos valores cuando copie fli_bitmap en pantalla, para
+   evitar mover datos innecesariamente.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fli_bitmap">fli_bitmap</a>,
+<a class="xref" href="#reset_fli_variables">reset_fli_variables</a>.</font></blockquote>
+<b>extern int <a name="fli_pal_dirty_from">fli_pal_dirty_from</a>;</b><br>
+<b>extern int <a name="fli_pal_dirty_to">fli_pal_dirty_to</a>;</b><br>
+   Estas variables son fijadas por next_fli_frame() para indicar qué parte
+   de fli_palette fue cambiada desde la última llamada a
+   reset_fli_variables(). Si fli_pal_dirty_from es mayor que
+   fli_pal_dirty_to, la paleta no fue modificada. De otro modo, los colores
+   de fli_pal_dirty_from a fli_pal_dirty_to (inclusive) fueron alterados.
+   Puede usar estas variables cuando actualice la paleta hardware, para
+   evitar llamadas innecesarias a set_palette().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fli_palette">fli_palette</a>,
+<a class="xref" href="#reset_fli_variables">reset_fli_variables</a>.</font></blockquote>
+<b>void <a name="reset_fli_variables">reset_fli_variables</a>();</b><br>
+   Una vez haya hecho lo que fuese a hacer con fli_bitmap y fli_palette,
+   llame esta función para resetear las variables fli_bmp_dirty_* y
+   fli_pal_dirty_*.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fli_bmp_dirty_from">fli_bmp_dirty_from</a>,
+<a class="xref" href="#fli_pal_dirty_from">fli_pal_dirty_from</a>.</font></blockquote>
+<b>extern int <a name="fli_frame">fli_frame</a>;</b><br>
+   Variable global que contiene el número de cuadro actual del fichero FLI.
+   Esto es útil para sincronizar otros eventos con la animación, por ejemplo
+   podría comprobarla en la función callback de play_fli() y usarla para
+   reproducir un sample en un punto particular.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#play_fli">play_fli</a>,
+<a class="xref" href="#play_memory_fli">play_memory_fli</a>,
+<a class="xref" href="#next_fli_frame">next_fli_frame</a>.</font></blockquote>
+<b>extern volatile int <a name="fli_timer">fli_timer</a>;</b><br>
+   Variable global para cronometrar la reproducción FLI. Cuando abre un
+   fichero FLI, una interrupción de temporizador es instalada, la cual
+   incrementa esta variable cada vez que se va a visualizar un nuevo cuadro.
+   Llamando a next_fli_frame() la decrementa, por lo que puede comprobarla
+   y saber el momento de enseñar un nuevo cuadro cuando sea mayor que cero.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg004.html#install_timer">install_timer</a>,
+<a class="xref" href="#next_fli_frame">next_fli_frame</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

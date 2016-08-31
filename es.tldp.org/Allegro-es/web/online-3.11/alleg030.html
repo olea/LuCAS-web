@@ -1,0 +1,546 @@
+<html><head><title>30 Rutinas GUI</title><body>
+<h1><a name="30 Rutinas GUI">30 Rutinas GUI</a></h1>
+<p>
+<ul><h4>
+<li><a href="#d_clear_proc">d_clear_proc</a>
+<li><a href="#d_box_proc">d_box_proc</a>
+<li><a href="#d_shadow_box_proc">d_shadow_box_proc</a>
+<li><a href="#d_bitmap_proc">d_bitmap_proc</a>
+<li><a href="#d_text_proc">d_text_proc</a>
+<li><a href="#d_ctext_proc">d_ctext_proc</a>
+<li><a href="#d_button_proc">d_button_proc</a>
+<li><a href="#d_check_proc">d_check_proc</a>
+<li><a href="#d_radio_proc">d_radio_proc</a>
+<li><a href="#d_icon_proc">d_icon_proc</a>
+<li><a href="#d_keyboard_proc">d_keyboard_proc</a>
+<li><a href="#d_edit_proc">d_edit_proc</a>
+<li><a href="#d_list_proc">d_list_proc</a>
+<li><a href="#d_textbox_proc">d_textbox_proc</a>
+<li><a href="#d_slider_proc">d_slider_proc</a>
+<li><a href="#d_menu_proc">d_menu_proc</a>
+<li><a href="#gui_mouse_focus">gui_mouse_focus</a>
+<li><a href="#gui_fg_color">gui_fg_color</a>
+<li><a href="#gui_bg_color">gui_bg_color</a>
+<li><a href="#gui_mg_color">gui_mg_color</a>
+<li><a href="#gui_font_baseline">gui_font_baseline</a>
+<li><a href="#gui_mouse_x">gui_mouse_x</a>
+<li><a href="#gui_mouse_y">gui_mouse_y</a>
+<li><a href="#gui_mouse_b">gui_mouse_b</a>
+<li><a href="#gui_textout">gui_textout</a>
+<li><a href="#gui_strlen">gui_strlen</a>
+<li><a href="#centre_dialog">centre_dialog</a>
+<li><a href="#set_dialog_color">set_dialog_color</a>
+<li><a href="#find_dialog_focus">find_dialog_focus</a>
+<li><a href="#dialog_message">dialog_message</a>
+<li><a href="#broadcast_dialog_message">broadcast_dialog_message</a>
+<li><a href="#do_dialog">do_dialog</a>
+<li><a href="#popup_dialog">popup_dialog</a>
+<li><a href="#init_dialog">init_dialog</a>
+<li><a href="#update_dialog">update_dialog</a>
+<li><a href="#shutdown_dialog">shutdown_dialog</a>
+<li><a href="#active_dialog">active_dialog</a>
+<li><a href="#do_menu">do_menu</a>
+<li><a href="#active_menu">active_menu</a>
+<li><a href="#alert">alert</a>
+<li><a href="#alert3">alert3</a>
+<li><a href="#file_select">file_select</a>
+<li><a href="#gfx_mode_select">gfx_mode_select</a>
+<li><a href="#gfx_mode_select_ex">gfx_mode_select_ex</a>
+</h4></ul>
+<p><br><br>
+<p>
+Allegro posee un mánager de diálogos orientados a objetos que originalmente
+se basa en el sistema GEM del Atari (form_do(), objc_draw(), etc:
+programadores veteranos del ST saben de lo que estoy hablando :-) Puede
+usar el GUI tal y como esta para crear interfaces simples para cosas como el
+programa test y la utilidad grabber, o puede usarlo como base para sistemas
+más complicados que cree. Allegro le deja definir sus propios tipos de
+objetos y escribir nuevos procesos de diálogo, por lo que tendrá control
+total sobre los aspectos visuales de la interfaz mientras todavía usa
+Allegro para controlar el ratón, teclado, joystick, etc.
+<p>
+Un dialogo GUI se almacena como un array de objetos DIALOG, de los cuales
+cada uno cuenta con los siguientes parámetros:
+<p><pre>
+typedef struct DIALOG
+{
+   int (*proc)(int, DIALOG *, int); - proceso de dialogo (controlador de
+                                      mensajes)
+   int x, y, w, h;                  - posición y tamaño del objeto
+   int fg, bg;                      - colores de letra y fondo
+   int key;                         - atajo ASCII del teclado
+   int flags;                       - biestable sobre el estado del objeto
+   int d1, d2;                      - úselos para lo que quiera
+   void *dp, *dp2, *dp3;            - punteros a datos específicos del
+                                      objeto
+} DIALOG;
+<p></pre>
+El array debe acabar con un objeto que tiene el proceso de dialogo puesto
+a NULL.
+<p>
+El campo de biestables puede contener cualquiera de los siguientes
+biestables de bits o una combinación de ellos.
+<pre>
+   D_EXIT          - este objeto debe cerrar el dialogo al activarse
+   D_SELECTED      - este objeto esta seleccionado
+   D_GOTFOCUS      - este objeto tiene el foco de entrada
+   D_GOTMOUSE      - el ratón esta actualmente encima del objeto
+   D_HIDDEN        - este objeto esta oculto e inactivo
+   D_DISABLED      - este objeto esta de color gris e inactivo
+   D_INTERNAL      - ¡no use esto! Es para uso interno de la biblioteca...
+   D_USER          - cualquier valor múltiplo de dos mayor que éste esta
+                     libre para que lo use
+<p></pre>
+Cada objeto es controlado por un proceso de diálogo, que se almacena en el
+puntero proc. Este será llamado por el mánager de diálogos cuando se
+produzca alguna acción que involucre al objeto, o puede llamarlo
+directamente con la macro SEND_MESSAGE. El proceso de diálogo debe seguir la
+siguiente forma:
+<p><pre>
+   int foo(int msg, DIALOG *d, int c);
+<p></pre>
+Se le pasará un biestable (msg) indicando que debe hacer, un puntero al
+objeto concerniente (d), y si msg es MSG_CHAR o MSG_XCHAR, la tecla que ha
+sido pulsada (c). Fíjese que d es un puntero a un objeto especifico y no al
+dialogo entero.
+<p>
+El dialogo debería devolver uno de los valores siguientes:
+<pre>
+   D_O_K          - estado normal de retorno
+   D_CLOSE        - le dice al mánager de diálogos que cierre el dialogo
+   D_REDRAW       - le dice al mánager de diálogos que redibuje el dialogo
+   D_WANTFOCUS    - requiere que se le de el foco de entrada al objeto
+   D_USED_CHAR    - MSG_CHAR y MSG_XCHAR devuelven esto si se uso una tecla
+<p></pre>
+Los procesos de dialogo se pueden llamar con cualquiera de estos mensajes:
+<p>
+<b>MSG_START:</b><br>
+   Le dice al objeto que se inicialice. El mánager de dialogo manda esto a
+   todos los objetos del dialogo justo antes de mostrarlo.
+<p>
+<b>MSG_END:</b><br>
+   Se manda a todos los objetos cuando se cierra un dialogo, permitiéndoles
+   que hagan los procesos de limpieza que necesiten.
+<p>
+<b>MSG_DRAW:</b><br>
+   Le dice al objeto que se dibuje en pantalla. El puntero del ratón se
+   desactivara cuando este mensaje sea mandado, para que el código de
+   dibujado no se preocupe por él.
+<p>
+<b>MSG_CLICK:</b><br>
+   Informa al objeto que un botón del ratón a sido pulsado mientras el
+   ratón estaba encima del objeto. Normalmente el objeto realizará su
+   propio seguimiento del ratón mientras el botón esté pulsado, y sólo
+   volverá de este controlador de mensaje cuando se suelte el botón.
+<p>
+<b>MSG_DCLICK:</b><br>
+   Se manda cuando el usuario hace un doble click en un objeto. Primero se
+   manda el mensaje MSG_CLICK cuando se presiona el botón por primera vez, y
+   entonces MSG_DCLICK si se suelta y vuelve a presionar otra vez en un
+   corto periodo de tiempo.
+<p>
+<b>MSG_KEY:</b><br>
+   Mandado cuando el atajo de teclado del objeto se presiona, o si se pulsa
+   enter, espacio, o algún botón del joystick cuando el objeto tiene el foco
+   de entrada.
+<p>
+<b>MSG_CHAR:</b><br>
+   Cuando se pulsa una tecla, este mensaje es mandado al objeto que tiene el
+   foco de entrada. Si el foco trata con la pulsación de teclas, debería
+   retornar D_USED_CHAR, en caso contrario debería retornar D_O_K para
+   permitir operar al interfaz de teclado por defecto.
+<p>
+<b>MSG_XCHAR:</b><br>
+   Cuando se pulsa una tecla, Allegro mandara MSG_CHAR al objeto que tenga
+   el foco de entrada. Si este objeto no procesa la entrada (ya que por
+   ejemplo retorna D_O_K en vez de D_USED_CHAR), el mánager de dialogo
+   mirara si hay algún dialogo con que se corresponda la tecla pulsada, y le
+   manda un MSG_KEY. Si esto falla, mandara un MSG_XCHAR al resto de los
+   objetos del dialogo permitiéndoles responder a pulsaciones de tecla
+   especiales incluso cuando no tienen el foco de entrada. Normalmente
+   debería ignorar este mensaje (devuelve D_O_K en vez de D_USED_CHAR),
+   con lo cual Allegro realizara las acciones por defecto como mover el foco
+   de entrada en respuesta a los cursores y cerrar el dialogo si se pulsa
+   ESC.
+<p>
+<b>MSG_WANTFOCUS:</b><br>
+   Determina si un objeto quiere recibir el foco de entrada. Deberá retornar
+   D_WANTFOCUS si lo hace, o D_O_K si no esta interesado en recibir datos
+   del usuario.
+<p>
+<b>MSG_GOTFOCUS:</b><br>
+<b>MSG_LOSTFOCUS:</b><br>
+   Es mandado cuando un objeto gana o pierde el foco de entrada. Estos
+   mensajes siempre son seguidos por un MSG_DRAW, para dejar que los objetos
+   se redibujen de manera diferente. Si devuelve D_WANTFOCUS en respuesta a
+   un evento MSG_LOSTFOCUS, esto le permitirá a su objeto quedarse con el
+   foco de entrada incluso si el ratón deja de estar sobre él y se pone
+   sobre el fondo u otro objeto inerte, por lo que solamente perderá el foco
+   de entrada cuando otro objeto esté preparado para cogerlo (este truco es
+   usado por el objeto d_edit_proc()).
+<p>
+<b>MSG_GOTMOUSE:</b><br>
+<b>MSG_LOSTMOUSE:</b><br>
+   Es mandado cuando el ratón se pone o quita de un objeto. A diferencia de
+   los mensajes de foco, a estos no les sigue un MSG_DRAW, por lo que si el
+   objeto se dibuja de forma diferente cuando el ratón esta encima suyo, es
+   responsable de redibujarse él solo como respuesta a estos mensajes.
+<p>
+<b>MSG_IDLE:</b><br>
+   Es mandado cuando el dialogo de mánager no tiene nada mejor que hacer.
+<p>
+<b>MSG_RADIO:</b><br>
+   Es mandado por botones de radio para deseleccionar otros botones en el
+   mismo grupo cuando son pinchados. El número del grupo se pasa en el
+   parámetro del mensaje c.
+<p>
+<b>MSG_USER:</b><br>
+   El primer valor de mensaje libre. Cualquier número a partir de aquí
+   (MSG_USER, MSG_USER+1, MSG_USER+2, ... MSG_USER+n) es libre para lo que
+   quiera.
+<p>
+Allegro trae varios procesos de dialogo estándar. Puede usarlos tal como
+vienen para crear una interfaz de objetos simples, o puede usarlos desde
+sus propios proceses de diálogo, resultando en una especie de herencia de
+objetos. Por ejemplo, podría hacer un objeto que llama d_button_proc para
+dibujarse, pero controla el mensaje de pulsación del botón del ratón de
+forma diferente, o un objeto que llama d_button_proc para cualquier cosa
+excepto para dibujarse a si mismo, por lo que se comportaría como un botón
+normal pero podría ser completamente diferente.
+<p>
+<b>int <a name="d_clear_proc">d_clear_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Esto simplemente borra la pantalla al ser dibujado. Util como el primer
+   objeto de un dialogo.
+<p>
+<b>int <a name="d_box_proc">d_box_proc</a>(int msg, DIALOG *d, int c);</b><br>
+<b>int <a name="d_shadow_box_proc">d_shadow_box_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Estos dibujan cajas en la pantalla, con o sin sombra.
+<p>
+<b>int <a name="d_bitmap_proc">d_bitmap_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Esto dibuja un bitmap en la pantalla, que deberá ser apuntado por el
+   campo dp.
+<p>
+<b>int <a name="d_text_proc">d_text_proc</a>(int msg, DIALOG *d, int c);</b><br>
+<b>int <a name="d_ctext_proc">d_ctext_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Estos dibujan texto en la pantalla. El campo dp debe apuntar a la cadena
+   de texto a visualizar. d_ctext_proc() centra la cadena alrededor de la
+   coordenada x. Todos los caracteres '&' de la cadena serán reemplazados
+   por líneas debajo del siguiente caracter, para enseñar los atajos de
+   teclado (tal y como en MS Windows). Para enseñar el caracter normal,
+   ponga "&&". Para dibujar el texto con otra cosa que no sea la fuente por
+   defecto, ajuste el campo dp2 para que apunte a una fuente propia.
+<p>
+<b>int <a name="d_button_proc">d_button_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Un botón objeto (el campo dp apunta a una cadena de texto). Este objeto
+   puede ser seleccionado pinchando sobre él con el ratón o presionando su
+   atajo de teclado. Si se pone el biestable D_EXIT, el seleccionarlo
+   provocara el cierre del dialogo. Si no, encenderá y apagará el dialogo.
+   Como en d_text_proc(), puede usar el caracter '&' para enseñar el atajo
+   de teclado del botón.
+<p>
+<b>int <a name="d_check_proc">d_check_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Esto es un ejemplo de cómo puede derivar objetos de otros objetos. La
+   mayoría de su funcionalidad viene de d_button_proc(), pero se visualiza
+   como una recuadro a marcar.
+<p>
+<b>int <a name="d_radio_proc">d_radio_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Un objeto de botón de radio. Un diálogo puede contener cualquier número
+   de grupos de botones de radio: el seleccionar un botón de radio provoca
+   que los otros botones del mismo grupo se desactiven. El campo dp apunta a
+   una cadena de texto, d1 requiere el número de grupo especifico, y d2 es el
+   estilo del botón (0=círculo, 1=cuadrado).
+<p>
+<b>int <a name="d_icon_proc">d_icon_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Un botón bitmap. El color fg es usado por la línea de puntos que enseña
+   el foco, y el color bg hace la sombra que rellena la parte superior e
+   izquierda del botón cuando este se presiona. d1 es la "profundidad", es
+   decir, el número de pixels que el icono será movido abajo a la derecha
+   cuando se seleccione (por defecto 2) si no hay imagen "seleccionada". d2
+   es la distancia entre los puntos de la línea del foco. dp apunta a un
+   bitmap para el icono, mientras que dp2 y dp3 son las imágenes de botón
+   seleccionado y no seleccionado (esto es opcional, puede ser NULL).
+<p>
+<b>int <a name="d_keyboard_proc">d_keyboard_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Este es un objeto invisible para implementar atajos de teclado. Puede
+   poner un código ASCII en el campo de la tecla del diálogo del objeto (un
+   caracter como 'a' responde a la pulsación de tecla, un número del 1 al 26
+   responde a Ctrl+una tecla a-z), o puede poner un scancode del teclado en
+   el campo d1 y/o d2. Cuando una de estas teclas es presionada, el objeto
+   llamara a la función apuntada por dp. Esto debería retornar un int, el
+   cual se pasara de vuelta al mánager de diálogo, para que pueda devolver
+   D_O_K, D_REDRAW, D_CLOSE, etc.
+<p>
+<b>int <a name="d_edit_proc">d_edit_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Un objeto de texto editable (el campo dp apunta a la cadena de texto).
+   Cuando tiene el foco de entrada (obtenido al pinchar sobre el objeto con
+   el ratón), se puede teclear texto en el objeto. El campo d1 indica el
+   número máximo de caracteres que se aceptaran, y d2 es la posición del
+   cursor dentro de la cadena de texto.
+<p>
+<b>int <a name="d_list_proc">d_list_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Un objeto de caja de lista. Esto permite al usuario ir hacia arriba o
+   abajo de la lista de ítems y seleccionar uno pinchando con el ratón o
+   usando las teclas. Si el biestable D_EXIT está puesto, haciendo doble click
+   en la lista de ítems cerrará el diálogo. El índice del objeto
+   seleccionado se encuentra en el campo d1, y d2 es usado para indicar
+   hasta dónde se ha desplazado la lista de ítems. El campo dp apunta a una
+   función que será llamada para obtener información sobre los contenidos de
+   la lista. Esto debería seguir el modelo:
+<p><pre>
+      char *foobar(int index, int *list_size);
+<p></pre>
+   Si index es cero o positivo, la función debe devolver un puntero a la
+   cadena que debe enseñarse en la posición index en la lista. Si index es
+   negativo, debe retornar NULL y en list_size debe poner el número de
+   ítems de la lista.
+<p>
+   Para crear una lista de selección múltiple, ponga el campo dp2 a un array
+   de biestables de byte que indican el estado de selección de cada ítem de la
+   lista (no-cero para entradas seleccionadas). ¡Esta tabla debe ser al
+   menos tan grande como el número de objetos de la lista!
+<p>
+<b>int <a name="d_textbox_proc">d_textbox_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Un objeto de caja de texto. El campo dp apunta al texto que debe
+   enseñarse en la caja. Si el texto es largo, habrá una barra de
+   desplazamiento vertical a la derecha del objeto que podrá ser usada para
+   mover el texto dentro de la caja. El valor por defecto es imprimir el
+   texto con ajuste de anchura a nivel de palabra, pero si se activa el
+   biestablea D_SELECTED, el texto se imprimirá con ajuste de anchura a nivel
+   de carácter. El campo d1 se usa internamente para guardar el número de
+   líneas de texto, y d2 es usado para guardar hasta dónde se ha desplazado
+   el texto.
+<p>
+<b>int <a name="d_slider_proc">d_slider_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Una barra de desplazamiento. Este objeto tiene un valor en d2, en el
+   rango de 0 a d1. Enseñará una barra de desplazamiento vertical si h es
+   más grande o igual a w, de otro modo enseñará una barra horizontal. El
+   campo dp puede contener un bitmap opcional que usará la barra de
+   desplazamiento, y dp2 puede contener una función opcional de callback,
+   que será llamada cada vez que d2 cambia. La función callback debería
+   seguir el prototipo:
+<p><pre>
+      int function(void *dp3, int d2);
+<p></pre>
+   El objeto d_slider_proc retornará el valor de la función callback.
+<p>
+<b>int <a name="d_menu_proc">d_menu_proc</a>(int msg, DIALOG *d, int c);</b><br>
+   Este objeto es una barra de menú que abre menús hijos cuando se pincha en
+   él o cuando alguna combinación alt+tecla es pulsada y se corresponde con
+   algún atajo del menú. El objeto ignora muchos de los campos de la
+   estructura de diálogo, particularmente el color se coge de las variables
+   gui_*_color, y el ancho y alto se calculan automáticamente. El campo dp
+   apunta a un array de estructuras de menú: mire do_menu() para más
+   información. El nivel de arriba del menú será visualizado como una barra
+   horizontal, pero cuando aparezcan los menús hijos, aparecerán con el
+   formato vertical usual usado por do_menu(). Cuando un ítem del menú es
+   seleccionado, el valor de retorno de la función del menú se pasa al
+   mánager de diálogo, para que las funciones de sus menús puedan devolver
+   D_O_K, D_REDRAW, o D_CLOSE.
+<p>
+El comportamiento del mánager de diálogos se controla con las siguientes
+variables:
+<p>
+<b>extern int <a name="gui_mouse_focus">gui_mouse_focus</a>;</b><br>
+   Si esta activado, el foco de entrada sigue al puntero del ratón, de otro
+   modo, un click es requerido para mover el foco de entrada.
+<p>
+<b>extern int <a name="gui_fg_color">gui_fg_color</a>, <a name="gui_bg_color">gui_bg_color</a>;</b><br>
+   Los colores de primer plano y fondo de los diálogos estándar (alertas,
+   menús, y el selector de ficheros). Por defecto son 255 y 0.
+<p>
+<b>extern int <a name="gui_mg_color">gui_mg_color</a>;</b><br>
+   El color usado para enseñar los diálogos en gris (los que tienen el
+   biestable D_DISABLED activado). Por defecto es 8.
+<p>
+<b>extern int <a name="gui_font_baseline">gui_font_baseline</a>;</b><br>
+   Si se pone a cero, ajusta los subrayados de los atajos de teclado para
+   que igualen la altura de bajada de su texto
+   <i>*** No he sabido traducir esto. ***</i>
+   If set to a non-zero value, adjusts the keyboard shortcut underscores to
+   account for the height of the descenders in your font.
+<p>
+<b>extern int (*<a name="gui_mouse_x">gui_mouse_x</a>)();</b><br>
+<b>extern int (*<a name="gui_mouse_y">gui_mouse_y</a>)();</b><br>
+<b>extern int (*<a name="gui_mouse_b">gui_mouse_b</a>)();</b><br>
+   Funciones de gancho, usadas por las rutinas GUI siempre que necesiten
+   acceder al estado del ratón. Por defecto éstas devuelven copias de las
+   variables mouse_x, mouse_y y mouse_b, pero pueden ser usadas para escalar
+   la posición del ratón, o para leer datos de una fuente totalmente
+   diferente.
+<p>
+Puede cambiar el puntero global a 'font' para hacer que los objetos del
+GUI usen otra cosa que la fuente estándar 8x8. Los procesos estándar de
+diálogo, los menús, las cajas de alerta, trabajarán con fuentes de cualquier
+tamaño, pero los diálogos file_select() y gfx_mode_select() aparecerán mal
+con cualquier cosa que no sean fuentes de 8x8.
+<p>
+<b>int <a name="gui_textout">gui_textout</a>(BITMAP *bmp, unsigned char *s, int x, y, color, centre);</b><br>
+   Función de ayuda usada por las rutinas GUI. Dibuja una cadena de texto en
+   la pantalla, interpretando el caracter '&' como el subrayado para enseñar
+   los atajos de teclado. Retorna el ancho de la cadena en pixels.
+<p>
+<b>int <a name="gui_strlen">gui_strlen</a>(unsigned char *s);</b><br>
+   Función de ayuda usada por las rutinas GUI. Retorna la longitud de una
+   cadena de texto en pixels, ignorando los caracteres '&'.
+<p>
+<b>void <a name="centre_dialog">centre_dialog</a>(DIALOG *dialog);</b><br>
+   Mueve un array de diálogos de objetos para que estén centrados en la
+   pantalla.
+<p>
+<b>void <a name="set_dialog_color">set_dialog_color</a>(DIALOG *dialog, int fg, int bg);</b><br>
+   Pone el color de primer plano y fondo de un array de diálogo de objetos.
+<p>
+<b>int <a name="find_dialog_focus">find_dialog_focus</a>(DIALOG *dialog);</b><br>
+   Busca el diálogo para el objeto que tiene el foco de entrada, devolviendo
+   un índice o -1 si no hay foco de entrada. Esto es útil cuando está
+   llamando a do_dialog() varias veces seguidas y quiere dejar el foco de
+   entrada en el mismo lugar que cuando se enseño el diálogo la ultima vez,
+   por lo que pueda llamar a do_dialog(dlg, find_dialog_focus(dlg));
+<p>
+<b>int <a name="dialog_message">dialog_message</a>(DIALOG *dialog, int msg, int c, int *obj);</b><br>
+   Manda un mensaje a todos los objetos de un array. Si alguno de los
+   procesos de diálogo devuelve otro valor que no sea D_O_K, la función
+   devuelve el valor y hace apuntar a obj al índice del objeto que produjo
+   ese mensaje.
+<p>
+<b>int <a name="broadcast_dialog_message">broadcast_dialog_message</a>(int msg, int c);</b><br>
+   Manda un mensaje a todos los objetos del diálogo activo. Si cualquiera de
+   los procesos de diálogo retorna otros valores que no sean D_O_K, devuelve
+   ese valor.
+<p>
+<b>int <a name="do_dialog">do_dialog</a>(DIALOG *dialog, int focus_obj);</b><br>
+   La función básica del mánager de diálogo. Esta enseña el diálogo (un
+   array de objetos de diálogo, acabados por uno con el proceso de diálogo
+   puesto a NULL), y pone el foco de entrada a focus_obj (-1 si no quiere
+   que nada tenga el foco de entrada). La función interpreta la entrada del
+   usuario y despacha mensajes a medida que se requiera, hasta que uno de los
+   procesos de diálogo le dice que lo cierre. Entonces retorna el índice del
+   objeto que causó el cierre.
+<p>
+<b>int <a name="popup_dialog">popup_dialog</a>(DIALOG *dialog, int focus_obj);</b><br>
+   Como do_dialog(), pero almacena los datos de la pantalla antes de dibujar
+   el diálogo y los recupera cuando el diálogo es cerrado. El área de
+   pantalla a guardar es calculada según las dimensiones del primero objeto
+   en el diálogo, por lo que el resto de los objetos deben estar dentro de
+   él.
+<p>
+<b>DIALOG_PLAYER *<a name="init_dialog">init_dialog</a>(DIALOG *dialog, int focus_obj);</b><br>
+   Esta función da acceso de bajo nivel a la misma funcionalidad que
+   do_dialog(), pero le permite combinar la caja de diálogo con sus propias
+   estructuras de objeto. Inicializa un diálogo, devolviendo un puntero al
+   objeto de player que puede ser usado con update_dialog() y
+   shutdown_dialog(). Con estas funciones, puede implementar su propia
+   versión de do_dialog() con las líneas:
+<p><pre>
+      void *player = init_dialog(dialog, focus_obj);
+<p>
+      while (update_dialog(player));
+<p>
+      return shutdown_dialog(player);
+<p></pre>
+<b>int <a name="update_dialog">update_dialog</a>(DIALOG_PLAYER *player);</b><br>
+   Actualiza el estado de un diálogo de objeto devuelto por init_dialog().
+   Devuelve TRUE si el diálogo sigue activo, o FALSE si se ha cerrado. Si
+   devuelve FALSE, depende de usted llamar a shutdown_dialog() o continuar con
+   la ejecución. El objeto que requirió la salida puede ser determinado
+   desde el campo player->obj.
+<p>
+<b>int <a name="shutdown_dialog">shutdown_dialog</a>(DIALOG_PLAYER *player);</b><br>
+   Destruye el player de diálogo de objeto retornado por init_dialog(),
+   devolviendo el objeto que causó la salida (esto es lo mismo que el valor
+   de do_dialog()).
+<p>
+<b>extern DIALOG *<a name="active_dialog">active_dialog</a>;</b><br>
+   Puntero global al diálogo activado mas recientemente. Esto puede ser útil
+   si un objeto necesita itererar
+   *** Esto no lo se traducir ***
+   Global pointer to the most recent activated dialog. This may be useful if
+   an object needs to iterate through a list of all its siblings.
+<p>
+<p><hr><p>
+Los menús emergentes o desplegables son creados como un array de la
+estructura:
+<p><pre>
+typedef struct MENU
+{
+   char *text;                   - texto a visualizar por el ítem del menú
+   int (*proc)();                - llamado cuando el ítem del menú es
+                                   seleccionado
+   struct MENU *child;           - menú hijo anidado
+   int flags;                    - estado seleccionado o deseleccionado
+   void *dp;                     - puntero a datos que necesite
+} MENU;
+<p></pre>
+Cada ítem del menú contiene una cadena de texto. Puede usar el caracter '&'
+para indicar el atajo del teclado, o puede ser una cadena de texto de tamaño
+cero para visualizar el ítem como una barra divisoria no seleccionable. Si
+la cadena contiene un caracter de tabulación "\t", el texto que sigue será
+justificado a la derecha, por ejemplo para enseñar información sobre el
+atajo del teclado. El puntero proc es una función que será llamada cuando el
+ítem del menú sea seleccionado, y child apunta a otro menú, permitiéndole
+hacer menús anidados. proc y child pueden ser ambos NULL. La función proc
+devuelve un entero que es ignorado si el menú fue llamado por do_menu(), pero
+que es devuelto al mánager de diálogo si fue creado por un objeto
+d_menu_proc(). El array de ítems del menú se cierra con una entrada con el
+campo text puesto a NULL.
+<p>
+Los ítems del menú pueden ser deseleccionados (en gris) activando el bit
+D_DISABLED en el campo flags, y pueden enseñar un símbolo de marcado si se
+activa el bit D_SELECTED. Con la alineación y fuente por defecto, la marca
+sobreescribiría el texto del menú, por lo que si va a usar ítems de menú
+con símbolo de marca, seria una buena idea prefijar todas sus opciones con
+un caracter de espacio o dos, para estar seguro de que hay suficiente sitio
+para el símbolo de marcado.
+<p>
+<b>int <a name="do_menu">do_menu</a>(MENU *menu, int x, int y)</b><br>
+   Enseña y anima el menú emergente en la pantalla en las coordenadas
+   especificadas (estas serán ajustadas si el menú no entra enteramente en
+   la pantalla). Retorna el índice del ítem de menú seleccionado, o -1 si el
+   menú fue cancelado. Fíjese que el valor de retorno no puede indicar una
+   selección de menús hijo, por lo que tendrá que usar funciones "callback"
+   si quiere menús multi-nivel.
+<p>
+<b>extern MENU *<a name="active_menu">active_menu</a>;</b><br>
+   Cuando se activa una llamada de vuelta, esta variable será puesta al
+   valor del ítem seleccionado, para que su rutina pueda determinar desde
+   dónde fue llamada.
+<p>
+<b>int <a name="alert">alert</a>(char *s1, *s2, *s3, char *b1, *b2, int c1, c2);</b><br>
+   Enseña una caja de alerta emergente, conteniendo tres líneas de texto
+   (s1-s3), y con uno o dos botones. El texto de los botones se pasa en b1 y
+   b2 (b2 puede ser NULL), y los atajos de teclado se pasan en c1 y c2.
+   Devuelve 1 o 2 dependiendo de que botón fue pulsado. Si la alerta se
+   aborta pulsando ESC cuando ESC no es uno de los atajos del teclado, se
+   trata como si se hubiese pulsado el segundo botón (esto es consistente
+   con la típica alerta "Ok", "Cancelar").
+<p>
+<b>int <a name="alert3">alert3</a>(char *s1, *s2, *s3, char *b1, *b2, *b3, int c1, c2, c3);</b><br>
+   Como alert(), pero con tres botones. Devuelve 1, 2, o 3.
+<p>
+<b>int <a name="file_select">file_select</a>(char *message, char *path, char *ext);</b><br>
+   Visualiza el selector de ficheros de allegro, con el mensaje como
+   "caption". El parámetro path contiene el nombre del fichero inicial a
+   visualizar (esto se puede usar como el comienzo del directorio, o para
+   dar un nombre por defecto a una operación salvar-como) La selección del
+   usuario es devuelta alterando el path, por lo que debe tener espacio para
+   al menos 80 caracteres. La lista de ficheros es filtrada según las
+   extensiones en ext. Pasando NULL incluye todos los ficheros, "PCX;BMP"
+   incluye solo ficheros con extensión .PCX o .BMP. Devuelve cero si se
+   cerró con el botón Cancelar, y no-cero si se cerró con OK.
+<p>
+<b>int <a name="gfx_mode_select">gfx_mode_select</a>(int *card, int *w, int *h);</b><br>
+   Enseña el diálogo de selección de modo gráfico de Allegro, que permite al
+   usuario seleccionar el modo y tarjeta de vídeo. Almacena la selección en
+   las tres variables, y devuelve cero si se cerró con el botón Cancelar y
+   no-cero si se cerró con OK.
+<p>
+<b>int <a name="gfx_mode_select_ex">gfx_mode_select_ex</a>(int *card, int *w, int *h, int *color_depth);</b><br>
+   Versión extendida del diálogo de selección de modo gráfico, que permite
+   al usuario seleccionar tanto el número de colores como la resolución y el
+   controlador de vídeo. Esta versión de la función lee los valores
+   iniciales de los parámetros cuando se activa, por lo que puede
+   especificar los valores por defecto.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

@@ -1,0 +1,124 @@
+<HTML>
+<HEAD>
+<TITLE>Serie COMO de Linux: ¿Puedo usar m&aacute;s de dos dispositivos serie?</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Serie-Como-7.html">Anterior</A>
+<A HREF="Serie-Como-9.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc8">Indice</A>
+<HR>
+<H2><A NAME="irqaddr"></A> <A NAME="s8">8. ¿Puedo usar m&aacute;s de dos dispositivos serie?</A></H2>
+
+
+<P>No necesita leer esta secci&oacute;n, a menos que quiera usar tres o m&aacute;s
+dispositivos serie... (suponiendo que tiene una placa multipuerto). </P>
+<P>Suponiendo que tiene otro puerto serie sin usar, s&iacute;, puede. El n&uacute;mero de
+puertos serie que puede usar est&aacute; limitado por el n&uacute;mero de interrupciones
+(IRQs) y direcciones de puertos de E/S que tengamos disponibles. Esto no
+es una limitaci&oacute;n de Linux, es una limitaci&oacute;n del bus del PC. Cada
+dispositivo serie debe tener asignado una interrupci&oacute;n propia y una
+direcci&oacute;n. Un dispositivo serie puede ser un puerto serie, un m&oacute;dem
+interno, o una placa serie multipuerto. </P>
+<P>Las placas serie multipuerto est&aacute;n especialmente dise&ntilde;adas para tener
+m&uacute;ltiples puertos serie que comparten la misma IRQ. Linux obtiene los
+datos de ellos usando una direcci&oacute;n de E/S para cada puerto de la placa. </P>
+
+<H2><A NAME="ss8.1">8.1 Eligiendo las interrupciones de los dispositivos serie</A></H2>
+
+
+<P>El PC normalmente viene con <CODE>ttyS0</CODE> y <CODE>ttyS2</CODE> en la IRQ 4, y
+<CODE>ttyS1</CODE> y <CODE>ttyS4</CODE> en la IRQ 3. Puede saber que IRQs est&aacute;n us&aacute;ndose
+viendo <CODE>/proc/interrupts</CODE>. Para usar m&aacute;s de dos dispositivos serie,
+debe reasignar las interrupciones. Una buena elecci&oacute;n es reasignar una
+interrupci&oacute;n del puerto paralelo. El PC normalmente viene con IRQ 5 e IRQ
+7 configuradas como interrupciones para los puertos paralelos, pero poca
+gente usa dos puertos paralelos. Puede reasignar una de las interrupciones
+a un dispositivo serie, y a&uacute;n usar felizmente un puerto paralelo. 
+Necesitar&aacute; el programa <CODE>setserial</CODE> para hacer esto. Adem&aacute;s, tendr&aacute; que
+jugar con los puentes de su placa, vea los documentos de su placa. Ponga
+los puentes para la IRQ que quiera para cada puerto. </P>
+<P>Necesitar&aacute; configurar algunas cosas, ya que hay una, y solamente una
+interrupci&oacute;n para cada dispositivo serie. As&iacute; es como tengo mi
+configuraci&oacute;n en <CODE>/etc/rc.d/rc.local</CODE> - debe hacerlo donde quiera
+que tenga su fichero de inicializaci&oacute;n: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/setserial /dev/cua0 irq 3      # mi raton serie
+/sbin/setserial /dev/cua1 irq 4      # mi terminal Wyse no-inteligente
+/sbin/setserial /dev/cua2 irq 5      # mi modem Zoom
+/sbin/setserial /dev/cua3 irq 9      # mi modem USR
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Asignaci&oacute;n est&aacute;ndar de IRQ:</P>
+<P>
+<PRE>
+              IRQ  0    Reloj en el canal 0
+              IRQ  1    Teclado
+              IRQ  2    Cascada para el controlador 2 
+              IRQ  3    Puerto serie 2
+              IRQ  4    Puerto serie 1
+              IRQ  5    Puerto paralelo 2
+              IRQ  6    Disquetera
+              IRQ  7    Puerto paralelo 1
+              IRQ  8    Reloj de tiempo real (24 horas)
+              IRQ  9    Redireccionada a IRQ 2
+              IRQ 10    no asignada
+              IRQ 11    no asignada
+              IRQ 12    no asignada
+              IRQ 13    Coprocesador matematico
+              IRQ 14    Controlador de disco duro 1
+              IRQ 15    Controlador de disco duro 2
+</PRE>
+</P>
+
+<P>No existen realmente un Modo Correcto de hacer las cosas cuando se eligen
+las interrupciones. S&oacute;lo aseg&uacute;rese de que no las est&aacute; usando la placa
+madre, o cualquier otra placa. 2, 3, 4, 5, &oacute; 7 son buenas elecciones. 
+``no asignada'' significa que actualmente nada est&aacute;ndar usa estas IRQs.
+N&oacute;tese tambi&eacute;n que la IRQ 2 es la misma que la IRQ 9. Puede llamarlo 2 &oacute;
+9, el controlador serie lo entender&aacute;. Si tiene una placa serie con un
+conector de 16 bits, tambi&eacute;n puede usar las IRQ 10, 11, 12 &oacute; 15.  </P>
+<P>¡S&oacute;lo aseg&uacute;rese de no usar las IRQs 0, 1, 6, 8, 13 &oacute; 14!. Estas son usadas
+por la placa madre. La har&aacute; muy desgraciada si coge sus IRQs. Cuando lo
+haga, compruebe otra vez <CODE>/proc/interrupts</CODE> y aseg&uacute;rese de que no
+haya conflictos. </P>
+
+
+<H2><A NAME="ss8.2">8.2 Configurando las direcciones de los dispositivos serie</A></H2>
+
+
+<P>El siguiente paso es configurar la direcci&oacute;n del puerto. Vea el manual de
+su placa para configurar los puentes. Como las interrupciones, puede haber
+s&oacute;lo un dispositivo serie en cada direcci&oacute;n. Los puertos suelen venir
+configurados de la siguiente manera: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ttyS0 direccion 0x3f8
+ttyS1 direccion 0x2f8
+ttyS2 direccion 0x3e8
+ttyS3 direccion 0x2e8
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Elija la direcci&oacute;n que desee para cada dispositivo serie que tenga y
+configure los puentes en concordancia. Tengo mi m&oacute;dem en <CODE>ttyS3</CODE>, el
+rat&oacute;n en <CODE>ttyS0</CODE>, y el terminal en <CODE>ttyS2</CODE>. </P>
+<P>Cuando arranque de nuevo, Linux deber&iacute;a ver los puertos serie en las
+direcciones en las que lo ha definido. La IRQ que Linux ve puede que no
+corresponda a la IRQ que ha configurado con los puentes. No se preocupe
+por esto. Linux no hace ninguna detecci&oacute;n de IRQ mientras arranca, porque
+la detecci&oacute;n de IRQ no es fiable y puede ser falsa. Use <CODE>setserial</CODE>
+para decirle a Linux que IRQ est&aacute; usando el puerto. Puede ver
+<CODE>/proc/ioports</CODE> para saber que direcciones del puerto de E/S est&aacute;
+usando Linux despu&eacute;s de arrancar. </P>
+
+
+<HR>
+<A HREF="Serie-Como-7.html">Anterior</A>
+<A HREF="Serie-Como-9.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc8">Indice</A>
+</BODY>
+</HTML>

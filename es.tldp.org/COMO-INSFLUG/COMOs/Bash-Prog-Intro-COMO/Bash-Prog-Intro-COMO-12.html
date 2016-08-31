@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Programaci&oacute;n en BASH - COMO de introducci&oacute;n: M&aacute;s scripts</TITLE>
+ <LINK HREF="Bash-Prog-Intro-COMO-13.html" REL=next>
+ <LINK HREF="Bash-Prog-Intro-COMO-11.html" REL=previous>
+ <LINK HREF="Bash-Prog-Intro-COMO.html#toc12" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bash-Prog-Intro-COMO-13.html">Página siguiente</A>
+<A HREF="Bash-Prog-Intro-COMO-11.html">Página anterior</A>
+<A HREF="Bash-Prog-Intro-COMO.html#toc12">Índice general</A>
+<HR>
+<H2><A NAME="s12">12. M&aacute;s scripts</A>     </H2>
+
+<H2><A NAME="ss12.1">12.1 Aplicando un comando a todos los ficheros de un directorio.</A>
+     </H2>
+
+<P> 
+<H2><A NAME="ss12.2">12.2 Ejemplo: Un script de copia de seguridad muy simple (algo mejor)</A>
+           </H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+            #!/bin/bash          
+            ORIG="/home/"
+            DEST="/var/copias_de_seguridad/"
+            FICH=home-$(date +%Y%m%d).tgz
+            tar -cZf $DEST$FICH $ORIG
+           
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>
+<H2><A NAME="ss12.3">12.3 Re-nombrador de ficheros</A>
+          </H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+          
+             #!/bin/sh
+             # renom: renombra m&uacute;ltiples ficheros de acuerdo con ciertas
+             # reglas
+             # escrito por Felix Hudson  Enero - 2000
+             
+             # primero comprueba los distintos 'modos' que tiene este
+             # programa
+             # si la primera ($1) condici&oacute;n coincide, se ejecuta esa parte
+             # del programa y acaba
+             
+             # comprueba la condici&oacute;n de prefijo
+             if [ $1 = p ]; then
+             
+             # ahora nos libramos de la variable de modo ($1) y ponemos $2
+             # de prefijo
+               prefijo=$2 ; shift ; shift
+             
+             # una r&aacute;pida comprobaci&oacute;n para ver si se especific&oacute; alg&uacute;n
+             # fichero
+             # si no, hay cosas mejores que hacer que renombrar ficheros
+             # inexistentes!!
+               if [$1 = ]; then
+                  echo "no se especificaron ficheros"
+                  exit 0
+               fi
+             
+             # este bucle for itera a lo largo de todos los ficheros que
+             # le hemos especificado al programa
+             # renombra cada uno de ellos
+               for fichero in $*
+                 do
+                 mv ${fichero} $prefijo$fichero
+               done
+             
+             # ahora salimos del programa
+               exit 0
+             fi
+             
+             # comprueba si es un renombramiento con sufijo
+             # el resto es casi id&eacute;ntico a la parte anterior
+             # lea los comentarios anteriores
+             if [ $1 = s ]; then
+               sufijo=$2 ; shift ; shift
+             
+                if [$1 = ]; then
+                 echo "no se especificaron ficheros"
+                exit 0
+                fi
+             
+              for fichero in $*
+               do
+                mv ${fichero} $fichero$sufijo
+              done
+             
+              exit 0
+             fi
+             
+             # comprueba si es una sustituci&oacute;n
+             if [ $1 = r ]; then
+             
+               shift
+             
+             # he inclu&iacute;do esto para no da&ntilde;ar ning&uacute;n fichero si el
+             # usuario no especifica que se haga nada
+             # tan s&oacute;lo una medida de seguridad             
+               if [ $# -lt 3 ] ; then
+                 echo "uso: renom r [expresi&oacute;n] [sustituto] ficheros... "
+                 exit 0
+               fi
+             
+             # elimina el resto de informaci&oacute;n
+               VIEJO=$1 ; NUEVO=$2 ; shift ; shift
+             
+             # este bucle for itera a lo largo de todos los ficheros que
+             # le hemos especificado al programa
+             # renombra cada fichero utilizando el programa 'sed'
+             # es un sencillo programa desde la l&iacute;nea de comandos que
+             # analiza la entrada est&aacute;ndar y sustituye una expresi&oacute;n por
+             # una cadena dada
+             # aqu&iacute; le pasamos el nombre del fichero (como entrada
+             # est&aacute;ndar)
+               for fichero in $*
+               do
+                 nuevo=`echo ${fichero} | sed s/${VIEJO}/${NUEVO}/g`
+                 mv ${fichero} $nuevo
+               done
+             exit 0
+             fi
+             
+             # si se llega a esta parte es que no se le pas&oacute; nada
+             # apropiado al programa, por lo que le decimos al usuario
+             # c&oacute;mo hacerlo
+             echo "uso:"
+             echo " renom p [prefijo] ficheros.."
+             echo " renom s [sufijo] ficheros.."
+             echo " renom r [expresi&oacute;n] [sustituto] ficheros.."
+             exit 0
+             
+             # hecho!
+             
+          
+</PRE>
+</CODE></BLOCKQUOTE>
+<H2><A NAME="ss12.4">12.4 Re-nombrador de ficheros (sencillo)</A>
+     </H2>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     #!/bin/bash
+     # renombra.sh
+     # renombrador de ficheros b&aacute;sico
+
+     criterio=$1
+     expresion=$2
+     sustituto=$3
+     
+     for i in $( ls *$criterio* ); 
+     do
+         orig=$i
+         dest=$(echo $i | sed -e "s/$expresion/$sustituto/")
+         mv $orig $dest
+     done
+     
+</PRE>
+</CODE></BLOCKQUOTE>
+<HR>
+<A HREF="Bash-Prog-Intro-COMO-13.html">Página siguiente</A>
+<A HREF="Bash-Prog-Intro-COMO-11.html">Página anterior</A>
+<A HREF="Bash-Prog-Intro-COMO.html#toc12">Índice general</A>
+</BODY>
+</HTML>

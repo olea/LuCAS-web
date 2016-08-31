@@ -1,0 +1,241 @@
+#! /usr/bin/perl
+# dict2latex,v 1.2 2000/12/26
+#
+# dict2latex - program to create a latex version of the orca glossary
+# Copyright (C) Jaime Villate <villate@fe.up.pt>, 2000
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# Jaime Villate, Faculdade de Engenharia, R. Dr. Roberto Frias, 4200 Porto
+# Portugal
+#
+# The ORCA project <http://quark.fe.up.pt/orca/> 
+
+=head1 NAME 
+
+dict2latex - Creates a latex version of glosario.dict
+
+=head1 SYNOPSIS
+
+S<dict2latex filename>
+
+=head1 DESCRIPTION
+
+This programs reads the glosario.dict text file and creates a latex
+version of it.
+
+=head1 AUTHOR
+
+Jaime Villate E<lt>villate@fe.up.ptE<gt>.
+
+=cut
+use strict vars;
+use vars qw($info $short $url $author $version $first $letter);
+
+sub usage
+{
+    print "Usage: dict2latex <filename.dict>\n";
+    exit;
+}
+
+my $keyw = '';
+my $text = '';
+my $word = '';
+my $item = 0;
+usage() if ($#ARGV != 0);
+my $filehandle = $ARGV[0];
+usage() if ($filehandle =~ /^\-/);
+(my $latexname = $filehandle) =~ s/\.dict/\.tex/;
+
+open(DICT, "< $filehandle");
+open(TEX,"> $latexname");
+while (<DICT>)
+{
+    s/\\/\\ensuremath{\\backslash}/g;
+    s/\</\\ensuremath{<}/g;
+    s/\>/\\ensuremath{>}/g;
+    s/_/\\_/g;
+    s/\$/\\\$/g;
+    s/\&/\\\&/g;
+    s/\^/\\^{}/g;
+    s/~/\\~{}/g;
+    s/#/\\#/g;
+    s/%/\\%/g;
+    if (/^([^0\#\s])/)
+    {
+	chop;
+	$word = $_;
+	$first = uc($1);
+	if ($item == 0)
+	{
+	    preamble();
+	    $item = 1;
+	    $letter = $first;
+	    print TEX "\\section*{$letter}\n\\begin{flushleft}\n";
+	    print TEX "\\begin{description}\n";
+	}
+	else
+	{
+	    $text =~ s/([1-9])\. /$1\.\~/g;
+	    print TEX "\\item[$keyw]\n$text" ;
+	    if ($first ne $letter)
+	    {
+		$letter = $first;
+		print TEX "\\end{description}\n\\end{flushleft}\n\n";
+		print TEX "\\section*{$letter}\n\\begin{flushleft}\n";
+		print TEX "\\begin{description}\n";
+	    }
+	}
+	$keyw = $word;
+	$text = '';
+    }
+    else
+    {
+	$text .= $_;
+    }
+    if ($item == 0)
+    {
+	$author  = $1, next if (/^\s*Autor:(.*)$/);
+	$version = $1, next if (/^\s*(Versión.*)$/);
+    }
+}
+close DICT;
+print TEX "\\item[$keyw]\n$text" if($keyw =~ /^[^0\#]/);
+print TEX "\\end{description}\n\\end{flushleft}\n"  if ($item == 1);
+print TEX "\\end{multicols}\n\n\\begin{thebibliography}{99}\n";
+open (BIB, '<fuentes');
+$item = 0;
+my $seq = 0;
+while (<BIB>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	if ($item == 0)
+	{
+	    $seq++;
+	    $item = 1;
+	    print TEX "\\bibitem{ref$seq}\n";
+	}
+	print TEX $text;
+    }
+    else
+    {
+	$item = 0;
+    }
+}
+close BIB;
+print TEX "\\end{thebibliography}\n\n";
+print TEX "\\appendix\n\\chapter{Colaboradores}\n\\begin{itemize}\n";
+
+open (COL, '<colaboradores');
+while (<COL>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	print TEX "\\item $text";
+    }
+}
+close COL;
+print TEX "\\end{itemize}\\end{document}\n";
+close TEX;
+exit;
+
+sub preamble
+{
+    $author = fmturl($author);
+    print TEX <<"EndPreamble";
+\\documentclass[a4paper,11pt]{report}
+\\usepackage[spanish]{babel}
+\\usepackage[latin1]{inputenc}
+\\usepackage{graphicx}
+\\usepackage{fancyhdr}
+\\usepackage{helvet}
+\\usepackage{times}
+\\usepackage{multicol}
+\\setlength{\\textwidth}{14cm}
+\\setlength{\\textheight}{22cm}
+\\setlength{\\oddsidemargin}{1cm}
+\\setlength{\\evensidemargin}{0pt}
+\\setlength{\\headheight}{17pt}
+
+\\pagestyle{fancyplain}
+\\renewcommand{\\sectionmark}[1]{\\markright{$short}}
+\\lhead[\\fancyplain{}{\\bfseries\\thepage}]
+    {\\fancyplain{}{\\sffamily\\slshape\\rightmark}}
+\\rhead[\\fancyplain{}{\\sffamily\\slshape\\leftmark}]
+    {\\fancyplain{}{\\bfseries\\thepage}}
+\\cfoot[]{}
+\\begin{document}
+\\begin{titlepage}
+\\vspace*{1cm}
+\\rightline{\\sffamily\\bfseries\\huge Glosario de Informática Inglés-Español}
+\\noindent\\rule{\\textwidth}{2pt}\\\\
+\\raggedleft
+ $author
+\\vspace{6cm}
+\\begin{center}
+  \\includegraphics[width=4cm]{ORCA}\\\\
+  {\\sffamily\\bfseries\\huge ORCA}
+\\end{center}
+\\vspace{8cm}
+\\raggedleft
+\\emph{$version}
+\\noindent\\rule{\\textwidth}{0.5pt}
+\\end{titlepage}
+
+\\thispagestyle{empty}
+\\vspace*{1cm}
+\\vfill
+{\\setlength{\\parindent}{0pt}
+\\begin{flushleft}
+  {\\footnotesize Copyright \\copyright\\ 2000 Jaime E. Villate}
+  
+  \\vskip 12pt
+    {\\footnotesize Este documento es libre. Puede copiarlo, distribuirlo y/o
+    modificarlo bajo los términos de la Licencia GNU Para Documentación Libre,
+    versión 1.1 o cualquier versión posterior publicada por la Free
+    Software Foundation.}
+
+  \\vskip 12pt
+    {\\footnotesize El texto completo de la Licencia GNU Para Documentación
+    Libre se encuentra en el mismo servidor donde encontró este glosario
+    (archivo fdl.txt) o en
+    \$\\langle\$\\textsl{http://www.fsf.org/copyleft/fdl.html}\$\\rangle\$.}
+\\end{flushleft}
+}
+\\chapter*{Prefacio}
+EndPreamble
+
+open (PRE, '<Prefacio');
+while (<PRE>)
+{
+    $text = fmturl($_);
+    print TEX $text;
+}
+close PRE;
+
+    print TEX "\\newpage\n";
+    print TEX "\\begin{multicols}{2}[\\chapter*{Glosario Inglés-Español}]\n";
+}
+
+sub fmturl {
+    (my $line) = @_;
+    $line =~ s/[\<\(]?([\w\.]+\@[\w\.]+)[\>\)]?/\\textsl{\$\\langle\$$1\$\\rangle\$}/g;
+    $line =~ s/[\<\(]?(h?[tf]tp:\/\/[\w\/\.\~\%]+)[\>\)]?/\\textsl{\$\\langle\$$1\$\\rangle\$}/g;
+    $line =~ s/\~/\$\\sim\$/g;
+    return $line;
+}

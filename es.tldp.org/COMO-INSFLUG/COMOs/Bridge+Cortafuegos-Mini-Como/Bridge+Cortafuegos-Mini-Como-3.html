@@ -1,0 +1,422 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bridge+Cortafuegos Mini-COMO: Bridging</TITLE>
+ <LINK HREF="Bridge+Cortafuegos-Mini-Como-4.html" REL=next>
+ <LINK HREF="Bridge+Cortafuegos-Mini-Como-2.html" REL=previous>
+ <LINK HREF="Bridge+Cortafuegos-Mini-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bridge+Cortafuegos-Mini-Como-4.html">Página siguiente</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como-2.html">Página anterior</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="bridging"></A> <A NAME="s3">3. <I>Bridging</I></A></H2>
+
+<P>
+<P>
+<H2><A NAME="Software"></A> <A NAME="ss3.1">3.1 Software</A>
+</H2>
+
+<P>
+<P>Obtenga la utilidad de configuraci&oacute;n de puentes <CODE>
+<A HREF="ftp://shadow.cabi.net/pub/Linux/BRCFG.tgz">ftp://shadow.cabi.net/pub/Linux/BRCFG.tgz</A></CODE> de las p&aacute;ginas
+personales de Alan Cox. Esta es la misma referencia que encuentra en el
+documento de Chris. No me hab&iacute;a dado cuenta de que era una URL de un ftp y no
+de http ... 
+<P>
+<H2><A NAME="lecturasprevias"></A> <A NAME="ss3.2">3.2 Lecturas previas.</A>
+</H2>
+
+<P>
+<P>Lea el <I>Multiple Ethernet HOWTO</I>, <CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/mini/Multiple-Ethernet">ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/mini/Multiple-Ethernet</A></CODE>
+si quiere asesoramiento sobre c&oacute;mo configurar m&aacute;s de una tarjeta de red en su
+m&aacute;quina.
+<P>En el <I>BootPrompt HOWTO</I> <CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/BootPrompt-HOWTO">ftp://sunsite.unc.edu/pub/Linux/docs/HOWTO/BootPrompt-HOWTO</A></CODE> podr&aacute;
+encontrar a&uacute;n m&aacute;s detalles de la magia involucrada en el proceso de arranque.
+<P>Puede escapar de la lectura del Redes-En-Linux-Como <CODE>
+<A HREF="http://www.insflug.org/documentos/Redes-En-Linux-Como/">http://www.insflug.org/documentos/Redes-En-Linux-Como/</A></CODE>. Es una
+lectura bien larga, y tendr&aacute; que seleccionar de ella los detalles que necesite. 
+<P>
+<H2><A NAME="configuracionarranque"></A> <A NAME="ss3.3">3.3 Configuraci&oacute;n del arranque</A>
+</H2>
+
+<P>
+<P>El material de lectura anterior le ense&ntilde;ar&aacute; lo que necesita para preparar el
+kernel para reconocer un segundo dispositivo ethernet en el arranque, por
+ejemplo a&ntilde;adiendo los siguiente a <CODE>/etc/lilo.conf</CODE>, y volviendo a
+ejecutar <CODE>lilo</CODE>: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+append = "ether=0,0,eth1" 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Observe el &quot;eth1&quot;. &quot;eth0&quot; es la primera tarjeta.
+&quot;eth1&quot; es la segunda tarjeta. Puede a&ntilde;adir los par&aacute;metros de arranque
+que quiera a la l&iacute;nea que lilo le ofrece. Esto es para tres tarjetas: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linux ether=0,0,eth1 ether=0,0,eth2 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Yo uso <CODE>loadlin</CODE> para arrancar mi kernel desde DOS: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+loadlin.exe c:\vmlinuz root=/dev/hda3 ro ether=0,0,eth1 ether=0,0,eth2 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>F&iacute;jese que este truco obliga al kernel a sondear direcciones en el arranque.
+Esto no ocurrir&aacute; si carga los controladores ethernet como <B>m&oacute;dulos</B> (por
+seguridad, ya que la orden de sondeo no puede ser determinada) as&iacute; que si usa
+m&oacute;dulos tendr&aacute; que a&ntilde;adir los par&aacute;metros de IRQ y puerto apropiados para el
+controlador espec&iacute;ficamente en su fichero <CODE>/etc/conf.modules</CODE>. Yo por
+lo menos tengo
+<P>
+<BLOCKQUOTE><CODE>
+ 
+<PRE>
+alias eth0 3c509
+alias eth1 de620
+options 3c509 irq=5 io=0x210
+options de620 irq=7 bnc=1
+</PRE>
+ 
+</CODE></BLOCKQUOTE>
+<P>Puede averiguar est&aacute; usando m&oacute;dulos mediante <CODE>ps -aux</CODE> para ver si se
+est&aacute; ejecutando <CODE>kerneld</CODE> y comprobando si hay archivos <CODE>.o</CODE> en
+alg&uacute;n subdirectorio del directorio <CODE>/lib/modules</CODE>. Necesita el que el
+directorio se llame como le diga <CODE>uname -r</CODE>. Si tiene <CODE>kerneld</CODE>
+y/o tiene alg&uacute;n archivo como <CODE>loquesea.o</CODE>, edite
+<CODE>/etc/conf.modules</CODE> y lea cuidadosamente la p&aacute;gina del manual de
+<CODE>depmod</CODE>.
+<P>Tenga en cuenta tambi&eacute;n que hasta hace poco (kernel <CODE>2.0.25</CODE>) el
+controlador <CODE>3c509</CODE> no pod&iacute;a ser usado para m&aacute;s de una tarjeta si era
+usado como m&oacute;dulo. He visto un parche por ah&iacute; que soluciona esto. Puede que
+est&eacute; integrado en el kernel cuando lea este documento.
+<P>
+<H2><A NAME="configuracionkernel"></A> <A NAME="ss3.4">3.4 Configuraci&oacute;n del kernel </A>
+</H2>
+
+<P>
+<P>Recompile el kernel con bridging activado. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+CONFIG_BRIDGE=y 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Yo compil&eacute; con el cortafuegos, reenv&iacute;o IP, enmascaramiento y lo dem&aacute;s activado.
+Esto es s&oacute;lo si quiere cortafuegos...
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+CONFIG_FIREWALL=y           
+CONFIG_NET_ALIAS=y          
+CONFIG_INET=y               
+CONFIG_IP_FORWARD=y         
+CONFIG_IP_MULTICAST=y       
+CONFIG_IP_FIREWALL=y        
+CONFIG_IP_FIREWALL_VERBOSE=y
+CONFIG_IP_MASQUERADE=y      
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>En realidad no necesita todo esto. Lo que s&iacute; necesita, adem&aacute;s de esto, es la
+configuaci&oacute;n normal de la red: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+CONFIG_NET=y 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>y no creo que necesite preocuparse de ninguna de las dem&aacute;s opciones de red.  Yo
+tengo opciones sin compilar dentro del kernel disponibles como m&oacute;dulos que
+puedo a&ntilde;adir m&aacute;s tarde.
+<P>Instale el nuevo kernel, vuelva a ejecutar <CODE>lilo</CODE> y rearranque con el
+kernel nuevo. ¡No deber&iacute;a haber cambios hasta ahora!
+<P>
+<H2><A NAME="direccionesred"></A> <A NAME="ss3.5">3.5 Direcciones de red </A>
+</H2>
+
+<P>
+<P>Chris dice que un puente no deber&iacute;a tener direcci&oacute;n IP, pero esta no es la
+configuraci&oacute;n que describo aqu&iacute;.
+<P>Seguro que querr&aacute; la m&aacute;quina para conectarse a la red, as&iacute; que va a necesitar
+una direcci&oacute;n y necesita asegurarse de que tiene el dispositivo de loopback
+activado de la manera normal, de tal forma que sus programas puedan hablar
+con los lugares que se supone deber&iacute;an poder hablar. Si la direcci&oacute;n loopback
+no est&aacute; activada,  el servicio de resoluci&oacute;n de nombres, y otros podr&iacute;an no
+funcionar adecuadamente. Vea el Redes-En-Linux-Como (<CODE>
+<A HREF="http://www.insflug.org/documentos/Redes-En-Linux-Como/">http://www.insflug.org/documentos/Redes-En-Linux-Como/</A></CODE>), aunque la
+configuraci&oacute;n est&aacute;ndard deber&iacute;a haber hecho esto: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig lo 127.0.0.1 
+route add -net 127.0.0.0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Va a necesitar dar direcciones a sus tarjetas de red. He modificado el 
+archivo <CODE>/etc/rc.d/rc.inet1</CODE> de mi slackware (<CODE>3.x</CODE>) para
+configurar dos tarjetas y usted deber&iacute;a buscar en su archivo de configuraci&oacute;n
+la manera de doblar o triplicar el n&uacute;mero de instrucciones. Suponga que usted
+tiene direcciones en
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+192.168.2.100 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>(esto es en el espacio de direcciones reservado para redes privadas, pero no se
+preocupe, no va a hacerle da&ntilde;o a nadie si usa esta direcci&oacute;n por error) as&iacute; que
+probablemente ya tenga una l&iacute;nea como
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth0 192.168.2.100 netmask 255.255.255.0 metric 1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>en su configuraci&oacute;n. Lo primero que probablemente quiera hacer es limitar el
+espacio de direcciones que alcance esta tarjeta a la mitad, de tal forma que
+pueda en alg&uacute;n momento puentear o hacer cortafuegos con las dos mitades. A&ntilde;ada
+pues una l&iacute;nea que reduzca la m&aacute;scara para direccionar un n&uacute;mero menor de 
+m&aacute;quinas:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth0 netmask 255.255.255.128 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Intente esto tambi&eacute;n. Limita a la tarjeta a, como mucho, las direcciones entre
+<CODE>.0</CODE> y <CODE>.127</CODE>. 
+<P>Ahora puede configurar su segunda tarjeta en la otra mitad del espacio de
+direcciones local. Aseg&uacute;rese que nadie est&aacute; usando ya las direcciones. Por
+simetria, yo lo pongo en <I>228=128+100</I>. Cualquier direcci&oacute;n funcionar&aacute;
+tan pronto como no est&eacute; en la m&aacute;scara de la otra tarjeta. Bueno, seguramente.
+Evite direcciones especiales como <CODE>.0</CODE>, <CODE>.1</CODE>, <CODE>.128</CODE> etc.
+a no ser que de verdad sepa qu&eacute; hace.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth1 192.168.2.228 netmask 255.255.255.128 metric 1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esto evita que la segunda tarjeta direccione entre .128 and .255. 
+<P>
+<H2><A NAME="rutadored"></A> <A NAME="ss3.6">3.6 Rutado de red </A>
+</H2>
+
+<P>
+<P>Aqu&iacute; es donde tengo que anunciar las salvedades en el esquema de puenteado y
+cortafuegos: no puede hacer cortafuegos con paquetes que no se ruten. No hay
+rutas, no hay cortafuegos. Al menos esto es verdad en el kernel <CODE>2.0.30</CODE>
+y en kernel m&aacute;s recientes. Los filtros para el cortafuegos est&aacute;n estrechamente
+relacionados con el c&oacute;digo de reenv&iacute;o IP.
+<P>Esto no significa que no pueda hacer puentes. Puede hacer un puente entre dos
+tarjetas y hacer cortafuegos con ellas desde una tercera. Puede tener dos
+tarjetas y hacer un cortafuegos con ellas contra una direcci&oacute;n IP externa como
+un router cercano, siempre y cuando el router sea rutado por usted hasta una de
+las tarjetas.
+<P>En otras palabras, ya que voy a hacer un cortafuegos quiero controlar con
+precisi&oacute;n el destino f&iacute;sico de algunos paquetes. 
+<P>Tengo la peque&ntilde;a red de m&aacute;quinas conectadas a un concentrador  que cuelga de
+eth0, por lo que configuro ah&iacute; una red: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+route add -net 192.168.2.128 netmask 255.255.255.128 dev eth0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El <CODE>.128</CODE> ser&iacute;a <CODE>.0</CODE> si tuviera una clase C completa all&iacute;. No la
+tengo, por definici&oacute;n, ya que he partido a la mitad el espacio de direcciones.
+El <CODE>dev eth0</CODE> es innecesario porque las direcciones de las tarjetas caen
+en la m&aacute;scara, pero podr&iacute;a ser necesario en su caso. Uno puede necesitar m&aacute;s de
+una tarjeta en esta subred (127 m&aacute;quinas en un segmento) pero estas tarjetas
+ser&iacute;an puenteadas bajo la misma m&aacute;scara de red, de tal forma que aparecen como
+una ante el c&oacute;digo de rutado.
+<P>En la otra tarjeta tengo un cable directo a un router grande en el que conf&iacute;o. 
+<P>
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                                               
+                                                  cliente 129
+          __                                         |    __ 
+cliente 1   \       .0              .128             |   /   red 1
+cliente 2 --- Hub - eth0 - Kernel - eth1 - Hub - Router ---  red 2
+cliente 3 __/       .100            .228          .2 |   \__ red 3
+                                                     |
+                                                  cliente 254 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Yo pongo la direcci&oacute;n del router a la tarjeta como una ruta fija
+(«est&aacute;tica») porque si no caer&iacute;a entre la m&aacute;scara de las primeras tarjetas y el
+kernel se confundir&iacute;a al mandar paquetes al router grande. Voy a hacer
+cortafuegos con estos paquetes, y esta es otra raz&oacute;n por la que rutarlos
+espec&iacute;ficamente.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+route add 192.168.2.2 dev eth1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>No los necesito, ya que no tengo m&aacute;s m&aacute;quinas en esa mitad del espacio de
+direcciones, pero declaro una red tambi&eacute;n en la segunda tarjeta. Separar mis
+interfaces en dos grupos mediante el rutado me permitir&aacute; hacer unas reglas de
+cortafuegos muy estrictas si lo necesito, pero puede escapar con mucho menos
+rutado espec&iacute;fico que el aqu&iacute; expuesto.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+route add -net 192.168.2.128 netmask 255.255.255.128 dev eth1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Necesito tambi&eacute;n enviar todos los paquetes no locales al mundo, as&iacute; que  le
+dir&eacute; al kernel que se los mande al router grande.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+route add default gw 192.168.2.2 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="configuraciontarjeta"></A> <A NAME="ss3.7">3.7 Configuraci&oacute;n de la tarjeta</A>
+</H2>
+
+<P>
+<P>La mayor&iacute;a de lo que ha visto es configuraci&oacute;n est&aacute;ndard de la red, pero
+estamos puenteando, as&iacute; que tambi&eacute;n tenemos que escuchar paquetes en ambas
+tarjetas que no se dirijan a nosotros. Lo que sigue debe ir al fichero de
+configuraci&oacute;n de red.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig promisc eth0 
+ifconfig promisc eth1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La p&aacute;gina del manual dice que <CODE>allmulti</CODE> equivale a <CODE>promisc</CODE>,
+pero a mi no me funcion&oacute;.
+<P>
+<H2><A NAME="rutadoadicional"></A> <A NAME="ss3.8">3.8 Rutado adicional </A>
+</H2>
+
+<P>
+<P>Una cosa de la que me di cuenta era que tuve que poner al menos la segunda
+tarjeta en un modo en el que respondiera a las preguntas del router grande
+sobre qu&eacute; m&aacute;quinas escond&iacute;a en mi red local.. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig arp eth1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Por si acaso, le hice lo mismo a la otra tarjeta.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig arp eth0 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="configuracionpuente"></A> <A NAME="ss3.9">3.9 Configuraci&oacute;n del puente</A>
+</H2>
+
+<P>
+<P>Active el puenteo, tambi&eacute;n en su archivo de configuraci&oacute;n de la red:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+brcfg -enable 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Debe haber probado esto extensivamente en pruebas reales, por supuesto.  El
+configurador del puente mostrar&aacute; algunos n&uacute;meros. Puede experimentar con
+conectando y desconectando los puertos uno cada vez.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+brcfg -port 0 -disable/-enable
+brcfg -port 1 -disable/-enable 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para comprobar el estado en cualquier momento, ejecute
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+brcfg 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>sin par&aacute;metros. Ver&aacute; c&oacute;mo el puente escucha, aprende y hace el reenv&iacute;o. (No
+entiendo por qu&eacute; el c&oacute;digo repite las mismas direcciones f&iacute;sicas en mis dos
+tarjetas, pero no importa, el HOWTO de Chris dice que es as&iacute;)
+<P>
+<H2><A NAME="probarlo"></A> <A NAME="ss3.10">3.10 Probarlo</A>
+</H2>
+
+<P>
+<P>Si todo funciona como es debido, pruebe su propio archivo de comandos de
+configuraci&oacute;n tirando abajo ambas tarjetas y luego ejecut&aacute;ndolo: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig eth0 down ifconfig eth1 down 
+/etc/rc.d/rc.inet1 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Con un poco de suerte los varios subsistemas (NFS, <CODE>ypbind</CODE>,
+etc.) ni se enterar&aacute;n. <B>¡No intente esto a no ser que est&eacute; delante del
+teclado!</B>
+<P>Si quiere ser a&uacute;n m&aacute;s cuidadoso, mate tantos demonios primero como pueda, y
+desmonte los directorios nfs. Lo peor que puede pasar es que tenga que resetear
+en modo monousuario (pasando el par&aacute;metro <CODE>single</CODE> a <CODE>lilo</CODE> o
+<CODE>loadlin</CODE>), y deshacer los cambios antes de rearrancar con las cosas
+como estaban antes de que empezara.
+<P>
+<H2><A NAME="comprobaciones"></A> <A NAME="ss3.11">3.11 Comprobaciones</A>
+</H2>
+
+<P>
+<P>Verifique que hay tr&aacute;fico distinto en cada interfaz:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tcpdump -i eth0
+</PRE>
+ # (en una ventana)
+<PRE>
+tcpdump -i eth1
+</PRE>
+ # (en otra ventana)
+</CODE></BLOCKQUOTE>
+<P>Debe acostumbrarse a usar <CODE>tcpdump</CODE> para buscar cosas que no deber&iacute;an
+estar pasando o que no pasan y deber&iacute;an. 
+<P>Por ejemplo, busque los paquetes que pasan por el puente a la segunda tarjeta
+desde la red interna. Aqu&iacute; busco paquetes de la m&aacute;quina con direcci&oacute;n
+<CODE>.22</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tcpdump -i eth1 -e host 192.168.2.22
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ahora le mando un <CODE>ping</CODE> desde la m&aacute;quina <CODE>.22</CODE> al router.
+Deber&iacute;a ver el paquete seg&uacute;n informe de <CODE>tcpdump</CODE>.
+<P>En esta fase tiene un puente listo que tambi&eacute;n tiene dos direcciones de red.
+Compruebe que puede hacer ping desde fuera y dentro de su red local, y que
+puede hacer telnet y ftp entre el exterior y el interior.
+<P>
+<HR>
+<A HREF="Bridge+Cortafuegos-Mini-Como-4.html">Página siguiente</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como-2.html">Página anterior</A>
+<A HREF="Bridge+Cortafuegos-Mini-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

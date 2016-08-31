@@ -1,0 +1,405 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 05 Rutinas de teclado
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="05 Rutinas de teclado">05 Rutinas de teclado</a></h1>
+
+<ul>
+<li><a href="#clear_keybuf">clear_keybuf</a>
+<li><a href="#install_keyboard">install_keyboard</a>
+<li><a href="#install_keyboard_hooks">install_keyboard_hooks</a>
+<li><a href="#key">key</a>
+<li><a href="#key_led_flag">key_led_flag</a>
+<li><a href="#key_shifts">key_shifts</a>
+<li><a href="#keyboard_callback">keyboard_callback</a>
+<li><a href="#keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>
+<li><a href="#keyboard_needs_poll">keyboard_needs_poll</a>
+<li><a href="#keyboard_ucallback">keyboard_ucallback</a>
+<li><a href="#keypressed">keypressed</a>
+<li><a href="#poll_keyboard">poll_keyboard</a>
+<li><a href="#readkey">readkey</a>
+<li><a href="#remove_keyboard">remove_keyboard</a>
+<li><a href="#scancode_to_ascii">scancode_to_ascii</a>
+<li><a href="#set_keyboard_rate">set_keyboard_rate</a>
+<li><a href="#set_leds">set_leds</a>
+<li><a href="#simulate_keypress">simulate_keypress</a>
+<li><a href="#simulate_ukeypress">simulate_ukeypress</a>
+<li><a href="#three_finger_flag">three_finger_flag</a>
+<li><a href="#ureadkey">ureadkey</a>
+</ul>
+
+<p>
+El controlador de teclado de Allegro proporciona entrada con búffer y un
+conjunto de variables que guardan el estado actual de cada tecla. Fíjese que
+no es posible detectar correctamente todas y cada una de las combinaciones de
+teclas, debido al diseño del teclado del PC. Combinaciones de dos o tres
+teclas funcionarán bien, pero si presiona más, probablemente las extras
+serán ignoradas (exactamente qué combinaciones son posibles parecen variar
+de un teclado a otro).
+
+<p><br>
+<b>int <a name="install_keyboard">install_keyboard</a>();</b><br>
+   Instala el controlador de interrupciones de teclado de Allegro. Debe
+   llamarla antes de usar cualquier otra función de teclado. Una vez
+   instalado el controlador no podrá usar las llamadas a sistema o las
+   funciones de librería de C para acceder al teclado. Devuelve cero con
+   éxito, o un número negativo si hubo problemas (pero puede decidir si
+   quiere verificar el valor de retorno dado que es muy poco probable que
+   esta función falle). Tenga en cuenta que en algunas plataformas el teclado
+   no funcionará a no ser que haya activado un modo gráfico, incluso si esta
+   función devuelve cero antes de haber llamado a set_gfx_mode.
+   
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#keyboard_callback">keyboard_callback</a>,
+<a class="xref" href="#keyboard_ucallback">keyboard_ucallback</a>,
+<a class="xref" href="#keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>,
+<a class="xref" href="#remove_keyboard">remove_keyboard</a>,
+<a class="xref" href="#poll_keyboard">poll_keyboard</a>,
+<a class="xref" href="#key">key</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>,
+<a class="xref" href="alleg007.html#set_gfx_mode">set_gfx_mode</a>,
+<a class="xref" href="alleg002.html#Variables de configuración estándar">Variables de configuración estándar</a>,
+<a class="xref" href="#three_finger_flag">three_finger_flag</a>,
+<a class="xref" href="#key_led_flag">key_led_flag</a>,
+<a class="xref" href="#set_leds">set_leds</a>,
+<a class="xref" href="#set_keyboard_rate">set_keyboard_rate</a>.</font></blockquote>
+<b>void <a name="remove_keyboard">remove_keyboard</a>();</b><br>
+   Desintala el controlador de teclado, devolviendo el control al sistema
+   operativo. Normalmente no necesita llamar a esta función, porque
+   allegro_exit() lo hará por usted.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="alleg000.html#allegro_exit">allegro_exit</a>.</font></blockquote>
+<b>void <a name="install_keyboard_hooks">install_keyboard_hooks</a>(int (*keypressed)(), int (*readkey)());</b><br>
+   Sólo debería usar esta funcion si *no* va a usar el resto del controlador
+   de teclado. Debe ser llamada en vez de install_keyboar(), y le deja
+   proporcionar rutinas de atención para detectar y leer pulsaciones de
+   teclado, que serán usadas por las funciones principales keypressed() y
+   readkey(). Esto puede ser útil si quiere usar el código GUI de Allegro con
+   un controlador de teclado propio, ya que permite al GUI acceder a la
+   entrada de teclado desde su código, saltándose el sistema de entrada
+   normal de Allegro.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#readkey">readkey</a>.</font></blockquote>
+<b>int <a name="poll_keyboard">poll_keyboard</a>();</b><br>
+   Siempre que sea posible Allegro intentará leer del teclado asíncronamente
+   (por ejemplo deste un controlador de interrupción), pero en algunas
+   plataformas puede que no sea posible, en cuyo caso deberá llamar a esta
+   rutina a intervalos regulares para actualizar las variables de estado del
+   teclado. Para ayudarle a comprobar su código que muestrea el teclado
+   incluso si está programando en una plataforma que no lo necesita, después
+   de la primera llamada Allegro cambiará a modo encuesta, así, en adelante,
+   tendrá que llamar a esta rutina para obtener la entrada de teclado, sin
+   importar si el driver actual necesita ser leído o no. La funciones
+   keypressed(), readkey() y ureadkey() llaman a poll_keyboard()
+   automáticamente, así que sólo tendra que usar esta función cuando acceda
+   al array key[] y a la variable key_shifts. Devuelve cero con éxito, o un
+   número negativo si hubo algún problema (ej: no hay driver de teclado
+   instalado).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#keyboard_needs_poll">keyboard_needs_poll</a>,
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#key">key</a>,
+<a class="xref" href="#key_shifts">key_shifts</a>.</font></blockquote>
+<b>int <a name="keyboard_needs_poll">keyboard_needs_poll</a>();</b><br>
+   Devuelve TRUE si el controlador actual de teclado está trabajando en
+   modo muestreo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#poll_keyboard">poll_keyboard</a>,
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#key">key</a>.</font></blockquote>
+<b>extern volatile char <a name="key">key</a>[KEY_MAX];</b><br>
+   Array de enteros que indica el estado de cada tecla, ordenado por
+   scancode. Siempre que sea posible se actualizarán estos valores de forma
+   asíncrona, pero si keyboard_needs_poll() devuelve TRUE, deberá llamar
+   manualmente a poll_keyboard() para actualizarlos con el estado actual. Los
+   scancodes están definidos en allegro/keyboard.h como una serie de
+   constantes KEY_* (abajo tiene un listado). Por ejemplo, podría escribir:
+<blockquote class="code"><pre>
+      if (key[KEY_SPACE])
+         printf("La barra espaciadora está siendo pulsada\n");
+</pre></blockquote>
+
+<p>
+   Tenga en cuenta que se supone que el array representa qué teclas están
+   físicamente apretadas y cuales nó, por lo que semánticamente sólo es
+   de lectura.
+
+<p>
+   Estos son los scancodes del teclado:
+<blockquote class="text"><pre>
+      KEY_A ... KEY_Z,
+      KEY_0 ... KEY_9,
+      KEY_0_PAD ... KEY_9_PAD,
+      KEY_F1 ... KEY_F12,
+
+      KEY_ESC, KEY_TILDE, KEY_MINUS, KEY_EQUALS,
+      KEY_BACKSPACE, KEY_TAB, KEY_OPENBRACE, KEY_CLOSEBRACE,
+      KEY_ENTER, KEY_COLON, KEY_QUOTE, KEY_BACKSLASH,
+      KEY_BACKSLASH2, KEY_COMMA, KEY_STOP, KEY_SLASH,
+      KEY_SPACE,
+
+      KEY_INSERT, KEY_DEL, KEY_HOME, KEY_END, KEY_PGUP,
+      KEY_PGDN, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN,
+
+      KEY_SLASH_PAD, KEY_ASTERISK, KEY_MINUS_PAD,
+      KEY_PLUS_PAD, KEY_DEL_PAD, KEY_ENTER_PAD,
+
+      KEY_PRTSCR, KEY_PAUSE,
+
+      KEY_ABNT_C1, KEY_YEN, KEY_KANA, KEY_CONVERT, KEY_NOCONVERT,
+      KEY_AT, KEY_CIRCUMFLEX, KEY_COLON2, KEY_KANJI,
+
+      KEY_LSHIFT, KEY_RSHIFT,
+      KEY_LCONTROL, KEY_RCONTROL,
+      KEY_ALT, KEY_ALTGR,
+      KEY_LWIN, KEY_RWIN, KEY_MENU,
+      KEY_SCRLOCK, KEY_NUMLOCK, KEY_CAPSLOCK
+</pre></blockquote>   
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#poll_keyboard">poll_keyboard</a>,
+<a class="xref" href="#key_shifts">key_shifts</a>.</font></blockquote>
+<b>extern volatile int <a name="key_shifts">key_shifts</a>;</b><br>
+   Máscara de bits que contienen el estado actual de shift/ctrl/alt, de las
+   teclas especiales de Windows y los carácteres de escape de los acentos.
+   Siempre que sea posible se actualizarán estos valores de forma asíncrona,
+   pero si keyboard_needs_poll() devuelve TRUE, deberá llamar manualmente a
+   poll_keyboard() para actualizarlos con el estado actual.
+   Puede contener cualquiera de los bits:
+<blockquote class="text"><pre>
+      KB_SHIFT_FLAG
+      KB_CTRL_FLAG
+      KB_ALT_FLAG
+      KB_LWIN_FLAG
+      KB_RWIN_FLAG
+      KB_MENU_FLAG
+      KB_SCROLOCK_FLAG
+      KB_NUMLOCK_FLAG
+      KB_CAPSLOCK_FLAG
+      KB_INALTSEQ_FLAG
+      KB_ACCENT1_FLAG
+      KB_ACCENT2_FLAG
+      KB_ACCENT3_FLAG
+      KB_ACCENT4_FLAG
+</pre></blockquote>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#poll_keyboard">poll_keyboard</a>,
+<a class="xref" href="#key">key</a>.</font></blockquote>
+<b>int <a name="keypressed">keypressed</a>();</b><br>
+   Devuelve TRUE si hay teclas esperando en el buffer de entrada. Esto es
+   equivalente a la función kbhit() de la biblioteca libc.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#clear_keybuf">clear_keybuf</a>,
+<a class="xref" href="#simulate_keypress">simulate_keypress</a>.</font></blockquote>
+<b>int <a name="readkey">readkey</a>();</b><br>
+   Devuelve el siguiente caracter del búffer de teclado en formato ASCII. Si
+   el búffer está vacío espera hasta que se apriete una tecla. El byte de
+   menos peso del valor de retorno contiene el código ASCII de la tecla, y el
+   byte de mayor peso el scancode. El scancode sigue siendo el mismo a pesar
+   del estado de las teclas shift, ctrl y alt, mientras que al código ASCII
+   sí que le afecta la pulsación de shift y ctrl de la manera normal (shift
+   cambia a mayúsculas, ctrl+letra da la posición de la tecla en el alfabeto,
+   ej: ctrl+A = 1, ctrl+B = 2, etc). Apretando alt+key se devuelve sólo el
+   scancode, con el código ASCII cero en el byte de menor peso. Por ejemplo:
+<blockquote class="code"><pre>
+      if ((readkey() &amp; 0xff) == 'd')            // por código ASCII
+         printf("Has pulsado 'd'\n");
+
+      if ((readkey() &gt;&gt; 8) == KEY_SPACE)    // por código scancode
+         printf("Has pulsado Espacio\n");
+
+      if ((readkey() &amp; 0xff) == 3)              // ctrl+letter
+         printf("Has pulsado Control+C\n");
+
+      if (readkey() == (KEY_X &lt;&lt; 8))        // alt+letter
+         printf("Has pulsado Alt+X\n");
+</pre></blockquote>
+   Esta función no puede devolver carácteres mayores que 255. Si necesita
+   leer entradas Unicode use ureadkey() en vez de readkey()
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#clear_keybuf">clear_keybuf</a>,
+<a class="xref" href="#simulate_keypress">simulate_keypress</a>.</font></blockquote>
+<b>int <a name="ureadkey">ureadkey</a>(int *scancode);</b><br>
+   Devuelve el siguiente caracter del búffer de teclado en formato Unicode.
+   Si el búffer está vacío se espera hasta que se presione una tecla. El
+   valor de retorno contiene el valor Unicode de la tecla, y si no es NULL,
+   en el argumento se iniciará con el scancode. Al contrario que
+   readkey() esta función es capaz de devolver carácteres mayores que 255.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#clear_keybuf">clear_keybuf</a>,
+<a class="xref" href="#simulate_ukeypress">simulate_ukeypress</a>.</font></blockquote>
+<b>int <a name="scancode_to_ascii">scancode_to_ascii</a>(int scancode);</b><br>
+   Convierte el scancode dado a un caracter ASCII para esa tecla, devolviendo
+   el resultado de apretar esa tecla sin shift ni capslock, o cero si la
+   tecla no es un caracter generable o no se puede ser traducido.
+
+<p><br>
+<b>void <a name="simulate_keypress">simulate_keypress</a>(int key);</b><br>
+   Introduce una tecla en el buffer del teclado, como si el usuario la
+   hubiese pulsado. El parámetro está el mismo formato que el devuelto por
+   readkey().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#simulate_ukeypress">simulate_ukeypress</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#readkey">readkey</a>.</font></blockquote>
+<b>void <a name="simulate_ukeypress">simulate_ukeypress</a>(int key, int scancode);</b><br>
+   Introduce una tecla en el búffer de teclado, como si el usuario la hubiese
+   pulsado. El parámetro está en el mismo formato devuelto por ureadkey()
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#simulate_keypress">simulate_keypress</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>.</font></blockquote>
+<b>extern int (*<a name="keyboard_callback">keyboard_callback</a>)(int key);</b><br>
+   Si se activa, esta función es será llamada por el controlador del teclado
+   en respuesta a cualquier tecla. Se le pasará una copia del valor que se
+   va a añadir al buffer de entrada, y la función puede devolver este valor
+   sin modificar, devolver cero para que la tecla sea ignorada, o devolver un
+   valor modificado que cambiará lo que readkey() va a devolver después. Esta
+   rutina se ejecuta en contexto de interrupción, por lo que debe estar
+   bloqueada (locked) en memoria.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>,
+<a class="xref" href="#keyboard_ucallback">keyboard_ucallback</a>,
+<a class="xref" href="#keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>.</font></blockquote>
+<b>extern int (*<a name="keyboard_ucallback">keyboard_ucallback</a>)(int key, int *scancode);</b><br>
+   Versión Unicode de keyboard_callback(). Si se activa, esta función es
+   llamada por el controlador de teclado en respuesta a cualquier pulsación
+   de tecla. Se le pasa el valor del caracter y el scancode que serán
+   añadidos al búffer de entrada, puede modificar el valor del scancode, y
+   devuelve un código de tecla nuevo o modificado. Si cambia el scancode a
+   cero y devuelve un cero la tecla será ignorada. Esta rutina se ejecuta en
+   un contexto de interrupción, por lo que debe ser bloqueada (locked) en
+   memoria.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>,
+<a class="xref" href="#keyboard_callback">keyboard_callback</a>,
+<a class="xref" href="#keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>.</font></blockquote>
+<b>extern void (*<a name="keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>)(int scancode);</b><br>
+   Si se, activa esta función es llamada por el controlador de teclado en
+   respuesta a cada evento de teclado, tanto cuando se pulsa como cuando se
+   suelta.  Se le pasará un byte de scancode puro, con el bit de más peso
+   desactivado si la tecla ha sido pulsada o activado si ha sido soltada.
+   Esta rutina se ejecuta en un contexto de interrupción, así que
+   debe estar bloqueada (locked) en memoria.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#keyboard_callback">keyboard_callback</a>,
+<a class="xref" href="#keyboard_ucallback">keyboard_ucallback</a>.</font></blockquote>
+<b>void <a name="set_leds">set_leds</a>(int leds);</b><br>
+   Modifica el estado de los indicadores LED del teclado. El parámetro es
+   una máscara de bits conteniendo cualquiera de los valores
+   KB_SCROLOCK_FLAG, KB_NUMLOCK_FLAG, y KB_CAPSLOCK_FLAG, o -1 para
+   recuperar el comportamiento normal.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#key_led_flag">key_led_flag</a>.</font></blockquote>
+<b>void <a name="set_keyboard_rate">set_keyboard_rate</a>(int delay, int repeat);</b><br>
+   Inicializa la frecuendia de repetición del teclado. Los tiempos se dan en
+   milisegundos. Pasar cero desactivará la repetición de teclas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>.</font></blockquote>
+<b>void <a name="clear_keybuf">clear_keybuf</a>();</b><br>
+   Limpia el búffer de teclado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#keypressed">keypressed</a>,
+<a class="xref" href="#readkey">readkey</a>,
+<a class="xref" href="#ureadkey">ureadkey</a>.</font></blockquote>
+<b>extern int <a name="three_finger_flag">three_finger_flag</a>;</b><br>
+   El controlador de teclado de djgpp proporciona una secuencia de 'salida
+   de emergencia' que puede usar para salir de su programa. Si está
+   ejecutando bajo DOS será la combinación ctrl+alt+del. La mayoría de SSOO
+   multitarea capturarán esta combinación antes de que llegue al controlador
+   de Allegro, en cuyo caso puede usar la combinación alternativa
+   ctrl+alt+fin. Si quiere desactivar este comportamiento en su programa
+   ajuste esta variable a FALSE.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>.</font></blockquote>
+<b>extern int <a name="key_led_flag">key_led_flag</a>;</b><br>
+   Por defecto las teclas BloqMayús, BloqNum y BloqDesp activan los LEDS
+   del teclado cuando son presionadas. Si las quiere utilizar en su juego
+   (Ej. BloqMayús para disparar) este comportamiento no es deseable, por lo
+   que puede poner a cero esta variable para evitar que los LEDS sean
+   actualizados.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_keyboard">install_keyboard</a>,
+<a class="xref" href="#set_leds">set_leds</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+<pre>
+#!/bin/sh
+# vim: set sw=4 ts=4 et:
+# wirtten by katja socher &lt;katja@linuxfocus.org&gt;
+# and guido socher &lt;guido@linuxfocus.org&gt;
+#
+#
+ver="0.1"
+help()
+{
+    cat &lt;&lt;HELP
+imgsrcline -- generate a &lt;img src=... width= height=&gt; line
+for a number of images
+
+USAGE: imgsrcline [-h]  image1 image2 ...
+
+OPTIONS: -h this help
+
+EXAMPLE: imgsrcline test.gif
+
+This program uses the identify utility from ImageMagick
+
+version $ver
+HELP
+    exit 0
+}
+error()
+{
+    echo "$1"
+    exit "$2"
+}
+while [ -n "$1" ]; do
+case $1 in
+    -h) help;shift 1;;
+    --) break;;
+    -*) echo "error: no such option $1. -h for help";exit 1;;
+    *)  break;;
+esac
+done
+
+if [ -z "$1" ];then
+    error "No image specified, -h for help" 1
+fi
+
+# process each image
+for imgfile in $* ;do
+    if [ ! -r "$imgfile" ]; then
+        echo "ERROR: can not read $imgfile\n"
+    else
+        geometry=`identify $imgfile | awk '{print $2}'`
+        # geometry can be 563x144+0+0 or 75x98
+        # get rid of the +0+0
+        width=`echo $geometry | sed 's/[^0-9]/ /g' | awk '{print $1}'`
+        height=`echo $geometry | sed 's/[^0-9]/ /g' | awk '{print $2}'`
+        echo "&lt;img src=\"$imgfile\" width=\"$width\" height=\"$height\" alt=\"[]\"&gt;"
+    fi
+done

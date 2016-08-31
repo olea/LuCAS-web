@@ -1,0 +1,496 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<HTML lang="es">
+
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<TITLE>LinuxFocus Julio 1998: TCPD y Firewalls usando IPFWADM</TITLE>
+</HEAD>
+
+
+
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+
+
+
+<!-- MAP for top navegation bar -->
+<MAP name="top">
+<AREA shape="rect" coords="367, 9, 418, 30" alt="Home" href="../">
+<AREA shape="rect" coords="423, 9, 457, 30" alt="Map" href="../map.html">
+<AREA shape="rect" coords="463, 9, 508, 30" alt="Index" href="../indice.html">
+<AREA shape="rect" coords="514, 9, 558, 30" alt="Search" href="../search.html">
+</MAP>
+
+
+
+<!-- MAP for bottom navegation bar -->
+<MAP name="bottom">
+<AREA shape="rect" coords="78, 0, 163, 15"   alt="News" href="../News/">
+<AREA shape="rect" coords="189, 0, 284, 15"  alt="Archives" href="../Archives/">
+<AREA shape="rect" coords="319, 0,  395, 15" alt="Links" href="../Links">
+<AREA shape="rect" coords="436, 0,  523, 15" alt="About LF" href="../aboutus.html">
+</MAP>
+
+
+
+<CENTER>
+<IMG src="../../common/images/../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top Bar]" ismap usemap="#top" ><BR>
+<IMG src="../../common/images/../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom Bar]" ismap usemap="#bottom">
+</CENTER>
+
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE  align="left" width="30%" border="0" cellspacing="0" cellpadding="5">
+
+<TR>
+ <TD>
+   <IMG src="../../common/images/Javi-P.gif" width="173" height="164" alt="[Photo of the Author]"><BR>
+   <FONT color="#336633" size="+2">Javi Polo </FONT><BR>
+
+   <FONT   color="#336633">Sobre  el autor</FONT>:    Soy un   sufrido
+   estudiante  de COU que lleva el   catal&aacute;n para septiembre, tengo 18
+   a&ntilde;os y mi gran  pasi&oacute;n es la inform&aacute;tica, espero  entrar el a&ntilde;o que
+   viene en  la UIB para hacer I.  T. Telem&aacute;tica, y  a ver si luego me
+   hago Ingeniero   Superior  de  inform&aacute;tica.    Me gusta   la m&uacute;sica
+   hardcore  y  tengo un grupo de   m&uacute;sica donde toco el  bajo llamado
+   Niko-Chan's Kingdom.  Aparte de eso, poco  m&aacute;s que decir, salvo que
+   tengo una novia fabulosa que se llama Xiska O:)
+   <BR>
+
+
+<!--   INDEX      -->
+<BR>
+<A href="mailto:javipolo@infomail.lacaixa.es">Escribe al Autor</A>
+<BR>
+
+
+ </TD>
+</TR>
+
+</TABLE>
+
+
+
+
+<TABLE>
+
+<TR>
+<TD>
+
+
+<!--   BODY OF THE ARTICLE    -->
+<H2>TCPD y Firewalls usando IPFWADM </H2>
+<IMG src="../../common/images/illustration38.gif" alt="[Ilustration]" width="100" height="100" hspace="10" >
+
+<P align="top">
+<FONT color="#336633" size="2">Resumen</FONT>: 
+<FONT size="2" face="Helvetica,Arial,Roman">
+En   este articulo revisamos a    groso modo la  configuraci&oacute;n de  los
+servicios ofrecidos por inetd y como usar  la herramienta IPFWADM para
+aumentar la seguridad de nuestro sistema.
+</FONT>
+
+</P>
+
+
+<BR clear="all">
+<BR>
+<HR size="0" noshadow>
+
+<P>Bueno, para  empezar,  hay que tener  clarito qu&eacute;  es el  inetd, es
+b&aacute;sicamente un demonio  que controla los  servicios  que puede ofrecer
+una m&aacute;quina conectada a Internet,  pero tambi&eacute;n puede que no  controle
+todos por      defecto,  as&iacute; que,  echadle  un     vistazo  al fichero
+<tt>/etc/inetd.conf</tt> y mirad los servicios  que da vuestra m&aacute;quina
+desde el demonio inetd (los  que est&eacute;n descomentados,  esto es, sin la
+parrilla  "<tt>#</tt>"  delante).  Lo primero    que  se ha de  hacer,
+l&oacute;gicamente, es no dar m&aacute;s  servicios que los  que queremos dar,  para
+evitar as&iacute; posibles brechas de seguridad por fallos en demonios que no
+usamos para nada.  Una  vez visto el  ficherito de marras, expliquemos
+su funcionamiento:</P>
+
+
+Por ejemplo, la l&iacute;nea:<BR>
+<font size=-1>
+<PRE>
+ftp stream tcp nowait root /usr/sbin/tcpd in.ftpd -l -a
+</PRE>
+</font>
+
+<P>Lo primero  de   todo es el    nombre del  servicio   (en este caso
+"<tt>ftp</tt>", que luego   se buscar&aacute; en  el <tt>/etc/services</tt> a
+que puerto corresponde.</P>
+
+<P>El segundo campo es  el tipo de socket que  se abre, y puede ser de
+varios tipos:  <tt>stream</tt> (como en   el ejemplo), <tt>dgram, raw,
+rdm</tt> y <tt>seqpacket</tt></P>
+
+<P>El tercer campo  es el protocolo  a  utilizar, que tiene que  estar
+definido en   <tt>/etc/protocols</tt>  (en este caso  es  el protocolo
+TCP)</P>
+
+<P>El  cuarto campo es   para indicar <tt>wait/nowait</tt>, este campo
+debe ser   siempre <tt>nowait</tt> excepto  para  los sockets  de tipo
+datagrama (<tt>dgram</tt>). Si el servidor de datagramas es multi-hilo
+se indica <tt>nowait</tt>, ya que el  servidor al recibir una llamada,
+lanza el proceso en  un hilo de ejecuci&oacute;n --al  ser multi-hilo  :)-- y
+libera el socket para que inetd pueda seguir recibiendo mensajes en el
+socket.  Si  el servidor es  de  tipo datagrama mono-hilo  entonces se
+indica <tt>wait</tt>,  ya que el  servidor atiende siempre en el mismo
+socket y no   puede lanzarlos en  procesos  aparte.  Adem&aacute;s, se  puede
+a&ntilde;adir un apartado m&aacute;s  a este campo, por  ejemplo: <tt>nowait.50</tt>
+(es decir, un n&uacute;mero separado del  <tt>wait/nowait</tt> por un punto).
+Este n&uacute;mero representa  el n&uacute;mero m&aacute;ximo  de demonios que puede lanzar
+(o  de peticiones aceptadas, seg&uacute;n se  mire) en 1 minuto.  Por defecto
+es 40.</P>
+
+<P>El  quinto campo indica  el nombre del  usuario con  el que se debe
+ejecutar el  demonio,  en este caso   se ejecutar&aacute; como  super-usuario
+(root).</P>
+
+<P>El sexto y los  sucesivos, son el programa  a lanzar seguido de los
+par&aacute;metros que se le  pasan al programa.  Aqu&iacute;  se le indica que lance
+el     demonio  <tt>tcpd</tt>,  y    como    argumentos    el  demonio
+<tt>in.ftpd</tt> con  los par&aacute;metros <tt>-l  -a</tt>.  Ahora  llega la
+parte m&aacute;s interesante de este primer trozo del art&iacute;culo, que es la que
+engloba al TCPD.</P>
+
+<P>Bueno, el tcpd es un demonio que filtra  las peticiones, y hace una
+u otra  cosa dependiendo del  demonio a lanzar y de  la IP que pide el
+servicio.     Esto  lo hace  mediante   el <tt>/etc/hosts.allow</tt> y
+<tt>/etc/hosts.deny</tt></P>
+
+<P>En principio, se  usa <tt>/etc/hosts.deny</tt> para indicar a quien
+y a  que no se permite  el acceso, y el <tt>/etc/hosts.allow</tt> para
+decir quien y a que puede acceder.</P>
+
+El formato de ambos ficheros es:
+<PRE>
+DEMONIO: IP[: OPCION1 [: OPCION2 ]]
+</PRE>
+
+<P>donde <tt>DEMONIO</tt>  puede ser el  demonio a lanzar, como  en el
+ejemplo puesto, el <tt>in.ftpd</tt>, o tambi&eacute;n puede ser <tt>ALL</tt>,
+refiri&eacute;ndose a todos los demonios.</P>
+
+<P><tt>IP</tt> puede ser tanto una IP o una URL,  como un rango de IPs
+(o de URLs), como cualquiera de los comodines que explico despues.</P>
+
+<P>Para  indicar  un  rango de IPs,  por  ejemplo,  se hace  poniendo:
+`<tt>123.32.</tt>' Esto  englobar&iacute;a todas las  IPs 123.32.XXX.XXX Y lo
+mismo para   las    URLs:  `<tt>.ml.org</tt>' englobar&iacute;a  todos    los
+subdominios de <tt>ml.org</tt></P>
+
+<P>Tambi&eacute;n se puede determinar un rango de IPs de la tradicional forma
+IP/MASCARA De forma que por ejemplo, para indicar el rango 127.0.0.0 a
+127.0.255.255 se indicar&iacute;a as&iacute;: <tt>127.0.0.0/255.255.0.0</tt> </P>
+
+Los comodines son:<BR>
+
+<TABLE>
+<TR valign="top">
+<TD><tt>ALL</tt></TD>
+<TD> que indica que coincide con cualquier direcci&oacute;n entrante</TD>
+</TR>
+
+<TR valign="top" >
+<TD><tt>LOCAL</tt></TD> <TD> que coincide con  cualquier nombre que no
+tenga un "." </TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>UNKNOWN</tt></TD> <TD> que coincide  con aquellas  m&aacute;quinas de
+las que no se conoce o su nombre o su IP</TD>
+</TR>
+
+<TR  valign="top">
+<TD><tt>KNOWN</tt></TD> <TD> que coincide  con las m&aacute;quinas de las que
+se conoce tanto su nombre como su IP</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>PARANOID</tt></TD> <TD> que  coincide con aquellas m&aacute;quinas en
+las cual su nombre no coincida con su IP</TD>
+</TR>
+</TABLE>
+
+las opciones pueden ser:<BR>
+<BR>
+
+<TABLE>
+<TR valign="top">
+<TD><tt>allow</tt></TD><TD> hace que a lo  indicado en esa entrada se
+debe aceptar  conexi&oacute;n, independientemente de   si est&aacute; en el  fichero
+<tt>hosts.allow</tt> o   en  <tt>hosts.deny</tt>. Debe   ser  la &uacute;ltima
+opci&oacute;n de la l&iacute;nea.</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>deny</tt></TD><TD>  es  como la   anterior, pero  denegando la
+conexi&oacute;n.</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>spawn</tt></TD><TD> ejecuta un comando shell (por si se quiere
+ejecutar algo cada vez que se establece  una conexi&oacute;n que coincida con
+la l&iacute;nea), yo por ejemplo hago que cuando recibo cualquier conexi&oacute;n de
+fuera, me suene un sonido para saber que alguien intenta conectar a mi
+m&aacute;quina</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>twist</tt></TD><TD>  es  como el  comando <tt>spawn</tt>, pero
+cortando la  conexi&oacute;n tras ejecutar el comando.    Tambi&eacute;n debe ser la
+&uacute;ltima opci&oacute;n de la l&iacute;nea.</TD>
+</TR>
+</TABLE>
+
+
+<P>Para estos dos &uacute;ltimos comandos, se pueden usar las expansiones que permite
+el tcpd. Estas son:</P>
+
+<TABLE>
+<TR valign="top">
+<TD><tt>%a</tt></TD><TD>  direcci&oacute;n de la m&aacute;quina cliente</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%c</tt></TD><TD>    Informaci&oacute;n    del    cliente   (puede ser
+usuario@m&aacute;quina, o lo que sea, dependiendo del cliente)</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%d</tt></TD><TD  nombre del demonio</TD>
+<TR>
+
+<TR valign="top">
+<TD><tt>%h</tt></TD><TD> nombre o IP de la m&aacute;quina cliente, seg&uacute;n est&eacute;
+disponible</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%n</tt></TD><TD> nombre de la m&aacute;quina cliente</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%p</tt></TD><TD> PID del demonio</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%s</tt></TD><TD>  informaci&oacute;n  del servidor (demonio@m&aacute;quina o
+solo demonio, depende)</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%u</tt></TD><TD>  Nombre del usuario cliente</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>%%</tt></TD><TD> Es un simple car&aacute;cter <tt>%</tt></TD>
+</TR>
+
+</TABLE>
+
+<P>Con estas expansiones  y esos dos  comandos se pueden hacer  muchas
+cosas, por ejemplo, me se de uno que cada  vez que intentaban entrarle
+por  telnet, le  mandaba autom&aacute;ticamente  un "teardrop" al  afortunado
+intruso :)</P>
+
+<P>NOTA:  Un teardrop  es un DoS  (Denial  of Service,  un ataque para
+colgar  la   m&aacute;quina o provocar   que  se reinicie)    que se  basa en
+aprovecharse en el fallo de la defragmentaci&oacute;n de los paquetes TCP que
+tienen (ahora ya  ten&iacute;an, puesto que muchos  se han parcheado ya) gran
+parte  de Sistemas Operativos.   La  informaci&oacute;n se manda  a trav&eacute;s de
+Internet por el  protocolo TCP/IP (que se  usa tambi&eacute;n en otro tipo de
+redes, aparte de  Internet, como por  ejemplo intranets), el protocolo
+TCP se  encarga de  trocear la  informaci&oacute;n  en paquetes que  luego el
+protocolo IP se encarga de hacer llegar a su  destino, y una vez all&iacute;,
+el  protocolo TCP comprueba  que est&eacute;n todos  los paquetes y los junta
+para recomponer   la  informaci&oacute;n  original. Dicho  ataque   (y muchos
+basados en  &eacute;l) lo que hace es  aprovecharse de que en muchos Sistemas
+Operativos   no  se comprobaba  si  el   tama&ntilde;o del  paquete  antes de
+juntarlos era muy peque&ntilde;o, y  al ser as&iacute; la  m&aacute;quina se hac&iacute;a un l&iacute;o a
+la  hora de juntarlo.  Esto no  estoy  completamente seguro de que sea
+as&iacute;, evidentemente, acepto todo tipo de aportaciones y cr&iacute;ticas, tanto
+positivas como  negativas.   Finalizada  esta  "peque&ntilde;a"   aclaraci&oacute;n,
+sigamos ...</P>
+
+Ejemplos:<BR>
+
+<font size=-1>
+<PRE>
+# cat /etc/hosts.allow 
+
+ALL: 127.0.0.1 #deja entrar a localhost para todo
+
+in.ftpd: ALL: spawn (wavplay /usr/share/sounds/intruso.wav & )
+# deja entrar a cualquiera por ftp, pero lanzando un 
+# sonido wav (para que yo me entere)
+
+in.telnetd:  ALL: twist ( teardrop %h %h )
+# manda un teardrop a quien intente
+# entrar por telnet
+
+#fin
+</PRE>
+
+<PRE>
+# cat /etc/hosts.deny
+
+ALL: `.bsa.org'   # no deja entrar a nadie del dominio bsa.org
+
+in.fingerd: ALL	  # el servicio de finger cerrado para todos :)
+
+#fin
+</PRE>
+</font>
+
+<P>Bueno, esto es todo lo que tengo que  decir sobre el <tt>tcpd</tt>,
+ya os dije que mis conocimientos no eran muchos.  Probad, experimentad
+y leeros    las  p&aacute;ginas  de  manual   (<tt>tcpd,  host_access(5)</tt>
+).  Seguro que as&iacute;    aprend&eacute;is mucho m&aacute;s  de  lo   que  yo os   pueda
+ense&ntilde;ar.</P>
+
+Pasemos ahora al uso de la herramienta IPFWADM<BR>
+
+<P>Lo primero  de todo  es tener  el soporte de   IP Firewalling en el
+kernel (Networking ->   Network firewalls +  IP:  firewalling). Luego,
+tras recompilar el kernel y reiniciar el equipo, pasemos a explicar la
+utilidad de esta herramienta.</P>
+
+<P>Esta herramienta permite entre otras cosas (ser&aacute;n en las &uacute;nicas que
+me     centrar&eacute;) gestionar la  entrada y    salida de  paquetes de los
+protocolos  TCP, UDP  e ICMP.  En  resumen, nosotros le  indicamos qu&eacute;
+paquetes debe  permitir entrar, pudiendo especificar  si vienen de una
+IP o grupo  de IPs concretos, a un  puerto concreto,  con un protocolo
+concreto, y todas las mezclas  de opciones que  se puedan hacer, y  lo
+mismo con los paquetes que van hacia fuera.</P>
+
+
+<P>ipfwadm tiene varios par&aacute;metros principales:</P>
+<UL>
+<LI>    <tt>-A</tt> especifica las reglas de accounting.
+<LI>	<tt>-I</tt> especifica las reglas para los paquetes entrantes.
+<LI>	<tt>-O</tt> especifica las reglas para los paquetes salientes.
+<LI>	<tt>-F</tt> especifica las reglas de reenv&iacute;o de paquetes.
+<LI>	<tt>-M</tt> es para la administraci&oacute;n del IP masquerading.
+</UL>
+
+<P>En este art&iacute;culo solo hablar&eacute; de los par&aacute;metros -I y -O. Para ambos se sigue
+la misma sintaxis.</P>
+
+Subpar&aacute;metros de estos par&aacute;metros principales son:<BR>
+<BR>
+
+<UL>
+<LI><tt>-a</tt> a&ntilde;ade una o m&aacute;s reglas al final de la lista.
+
+<LI><tt>-i</tt> a&ntilde;ade una o m&aacute;s reglas al principio de la lista.
+
+<LI><tt>-d</tt> borra una o m&aacute;s reglas de la lista.
+
+<LI><tt>-l</tt> muestra las reglas de la lista.
+
+<LI><tt>-f</tt> borra las reglas de la lista.
+
+<LI><tt>-p</tt> para indicar si  los paquetes se  han de  aceptar (a),
+denegar (d) o rechazar (r).
+
+<LI><tt>-c</tt> comprueba que tipo de regla se segu&iacute;a con un paquete.
+
+<LI><tt>-h</tt> ayuda.
+</UL>
+
+Los par&aacute;metros "importantes" son:<BR>
+<BR>
+
+<TABLE>
+<TR valign="top">
+<TD><tt>-P</tt></TD><TD> especifica el protocolo con  el cual se ha de
+aplicar  la regla, este  puede ser TCP,  UDP, ICMP o all (para indicar
+cualquier protocolo)</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>-S</tt></TD><TD> especifica la direcci&oacute;n origen del paquete. El formato es:<pre>
+   DIRECCION[/MASCARA] [PUERTO]
+</pre>
+   Por ejemplo, una direcci&oacute;n v&aacute;lida ser&iacute;a:
+<pre>
+123.32.34.0/255.255.255.250 25
+</pre>
+   para indicar el rango de IPs desde 123.32.34.0 a 123.32.34.5</TD>
+</TR>
+
+<TR valign="top">
+<TD><tt>-D</tt></TD><TD> especifica  la  direcci&oacute;n destino.  Tiene  el
+mismo formato que <tt>-S</tt></TD>
+</TR>
+
+</TABLE>
+
+
+<P>B&aacute;sicamente estos son los par&aacute;metros fundamentales, as&iacute;, para permitir que las
+tramas lleguen a mi m&aacute;quina, todas de mi misma m&aacute;quina, a&ntilde;ado la regla:</P>
+<pre>
+ipfwadm -I -i a -S 127.0.0.1
+</pre>
+<P>y para descartar los paquetes que vengan desde 123.34.22.XXX le indico:</P>
+
+<pre>
+ipfwadm -I -a d -S 123.34.22.0/255.255.255.0<BR>
+</pre>
+
+<P>y luego si  quiero denegar TODO acceso  al puerto de netbios, menos
+para la IP 111.222.123.221, lo har&iacute;a as&iacute;:</P>
+<pre>
+ipfwadm -I -a a -P tcp -S 111.222.123.221 139
+ipfwadm -I -a d -P tcp -D 0.0.0.0/0 139
+</pre>
+<BR>
+
+<P>Bueno, creo que eso  es todo mi art&iacute;culo,  un poco pobre, pero  mis
+conocimientos no llegan a m&aacute;s O:)</P>
+
+
+
+<HR size="1" noshade>
+
+<p align=right><i>Texto original en Castellano</i></P>
+
+
+
+</TD>
+</TR>
+</TABLE>
+
+
+<!-- ARTICLE FOOT -->
+<BR clear="all">
+<CENTER>
+<TABLE width="95%">
+
+<TR>
+ <TD align="center" bgcolor="#666666">
+  <FONT color="#ffffff">
+  P&aacute;ginas Web mantenidas por Miguel &Aacute;ngel Sep&uacute;lveda<BR>
+ &copy; Javi Polo 1998<BR>
+  <B>LinuxFocus 1998</B>
+  </FONT>
+ </TD>
+</TR>
+
+</TABLE>
+</CENTER>
+
+
+
+</BODY>
+
+</HTML>
+
+
+
+
+
+

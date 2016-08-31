@@ -1,0 +1,299 @@
+<HTML>
+<HEAD>
+<TITLE>RDSI COMO : Instalaci&oacute;n y configuraci&oacute;n de controladores</TITLE>
+</HEAD>
+<BODY>
+<A HREF="RDSI-Como-5.html">Anterior</A>
+<A HREF="RDSI-Como-7.html">Siguiente</A>
+<A HREF="RDSI-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="s6">6. Instalaci&oacute;n y configuraci&oacute;n de controladores</A></H2>
+
+
+<P>Los controladores son el software que hace funcionar al dispositivo, y que
+da soporte l&oacute;gico al Sistema Operativo para interactuar con &eacute;l. En Linux
+la integraci&oacute;n de este soporte se lleva a cabo configurando y compilando
+el n&uacute;cleo o kernel, con lo que obtenemos un <I>coraz&oacute;n</I> del Sistema
+Operativo <I>a la medida</I> de cada m&aacute;quina. </P>
+<P>Linux ofrece la posibilidad de compilarlo &iacute;ntegro en el kernel o en
+m&oacute;dulos aparte, que se cargan seg&uacute;n los necesite el sistema o no. Si no
+est&aacute; familiarizado con todo esto, es momento de que lea el
+<I>Kernel-Como</I>, disponible en el Insflug <CODE>
+<A HREF="http://www.insflug.org">http://www.insflug.org</A></CODE>.</P>
+<P>El kernel necesitar&aacute; tener dos tipos de soporte; uno gen&eacute;rico, (m&oacute;dulo
+<CODE>isdn</CODE>) y otro espec&iacute;fico a la tarjeta (<CODE>hisax</CODE>, etc).</P>
+<P>Como algunas tarjetas RDSI, especialmente las que tienen soporte
+experimental, s&oacute;lo funcionan con controladores espec&iacute;ficos modulares, nos
+centraremos en este tipo de soporte, por ser m&aacute;s <I>universal</I>. </P>
+<P>No obstante, en los ejemplos supondremos que hacemos uso de kernels
+estables (<CODE>2.0.xx</CODE>), aunque tengamos que <I>parchearlos</I>. Puede usar
+kernels de desarrollo si lo prefiere, tan s&oacute;lo t&eacute;ngalo en cuenta en los
+ejemplos que aplique y modif&iacute;quelos en consecuencia, sin olvidar que estos
+kernels son para lo que son, <B>desarrollo</B>, no siendo muy id&oacute;neos para
+la instalaci&oacute;n por primera vez de algo que se desconoce.</P>
+
+<H2><A NAME="ss6.1">6.1 Soporte espec&iacute;fico a la tarjeta </A></H2>
+
+
+<P>Antes de continuar, suponemos que ha le&iacute;do la secci&oacute;n 
+<A HREF="RDSI-Como-2.html#soportadas">soportadas</A> y que sabe a ciencia cierta que su tarjeta est&aacute;
+soportada.</P>
+<P>Si no parece estarlo, es conveniente que lea (s&iacute;, bueno, relea ;-) de todos
+modos la documentaci&oacute;n que hay en <CODE>/usr/src/linux/Documentation/isdn</CODE>
+que siempre estar&aacute; m&aacute;s actualizada que este <I>Como</I>. Si no, no est&aacute; todo
+perdido; obtenga el &uacute;ltimo &aacute;rbol de desarrollo de
+<CODE>
+<A HREF="ftp://ftp.suse.com/pub/isdn4linux/v2.0/isdn.tar.gz">ftp://ftp.suse.com/pub/isdn4linux/v2.0/isdn.tar.gz</A></CODE> y eche un
+vistazo a los ficheros de <CODE>isdn/Documentation/isdn/</CODE>, puede que se
+lleve una grata sorpresa. </P>
+<P>Si su tarjeta est&aacute; soportada en la distribuci&oacute;n est&aacute;ndar del kernel actual
+(2.0.34 a d&iacute;a de hoy), salte a la secci&oacute;n 
+<A HREF="#confkr">confkr</A>. Si necesita
+parchear, siga leyendo. </P>
+<P>Para a&ntilde;adir soporte al kernel actual, integraremos una parte del &aacute;rbol de
+fuentes modificada, que a&ntilde;ada soporte para la misma. Obtenga el fichero
+<CODE>
+<A HREF="ftp://ftp.suse.com/pub/isdn4linux/v2.0/isdn.tar.gz">ftp://ftp.suse.com/pub/isdn4linux/v2.0/isdn.tar.gz</A></CODE>, suele ser
+un enlace simb&oacute;lico a la &uacute;ltima versi&oacute;n del &aacute;rbol de desarrollo RDSI
+disponible.</P>
+<P>No obstante... el soporte es experimental. Casos t&iacute;picos son los de las
+&uacute;ltimamente disponibles popularmente <I>Teles.SO 16.3c</I> o las
+<I>Asuscom</I>. Los que suscriben no han visto nada anormal (cierto es que
+el tiempo de que hemos dispuesto para testearlas ha sido breve) y tienen
+noticias de varios servidores de los llamados <I>de producci&oacute;n</I> que est&aacute;n
+funcionando sin problemas con kernels estables y estas tarjetas.</P>
+<P>No obstante, no se parchea en el sentido estricto, ya que lo &uacute;nico que se
+sustituye es la parte correspondiente a RDSI. </P>
+<P>La parte del &aacute;rbol modificada lleva un fichero llamado <CODE>std2kern</CODE> que
+hace el trabajo de parcheo por nosotros, siempre y cuando
+<CODE>/usr/src/linux</CODE> sea el directorio donde residan las fuentes de
+linux. Aseg&uacute;rese de que exista; si en su sistema el directorio se llama
+<CODE>/usr/src/linux-2.0.33</CODE>, compruebe, y en su ausencia cree un
+enlace al mismo llamado <CODE>linux</CODE>; por ejemplo: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src ;
+ln -s linux-2.0.33 linux 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Descomprima el &aacute;rbol de fuentes <CODE>isdn</CODE>: suponiendo que ha dejado el
+fichero en <CODE>/tmp</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+( cd /usr/src; tar zxvf /tmp/isdn.tar.gz )
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>Acceda a <CODE>/usr/src/isdn</CODE>, y ejecute el comando <CODE>std2kern -d</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/isdn
+./std2kern -d
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>no olvide el "<CODE>./</CODE>" para dar el path directo al fichero, en
+la mayor&iacute;a de los sistemas el directorio actual no est&aacute; en el <CODE>PATH</CODE>
+por seguridad.</P>
+<P>Compruebe que no se producen mensajes de error. Si es as&iacute;, averig&uuml;e qu&eacute;
+sucede. Lo m&aacute;s t&iacute;pico es que se haya equivocado en la elecci&oacute;n de fichero,
+y haya escogido uno para un kernel de otra versi&oacute;n (2.1.xx por ejemplo). </P>
+
+
+<H2><A NAME="confkr"></A> <A NAME="ss6.2">6.2 Configuraci&oacute;n del Kernel </A></H2>
+
+
+<P>Una vez hemos llevado a cabo los pasos anteriores procederemos a la
+configuraci&oacute;n y posterior recompilaci&oacute;n del kernel. Si no est&aacute; habituado a
+esto, l&eacute;ase primero el <I>Kernel-Como</I>, disponible en Insflug, vea secci&oacute;n
+<A HREF="RDSI-Como-12.html#Grupos">INSFLUG</A>.</P>
+<P>Acceda a <CODE>/usr/src/linux</CODE> y ejecute su m&eacute;todo preferido de
+configuraci&oacute;n. Aseg&uacute;rese de activar, en la secci&oacute;n principal, <I>Code
+maturity level options</I> el apartado <I>Prompt for development and/or
+incomplete code/drivers</I>, o de lo contrario, el programa de
+configuraci&oacute;n no le dar&aacute; opci&oacute;n a seleccionar controladores
+experimentales.</P>
+<P>Una vez hecho esto, seleccione:</P>
+
+<H3>Soporte gen&eacute;rico en el kernel</H3>
+
+
+<P>Vaya a la secci&oacute;n <I>ISDN subsystem</I> del men&uacute; principal:</P>
+<P>
+<UL>
+<LI><I>ISDN support</I> como m&oacute;dulo (<CODE>M</CODE>).</LI>
+<LI><I>Support synchronous PPP</I></LI>
+<LI><I>Support generic MP (RFC 1717)</I> (potestativo, necesario para 
+canales m&uacute;ltiples)</LI>
+<LI><I>Support audio via ISDN</I> (potestativo)</LI>
+</UL>
+</P>
+<P>Esto es para cuanto a soporte RDSI se refiere. En cuanto a soporte PPP,
+cuestiones espec&iacute;ficas de redes, y dem&aacute;s aspectos, recurra al <I>Como</I>
+apropiado.</P>
+
+<H3>Soporte espec&iacute;fico a la tarjeta</H3>
+
+
+<P>En la secci&oacute;n <I>ISDN subsystem</I> del men&uacute; principal, active el
+controlador que d&eacute; soporte a su tarjeta. El m&aacute;s popular es el HiSax, si
+ese es su caso, deber&aacute; adem&aacute;s especificar:</P>
+<P>
+<UL>
+<LI>Protocolo a soportar: en nuestro caso, <I>HiSax Support for
+EURO/DSS1</I> y</LI>
+<LI>Cu&aacute;l de la familia de tarjetas soportadas por &eacute;l es la suya; si por
+ejemplo es la veterana Teles.SO 16.3 NO PnP, la PnP, o la pcmcia (<B>NO
+la 16.3c OJO</B>) seleccionar&iacute;a <I>HiSax Support for Teles 16.3 or PNP or
+PCMCIA</I>. </LI>
+</UL>
+</P>
+<P>De nuevo, no conocemos ni podemos conocer todas las tarjetas soportadas
+por Linux. Es posible que en drivers experimentales haya que indicar
+alguna otra opci&oacute;n; recurra a su sentido com&uacute;n, a la documentaci&oacute;n (a la
+que no nos cansaremos de remitirle; este documento no es m&aacute;s que una gu&iacute;a) 
+y a nosotros, a fin de actualizar este <I>Como</I>.</P>
+<P>Salga del men&uacute; guardando los cambios, y compile; no olvide el <CODE>make
+modules</CODE> y el <CODE>make modules_install</CODE>, y reinstalar el LILO para dicho
+kernel. </P>
+<P>Para m&aacute;s informaci&oacute;n de c&oacute;mo recompilar el kernel, v&eacute;ase el
+<I>Kernel-Como</I>, disponible en el Insflug, vea secci&oacute;n 
+<A HREF="RDSI-Como-12.html#Grupos">INSFLUG</A>.</P>
+
+
+<H2><A NAME="ss6.3">6.3 Carga de los m&oacute;dulos - comprobaci&oacute;n del sistema</A></H2>
+
+
+<P><I>Ya he recompilado, instalado los m&oacute;dulos, y arrancado con el nuevo
+kernel.  Adem&aacute;s, he usado</I> <CODE>isapnp</CODE> <I>y todo parece haber ido
+bien...  ¿Qu&eacute; hago ahora?</I></P>
+<P>Se ha ganado un descanso. T&oacute;mese algo... ;-) No, en serio. Ahora viene la
+parte m&aacute;s interesante.</P>
+<P>Hay varias formas de cargar los m&oacute;dulos, en cualquier caso, la manera que
+nunca falla es hacerlo a mano directamente desde la l&iacute;nea de comandos. 
+Supondremos que hacemos uso del soporte espec&iacute;fico HiSax. La sintaxis del
+m&oacute;dulo hisax es la que sigue, si bien es conveniente leer (al final lo
+conseguiremos ;-), especialmente en drivers experimentales, 
+<CODE>/usr/src/linux/Documentation/isdn/README.HiSax</CODE>. </P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+modprobe hisax type=&lt;codigo tarjeta&gt; protocol=&lt;protocolo&gt; io=&lt;direccion E/S&gt; irq=&lt;interrupcion&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ha llegado el momento de echar mano de donde tuviera anotados (¿los anot&oacute;?)
+los par&aacute;metros que asignara en las secciones 
+<A HREF="RDSI-Como-4.html#bios">bios</A> y 
+<A HREF="RDSI-Como-5.html#recursos">recursos</A>.</P>
+<P>Suponiendo que se trate de la tarjeta <I>Teles.SO 16.3c PnP</I>, que al fin
+y al cabo, fue la causante en origen de este <I>Como</I>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+modprobe hisax type=14 protocol=2 io=&lt;IO&gt; irq=&lt;IRQ&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Por ejemplo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+modprobe hisax type=14 protocol=2 io=0x0580 irq=11
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>con lo que si miramos en <CODE>/var/log/messages</CODE> deber&iacute;amos ver algo
+como: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Jun 23 12:05:11 hal kernel: HiSax: Driver for Siemens chip set ISDN cards
+Jun 23 12:05:11 hal kernel: HiSax: Version 2.8
+Jun 23 12:05:11 hal kernel: HiSax: Revisions 1.15.2.8/1.10.2.5/1.10.2.3/1.30.2.6/1.8.2.5
+Jun 23 12:05:11 hal kernel: HiSax: Card 1 Protocol EDSS1 Id=HiSax (0)
+Jun 23 12:05:11 hal kernel: HiSax: Teles 16.3c driver Rev. 1.1.2.2
+Jun 23 12:05:11 hal kernel: teles3c: defined at 0x580 IRQ 3 HZ 100
+Jun 23 12:05:11 hal kernel: teles3c: resetting card
+Jun 23 12:05:11 hal kernel: Teles 16.3c: IRQ 11 count 0
+Jun 23 12:05:11 hal kernel: Teles 16.3c: IRQ 11 count 1
+Jun 23 12:05:11 hal kernel: HiSax: DSS1 Rev. 1.16.2.3
+Jun 23 12:05:11 hal kernel: HiSax: 2 channels added
+Jun 23 12:05:11 hal kernel: HiSax: module installed
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El tipo <CODE>14</CODE> es el que se corresponde con la <I>Teles 16.3c PnP</I>, el
+protocolo <CODE>2</CODE> es el usado en Espa&ntilde;a para las conexiones RDSI, <I>EURO
+ISDN o EDSS1</I>. Los otros dos valores (direcci&oacute;n de E/S e interrupci&oacute;n) 
+depender&aacute;n de su configuraci&oacute;n particular, que anot&oacute; en su momento,
+¿verdad? </P>
+<P>Dependiendo del driver, este puede que se cargue aun con par&aacute;metros
+err&oacute;neos, si bien no es el caso del HiSax, que rehusar&aacute; a hacerlo. </P>
+<P>Si sospechamos que pese a haberse cargado (repetimos, no en el caso del
+HiSax) hay por ejemplo conflictos de IRQ, o no est&aacute; usando la que le hemos
+asignado, un indicador claro de esto es que al hacer un</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cat /proc/interrupts 
+ 0:    9719062   timer
+ 1:     342221   keyboard
+ 2:          0   cascade
+ 4:     495989 + serial
+10:    1591809   ICN
+12:        681   eth0
+13:          1   math error
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en un sistema con una tarjeta ICN la l&iacute;nea correspondiente a la irq usada
+por el controlador contase con <CODE>0</CODE> interrupciones de contador (segunda
+columna). Esto aplica para todos los dispositivos; si la l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+10:    1591809   ICN
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>fuese</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+10:    0         ICN
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>ser&iacute;a un claro s&iacute;ntoma de que el driver <CODE>ICN</CODE> no est&aacute; usando dicha
+interrupci&oacute;n, casi seguro por fallo de configuraci&oacute;n. Tan s&oacute;lo por cargar
+correctamente,  debe de poner el contador a <CODE>1</CODE> al menos.</P>
+<P>Llegados a este punto, respire profundamente y si&eacute;ntase todo un <I>gur&uacute;</I>
+Linuxero...  ;-) Ya casi est&aacute; listo; para no tener que hacerlo en un
+futuro a mano, y suponiendo que tiene las <CODE>modutils</CODE> correctamente
+instaladas, edite o cree su <CODE>/etc/conf.modules</CODE> o
+<CODE>/etc/modules.conf</CODE> e inserte las siguientes l&iacute;neas, (suponiendo
+que use por ejemplo una Teles 16.3 NO PnP/ con la IRQ 10 y la io 0x180 :</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+alias isdn hisax
+options hisax type=3 protocol=2 io=0x180 irq=10
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>ejecute <CODE>depmod -a</CODE> para computar/actualizar las dependencias entre
+m&oacute;dulos; de ahora en adelante un <CODE>modprobe hisax</CODE> bastar&aacute;.</P>
+
+
+<HR>
+<A HREF="RDSI-Como-5.html">Anterior</A>
+<A HREF="RDSI-Como-7.html">Siguiente</A>
+<A HREF="RDSI-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

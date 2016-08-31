@@ -1,0 +1,98 @@
+#!/usr/bin/python
+# Drill - Teo Serie
+# Copyright Hilaire Fernandes 2001
+# Release under the terms of the GPL licence
+# You can get a copy of the license at http://www.gnu.org
+
+from gtk import *
+from gnome.ui import *
+from GDK import *
+from libglade import *
+
+exerciceTree = currentExercice = label = None
+
+def on_about_activate(obj):
+    "display the about dialog"
+    about = GladeXML ("drill.glade", "about").get_widget ("about")
+    about.show ()
+
+def on_new_activate (obj):
+    global exerciceTree, currentExercice
+
+
+def selectTreeItem (item):
+    global label
+    label.set_text ("L'exercice " +
+                    item.get_data ("id") + "est sélectionné.")
+
+def deselectTreeItem (item):
+    global label
+    label.set_text ("L'exercice " +
+                    item.get_data ("id") + "est désélectionné.")
+    
+def selectSubtree (subtree):
+    global label
+    label.set_text ("Aucun exercice de sélectionné")
+    
+def addSubtree (name):
+    global exerciceTree
+    subTree = GtkTree ()
+    item = GtkTreeItem (name)
+    exerciceTree.append (item)
+    item.set_subtree (subTree)
+    item.show ()
+    item.connect ("select", selectSubtree)
+    return subTree
+
+def addExercice (category, title, id):
+    item = GtkTreeItem (title)
+    item.set_data ("id", id)
+    category.append (item)
+    item.show ()
+    item.connect ("select", selectTreeItem)
+    item.connect ("deselect", deselectTreeItem)
+    
+
+def addMathExercices ():
+    subtree = addSubtree ("Mathématiques")
+    addExercice (subtree, "Exercice 1", "Math. Ex1")
+    addExercice (subtree, "Exercice 2", "Math. Ex2")
+
+def addFrenchExercices ():
+    subtree = addSubtree ("Français")
+    addExercice (subtree, "Exercice 1", "Français Ex1")
+    addExercice (subtree, "Exercice 2", "Français Ex2")
+
+def addHistoryExercices ():
+    subtree = addSubtree ("Histoire")
+    addExercice (subtree, "Exercice 1", "Histoire Ex1")
+    addExercice (subtree, "Exercice 2", "Histoire Ex2")
+
+def addGeographyExercices ():
+    subtree = addSubtree ("Géographie")
+    addExercice (subtree, "Exercice 1", "Géographie Ex1")
+    addExercice (subtree, "Exercice 2", "Géographie Ex2")
+    
+def initDrill ():
+    global exerciceTree, label
+    wTree = GladeXML ("drill.glade", "drillApp")
+    dic = {"on_about_activate": on_about_activate,
+           "on_exit_activate": mainquit,
+           "on_new_activate": on_new_activate}
+    wTree.signal_autoconnect (dic)           
+    exerciceTree = wTree.get_widget ("exerciceTree")
+    # Temporary until we implement real exercice
+    paned = wTree.get_widget ("hpanedTree")
+    label = GtkLabel ("Aucun exercice de sélectionné")
+    label.show ()
+    paned.pack2 (label)
+    # Free the GladeXML tree
+    wTree.destroy ()
+    # Add the exercices
+    addMathExercices ()
+    addFrenchExercices ()
+    addHistoryExercices ()
+    addGeographyExercices ()
+    
+initDrill ()
+mainloop ()

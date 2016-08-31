@@ -1,0 +1,227 @@
+<HTML>
+<HEAD>
+<TITLE>En Hora mini-COMO: Uso del programa clock</TITLE>
+</HEAD>
+<BODY>
+<A HREF="En-Hora-Como-1.html">Anterior</A>
+<A HREF="En-Hora-Como-3.html">Siguiente</A>
+<A HREF="En-Hora-Como.html#toc2">Indice</A>
+<HR>
+<H2><A NAME="s2">2. Uso del programa <CODE>clock</CODE></A></H2>
+
+
+<P>Todo lo que necesita saber est&aacute; en la p&aacute;gina man de <CODE>clock(8)</CODE>, y este
+mini-COMO lo guiar&aacute; a trav&eacute;s del proceso.</P>
+<P>Nota:</P>
+<P>
+<BLOCKQUOTE>
+Debe ser root para ejecutar "<CODE>clock</CODE>", o cualquier otro programa
+que afecte la hora del sistema o el reloj del CMOS.
+</BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss2.1">2.1 Revisi&oacute;n de su sistema</A></H2>
+
+
+<P>Revise sus archivos de inicio del sistema buscando una l&iacute;nea de comando
+semejante a "<CODE>clock -a</CODE>" o "<CODE>clock -ua</CODE>".  Dependiendo de la
+distribuci&oacute;n que est&eacute; utilizando, puede estar en <CODE>/etc/rc.local</CODE> o
+en <CODE>/etc/rc.d/rc.sysinit</CODE>, <CODE>/etc/rc.d/init.d</CODE> o alg&uacute;n otro
+lugar similar.</P>
+<P>Si aparece como "<CODE>clock -s</CODE>" o "<CODE>clock -us</CODE>", cambie la
+"<CODE>s</CODE>" por una "<CODE>a</CODE>", y compruebe si tiene el archivo
+<CODE>/etc/adjtime</CODE>, que contiene una sola l&iacute;nea semejante a esta:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+0.000000 842214901 0.000000
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Estos n&uacute;meros son el factor de correcci&oacute;n (en segundos por d&iacute;a), el
+momento que reloj fue corregido por &uacute;ltima vez (en segundos desde Enero 1,
+1970), y el momento (segundo) en que fue corregido por &uacute;ltima vez.  Si no
+dispone de este archivo, entre en el sistema como root y cr&eacute;elo, con una
+&uacute;nica l&iacute;nea que como esta (todo en cero):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+0.0 0 0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ejecute "<CODE>clock -a</CODE>" o "<CODE>clock -ua</CODE>"  manualmente desde la
+l&iacute;nea de comando para actualizar el segundo n&uacute;mero (use la "<CODE>u</CODE>" si su
+reloj esta marcando la hora Universal en lugar el tiempo local).</P>
+
+
+<H2><A NAME="ss2.2">2.2 C&aacute;lculo de las variaciones de su reloj</A></H2>
+
+
+<P>Primero, necesita saber qu&eacute; hora es <CODE>:-)</CODE>.  Su hora del d&iacute;a puede estar
+o no ajustada.  Mi m&eacute;todo favorito es llamar al servicio WWV al (303)
+499-7111 (es una llamada por voz).  Si dispone de acceso a un servidor de
+horario en la red, puede utilizar el programa <CODE>ntpdate</CODE> del paquete
+<CODE>xntpd</CODE> (utilice el par&aacute;metro <CODE>-b</CODE> para permitir que el kernel
+actualice el reloj del CMOS).  De lo contrario use <CODE>date -s
+hh:mm:ss</CODE> para poner en hora el reloj del kernel a mano, y entonces
+<CODE>clock -w</CODE> para el reloj del CMOS, tomando la hora del reloj del
+kernel.  Deber&aacute; recordar cu&aacute;ndo puso en hora el reloj por &uacute;ltima vez, lo
+mejor es escribir la fecha en alg&uacute;n lugar donde no la pierda. Si utiliz&oacute;
+<CODE>ntpdate</CODE>, con <CODE>date +%s</CODE>" puede registrar el n&uacute;mero de
+segundos desde Enero 1, 1970.</P>
+<P>Entonces, vuelva algunos d&iacute;as o semanas despu&eacute;s para ver cu&aacute;nto se ha
+desviado su reloj.  Si puso la hora a mano, le recomiendo espere al menos
+dos semanas para poder calcular la desviaci&oacute;n lo m&aacute;s aproximada a .1
+seg/d&iacute;a.  Despu&eacute;s de algunos meses le ser&aacute; posible determinarla con
+exactitud cercana a .01 seg/d&iacute;a (algunas personas prefieren m&aacute;s exactitud
+a&uacute;n, pero yo ya soy conservador a estas alturas).  Si ha utilizado
+<CODE>ntpdate</CODE> no es necesario que espere tanto tiempo, pero siempre podr&aacute;
+hacer un mejor ajuste cuanto m&aacute;s tiempo pase. </P>
+<P>Puede ejecutar con cron el comando "<CODE>clock -a</CODE>" a intervalos
+regulares para mantener la hora del sistema ajustada con el horario
+(corregido) de la CMOS. Este comando puede ejecutarse tambi&eacute;n desde alg&uacute;n
+archivo de inicio en el momento del arranque, si Vd hace esto (como lo
+hacemos casi todos nosotros) ser&aacute; suficiente para sus prop&oacute;sitos. </P>
+<P>Tenga en cuenta que algunos programas pueden quejarse si el sistema salta
+m&aacute;s de un segundo a la vez, o si va para atr&aacute;s. Si tiene este problema,
+puede utilizar <CODE>xntpd</CODE> o <CODE>ntpdate</CODE> para corregir el tiempo m&aacute;s
+gradualmente. </P>
+
+
+<H2><A NAME="ss2.3">2.3 Ejemplo</A></H2>
+
+
+
+<H3>Estableciendo la hora</H3>
+
+
+<P>Entre como root. Llame al (303) 499-711 (voz), escuche el anuncio de la
+hora y escriba:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+date -s hh:mm:ss
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>pero no presione ENTER hasta no escuchar el beep (puede utilizar
+<CODE>ntpdate</CODE> aqu&iacute; en lugar de <CODE>date</CODE>, y evitar la llamada por
+tel&eacute;fono.  Esto establece la hora del n&uacute;cleo (<EM>kernel time</EM>). 
+Luego escriba:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -w
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto pone en hora la CMOS a partir de la hora del n&uacute;cleo. Y ahora escriba: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+date +%j
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(o <CODE>date +%s</CODE> si ha usado <CODE>ntpdate</CODE> en lugar de
+<CODE>date</CODE> arriba) y escriba el resultado, para la pr&oacute;xima vez. </P>
+
+<H3>Restablecimiento de la hora y c&aacute;lculo de la desviaci&oacute;n.</H3>
+
+
+<P>Busque la fecha en que ajust&oacute; la hora la vez anterior. Entre como root y
+escriba: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -a
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto hace que el n&uacute;cleo tome la hora de la CMOS. Llame al (303) 499-7111
+(voz) y escuche el anuncio. Entonces escriba: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+date
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Presionando ENTER en el momento que escuche el beep, pero mientras est&aacute;
+esperando, apunte la hora que escucha y no cuelgue a&uacute;n.  Lo que escucha es
+la hora que deber&iacute;a tener su m&aacute;quina cuando se encuentra exacta en el
+minuto. Escriba:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+date hh:mm:00
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>usando el minuto <B>siguiente</B> al cual acaba de escuchar y presionando
+ENTER en el momento en que escuche el beep nuevamente (ahora puede
+colgar).  Para <CODE>hh</CODE> utilice su hora local.  Esto coloca la hora del
+n&uacute;cleo (<EM>kernel time</EM>). Teclee:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+clock -w
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>el cual establecer&aacute; la nueva hora (correcta) en el reloj del CMOS.
+Escriba: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+date +%j
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(o <CODE>date +%s</CODE> si es lo que ha utilizado anteriormente) </P>
+<P>Ahora dispone de tres n&uacute;meros (dos fechas y un intervalo de tiempo) que le
+permitir&aacute;n calcular el desv&iacute;o horario.</P>
+
+<H3>C&aacute;lculo del factor de correcci&oacute;n</H3>
+
+
+<P>¿Cu&aacute;ndo ejecut&oacute; <CODE>date</CODE> en el minuto, su m&aacute;quina iba atrasada o
+adelantada?  Si iba adelantada, deber&aacute; descontar algunos segundos, aunque
+le resulte un n&uacute;mero negativo.  Si estaba retrasada, deber&aacute; agregar
+algunos segundos, aunque resulte un n&uacute;mero positivo. </P>
+<P>Ahora reste ambas fechas.  Si us&oacute; "<CODE>date +%j</CODE>" , el n&uacute;mero
+representando el d&iacute;a del a&ntilde;o (1-365 o 1-366 en a&ntilde;o bisiesto). Si Usted ha
+pasado el 1 de Enero entre la primera y segunda fecha entonces deber&aacute;
+agregar 365 (o 366) al segundo n&uacute;mero.  Si us&oacute; <CODE>date +%s</CODE> su
+n&uacute;mero est&aacute; en segundos y deber&aacute; dividirlo por 86400 para obtener d&iacute;as. </P>
+<P>Si ya tiene un factor de correcci&oacute;n en <CODE>/etc/adjtime</CODE>, deber&aacute; tomar
+en consideraci&oacute;n el n&uacute;mero de segundos que ha corregido. Si ha corregido
+adelantando, este n&uacute;mero tendr&aacute; el signo opuesto al del que ha medido; si
+ha corregido atrasando tendr&aacute; el mismo signo.  Multiplique el antiguo
+factor de correcci&oacute;n por el n&uacute;mero de d&iacute;as, y a&ntilde;ada el n&uacute;mero de segundos
+resultante (adici&oacute;n con signos <CODE>-</CODE> si ambos n&uacute;meros tienen el mismo
+signo: obtendr&aacute; un n&uacute;mero mayor; si tienen signos opuestos, obtendr&aacute; un
+n&uacute;mero menor). </P>
+<P>Divida el n&uacute;mero total de segundos por el n&uacute;mero de d&iacute;as para tener el
+nuevo factor de correcci&oacute;n, y col&oacute;quelo en <CODE>/etc/adjtime</CODE> en lugar
+del anterior.  Registre la nueva fecha (en segundos o d&iacute;as) para la
+pr&oacute;xima vez. </P>
+<P>He aqu&iacute; mi <CODE>/etc/adjtime</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-9.600000 845082716 -0.250655
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(¡N&oacute;tese que 9.6 segundos por d&iacute;a es aproximadamente cinco minutos
+al mes!)</P>
+
+
+<HR>
+<A HREF="En-Hora-Como-1.html">Anterior</A>
+<A HREF="En-Hora-Como-3.html">Siguiente</A>
+<A HREF="En-Hora-Como.html#toc2">Indice</A>
+</BODY>
+</HTML>

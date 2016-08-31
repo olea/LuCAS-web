@@ -1,0 +1,347 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA COMO : Temas avanzados </TITLE>
+ <LINK HREF="PCMCIA-Como-6.html" REL=next>
+ <LINK HREF="PCMCIA-Como-4.html" REL=previous>
+ <LINK HREF="PCMCIA-Como.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PCMCIA-Como-6.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-4.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="avan"></A> <A NAME="s5">5. Temas avanzados </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 Apartado de recursos para dispositivos PCMCIA</A>
+</H2>
+
+<P>
+<P>En teor&iacute;a, no debe importar qu&eacute; interrupci&oacute;n se reserva para cada
+dispositivo, mientras dos dispositivos no sean configurados para usar la
+misma interrupci&oacute;n.
+<P>En <CODE>/etc/pcmcia/config.opts</CODE> encontrar&aacute; un lugar para excluir las
+interrupciones que son usadas por dispositivos no PCMCIA. 
+<P>De igual modo, no hay forma de especificar directamente las direcciones de
+E/S que va a utilizar una tarjeta. El archivo
+<CODE>/etc/pcmcia/config.opts</CODE> permite especificar rangos de puertos
+disponibles para ser usados por una tarjeta cualquiera, o para excluir
+rangos que causan conflictos con otros dispositivos.
+<P>Despu&eacute;s de modificar <CODE>/etc/pcmcia/config.opts</CODE>, puede reiniciar
+<CODE>cardmgr</CODE> con <CODE>kill -HUP</CODE>.
+<P>La interrupci&oacute;n que se utiliza para monitorizar el estado de la tarjeta se
+determina por el m&oacute;dulo controlador de bajo nivel del socket (<CODE>i82365</CODE>
+o <CODE>tcic</CODE>) antes de que <CODE>cardmgr</CODE> pase a <CODE>/etc/pcmcia/config</CODE>,
+as&iacute; no se ve afectado con los cambios a este archivo. Para establecer esta
+interrupci&oacute;n, use la opci&oacute;n <CODE>cs_irq=</CODE> cuando se cargue el controlador
+del socket, estableciendo la variable <CODE>PCIC_OPTS</CODE> en
+<CODE>/etc/rc.d/rc.pcmcia</CODE>
+<P>Todos los controladores de tarjetas tienen un par&aacute;metro llamado
+<CODE>irq_list</CODE> para especificar qu&eacute; interrupciones pueden intentar
+reservar. Dichas opciones deben establecerse en el archivo
+<CODE>/etc/pcmcia/config</CODE>. Por ejemplo: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       device "serial_cs"
+         module "serial_cs" opts "irq_list=8,12"
+         ...
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>debe especificarse que el controlador serie debe utilizar s&oacute;lo la irq 8 o
+la 12. Sin importar las configuraciones de <CODE>irq_list</CODE>, los Servicios de
+Tarjetas nunca reservar&aacute;n una interrupci&oacute;n que ya est&eacute; siendo usada por
+otro dispositivo, o una interrupci&oacute;n que est&eacute; excluida en el archivo de
+configuraci&oacute;n. 
+<P>
+<H2><A NAME="casa"></A> <A NAME="ss5.2">5.2 C&oacute;mo puedo separar configuraciones de los dispositivos para casa y el</A>
+trabajo? </H2>
+
+<P>
+<P>Esto es bastante f&aacute;cil con el soporte de «esquemas». Usando dos esquemas
+de configuraci&oacute;n, llamados <CODE>casa</CODE> y <CODE>trabajo</CODE>. He aqu&iacute; un ejemplo
+del script <CODE>network.opts</CODE> con configuraciones espec&iacute;ficas de esquemas:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       trabajo,*,*,*)
+           # definiciones para la tarjeta de red en el esquema trabajo
+           ...
+           ;;
+       casa,*,*,*|default,*,*,*)
+           # definiciones para la tarjeta de red en el esquema casa
+           ...
+           ;;
+       esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La primera parte de una direcci&oacute;n de dispositivo siempre es la
+configuraci&oacute;n del esquema. En este ejemplo, la segunda cl&aacute;usula <CODE>case</CODE>
+aplicar&aacute; para ambos esquemas. As&iacute;, si un esquema no est&aacute; establecido por
+cualquier raz&oacute;n, se tomar&aacute; por omisi&oacute;n la configuraci&oacute;n <CODE>casa</CODE>.
+<P>Ahora, para seleccionar entre dos conjuntos de configuraciones, ejecute:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       cardctl scheme casa
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>o bien
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       cardctl scheme trabajo
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El comando <CODE>cardctl</CODE> hace el equivalente a apagar todas sus tarjetas y
+luego reiniciarlas. Este comando puede ejecutarse de forma segura estando
+el sistema PCMCIA cargado o no, pero el comando puede fallar si est&aacute;
+usando otros dispositivos PCMCIA en ese momento (incluso si sus
+configuracion no es expl&iacute;citamente dependiente de la configuraci&oacute;n del
+esquema).
+<P>Para mostrar la configuraci&oacute;n del esquema, ejecute:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       cardctl scheme
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Por omisi&oacute;n, la configuraci&oacute;n del esquema es persistente a trav&eacute;s de los
+inicios del equipo. Esto puede tener efectos no deseados si la red se
+inicializa para el ambiente equivocado. Opcionalmente, puede establecer el
+valor inicial del esquema con la opci&oacute;n de inicio <CODE>SCHEME</CODE>; consulte la
+secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#inicio"> Opciones de Inicio</A> para m&aacute;s detalles. 
+Tambi&eacute;n es posible establecer el esquema desde el prompt de inicio de
+<CODE>lilo</CODE>.  Debido a que <CODE>lilo</CODE> pasa opciones desconocidas a <CODE>init</CODE>
+como variables de entorno, un valor destinado a <CODE>SCHEME</CODE> (o cualquier
+otra opci&oacute;n de inicio de PCMCIA) en el prompt de inicio se propagar&aacute; al
+script de inicio PCMCIA. 
+<P>Para ahorrarse tecleo, los esquemas pueden ser especificados en el archivo
+de configuraci&oacute;n de <CODE>lilo</CODE>. Por ejemplo, puede tener: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       root = /dev/hda1
+       read-only
+       image = /boot/vmlinuz
+         label  = casa
+         append = "SCHEME=casa"
+       image = /boot/vmlinuz
+         label  = trabajo
+         append = "SCHEME=trabajo"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>As&iacute;, al teclear <CODE>casa</CODE> o <CODE>trabajo</CODE> en el prompt de inicio arrancar&aacute;
+con el esquema PCMCIA apropiado.
+<P>
+<H2><A NAME="boot"></A> <A NAME="ss5.3">5.3 Arranque desde un dispositivo PCMCIA </A>
+</H2>
+
+<P>
+<P>Tener el sistema de archivos ra&iacute;z en un dispositivo PCMCIA es algo dif&iacute;cil
+porque el sistema PCMCIA de Linux no est&aacute; dise&ntilde;ado para ser enlazado
+dentro del kernel. Sus componentes principales, los m&oacute;dulos cargables del
+kernel y el demonio <CODE>cardmgr</CODE> dependen de un sistema que ya est&aacute;
+ejecut&aacute;ndose. La funcionalidad <CODE>initrd</CODE> del kernel sortea esta
+limitaci&oacute;n permitiendo a Linux iniciar utilizando un disco ram temporal
+como una imagen ra&iacute;z m&iacute;nima, cargar los controladores, y remontar entonces
+un sistema de archivos ra&iacute;z diferente. La ra&iacute;z temporal puede configurar
+dispositivos PCMCIA y luego remontar un dispositivo PCMCIA como ra&iacute;z.
+<P>La imagen <CODE>initrd</CODE> de residir en un dispositivo arrancable
+obligatoriamente;  lo que implica no puede tratarse de un dispositivo
+PCMCIA. Esta es una limitaci&oacute;n de BIOS, no del kernel. Aqui es &uacute;til
+distinguir entre dispositivos «arrancables» (es decir, dispositivos desde
+los que se puede iniciar), y dispositivos <I>root-able</I>s (es decir,
+dispositivos origen, que son montados como ra&iacute;z). Los dispositivos
+«arrancables» se determinan por BIOS, y est&aacute;n limitados generalmente a
+discos flexibles internos y unidades de disco duro. La funcionalidad
+<CODE>initrd</CODE> permite disponer de m&aacute;s dispositivos origen, no de m&aacute;s
+dispositivos «arrancables».
+<P>Algunas distribuciones de Linux permitir&aacute;n la instalaci&oacute;n a un dispositivo
+conectado a un adaptador SCSI PCMCIA, como un efecto lateral involuntario
+de su soporte para instalar desde unidades de CD-ROM SCSI PCMCIA. Sin
+embargo, en la actualidad, no hay herramientas de instalaci&oacute;n de Linux que
+soporten el configurar una imagen <CODE>initrd</CODE> apropiada para iniciar Linux
+con un sistema de archivos ra&iacute;z PCMCIA. Configurar un sistema con ra&iacute;z
+PCMCIA de este modo requiere que se use otro sistema Linux para crear la
+imagen <CODE>initrd</CODE>. Si no tiene otro sistema Linux disponible, una opci&oacute;n
+podr&iacute;a ser instalar temporalmente una configuraci&oacute;n m&iacute;nima en una unidad
+no PCMCIA, crear una imagen <CODE>initrd</CODE>, y luego reinstalar en el
+dispositivo PCMCIA destino. 
+<P>El <I>Linux Bootdisk-HOWTO</I> contiene informaci&oacute;n general acerca de la
+configuraci&oacute;n de discos de inicio pero nada espec&iacute;fico de <CODE>initrd</CODE>.  El
+documento principal de <CODE>initrd</CODE> se incluye con las distribuciones
+recientes del c&oacute;digo fuente del kernel, en
+<CODE>linux/Documentation/initrd.txt</CODE>. Antes de empezar, deber&iacute;a leer
+este documento. Es de utilidad estar familiarizado con <CODE>lilo</CODE>. El uso
+de <CODE>initrd</CODE> tambi&eacute;n requiere que tenga un kernel compilado con
+<CODE>CONFIG_BLK_DEV_RAM</CODE> y <CODE>CONFIG_BLK_DEV_INITRD</CODE> activados.
+<P>Esta es una t&eacute;cnica de configuraci&oacute;n avanzada, y requiere un alto nivel de
+familiaridad con Linux y el sistema PCMCIA. Aseg&uacute;rese de leer toda la
+documentaci&oacute;n relevante antes de empezar. Las siguientes recetas deber&iacute;an
+funcionar, pero las derivaciones de los ejemplos le pondr&aacute;n r&aacute;pidamente en
+un territorio desconocido y «no soportado»; y estar&aacute; solo.
+<P>Este m&eacute;todo requiere obligatoriamente que se use una versi&oacute;n del
+controlador PCMCIA <CODE>2.9.5</CODE> o posterior. Los paquetes PCMCIA antiguos o
+los componentes individuales no funcionar&aacute;n en el contexto <CODE>initrd</CODE>. No
+mezcle componentes de diferentes versiones. 
+<P>
+<H3><A NAME="pcinitrd"></A> El script <CODE>pcinitrd</CODE> </H3>
+
+<P>
+<P>El script <CODE>pcinitrd</CODE> crea una imagen b&aacute;sica para iniciar con una
+partici&oacute;n ra&iacute;z PCMCIA. La imagen incluye una jerarqu&iacute;a de directorios
+m&iacute;nima, algunos archivos de dispositivos, unos cuantos binarios,
+bibliotecas compartidas, y un conjunto de m&oacute;dulos controladores PCMCIA.
+Cuando se invoca <CODE>pcinitrd</CODE>, especifique los m&oacute;dulos controladores que
+busca que se incluyan en la imagen. Los componentes principales de PCMCIA,
+<CODE>pcmcia_core</CODE> y <CODE>ds</CODE>, se incluyen autom&aacute;ticamente.
+<P>Como ejemplo, digamos que su port&aacute;til usa un controlador compatible con
+<CODE>i82365</CODE>, y quiere iniciar Linux con el sistema de archivos ra&iacute;z en un
+disco duro conectado a un adaptador <I>Adaptec SlimSCSI</I>. Podr&iacute;a crear
+una imagen <CODE>initrd</CODE> apropiada con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       pcinitrd -v initrd pcmcia/i82365.o pcmcia/aha152x_cs.o
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para personalizar la secuencia de inicio de <CODE>initrd</CODE>, podr&iacute;a montar la
+imagen usando el dispositivo <I>loopback</I> con un comando como: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mount -o loop -t ext2 initrd /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>y luego editar el script <CODE>linuxrc</CODE>. Los archivos de configuraci&oacute;n se
+instalar&aacute;n bajo <CODE>/etc</CODE> en la imagen, y tambi&eacute;n puede
+personalizarse. Consulte la p&aacute;gina del manual de <CODE>pcinitrd</CODE> para mayor
+informaci&oacute;n.
+<P>
+<P>
+<H3><A NAME="initrddsk"></A> Creaci&oacute;n de un disquete de inicio <CODE>initrd</CODE></H3>
+
+<P>
+<P>Despu&eacute;s de crear una imagen con <CODE>pcinitrd</CODE>, puede crear un disquete de
+inicio copiando el kernel, la imagen initrd comprimida, y algunos archivos
+de soporte para <CODE>lilo</CODE> a un disquete limpio. En el ejemplo siguiente,
+asumimos que el dispositivo ra&iacute;z PCMCIA deseado es <CODE>/dev/sda1</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mke2fs /dev/fd0
+       mount /dev/fd0 /mnt
+       mkdir /mnt/etc /mnt/boot /mnt/dev
+       cp -a /dev/fd0 /dev/sda1 /mnt/dev
+       cp [kernel-image] /mnt/vmlinuz
+       cp /boot/boot.b /mnt/boot/boot.b
+       gzip &lt; [initrd-image] > /mnt/initrd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Genere un fichero <CODE>/mnt/etc/lilo.conf</CODE> que contenga:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       boot=/dev/fd0
+       compact
+       image=/vmlinuz
+           label=linux
+           initrd=/initrd
+           read-only
+           root=/dev/sda1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Finalmente, invoque a lilo con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       lilo -r /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Cuando <CODE>lilo</CODE> es invocado con <CODE>-r</CODE>, realiza todas las acciones
+tomando como directorio ra&iacute;z el especificado. La raz&oacute;n para crear los
+archivos de dispositivo bajo <CODE>/mnt/dev</CODE> es que <CODE>lilo</CODE> no podr&aacute;
+usar esos archivos en <CODE>/dev</CODE> cuando se ejecute con este directorio
+ra&iacute;z alternativo.
+<P>
+<H3><A NAME="nolinux"></A> Instalaci&oacute;n de una imagen <CODE>initrd</CODE> en una unidad no-Linux </H3>
+
+<P>
+<P>Un uso com&uacute;n de la funcionalidad <CODE>initrd</CODE> puede darse en sistemas donde
+el disco duro interno est&aacute; dedicado a otro sistema operativo. El kernel de
+Linux y la imagen <CODE>initrd</CODE> pueden ponerse en una partici&oacute;n no-Linux, y
+<CODE>lilo</CODE> o <CODE>LOADLIN</CODE> pueden configurarse para iniciar Linux desde esas
+im&aacute;genes. 
+<P>Asumiendo que tiene un kernel que se ha configurado para el dispositivo
+ra&iacute;z apropiado, y una imagen <CODE>initrd</CODE> creada en otro sistema, la forma
+m&aacute;s f&aacute;cil de iniciar Linux es utilizando <CODE>LOADLIN</CODE>, como:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       LOADLIN &lt;kernel> initrd=&lt;imagen-initrd>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Una vez que pueda iniciar Linux en su m&aacute;quina destino, puede instalar
+<CODE>lilo</CODE> para permitir que Linux se inicie directamente. Por ejemplo,
+digamos que <CODE>/dev/hda1</CODE> es la partici&oacute;n no-Linux destino y
+<CODE>/mnt</CODE> puede usarse como un punto de montaje. Primero, genere un
+subdirectorio en el destino para los archivos de Linux:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mount /dev/hda1 /mnt
+       mkdir /mnt/linux
+       cp [imagen-del-kernel] /mnt/linux/vmlinuz
+       cp [imagen-initrd] /mnt/linux/initrd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En este ejemplo, digamos que <CODE>/dev/sda1</CODE> es la partici&oacute;n ra&iacute;z de
+Linux deseada, en un disco duro SCSI montado v&iacute;a un adaptador PCMCIA SCSI.
+Para instalar <CODE>lilo</CODE>, genere un archivo <CODE>lilo.conf</CODE> que contenga: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       boot=/dev/hda
+       map=/mnt/linux/map
+       compact
+       image=/mnt/linux/vmlinuz
+               label=linux
+               root=/dev/sda1
+               initrd=/mnt/linux/initrd
+               read-only
+       other=/dev/hda1
+               table=/dev/hda
+               label=windows
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La l&iacute;nea <CODE>boot=</CODE> dice que se instale el cargador de inicio en el MBR
+(<I>master boot record</I>) del dispositivo especificado. La l&iacute;nea
+<CODE>root=</CODE> identifica el sistema de archivos ra&iacute;z deseado a usar despu&eacute;s
+de cargar la imagen <CODE>initrd</CODE>, que puede resultar innecesario si la
+imagen del kernel ya se encuentra configurada de esta forma. La secci&oacute;n
+<CODE>other=</CODE> se usa para describir el otro sistema operativo instalado en
+<CODE>/dev/hda1</CODE>. 
+<P>Para instalar <CODE>lilo</CODE> en este caso, teclee:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       lilo -C lilo.conf
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>N&oacute;tese que en este caso, el archivo <CODE>lilo.conf</CODE> usa rutas absolutas que
+incluyen <CODE>/mnt</CODE>. Hice esto en el ejemplo porque el sistema de
+archivos destino puede no soportar la creaci&oacute;n de archivos de dispositivos
+para las opciones <CODE>boot=</CODE> y <CODE>root=</CODE>.
+<P>
+<HR>
+<A HREF="PCMCIA-Como-6.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-4.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc5">Índice general</A>
+</BODY>
+</HTML>

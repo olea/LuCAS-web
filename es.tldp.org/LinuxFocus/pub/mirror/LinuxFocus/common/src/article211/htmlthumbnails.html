@@ -1,0 +1,68 @@
+<pre>
+#!/bin/sh
+# vim: set sw=4 ts=4 et:
+# wirtten by katja socher &lt;katja@linuxfocus.org&gt;
+# and guido socher &lt;guido@linuxfocus.org&gt;
+#
+#
+ver="0.1"
+twidth=80
+theight=80
+help()
+{
+    cat &lt;&lt;HELP
+htmlthumbnails -- generate html code with thumbnails to click on
+for a number of images
+
+USAGE: htmlthumbnails [-h]  image1 image2 ...
+
+OPTIONS: -h this help
+
+EXAMPLE: htmlthumbnails *.gif
+
+The html code is written to stdout
+All thumbnails have a size of ${twidth}x$theight
+
+version $ver
+HELP
+    exit 0
+}
+error()
+{
+    echo "$1"
+    exit "$2"
+}
+while [ -n "$1" ]; do
+case $1 in
+    -h) help;shift 1;;
+    --) break;;
+    -*) echo "error: no such option $1. -h for help";exit 1;;
+    *)  break;;
+esac
+done
+
+if [ -z "$1" ];then
+    error "No image specified, -h for help" 1
+fi
+# process each image
+i=0
+for imgfile in $* ;do
+    if [ ! -r "$imgfile" ]; then
+        echo "ERROR: can not read $imgfile\n"
+    else
+        i=`expr $i + 1`
+        bn=`basename "$imgfile"`
+        dn=`dirname "$imgfile"`
+        if echo "$bn" | grep "^t_" &gt; /dev/null ; then
+            echo "&lt;!-- ignoring file $imgfile , already converted --&gt;"
+            continue
+        fi
+        tumbnailfilename="$dn/t_$bn"
+        convert -geometry "${twidth}x$theight" "$imgfile" "$tumbnailfilename"
+        echo "&lt;!-- image nr $i --&gt;&lt;a href=\"$imgfile\"&gt;&lt;img src=\"$tumbnailfilename\" width=\"$twidth\" height=\"$theight\" alt=\"[$bn]\"&gt;"
+        modulo=`expr $i % 3`
+        if [ "$modulo" = "0" ]; then
+            echo " &lt;br&gt;"
+        fi
+    fi
+done

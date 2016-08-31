@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+# vim: set sw=4 ts=4 si et:
+# 
+use strict;
+# global variables:
+use vars qw($opt_h);
+my %htab;
+use Getopt::Std;
+#
+&getopts("h")||die "ERROR: No such option. -h for help\n";
+&help if ($opt_h);
+#
+open(FD,"abb.txt")||die "ERROR: can not read file abb.txt\n"; 
+print "Abbreviations with several meanings in file abb.txt:\n";
+while(<FD>){ 
+    if (m/^(\S+)\s/){
+        # we use the first word as index to the hash:
+        if ($htab{$1}){
+            # again this abbrev:
+            if ($htab{$1} eq "_repeated_"){
+                print; # same as print "$_";
+            }else{
+                # this is the first duplicate we print first
+                # occurance of this abbreviation:
+                print $htab{$1};
+                # print the abbreviation line that we are currently reading:
+                print;
+                # mark as repeated (= appears at least twice)
+                $htab{$1}="_repeated_";
+            }
+        }else{
+            # the first time we load the whole line:
+            $htab{$1}=$_;
+        }
+    }
+} 
+close FD; 
+#
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+sub help{
+        print "finddup -- Find abbreviations with several meanins in the
+file abb.txt. The lines in this file must have the format:
+abrev meaning
+\n";
+        exit;
+}
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+__END__ 

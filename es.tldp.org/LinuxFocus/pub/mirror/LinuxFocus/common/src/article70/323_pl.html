@@ -1,0 +1,430 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/perl
+########################################################################
+#
+#	Universal filter of Russian encodings version 2.1
+#	created by Serge Winitzki (1997-1999). This is free software.
+#	Home page: http://www.geocities.com/CapeCanaveral/Lab/5735/1/
+#
+#	Features:
+#	supported encodings: alt, iso, koi, lat, mac, win;
+#	letters 'YO' and 'yo' correctly supported in all encodings;
+#	strict 'Russkaja Latinica' conformance for the 'lat' encoding which
+#	allows almost unambiguous repeated native<->latinized translations of text;
+#	faster operation on Russian input (caveat: loads the whole file into memory);
+#	determines the required encodings from invoked script's name (alt2koi etc.)
+#	or from option string.
+#
+#	Command line options (all options are case-insensitive):
+#	-alt2koi or -mac2win or whatever	select required encodings
+#
+#	Options for lat -> ... conversion:
+#	-tex	do not translate text inside $..$, $$..$$ and \command names
+#	-wisv	translate w as v (default w is tshcha)
+#	-qisja	translate q as ja (default q is tshcha)
+#	-usekh	translate kh as h (default kh='k''h')
+#	
+########################################################################
+#
+#	Installation:
+#	if needed, edit the first line to reflect your perl location (`which perl`);
+#	put this script somewhere on the path with executable permission;
+#	optionally make links to this script named alt2win, win2koi etc.
+#	(The script can determine the source/target encoding from its *name*.)
+#	e.g. copy this file to /usr/local/bin/323 and then say
+#	cd /usr/local/bin; chmod 755 323
+#	ln -s 323 alt2koi; ln -s 323 koi2alt; and so on (optional)
+#	for all needed combinations of alt, iso, koi, mac, win, lat.
+#	After all this, use as a filter. For example, `lat2koi < file1 > file2`
+#	or else have to specify encoding as `323 -lat2koi < file1 > file2`
+#
+############################# start of script ##########################
+#
+#	Direct native encodings:
+#
+$rusmac='\xDD\xDE\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8A\x8B\x8C\x8D\x8E\x8F\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9A\x9B\x9C\x9D\x9E\x9F\xE0\xE1\xE2\xE3\xE4\xE5\xE6\xE7\xE8\xE9\xEA\xEB\xEC\xED\xEE\xEF\xF0\xF1\xF2\xF3\xF4\xF5\xF6\xF7\xF8\xF9\xFA\xFB\xFC\xFD\xFE\xDF';
+$rusalt='\xF0\xF1\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8A\x8B\x8C\x8D\x8E\x8F\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9A\x9B\x9C\x9D\x9E\x9F\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF\xE0\xE1\xE2\xE3\xE4\xE5\xE6\xE7\xE8\xE9\xEA\xEB\xEC\xED\xEE\xEF';
+$ruswin='\xA8\xB8\xC0\xC1\xC2\xC3\xC4\xC5\xC6\xC7\xC8\xC9\xCA\xCB\xCC\xCD\xCE\xCF\xD0\xD1\xD2\xD3\xD4\xD5\xD6\xD7\xD8\xD9\xDA\xDB\xDC\xDD\xDE\xDF\xE0\xE1\xE2\xE3\xE4\xE5\xE6\xE7\xE8\xE9\xEA\xEB\xEC\xED\xEE\xEF\xF0\xF1\xF2\xF3\xF4\xF5\xF6\xF7\xF8\xF9\xFA\xFB\xFC\xFD\xFE\xFF';
+$ruskoi='\xB3\xA3\xE1\xE2\xF7\xE7\xE4\xE5\xF6\xFA\xE9\xEA\xEB\xEC\xED\xEE\xEF\xF0\xF2\xF3\xF4\xF5\xE6\xE8\xE3\xFE\xFB\xFD\xFF\xF9\xF8\xFC\xE0\xF1\xC1\xC2\xD7\xC7\xC4\xC5\xD6\xDA\xC9\xCA\xCB\xCC\xCD\xCE\xCF\xD0\xD2\xD3\xD4\xD5\xC6\xC8\xC3\xDE\xDB\xDD\xDF\xD9\xD8\xDC\xC0\xD1';
+$rusiso='\xA1\xF1\xB0\xB1\xB2\xB3\xB4\xB5\xB6\xB7\xB8\xB9\xBA\xBB\xBC\xBD\xBE\xBF\xC0\xC1\xC2\xC3\xC4\xC5\xC6\xC7\xC8\xC9\xCA\xCB\xCC\xCD\xCE\xCF\xD0\xD1\xD2\xD3\xD4\xD5\xD6\xD7\xD8\xD9\xDA\xDB\xDC\xDD\xDE\xDF\xE0\xE1\xE2\xE3\xE4\xE5\xE6\xE7\xE8\xE9\xEA\xEB\xEC\xED\xEE\xEF';
+
+####################### main part of the script ########################
+
+$from="nothing";
+$to="nothing";
+$lat_output="no";	#whether latinized output is requested. special flag.
+$lat_input="no";	#same for input
+
+$help='Universal converter of Russian encodings version 2.1
+Created by Serge Winitzki, 1999. No warranty. This is free software.
+http://www.geocities.com/CapeCanaveral/Lab/5735/1/
+
+   Supported encodings: alt, iso, koi, lat, mac, win
+   Example usage:
+
+	323 -alt2koi < inputfile > outputfile
+
+   Or rename to "xxx2xxx" where xxx is one of the supported encodings and e.g.
+
+	alt2koi < inputfile > outputfile
+
+   Note: latinized encoding "lat" is implemented according to the "Russkaja
+Latinica" scheme. See http://www.geocities.com/Athens/Forum/5344/RL/ for
+more details. Sample options for "lat" input:
+
+	323 -lat2koi -usekh -wisv -qisja -tex < inputfile > outputfile
+
+   See the script preamble for more information.
+';
+
+if ("@ARGV" =~ /-([aciklmnostw]{3})2([aciklmnostw]{3})/i) {
+	$a1=$1;
+	$a2=$2;
+	$error="Incorrect encoding '$a1 -> $a2' on command line.";
+} else {
+	#decide the source and target encoding based on our name
+	$name=`basename $0`;
+	if ($name =~ /([aciklmnostw]{3})2([aciklmnostw]{3})/i) {	#this should match koi2win etc.
+	$a1="$1";
+	$a2="$2";
+	}
+	$error="Incorrect usage of this script, see $0 for documentation.";
+}
+
+if ("@ARGV" =~ /help/i) {
+	print $help . "\n";
+	exit;
+}
+
+
+{
+	if ($a1 =~ /win/i) {
+		$from="$ruswin";
+	} elsif ($a1 =~ /koi/i) {
+		$from="$ruskoi";
+	} elsif ($a1 =~ /alt/i) {
+                $from="$rusalt";
+	} elsif ($a1 =~ /mac/i) {
+                $from="$rusmac";
+	} elsif ($a1 =~ /iso/i) {
+                $from="$rusiso";
+	} elsif ($a1 =~ /lat/i) {
+       		$from="$ruskoi";	#this is because our latin table is for koi
+		$lat_input="yes";
+	}
+	if ($a2 =~ /win/i) {
+                $to="$ruswin";
+	} elsif ($a2 =~ /koi/i) {
+                $to="$ruskoi";
+	} elsif ($a2 =~ /alt/i) {
+                $to="$rusalt";
+	} elsif ($a2 =~ /mac/i) {
+                $to="$rusmac";
+	} elsif ($a2 =~ /iso/i) {
+                $to="$rusiso";
+	} elsif ($a2 =~ /lat/i) {
+		$to="$ruskoi";	#this is because our latin table is for koi
+		$lat_output="yes";
+   }
+
+}
+
+if ($to eq "nothing" or $from eq "nothing") {	#wrong options
+	print "$error\n$0 -help for brief usage instructions.\n";
+	exit 1;
+}
+
+undef $/;	#make it convert the whole file at once, usually much faster.
+
+while(<STDIN>) {	#main loop
+
+#effectively we want to do e.g.
+# eval ("tr/$ruswin/$rusalt/");	#because tr requires constant strings
+
+
+	if ($lat_input eq "yes") {
+		&translate_lat_to_koi();	#call special procedure operating on $_
+	}
+	#now $_ contains all cyrillic text and we need to transform it
+	eval ("tr/$from/$to/");	#we need to do this now
+	#now $_ contains correctly transformed text
+	if ($lat_output eq "yes") {
+		&translate_koi_to_lat();	#call special procedure operating on $_
+	}
+	print;
+}
+
+#################### end of main part of the script ####################
+
+sub translate_koi_to_lat {
+
+#use this procedure to replace each character in $_
+
+#using Russkaja Latinica standard (by Alexy Khabrov and Serge Winitzki, 1995)
+
+#first, break digraphs Y-A, Y-U, Y-O - just in case we get them in the text although they are ungrammatical. Insert the canonical breaking char \\.
+
+	s/([\xF9\xD9])([\xE1\xEF\xF5\xC1\xCF\xD5])/$1\\$2/g;
+
+#also break the sh-ch which should rarely happen but still
+
+	s/([\xFB\xDB])([\xFE\xDE])/$1\\$2/g;
+
+#second, transform letters that require combinations. Using "x" for "kha", "j'" for "i kratkoe, "shch" for "tshcha", "e'" for "e oborotnoe".
+	s/\xB3/Yo/g;
+	s/\xF6/Zh/g;
+	s/\xEA/J'/g;
+	s/\xFE/Ch/g;
+	s/\xFB/Sh/g;
+	s/\xFD/Shch/g;
+	s/\xFC/E'/g;
+	s/\xE0/Yu/g;
+	s/\xF1/Ya/g;
+
+	s/\xA3/yo/g;
+	s/\xD6/zh/g;
+	s/\xCA/j'/g;
+	s/\xDE/ch/g;
+	s/\xDB/sh/g;
+	s/\xDD/shch/g;
+	s/\xDC/e'/g;
+	s/\xC0/yu/g;
+	s/\xD1/ya/g;
+
+#then replace other letters
+
+tr/\xE1\xE2\xF7\xE7\xE4\xE5\xFA\xE9\xEB\xEC\xED\xEE\xEF\xF0\xF2\xF3\xF4\xF5\xE6\xE8\xE3\xFF\xF9\xF8\xC1\xC2\xD7\xC7\xC4\xC5\xDA\xC9\xCB\xCC\xCD\xCE\xCF\xD0\xD2\xD3\xD4\xD5\xC6\xC8\xC3\xDF\xD9\xD8/ABVGDEZIKLMNOPRSTUFXC~Y'abvgdeziklmnoprstufxc~y'/;
+}
+
+sub translate_lat_to_koi {	#operate on $_ only
+
+	%translit=(
+		"Shch" => "\xFD",
+		"shch" => "\xDD",
+		"Yo" => "\xB3",
+		"yo" => "\xA3",
+		"Jo" => "\xB3",
+		"jo" => "\xA3",
+		"Zh" => "\xF6",
+		"zh" => "\xD6",
+		"J'" => "\xEA",
+		"j'" => "\xCA",
+		"J`" => "\xEA",
+		"j`" => "\xCA",
+		"Ch" => "\xFE",
+		"ch" => "\xDE",
+		"Sh" => "\xFB",
+		"sh" => "\xDB",
+		"E'" => "\xFC",
+		"e'" => "\xDC",
+		"E`" => "\xFC",
+		"e`" => "\xDC",
+		"`E" => "\xFC",
+		"`e" => "\xDC",
+		"Yu" => "\xE0",
+		"yu" => "\xC0",
+		"Ju" => "\xE0",
+		"ju" => "\xC0",
+		"Ya" => "\xF1",
+		"ya" => "\xD1",
+		"Ja" => "\xF1",
+		"ja" => "\xD1",
+	);
+
+	%malleable=(	# lowercase
+		'~' => "\xDF",
+		'`' => "\xD8",
+		"'" => "\xD8",
+		'@' => "\xDC",
+	);
+
+	%malleable_uc=(	# uppercase
+		'~' => "\xFF",
+		'`' => "\xF8",
+		"'" => "\xF8",
+		'@' => "\xFC",
+	);
+
+	$i=0;	#pointer into the input string ($_)
+	
+	$EnglishNow=0;	#state flag for the digestion machine
+	#now need to set some options
+	$want_tex = ("@ARGV" =~ /-tex/i) ? 1 : 0;
+	$want_wisv = ("@ARGV" =~ /-wisv/i) ? 1 : 0;
+	$want_qisja = ("@ARGV" =~ /-qisja/i) ? 1 : 0;
+	$want_kh = ("@ARGV" =~ /-usekh/i) ? 1 : 0;
+	
+	#need to modify the tables now
+	if ($want_kh) {
+		$translit{"Kh"} = "\xE8";
+		$translit{"kh"} = "\xC8";
+	}
+		
+	$output="";	#to hold the output text
+
+	while ($i < length($_)) {	#loop through the input
+		# The current char is substr($_,i,1).
+		# Note that $i will not always advance by 1 and sometimes be changed inside &digest_some()
+		my $doutput = &digest_some();
+		$i += length($doutput);
+		$output .= $doutput;
+	}
+	$_ = $output;
+}
+
+sub digest_some {	# Return next output char(s), using $i as read-only position in $_ and using flags $want_tex and $want_wisv
+
+# our state: $EnglishNow=2 if inside $$ or after '\ ', 1 if inside \command, 0 if in Russian.
+# the '$' and \commands are all ignored unless $want_tex
+	my $thischar = substr($_, $i, 1);	#just caching, aren't going to change it
+	my $nextchar = substr($_, $i+1, 1);	#this may be changed
+
+	if ($EnglishNow == 2) {
+	  if ($want_tex) {
+		if ($thischar . $nextchar eq '$$') {
+			$EnglishNow= 0;
+			return '$$';
+		}
+		if ($thischar eq '$') {
+			$EnglishNow= 0;
+			return '$';
+		}
+	  }
+		# insert any additional switchers here
+		if ($thischar . $nextchar eq '\\ ') {
+			#switching back to Russian
+			$EnglishNow= 0;
+			$i += 2;	#incrementing $i here since not returning anything
+			return "";
+		}
+		# ok, English is still going on
+		return $thischar;
+	} # case of $EnglishNow == 2 is done	
+
+	if ($EnglishNow == 1 and $want_tex) {
+		if ($thischar eq ' ' or $thischar eq '\n') {	# terminates \command
+			$EnglishNow= 0;
+			return $thischar;
+		}
+		if ($thischar . $nextchar eq '$$') {
+			$EnglishNow= 2;
+			return '$$';
+		}
+		if ($thischar eq '$') {
+			$EnglishNow= 2;
+			return '$';
+		}
+		if ($thischar eq '\\') {
+			if ($nextchar =~ /[0-9A-z@\\\"\':]/) { # starts another \command right after this one
+				$EnglishNow= 1;
+				return $thischar;
+			}
+		}	
+		# didn't switch to Russian, continue without translation
+		return $thischar;
+	} # case of $EnglishNow == 1 is done
+	
+	if ($EnglishNow == 0) {
+	  if ($want_tex) {
+		if ($thischar . $nextchar eq '$$') {
+			$EnglishNow= 2;
+			return '$$';
+		}
+		if ($thischar eq '$') {
+			$EnglishNow= 2;
+			return '$';
+		}
+	  }
+	  if ($thischar eq '\\') {
+	  	if ($want_tex) {
+			if ($nextchar =~ /[0-9A-z@\\\"\':]/) { # starts \command
+				$EnglishNow= 1;
+				return $thischar;
+			}
+		}
+		if ($nextchar eq ' ') {	# switch to English now
+			$EnglishNow = 2;
+			$i += 2;
+			return "";
+		}
+		if ($nextchar eq '\\') {	# double backslash, skipping one
+			$i += 1;
+			return "\\";
+		}
+		
+		#we get a backslash in Russian mode and not followed by space
+		#tex mode quirks and double backslashes are already done
+		#so we should swallow it and go on with the next char
+		$i += 1;
+		return "";
+	  }	# End of processing backslash char
+		# all switches have been processed, now do Russian stuff
+		
+		# first, the 4-letter combination for "tshcha"
+		
+		if (substr($_, $i, 4) eq 'shch') {	#lowercase
+			$i += 3;
+			return $translit{'shch'};
+		}
+		
+		if (substr($_, $i, 4) =~ /shch/i) {	# uppercase: we now know it's not lowercase so any case combination works
+			$i += 3;
+			return $translit{'Shch'};
+		}
+		
+		#now looking for digraphs
+		$digraph = $thischar . $nextchar;
+		$digraph =~ tr/A-Z/a-z/;	#now it's all lowercase
+		if (defined($translit{$digraph})) {	# Found a digraph!
+			if ($nextchar =~ /[A-Z]/ or $thischar =~ /[A-Z]/) {	# uppercase
+				$thischar =~ tr/a-z/A-Z/;	# Clobber, clobber
+				$nextchar =~ tr/A-Z/a-z/;
+				$digraph = $thischar . $nextchar;
+			}
+			$i += 1;
+			return $translit{$digraph};
+		}
+
+		# now search for malleables
+		if (defined($malleable{$thischar})) {	# Found a malleable.
+			$prevchar = ($i>0) ? substr($_, $i-1, 1) : "";
+			if ($thischar eq '`' or $thischar eq "'") {
+				if (not ($prevchar =~ /[\@A-Za-z]/) and $nextchar =~ /[\@A-Za-z]/) {	# ' and ` at beginning of word are not translated
+					return $thischar;
+				}
+				
+			}
+			if ($prevchar eq '\\') {
+				return $thischar;	# ' and ` prefixed by \ are not translated
+			}
+			if ($prevchar eq '^') {	# Special cases.
+				return $malleable_uc{$thischar};
+			}
+			if ($prevchar eq '_') {
+				return $malleable{$thischar};
+			}
+			if (($prevchar =~ /[A-Z \n\t]/ or length($prevchar) == 0) and $nextchar =~ /[A-Z \n\t]/) {
+				return $malleable_uc{$thischar};
+			}
+			return $malleable{$thischar};
+		}
+
+		#if we are still here, we have a simple letter
+		if ($want_qisja) {
+			$thischar = ($thischar eq 'Q') ? $translit{'Ja'} : (($thischar eq 'q') ? $translit{'ja'} : $thischar);
+		}
+		if ($want_wisv) {
+			$thischar = ($thischar eq 'W') ? 'V' : (($thischar eq 'w') ? 'v' : $thischar);
+		}
+		$thischar =~ tr/ABVGDEZIKLMNOPRSTUFXHCYWQJabvgdeziklmnoprstufxhcywqj/\xE1\xE2\xF7\xE7\xE4\xE5\xFA\xE9\xEB\xEC\xED\xEE\xEF\xF0\xF2\xF3\xF4\xF5\xE6\xE8\xE8\xE3\xF9\xFD\xFD\xEA\xC1\xC2\xD7\xC7\xC4\xC5\xDA\xC9\xCB\xCC\xCD\xCE\xCF\xD0\xD2\xD3\xD4\xD5\xC6\xC8\xC8\xC3\xD9\xDD\xDD\xCA/;
+		return $thischar;
+
+	} # case of EnglishNow == 0 is done
+
+}
+__END__
+</pre>
+</body>
+</html>

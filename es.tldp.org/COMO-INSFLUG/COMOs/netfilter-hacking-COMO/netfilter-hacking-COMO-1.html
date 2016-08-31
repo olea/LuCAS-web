@@ -1,0 +1,216 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.7.4">
+ <TITLE>Linux netfilter Hacking COMO: Introducci&oacute;n</TITLE>
+ <LINK HREF="netfilter-hacking-COMO-2.html" REL=next>
+
+ <LINK HREF="netfilter-hacking-COMO.html#toc1" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="netfilter-hacking-COMO-2.html">Página siguiente</A>
+Página anterior
+<A HREF="netfilter-hacking-COMO.html#toc1">Índice general</A>
+<HR>
+<H2><A NAME="intro"></A> <A NAME="s1">1.</A> <A HREF="netfilter-hacking-COMO.html#toc1">Introducci&oacute;n</A></H2>
+
+<P>Hola.</P>
+
+<P>Este documento es un viaje; algunas partes se recorren con comodidad, y 
+en otras zonas se encontrar&aacute; casi en la soledad. El mejor consejo que 
+puedo darle es que coja una gran taza de caf&eacute; o chocolate caliente, se 
+siente en un c&oacute;modo asiento, y absorba los contenidos antes de 
+aventurarse en el a veces peligroso mundo del <I>hacking</I> de redes.</P>
+
+<P>Para un mayor entendimiento del uso de la infraestructura existente 
+sobre el sistema netfilter, recomiendo la lectura del Packet Filtering 
+HOWTO y el NAT HOWTO (disponibles en castellano). Para m&aacute;s informaci&oacute;n 
+sobre la programaci&oacute;n del kernel, sugiero el <I>Rusty's Unreliable Guide 
+to Kernel Hacking</I> y el <I>Rusty's Unreliable Guide to Kernel 
+Locking</I>.</P>
+
+<P>(C) 2000 Paul `Rusty' Russell.  Bajo licencia GNU GPL.</P>
+
+<H2><A NAME="ss1.1">1.1 ¿Qu&eacute; es «netfilter»?</A>
+</H2>
+
+<P>netfilter es un sistema para manipular paquetes que se encuentra fuera 
+del interfaz normal de sockets de Berkeley. Consta de cuatro partes. 
+Primero, cada protocolo define "ganchos" (IPv4 define 5), que son puntos 
+bien definidos en el recorrido de un paquete a trav&eacute;s de la pila de ese 
+protocolo. En cada uno de estos puntos, el protocolo llamar&aacute; al sistema 
+netfilter con el paquete y el n&uacute;mero del gancho.</P>
+
+<P>En segundo lugar, hay partes del kernel que pueden registrarse para 
+escuchar los diferentes ganchos de cada protocolo. Entonces, cuando se le 
+pasa un paquete al sistema netfilter, &eacute;ste comprueba si alguien se ha
+registrado para ese protocolo y ese gancho; si es as&iacute;, cada uno de los 
+que se ha registrado tiene la posibilidad de examinar (y quiz&aacute; alterar) 
+el paquete en cuesti&oacute;n, y luego rechazarlo, permitir que pase, o pedirle 
+a netfilter que ponga el paquete en una cola para el espacio de usuario.</P>
+
+<P>En tercer lugar, los paquetes que han sido colocados en la cola 
+son recogidos (por el controlador ip_queue_driver) para enviarlos al 
+espacio de usuario; estos paquetes se manejan asincr&oacute;nicamente.</P>
+
+<P>La parte final est&aacute; constituida por comentarios &uacute;tiles en el c&oacute;digo y por 
+la documentaci&oacute;n. Esto juega un papel decisivo en cualquier proyecto 
+experimental. El lema de netfilter es (robado descaradamente a Cort 
+Dougan):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        ``Entonces... ¿en qu&eacute; es mejor esto que KDE?''
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>(Este lema casi dice `Az&oacute;tame, p&eacute;game, hazme usar ipchains').</P>
+
+<P>Adem&aacute;s de este sistema crudo, se han escrito varios m&oacute;dulos que 
+proporcionan una funcionalidad similar a la que ten&iacute;an los kernels 
+anteriores (pre-netfilter). En particular, un sistema NAT extensible, y 
+un sistema de filtrado de paquetes extensible (iptables).</P>
+
+<H2><A NAME="ss1.2">1.2 ¿Qu&eacute; hay de malo en lo que ten&iacute;amos con el 2.0 y el 2.2?</A>
+</H2>
+
+<P>
+<OL>
+<LI>No hay establecida una infraestructura para pasar paquetes al 
+espacio de usuario:
+<UL>
+<LI>La programaci&oacute;n del kernel se hace dif&iacute;cil</LI>
+<LI>La programaci&oacute;n del kernel tiene que hacerse en C/C++</LI>
+<LI>Las pol&iacute;ticas de filtrado din&aacute;micas no pertenecen al kernel</LI>
+<LI>2.2 introdujo una manera de pasar paquetes al espacio de usuario   
+mediante netlink, pero la reinyecci&oacute;n de paquetes es lenta, y      
+sujeta a comprobaciones de `sanidad'. Por ejemplo, reinyectar un   
+paquete que afirma venir de una interfaz existente no es posible.</LI>
+</UL>
+
+</LI>
+<LI>Montar un proxy transparente es una chapuza:
+
+<UL>
+<LI> Tenemos que observar <B>todos</B> los paquetes para ver si hay
+un socket ligado a esa direcci&oacute;n
+</LI>
+<LI> root puede ligar (bind :-) a direcciones externas
+</LI>
+<LI> No se pueden redirigir paquetes generados localmente
+</LI>
+<LI> REDIRECT no maneja respuestas UDP: redirigir paquetes UDP al 
+puerto 1153 no funciona porque a algunos clientes no les gustan las 
+respuestas que vienen de otro puerto que no sea el 53.
+</LI>
+<LI> REDIRECT no se coordina con la asignaci&oacute;n de puertos tcp/udp: un 
+usuario podr&iacute;a conseguir un puerto (shadowed) por una regla REDIRECT.
+(a user may get a port shadowed by a REDIRECT rule)
+</LI>
+<LI>Ha sido interrumpido al menos dos veces desde la serie 2.1.
+Has been broken at least twice during 2.1 series.
+</LI>
+<LI>El c&oacute;digo es extremadamente molesto. Considere el n&uacute;mero de 
+apariciones de #ifdef CONFIG_IP_TRANSPARENT_PROXY en el 2.2.1: 34 
+apariciones en 11 ficheros. Compare esto con CONFIG_IP_FIREWALL, que 
+aparece 10 veces en 5 ficheros.</LI>
+</UL>
+
+</LI>
+<LI>No es posible crear reglas de filtrado de paquetes independientes 
+de las direcciones de interfaz:
+
+<UL>
+<LI>Se deben conocer las direcciones de interfaz locales para 
+distinguir los paquetes generados localmente o los que terminan 
+localmente de los paquetes redirigidos.
+</LI>
+<LI>Incluso esto es insuficiente en casos de redirecci&oacute;n o 
+enmascaramiento.
+</LI>
+<LI>La cadena forward (redirecci&oacute;n) s&oacute;lo tiene informaci&oacute;n de la 
+interfaz de salida, lo que significa que usted tiene que figurarse de 
+d&oacute;nde proviene el paquete utilizando sus conocimientos sobre la 
+topolog&iacute;a de la red.</LI>
+</UL>
+
+</LI>
+<LI>El enmascaramiento est&aacute; encima del filtrado de paquetes:<P>Las interacciones entre el filtrado de paquetes y el enmascaramiento
+hacen que sea complejo manejar un cortafuegos:
+<UL>
+<LI>En el filtrado de entrada (input), los paquetes de respuesta 
+parecen ir destinados a la propia m&aacute;quina</LI>
+<LI>En el filtrado de redirecci&oacute;n (forward), los paquetes 
+desenmascarados no se pueden ver</LI>
+<LI>En el filtrado de salida (output), los paquetes parecen venir de la 
+m&aacute;quina local</LI>
+</UL>
+</P>
+
+</LI>
+<LI>La manipulaci&oacute;n del TOS, la redirecci&oacute;n, el ICMP unreachable y el 
+marcado (mark) (que pueden proporcionan redirecci&oacute;n de puertos, enrutado 
+y QoS) tambi&eacute;n est&aacute;n encima del c&oacute;digo de filtrado de paquetes.
+</LI>
+<LI>El c&oacute;digo de ipchains no es ni modular ni extensible (p.ej. 
+filtrado de direcciones MAC, opciones de filtrado, etc).
+</LI>
+<LI>La falta de una infraestructura suficiente ha llevado a la 
+profusi&oacute;n de distintas t&eacute;cnicas:
+<UL>
+<LI>Enmascaramiento, adem&aacute;s de m&oacute;dulos por cada protocolo</LI>
+<LI>NAT est&aacute;tico veloz mediante c&oacute;digo de enrutamiento (no tiene manejo 
+por protocolo)</LI>
+<LI>Redirecci&oacute;n de puertos (port forwarding), redirecci&oacute;n, auto 
+redirecci&oacute;n (auto forwarding)</LI>
+<LI>Los Proyectos NAT y Servidor Virtual para Linux.</LI>
+</UL>
+
+</LI>
+<LI>Incompatibilidad entre CONFIG_NET_FASTROUTE y el filtrado de 
+paquetes:
+<UL>
+<LI>Los paquetes redirigidos tienen que atravesar tres cadenas de todos
+modos</LI>
+<LI>No hay manera de saber si estas cadenas pueden evitarse</LI>
+</UL>
+
+</LI>
+<LI>No es posible la inspecci&oacute;n de los paquetes rechazados a causa de 
+una protecci&oacute;n de enrutado (p.ej. Source Address Verification).
+</LI>
+<LI>No hay manera de leer autom&aacute;ticamente los contadores de las reglas 
+de filtrado de paquetes.
+</LI>
+<LI>CONFIG_IP_ALWAYS_DEFRAG es una opci&oacute;n en tiempo de compilaci&oacute;n, 
+cosa que le complica la vida a las distribuciones que quieren hacer un
+kernel de prop&oacute;sitos generales.
+</LI>
+</OL>
+</P>
+
+<H2><A NAME="ss1.3">1.3 ¿Qui&eacute;n eres?</A>
+</H2>
+
+<P>Soy el &uacute;nico lo suficientemente tonto para hacer esto. Como coautor de 
+ipchains y como actual mantenedor del Cortafuegos IP del Kernel de Linux, 
+puedo ver muchos de los problemas que la gente tiene con el sistema 
+actual, adem&aacute;s de saber lo que tratan de hacer.</P>
+
+<H2><A NAME="ss1.4">1.4 ¿Por qu&eacute; se cuelga?</A>
+</H2>
+
+<P>¡Bueno! ¡Deber&iacute;a haberlo visto la semana <B>pasada</B>!</P>
+
+<P>Porque no soy un gran programador como todos desear&iacute;amos, y ciertamente 
+no he comprobado todas las situaciones, por falta de tiempo, equipo y/o 
+inspiraci&oacute;n. S&iacute; que tengo una bater&iacute;a de pruebas, a la que le animo que 
+contribuya.</P>
+
+<HR>
+<A HREF="netfilter-hacking-COMO-2.html">Página siguiente</A>
+Página anterior
+<A HREF="netfilter-hacking-COMO.html#toc1">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,96 @@
+<HTML>
+<HEAD>
+<TITLE>Samba COMO: Ejecutando los demonios</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Samba-Como-3.html">Anterior</A>
+<A HREF="Samba-Como-5.html">Siguiente</A>
+<A HREF="Samba-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="sec-daemons"></A> <A NAME="s4">4. Ejecutando los demonios</A></H2>
+
+
+<P>Los dos demonios de SMB son <CODE>/usr/bin/smbd</CODE> y <CODE>/usr/sbin/nmbd</CODE>.</P>
+<P>Puedes ejecutar los demonios de <I>Samba</I> desde <CODE>inetd</CODE> o como procesos independientes
+. Si est&aacute;s configurando un servidor de ficheros permanente, deber&iacute;an ejecutarse
+desde <CODE>inetd</CODE> para que sean reejecutados si 'mueren'. Si solo quieres usar los 
+servicios SMB de vez en cuando o como ayuda a la administraci&oacute;n del sistema, 
+puedes ejecutarlos con un script en <CODE>/etc/rc.d/init.d</CODE> o incluso a mano 
+cuando los necesites.</P>
+<P>Para ejecutar los demonios desde <CODE>inetd</CODE>, pon las siguientes l&iacute;neas en el 
+fichero de configuraci&oacute;n de <CODE>inetd</CODE>, <CODE>/etc/inetd.conf</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    # Servicios SAMBA NetBIOS (para compartici&oacute;n de ficheros e impresoras en PC)
+    netbios-ssn stream tcp nowait root /usr/sbin/smbd smbd
+    netbios-ns dgram udp wait root /usr/sbin/nmbd nmbd
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Entonces reejecuta <CODE>inetd</CODE> con el siguiente comando:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    kill -HUP 1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para ejecutarlos desde los scripts de inicio del sistema, pon las siguientes 
+l&iacute;neas en <CODE>/etc/rc.d/init.d/smb</CODE> y hazle un enlace simb&oacute;lico con los 
+ficheros indicados en los comentarios:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+    #!/bin/sh
+    #
+    # /etc/rc.d/init.d/smb - comienza y termina los servicios SMB.
+    #
+    # Se deben crear los siguientes ficheros como enlaces simbolicos a este fichero:
+    # symlinks: /etc/rc.d/rc1.d/K35smb  (Termina los servicios SMB al cerrar el sistema)
+    #           /etc/rc.d/rc3.d/S91smb  (Comienza los servicios SMB en modo multiusuario)
+    #           /etc/rc.d/rc6.d/K35smb  (Termina los servicios SMB al hacer un reboot)
+    #
+
+    # Libreria de funciones
+    . /etc/rc.d/init.d/functions
+
+    # Configuracion de red
+    . /etc/sysconfig/network
+
+    # Asegurarse que la red esta a punto
+    [ ${NETWORKING} = &quot;no&quot; ] && exit 0
+
+    # Comprobar como fuimos llamados
+    case &quot;$1&quot; in
+      empezar)
+        echo -n &quot;Poniendo en marcha los servicios SMB: &quot;
+        daemon smbd -D  
+        daemon nmbd -D 
+        echo
+        touch /var/lock/subsys/smb
+        ;;
+      parar)
+        echo -n &quot;Terminando los servicios SMB: &quot;
+        killproc smbd
+        killproc nmbd
+        rm -f /var/lock/subsys/smb
+        echo &quot;&quot;
+        ;;
+      *)
+        echo &quot;Modo de uso: smb {empezar|parar}&quot;
+        exit 1
+    esac
+
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+<HR>
+<A HREF="Samba-Como-3.html">Anterior</A>
+<A HREF="Samba-Como-5.html">Siguiente</A>
+<A HREF="Samba-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

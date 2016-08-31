@@ -1,0 +1,866 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 01 Rutinas Unicode
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="01 Rutinas Unicode">01 Rutinas Unicode</a></h1>
+
+<ul>
+<li><a href="#_ustrdup">_ustrdup</a>
+<li><a href="#do_uconvert">do_uconvert</a>
+<li><a href="#empty_string">empty_string</a>
+<li><a href="#get_uformat">get_uformat</a>
+<li><a href="#need_uconvert">need_uconvert</a>
+<li><a href="#register_uformat">register_uformat</a>
+<li><a href="#set_ucodepage">set_ucodepage</a>
+<li><a href="#set_uformat">set_uformat</a>
+<li><a href="#uatof">uatof</a>
+<li><a href="#uconvert">uconvert</a>
+<li><a href="#uconvert_ascii">uconvert_ascii</a>
+<li><a href="#uconvert_size">uconvert_size</a>
+<li><a href="#uconvert_toascii">uconvert_toascii</a>
+<li><a href="#ucwidth">ucwidth</a>
+<li><a href="#ugetat">ugetat</a>
+<li><a href="#ugetc">ugetc</a>
+<li><a href="#ugetx">ugetx</a>
+<li><a href="#ugetxc">ugetxc</a>
+<li><a href="#uinsert">uinsert</a>
+<li><a href="#uisdigit">uisdigit</a>
+<li><a href="#uisok">uisok</a>
+<li><a href="#uisspace">uisspace</a>
+<li><a href="#uoffset">uoffset</a>
+<li><a href="#uremove">uremove</a>
+<li><a href="#usetat">usetat</a>
+<li><a href="#usetc">usetc</a>
+<li><a href="#usprintf">usprintf</a>
+<li><a href="#ustrcat">ustrcat</a>
+<li><a href="#ustrchr">ustrchr</a>
+<li><a href="#ustrcmp">ustrcmp</a>
+<li><a href="#ustrcpy">ustrcpy</a>
+<li><a href="#ustrdup">ustrdup</a>
+<li><a href="#ustrerror">ustrerror</a>
+<li><a href="#ustricmp">ustricmp</a>
+<li><a href="#ustrlen">ustrlen</a>
+<li><a href="#ustrlwr">ustrlwr</a>
+<li><a href="#ustrncat">ustrncat</a>
+<li><a href="#ustrncmp">ustrncmp</a>
+<li><a href="#ustrncpy">ustrncpy</a>
+<li><a href="#ustrpbrk">ustrpbrk</a>
+<li><a href="#ustrrchr">ustrrchr</a>
+<li><a href="#ustrsize">ustrsize</a>
+<li><a href="#ustrsizez">ustrsizez</a>
+<li><a href="#ustrstr">ustrstr</a>
+<li><a href="#ustrtod">ustrtod</a>
+<li><a href="#ustrtok">ustrtok</a>
+<li><a href="#ustrtok_r">ustrtok_r</a>
+<li><a href="#ustrtol">ustrtol</a>
+<li><a href="#ustrupr">ustrupr</a>
+<li><a href="#ustrzcat">ustrzcat</a>
+<li><a href="#ustrzcpy">ustrzcpy</a>
+<li><a href="#ustrzncat">ustrzncat</a>
+<li><a href="#ustrzncpy">ustrzncpy</a>
+<li><a href="#uszprintf">uszprintf</a>
+<li><a href="#utolower">utolower</a>
+<li><a href="#utoupper">utoupper</a>
+<li><a href="#uvsprintf">uvsprintf</a>
+<li><a href="#uvszprintf">uvszprintf</a>
+<li><a href="#uwidth">uwidth</a>
+<li><a href="#uwidth_max">uwidth_max</a>
+</ul>
+
+<p>
+Allegro puede manipular y mostrar texto usando cualquier carácter en el rango
+que va de 0 a 2^32-1 (aunque por ahora grabber sólo puede crear fuentes
+usando carácteres hasta 2^16-1). Puede escoger entre varios tipos de formatos
+de codificación de texto, los cuales controlan la forma en la que las cadenas
+son almacenadas y cómo Allegro interpreta las que usted le pase. Esta
+configuración afecta a todos los aspectos del sistema: cada vez que observe
+una función que devuelve un puntero a carácter (char *) o que toma un puntero
+a carácter como argumento, el texto utilizará el formato que se le haya
+indicado a Allegro.
+
+<p>
+Por defecto, Allegro usa texto codificado en el formato UTF-8 (U_UTF8). Este
+es un formato de anchura variable donde los carácteres pueden tener cualquier
+tamaño de 1 a 6 bytes. Lo bueno de este formato es que los carácteres de 0 a
+127 pueden ser almacenados directamente, o lo que es igual, significa que es
+compatible con códigos ASCII de 7 bits ("Hola, Mundo!" es exactamente la
+misma cadena en ASCII que en UTF-8). Cualquier carácter por encima del 128
+como vocales acentuadas, el símbolo monetario inglés o carácteres árabes y
+chinos serán codificados como una secuencia de dos o más bytes con un valor
+en el rango 128-255. Esto permite que al mostrar la cadena no se obtengan
+carácteres extraños en ASCII que en realidad forman parte de la codificación
+de un carácter con diferente valor, lo que hace realmente fácil manipular
+cadenas UTF-8.
+
+<p>
+Existen algunos editores de texto que entienden ficheros UTF-8, pero
+alternativamente, puede escribir sus cadenas en ASCII plano o en formato
+Unicode de 16 bit y luego utilizar el programa textconv (suministrado con
+Allegro) para convertir el texto a UTF-8.
+
+<p>
+Si prefiere usar otros formatos de texto, Allegro permite la utilización de
+formatos ASCII de 8 bits (U_ASCII) o Unicode de 16 bits (U_UNICODE). Además
+puede programar sus propias funciones para manejar otros formatos de texto
+con Allegro (sería sencillo añadir soporte para el formato UCS-4 de 32 bits,
+o el formato GB-code chino).
+
+<p>
+También existe soporte limitado para páginas de códigos alternativas de 8
+bits a través del modo U_ASCII_CP. Lo malo de este modo es que es muy lento y
+no debería utilizarse para aplicaciones serias. Sin embargo, puede utilizarse
+para convertir texto fácilmente entre diferentes páginas de códigos. Por
+defecto, el modo U_ASCII_CP es activado para convertir texto al formato ASCII
+de 7 bits, convirtiendo las vocales acentuadas en sus equivalente (por
+ejemplo, allegro_message() utiliza este modo para mostrar los mensajes en una
+consola DOS). Si necesita trabajar con otras páginas de códigos, puede
+hacerlo pasando un mapeado de carácteres a la función set_ucodepage().
+
+<p>
+Tenga en cuenta que puede usar las rutinas Unicode antes de llamar
+install_allegro() o allegro_init(). Si quiere trabajar en un formato de texto
+distinto al UTF-8, lo mejor es que lo seleccione con set_uformat() antes de
+llamar estas funciones.
+
+<p><br>
+<b>void <a name="set_uformat">set_uformat</a>(int type);</b><br>
+   Establece el formato de codificación de texto a utilizar. Esta operación
+   afectará a todos las funciónes de Allegro que devuelvan un puntero a
+   carácter (char *) o acepten un puntero a carácter como parámetro. El
+   parámetro type debe ser uno de los siguientes:
+<blockquote class="text"><pre>
+      U_ASCII     - carácteres ASCII de 8 bits de tamaño fijo
+      U_ASCII_CP  - página de códigos alternativa de 8 bits (ver
+                    set_ucodepage())
+      U_UNICODE   - carácteres Unicode de 16 bits de tamaño fijo
+      U_UTF8      - carácteres Unicode UTF-8 de tamaño variable
+</pre></blockquote>
+   Aunque es posible cambiar el formato de texto en cualquier momento, no es
+   una práctica demasiado recomendable. Muchas cadenas (entre ellas los
+   nombres de los drivers de hardware y algunas traducciones) son
+   inicializadas en la llamada a allegro_init(), por lo tanto, si se cambia
+   el formato de texto tras dicha llamada, las cadenas estarán en un formato
+   diferente al seleccionado y el sistema no funcionará de forma apropiada.
+   Como normal general, sólo debería llamarse a set_uformat() una vez, antes
+   de llamar a allegro_init(), y utilizar el formato de texto seleccionado
+   durante toda la ejecución de su programa.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_uformat">get_uformat</a>,
+<a class="xref" href="#register_uformat">register_uformat</a>,
+<a class="xref" href="#set_ucodepage">set_ucodepage</a>,
+<a class="xref" href="#set_uformat">set_uformat</a>,
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ugetat">ugetat</a>,
+<a class="xref" href="#usetat">usetat</a>,
+<a class="xref" href="#uinsert">uinsert</a>,
+<a class="xref" href="#uremove">uremove</a>,
+<a class="xref" href="alleg000.html#allegro_init">allegro_init</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>,
+<a class="xref" href="#uoffset">uoffset</a>.</font></blockquote>
+<b>int <a name="get_uformat">get_uformat</a>(void);</b><br>
+   Devuelve el formato de codificación de texto actualmente seleccionado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_uformat">set_uformat</a>.</font></blockquote>
+<b>void <a name="register_uformat">register_uformat</a>(int type,</b>
+<b>                      int (*u_getc)(const char *s),</b>
+<b>                      int (*u_getx)(char **s),</b>
+<b>                      int (*u_setc)(char *s, int c),</b>
+<b>                      int (*u_width)(const char *s),</b>
+<b>                      int (*u_cwidth)(int c),</b>
+<b>                      int (*u_isok)(int c));</b><br>
+   Instala un conjunto de funciones para el manejo de un nuevo formato de
+   codificación de carácteres. El parámetro type identifica el nuevo formato,
+   que debería ser una cadena de 4 carácteres como las producidas por la
+   macro AL_ID(). Esta cadena será la que se pase posteriormente a funciones
+   como set_uformat() y uconvert(). Los punteros a funciones pasados como
+   parámetros, son manejadores que implementan el acceso a los carácteres de
+   una cadena formateada con la nueva codificación (vea más abajo para más
+   detalles).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_uformat">set_uformat</a>,
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>void <a name="set_ucodepage">set_ucodepage</a>(const unsigned short *table,</b>
+<b>          const unsigned short *extras);</b><br>
+   Cuando se selecciona el modo U_ASCII_CP, los carácteres de 8 bits son
+   convertidos a sus equivalentes en Unicode a través de un conjunto de
+   tablas. Se puede usar esta función para especificar un conjunto de tablas
+   personalizadas que permitan la utilización de páginas de códigos de 8 bits
+   alternativas. El parámetro table apunta a un array de 256 enteros short
+   que contienen el valor Unicode para cada carácter en la página de códigos.
+   El parámetro extras, si no es NULL, apunta a una lista de pares de valores
+   que es utilizada para realizar la conversión inversa, es decir, reducir
+   los valores Unicode a la representación correcta dentro de la nueva
+   página de codigos. Cada par de valores consiste en un valor Unicode
+   seguido por la forma de representación correspondiente dentro de la página
+   de códigos. La tabla debe finalizar con el valor cero en Unicode. Esta
+   tabla permite que varios carácteres Unicode puedan representarse mediante
+   un solo valor en la página de codigos (por ejemplo para reducir vocales
+   acentuadas a ASCII de 7 bits).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_uformat">set_uformat</a>.</font></blockquote>
+<b>int <a name="need_uconvert">need_uconvert</a>(const char *s, int type, int newtype);</b><br>
+   Dado un puntero a una cadena, el tipo de la cadena y el tipo al que se
+   desea convertir, esta función indica si dicha conversión es necesaria. La
+   conversión no es necesaria si type y newtype son el mismo tipo o son tipos
+   equivalentes (por ejemplo ASCII y UTF-8 y la cadena contiene carácteres
+   menores que 128). Como valor para uno de los parámetros type, se puede
+   pasar U_CURRENT que representa el tipo actualmente seleccionado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_uformat">set_uformat</a>,
+<a class="xref" href="#get_uformat">get_uformat</a>,
+<a class="xref" href="#do_uconvert">do_uconvert</a>,
+<a class="xref" href="#uconvert">uconvert</a>.</font></blockquote>
+<b>int <a name="uconvert_size">uconvert_size</a>(const char *s, int type, int newtype);</b><br>
+   Devuelve el número de bytes que serán necesarios para almacenar la cadena
+   especificada tras una conversión al nuevo tipo, incluyendo el carácter
+   terminador nulo. Los parámetros type pueden usar el valor U_CURRENT para
+   indicar el tipo actualmente seleccionado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#need_uconvert">need_uconvert</a>,
+<a class="xref" href="#do_uconvert">do_uconvert</a>.</font></blockquote>
+<b>void <a name="do_uconvert">do_uconvert</a>(const char *s, int type,</b>
+<b>        char *buf, int newtype, int size);</b><br>
+   Convierte la cadena especificada del tipo type al tipo newtype, guardando
+   como mucho size bytes en el buffer buf. Los parámetros type pueden
+   utilizar el valor U_CURRENT para indicar el tipo actualmente seleccionado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>.</font></blockquote>
+<b>char *<a name="uconvert">uconvert</a>(const char *s, int type,</b>
+<b>      char *buf, int newtype, int size);</b><br>
+   Esta es una función de alto nivel que sirve como ayuda para ejecutar
+   do_uconvert(). Al igual que do_uconvert(), convierta la cadena
+   especificada del tipo type al tipo newtype, guardando como mucho size
+   bytes en el buffer buf. La ventaja que obtenemos a usar uconvert() es que
+   comprueba los tipos antes de realizar la conversión, para asegurarse de
+   que son tipos diferentes, no realizando conversión alguna si los tipos son
+   iguales o equivalentes. Si la conversión fue realizada, devuelve un
+   puntero a buf, en caso contrario, devuelve una copia de la cadena a
+   convertir (s). Por lo tanto, debe usar el valor devuelto en lugar de
+   asumir que la cadena ha sido movida a buf. Si buf es NULL, la cadena será
+   convertida en un buffer estático interno. Sin embargo, debería tener
+   cuidado al usar este comportamiento, ya que el buffer será sobreescrito
+   cada vez que la rutina sea invocada, por lo que no espere que los datos
+   persistan tras haber hecho llamadas a otras funciones de la biblioteca.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_uformat">set_uformat</a>,
+<a class="xref" href="#need_uconvert">need_uconvert</a>,
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#uconvert_ascii">uconvert_ascii</a>,
+<a class="xref" href="#uconvert_toascii">uconvert_toascii</a>.</font></blockquote>
+<b>char *<a name="uconvert_ascii">uconvert_ascii</a>(const char *s, char buf[]);</b><br>
+   Macro auxiliar para convertir cadenas desde ASCII al formato actual de
+   codificación. Se expande a
+   uconvert(s, U_ASCII, buf, U_CURRENT, sizeof(buf)).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>.</font></blockquote>
+<b>char *<a name="uconvert_toascii">uconvert_toascii</a>(const char *s, char buf[]);</b><br>
+   Macro auxiliar para convertir cadenas desde el formato actual de
+   codificación a ASCII. Se expande a
+   uconvert(s, U_CURRENT, buf, U_ASCII, sizeof(buf)).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>.</font></blockquote>
+<b>extern char <a name="empty_string">empty_string</a>[];</b><br>
+   No se puede fiar de que "" sea una cadena vacía válida en todos los
+   formatos de codificación. Este búffer global contiene un número de ceros
+   consecutivos, así que siempre será una cadena vacía válida, sin tener
+   importancia si el programa se está ejecutando en modo ASCII, Unicode o
+   UTF-8.
+
+<p><br>
+<b>int <a name="ugetc">ugetc</a>(const char *s);</b><br>
+   Función auxiliar de bajo nivel para leer datos de texto en Unicode. Dado
+   un puntero a una cadena en el formato de codificación actual devuelve el
+   siguiente caracter de la cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="ugetx">ugetx</a>(char **s);</b><br>
+<b>int <a name="ugetxc">ugetxc</a>(const char **s);</b><br>
+   Función auxiliar de bajo nivel para leer datos de texto en Unicode. Dada
+   la dirección de un puntero a un string en el formato de codificación
+   actual devuelve el siguiente caracter de la cadena y avanza el puntero al
+   siguiente caracter.
+
+<p>
+   ugetxc es para trabajar con datos char constantes puntero a puntero.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="usetc">usetc</a>(char *s, int c);</b><br>
+   Función auxiliar de bajo nivel para escribir datos de texto en Unicode.
+   Escribe el caracter especificado en la dirección dada usando el formato
+   de codificación actual y devuelve el número de bytes escritos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="uwidth">uwidth</a>(const char *s);</b><br>
+   Función auxiliar de bajo nivel para comprobar datos de texto en Unicode.
+   Devuelve el número de bytes ocupados por el primer caracter de la cadena
+   especificada en el formato de codificación actual.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uwidth_max">uwidth_max</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="ucwidth">ucwidth</a>(int c);</b><br>
+   Función auxiliar de bajo nivel para comprobar datos de texto en Unicode.
+   Devuelve el número de bytes que ocuparía el caracter especificado en caso
+   de codificarse en el formato actual.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uwidth_max">uwidth_max</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="uisok">uisok</a>(int c);</b><br>
+   Función auxiliar de bajo nivel para comprobar datos de texto en Unicode.
+   Comprueba que el valor especificado puede ser codificado correctamente en
+   en el formato actual.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>.</font></blockquote>
+<b>int <a name="uoffset">uoffset</a>(const char *s, int index);</b><br>
+   Devuelve el desplazamiento en bytes desde el comienzo de la cadena hasta
+   el caracter correspondiente al índice especificado. Si el índice es
+   negativo, cuenta hacía atrás desde el final de la cadena, así que un
+   índice de -1 devolverá un desplazamiento al último caracter.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ugetat">ugetat</a>,
+<a class="xref" href="#usetat">usetat</a>,
+<a class="xref" href="#uinsert">uinsert</a>,
+<a class="xref" href="#uremove">uremove</a>.</font></blockquote>
+<b>int <a name="ugetat">ugetat</a>(const char *s, int index);</b><br>
+   Devuelve el valor del caracter de la cadena correspondiente al índice
+   especificado. Un parámetro indice igual a 0 devolverá el primer caracter
+   de la cadena. Si el índice es negativo, cuenta hacia atrás desde el final
+   de la cadena. Así pues un índice de -1 devolverá el ultimo caracter de la
+   cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uoffset">uoffset</a>,
+<a class="xref" href="#usetat">usetat</a>,
+<a class="xref" href="#uinsert">uinsert</a>,
+<a class="xref" href="#uremove">uremove</a>.</font></blockquote>
+<b>int <a name="usetat">usetat</a>(char *s, int index, int c);</b><br>
+   Reemplaza el caracter del string con el índice especificado por el valor
+   c, haciendo los ajustes necesarios debido a la anchura de la variable
+   (ej: si c se codifica con una anchura diferente que el valor que había
+   antes en esa posición). Devuelve el número de bytes que ha sido desplazada
+   la parte derecha de la cadena. Si el índice es negativo cuenta hacia atrás
+   desde el final de la cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uoffset">uoffset</a>,
+<a class="xref" href="#ugetat">ugetat</a>,
+<a class="xref" href="#uinsert">uinsert</a>,
+<a class="xref" href="#uremove">uremove</a>.</font></blockquote>
+<b>int <a name="uinsert">uinsert</a>(char *s, int index, int c);</b><br>
+   Inserta el caracter c en la posición de la cadena especificada por index,
+   desplazando el resto de los datos para hacer sitio. Devuelve el número de
+   bytes que ha desplazado la parte derecha. Si el índice es negativo cuenta
+   hacia atras desde el final de la cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uoffset">uoffset</a>,
+<a class="xref" href="#ugetat">ugetat</a>,
+<a class="xref" href="#usetat">usetat</a>,
+<a class="xref" href="#uremove">uremove</a>.</font></blockquote>
+<b>int <a name="uremove">uremove</a>(char *s, int index);</b><br>
+   Borra el caracter que hay en la posición index de la cadena, desplazando
+   el resto de los datos para llenar la posición vacía. Devuelve el número de
+   bytes que se ha tenido que desplazar la parte derecha de la cadena, si
+   index es negativo empieza a contar desde el final de la cadena
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uoffset">uoffset</a>,
+<a class="xref" href="#ugetat">ugetat</a>,
+<a class="xref" href="#usetat">usetat</a>,
+<a class="xref" href="#uinsert">uinsert</a>.</font></blockquote>
+<b>int <a name="ustrsize">ustrsize</a>(const char *s);</b><br>
+   Devuelve el tamaño de la cadena especificada en bytes, sin incluir el
+   caracter nulo finalizador de cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ustrsizez">ustrsizez</a>.</font></blockquote>
+<b>int <a name="ustrsizez">ustrsizez</a>(const char *s);</b><br>
+   Devuelve el tamaño de la cadena especificada en bytes, incluyendo el
+   caracter nulo finalizador de cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ustrsize">ustrsize</a>.</font></blockquote>
+<b>int <a name="uwidth_max">uwidth_max</a>(int type);</b><br>
+   Rutinas ayudantes de bajo nivel para trabajar con texto Unicode.
+   Devuelven el mayor número de bytes que un carácter puede ocupar en el
+   formato de codificación especificado. Pase U_CURRENT para indicar el
+   formato de codificación actual.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>.</font></blockquote>
+<b>int <a name="utolower">utolower</a>(int c);</b><br>
+   Esta función devuelve c, convirtiéndola a minúsculas si estaba en
+   mayúsculas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#utoupper">utoupper</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="utoupper">utoupper</a>(int c);</b><br>
+   Esta función devuelve c, convirtiéndola a mayúsculas si estaba en
+   minúsculas.
+   
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#utolower">utolower</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#ugetx">ugetx</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="uisspace">uisspace</a>(int c);</b><br>
+   Devuelve distinto de cero si c es carácter de espaciado, es decir, un
+   retorno de carro, una nueva línea, página, un tabulador, un tabulador
+   vertical o un espacio.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uisdigit">uisdigit</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>int <a name="uisdigit">uisdigit</a>(int c);</b><br>
+   Devuelve distinto de cero si c es un dígito.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uisspace">uisspace</a>,
+<a class="xref" href="#ugetc">ugetc</a>,
+<a class="xref" href="#usetc">usetc</a>,
+<a class="xref" href="#uwidth">uwidth</a>,
+<a class="xref" href="#ucwidth">ucwidth</a>,
+<a class="xref" href="#uisok">uisok</a>.</font></blockquote>
+<b>char *<a name="ustrdup">ustrdup</a>(const char *src)</b><br>
+   Esta función copia la cadena src terminada en NULL en una nueva área de
+   memoria reservada. La memoria devuelta por esta llamada debe ser liberada
+   por el usuario. Devuelve NULL si no puede reservar espacio para la cadena
+   duplicada.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#_ustrdup">_ustrdup</a>,
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>.</font></blockquote>
+<b>char *<a name="_ustrdup">_ustrdup</a>(const char *src, void* (*malloc_func) (size_t))</b><br>
+   Hace lo mismo que ustrdup(), pero permite especificar al usuario su
+   propia rutina para reservar memoria.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ustrdup">ustrdup</a>,
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>.</font></blockquote>
+<b>char *<a name="ustrcpy">ustrcpy</a>(char *dest, const char *src);</b><br>
+   Esta función copia src en dest (incluyendo el terminador de cadena NULL).
+   El valor de retorno es el valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>,
+<a class="xref" href="#ustrncpy">ustrncpy</a>.</font></blockquote>
+<b>char *<a name="ustrzcpy">ustrzcpy</a>(char *dest, int size, const char *src);</b><br>
+   Esta función copia src en dest (incluyendo el terminador de cadena NULL),
+   cuya longitud en bytes es especificada por size y que está garantizado
+   que termine en carácter NULL. El valor de retoron es el valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrcpy">ustrcpy</a>,
+<a class="xref" href="#ustrzncpy">ustrzncpy</a>.</font></blockquote>
+<b>char *<a name="ustrcat">ustrcat</a>(char *dest, const char *src);</b><br>
+   Esta función concatena src al final de dest. El valor de retorno es el
+   valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrzcat">ustrzcat</a>,
+<a class="xref" href="#ustrncat">ustrncat</a>.</font></blockquote>
+<b>char *<a name="ustrzcat">ustrzcat</a>(char *dest, int size, const char *src);</b><br>
+   Esta función concatena src al final de dest, cuya longitud en bytes es
+   especificada por size y que está garantizado que termine en carácter
+   NULL. El valor de retorno es el valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrcat">ustrcat</a>,
+<a class="xref" href="#ustrzncat">ustrzncat</a>.</font></blockquote>
+<b>int <a name="ustrlen">ustrlen</a>(const char *s);</b><br>
+   Esta función devuelve el número de carácteres de s. Tenga en cuenta que
+   esto no tiene que ser igual que el tamaño de la cadena en bytes.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>.</font></blockquote>
+<b>int <a name="ustrcmp">ustrcmp</a>(const char *s1, const char *s2);</b><br>
+   Esta función compara s1 con s2. Devuelve cero si las cadenas son iguales,
+   un número positivo si s1 va detrás de s2 en la secuencia ASCII apropiada,
+   o negativo en caso contrario.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>,
+<a class="xref" href="#ustrncmp">ustrncmp</a>,
+<a class="xref" href="#ustricmp">ustricmp</a>.</font></blockquote>
+<b>char *<a name="ustrncpy">ustrncpy</a>(char *dest, const char *src, int n);</b><br>
+   Esta función es como ustrcpy() excepto que no copiará más de n carácteres
+   de src a dest. Si src es menor en longitud que n carácteres, se añadirán
+   carácteres NULL en dest hasta rellenar los n carácteres especificados.
+   Note que si src es mayor que n carácteres, dest no terminará en NULL. El
+   valor de retorno es el valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrcpy">ustrcpy</a>,
+<a class="xref" href="#ustrzncpy">ustrzncpy</a>.</font></blockquote>
+<b>char *<a name="ustrzncpy">ustrzncpy</a>(char *dest, int size, const char *src, int n);</b><br>
+   Esta función es como ustrzcpy() excepto que no copiará más de n
+   carácteres de src a dest. Si src es menor en longitud que n carácteres,
+   se añadirán carácteres NULL en dest hasta rellenar los n carácteres
+   especificados. Note que está garantizado que dest acabe en carácter NULL.
+   El valor de retorno es el valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrzcpy">ustrzcpy</a>,
+<a class="xref" href="#ustrncpy">ustrncpy</a>.</font></blockquote>
+<b>char *<a name="ustrncat">ustrncat</a>(char *dest, const char *src, int n);</b><br>
+   Esta función es como `strcat' con la excepción de que no se añadirán más
+   de n bytes de src al final de dest. Si el carácter terminador NULL es
+   encontrado en src antes de haber escrito n carácteres, el carácter NULL
+   será copiado, pero no se escribirán más carácteres. Si n carácteres son
+   copiados antes de encontrar el carácter NULL, la función añadirá
+   automáticamente el carácter NULL a dest, por lo que se escribirán n+1
+   carácteres. El valor de retorno es dest.
+   
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrcat">ustrcat</a>,
+<a class="xref" href="#ustrzncat">ustrzncat</a>.</font></blockquote>
+<b>char *<a name="ustrzncat">ustrzncat</a>(char *dest, int size, const char *src, int n);</b><br>
+   Esta función es como ustrszcat() con la excepción de que no se añadirán
+   más de n carácteres de src al final de dest. Si el carácter terminador
+   NULL es encontrado en src antes de haber escrito n carácteres, el
+   carácter NULL será copiado, pero no se escribirán más carácteres. Note
+   que está garantizado que dest acabe en carácter NULL. El valor de
+   retorno es el valor de dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrzcat">ustrzcat</a>,
+<a class="xref" href="#ustrncat">ustrncat</a>.</font></blockquote>
+<b>int <a name="ustrncmp">ustrncmp</a>(const char *s1, const char *s2, int n);</b><br>
+   Esta función compara hasta n carácteres de s1 con s2. Devuelve cero si
+   las cadenas son iguales, un número positivo si s1 va detrás de s2 en la
+   secuencia ASCII apropiada, o negativo en caso contrario.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>,
+<a class="xref" href="#ustrcmp">ustrcmp</a>,
+<a class="xref" href="#ustricmp">ustricmp</a>.</font></blockquote>
+<b>int <a name="ustricmp">ustricmp</a>(const char *s1, const char *s2);</b><br>
+   Esta función compara s1 con s2, ignorando las mayúsculas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrsize">ustrsize</a>,
+<a class="xref" href="#ustrsizez">ustrsizez</a>,
+<a class="xref" href="#ustrcmp">ustrcmp</a>,
+<a class="xref" href="#ustrncmp">ustrncmp</a>.</font></blockquote>
+<b>char *<a name="ustrlwr">ustrlwr</a>(char *s);</b><br>
+   Esta función sustituye todas las letras mayúsculas de s con minúsculas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#utolower">utolower</a>,
+<a class="xref" href="#ustrupr">ustrupr</a>.</font></blockquote>
+<b>char *<a name="ustrupr">ustrupr</a>(char *s);</b><br>
+   Esta función sustituye todas las letras minúsculas de s con mayúscylas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#utolower">utolower</a>,
+<a class="xref" href="#ustrlwr">ustrlwr</a>.</font></blockquote>
+<b>char *<a name="ustrchr">ustrchr</a>(const char *s, int c);</b><br>
+   Esta función devuelve un puntero a la primera ocurrencia de c en s, o
+   NULL si s no contiene c. Tenga en cuenta que si c es NULL, esta función
+   devolverá un puntero al final de la cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrrchr">ustrrchr</a>,
+<a class="xref" href="#ustrstr">ustrstr</a>,
+<a class="xref" href="#ustrpbrk">ustrpbrk</a>,
+<a class="xref" href="#ustrtok">ustrtok</a>.</font></blockquote>
+<b>char *<a name="ustrrchr">ustrrchr</a>(const char *s, int c);</b><br>
+   Esta función devuelve un puntero a la última ocurrencia de c en s, o NULL
+   si s no contiene c.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrchr">ustrchr</a>,
+<a class="xref" href="#ustrstr">ustrstr</a>,
+<a class="xref" href="#ustrpbrk">ustrpbrk</a>,
+<a class="xref" href="#ustrtok">ustrtok</a>.</font></blockquote>
+<b>char *<a name="ustrstr">ustrstr</a>(const char *s1, const char *s2);</b><br>
+   Esta función busca la primera ocurrencia de s2 en s1. Devuelve un puntero
+   dentro de s1, o NULL si s2 no fue encontrada.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrchr">ustrchr</a>,
+<a class="xref" href="#ustrrchr">ustrrchr</a>,
+<a class="xref" href="#ustrpbrk">ustrpbrk</a>,
+<a class="xref" href="#ustrtok">ustrtok</a>.</font></blockquote>
+<b>char *<a name="ustrpbrk">ustrpbrk</a>(const char *s, const char *set);</b><br>
+   Esta función encuentra el primer carácter de s que esté contenido en set.
+   Devuelve un puntero a la primera ocurrencia, o NULL si no se encontró
+   nada.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrchr">ustrchr</a>,
+<a class="xref" href="#ustrrchr">ustrrchr</a>,
+<a class="xref" href="#ustrstr">ustrstr</a>,
+<a class="xref" href="#ustrtok">ustrtok</a>.</font></blockquote>
+<b>char *<a name="ustrtok">ustrtok</a>(char *s, const char *set);</b><br>
+   Esta función recupera palabras de s que están delimitadas por carácteres
+   de set. Para iniciar la búsqueda, pase la cadena que quiere analizar como
+   s. Para el resto de las palabras, pase NULL en su lugar. Devuelve un
+   puntero a la palabra, o NULL si no se encontró nada. Aviso: dado que
+   ustrtok altera la cadena que está analizando, debe copiar siempre su
+   cadena a un buffer temporal antes de analizarla. Además, esta función no
+   es reentrante (ej: no puede analizar dos cadenas simultáneamente).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrchr">ustrchr</a>,
+<a class="xref" href="#ustrrchr">ustrrchr</a>,
+<a class="xref" href="#ustrstr">ustrstr</a>,
+<a class="xref" href="#ustrpbrk">ustrpbrk</a>,
+<a class="xref" href="#ustrtok_r">ustrtok_r</a>.</font></blockquote>
+<b>char *<a name="ustrtok_r">ustrtok_r</a>(char *s, const char *set, char **last);</b><br>
+   Versión reentrante de ustrtok. El último parámetro es usado para almacenar
+   por dónde iba el procesado de la cadena y debe ser un puntero a una
+   variable char * reservada por el usuario que no debe ser modificada
+   mientras se procesa la misma cadena.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#ustrtok">ustrtok</a>.</font></blockquote>
+<b>double <a name="uatof">uatof</a>(const char *s);</b><br>
+   Convierte tanto como sea posible de la cadena a un número equivalente en
+   coma flotante de doble precisión. Esta función es casi como `ustrtod(s,
+   NULL)'. Devuelve un valor equivalente, o cero si la cadena no representa
+   un número.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrtol">ustrtol</a>,
+<a class="xref" href="#ustrtod">ustrtod</a>.</font></blockquote>
+<b>long <a name="ustrtol">ustrtol</a>(const char *s, char **endp, int base);</b><br>
+   Esta función convierte la parte inicial de s a un entero con signo, el
+   cual será devuelto como un valor de tipo `long int', haciendo que *endp
+   apunte al primer carácter no convertido, si endp no es un puntero nulo.
+   Si el parámetro base es cero, la base es determinada buscando cosas como
+   `0x', `0X', o `0' como parte inicial de la cadena, y ajusta la base a 16,
+   16 u 8 respectivamente si se encuentra algo. La base por defecto es 10
+   en el caso de que no se detecte ninguno de esos prefijos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrtod">ustrtod</a>,
+<a class="xref" href="#uatof">uatof</a>.</font></blockquote>
+<b>double <a name="ustrtod">ustrtod</a>(const char *s, char **endp);</b><br>
+   Convierte en número de coma flotante tantos carácteres de s que parezcan
+   un número en coma flotante, y hace que *endp apunte al primer carácter no
+   usado, si endp no es un puntero nulo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#ustrtol">ustrtol</a>,
+<a class="xref" href="#uatof">uatof</a>.</font></blockquote>
+<b>const char *<a name="ustrerror">ustrerror</a>(int err);</b><br>
+   Esta función devuelve una cadena que describe el código de error `err',
+   que normalmente vendrá de la variable `errno'. Devuelve un puntero a una
+   cadena estática que no debe ser modificada o liberada. Si hace llamadas
+   posteriores a ustrerror, la cadena puede ser sobreescrita.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="alleg000.html#allegro_error">allegro_error</a>.</font></blockquote>
+<b>int <a name="usprintf">usprintf</a>(char *buf, const char *format, ...);</b><br>
+   Esta función escribe datos formateados en el buffer de salida. El
+   carácter NULL es escrito para marcar el final de la cadena. Devuelve el
+   número de carácteres que fueron escritos, sin incluír el carácter
+   terminador nulo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#uszprintf">uszprintf</a>,
+<a class="xref" href="#uvsprintf">uvsprintf</a>.</font></blockquote>
+<b>int <a name="uszprintf">uszprintf</a>(char *buf, int size, const char *format, ...);</b><br>
+   Esta función escribe datos formateados en el buffer de salida, cuya
+   longitud en bytes es especificada por size, y que está garantizado que
+   acabará en carácter NULL. Devuelve el número de carácteres que se
+   hubiesen escrito sin contar la truncación eventual (como con usprintf), y
+   sin incluír el carácter terminador NULL.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#usprintf">usprintf</a>,
+<a class="xref" href="#uvszprintf">uvszprintf</a>.</font></blockquote>
+<b>int <a name="uvsprintf">uvsprintf</a>(char *buf, const char *format, va_list args);</b><br>
+   Esto es como usprintf, pero usted pasa una lista variable de argumentos
+   en vez de los propios argumentos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#usprintf">usprintf</a>,
+<a class="xref" href="#uvszprintf">uvszprintf</a>.</font></blockquote>
+<b>int <a name="uvszprintf">uvszprintf</a>(char *buf, int size, const char *format, va_list args);</b><br>
+   Esto es como uszprintf(), pero usted pasa una lista variable de
+   argumentos en vez de los propios argumentos.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#uconvert">uconvert</a>,
+<a class="xref" href="#uszprintf">uszprintf</a>,
+<a class="xref" href="#uvsprintf">uvsprintf</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

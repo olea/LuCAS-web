@@ -1,0 +1,579 @@
+<HTML
+><HEAD
+><TITLE
+>Realización de la Llamada con chat</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Protocolo Punto-a-Punto"
+HREF="x-087-2-ppp.html"><LINK
+REL="PREVIOUS"
+TITLE="Usando los Ficheros de Opciones"
+HREF="x-087-2-ppp.options.html"><LINK
+REL="NEXT"
+TITLE="Opciones de Configuración IP"
+HREF="x-087-2-ipconfig.options.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ppp.options.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 8. El Protocolo Punto-a-Punto</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ipconfig.options.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN6765">8.4. Realización de la Llamada con chat</H1
+><P
+>&#13;
+
+Uno de los problemas que puede haberle dado el ejemplo anterior es que
+tenía que establecer la conexión manualmente antes de poder ejecutar
+<B
+CLASS="COMMAND"
+>pppd</B
+>. Al contrario que  <B
+CLASS="COMMAND"
+>dip</B
+>,
+<B
+CLASS="COMMAND"
+>pppd</B
+> no tiene su propio lenguaje de scripts para
+llamar al sistema remoto y entrar en él, sino que confía en otro programa
+externo para que haga esto. El comando que tiene que ser ejecutado puede
+dársele <B
+CLASS="COMMAND"
+>pppd</B
+> con la opción <SPAN
+CLASS="SYSTEMITEM"
+>connect</SPAN
+>
+en la línea de órdenes. El <B
+CLASS="COMMAND"
+>pppd</B
+> redirigirá la entrada
+y salida estándar de órdenes a la línea serie.</P
+><P
+>El paquete <B
+CLASS="COMMAND"
+>pppd</B
+> incluye un programa muy simple llamado 
+chat que es capaz de automatizar secuencias de registro simples. 
+Hablaremos sobre este programa con detalle.</P
+><P
+>&#13;
+Si su secuencia de registro es compleja, necesitará algo más potente que
+<B
+CLASS="COMMAND"
+>chat</B
+>. Una  alternativa útil que debería considerar es
+<B
+CLASS="COMMAND"
+>expect</B
+>, escrito por Don Libes. Tiene un lenguaje
+basado en Tcl, y fue diseñado exactamente para este tipo de aplicación.
+Aquellos de vosotros cuyas secuencias de registro requieran, por ejemplo,
+autentificación por reto/respuesta con generación de claves
+encontraréis <B
+CLASS="COMMAND"
+>expect</B
+> lo suficientemente potente para 
+ocuparse de la tarea. Puesto que hay tantas posibles variaciones de este 
+tema, no describiremos como desarrollar un guión de expect apropiado en 
+este libro. Es suficiente decir, que usted llama a su guión expect 
+especificando su nombre con la opción 
+<SPAN
+CLASS="SYSTEMITEM"
+>connect</SPAN
+> de <B
+CLASS="COMMAND"
+>pppd</B
+>. 
+También es importante señalar que cuando el guión está ejecutándose, la entrada
+y la salida estándar estarán desviadas al módem, y no a
+la terminal que invocó al <B
+CLASS="COMMAND"
+>pppd</B
+>. Si usted necesita
+interactuar como usuario, usted deberá hacerlo mediante un terminal
+virtual compartido, o mediante otros medios.</P
+><P
+>&#13;
+La orden <B
+CLASS="COMMAND"
+>chat</B
+> le permite especificar un script del estilo
+de los de UUCP. Básicamente, un script de chat consiste en una secuencia
+alterna de cadenas que esperamos recibir del sistema remoto y las respuestas
+que hemos de enviar. Las llamaremos respectivamente, cadenas
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>esperadas</I
+></SPAN
+> y cadenas <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>enviadas</I
+></SPAN
+>.
+Este es un extracto de un típico script de chat:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ogin: b1ff ssword: s3|&lt;r1t</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Este script le indica a <B
+CLASS="COMMAND"
+>chat</B
+> que espere a que el sistema remoto
+le envíe el mensaje de petición de usuario y entonces le devuelve el nombre
+del usuario <SPAN
+CLASS="SYSTEMITEM"
+>b1ff</SPAN
+>. Sólo esperamos por
+<SPAN
+CLASS="SYSTEMITEM"
+>ogin:</SPAN
+> para que no importe si el mensaje
+de registro empiece por l mayúscula o minúscula, o si llega con basura. La siguiente
+cadena es una cadena esperada que hace que  <B
+CLASS="COMMAND"
+>chat</B
+> espere al
+mensaje de petición de contraseña y le envíe nuestra contraseña como respuesta.</P
+><P
+>Esto es básicamente lo que hacen los scripts de chat. Un script completo para
+llamar a un servidor PPP debería, además, incluir las órdenes apropiados para
+el módem. Suponga que su módem entiende los comandos Hayes, y que el número de
+teléfono del servidor es el 318714. En ese caso, la línea completa de
+<B
+CLASS="COMMAND"
+>chat</B
+> para que pudiésemos establecer una conexión con
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> sería:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>chat -v '' ATZ OK ATDT318714 CONNECT '' ogin: ppp word: GaGariN</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Por definición, la primera cadena que damos a chat tiene que ser una cadena
+esperada, pero como el módem no dirá nada hasta que hablemos con él,
+hacemos que  <B
+CLASS="COMMAND"
+>chat</B
+> la ignore especificando una cadena vacía.
+Continuamos enviando <SPAN
+CLASS="SYSTEMITEM"
+>ATZ</SPAN
+>, la orden de
+inicialización para los módems compatibles Hayes, y esperamos a que nos responda
+con (<SPAN
+CLASS="SYSTEMITEM"
+>OK</SPAN
+>). La siguiente cadena envía a
+<B
+CLASS="COMMAND"
+>chat</B
+> la orden de marcado junto con el número de teléfono,
+y espera a que aparezca el mensaje <SPAN
+CLASS="SYSTEMITEM"
+>CONNECT</SPAN
+>
+como respuesta. Esto está seguido de otra cadena vacía otra vez, porque ahora no
+queremos enviar nada, sino esperar a que aparezca el mensaje de petición de registro.
+El resto del script de chat funciona exactamente como antes. Esta descripción
+probablemente parezca algo confusa, pero veremos en un momento que hay una forma 
+de hacer los scrips chat mucho más fáciles de entender.</P
+><P
+>La opción <TT
+CLASS="OPTION"
+>&ndash;v</TT
+> hace que  <B
+CLASS="COMMAND"
+>chat</B
+> capture
+todas las actividades hacia la facilidad <SPAN
+CLASS="SYSTEMITEM"
+>local2</SPAN
+>
+del demonio <B
+CLASS="COMMAND"
+>syslog.</B
+>
+<A
+NAME="X-087-2-FNPP06"
+HREF="#FTN.X-087-2-FNPP06"
+>[1]</A
+></P
+><P
+>&#13;El escribir el script de chat directamente en la línea de órdenes implica
+un cierto riesgo, pues los usuarios pueden ver la línea de órdenes de un
+proceso con la orden <B
+CLASS="COMMAND"
+>ps</B
+>. Puede evitar esto colocando
+el script del chat en un fichero, por ejemplo llamado <TT
+CLASS="FILENAME"
+>dial-c3po</TT
+>.
+Entonces, podrá hacer al <B
+CLASS="COMMAND"
+>chat</B
+> leer el script del fichero en vez de
+la línea de comando utilizando la opción <TT
+CLASS="OPTION"
+>&ndash;f</TT
+>, seguida por el
+nombre del fichero.Esto supondrá el beneficio añadido de
+hacer nuestra secuencia de chat expect más fácil de entender.
+Al modificar nuestro ejempo, nuestro fichero <TT
+CLASS="FILENAME"
+>dial-c3po</TT
+> tendrá ahora
+un aspecto como éste:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ''      ATZ
+    OK      ATDT318714
+    CONNECT ''
+    ogin:   ppp
+    word:   GaGariN</PRE
+></TD
+></TR
+></TABLE
+>
+
+Cuando usamos un script de chat de esta manera, la cadena que esperamos
+recibir está en la izquierda y la respuesta que devolveremos está en
+la derecha. Presentándolas así son mucho más fáciles de leer y entender.</P
+><P
+>Por lo tanto la invocación completa al <B
+CLASS="COMMAND"
+>pppd</B
+> tendrá ahora
+un aspecto como éste:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>pppd connect "chat -f dial-c3po" /dev/ttyS3 38400 -detach \
+        crtscts módem defaultroute</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Además de la opción <SPAN
+CLASS="SYSTEMITEM"
+>connect</SPAN
+> que
+se refiere al script de llamada, hemos añadido dos opciones más a la línea
+de órdenes: <SPAN
+CLASS="SYSTEMITEM"
+>&ndash;detach</SPAN
+>, que le indica al <B
+CLASS="COMMAND"
+>pppd</B
+>
+que no se separe de la consola y se convierta en un proceso en segundo plano. La palabra
+<SPAN
+CLASS="SYSTEMITEM"
+>modem</SPAN
+> activa algunas acciones específicas
+para módem sobre el dispositivo serie, como colgar la línea antes y después de
+la llamada. Si no utiliza esta opción, <B
+CLASS="COMMAND"
+>pppd</B
+> no se preocupará
+de la línea DCD del puerto, y por lo tanto no podrá detectar si el extremo remoto
+cuelga de forma imprevista.</P
+><P
+>Los ejemplos anteriores eran bastante simples; <B
+CLASS="COMMAND"
+>chat</B
+>
+permite el uso de scripts mucho más complejos. Una característica muy útil
+es la capacidad de especificar cadenas frente a las cuales parar chat
+con un error. Unas cadenas típicas para parar pueden ser mensajes como
+<SPAN
+CLASS="SYSTEMITEM"
+>BUSY</SPAN
+> o
+<SPAN
+CLASS="SYSTEMITEM"
+>NO CARRIER</SPAN
+>, que son los que su
+módem produce cuando el número al que llama comunica o cuando la línea no tiene tono.
+Para hacer que  <B
+CLASS="COMMAND"
+>chat</B
+> las reconozca inmediatamente en vez de
+esperar, puede introducirlas al principio del script utilizando la opción 
+<SPAN
+CLASS="SYSTEMITEM"
+>ABORT</SPAN
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>chat -v ABORT BUSY ABORT 'NO CARRIER' '' ATZ OK ...</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Igualmente, puede variar el valor del tiempo de espera para algunas
+partes de los scripts de chat insertando opciones
+<SPAN
+CLASS="SYSTEMITEM"
+>TIMEOUT</SPAN
+>.</P
+><P
+>Algunas veces, también querrá disponer de algún tipo de ejecución condicional
+de algunas partes del script de chat. Por ejemplo, cuando reciba el mensaje de
+petición de registro (login) desde el extremo remoto, puede que quiera enviar un BREAK, o
+un retorno de carro. Puede conseguir esto añadiendo un sub-script a la parte
+de la cadena esperada. Consiste en una secuencia de cadenas de envío y esperadas,
+de la misma forma que el script en su totalidad, pero separadas por guiones.
+El sub-script es ejecutado desde el momento en que la cadena esperada a la que
+están ligados no es recibida a tiempo. Para este ejemplo, modificaríamos el
+script de chat de la siguiente manera:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ogin:-BREAK-ogin: ppp ssword: GaGariN</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;Ahora, cuando  <B
+CLASS="COMMAND"
+>chat</B
+> no recibe el mensaje de login del
+sistema remoto, se ejecuta el sub-script enviando un BREAK y esperando de
+nuevo por el mensaje de login. Si ahora ya aparece, el script continúa como
+usualmente y si no, termina con un error.
+
+
+&#13;</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP06"
+HREF="x6765.html#X-087-2-FNPP06"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Si edita el <TT
+CLASS="FILENAME"
+>syslog.conf</TT
+> para
+redirigir estos mensajes a un fichero, asegúrese de que este fichero no pueda ser
+leído por cualquiera, pues  <B
+CLASS="COMMAND"
+>chat</B
+> también captura todo el script
+de entrada por omisión - incluyendo las contraseñas.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.options.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-ipconfig.options.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Usando los Ficheros de Opciones</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Opciones de Configuración IP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

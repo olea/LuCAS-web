@@ -1,0 +1,109 @@
+<HTML>
+<HEAD>
+<TITLE>HDs grandes: mini-COMO: Traslaci&oacute;n de disco al n&uacute;cleo en discos IDE.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Discos-Grandes-Como-4.html">Anterior</A>
+<A HREF="Discos-Grandes-Como-6.html">Siguiente</A>
+<A HREF="Discos-Grandes-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Traslaci&oacute;n de disco al n&uacute;cleo en discos IDE.</A></H2>
+
+
+<P>Si el n&uacute;cleo de Linux detecta la presencia de alg&uacute;n gestor de disco en un
+disco IDE, tratar&aacute; de remapear el disco del mismo modo en que lo haya
+hecho el gestor de disco, de modo que Linux `vea' el mismo
+particionamiento del mismo que bajo DOS con OnTrack o EZ-Drive. </P>
+<P>No obstante, <B>NO</B> se produce remapeo alguno cuando se especifica la
+geometr&iacute;a en la l&iacute;nea de comandos
+<SL>N del T: Paso de par&aacute;metros a
+LILO o loadlin al arrancar Linux</SL>
+, por lo que una opci&oacute;n como
+`<CODE>hd=cyls,heads,secs</CODE>' puede acabar perfectamente con la compatibilidad
+de un gestor de disco. </P>
+<P>El remapeo se lleva a cabo probando con 4, 8, 16, 32, 64, 128, 255 Cabezas
+(manteniendo H*C constante) hasta que o bien C &lt;= 1024 o H = 255. </P>
+<P>Los detalles vienen a continuaci&oacute;n. --los t&iacute;tulos de las subsecciones son
+las que aparecen en los mensajes de arranque correspondientes--. Tanto
+aqu&iacute; como en cualquier otra parte de este texto, los tipos de partici&oacute;n se
+dar&aacute;n en notaci&oacute;n hexadecimal. </P>
+
+<H2><A NAME="ss5.1">5.1 EZD</A></H2>
+
+
+<P>EZ-Drive se detecta por el hecho de que la primera partici&oacute;n primaria es
+de tipo 55. La geometr&iacute;a se remapea como se describi&oacute; anteriormente,
+desechando la tabla de particiones del sector 0 --en lugar de ello, se lee
+del sector 1--.  Los n&uacute;meros de bloque del disco no sufren cambio alguno,
+tan s&oacute;lo se redirigen las operaciones de escritura al sector 0 al sector
+1. Se puede cambiar este comportamiento recompilando el kernel con la
+definici&oacute;n</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define FAKE_FDISK_FOR_EZDRIVE  0 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en <CODE>ide.c</CODE>.</P>
+
+
+<H2><A NAME="ss5.2">5.2 DM6:DDO</A></H2>
+
+
+<P>OnTrack DiskManager (en el primer disco) se detecta por el hecho de que la
+primera partici&oacute;n primaria es de tipo 54. La geometr&iacute;a se remapea como se
+describi&oacute; anteriormente, y el disco se desplaza enteramente 63 sectores
+(por lo que el antiguo sector 63 pasa a ser el sector 0).  Posteriormente,
+un MBR nuevo (con su correspondiente tabla de particiones) es le&iacute;do del
+nuevo sector 0. Por supuesto este desplazamiento se lleva a cabo para
+hacer sitio al <I>DDO</I> --a esto se debe a que no se produzca dicho
+desplazamiento en los dem&aacute;s discos--. </P>
+
+
+<H2><A NAME="ss5.3">5.3 DM6:AUX</A></H2>
+
+
+<P>OnTrack DiskManager (en otros discos) es detectado por la circunstancia de
+que la primera partici&oacute;n primaria es de tipo 51 o 53.  La geometr&iacute;a se
+remapea como describimos antes. </P>
+
+
+<H2><A NAME="ss5.4">5.4 DM6:MBR</A></H2>
+
+
+<P>Una versi&oacute;n m&aacute;s antigua de OnTrack DiskManager se detecta no por el tipo
+de partici&oacute;n, sino por la firma. (Se comprueba que el <I>offset</I>
+encontrado en los bytes 2 y 3 del MBR no es superior a 430, la abreviatura
+encontrada en este <I>offset</I> es igual a <CODE>0x55AA</CODE>, y est&aacute; seguido por
+un byte impar.). Nuevamente, la geometr&iacute;a se remapea como anteriormente. </P>
+
+
+<H2><A NAME="ss5.5">5.5 PTBL</A></H2>
+
+
+<P>Para finalizar, hay un test que intenta deducir si existe traslaci&oacute;n a
+partir de los valores <CODE>start</CODE> y <CODE>end</CODE>
+<SL>N del T:
+<CODE>comienzo</CODE> y <CODE>final</CODE> respectivamente</SL>
+ de las particiones
+primarias:  Si alguna partici&oacute;n posee un cilindro de comienzo y fin menor
+de 256, sectores de comienzo y fin 1 y 63 respectivamente, y como cabezas
+finales 31, 63 o 127, entonces dado que acabar las particiones en el
+l&iacute;mite de un cilindro es algo ``no estandarizado'' y dado que adem&aacute;s los
+interfaces IDE usan como mucho 16 cabezas, se deduce que est&aacute; activa
+alguna traslaci&oacute;n de BIOS, y la geometr&iacute;a se remapea para usar 32, 64 o
+128 cabezas respectivamente.  (Puede que haya una inconsistencia aqu&iacute;, y
+<CODE>genhd.c</CODE>, ¿no deber&iacute;a haber comprobado dos bits mayores por orden del
+n&uacute;mero de cilindro?).  No obstante, no se lleva a cabo remapeo alguno
+cuando la noci&oacute;n que se tiene en este momento de la geometr&iacute;a ya es de 63
+sectores por pista con al menos tantas otras cabezas (dado que esto
+significar&iacute;a que el remapeo ya se ha producido). </P>
+
+
+<HR>
+<A HREF="Discos-Grandes-Como-4.html">Anterior</A>
+<A HREF="Discos-Grandes-Como-6.html">Siguiente</A>
+<A HREF="Discos-Grandes-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

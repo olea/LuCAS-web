@@ -1,0 +1,582 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Programación distribuida con ADA95 bajo GNU/Linux (I)</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.73
+"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN2"
+>Programación distribuida con ADA95 bajo GNU/Linux (I)</A
+></H1
+><H3
+CLASS="AUTHOR"
+><A
+NAME="AEN4"
+>Alvaro López Ortega</A
+></H3
+><DIV
+CLASS="AFFILIATION"
+><DIV
+CLASS="ADDRESS"
+><P
+CLASS="ADDRESS"
+>alvaro@godsmaze.org</P
+></DIV
+></DIV
+><P
+CLASS="COPYRIGHT"
+>Copyright &copy; 2001 por Alvaro Lopez Ortega</P
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>1. <A
+HREF="#INTRODUCCION"
+>Introducción a GNAT-Glade</A
+></DT
+><DT
+>2. <A
+HREF="#COMOFUNCIONA"
+>¿Cómo funciona GNAT-Glade?</A
+></DT
+><DT
+>3. <A
+HREF="#GNATDIST"
+>Lenguaje de configuración de GnatDist</A
+></DT
+><DD
+><DL
+><DT
+>3.1. <A
+HREF="#CFGCONFIGS"
+>¿Cómo se escriben las configuraciones?</A
+></DT
+></DL
+></DD
+><DT
+>4. <A
+HREF="#EJEMPLO1"
+>Primer ejemplo</A
+></DT
+><DD
+><DL
+><DT
+>4.1. <A
+HREF="#CALCULADORAADS"
+>calculadora.ads</A
+></DT
+><DT
+>4.2. <A
+HREF="#CALCULADORAADB"
+>calculadora.adb</A
+></DT
+><DT
+>4.3. <A
+HREF="#CLIENTEADB"
+>cliente.adb</A
+></DT
+><DT
+>4.4. <A
+HREF="#EJEMPLOCFG"
+>ejemplo.cfg</A
+></DT
+><DT
+>4.5. <A
+HREF="#SALIDA"
+>Compilación y ejecución del programa</A
+></DT
+></DL
+></DD
+><DT
+>5. <A
+HREF="#AEN98"
+>Instalación bajo Debian GNU/Linux</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="INTRODUCCION"
+>1. Introducción a GNAT-Glade</A
+></H1
+><P
+><IMG
+SRC="imagenes/ada.png"></P
+><P
+>En primer lugar hay que aclarar que el nombre de esta librería puede confundir a los usuarios y programadores de GTK+ y GNOME.  Existe una aplicación muy extendida para el diseño de interfaces gráficas que se llama 'Glade'.  Un grandísimo número de lenguajes de programación disponen de librerías para poder leer los ficheros de interfaces que genera Glade (Python, C++, Scheme, Ruby, Eifell, Haskell, etc).  Pues bien, GNAT-Glade no tiene nada que ver con esta (magnifica ;-) herramienta.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="AEN21"
+></A
+><P
+><B
+>Figura 1. Este Glade NO es.</B
+></P
+><P
+><IMG
+SRC="imagenes/este-glade-no-es.png"></P
+></DIV
+><P
+>GNAT-Glade es una extensión para GNAT95, el compilador libre (licenciado bajo GPL) de Ada95, que permite desarrollar aplicaciones distribuidas con este lenguaje.</P
+><P
+>La base de las aplicaciones distribuidas de Ada95 son las 'particiones'.  Básicamente una aplicación distribuida se compone de al menos un par de particiones.</P
+><P
+>      Es posible utilizar GNAT-Glade de dos formas diferentes:
+      <P
+></P
+><UL
+><LI
+><P
+>Con varias particiones sobre la misma máquina.</P
+></LI
+><LI
+><P
+>	    Con varias particiones sobre diferentes máquinas que 
+	    formen parte de una red de computadoras.
+	  </P
+></LI
+></UL
+>
+    </P
+><P
+>Desde luego resulta mucho más interesante la segunda de las opciones.  Es más, para desarrollar aplicaciones con varias particiones sobre una misma máquina hay muchos casos en que seria más conveniente no utilizar Glade y basarse únicamente en los mecanismos de concurrencia de GNAT (Ada95): la aplicación será más eficiente.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="COMOFUNCIONA"
+>2. ¿Cómo funciona GNAT-Glade?</A
+></H1
+><P
+>Cada una de las particiones de una aplicación basada en GNAT-Glade, a la hora de la compilación se va a convertir en un ejecutable independiente.  Cada uno de estos ejecutables serán los que se ejecuten por separado y se comuniquen entre ellos.</P
+><P
+>Existe una herramienta que facilita todo este proceso: gnatdist.</P
+><P
+>Gnatdist lee un fichero de configuración en el que se especifica como queremos distribuir la aplicación y genera todos los ejecutables necesarios. De esta forma, es posible probar diferentes formas de distribuir una misma aplicación simplemente con lanzar gnatdist con un fichero de configuración distinto, sin necesidad de modificar el código de la aplicación.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="GNATDIST"
+>3. Lenguaje de configuración de GnatDist</A
+></H1
+><P
+>Las configuraciones de GnatDist se escriben en un lenguaje muy parecido a ADA'95.
+Es importante que todas las configuraciones se guarden en ficheros con extensión ".cfg".</P
+><P
+>Para lanzar la compilación de una aplicación distribuida con GnatDist únicamente es necesario ejecutar gnatdist dándole como parámetro el nombre del fichero de configuración. Por ejemplo:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>    
+      alo@servidor:~$ gnatdist Ejemplo_Configuracion1.cfg
+    </PRE
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="CFGCONFIGS"
+>3.1. ¿Cómo se escriben las configuraciones?</A
+></H2
+><P
+>En cualquier punto de la configuración es posible usar comentarios, que al igual que en Ada se comienzan con los caracteres '-- '.</P
+><P
+>Los ficheros de configuración han de contener un bloque "configuration", cuyo nombre ha de coincidir, al igual que en el caso de los paquetes, con el nombre del fichero en el que se encuentra. Es decir:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+	configuration Ejemplo_Configuracion1 is
+	     --
+	     -- Código de la configuración
+	     --
+	end Ejemplo_Configuracion1;
+      </PRE
+><P
+>	CONTINUAR !!! .. no esta terminado
+      </P
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="EJEMPLO1"
+>4. Primer ejemplo</A
+></H1
+><P
+>El movimiento se aprender andando.. así que, vamos a por el primer ejemplo.</P
+><P
+>En este ejemplo vamos a crear una pequeña aplicación compuesta únicamente de dos particiones:</P
+><P
+>      <P
+></P
+><UL
+><LI
+><P
+>La primera de ellas es un servidor de sumas y restas (al más puro estilo RPC). En el se van a definir dos operaciones: suma y resta, que dados dos números enteros, van a devolver el resultado de aplicar la operación elegida sobre ambos.</P
+></LI
+><LI
+><P
+>La segunda de ellas es un pequeño cliente que efectuará un par de operaciones para comprobar que efectivamente el servidor responde.</P
+></LI
+></UL
+>
+    </P
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="CALCULADORAADS"
+>4.1. calculadora.ads</A
+></H2
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+	package Calculadora is
+
+	pragma Remote_Call_Interface;
+
+	function Sumar (Operador1 : in Integer;
+                      	Operador2 : in Integer)
+                    	return Integer;
+
+	function Restar (Operador1 : in Integer;
+	                 Operador2 : in Integer)
+                     	return Integer;
+
+	end Calculadora;
+      </PRE
+><P
+>En esta definición del paquete llama la atención la instrucción 'pragma'. Un pragma es simplemente una directiva para el compilador.  En concreto, en este ejemplo, el pragma Remote_Call_Interface hace que se exporte la interfaz del paquete para que otras particiones puedan realizar llamadas a sus funciones, es decir, básicamente una llamada RPC.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="CALCULADORAADB"
+>4.2. calculadora.adb</A
+></H2
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+        package body Calculadora is
+
+            function Sumar (Operador1 : in Integer;
+                            Operador2 : in Integer)
+                            return Integer is
+            begin
+               return Operador1 + Operador2;
+            end Sumar;
+
+
+            function Restar (Operador1 : in Integer;
+                             Operador2 : in Integer)
+                             return Integer is
+            begin
+               return Operador1 - Operador2;
+            end Restar;
+
+    	end Calculadora;
+      </PRE
+><P
+>Este fichero es únicamente la implementación de las funciones del paquete calculadora.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="CLIENTEADB"
+>4.3. cliente.adb</A
+></H2
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+        with Text_IO; use Text_IO;
+        with Calculadora;
+
+        procedure Cliente is
+        begin
+
+           Put_Line ("- Calculadora, ¿cuanto es 321+123? = " &#38;
+                     Integer'Image (Calculadora.Sumar (321,123)));
+
+           Put_Line ("- Calculadora, ¿cuanto es 321-123? = " &#38;
+                     Integer'Image (Calculadora.Restar (321,123)));
+
+        end Cliente;
+      </PRE
+><P
+>Por último, el cliente. Este programa hace un par de llamadas a los funciones exportadas por el proceso de calculadora. Como se puede ver el código no tiene en cuenta si el proceso calculadora se encuentra corriendo en la misma máquina o en otra. Simplemente realiza llamadas a las funciones de la calculadora. De todo lo demás, que es mucho, ya se ha encargado gnatdist y se encarga ADA.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="EJEMPLOCFG"
+>4.4. ejemplo.cfg</A
+></H2
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+        configuration ejemplo is
+	        pragma Starter (Ada);
+
+        	Particion1: Partition := (Calculadora);
+        	Particion2: Partition := (Cliente);
+
+        	procedure Cliente is in Particion2;
+        end ejemplo;
+      </PRE
+><P
+>Este es el fichero de configuración/compilación de gnatdist.</P
+><P
+>El pragma Starter describe como queremos que gnatdist compile el proyecto. Existen tres posibilidades: Ada, Shell y None. En este caso es uno de los ejecutables el que lance todos los demás.</P
+><P
+>A continuación se definen las dos particiones que se han utilizado en este ejemplo: una para la calculadora y la segunda para el cliente que le realiza peticiones.</P
+><P
+>Por último se especifica cual es la parte principal (el main). Esta partición, lógicamente, ha de tener un body.</P
+><DIV
+CLASS="IMPORTANT"
+><P
+></P
+><TABLE
+CLASS="IMPORTANT"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/docbook-dsssl/important.gif"
+HSPACE="5"
+ALT="Importante"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>	  Cuidado con los nombres de los ficheros: han de coincidir con el nombre del paquete y además, han de estar en minúsculas. De no ser así gnatdist producirá un error.
+	</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><HR><H2
+CLASS="SECT2"
+><A
+NAME="SALIDA"
+>4.5. Compilación y ejecución del programa</A
+></H2
+><P
+>	Para compilar la aplicacion, como ya hemos visto, simplemente hay que ejecutar gnatdist:	
+      </P
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+	$ gnatdist ejemplo.cfg
+      </PRE
+><P
+>Si no ha habido ningún problema, se habrá producido una salida como esta:</P
+><PRE
+CLASS="PROGRAMLISTING"
+> 
+        gnatdist: checking configuration consistency
+         ------------------------------
+         ---- Configuration report ----
+         ------------------------------
+        Configuration :
+           Name        : ejemplo
+           Main        : cliente
+           Starter     : Ada code
+
+        Partition particion1
+           Units       : 
+                     - calculadora (rci)
+
+        Partition particion2
+           Main        : cliente
+           Units       : 
+           Name        : ejemplo
+           Main        : cliente
+           Starter     : Ada code
+
+        Partition particion1
+           Units       : 
+                     - calculadora (rci)
+
+        Partition particion2
+           Main        : cliente
+           Units       : 
+                     - cliente (normal)
+
+         -------------------------------
+        gnatdist: building calculadora caller stubs from calculadora.ads
+        gnatdist: building calculadora receiver stubs from calculadora.adb
+        gnatdist: building partition particion1
+        gnatdist: building partition particion2
+        gnatdist: generating starter cliente 
+      </PRE
+><P
+>En este momento ya tenemos construidos todos los ejecutables:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>lrwxrwxrwx    1 alo      alo            10 Oct  9 22:33 cliente -&#62; particion2
+-rwxr-xr-x    1 alo      alo       3663802 Oct  9 22:33 particion1
+-rwxr-xr-x    1 alo      alo       3723193 Oct  9 22:33 particion2
+      </PRE
+><P
+>Como podemos ver, al especificar el Pragma Starter (Ada) en el fichero de configuración, gnatdist ha generado un link simbólico al ejecutable que va a lanzar los demás.</P
+><P
+>En esta prueba vamos a ejecutar los dos programas en la misma máquina, más adelante se explicará como hacerlo en varias.</P
+><PRE
+CLASS="PROGRAMLISTING"
+>        $ ./cliente 
+        Host for "particion1": localhost
+        - Calculadora, ¿cuanto es 321+123? =  444
+        - Calculadora, ¿cuanto es 321-123? =  198
+      </PRE
+><P
+>Ahora bien.. ¿estamos seguros de que se ha ejecutado un programa paralelo? ¿estamos seguros de que en realizar no se la linkado el paquete Calculadora en los dos ejecutables?</P
+><P
+>Como podemos ver en los procesos, realmente se han ejecutado los dos programas:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>        [..]
+
+7701 pts/10   S      0:00  \_ bash
+8753 pts/10   S      0:00  |   \_ ./cliente
+8754 pts/10   S      0:00  |       \_ ./cliente
+8755 pts/10   S      0:00  |           \_ ./cliente
+8793 pts/10   S      0:00  |           \_ ./cliente
+
+        [..]
+
+8788 ?        S      0:00 /home/alo/prog/glade/1/particion1 --detach --boot_location tcp://localhost:35802
+8790 ?        R      0:00  \_ /home/alo/prog/glade/1/particion1 --detach --boot_location tcp://localhost:35802
+8791 ?        S      0:00      \_ /home/alo/prog/glade/1/particion1 --detach --boot_location tcp://localhost:35802
+8792 ?        S      0:00      \_ /home/alo/prog/glade/1/particion1 --detach --boot_location tcp://localhost:35802
+8794 ?        R      0:00      \_ /home/alo/prog/glade/1/particion1 --detach --boot_location tcp://localhost:35802
+      </PRE
+><P
+>Es más, si examinamos los símbolos de los dos ejecutables podemos ver como la calculadora tiene linkadas las funciones de suma y resta:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>08050500 g     F .text	00000011              calculadora__restar
+080504f0 g     F .text	0000000d              calculadora__sumar
+      </PRE
+><P
+>y el cliente, además, tiene las funciones que usa gnatdist para el acceso:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>080502c0 l     F .text	00000018              calculadora__sumar___clean.0
+080502e0 l     F .text	0000005a              calculadora__sumar___input27___read30.2
+08050340 l     F .text	0000018a              calculadora__sumar___input27.1
+080504d0 g     F .text	000002bf              calculadora__sumar
+08050790 l     F .text	00000018              calculadora__restar___clean.3
+080507b0 l     F .text	0000005a              calculadora__restar___input67___read70.5
+08050810 l     F .text	0000018a              calculadora__restar___input67.4
+080509a0 g     F .text	000002bf              calculadora__restar
+      </PRE
+></DIV
+></DIV
+><DIV
+CLASS="SECT1"
+><HR><H1
+CLASS="SECT1"
+><A
+NAME="AEN98"
+>5. Instalación bajo Debian GNU/Linux</A
+></H1
+><P
+>Instalación de GNAT (compilador de Ada95) y Glade para GNAT (extensión para soporte de programación distribuida).</P
+><P
+>Para realizar la instalación en el sistema es imprescindible estar conectado como usuario 'root':</P
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+      # apt-get install gnat gnat-glade
+      Reading Package Lists... Done
+      Building Dependency Tree... Done
+      The following NEW packages will be installed:
+        gnat gnat-glade 
+      0 packages upgraded, 2 newly installed, 0 to remove and 2  not upgraded.
+      Need to get 10.1MB of archives. After unpacking 40.2MB will be used.
+      Get:1 http://http.us.debian.org unstable/main gnat 3.13p-8 [6789kB]
+      Get:2 http://http.us.debian.org unstable/main gnat-glade 3.13p-6 [3339kB]      
+      Fetched 10.1MB in 6m30s (25.9kB/s)                                             
+      Selecting previously deselected package gnat.
+      (Reading database ... 93759 files and directories currently installed.)
+      Unpacking gnat (from .../archives/gnat_3.13p-8_i386.deb) ...
+      Selecting previously deselected package gnat-glade.
+      Unpacking gnat-glade (from .../gnat-glade_3.13p-6_i386.deb) ...
+      Setting up gnat (3.13p-8) ...
+
+      Setting up gnat-glade (3.13p-6) ...
+    </PRE
+><P
+>Instalación de la documentación de ambos paquetes. Estos paquetes son opcionales aunque muy recomendables.</P
+><PRE
+CLASS="PROGRAMLISTING"
+>  
+      # apt-get install gnat-glade-doc gnat-doc                          
+      Reading Package Lists... Done
+      Building Dependency Tree... Done
+      The following NEW packages will be installed:
+        gnat-doc gnat-glade-doc 
+      0 packages upgraded, 2 newly installed, 0 to remove and 2  not upgraded.
+      Need to get 3708kB of archives. After unpacking 6567kB will be used.
+      Get:1 http://http.us.debian.org unstable/main gnat-doc 3.13p-2 [3399kB]
+      Get:2 http://http.us.debian.org unstable/main gnat-glade-doc 3.13p-2 [309kB]   
+      Fetched 3708kB in 2m19s (26.5kB/s)                                             
+      Selecting previously deselected package gnat-doc.
+      (Reading database ... 95179 files and directories currently installed.)
+      Unpacking gnat-doc (from .../gnat-doc_3.13p-2_all.deb) ...
+      Selecting previously deselected package gnat-glade-doc.
+      Unpacking gnat-glade-doc (from .../gnat-glade-doc_3.13p-2_all.deb) ...
+      Setting up gnat-doc (3.13p-2) ...
+
+      Setting up gnat-glade-doc (3.13p-2) ...
+    </PRE
+></DIV
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,736 @@
+<HTML
+><HEAD
+><TITLE
+>Transferencias UUCP y ejecución remota</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Administración deTaylor UUCP"
+HREF="x-087-2-uucp.html"><LINK
+REL="PREVIOUS"
+TITLE="Administración deTaylor UUCP"
+HREF="x-087-2-uucp.html"><LINK
+REL="NEXT"
+TITLE="Ficheros de configuración de UUCP"
+HREF="x-087-2-uucp.config.files.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-uucp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 16. Administración deTaylor UUCP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-uucp.config.files.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-UUCP.INTRO.GRADES">16.1. Transferencias UUCP y ejecución remota</H1
+><P
+> 
+
+
+El concepto de tarea resulta vital para entender UUCP.
+Cada transferencia que inicia un usuario con <B
+CLASS="COMMAND"
+>uucp</B
+> o
+<B
+CLASS="COMMAND"
+>uux</B
+> se llama <B
+CLASS="COMMAND"
+>tarea</B
+>. Consta de una orden
+a ejecutar en un sistema remoto, una recopilación de ficheros a transferir
+entre sitios o ambas cosas.</P
+><P
+>Por ejemplo, la siguiente orden hace que UUCP copie el fichero
+<TT
+CLASS="FILENAME"
+>netguide.ps</TT
+> a un sistema remoto llamado
+<SPAN
+CLASS="SYSTEMITEM"
+>pablo</SPAN
+> y ejecute la orden
+<B
+CLASS="COMMAND"
+>lpr</B
+> en
+<SPAN
+CLASS="SYSTEMITEM"
+>pablo</SPAN
+>
+para imprimir el fichero:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>uux -r pablo!lpr !netguide.ps</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+> 
+ 
+
+Por lo general, UUCP no llama al sistema remoto de inmediato para llevar a
+cabo una tarea (o cualquier otra cosa que pueda hacer con
+<B
+CLASS="COMMAND"
+>kermit</B
+>). En cambio, guarda la descripción de la tarea de
+manera temporal. Esto se conoce como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>encolar</I
+></SPAN
+>. El árbol
+de directorios bajo el que se guardan las tareas se llama por lo tanto
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>directorio de cola</I
+></SPAN
+> y se encuentra generalmente en
+<TT
+CLASS="FILENAME"
+>/var/spool/uucp</TT
+>. En nuestro ejemplo, la descripción de
+la tarea contendría información sobre la orden remota a ejecutar
+(<B
+CLASS="COMMAND"
+>lpr</B
+>), el usuario que ordenó la ejecución y un par de
+elementos más. Además de la descripción de la tarea, UUCP tiene que guardar
+el fichero de entrada <TT
+CLASS="FILENAME"
+>netguide.ps</TT
+>.</P
+><P
+>La localización y nomenclatura exactas de los ficheros de cola puede varias
+dependiendo de algunas opciones en tiempo de compilación. Los UUCPs compatibles
+con HDB guardan por lo general los ficheros de cola en el subdirectorio
+<TT
+CLASS="FILENAME"
+>/var/spool/uucp</TT
+> con el nombre del sistema remoto.
+Cuando se compilan para la configuración Taylor, UUCP crea subdirectorios
+bajo el directorio de cola específico del sitio para diferentes tipos de
+ficheros de cola.</P
+><P
+>A intervalos regulares, UUCP llama al sistema remoto. Cuando se establece
+una conexión con el sistema remoto, UUCP transfiere los ficheros en los que
+se describe la tarea, además de los ficheros de entrada. Las tareas entrantes
+no se ejecutarán de inmediato, sino sólo tras haber terminado la conexión.
+La ejecución la gestion <B
+CLASS="COMMAND"
+>uuxqt</B
+>, quien también se ocupa de
+redirigir cualquier tarea designada a otro sitio.</P
+><P
+>&#13;
+
+Para distinguir entre tareas más o menos importantes, UUCP asocia un
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>nivel</I
+></SPAN
+> a cada tarea. Se trata de un único dígito de 0 a 9,
+de A a Z, y de a a z, en precedencia decreciente. El correo se suele colocar
+en la cola con nivel B o C, mientras que las noticias se colocan con un nivel
+N. Las tareas con niveles más altos se transfieren antes. Los niveles pueden
+asignarse por medio de la opción <TT
+CLASS="OPTION"
+>&ndash;g</TT
+> al invocar a
+<B
+CLASS="COMMAND"
+>uucp</B
+> o <B
+CLASS="COMMAND"
+>uux</B
+>.</P
+><P
+>También se puede prohibir la transferencia de trabajos bajo
+un cierto nivel a horas determinadas.  Esto también se llama
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>máximo nivel de cola</I
+></SPAN
+> permitido durante una conversación
+y el valor predeterminado es z.  Percátese de la ambigüedad
+de esta terminología: un fichero se transfiere sólo si
+es <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>igual</I
+></SPAN
+> o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>mayor</I
+></SPAN
+> que el máximo nivel 
+de cola.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-UUCICO.CONNECT">16.1.1. El funcionamiento interno de uucico</H2
+><P
+>&#13; 
+Para comprender por qué  <B
+CLASS="COMMAND"
+>uucico</B
+> necesita saber ciertas
+cosas, una rápida descripción de cómo se conecta realmente a un sistema remoto
+resultará de ayuda.</P
+><P
+> 
+Cuando usted ejecuta <B
+CLASS="COMMAND"
+>uucico -s <TT
+CLASS="REPLACEABLE"
+><I
+>sistema</I
+></TT
+></B
+> desde la línea de órdenes, primero tiene que conectarse físicamente.
+Las acciones a tomar dependen del tipo de conexión a usar.  Por ejemplo, 
+cuando se usa una línea telefónica, tiene que encontrar un módem, y marcar un 
+número de teléfono.  Sobre TCP, tiene que llamar 
+<TT
+CLASS="FUNCTION"
+>gethostbyname(3)</TT
+> para convertir el nombre a una dirección 
+de red, averiguar qué puerto abrir, y conectar la dirección al puerto 
+correspondiente.</P
+><P
+>&#13;
+Una vez que se ha establecido la conexión, hay que pasar un proceso
+de autorización.  Normalmente consiste en que el sistema remoto
+pide un nombre de usuario y posiblemente una clave.  Esto se llama
+el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>diálogo de entrada</I
+></SPAN
+>.  El proceso de autorización se lleva
+a cabo mediante el usual <B
+CLASS="COMMAND"
+>getty/login</B
+>, o en conexiones
+TCP por el propio <B
+CLASS="COMMAND"
+>uucico</B
+>.  Si la autorización es permitida,
+la parte remota de la conexión ejecuta <B
+CLASS="COMMAND"
+>uucico</B
+>. La copia 
+local de <B
+CLASS="COMMAND"
+>uucico</B
+> que inició la conexión se denomina 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>maestro</I
+></SPAN
+>, y la copia remota se denomina <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>esclavo</I
+></SPAN
+>.</P
+><P
+>&#13;
+
+ 
+Ahora viene la <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>fase de handshake</I
+></SPAN
+>&thinsp;: El maestro
+envía su nombre, además de varias opciones.  El esclavo
+comprueba el nombre para ver si tiene permiso para conectarse, para
+enviar y recibir ficheros, etc.  Las opciones describen (entre otras cosas)
+el nivel máximo de ficheros de cola que hay que transferir.  Si
+esta opción está activada, tiene lugar una cuenta de conversación,
+o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>comprobación de la secuencia de llamada</I
+></SPAN
+>.  Con esta 
+característica, ambos ordenadores mantienen una cuenta de conexiones exitosas, 
+que se comparan.  Si las cuentas no son iguales, la negociación de
+protocolos no tendrá lugar. Esto es útil para protegerse de
+impostores.</P
+><P
+>Finalmente los dos <B
+CLASS="COMMAND"
+>uucico</B
+> tratan de ponerse de acuerdo en un
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>protocolo de transferencia</I
+></SPAN
+> común.  Este protocolo 
+gobierna la manera en que los datos se transfieren, la manera en que se 
+comprueba la consistencia de los datos, y la manera en que se retransmiten en
+caso de error.  Hacen falta protocolos diferentes debido a los diferentes
+tipos de conexiones que se soportan.  Por ejemplo, las líneas de teléfono
+precisan un protocolo &ldquo;seguro&rdquo; que es pesimista respecto a errores,
+mientras que una transmisión de TCP es fiable y puede usar un protocolo
+más eficiente que carece de la mayoría de las comprobaciones de errores.</P
+><P
+>Una vez que las negociaciones se han completado, comienza la fase de la
+verdadera transmisión.  Ambos extremos ponen en funcionamiento
+el controlador del protocolo elegido.  Los controladores posiblemente
+lleven a cabo alguna secuencia específica del protocolo para la
+inicialización.</P
+><P
+>Primero el maestro envía todos los ficheros en la cola de este sistema
+remoto cuyo nivel de cola es suficientemente alto.  Cuando ha finalizado,
+informa al esclavo que ha terminado, y que el esclavo puede ahora colgar.
+El esclavo puede entonces colgar, o tomar el control de la conversación.
+Esto es un cambio de papeles: ahora el sistema remoto se convierte en
+maestro y el local en esclavo.  El nuevo maestro envía ahora sus
+ficheros.  Cuando ha terminado, ambos <B
+CLASS="COMMAND"
+>uucico</B
+>&thinsp;s 
+intercambian mensajes de terminación, y cierran la comunicación.</P
+><P
+>Si necesita información adicional sobre UUCP acuda al código fuente. También
+hay un artículo bastante antiguo escrito por David A. Novitz pululando por la
+red en el que se proporciona una descripción detallada del protocolo UUCP.
+<A
+NAME="X-087-2-FNUU02"
+HREF="#FTN.X-087-2-FNUU02"
+>[1]</A
+> En las PUF sobre Taylor UUCP también se discuten algunos detalles
+de la implementación de UUCP. Se envía a 
+<SPAN
+CLASS="SYSTEMITEM"
+>comp.mail.uucp</SPAN
+> con relativa
+frecuencia.
+&#13;</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12866">16.1.2. Opciones en la línea de órdenes para uucico</H2
+><P
+>&#13;
+
+
+En esta sección describimos las opciones de la línea de órdenes más
+importantes para
+<B
+CLASS="COMMAND"
+>uucico</B
+>&thinsp;:</P
+><P
+><P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="OPTION"
+>&ndash; &ndash; system, &ndash;s <TT
+CLASS="REPLACEABLE"
+><I
+>sistema</I
+></TT
+></TT
+></DT
+><DD
+><P
+>Llama al <TT
+CLASS="REPLACEABLE"
+><I
+>sistema</I
+></TT
+> si no está prohibido por
+restricciones en la hora de llamada.</P
+></DD
+><DT
+><TT
+CLASS="OPTION"
+>&ndash;S <TT
+CLASS="REPLACEABLE"
+><I
+>sistema</I
+></TT
+></TT
+></DT
+><DD
+><P
+>Llama al <TT
+CLASS="REPLACEABLE"
+><I
+>sistema</I
+></TT
+> sin condiciones.</P
+></DD
+><DT
+><TT
+CLASS="OPTION"
+>&ndash; &ndash;master, &ndash;r1</TT
+></DT
+><DD
+><P
+>Inicia <B
+CLASS="COMMAND"
+>uucico</B
+> en modo maestro. Éste es el modo
+predeterminado cuando se indica
+<TT
+CLASS="OPTION"
+>&ndash;s</TT
+> o <TT
+CLASS="OPTION"
+>&ndash;S</TT
+>. Por sí misma,
+la opción <TT
+CLASS="OPTION"
+>&ndash;r1</TT
+> provoca que  <B
+CLASS="COMMAND"
+>uucico</B
+> intente
+llamar a todos los sistemas en el fichero <TT
+CLASS="FILENAME"
+>sys</TT
+> que se describe 
+en la siguiente sección de este capítulo, a no ser que sea prohibido por las 
+restricciones de la hora de llamada o las veces que se puede reintentar la misma.</P
+></DD
+><DT
+><TT
+CLASS="OPTION"
+>&ndash; &ndash;slave, &ndash;r0</TT
+></DT
+><DD
+><P
+>Inicia <B
+CLASS="COMMAND"
+>uucico</B
+> en modo esclavo. Éste es el modo
+predeterminado cuando no se indica <TT
+CLASS="OPTION"
+>&ndash;s</TT
+> ni 
+<TT
+CLASS="OPTION"
+>&ndash;S</TT
+>. En modo esclavo, tanto la entrada como la salida
+estándar se asume que están conectadas a un puerto serie, o al puerto TCP
+especificado por la opción <TT
+CLASS="OPTION"
+>&ndash;p</TT
+> si se usa.</P
+></DD
+><DT
+><TT
+CLASS="OPTION"
+>&ndash; &ndash;ifwork, &ndash;C</TT
+></DT
+><DD
+><P
+>La opción suplementa <TT
+CLASS="OPTION"
+>&ndash;s</TT
+> o
+<TT
+CLASS="OPTION"
+>&ndash;S</TT
+> y comunica a <B
+CLASS="COMMAND"
+>uucico</B
+> que llame
+al sistema mencionado sólo si hay tareas en la cola para él.</P
+></DD
+><DT
+><TT
+CLASS="OPTION"
+>&ndash; &ndash;debug <TT
+CLASS="REPLACEABLE"
+><I
+>tipo</I
+></TT
+>, &ndash;x <TT
+CLASS="REPLACEABLE"
+><I
+>tipo</I
+></TT
+></TT
+>, <TT
+CLASS="OPTION"
+>&ndash;X <TT
+CLASS="REPLACEABLE"
+><I
+>tipo</I
+></TT
+></TT
+></DT
+><DD
+><P
+>Activa la depuración del tipo especificado. Pueden proporcionarse muchos tipos
+en forma de lista separada por comas. Los siguientes tipos son válidos.
+<SPAN
+CLASS="SYSTEMITEM"
+>abnormal</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>chat</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>handshake</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>uucp-proto</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>proto</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>port</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>config</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>spooldir</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>execute</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>incoming</SPAN
+>, y
+<SPAN
+CLASS="SYSTEMITEM"
+>outgoing</SPAN
+>.
+Si usa <SPAN
+CLASS="SYSTEMITEM"
+>all</SPAN
+> activará todas las opciones.
+Por compatibilidad con otras implementaciones de UUCP, también puede
+especificar un número, que activará la depuración para los primeros
+<TT
+CLASS="REPLACEABLE"
+><I
+>n</I
+></TT
+> elementos de la lista anterior.</P
+><P
+>Los mensajes de depuración se registrarán en el fichero
+<TT
+CLASS="FILENAME"
+>Debug</TT
+> bajo <TT
+CLASS="FILENAME"
+>/var/spool/uucp</TT
+>.</P
+></DD
+></DL
+></DIV
+><P></P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNUU02"
+HREF="x-087-2-uucp.intro.grades.html#X-087-2-FNUU02"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>También se incluye en el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Manual del Administrador de Sistemas</I
+></SPAN
+> 4.4BSD.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-uucp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-uucp.config.files.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Administración deTaylor UUCP</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-uucp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Ficheros de configuración de UUCP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

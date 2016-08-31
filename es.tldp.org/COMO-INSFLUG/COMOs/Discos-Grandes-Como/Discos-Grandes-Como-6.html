@@ -1,0 +1,218 @@
+<HTML>
+<HEAD>
+<TITLE>HDs grandes: mini-COMO: Consecuencias</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Discos-Grandes-Como-5.html">Anterior</A>
+<A HREF="Discos-Grandes-Como-7.html">Siguiente</A>
+<A HREF="Discos-Grandes-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="s6">6. Consecuencias</A></H2>
+
+
+<P>¿Qu&eacute; significa todo esto? Para los usuarios de Linux tan s&oacute;lo una cosa:
+deben de asegurarse de que <CODE>LILO</CODE> y <CODE>fdisk</CODE> usan la geometr&iacute;a
+correcta, donde `correcta' se define para <CODE>fdisk</CODE> como la misma
+geometr&iacute;a usada por los otros sistemas operativos presentes en el mismo
+disco, y para <CODE>LILO</CODE> como la geometr&iacute;a que har&aacute; posible una interacci&oacute;n
+exitosa con la BIOS en el momento del arranque. (Normalmente ambos
+coinciden). </P>
+<P>¿C&oacute;mo averigua <CODE>fdisk</CODE> la geometr&iacute;a?  Pregunta al n&uacute;cleo, empleando la
+llamada <CODE>ioctl</CODE> <CODE>HDIO_GETGEO</CODE>.  No obstante, el usuario puede
+interponerse a dicha geometr&iacute;a, interactivamente o en la l&iacute;nea de
+comandos. </P>
+<P>¿C&oacute;mo averigua <CODE>LILO</CODE> la geometr&iacute;a?  Pregunta al n&uacute;cleo, usando la
+llamada <CODE>ioctl</CODE> <CODE>HDIO_GETGEO</CODE>.  No obstante, el usuario puede
+descartar dicha geometr&iacute;a empleando la opci&oacute;n `<CODE>disk=</CODE>'.  Se puede
+pasar tambi&eacute;n la opci&oacute;n <CODE>linear</CODE> a LILO, que almacenar&aacute; en tal caso
+direcciones LBA en lugar de CHS en su fichero de mapeo, averiguando la
+geometr&iacute;a a usar al arrancar (mediante el empleo de de la <CODE>INT13</CODE>,
+funci&oacute;n <CODE>8</CODE> para preguntar la geometr&iacute;a del disco). </P>
+<P>C&oacute;mo sabe el n&uacute;cleo qu&eacute; responder?  Veamos, para comenzar, el usuario
+puede haber especificado una geometr&iacute;a expl&iacute;citamente con la opci&oacute;n, en la
+l&iacute;nea de comandos
+<SL>N del T: Al <I>prompt</I> de <CODE>LILO</CODE>, el
+``<CODE>LILO boot:</CODE>'' que aparece al encender el ordenador si <CODE>LILO</CODE>
+est&aacute; instalado.</SL>
+ `<CODE>hd=cyls,heads,secs</CODE>'.  En cualquier caso
+distinto, el n&uacute;cleo preguntar&aacute; al <I>hardware</I>. </P>
+
+<H2><A NAME="ss6.1">6.1 Detalles IDE </A></H2>
+
+
+<P>Perm&iacute;tame elaborar.  El controlador
+<SL>N del T: ``<I>driver</I>'' en
+el original, software</SL>
+ IDE tiene cuatro fuentes de informaci&oacute;n
+acerca de la geometr&iacute;a.  La primera, (<I>G_user</I>) es la especificada por
+el usuario en la l&iacute;nea de comandos.  La segunda (<I>G_bios</I>) es la Tabla
+de Par&aacute;metros de Disco Duro de la BIOS.  (para el primer y segundo disco
+solamente). Esto se lee al arrancar el sistema, antes de cambiar a modo 32
+bits.  La tercera (<I>G_phys</I>) y cuarta (<I>G_log</I>) son proporcionadas
+por la controladora IDE como respuesta al comando <I>IDENTIFY</I> --son las
+geometr&iacute;as ``f&iacute;sicas'' y ``l&oacute;gicas actuales''--. </P>
+<P>Por otra parte, el controlador (<I>driver</I>, software;)  precisa dos
+valores para la geometr&iacute;a: por una parte <CODE>G_fdisk</CODE>, devuelto por la
+llamada <CODE>ioctl</CODE> <CODE>HDIO_GETGEO</CODE>, y por otra, <CODE>G_used</CODE> que es
+empleada actualmente para las operaciones de E/S.  Tanto <CODE>G_fdisk</CODE> como
+<CODE>G_used</CODE> son inicializadas a <CODE>G_used</CODE> si se especifica &eacute;ste, a
+<CODE>G_bios</CODE> cuando dicha informaci&oacute;n est&aacute; presente de acuerdo a la
+<I>CMOS</I>, y a <CODE>G_phys</CODE> en los dem&aacute;s casos. Si <CODE>G_log</CODE> parece
+razonable, entonces <CODE>G_used</CODE> se inicializa como &eacute;l. En cualquier otro
+caso, si <CODE>G_used</CODE> no parece razonable y s&iacute; lo parece <CODE>G_phys</CODE>,
+entonces <CODE>G_used</CODE> se inicializa a <CODE>G_phys</CODE>. `Razonable' aqu&iacute;
+significa que el n&uacute;mero de cabezas est&eacute; en el rango 1-16. </P>
+<P>Dicho con otras palabras: la l&iacute;nea de comandos descarta la BIOS, y
+determinar&aacute; lo que <CODE>fdisk</CODE> va a ver, pero si especifica una geometr&iacute;a
+que ya ha sufrido traslaci&oacute;n, (m&aacute;s de 16 cabezas), para operaciones de E/S
+a nivel n&uacute;cleo ser&aacute; sustituida por lo retornado por el comando
+<I>IDENTIFY</I>. </P>
+
+
+
+<H2><A NAME="ss6.2">6.2 Detalles SCSI </A></H2>
+
+
+<P>La situaci&oacute;n para los discos SCSI es ligeramente diferente, ya que los
+comandos SCSI usan ya n&uacute;meros de bloque l&oacute;gicos, por lo que la `geometr&iacute;a'
+es completamente irrelevante para las operaciones de E/S. </P>
+<P>No obstante, el formato de la tabla particiones contin&uacute;a siendo el mismo,
+por lo que <CODE>fdisk</CODE> tendr&aacute; que inventarse alguna geometr&iacute;a, y tambi&eacute;n
+usar&aacute; <CODE>HDIO_GETGEO</CODE> aqu&iacute; --de hecho, <CODE>fdisk</CODE> no distingue entre
+discos IDE o SCSI--.  Como uno puede ver a ra&iacute;z de la descripci&oacute;n
+detallada anterior, los distintos <I>drivers</I> inventan cada uno, una
+geometr&iacute;a diferente de alg&uacute;n modo. Un gran <I>foll&oacute;n</I>, de hecho. </P>
+<P>Si no usa DOS o similar, evite todas las configuraciones con traslaci&oacute;n
+extendida, empleando simplemente 64 cabezas, y 32 sectores por pista (para
+un bonito y pr&aacute;ctico 1 MB por cilindro), si es posible, de modo que no
+aparezcan problemas cuando cambie el disco de una controladora a otra. </P>
+<P>Algunos controladores de discos SCSI (<CODE>aha152x, pas16, ppa, qlogicfas,
+qlogicisp</CODE>)  son tan paranoicos con la compatibilidad con DOS que no
+permitir&aacute;n a un sistema s&oacute;lo-Linux emplear m&aacute;s de 8Gb. Esto es un fallo. </P>
+<P>¿Qu&eacute; es ``geometr&iacute;a real''?  La respuesta m&aacute;s sencilla es que no existe
+tal cosa.  Y si la hubiese, no deber&iacute;a querer saberla, y desde luego
+NUNCA, JAM&Aacute;S dec&iacute;rsela a <CODE>LILO</CODE> o <CODE>fdisk</CODE>. </P>
+<P>Esto es un asunto a tratar exclusivamente entre la controladora SCSI y el
+disco.  Perm&iacute;tame repet&iacute;rselo: s&oacute;lo los tontos le dicen a
+<CODE>fdisk/LILO</CODE>/kernel la verdadera geometr&iacute;a de un disco SCSI. </P>
+<P>Si a&uacute;n as&iacute; es usted curioso e insiste, deber&iacute;a preguntarle al propio
+disco.  Existe el importante comando <I>READ CAPACITY</I> que proporcionar&aacute;
+el tama&ntilde;o total del disco, as&iacute; como existe el comando <I>MODE SENSE</I>, que
+proporciona el n&uacute;mero de cilindros y cabezas (informaci&oacute;n que no puede ser
+cambiada) de la <I>P&aacute;gina de Geometr&iacute;as de Disco Duro</I> (p&aacute;gina 04), y que
+extrae de la <I>P&aacute;gina de Formateo</I> (p&aacute;gina 03) el n&uacute;mero de de bytes por
+sector, as&iacute; como de sectores por pista. Este &uacute;ltimo n&uacute;mero es t&iacute;picamente
+dependiente de las marcas
+<SL>N del T: No marca comercial, marca
+f&iacute;sica.</SL>
+, variando el n&uacute;mero de sectores por pista --las pistas
+externas tienen m&aacute;s sectores que las internas. </P>
+<P>El programa Linux <CODE>scsiinfo</CODE> proporcionar&aacute; esta informaci&oacute;n.  Existen
+m&aacute;s detalles y complicaciones, pero est&aacute; claro que nadie (probablemente ni
+siquiera el sistema operativo) quiere usar esta informaci&oacute;n. </P>
+<P>M&aacute;s a&uacute;n, en lo que a nosotros concierne respecto a <CODE>fdisk</CODE> y <CODE>LILO</CODE>,
+obtendremos respuestas t&iacute;picamente como C/H/S=4476/27/171 --valores que no
+pueden ser empleados por <CODE>fdisk</CODE> porque la tabla de particiones reserva
+s&oacute;lo 10/8/6 bits para C/H/S.</P>
+<P>¿Entonces de d&oacute;nde averigua la llamada al kernel <CODE>HDIO_GETGEO</CODE> su
+informaci&oacute;n?  O bien de la controladora SCSI, o bien mediante cultas
+averiguaciones.  Algunos controladores parecen pensar que queremos saber
+la `realidad', pero por supuesto lo &uacute;nico que queremos saber es qu&eacute;
+utilizar&aacute;n los FDISK de DOS u OS/2 (o el AFDISK de Adaptec, etc). </P>
+<P>N&oacute;tese que el <CODE>fdisk</CODE> de Linux necesita los n&uacute;meros H y S de las
+cabezas y sectores por pista para convertir de n&uacute;meros de sectores LBA a
+localizaciones c/h/s, pero el n&uacute;mero C de cilindros no tienen nada que ver
+en esta conversi&oacute;n.  Algunos controladores usan (C,H,S) = (1023,255,63)
+para indicar que la capacidad del disco es al menos 1023*255*63 sectores.
+Esto no resulta muy afortunado, ya que no revela la capacidad actual, y
+limitar&aacute; a los usuarios de la mayor&iacute;a de las versiones de <CODE>fdisk</CODE> a
+alrededor de 8 Gb m&aacute;ximo en sus discos --una verdadera limitaci&oacute;n hoy en
+d&iacute;a--. </P>
+<P>En la descripci&oacute;n que sigue, <I>M</I> denota la capacidad total del disco, y
+<I>C, H, S</I> el n&uacute;mero de cilindros, cabezas y sectores por pista.  Basta
+con proporcionar <I>H, S</I> si tenemos en cuenta a C como definido por M /
+(H*S).</P>
+<P>Por defecto, H=64, S=32.</P>
+<P>
+<DL>
+<DT><B>aha1740, dtc, g_NCR5380, t128, wd7000:</B><DD><P>H=64, S=32.</P>
+
+<DT><B>aha152x, pas16, ppa, qlogicfas, qlogicisp:</B><DD><P> H=64, S=32 a menos
+que C &gt; 1024, en cuyo caso H=255, S=63, C = min(1023, M/(H*S)).  (C por
+tanto es truncado, y H*S*C no es una aproximaci&oacute;n a la capacidad del disco
+M. Esto causar&aacute; confusi&oacute;n en la mayor&iacute;a de las versiones de fdisk.)  El
+c&oacute;digo <I>ppa.c</I> emplea M+1 en lugar de M y dice que ello se debe a un
+error en <I>sd.c</I>, en el que a M le falta 1. </P>
+
+<DT><B>advansys:</B><DD><P> H=64, S=32 a menos que C &gt; 1024 y m&aacute;s a&uacute;n si la
+opci&oacute;n `&gt; 1 GB' est&aacute; activado en la BIOS, en cuyo caso H=255, S=63. </P>
+
+<DT><B>aha1542:</B><DD><P> Pregunte a la controladora cu&aacute;l de los dos esquemas de
+traslaci&oacute;n posibles est&aacute; en uso, y emplee tanto H=255, S=63 como H=64,
+S=32. En el &uacute;ltimo caso habr&aacute; un mensaje al arrancar: "<CODE>aha1542.c:
+Using extended bios translation"</CODE>. </P>
+
+<DT><B>aic7xxx:</B><DD><P> H=64, S=32 a menos que C &gt; 1024, y adem&aacute;s o bien el
+par&aacute;metro de arranque "<CODE>extended</CODE>" haya sido especificado en el
+arranque, o si el bit "<CODE>extended</CODE>" ha sido especificado en la SEEPROM o
+BIOS, en cuyo caso H=255, S=63. </P>
+
+<DT><B>buslogic:</B><DD><P> H=64, S=32 a menos que C &gt;= 1024, y que adem&aacute;s se
+haya configurado la controladora para hacer traslaciones extendidas, en
+cuyo caso si M &lt; 2^22 entonces H=128, S=32; de otro modo, H=255, S=63.
+No obstante, tras hacer esta elecci&oacute;n para (C,H,S), se lee la tabla de
+particiones, y si para alguna de las tres posibilidades (H,S) = (64,32),
+(128,32), (255,63) el valor endH=H-1 aparece por alguna parte, entonces es
+usado dicho par (H,S), y un mensaje ser&aacute; mostrado al arranque: 
+"<CODE>Adopting Geometry from Partition Table</CODE>". </P>
+
+<DT><B>fdomain:</B><DD><P> Averig&uuml;e la informaci&oacute;n acerca de la geometr&iacute;a de la
+Tabla de Par&aacute;metros de Disco de la BIOS, o lea la tabla de particiones y
+use H=endH+1, S=endS para la primera partici&oacute;n, teniendo en cuenta que no
+est&eacute; vac&iacute;a, o use H=64, S=32 para M &lt; 2^21 (1 GB), H=128, S=63 para M
+&lt; 63*2^17 (3.9 GB) y S=63 en otro caso. </P>
+
+<DT><B>in2000:</B><DD><P> Emplee los primeros (H,S) = (64,32), (64,63), (128,63),
+(255,63) que hagan que C &lt;= 1024. En el &uacute;ltimo caso, trunque C a 1023. 
+Use los primeros de (H,S) = (64,32), (64,63), (128,63), (255,63) </P>
+
+<DT><B>seagate:</B><DD><P> Lea C,H,S del disco. (¡Horror!) Si C o S es demasiado
+grande, ponga S=17, H=2 y vaya doblando H hasta que C &lt;= 1024. Esto
+significa que H ser&aacute; establecida a 0 si M &gt; 128*1024*17 (1.1 GB). Esto
+es un error de programaci&oacute;n (<I>bug</I>). </P>
+
+<DT><B>ultrastor y u14_34f:</B><DD><P> Uno de los tres mapeos ((H,S) = (16,63),
+(64,32), (64,63))  es empleado dependiendo del modo de mapeo de la
+controladora. </P>
+</DL>
+</P>
+<P>Si el driver no especifica la geometr&iacute;a, volveremos a realizar una
+averiguaci&oacute;n inteligente usando la tabla de particiones, o usando la
+capacidad total del disco. </P>
+<P>Mire la tabla de particiones. Dado que por convenci&oacute;n las particiones
+terminan en el l&iacute;mite de un cilindro, podemos, dado un <CODE>end =
+(endC,endH,endS)</CODE> de una partici&oacute;n, poner simplemente H = <CODE>endH+1</CODE> y S
+= <CODE>endS</CODE>. (Recuerde que los sectores son numerados a partir de 1).  De
+un modo m&aacute;s preciso, se hace lo siguiente:  Si hay alguna partici&oacute;n que no
+est&eacute; vac&iacute;a, escoja la partici&oacute;n con el <CODE>beginC</CODE> mayor.  Para dicha
+partici&oacute;n, mire a <CODE>end+1</CODE>, calculados ambos a&ntilde;adiendo <CODE>start</CODE> y
+<CODE>length</CODE> y asumiendo que estas particiones terminan en los l&iacute;mites de
+un cilindro. Si ambos valores concuerdan, o si <CODE>endC</CODE> = 1023 y
+<CODE>start+length</CODE> es m&uacute;ltiplo integral de <CODE>(endH+1)*endS</CODE>, asuma
+entonces que dicha partici&oacute;n est&aacute; realmente alineada con el l&iacute;mite de un
+cilindro, y ponga H = <CODE>endH+1</CODE> y S = <CODE>endS</CODE>. </P>
+<P>Si esto falla, bien debido a que no hay particiones, o porque poseen
+tama&ntilde;os extra&ntilde;os, tenga en cuenta entonces &uacute;nicamente la capacidad del
+disco M.  Algoritmo: ponga H = M/(62*1024) (redondeando hacia arriba), S =
+M/(1024*H) (redondeando hacia arriba), C = M/(H*S) (redondeando hacia
+abajo). </P>
+<P>Esto tiene el efecto de producir un (C,H,S) con C siendo como mucho 1024 y
+S como mucho 62. </P>
+
+
+<HR>
+<A HREF="Discos-Grandes-Como-5.html">Anterior</A>
+<A HREF="Discos-Grandes-Como-7.html">Siguiente</A>
+<A HREF="Discos-Grandes-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

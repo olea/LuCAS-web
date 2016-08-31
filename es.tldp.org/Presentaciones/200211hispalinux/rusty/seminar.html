@@ -1,0 +1,1653 @@
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>Rusty's Unreliable Guide To Kernel Hacking</title><meta name="generator" content="DocBook XSL Stylesheets V1.50.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article"><div class="titlepage"><div><h1 class="title"><a name="id2752676"></a>Rusty's Unreliable Guide To Kernel Hacking</h1></div><div><div class="author"><h3 class="author">Paul `Rusty' Russell</h3><div class="affiliation"><div class="address"><p>IBM</p></div></div></div></div><div><div class="legalnotice"><p>Copyright (c) 2002 Paul `Rusty' Russell, IBM.       Permission is granted to copy, distribute and/or modify this document       under the terms of the GNU Free Documentation License, Version 1.1       or any later version published by the Free Software Foundation;       with no Invariant Sections being LIST THEIR TITLES, with no       Front-Cover Texts, and with no Back-Cover Texts.
+</p></div></div><div><div class="revhistory"><table border="1" width="100%" summary="Revision history"><tr><th align="left" valign="top" colspan="2"><b>Revision History</b></th></tr><tr><td align="left">Revision 1</td><td align="left">Tue Aug 27 2002</td></tr></table></div></div><div><div class="abstract"><p class="title"><b>Abstract</b></p><p>The Linux Kernel contains 5 million lines of source.  It is         difficult to know where to start, when you want to modify it         in some way.  This tutorial will cover various kernel         programming conceps in depth: you will gain an appreciation         for the Linux kernel by reading some of the code some of the         great programmers, including of Linus Torvalds and Ingo         Molnar, and an insight into Linux kernel development methods         and politics (this is a preliminary version, the final version         for the Congress may still suffer some changes. The Editors).</p></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt>1. <a href="#id2754478">Target Audience </a></dt><dt>2. <a href="#id2754492">Principles </a></dt><dd><dl><dt>2.1. <a href="#id2754498">The Kernel Tree </a></dt><dt>2.2. <a href="#id2754700">Overview </a></dt><dt>2.3. <a href="#id2754368">Fundamental Constraints </a></dt><dt>2.4. <a href="#id2754442">The Three Kernel Entry Points </a></dt></dl></dd><dt>3. <a href="#id2755160">Booting </a></dt><dt>4. <a href="#id2755193">System Calls &amp; Traps </a></dt><dd><dl><dt>4.1. <a href="#id2755223">System Calls &amp; Traps </a></dt><dt>4.2. <a href="#id2755264">Hardware Interrupts </a></dt><dt>4.3. <a href="#id2755289">Software Interrupts </a></dt><dt>4.4. <a href="#id2755334">Multiple CPU Reference Table </a></dt><dt>4.5. <a href="#id2755377">Race Conditions </a></dt><dt>4.6. <a href="#id2755444">Race Conditions </a></dt><dt>4.7. <a href="#id2755610">Common Library Functions </a></dt></dl></dd><dt>5. <a href="#id2755632">Programming </a></dt><dt>6. <a href="#id2755859">Practicalities </a></dt><dd><dl><dt>6.1. <a href="#id2755865">Kernel Numbering </a></dt><dt>6.2. <a href="#id2755928">Where To Get Kernel Source </a></dt><dt>6.3. <a href="#id2755952">Editing the Kernel </a></dt><dt>6.4. <a href="#id2756007">GCC/ISO C Extensions </a></dt><dt>6.5. <a href="#id2756069">More Common Functions </a></dt></dl></dd><dt>7. <a href="#id2756098">Programming </a></dt><dt>8. <a href="#id2757512">Politics </a></dt><dd><dl><dt>8.1. <a href="#id2757532">linux-kernel Mailing List </a></dt><dt>8.2. <a href="#id2757584">Patches </a></dt><dt>8.3. <a href="#id2757616">Style </a></dt></dl></dd><dt>9. <a href="#id2757680">References </a></dt><dt>10. <a href="#id2757751">Appendix A: Ingo Molnar on Linux Accepting Patches </a></dt><dt>11. <a href="#id2758099">Appendix B: Linus Torvalds on Coding Style </a></dt></dl></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2754478"></a>1. Target Audience </h2></div></div><p>
+Programmers without Linux Kernel experience.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2754492"></a>2. Principles </h2></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754498"></a>2.1. The Kernel Tree </h3></div></div><pre class="programlisting">
+        linux-2.5.3
+             |------ Documentation
+             |------ arch
+             |       |------ ...
+             |       |------ i386
+             |       |       |------ boot
+             |       |       |       |------ compressed
+             |       |       |       `------ tools
+             |       |       |------ kernel
+             |       |       |       `------ cpu
+             |       |       |------ lib
+             |       |       |------ math-emu
+             |       |       |------ mm
+             |       |       `------ pci
+             |       |------ ...
+             |------ drivers
+             |------ fs
+             |------ include
+             |       |------ ...
+             |       |------ asm-i386
+             |       |------ ...
+             |       |------ linux
+             |       |------ ...
+             |------ init
+             |------ ipc
+             |------ kernel
+             |------ lib
+             |------ mm
+             |------ net
+             |------ scripts
+             |------ security
+             `------ sound
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754700"></a>2.2. Overview </h3></div></div><div class="itemizedlist"><ul type="disc"><li><p>17 architectures</p></li><li><p>12,000 files, 5,000,000 lines of code
+</p><div class="variablelist"><dl><dt><span class="term">drivers</span></dt><dd><p>drivers/:                         3,200 files, 2,300,000 lines of code</p></dd><dt><span class="term">arch</span></dt><dd><p>arch/:                         2,900 files, 990,000 lines of code</p></dd><dt><span class="term">filesystems</span></dt><dd><p>fs/:                         660 files, 330,000 lines of code</p></dd><dt><span class="term">networking</span></dt><dd><p>net/:                         450 files, 230,000 lines of code</p></dd><dt><span class="term">core</span></dt><dd><p>init/ kernel/ lib/ mm/:                         100 files, 46,000 lines of code</p></dd></dl></div></li></ul></div><p>
+We will NOT be covering all these today!
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754368"></a>2.3. Fundamental Constraints </h3></div></div><p>
+Kernel is written in GNU C &amp; inline assembler (arch specific code).
+</p><pre class="programlisting">
+                static inline int foo(void) { return -ENOMEM }
+</pre><p>
+Global address space.  No memory protection: you can destroy everything.
+</p><pre class="programlisting">
+                int *foo = NULL;
+                *foo = 1; /* BOOM! */
+</pre><p>
+No libc in the kernel: only a small subset.
+</p><pre class="programlisting">
+                malloc(), strtoul()
+</pre><p>
+No floating point or MMX usage.
+</p><pre class="programlisting">
+                int x = foo * 2.5; /* BOOM! */
+</pre><p>
+Limited stack space (shared with interrupts on some archs)
+</p><pre class="programlisting">
+                char buffer[4096]; /* BOOM! */
+</pre><p>
+Platform independence: 64-bit clean, endian-clean, char-signed clean
+</p><pre class="programlisting">
+                int foo = (int)&amp;ptr; /* BOOM! */
+                char *firstbyte = (char &amp;)&amp;foo;  /* BOOM! */
+                if (*firstbyte &lt; 0) /* BOOM! */
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754442"></a>2.4. The Three Kernel Entry Points </h3></div></div><div class="orderedlist"><ol type="1"><li><p>Booting</p></li><li><p>System Calls</p></li><li><p>Interrupts</p></li></ol></div></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755160"></a>3. Booting </h2></div></div><pre class="programlisting">
+        arch/&lt;arch&gt;/kernel/head.S
+</pre><pre class="programlisting">
+        init/main.c
+</pre><pre class="programlisting">
+                calls module_init( ) and __setup( ) functions
+</pre><pre class="programlisting">
+                mounts root filesystem
+</pre><pre class="programlisting">
+                execs init process
+</pre></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755193"></a>4. System Calls &amp; Traps </h2></div></div><pre class="programlisting">
+        arch/&lt;arch&gt;/kernel/entry.S
+                Hard-coded table of functions
+</pre><p>
+Functions called from here must be declared asmlinkage.
+</p><p>
+Negative return sets errno, eg &quot;return -ENOENT;&quot;
+</p><p>
+Traps are similar to asynchronous system calls.
+eg. page fault, segmentation fault
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755223"></a>4.1. System Calls &amp; Traps </h3></div></div><p>
+We call these &quot;user context&quot;
+</p><div class="itemizedlist"><ul type="disc"><li><p>Doing work for a particular process</p></li><li><p>Process accessed using the &quot;current&quot; global variable</p></li></ul></div><p>
+We can switch to other tasks voluntarily, by calling &quot;schedule()&quot;.
+Sometimes called &quot;sleeping&quot;.
+</p><p>
+We can be preempted by other tasks, too.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755264"></a>4.2. Hardware Interrupts </h3></div></div><pre class="programlisting">
+        request_irq( ) registers your hardware interrupt handler
+</pre><pre class="programlisting">
+        arch/&lt;arch&gt;/kernel/irq.c:do_IRQ( ) calls your handler.
+</pre><pre class="programlisting">
+        Interrupts are disabled while your handler is running, so be quick!
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755289"></a>4.3. Software Interrupts </h3></div></div><p>
+Three types: softirqs, tasklets, bottom halves.
+</p><p>
+Marked (usually by hardware interrupt handlers) to do more work.
+</p><p>
+Timer functions (add_timer et al) run as bottom halves.
+</p><p>
+Run on return from hw handlers
+</p><pre class="programlisting">
+                ... and from ksoftirqd if very busy.
+</pre><p>
+See <a href="simultaneous.eps" target="_top">simultaneous.eps</a>
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755334"></a>4.4. Multiple CPU Reference Table </h3></div></div><pre class="programlisting">
+                                      Soft Interrupts
+                    User-  User-   Bottom Tasklet Softirq IRQ
+                    space  context Half
+</pre><pre class="programlisting">
+ Same one runs      No     No      No     No      Yes     No
+ simultaneously
+ on other CPU?
+</pre><pre class="programlisting">
+ Same type runs     Yes    Yes     No     Yes     Yes     Yes
+ simultaneously
+ on other CPU?
+</pre><pre class="programlisting">
+ Interrupted by
+ same type?         Yes    Yes*    No     No      No      No
+</pre><pre class="programlisting">
+ Interrupted by     Yes    Yes     No     No      No      No
+ soft interrupts?
+</pre><pre class="programlisting">
+ Interrupted by     Yes    Yes     Yes    Yes     Yes     No
+ hard interrupts?     
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755377"></a>4.5. Race Conditions </h3></div></div><p>
+Problems:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Shared address space: all using the same global &amp; static variables.</p></li><li><p>Other functions can interrupt at any time</p></li><li><p>Maybe multiple CPUs (SMP)</p></li></ul></div><p>
+We need ways to protect data from simultaneous access.
+</p><p>
+We call these multiple accesses at the same time &quot;Race Conditions&quot;
+</p><p>
+foo.c:
+</p><pre class="programlisting">
+        /* Increment i by 1 */
+        i++;
+</pre><p>
+foo.s:
+</p><pre class="programlisting">
+        lwz 9,0(3)      # Load contents of R3 + 0 into R9
+        addi 9,9,1      # Add one to R9
+        stw 9,0(3)      # Put contents of R9 back into R3 + 0
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755444"></a>4.6. Race Conditions </h3></div></div><p>
+Three flavours of race conditions in the Linux Kernel:
+</p><div class="sect3"><div class="titlepage"><div><h4 class="title"><a name="id2755455"></a>4.6.1. Race conditions when a processor is interrupted </h4></div></div><pre class="programlisting">
+        lwz 9,0(3)      # Load contents of R3 + 0 into R9
+                ***** INTERRUPT *****
+                ...
+                lwz 9,0(3)      # Load contents of R3 + 0 into R9
+                addi 9,9,1      # Add one to R9
+                stw 9,0(3)      # Put contents of R9 back into R3 + 0
+                ...
+                ***** RETURN FROM INTERRUPT *****
+        addi 9,9,1      # Add one to R9
+        stw 9,0(3)      # Put contents of R9 back into R3 + 0
+</pre></div><div class="sect3"><div class="titlepage"><div><h4 class="title"><a name="id2755477"></a>4.6.2. Race conditions when a process is preempted </h4></div></div><pre class="programlisting">
+        lwz 9,0(3)      # Load contents of R3 + 0 into R9
+                ***** PROCESS 1 KICKED OFF CPU.  PROCESS 2: *****
+                ...
+                lwz 9,0(3)      # Load contents of R3 + 0 into R9
+                addi 9,9,1      # Add one to R9
+                stw 9,0(3)      # Put contents of R9 back into R3 + 0
+                ...
+                ***** PROCESS 1 RETURNS TO CPU *****
+        addi 9,9,1      # Add one to R9
+        stw 9,0(3)      # Put contents of R9 back into R3 + 0
+</pre></div><div class="sect3"><div class="titlepage"><div><h4 class="title"><a name="id2755499"></a>4.6.3. Race conditions caused by multiple processors (SMP) </h4></div></div><pre class="programlisting">
+        CPU 1                   CPU 2
+        ...
+        lwz 9,0(3)              ...
+        addi 9,9,1              lwz 9,0(3)
+        stw 9,0(3)              addi 9,9,1
+        ...                     stw 9,0(3)
+                                ...
+</pre><p>
+Protect from interruption by hardware interrupts:
+</p><pre class="programlisting">
+                local_irq_disable(int irq) &amp; local_irq_enable(int irq)
+</pre><p>
+Protection from software interrupts:
+</p><pre class="programlisting">
+                local_bh_disable(void) &amp; local_bh_enable(void)
+</pre><p>
+Protection from other CPUs:
+</p><pre class="programlisting">
+                spin_lock(spinlock_t *) &amp; spin_unlock(spinlock_t *)
+</pre><p>
+Preemption by other user contexts:
+</p><pre class="programlisting">
+                preempt_disable(void) &amp; preempt_enable(void)
+</pre><p>
+Combinations:
+</p><pre class="programlisting">
+                spin_lock_bh &amp; spin_unlock_bh
+                spin_lock_irq &amp; spin_unlock_irq
+                spin_lock_irqsave &amp; spin_unlock_irqrestore
+</pre><p>
+Reader-writer:
+</p><pre class="programlisting">
+                read_lock*/write_lock* &amp; read_unlock*/write_unlock*
+</pre><p>
+We cannot call any function which might sleep (schedule()) while using ANY of these.
+</p><p>
+There are special primitives for protecting from other user contexts while in user context: they sleep if they have to wait:
+</p><pre class="programlisting">
+        down_interruptible(struct semaphore *) &amp; up(struct semaphore *)
+</pre><pre class="programlisting">
+        down_read(struct rw_semaphore *) &amp; up_read(struct rw_semaphore *)
+        down_write(struct rw_semaphore *) &amp; up_write(struct rw_semaphore *)
+</pre></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755610"></a>4.7. Common Library Functions </h3></div></div><pre class="programlisting">
+        kmalloc(size, flags) &amp; kfree(ptr)
+        vmalloc(size) &amp; vfree(ptr)
+        copy_from_user/get_user &amp; copy_to_user/put_user
+        printk(format, ... )
+        udelay(int usecs) &amp; mdelay(int msecs )
+        include/linux/list.h
+</pre></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755632"></a>5. Programming </h2></div></div><pre class="programlisting">
+  kernel/softirq.c
+</pre><pre class="programlisting">
+        /*
+         *      linux/kernel/softirq.c
+         *
+         *      Copyright (C) 1992 Linus Torvalds
+         *
+         * Fixed a disable_bh()/enable_bh() race (was causing a console lockup)
+         * due bh_mask_count not atomic handling. Copyright (C) 1998  Andrea Arcangeli
+         *
+         * Rewritten. Old one was good in 2.2, but in 2.3 it was immoral. --ANK (990903)
+         */
+</pre><pre class="programlisting">
+        #include &lt;linux/config.h&gt;
+        #include &lt;linux/mm.h&gt;
+        #include &lt;linux/kernel_stat.h&gt;
+        #include &lt;linux/interrupt.h&gt;
+        #include &lt;linux/smp_lock.h&gt;
+        #include &lt;linux/init.h&gt;
+        #include &lt;linux/tqueue.h&gt;
+        #include &lt;linux/percpu.h&gt;
+        #include &lt;linux/notifier.h&gt;
+</pre><pre class="programlisting">
+        /*
+           - No shared variables, all the data are CPU local.
+           - If a softirq needs serialization, let it serialize itself
+             by its own spinlocks.
+           - Even if softirq is serialized, only local cpu is marked for
+             execution. Hence, we get something sort of weak cpu binding.
+             Though it is still not clear, will it result in better locality
+             or will not.
+</pre><pre class="programlisting">
+           Examples:
+           - NET RX softirq. It is multithreaded and does not require
+             any global serialization.
+           - NET TX softirq. It kicks software netdevice queues, hence
+             it is logically serialized per device, but this serialization
+             is invisible to common code.
+           - Tasklets: serialized wrt itself.
+           - Bottom halves: globally serialized, grr...
+         */
+</pre><pre class="programlisting">
+        irq_cpustat_t irq_stat[NR_CPUS];
+</pre><pre class="programlisting">
+        static struct softirq_action softirq_vec[32] __cacheline_aligned_in_smp;
+</pre><pre class="programlisting">
+        /*
+         * we cannot loop indefinitely here to avoid userspace starvation,
+         * but we also don't want to introduce a worst case 1/HZ latency
+         * to the pending events, so lets the scheduler to balance
+         * the softirq load for us.
+         */
+        static inline void wakeup_softirqd(unsigned cpu)
+        {
+                struct task_struct * tsk = ksoftirqd_task(cpu);
+</pre><pre class="programlisting">
+                if (tsk &amp;&amp; tsk-&gt;state != TASK_RUNNING)
+                        wake_up_process(tsk);
+        }
+</pre><pre class="programlisting">
+        asmlinkage void do_softirq()
+        {
+                __u32 pending;
+                long flags;
+                __u32 mask;
+                int cpu;
+</pre><pre class="programlisting">
+                if (in_interrupt())
+                        return;
+</pre><pre class="programlisting">
+                local_irq_save(flags);
+                cpu = smp_processor_id();
+</pre><pre class="programlisting">
+                pending = softirq_pending(cpu);
+</pre><pre class="programlisting">
+                if (pending) {
+                        struct softirq_action *h;
+</pre><pre class="programlisting">
+                        mask = ~pending;
+                        local_bh_disable();
+        restart:
+                        /* Reset the pending bitmask before enabling irqs */
+                        softirq_pending(cpu) = 0;
+</pre><pre class="programlisting">
+                        local_irq_enable();
+</pre><pre class="programlisting">
+                        h = softirq_vec;
+</pre><pre class="programlisting">
+                        do {
+                                if (pending &amp; 1)
+                                        h-&gt;action(h);
+                                h++;
+                                pending &gt;&gt;= 1;
+                        } while (pending);
+</pre><pre class="programlisting">
+                        local_irq_disable();
+</pre><pre class="programlisting">
+                        pending = softirq_pending(cpu);
+                        if (pending &amp; mask) {
+                                mask &amp;= ~pending;
+                                goto restart;
+                        }
+                        __local_bh_enable();
+</pre><pre class="programlisting">
+                        if (pending)
+                                wakeup_softirqd(cpu);
+                }
+</pre><pre class="programlisting">
+                local_irq_restore(flags);
+        }
+</pre><pre class="programlisting">
+        /*
+         * This function must run with irqs disabled!
+         */
+        inline void cpu_raise_softirq(unsigned int cpu, unsigned int nr)
+        {
+                __cpu_raise_softirq(cpu, nr);
+</pre><pre class="programlisting">
+                /*
+                 * If we're in an interrupt or bh, we're done
+                 * (this also catches bh-disabled code). We will
+                 * actually run the softirq once we return from
+                 * the irq or bh.
+                 *
+                 * Otherwise we wake up ksoftirqd to make sure we
+                 * schedule the softirq soon.
+                 */
+                if (!in_interrupt())
+                        wakeup_softirqd(cpu);
+        }
+</pre><pre class="programlisting">
+        void raise_softirq(unsigned int nr)
+        {
+                long flags;
+</pre><pre class="programlisting">
+                local_irq_save(flags);
+                cpu_raise_softirq(smp_processor_id(), nr);
+                local_irq_restore(flags);
+        }
+</pre></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755859"></a>6. Practicalities </h2></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755865"></a>6.1. Kernel Numbering </h3></div></div><p>
+Even middle point is stable (eg. 2.4.17).
+</p><div class="itemizedlist"><ul type="disc"><li><p>Bug fixes</p></li><li><p>New drivers</p></li></ul></div><p>
+Odd is unstable (eg. 2.5.3).
+</p><div class="itemizedlist"><ul type="disc"><li><p>Everything can change</p></li></ul></div><p>
+Unstable becomes stable every few years.
+</p><p>
+-pre or -rc kernels are designed for testing only.
+</p><p>
+Currently playing: 2.5.  Linus et. al.
+</p><p>
+Stable: 2.4.  Marcelo et al.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755928"></a>6.2. Where To Get Kernel Source </h3></div></div><p>
+Kernels come from ftp.es.kernel.org/pub/linux/kernel/
+</p><p>
+Download patches and apply them by hand:
+</p><pre class="programlisting">
+                cp -al linux-2.5.30 linux-2.5.31
+                cd linux-2.5.31
+                zcat ../patch-2.5.31.gz | patch -p1
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755952"></a>6.3. Editing the Kernel </h3></div></div><p>
+Recommended method (if editor breaks hardlinks!):
+</p><pre class="programlisting">
+     cd ~/kernel-sources
+     wget <a href="http://www.moses.uklinux.net/patches/dontdiff" target="_top">http://www.moses.uklinux.net/patches/dontdiff</a>
+     grab-kernel 2.5.3 .
+     cp -al linux-2.5.3 working-2.5.3-myhacks
+     cd working-2.5.3-myhacks
+</pre><p>
+To produce a patch:
+</p><pre class="programlisting">
+     cd ~/kernel-sources
+     diff -urN -X ~/dontdiff linux-2.5.3 working-2.5.3-myhacks | grep -v Binary
+</pre><p>
+Make sure you read the patch before you send it out!
+</p><p>
+More hints can be found: <a href="http://www.kernelnewbies.org" target="_top">http://www.kernelnewbies.org</a>
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2756007"></a>6.4. GCC/ISO C Extensions </h3></div></div><p>
+Named structure initializers
+</p><pre class="programlisting">
+                struct foo bar = {
+                        .func = myfunc,
+                };
+</pre><p>
+inline functions
+</p><pre class="programlisting">
+                static inline int myfunc(void)
+                {
+                        return -ENOSYS;
+                }
+</pre><p>
+Variable argument macros
+</p><pre class="programlisting">
+                #define DEBUG(x,...) printk(KERN_DEBUG x , __VA_ARGS__)
+</pre><p>
+Statement expressions ({ and })
+</p><pre class="programlisting">
+                #define get_cpu() ({ preempt_disable(); smp_processor_id(); })
+</pre><p>
+__builtin_constant_p()
+</p><pre class="programlisting">
+                #define test_bit(nr,addr)                          (__builtin_constant_p(nr) ?                           constant_test_bit((nr),(addr)) :                           variable_test_bit((nr),(addr)))
+</pre></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2756069"></a>6.5. More Common Functions </h3></div></div><pre class="programlisting">
+        wait_queue_head_t: DECLARE_WAIT_QUEUE_HEAD( )/init_waitqueue_head( )
+        wait_event_interruptible(wq, condition)
+        wake_up(wait_queue_head_t *)
+</pre><pre class="programlisting">
+        HZ &amp; jiffies
+        add_timer( ) &amp; del_timer_sync( )
+</pre><pre class="programlisting">
+        struct completion: DECLARE_COMPLETION( )/init_completion( )
+        wait_for_completion(struct completion *)
+        complete(struct completion *)
+</pre></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2756098"></a>7. Programming </h2></div></div><pre class="programlisting">
+  kernel/sched.c
+</pre><pre class="programlisting">
+        /*
+         *  kernel/sched.c
+         *
+         *  Kernel scheduler and related syscalls
+         *
+         *  Copyright (C) 1991-2002  Linus Torvalds
+         *
+         *  1996-12-23  Modified by Dave Grothe to fix bugs in semaphores and
+         *              make semaphores SMP safe
+         *  1998-11-19  Implemented schedule_timeout() and related stuff
+         *              by Andrea Arcangeli
+         *  2002-01-04  New ultra-scalable O(1) scheduler by Ingo Molnar:
+         *              hybrid priority-list and round-robin design with
+         *              an array-switch method of distributing timeslices
+         *              and per-CPU runqueues.  Cleanups and useful suggestions
+         *              by Davide Libenzi, preemptible kernel bits by Robert Love.
+         */
+</pre><pre class="programlisting">
+        #include &lt;linux/mm.h&gt;
+        #include &lt;linux/nmi.h&gt;
+        #include &lt;linux/init.h&gt;
+        #include &lt;asm/uaccess.h&gt;
+        #include &lt;linux/highmem.h&gt;
+        #include &lt;linux/smp_lock.h&gt;
+        #include &lt;asm/mmu_context.h&gt;
+        #include &lt;linux/interrupt.h&gt;
+        #include &lt;linux/completion.h&gt;
+        #include &lt;linux/kernel_stat.h&gt;
+        #include &lt;linux/security.h&gt;
+        #include &lt;linux/notifier.h&gt;
+        #include &lt;linux/delay.h&gt;
+</pre><pre class="programlisting">
+        /*
+         * Convert user-nice values [ -20 ... 0 ... 19 ]
+         * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
+         * and back.
+         */
+        #define NICE_TO_PRIO(nice)      (MAX_RT_PRIO + (nice) + 20)
+        #define PRIO_TO_NICE(prio)      ((prio) - MAX_RT_PRIO - 20)
+        #define TASK_NICE(p)            PRIO_TO_NICE((p)-&gt;static_prio)
+</pre><pre class="programlisting">
+        /*
+         * 'User priority' is the nice value converted to something we
+         * can work with better when scaling various scheduler parameters,
+         * it's a [ 0 ... 39 ] range.
+         */
+        #define USER_PRIO(p)            ((p)-MAX_RT_PRIO)
+        #define TASK_USER_PRIO(p)       USER_PRIO((p)-&gt;static_prio)
+        #define MAX_USER_PRIO           (USER_PRIO(MAX_PRIO))
+</pre><pre class="programlisting">
+        /*
+         * These are the 'tuning knobs' of the scheduler:
+         *
+         * Minimum timeslice is 10 msecs, default timeslice is 150 msecs,
+         * maximum timeslice is 300 msecs. Timeslices get refilled after
+         * they expire.
+         */
+        #define MIN_TIMESLICE           ( 10 * HZ / 1000)
+        #define MAX_TIMESLICE           (300 * HZ / 1000)
+        #define CHILD_PENALTY           95
+        #define PARENT_PENALTY          100
+        #define EXIT_WEIGHT             3
+        #define PRIO_BONUS_RATIO        25
+        #define INTERACTIVE_DELTA       2
+        #define MAX_SLEEP_AVG           (2*HZ)
+        #define STARVATION_LIMIT        (2*HZ)
+</pre><pre class="programlisting">
+        /*
+         * If a task is 'interactive' then we reinsert it in the active
+         * array after it has expired its current timeslice. (it will not
+         * continue to run immediately, it will still roundrobin with
+         * other interactive tasks.)
+         *
+         * This part scales the interactivity limit depending on niceness.
+         *
+         * We scale it linearly, offset by the INTERACTIVE_DELTA delta.
+         * Here are a few examples of different nice levels:
+         *
+         *  TASK_INTERACTIVE(-20): [1,1,1,1,1,1,1,1,1,0,0]
+         *  TASK_INTERACTIVE(-10): [1,1,1,1,1,1,1,0,0,0,0]
+         *  TASK_INTERACTIVE(  0): [1,1,1,1,0,0,0,0,0,0,0]
+         *  TASK_INTERACTIVE( 10): [1,1,0,0,0,0,0,0,0,0,0]
+         *  TASK_INTERACTIVE( 19): [0,0,0,0,0,0,0,0,0,0,0]
+         *
+         * (the X axis represents the possible -5 ... 0 ... +5 dynamic
+         *  priority range a task can explore, a value of '1' means the
+         *  task is rated interactive.)
+         *
+         * Ie. nice +19 tasks can never get 'interactive' enough to be
+         * reinserted into the active array. And only heavily CPU-hog nice -20
+         * tasks will be expired. Default nice 0 tasks are somewhere between,
+         * it takes some effort for them to get interactive, but it's not
+         * too hard.
+         */
+</pre><pre class="programlisting">
+        #define SCALE(v1,v1_max,v2_max)                  (v1) * (v2_max) / (v1_max)
+</pre><pre class="programlisting">
+        #define DELTA(p)                  (SCALE(TASK_NICE(p), 40, MAX_USER_PRIO*PRIO_BONUS_RATIO/100) +                          INTERACTIVE_DELTA)
+</pre><pre class="programlisting">
+        #define TASK_INTERACTIVE(p)                  ((p)-&gt;prio &lt;= (p)-&gt;static_prio - DELTA(p))
+</pre><pre class="programlisting">
+        /*
+         * BASE_TIMESLICE scales user-nice values [ -20 ... 19 ]
+         * to time slice values.
+         *
+         * The higher a thread's priority, the bigger timeslices
+         * it gets during one round of execution. But even the lowest
+         * priority thread gets MIN_TIMESLICE worth of execution time.
+         *
+         * task_timeslice() is the interface that is used by the scheduler.
+         */
+</pre><pre class="programlisting">
+        #define BASE_TIMESLICE(p) (MIN_TIMESLICE +                  ((MAX_TIMESLICE - MIN_TIMESLICE) * (MAX_PRIO-1-(p)-&gt;static_prio)/(MAX_USER_PRIO - 1)))
+</pre><pre class="programlisting">
+        static inline unsigned int task_timeslice(task_t *p)
+        {
+                return BASE_TIMESLICE(p);
+        }
+</pre><pre class="programlisting">
+        /*
+         * These are the runqueue data structures:
+         */
+</pre><pre class="programlisting">
+        #define BITMAP_SIZE ((((MAX_PRIO+1+7)/8)+sizeof(long)-1)/sizeof(long))
+</pre><pre class="programlisting">
+        typedef struct runqueue runqueue_t;
+</pre><pre class="programlisting">
+        struct prio_array {
+                int nr_active;
+                unsigned long bitmap[BITMAP_SIZE];
+                list_t queue[MAX_PRIO];
+        };
+</pre><pre class="programlisting">
+        /*
+         * This is the main, per-CPU runqueue data structure.
+         *
+         * Locking rule: those places that want to lock multiple runqueues
+         * (such as the load balancing or the thread migration code), lock
+         * acquire operations must be ordered by ascending &amp;runqueue.
+         */
+        struct runqueue {
+                spinlock_t lock;
+                unsigned long nr_running, nr_switches, expired_timestamp,
+                                nr_uninterruptible;
+                task_t *curr, *idle;
+                prio_array_t *active, *expired, arrays[2];
+                int prev_nr_running[NR_CPUS];
+</pre><pre class="programlisting">
+                task_t *migration_thread;
+                list_t migration_queue;
+</pre><pre class="programlisting">
+        } ____cacheline_aligned;
+</pre><pre class="programlisting">
+        static struct runqueue runqueues[NR_CPUS] __cacheline_aligned;
+</pre><pre class="programlisting">
+        #define cpu_rq(cpu)             (runqueues + (cpu))
+        #define this_rq()               cpu_rq(smp_processor_id())
+        #define task_rq(p)              cpu_rq(task_cpu(p))
+        #define cpu_curr(cpu)           (cpu_rq(cpu)-&gt;curr)
+        #define rt_task(p)              ((p)-&gt;prio &lt; MAX_RT_PRIO)
+</pre><pre class="programlisting">
+        /*
+         * Default context-switch locking:
+         */
+        #ifndef prepare_arch_switch
+        # define prepare_arch_switch(rq, next)  do { } while(0)
+        # define finish_arch_switch(rq, next)   spin_unlock_irq(&amp;(rq)-&gt;lock)
+        # define task_running(rq, p)            ((rq)-&gt;curr == (p))
+        #endif
+</pre><pre class="programlisting">
+        /*
+         * task_rq_lock - lock the runqueue a given task resides on and disable
+         * interrupts.  Note the ordering: we can safely lookup the task_rq without
+         * explicitly disabling preemption.
+         */
+        static inline runqueue_t *task_rq_lock(task_t *p, unsigned long *flags)
+        {
+                struct runqueue *rq;
+</pre><pre class="programlisting">
+        repeat_lock_task:
+                local_irq_save(*flags);
+                rq = task_rq(p);
+                spin_lock(&amp;rq-&gt;lock);
+                if (unlikely(rq != task_rq(p))) {
+                        spin_unlock_irqrestore(&amp;rq-&gt;lock, *flags);
+                        goto repeat_lock_task;
+                }
+                return rq;
+        }
+</pre><pre class="programlisting">
+        static inline void task_rq_unlock(runqueue_t *rq, unsigned long *flags)
+        {
+                spin_unlock_irqrestore(&amp;rq-&gt;lock, *flags);
+        }
+</pre><pre class="programlisting">
+        /*
+         * rq_lock - lock a given runqueue and disable interrupts.
+         */
+        static inline runqueue_t *this_rq_lock(void)
+        {
+                runqueue_t *rq;
+</pre><pre class="programlisting">
+                local_irq_disable();
+                rq = this_rq();
+                spin_lock(&amp;rq-&gt;lock);
+</pre><pre class="programlisting">
+                return rq;
+        }
+</pre><pre class="programlisting">
+        static inline void rq_unlock(runqueue_t *rq)
+        {
+                spin_unlock(&amp;rq-&gt;lock);
+                local_irq_enable();
+        }
+</pre><pre class="programlisting">
+        /*
+         * Adding/removing a task to/from a priority array:
+         */
+        static inline void dequeue_task(struct task_struct *p, prio_array_t *array)
+        {
+                array-&gt;nr_active--;
+                list_del(&amp;p-&gt;run_list);
+                if (list_empty(array-&gt;queue + p-&gt;prio))
+                        __clear_bit(p-&gt;prio, array-&gt;bitmap);
+        }
+</pre><pre class="programlisting">
+        static inline void enqueue_task(struct task_struct *p, prio_array_t *array)
+        {
+                list_add_tail(&amp;p-&gt;run_list, array-&gt;queue + p-&gt;prio);
+                __set_bit(p-&gt;prio, array-&gt;bitmap);
+                array-&gt;nr_active++;
+                p-&gt;array = array;
+        }
+</pre><pre class="programlisting">
+        /*
+         * effective_prio - return the priority that is based on the static
+         * priority but is modified by bonuses/penalties.
+         *
+         * We scale the actual sleep average [0 .... MAX_SLEEP_AVG]
+         * into the -5 ... 0 ... +5 bonus/penalty range.
+         *
+         * We use 25% of the full 0...39 priority range so that:
+         *
+         * 1) nice +19 interactive tasks do not preempt nice 0 CPU hogs.
+         * 2) nice -20 CPU hogs do not get preempted by nice 0 tasks.
+         *
+         * Both properties are important to certain workloads.
+         */
+        static inline int effective_prio(task_t *p)
+        {
+                int bonus, prio;
+</pre><pre class="programlisting">
+                bonus = MAX_USER_PRIO*PRIO_BONUS_RATIO*p-&gt;sleep_avg/MAX_SLEEP_AVG/100 -
+                                MAX_USER_PRIO*PRIO_BONUS_RATIO/100/2;
+</pre><pre class="programlisting">
+                prio = p-&gt;static_prio - bonus;
+                if (prio &lt; MAX_RT_PRIO)
+                        prio = MAX_RT_PRIO;
+                if (prio &gt; MAX_PRIO-1)
+                        prio = MAX_PRIO-1;
+                return prio;
+        }
+</pre><pre class="programlisting">
+        /*
+         * activate_task - move a task to the runqueue.
+</pre><pre class="programlisting">
+         * Also update all the scheduling statistics stuff. (sleep average
+         * calculation, priority modifiers, etc.)
+         */
+        static inline void activate_task(task_t *p, runqueue_t *rq)
+        {
+                unsigned long sleep_time = jiffies - p-&gt;sleep_timestamp;
+                prio_array_t *array = rq-&gt;active;
+</pre><pre class="programlisting">
+                if (!rt_task(p) &amp;&amp; sleep_time) {
+                        /*
+                         * This code gives a bonus to interactive tasks. We update
+                         * an 'average sleep time' value here, based on
+                         * sleep_timestamp. The more time a task spends sleeping,
+                         * the higher the average gets - and the higher the priority
+                         * boost gets as well.
+                         */
+                        p-&gt;sleep_avg += sleep_time;
+                        if (p-&gt;sleep_avg &gt; MAX_SLEEP_AVG)
+                                p-&gt;sleep_avg = MAX_SLEEP_AVG;
+                        p-&gt;prio = effective_prio(p);
+                }
+                enqueue_task(p, array);
+                rq-&gt;nr_running++;
+        }
+</pre><pre class="programlisting">
+        /*
+         * deactivate_task - remove a task from the runqueue.
+         */
+        static inline void deactivate_task(struct task_struct *p, runqueue_t *rq)
+        {
+                rq-&gt;nr_running--;
+                if (p-&gt;state == TASK_UNINTERRUPTIBLE)
+                        rq-&gt;nr_uninterruptible++;
+                dequeue_task(p, p-&gt;array);
+                p-&gt;array = NULL;
+        }
+</pre><pre class="programlisting">
+        /*
+         * resched_task - mark a task 'to be rescheduled now'.
+         *
+         * On UP this means the setting of the need_resched flag, on SMP it
+         * might also involve a cross-CPU call to trigger the scheduler on
+         * the target CPU.
+         */
+        static inline void resched_task(task_t *p)
+        {
+        #ifdef CONFIG_SMP
+                int need_resched, nrpolling;
+</pre><pre class="programlisting">
+                preempt_disable();
+                /* minimise the chance of sending an interrupt to poll_idle() */
+                nrpolling = test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
+                need_resched = test_and_set_tsk_thread_flag(p,TIF_NEED_RESCHED);
+                nrpolling |= test_tsk_thread_flag(p,TIF_POLLING_NRFLAG);
+</pre><pre class="programlisting">
+                if (!need_resched &amp;&amp; !nrpolling &amp;&amp; (task_cpu(p) != smp_processor_id()))
+                        smp_send_reschedule(task_cpu(p));
+                preempt_enable();
+        #else
+                set_tsk_need_resched(p);
+        #endif
+        }
+</pre><pre class="programlisting">
+        /***
+         * try_to_wake_up - wake up a thread
+         * @p: the to-be-woken-up thread
+         * @sync: do a synchronous wakeup?
+         *
+         * Put it on the run-queue if it's not already there. The &quot;current&quot;
+         * thread is always on the run-queue (except when the actual
+         * re-schedule is in progress), and as such you're allowed to do
+         * the simpler &quot;current-&gt;state = TASK_RUNNING&quot; to mark yourself
+         * runnable without the overhead of this.
+         *
+         * returns failure only if the task is already active.
+         */
+        static int try_to_wake_up(task_t * p, int sync)
+        {
+                unsigned long flags;
+                int success = 0;
+                long old_state;
+                runqueue_t *rq;
+</pre><pre class="programlisting">
+        repeat_lock_task:
+                rq = task_rq_lock(p, &amp;flags);
+                old_state = p-&gt;state;
+                if (!p-&gt;array) {
+                        /*
+                         * Fast-migrate the task if it's not running or runnable
+                         * currently. Do not violate hard affinity.
+                         */
+                        if (unlikely(sync &amp;&amp; !task_running(rq, p) &amp;&amp;
+                                (task_cpu(p) != smp_processor_id()) &amp;&amp;
+                                (p-&gt;cpus_allowed &amp; (1UL &lt;&lt; smp_processor_id())))) {
+</pre><pre class="programlisting">
+                                set_task_cpu(p, smp_processor_id());
+                                task_rq_unlock(rq, &amp;flags);
+                                goto repeat_lock_task;
+                        }
+                        if (old_state == TASK_UNINTERRUPTIBLE)
+                                rq-&gt;nr_uninterruptible--;
+                        activate_task(p, rq);
+</pre><pre class="programlisting">
+                        if (p-&gt;prio &lt; rq-&gt;curr-&gt;prio)
+                                resched_task(rq-&gt;curr);
+                        success = 1;
+                }
+                p-&gt;state = TASK_RUNNING;
+                task_rq_unlock(rq, &amp;flags);
+</pre><pre class="programlisting">
+                return success;
+        }
+</pre><pre class="programlisting">
+        int wake_up_process(task_t * p)
+        {
+                return try_to_wake_up(p, 0);
+        }
+</pre><pre class="programlisting">
+        /*
+         * context_switch - switch to the new MM and the new
+         * thread's register state.
+         */
+        static inline task_t * context_switch(task_t *prev, task_t *next)
+        {
+                struct mm_struct *mm = next-&gt;mm;
+                struct mm_struct *oldmm = prev-&gt;active_mm;
+</pre><pre class="programlisting">
+                if (unlikely(!mm)) {
+                        next-&gt;active_mm = oldmm;
+                        atomic_inc(&amp;oldmm-&gt;mm_count);
+                        enter_lazy_tlb(oldmm, next, smp_processor_id());
+                } else
+                        switch_mm(oldmm, mm, next, smp_processor_id());
+</pre><pre class="programlisting">
+                if (unlikely(!prev-&gt;mm)) {
+                        prev-&gt;active_mm = NULL;
+                        mmdrop(oldmm);
+                }
+</pre><pre class="programlisting">
+                /* Here we just switch the register state and the stack. */
+                switch_to(prev, next, prev);
+</pre><pre class="programlisting">
+                return prev;
+        }
+</pre><pre class="programlisting">
+        /*
+         * double_rq_lock - safely lock two runqueues
+         *
+         * Note this does not disable interrupts like task_rq_lock,
+         * you need to do so manually before calling.
+         */
+        static inline void double_rq_lock(runqueue_t *rq1, runqueue_t *rq2)
+        {
+                if (rq1 == rq2)
+                        spin_lock(&amp;rq1-&gt;lock);
+                else {
+                        if (rq1 &lt; rq2) {
+                                spin_lock(&amp;rq1-&gt;lock);
+                                spin_lock(&amp;rq2-&gt;lock);
+                        } else {
+                                spin_lock(&amp;rq2-&gt;lock);
+                                spin_lock(&amp;rq1-&gt;lock);
+                        }
+                }
+        }
+</pre><pre class="programlisting">
+        /*
+         * double_rq_unlock - safely unlock two runqueues
+         *
+         * Note this does not restore interrupts like task_rq_unlock,
+         * you need to do so manually after calling.
+         */
+        static inline void double_rq_unlock(runqueue_t *rq1, runqueue_t *rq2)
+        {
+                spin_unlock(&amp;rq1-&gt;lock);
+                if (rq1 != rq2)
+                        spin_unlock(&amp;rq2-&gt;lock);
+        }
+</pre><pre class="programlisting">
+        #if CONFIG_SMP
+</pre><pre class="programlisting">
+        /*
+         * double_lock_balance - lock the busiest runqueue
+         *
+         * this_rq is locked already. Recalculate nr_running if we have to
+         * drop the runqueue lock.
+         */
+        static inline unsigned int double_lock_balance(runqueue_t *this_rq,
+                runqueue_t *busiest, int this_cpu, int idle, unsigned int nr_running)
+        {
+                if (unlikely(!spin_trylock(&amp;busiest-&gt;lock))) {
+                        if (busiest &lt; this_rq) {
+                                spin_unlock(&amp;this_rq-&gt;lock);
+                                spin_lock(&amp;busiest-&gt;lock);
+                                spin_lock(&amp;this_rq-&gt;lock);
+                                /* Need to recalculate nr_running */
+                                if (idle || (this_rq-&gt;nr_running &gt; this_rq-&gt;prev_nr_running[this_cpu]))
+                                        nr_running = this_rq-&gt;nr_running;
+                                else
+                                        nr_running = this_rq-&gt;prev_nr_running[this_cpu];
+                        } else
+                                spin_lock(&amp;busiest-&gt;lock);
+                }
+                return nr_running;
+        }
+</pre><pre class="programlisting">
+        /*
+         * find_busiest_queue - find the busiest runqueue.
+         */
+        static inline runqueue_t *find_busiest_queue(runqueue_t *this_rq, int this_cpu, int idle, int *imbalance)
+        {
+                int nr_running, load, max_load, i;
+                runqueue_t *busiest, *rq_src;
+</pre><pre class="programlisting">
+                /*
+                 * We search all runqueues to find the most busy one.
+                 * We do this lockless to reduce cache-bouncing overhead,
+                 * we re-check the 'best' source CPU later on again, with
+                 * the lock held.
+                 *
+                 * We fend off statistical fluctuations in runqueue lengths by
+                 * saving the runqueue length during the previous load-balancing
+                 * operation and using the smaller one the current and saved lengths.
+                 * If a runqueue is long enough for a longer amount of time then
+                 * we recognize it and pull tasks from it.
+                 *
+                 * The 'current runqueue length' is a statistical maximum variable,
+                 * for that one we take the longer one - to avoid fluctuations in
+                 * the other direction. So for a load-balance to happen it needs
+                 * stable long runqueue on the target CPU and stable short runqueue
+                 * on the local runqueue.
+                 *
+                 * We make an exception if this CPU is about to become idle - in
+                 * that case we are less picky about moving a task across CPUs and
+                 * take what can be taken.
+                 */
+                if (idle || (this_rq-&gt;nr_running &gt; this_rq-&gt;prev_nr_running[this_cpu]))
+                        nr_running = this_rq-&gt;nr_running;
+                else
+                        nr_running = this_rq-&gt;prev_nr_running[this_cpu];
+</pre><pre class="programlisting">
+                busiest = NULL;
+                max_load = 1;
+                for (i = 0; i &lt; NR_CPUS; i++) {
+                        if (!cpu_online(i))
+                                continue;
+</pre><pre class="programlisting">
+                        rq_src = cpu_rq(i);
+                        if (idle || (rq_src-&gt;nr_running &lt; this_rq-&gt;prev_nr_running[i]))
+                                load = rq_src-&gt;nr_running;
+                        else
+                                load = this_rq-&gt;prev_nr_running[i];
+                        this_rq-&gt;prev_nr_running[i] = rq_src-&gt;nr_running;
+</pre><pre class="programlisting">
+                        if ((load &gt; max_load) &amp;&amp; (rq_src != this_rq)) {
+                                busiest = rq_src;
+                                max_load = load;
+                        }
+                }
+</pre><pre class="programlisting">
+                if (likely(!busiest))
+                        goto out;
+</pre><pre class="programlisting">
+                *imbalance = (max_load - nr_running) / 2;
+</pre><pre class="programlisting">
+                /* It needs an at least ~25% imbalance to trigger balancing. */
+                if (!idle &amp;&amp; (*imbalance &lt; (max_load + 3)/4)) {
+                        busiest = NULL;
+                        goto out;
+                }
+</pre><pre class="programlisting">
+                nr_running = double_lock_balance(this_rq, busiest, this_cpu, idle, nr_running);
+                /*
+                 * Make sure nothing changed since we checked the
+                 * runqueue length.
+                 */
+                if (busiest-&gt;nr_running &lt;= nr_running + 1) {
+                        spin_unlock(&amp;busiest-&gt;lock);
+                        busiest = NULL;
+                }
+        out:
+                return busiest;
+        }
+</pre><pre class="programlisting">
+        /*
+         * pull_task - move a task from a remote runqueue to the local runqueue.
+         * Both runqueues must be locked.
+         */
+        static inline void pull_task(runqueue_t *src_rq, prio_array_t *src_array, task_t *p, runqueue_t *this_rq, int this_cpu)
+        {
+                dequeue_task(p, src_array);
+                src_rq-&gt;nr_running--;
+                set_task_cpu(p, this_cpu);
+                this_rq-&gt;nr_running++;
+                enqueue_task(p, this_rq-&gt;active);
+                /*
+                 * Note that idle threads have a prio of MAX_PRIO, for this test
+                 * to be always true for them.
+                 */
+                if (p-&gt;prio &lt; this_rq-&gt;curr-&gt;prio)
+                        set_need_resched();
+        }
+</pre><pre class="programlisting">
+        /*
+         * Current runqueue is empty, or rebalance tick: if there is an
+         * inbalance (current runqueue is too short) then pull from
+         * busiest runqueue(s).
+         *
+         * We call this with the current runqueue locked,
+         * irqs disabled.
+         */
+        static void load_balance(runqueue_t *this_rq, int idle)
+        {
+                int imbalance, idx, this_cpu = smp_processor_id();
+                runqueue_t *busiest;
+                prio_array_t *array;
+                list_t *head, *curr;
+                task_t *tmp;
+</pre><pre class="programlisting">
+                busiest = find_busiest_queue(this_rq, this_cpu, idle, &amp;imbalance);
+                if (!busiest)
+                        goto out;
+</pre><pre class="programlisting">
+                /*
+                 * We first consider expired tasks. Those will likely not be
+                 * executed in the near future, and they are most likely to
+                 * be cache-cold, thus switching CPUs has the least effect
+                 * on them.
+                 */
+                if (busiest-&gt;expired-&gt;nr_active)
+                        array = busiest-&gt;expired;
+                else
+                        array = busiest-&gt;active;
+</pre><pre class="programlisting">
+        new_array:
+                /* Start searching at priority 0: */
+                idx = 0;
+        skip_bitmap:
+                if (!idx)
+                        idx = sched_find_first_bit(array-&gt;bitmap);
+                else
+                        idx = find_next_bit(array-&gt;bitmap, MAX_PRIO, idx);
+                if (idx == MAX_PRIO) {
+                        if (array == busiest-&gt;expired) {
+                                array = busiest-&gt;active;
+                                goto new_array;
+                        }
+                        goto out_unlock;
+                }
+</pre><pre class="programlisting">
+                head = array-&gt;queue + idx;
+                curr = head-&gt;prev;
+        skip_queue:
+                tmp = list_entry(curr, task_t, run_list);
+</pre><pre class="programlisting">
+                /*
+                 * We do not migrate tasks that are:
+                 * 1) running (obviously), or
+                 * 2) cannot be migrated to this CPU due to cpus_allowed, or
+                 * 3) are cache-hot on their current CPU.
+                 */
+</pre><pre class="programlisting">
+        #define CAN_MIGRATE_TASK(p,rq,this_cpu)                                                  ((jiffies - (p)-&gt;sleep_timestamp &gt; cache_decay_ticks) &amp;&amp;                                 !task_running(rq, p) &amp;&amp;                                                                  ((p)-&gt;cpus_allowed &amp; (1UL &lt;&lt; (this_cpu))))
+</pre><pre class="programlisting">
+                curr = curr-&gt;prev;
+</pre><pre class="programlisting">
+                if (!CAN_MIGRATE_TASK(tmp, busiest, this_cpu)) {
+                        if (curr != head)
+                                goto skip_queue;
+                        idx++;
+                        goto skip_bitmap;
+                }
+                pull_task(busiest, array, tmp, this_rq, this_cpu);
+                if (!idle &amp;&amp; --imbalance) {
+                        if (curr != head)
+                                goto skip_queue;
+                        idx++;
+                        goto skip_bitmap;
+                }
+        out_unlock:
+                spin_unlock(&amp;busiest-&gt;lock);
+        out:
+                ;
+        }
+</pre><pre class="programlisting">
+        /*
+         * One of the idle_cpu_tick() and busy_cpu_tick() functions will
+         * get called every timer tick, on every CPU. Our balancing action
+         * frequency and balancing agressivity depends on whether the CPU is
+         * idle or not.
+         *
+         * busy-rebalance every 250 msecs. idle-rebalance every 1 msec. (or on
+         * systems with HZ=100, every 10 msecs.)
+         */
+        #define BUSY_REBALANCE_TICK (HZ/4 ?: 1)
+        #define IDLE_REBALANCE_TICK (HZ/1000 ?: 1)
+</pre><pre class="programlisting">
+        static inline void idle_tick(runqueue_t *rq)
+        {
+                if (jiffies % IDLE_REBALANCE_TICK)
+                        return;
+                spin_lock(&amp;rq-&gt;lock);
+                load_balance(rq, 1);
+                spin_unlock(&amp;rq-&gt;lock);
+        }
+</pre><pre class="programlisting">
+        #endif
+</pre><pre class="programlisting">
+        /*
+         * We place interactive tasks back into the active array, if possible.
+         *
+         * To guarantee that this does not starve expired tasks we ignore the
+         * interactivity of a task if the first expired task had to wait more
+         * than a 'reasonable' amount of time. This deadline timeout is
+         * load-dependent, as the frequency of array switched decreases with
+         * increasing number of running tasks:
+         */
+        #define EXPIRED_STARVING(rq)                          ((rq)-&gt;expired_timestamp &amp;&amp;                          (jiffies - (rq)-&gt;expired_timestamp &gt;=                                  STARVATION_LIMIT * ((rq)-&gt;nr_running) + 1))
+</pre><pre class="programlisting">
+        /*
+         * This function gets called by the timer code, with HZ frequency.
+         * We call it with interrupts disabled.
+         */
+        void scheduler_tick(int user_ticks, int sys_ticks)
+        {
+                int cpu = smp_processor_id();
+                runqueue_t *rq = this_rq();
+                task_t *p = current;
+</pre><pre class="programlisting">
+                if (p == rq-&gt;idle) {
+                        /* note: this timer irq context must be accounted for as well */
+                        if (irq_count() - HARDIRQ_OFFSET &gt;= SOFTIRQ_OFFSET)
+                                kstat.per_cpu_system[cpu] += sys_ticks;
+        #if CONFIG_SMP
+                        idle_tick(rq);
+        #endif
+                        return;
+                }
+                if (TASK_NICE(p) &gt; 0)
+                        kstat.per_cpu_nice[cpu] += user_ticks;
+                else
+                        kstat.per_cpu_user[cpu] += user_ticks;
+                kstat.per_cpu_system[cpu] += sys_ticks;
+</pre><pre class="programlisting">
+                /* Task might have expired already, but not scheduled off yet */
+                if (p-&gt;array != rq-&gt;active) {
+                        set_tsk_need_resched(p);
+                        return;
+                }
+                spin_lock(&amp;rq-&gt;lock);
+                if (unlikely(rt_task(p))) {
+                        /*
+                         * RR tasks need a special form of timeslice management.
+                         * FIFO tasks have no timeslices.
+                         */
+                        if ((p-&gt;policy == SCHED_RR) &amp;&amp; !--p-&gt;time_slice) {
+                                p-&gt;time_slice = task_timeslice(p);
+                                p-&gt;first_time_slice = 0;
+                                set_tsk_need_resched(p);
+</pre><pre class="programlisting">
+                                /* put it at the end of the queue: */
+                                dequeue_task(p, rq-&gt;active);
+                                enqueue_task(p, rq-&gt;active);
+                        }
+                        goto out;
+                }
+                /*
+                 * The task was running during this tick - update the
+                 * time slice counter and the sleep average. Note: we
+                 * do not update a thread's priority until it either
+                 * goes to sleep or uses up its timeslice. This makes
+                 * it possible for interactive tasks to use up their
+                 * timeslices at their highest priority levels.
+                 */
+                if (p-&gt;sleep_avg)
+                        p-&gt;sleep_avg--;
+                if (!--p-&gt;time_slice) {
+                        dequeue_task(p, rq-&gt;active);
+                        set_tsk_need_resched(p);
+                        p-&gt;prio = effective_prio(p);
+                        p-&gt;time_slice = task_timeslice(p);
+                        p-&gt;first_time_slice = 0;
+</pre><pre class="programlisting">
+                        if (!TASK_INTERACTIVE(p) || EXPIRED_STARVING(rq)) {
+                                if (!rq-&gt;expired_timestamp)
+                                        rq-&gt;expired_timestamp = jiffies;
+                                enqueue_task(p, rq-&gt;expired);
+                        } else
+                                enqueue_task(p, rq-&gt;active);
+                }
+        out:
+        #if CONFIG_SMP
+                if (!(jiffies % BUSY_REBALANCE_TICK))
+                        load_balance(rq, 0);
+        #endif
+                spin_unlock(&amp;rq-&gt;lock);
+        }
+</pre><pre class="programlisting">
+        void scheduling_functions_start_here(void) { }
+</pre><pre class="programlisting">
+        /*
+         * schedule() is the main scheduler function.
+         */
+        asmlinkage void schedule(void)
+        {
+                task_t *prev, *next;
+                runqueue_t *rq;
+                prio_array_t *array;
+                list_t *queue;
+                int idx;
+</pre><pre class="programlisting">
+                if (unlikely(in_interrupt()))
+                        BUG();
+</pre><pre class="programlisting">
+        #if CONFIG_DEBUG_HIGHMEM
+                check_highmem_ptes();
+        #endif
+        need_resched:
+                preempt_disable();
+                prev = current;
+                rq = this_rq();
+</pre><pre class="programlisting">
+                release_kernel_lock(prev);
+                prev-&gt;sleep_timestamp = jiffies;
+                spin_lock_irq(&amp;rq-&gt;lock);
+</pre><pre class="programlisting">
+                /*
+                 * if entering off of a kernel preemption go straight
+                 * to picking the next task.
+                 */
+                if (unlikely(preempt_count() &amp; PREEMPT_ACTIVE))
+                        goto pick_next_task;
+</pre><pre class="programlisting">
+                switch (prev-&gt;state) {
+                case TASK_INTERRUPTIBLE:
+                        if (unlikely(signal_pending(prev))) {
+                                prev-&gt;state = TASK_RUNNING;
+                                break;
+                        }
+                default:
+                        deactivate_task(prev, rq);
+                case TASK_RUNNING:
+                        ;
+                }
+        pick_next_task:
+                if (unlikely(!rq-&gt;nr_running)) {
+        #if CONFIG_SMP
+                        load_balance(rq, 1);
+                        if (rq-&gt;nr_running)
+                                goto pick_next_task;
+        #endif
+                        next = rq-&gt;idle;
+                        rq-&gt;expired_timestamp = 0;
+                        goto switch_tasks;
+                }
+</pre><pre class="programlisting">
+                array = rq-&gt;active;
+                if (unlikely(!array-&gt;nr_active)) {
+                        /*
+                         * Switch the active and expired arrays.
+                         */
+                        rq-&gt;active = rq-&gt;expired;
+                        rq-&gt;expired = array;
+                        array = rq-&gt;active;
+                        rq-&gt;expired_timestamp = 0;
+                }
+</pre><pre class="programlisting">
+                idx = sched_find_first_bit(array-&gt;bitmap);
+                queue = array-&gt;queue + idx;
+                next = list_entry(queue-&gt;next, task_t, run_list);
+</pre><pre class="programlisting">
+        switch_tasks:
+                prefetch(next);
+                clear_tsk_need_resched(prev);
+</pre><pre class="programlisting">
+                if (likely(prev != next)) {
+                        rq-&gt;nr_switches++;
+                        rq-&gt;curr = next;
+</pre><pre class="programlisting">
+                        prepare_arch_switch(rq, next);
+                        prev = context_switch(prev, next);
+                        barrier();
+                        rq = this_rq();
+                        finish_arch_switch(rq, prev);
+                } else
+                        spin_unlock_irq(&amp;rq-&gt;lock);
+</pre><pre class="programlisting">
+                reacquire_kernel_lock(current);
+                preempt_enable_no_resched();
+                if (test_thread_flag(TIF_NEED_RESCHED))
+                        goto need_resched;
+        }
+</pre></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757512"></a>8. Politics </h2></div></div><p>
+Linus is God
+</p><p>
+&quot;The Linux kernel has no core team, and we all know who they are&quot;
+</p><p>
+Alan Cox (paraphrased)
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2757532"></a>8.1. linux-kernel Mailing List </h3></div></div><p>
+You do not need to know anything to post to Linux Kernel:
+</p><pre class="programlisting">
+   From: Rusty Russell &lt;rusty@linuxcare.com.au&gt;
+   To: root@chaos.analogic.com
+   Cc: lkml &lt;linux-kernel@vger.kernel.org&gt;
+   Subject: Re: On labelled initialisers, gcc-2.7.2.3 and tcp_ipv4.c 
+   Date: Mon, 16 Oct 2000 20:59:38 +1100
+</pre><pre class="programlisting">
+   In message &lt;Pine.LNX.3.95.1001015203310@chaos.analogic.com&gt; you write:
+   &gt; The 'C' language can order structure members anyway it wants.
+</pre><pre class="programlisting">
+   You are an idiot.
+</pre><pre class="programlisting">
+   Rusty.
+   --
+   Hacking time.
+</pre><p>
+Discussion on linux-kernel is usually best when code is included
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2757584"></a>8.2. Patches </h3></div></div><p>
+Patches get dropped
+</p><div class="itemizedlist"><ul type="disc"><li><p>Even good patches.</p></li><li><p>Trivial Patch Monkey: trivial@rustcorp.com.au</p></li></ul></div><p>
+Small number of people have Linus bandwidth reservation
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2757616"></a>8.3. Style </h3></div></div><p>
+Documentation/CodingStyle
+</p><pre class="programlisting">
+        #ifdefs are bad, try to avoid them in functions.
+                eg. Define dummy functions for non-SMP.
+</pre><p>
+Linus says: ALWAYS _RETURN_ THE ERROR.
+</p><p>
+Usually aim for the *smallest possible patch*:
+If Linus says &quot;please do more&quot;, then great!
+</p><p>
+Revolutionary changes have been most successful when they are small (at least to begin with)
+</p><p>
+The correct way to write a portable driver is to write it for 2.5, and then use compatibility macros for 2.4 and 2.2.
+</p><p>
+Removal of debugging stuff: if it's only useful to the maintainer, get rid of it before submission.
+</p><p>
+Standards are much higher for core code and infrastructure then drivers and other code which doesn't break anything else.
+</p><p>
+Do not optimize your locking: use locking idioms.
+</p><p>
+Do not use typedefs unneccessarily.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757680"></a>9. References </h2></div></div><div class="orderedlist"><ol type="1"><li><p>Linux kernel sources:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Documentation/CodingStyle</p></li><li><p>Documentation/DocBook/kernel-hacking.sgml</p></li><li><p>Documentation/DocBook/kernel-locking.sgml</p></li></ul></div></li><li><p>Unix Systems for Modern Architectures:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Symmetric Multiprocessing and Caching for Kernel Programmers</p></li><li><p>Curt Schimmel [ISBN: 0201633388]</p></li></ul></div></li><li><p>Linux Device Drivers</p></li><li><p>Understanding the Linux Kernel</p></li></ol></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757751"></a>10. Appendix A: Ingo Molnar on Linux Accepting Patches </h2></div></div><pre class="programlisting">
+ Date:   Tue, 29 Jan 2002 14:54:27 +0100 (CET)
+ From: Ingo Molnar &lt;mingo@elte.hu&gt;
+ Reply-To: &lt;mingo@elte.hu&gt;
+ To: Rob Landley &lt;landley@trommello.org&gt;
+ Cc: Linus Torvalds &lt;torvalds@transmeta.com&gt;,
+        &lt;linux-kernel@vger.kernel.org&gt;
+ Subject: Re: A modest proposal -- We need a patch penguin
+ In-Reply-To: &lt;200201290446.g0T4kZU31923@snark.thyrsus.com&gt;
+ Message-ID: &lt;Pine.LNX.4.33.0201291324560.3610-100000@localhost.localdomain&gt;
+ MIME-Version: 1.0
+ Content-Type: TEXT/PLAIN; charset=US-ASCII
+ Sender: linux-kernel-owner@vger.kernel.org
+ Precedence: bulk
+ X-Mailing-List: linux-kernel@vger.kernel.org
+</pre><pre class="programlisting">
+ On Mon, 28 Jan 2002, Rob Landley wrote:
+</pre><pre class="programlisting">
+ &gt; (You keep complaining people never send you patches.  People are
+ &gt; suggesting automated patch remailers to spam your mailbox even harder.
+ &gt; There has GOT to be a better way...)
+</pre><pre class="programlisting">
+ None of the examples you cited so far are convincing to me, and i'd like
+ to explain why. I've created and submitted thousands of patches to the
+ Linux kernel over the past 4 years (my patch archive doesnt go back more
+ than 4 years):
+</pre><pre class="programlisting">
+  # ls patches | wc -l
+     2818
+</pre><pre class="programlisting">
+ a fair percentage of those went to Linus as well, and while having seen
+ some of them rejected does hurt mentally, i couldnt list one reject from
+ Linus that i wouldnt reject *today*. But i sure remember being frustrated
+ about rejects when they happened. In any case, i have some experience in
+ submitting patches and i'm maintaining a few subsystems, so here's my take
+ on the 'patch penguin' issue:
+</pre><pre class="programlisting">
+ If a patch gets ignored 33 times in a row then perhaps the person doing
+ the patch should first think really hard about the following 4 issues:
+</pre><pre class="programlisting">
+   - cleanliness
+   - concept
+   - timing
+   - testing
+</pre><pre class="programlisting">
+ a violation of any of these items can cause patch to be dropped *without
+ notice*. Face it, it's not Linus' task to teach people how to code or how
+ to write correct patches. Sure, he still does teach people most of the
+ time, but you cannot *expect* him to be able to do it 100% of the time.
+</pre><pre class="programlisting">
+ 1) cleanliness
+</pre><pre class="programlisting">
+ code cleanliness is a well-know issue, see Documentation/CodingStyle.  If
+ a patch has such problems then maintainers are very likely to help - Linus
+ probably wont and shouldnt. I'm truly shocked sometimes, how many active
+ and experienced kernel developers do not follow these guidelines. While
+ the Linux coding style might be arbitrary in places, all coding styles are
+ arbitrary in some areas, and only one thing is important above all:
+ consistency between kernel subsystems. If i go from one kernel subsystem
+ to another then i'd like to have the same 'look and feel' of source code -
+ i think this is a natural desire we all share. If anyone doesnt see the
+ importance of this issue then i'd say he hasnt seen, hacked and maintained
+ enough kernel code yet. I'd say the absolute positive example here is Al
+ Viro. I think most people just do not realize the huge amount of
+ background cleanup work Al did in the past 2 years. And guess what? I bet
+ Linus would be willing to apply Al's next patch blindfolded.
+</pre><pre class="programlisting">
+ impact: a patch penguin might help here - but he probably wont scale as
+ well as the current set of experienced kernel hackers scale, many of whom
+ are happy to review patches for code cleanliness (and other) issues.
+</pre><pre class="programlisting">
+ 2) concept
+</pre><pre class="programlisting">
+ many of the patches which were rejected for a long time are *difficult*
+ issues. And one thing many patch submitters miss: even if the concept of
+ the patch is correct, you first have to start by cleaning up *old* code,
+ see issue 1). Your patch is not worth a dime if you leave in old cruft, or
+ if the combination of old cruft and your new code is confusing. Also, make
+ sure the patch is discussed and developed openly, not on some obscure
+ list. linux-kernel@vger.kernel.org will do most of the time. I do not want
+ to name specific patches that violate this point (doing that in public
+ just offends people needlessly - and i could just as well list some of my
+ older patches), but i could list 5 popular patches immediately.
+</pre><pre class="programlisting">
+ impact: a patch penguin just wont solve this concept issue, because, by
+ definition, he doesnt deal with design issues. And most of the big patch
+ rejections happen due to exactly these concept issues.
+</pre><pre class="programlisting">
+ 3) timing
+</pre><pre class="programlisting">
+ kernel source code just cannot go through arbitrary transitions. Eg. right
+ now the scheduler is being cleaned up (so far it was more than 50
+ sub-patches and they are still coming) - and work is going on to maximize
+ the quality of the preemption patch, but until the base scheduler has
+ stabilized there is just no point in applying the preemption patch - no
+ matter how good the preemption patch is. Robert understands this very
+ much. Many other people do not.
+</pre><pre class="programlisting">
+ impact: a patch penguin just wont solve this issue, because a patch
+ penguin cannot let his tree transition arbitrarily either. Only separately
+ maintained and tested patches/trees can handle this issue.
+</pre><pre class="programlisting">
+ 4) testing
+</pre><pre class="programlisting">
+ there are code areas and methods which need more rigorous testing and
+ third-party feedback - no matter how good the patch. Most notably, if a
+ patch exports some new user-space visible interface, then this item
+ applies. An example is the aio patch, which had all 3 items right but was
+ rejected due to this item. [things are improving very well on the aio
+ front so i think this will change in the near future.]
+</pre><pre class="programlisting">
+ impact: a patch penguin just wont solve this issue, because his job, by
+ definition, is not to keep patches around indefinitely, but to filter them
+ to Linus. Only separately maintained patches/trees help here. More people
+ are willing to maintain separate trees is good (-dj, -ac, -aa, etc.), one
+ tree can do a nontrivial transition at a time, and by having more of them
+ we can eg. get one of them testing aio, the other one testing some other
+ big change. A single patch penguin will be able to do only one nontrivial
+ transition - and it's not his task to do nontrivial transitions to begin
+ with.
+</pre><pre class="programlisting">
+ Many people who dont actually maintain any Linux code are quoting Rik's
+ complains as an example. I'll now have to go on record disagreeing with
+ Rik humbly, i believe he has done a number of patch-management mistakes
+ during his earlier VM development, and i strongly believe the reason why
+ Linus ignored some of his patches were due to these issues. Rik's flames
+ against Linus are understandable but are just that: flames. Fortunately
+ Rik has learned meanwhile (we all do) and his rmap patches are IMHO
+ top-notch. Joining the Andrea improvements and Rik's tree could provide a
+ truly fantastic VM. [i'm not going to say anything about the IDE patches
+ situation because while i believe Rik understands public criticism, i
+ failed to have an impact on Andre before :-) ]
+</pre><pre class="programlisting">
+ also, many people just start off with a single big patch. That just doesnt
+ work and you'll likely violate one of the 4 items without even noticing
+ it. Start small, because for small patches people will have the few
+ minutes needed to teach you. The bigger a patch, the harder it is to
+ review it, and the less likely it happens. Also, if a few or your patches
+ have gone into the Linux tree that does not mean you are senior kernel
+ hacker and can start off writing the one big, multi-megabyte super-feature
+ you dreamt about for years. Start small and increase the complexity of
+ your patches slowly - and perhaps later on you'll notice that that
+ super-feature isnt all that super anymore. People also underestimate the
+ kind of complexity explosion that occurs if a large patch is created.
+ Instead of 1-2 places, you can create 100-200 problems.
+</pre><pre class="programlisting">
+ face it, most of the patches rejected by Linus are not due to overload. He
+ doesnt guarantee to say why he rejects patches - *and he must not*. Just
+ knowing that your patch got rejected and thinking it all over again often
+ helps finding problems that Linus missed first time around. If you submit
+ to Linus then you better know exactly what you do.
+</pre><pre class="programlisting">
+ if you are uncertain about why a patch got rejected, then shake off your
+ frustration and ask *others*. Many kernel developers, including myself,
+ are happy to help reviewing patches. But people do have egos, and it
+ happens very rarely that people ask it on public lists why their patches
+ got rejected, because people do not like talking about failures. And the
+ human nature makes it much easier to attack than to talk about failures.
+ Which fact alone pretty much shows that most of the time the problem is
+ with the patch submitter, not with Linus.
+</pre><pre class="programlisting">
+ it's so much easier to blame Linus, or maintainers. It's so much easier to
+ fire off an email flaming Linus and getting off the steam than to actually
+ accept the possibility of mistake and *fix* the patch. I'll go on record
+ saying that good patches are not ignored, even these days when the number
+ of active kernel hackers has multipled. People might have to go through
+ several layers first, and finding some kernel hacker who is not as loaded
+ as Linus to review your patch might be necessery as well (especially if
+ the patch is complex), but if you go through the right layers then you can
+ be sure that nothing worthwile gets rejected arbitrarily.
+</pre><pre class="programlisting">
+         Ingo
+</pre><pre class="programlisting">
+ -
+ To unsubscribe from this list: send the line &quot;unsubscribe linux-kernel&quot; in
+ the body of a message to majordomo@vger.kernel.org
+ More majordomo info at  <a href="http://vger.kernel.org/majordomo-info.html" target="_top">http://vger.kernel.org/majordomo-info.html</a>
+ Please read the FAQ at  <a href="http://www.tux.org/lkml/" target="_top">http://www.tux.org/lkml/</a>
+</pre></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2758099"></a>11. Appendix B: Linus Torvalds on Coding Style </h2></div></div><pre class="programlisting">
+ Date:   Wed, 30 Aug 2000 10:04:12 -0700 (PDT)
+ From: Linus Torvalds &lt;torvalds@transmeta.com&gt;
+ To: Rogier Wolff &lt;R.E.Wolff@BitWizard.nl&gt;
+ Cc: Arnaldo Carvalho de Melo &lt;acme@conectiva.com.br&gt;,
+         Philipp Rumpf &lt;prumpf@parcelfarce.linux.theplanet.co.uk&gt;,
+         Kenneth Johansson &lt;ken@canit.se&gt;, Jean-Paul Roubelat &lt;jpr@f6fbb.org&gt;,
+         davem@redhat.com, linux-kernel@vger.kernel.org
+ Subject: Re: [PATCH] af_rose.c: s/suser/capable/ + micro cleanups
+ In-Reply-To: &lt;200008300717.JAA02899@cave.bitwizard.nl&gt;
+ Message-ID: &lt;Pine.LNX.4.10.10008300941230.1393-100000@penguin.transmeta.com&gt;
+ MIME-Version: 1.0
+ Content-Type: TEXT/PLAIN; charset=US-ASCII
+ Sender: linux-kernel-owner@vger.kernel.org
+ Precedence: bulk
+ X-Mailing-List:         linux-kernel@vger.kernel.org
+</pre><pre class="programlisting">
+ On Wed, 30 Aug 2000, Rogier Wolff wrote:
+ &gt; 
+ &gt; &gt; source code smaller and more easier to read (yes, this is debatable,
+ &gt; &gt; I think it becomes more clean, other think otherwise, I'm just
+ &gt; &gt; following what Linus said he prefer).
+ &gt; 
+ &gt; The kernel is a multi-million-lines-of-code piece of software.
+ &gt; Software maintenance cost is found to correlate strongly with the
+ &gt; number of lines-of-code.
+ &gt; 
+ &gt; So, I would prefer the shorter version. 
+</pre><pre class="programlisting">
+ I disagree.
+</pre><pre class="programlisting">
+ Number of lines is irrelevant.
+</pre><pre class="programlisting">
+ The _complexity_ of lines counts.
+</pre><pre class="programlisting">
+ And ?: is a complex construct, that is not always visually very easy to
+ parse because of the &quot;non-local&quot; behaviour. 
+</pre><pre class="programlisting">
+ That is not saying that I think you shouldn't use ?: at all. It's a
+ wonderful construct in many ways, and I use it all the time myself. But I
+ actually prefer
+</pre><pre class="programlisting">
+         if (complex_test)
+                 return complex_expression1;
+</pre><pre class="programlisting">
+         return complex_expression2;
+</pre><pre class="programlisting">
+ over
+</pre><pre class="programlisting">
+         return (complex_test) ? complex_expression1 : complex_expression2;
+</pre><pre class="programlisting">
+ because by the time you have a complex ?: thing it's just not very
+ readable any more.
+</pre><pre class="programlisting">
+ Basically, dense lines are bad. And ?: can make for code that ends up &quot;too
+ dense&quot;.
+</pre><pre class="programlisting">
+ More specific example: I think
+</pre><pre class="programlisting">
+         return copy_to_user(dst, src, size) ? -EFAULT : 0;
+</pre><pre class="programlisting">
+ is fine and quite readable. Fits on a simple line.
+</pre><pre class="programlisting">
+ However, it's getting iffy when it becomes something like
+</pre><pre class="programlisting">
+         return copy_to_user(buf, page_address(page) + offset, size) ? -EFAULT: 0;
+</pre><pre class="programlisting">
+ for example. The &quot;return&quot; is so far removed from the actual return values,
+ that it takes some parsing (maybe you don't even see everything on an
+ 80-column screen, or even worse, you split up one expression over several
+ lines..
+</pre><pre class="programlisting">
+ (Basically, I don't like multi-line expressions. Avoid stuff like
+</pre><pre class="programlisting">
+         x = ...
+                 + ...
+                 - ...;
+</pre><pre class="programlisting">
+ unless it is _really_ simple. Similarly, some people split up their
+ &quot;for ()&quot; or &quot;while ()&quot; statement things - which usually is just a sign of
+ the loop baing badly designed in the first place. Multi-line expressions
+ are sometimes unavoidable, but even then it's better to try to simplify
+ them as much as possible. You can do it by many means
+</pre><pre class="programlisting">
+  - make an inline function that has a descriptive name. It's still
+    complex, but now the complexity is _described_, and not mixed in with
+    potentially other complex actions.
+</pre><pre class="programlisting">
+  - Use logical grouping. This is sometimes required especially in &quot;if()&quot;
+    statements with multiple parts (ie &quot;if ((x || y) &amp;&amp; !z)&quot; can easily
+    become long - but you might consider just the above inline function or
+    #define thing).
+</pre><pre class="programlisting">
+  - Use multiple statements. I personally find it much more readable to
+    have
+</pre><pre class="programlisting">
+         if (PageTestandClearReferenced(page))
+                 goto dispose_continue;
+</pre><pre class="programlisting">
+         if (!page-&gt;buffers &amp;&amp; page_count(page) &gt; 1)
+                 goto dispose_continue;
+</pre><pre class="programlisting">
+         if (TryLockPage(page))
+                 goto dispose_continue;
+</pre><pre class="programlisting">
+    rather than the equivalent
+</pre><pre class="programlisting">
+         if (PageTestandClearReferenced(page) ||
+             (!page-&gt;buffers &amp;&amp; page_count(page) &gt; 1) ||
+             TryLockPage(page))
+                 goto dispose_continue;
+</pre><pre class="programlisting">
+    regardless of any grouping issues.
+</pre><pre class="programlisting">
+ Basically, lines-of-code is a completely bogus metric for _anything_.
+ Including maintainability.
+</pre><pre class="programlisting">
+ &gt; If it takes you a few seconds to look this over, that's fine. Even it
+ &gt; the one &quot;complicated&quot; line take twice as long (per line) as the
+ &gt; original 4 lines, then it's a win. 
+</pre><pre class="programlisting">
+ I disagree violently.
+</pre><pre class="programlisting">
+                 Linus
+</pre></div></div></body></html>

@@ -1,0 +1,285 @@
+<HTML>
+<HEAD>
+<TITLE>Kernel-Como: Problemas t&iacute;picos </TITLE>
+</HEAD>
+<BODY>
+<A HREF="Kernel-Como-6.html">Anterior</A>
+<A HREF="Kernel-Como-8.html">Siguiente</A>
+<A HREF="Kernel-Como.html#toc7">Indice</A>
+<HR>
+<H2><A NAME="tipicos"></A> <A NAME="s7">7. Problemas t&iacute;picos </A></H2>
+
+
+
+<H2><A NAME="ss7.1">7.1 <CODE>make clean</CODE> </A></H2>
+
+
+<P>Si su nuevo n&uacute;cleo hace cosas raras, puede ser que se le olvidara hacer
+`<CODE>make clean</CODE>' antes de compilar. Los s&iacute;ntomas suelen ser extra&ntilde;os
+cuelgues, problemas de E/S... aseg&uacute;rese tambi&eacute;n de hacer `<CODE>make
+dep</CODE>'.</P>
+
+
+<H2><A NAME="lentos"></A> <A NAME="ss7.2">7.2 N&uacute;cleos muy lentos o muy grandes </A></H2>
+
+
+<P>Si su n&uacute;cleo consume mucha memoria, o la compilaci&oacute;n se hace eterna
+incluso con su nuevo <I>786DX6/440</I>, probablemente se deber&aacute; a haber
+elegido demasiados manejadores, sistemas de ficheros, etc. a soportar en
+el sistema. Si no los va a usar, no los incluya, puesto que consumen
+memoria.  Lo t&iacute;pico en estos casos es que se recurre demasiado al
+intercambio con el disco, lo que se aprecia en un ruido `excesivo' del
+disco duro. </P>
+<P>Puede ver cu&aacute;nta memoria ocupa su n&uacute;cleo comparando los valores obtenidos
+al ver el fichero <CODE>/proc/meminfo</CODE>, o con el comando <CODE>dmesg</CODE> o el
+log de los mensajes del n&uacute;cleo, donde ver&aacute; algo parecido a esto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Memory: 15124k/16384k available (552k kernel code, 384k reserved, 324k data)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En mi 386 (con pocos drivers configurados) sale:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Memory: 7000k/8192k available (496k kernel code, 384k reserved, 312k data)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss7.3">7.3 El n&uacute;cleo no compila </A></H2>
+
+
+<P>Si no compila, puede ser por un fallo de parcheo, u otro tipo de
+corrupci&oacute;n en los ficheros fuente. Adem&aacute;s, la versi&oacute;n de <CODE>gcc</CODE> puede no
+ser correcta o los propios ficheros de <CODE>#include</CODE>. Aseg&uacute;rese
+que los enlaces simb&oacute;licos necesarios (descritos en el fichero <CODE>README</CODE>
+de Linus) existen. En general, cuando un n&uacute;cleo est&aacute;ndar no se puede
+compilar, es porque hay alg&uacute;n problema serio en el sistema, y ser&aacute;
+necesario reinstalar algunos programas.</P>
+<P>Tambi&eacute;n puede suceder que le den errores compilando el n&uacute;cleo <CODE>1.2.x</CODE>
+con un <CODE>gcc</CODE> <I>ELF</I> (<CODE>2.6.3</CODE> o superior). Se puede intentan
+arreglar a&ntilde;adiendo las siguientes l&iacute;neas al fichero
+<CODE>arch/i386/Makefile</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+AS=/usr/i486-linuxaout/bin/as
+LD=/usr/i486-linuxaout/bin/ld -m i386linux
+CC=gcc -b i486-linuxaout -D__KERNEL__ -I$(TOPDIR)/include
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora, haga `<CODE>make dep</CODE>' y `<CODE>make zimage</CODE>' de nuevo.</P>
+<P>En algunos casos muy raros el <CODE>gcc</CODE> romper&aacute; con un mensaje similar a
+``<CODE>xxx exited with signal 15</CODE>''. En este caso la soluci&oacute;n puede estar
+en desactivar la cach&eacute; de segundo nivel, pensar en un fallo hardware de la
+memoria... o reinstalar de nuevo el <CODE>gcc</CODE>. </P>
+
+
+<H2><A NAME="ss7.4">7.4 El nuevo n&uacute;cleo no parece arrancar </A></H2>
+
+
+<P>No se ejecut&oacute; <CODE>LILO</CODE>, o no est&aacute; bien configurado. A veces, se ponen
+errores como `<CODE>boot = /dev/hda1</CODE>' en lugar de `<CODE>boot =
+/dev/hda</CODE>'.</P>
+
+
+<H2><A NAME="ss7.5">7.5 Se olvid&oacute; ejecutar <CODE>LILO</CODE>, y el sistema ya no arranca</A></H2>
+
+
+<P>¡Vaya problema! Lo mejor que puede hacerse ahora es arrancar con un
+disquete y preparar otro disquete para arrancar Linux (con <CODE>`make
+zdisk'</CODE> se hizo uno). Necesita saber qu&eacute; sistema de ficheros ra&iacute;z
+(<CODE>/</CODE>) tiene, d&oacute;nde est&aacute; y su tipo (por ejemplo, <CODE>ext2</CODE> o
+<CODE>minix</CODE>). En este ejemplo, tambi&eacute;n hay que saber d&oacute;nde est&aacute;n los
+ficheros de <CODE>/usr</CODE>, en otra partici&oacute;n. </P>
+<P>En el siguiente ejemplo, <CODE>/</CODE> es <CODE>/dev/hda1</CODE>, y el sistema
+con las fuentes del n&uacute;cleo es <CODE>/dev/hda3</CODE>, montado como
+<CODE>/usr</CODE> normalmente. Ambos son sistemas <CODE>ext2</CODE>. La imagen
+compilada estar&aacute; en el sistema de las fuentes.</P>
+<P>La idea es que si hay un fichero <CODE>zImage</CODE> correcto, puede salvarse
+en un disquete. Otra posibilidad (que funcionar&aacute; mejor o peor, seg&uacute;n el
+caso) se ver&aacute; en otro ejemplo.</P>
+<P>En primer lugar, arranque con un disquete de instalaci&oacute;n o de rescate, y
+monte el sistema de ficheros que contenga el n&uacute;cleo a usar:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ mkdir /mnt
+ mount -t ext2 /dev/hda3 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si <CODE>mkdir</CODE> le dice que el directorio ya existe, no hay problema. 
+Ahora, pase al directorio donde est&aacute; el n&uacute;cleo compilado. Vea que</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/mnt + /usr/src/linux/arch/i386/boot - /usr = /mnt/src/linux/arch/i386/boot
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ponga un disco con formato en la unidad ``A:'' (que no sea el disquete con
+el que ha arrancado) y copie el n&uacute;cleo a &eacute;l:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /mnt/src/linux/arch/i386/boot
+ dd if=zImage of=/dev/fd0
+ rdev /dev/fd0 /dev/hda1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>vaya a <CODE>/</CODE> y desmonte el sistema de ficheros:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ cd /
+ umount /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora puede rearrancar el sistema desde el disquete. ¡No olvide ejecutar
+<CODE>LILO</CODE>!</P>
+<P>Como se ha dicho, hay otra alternativa. Si el n&uacute;cleo est&aacute; en el directorio
+ra&iacute;z (por ejemplo <CODE>/vmlinuz</CODE>), puede usarlo para un disquete de
+arranque. Suponiendo las condiciones anteriores, har&iacute;amos los cambios
+siguientes en el ejemplo anterior: <CODE>/dev/hda3</CODE> por
+<CODE>/dev/hda1</CODE> (el sistema ra&iacute;z), <CODE>/mnt/src/linux</CODE> por
+<CODE>/mnt</CODE>, y `<CODE>if=zImage</CODE>' por `<CODE>if=vmlinuz</CODE>'. El resto
+puede ignorarse. </P>
+<P>Usar <CODE>LILO</CODE> con discos grandes (de m&aacute;s de 1024 cilindros) puede dar
+problemas. Le recomendamos que lea el <I>mini-HOWTO</I> sobre LILO para m&aacute;s
+informaci&oacute;n.
+<SL>As&iacute; como el <I>Discos-Grandes-mini-Como</I>,
+disponible en castellano, ver secci&oacute;n 
+<A HREF="Kernel-Como-14.html#Grupos">Grupos</A>.</SL>
+.</P>
+
+
+<H2><A NAME="ss7.6">7.6 Mensaje de aviso: `<CODE>warning: bdflush not running</CODE>' </A></H2>
+
+
+<P>Es un problema muy importante. Desde la versi&oacute;n <CODE>1.0</CODE> del n&uacute;cleo (20 de
+Abril de 1994), hay un programa, `<CODE>update</CODE>' que, peri&oacute;dicamente,
+vuelca al disco la cach&eacute; de <I>buffers</I> del sistema. Obtenga las fuentes
+de `<CODE>bdflush</CODE>' (est&aacute; donde se distribuyen las fuentes del n&uacute;cleo) e
+inst&aacute;lelas (quiz&aacute;s deba usar mientras lo hace el n&uacute;cleo antiguo). Despu&eacute;s
+del rearranque, se instalar&aacute; en memoria como `<CODE>update</CODE>' y ya no
+habr&aacute; m&aacute;s avisos.</P>
+
+
+<H2><A NAME="ss7.7">7.7 Salen mensajes sobre s&iacute;mbolos no definidos, y no compila</A></H2>
+
+
+<P>Esto ser&aacute; probablemente porque tenga un compilador <I>ELF</I> (<CODE>gcc
+2.6.3</CODE> y posteriores) y las fuentes <CODE>1.2.x</CODE> o anteriores. Habitualmente
+esto se corrige a&ntilde;adiendo las siguientes l&iacute;neas al archivo
+<CODE>arch/i386/Makefile</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+AS=/usr/i486-linuxaout/bin/as
+LD=/usr/i486-linuxaout/bin/ld -m i386linux
+CC=gcc -b i486-linuxaout -D__KERNEL__ -I$(TOPDIR)/include
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto permitir&aacute; compilar el n&uacute;cleo <CODE>1.2.x</CODE> con librer&iacute;as <CODE>a.out</CODE>.</P>
+
+
+<H2><A NAME="ss7.8">7.8 No consigo que me detecte mi CD-ROM <I>IDE/ATAPI</I></A></H2>
+
+
+<P>Mucha gente tiene este problema, siendo las causas muy diversas.</P>
+<P>El error m&aacute;s com&uacute;n es tener el dispositivo en una interfaz IDE sin
+compa&ntilde;&iacute;a de otro disco, para lo que debe ser configurado como ``maestro''
+(master) o ``&uacute;nico'' (single), nunca como ``esclavo'' (slave).</P>
+<P><I>Creative Labs</I> est&aacute; poniendo interfaces IDE en sus tarjetas de sonido.
+Sin embargo, esto es un problema cuando se tienen ya dos interfaces IDE en
+la placa, en la <I>IRQ 15</I>. Entonces se suele configurar el IDE de la
+tarjeta de sonido en la <I>IRQ 11</I>, y los n&uacute;cleos <CODE>1.2.x</CODE> no saben
+manejar esto (tener, en la pr&aacute;ctica, tres IDE).</P>
+<P>En las versiones <CODE>1.3.x</CODE> se empieza a intentar soportar esto, pero est&aacute;
+en desarrollo y en todo caso no incluye autodetecci&oacute;n. Para utilizarlo,
+pues, deber&aacute; hacer algunas cosas.</P>
+<P>Si no tiene segunda IDE en placa, cambie los ``<I>jumpers</I>'' de la
+tarjeta de sonido referentes a la interfaz IDE para que ocupen la <I>IRQ
+15</I> (segunda interfaz). Esto deber&iacute;a funcionar.</P>
+<P>Si por el contrario hay en total tres interfaces, obtenga un n&uacute;cleo
+<I>1.3.x</I> (por ejemplo, el <CODE>1.3.57</CODE> lo incluye) y lea el documento
+<CODE>drivers/block/README.ide</CODE>, donde encontrar&aacute; m&aacute;s informaci&oacute;n.</P>
+
+
+<H2><A NAME="ss7.9">7.9 Salen mensajes sobre cosas de encaminamiento obsoletas </A></H2>
+
+
+<P>Consiga nuevas versiones de los programas `<CODE>route</CODE>' y otros que
+manipulan tablas de encaminamiento. El fichero
+<CODE>/usr/include/linux/route.h</CODE> tiene cambios al respecto. </P>
+
+
+<H2><A NAME="ss7.10">7.10 La funci&oacute;n de cortafuegos no funciona en el n&uacute;cleo <CODE>1.2.0</CODE></A></H2>
+
+
+<P>Actual&iacute;cese al menos a la <CODE>1.2.1</CODE>.</P>
+
+
+<H2><A NAME="ss7.11">7.11 Mensaje: ``<CODE>Not a compressed kernel Image file</CODE>''</A></H2>
+
+
+<P>No utilice el fichero <CODE>vmlinux</CODE> creado en <CODE>/usr/src/linux</CODE> para
+arrancar, sino el mencionado <CODE>zImage</CODE>. </P>
+
+
+<H2><A NAME="ss7.12">7.12 Hay problemas con la consola al pasarse a la <CODE>1.3.x</CODE></A></H2>
+
+
+<P>Ponga `<CODE>linux</CODE>' en la entrada `<CODE>console</CODE>' del fichero
+<CODE>/etc/termcap</CODE>. Adem&aacute;s, deber&aacute; hacer una entrada en <CODE>terminfo</CODE>. </P>
+
+
+<H2><A NAME="ss7.13">7.13 Algunas cosas no compilan despu&eacute;s de la actualizaci&oacute;n</A></H2>
+
+
+<P>El n&uacute;cleo incluye ciertos ficheros <CODE>#include</CODE> (acaban en
+<CODE>.h</CODE>)  que se referencian desde <CODE>/usr/include</CODE>. T&iacute;picamente se
+referencian con la l&iacute;nea:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;linux/xyzzy.h&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Normalmente, hay un enlace simb&oacute;lico `<CODE>linux</CODE>' de <BR> 
+<CODE>/usr/include</CODE> al directorio <CODE>/usr/src/linux/include/linux</CODE>. 
+Si no existe tal enlace, o apunta a un lugar incorrecto, muchas cosas
+compilar&aacute;n mal. Por ejemplo, el problema es obvio si borr&oacute; las fuentes del
+n&uacute;cleo porque le ocupaban mucho. Otro problema puede tener relaci&oacute;n con
+los permisos de los ficheros, tal vez debido a un <CODE>umask</CODE> de la cuenta
+<CODE>root</CODE> que obligue a crear los ficheros ocultos a otros usuarios por
+defecto.  Puede solucionar esto con el comando <CODE>chmod</CODE>, pero ser&aacute; m&aacute;s
+c&oacute;modo descomprimir las fuentes del n&uacute;cleo a&ntilde;adiendo la opci&oacute;n <CODE>-p</CODE>
+(preservar modo)  al comando <CODE>tar</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+blah# tar zxvpf linux.x.y.z.tar.gz linux/include
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Nota: Con ``<CODE>make config</CODE>'' se crea el enlace
+<CODE>/usr/src/linux</CODE> si no existe. </P>
+
+
+<HR>
+<A HREF="Kernel-Como-6.html">Anterior</A>
+<A HREF="Kernel-Como-8.html">Siguiente</A>
+<A HREF="Kernel-Como.html#toc7">Indice</A>
+</BODY>
+</HTML>

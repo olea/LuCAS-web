@@ -1,0 +1,599 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_0.6">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="Graphics">
+ <TITLE>Graphics : Renderman III</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 CELLSPACING=0 CELLPADDING=5 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/Carlos_C.gif" ALT="[Foto del Autor]" HEIGHT=147 WIDTH=122>
+<BR>por  <A HREF="mailto:ccgrau@disca.upv.es">Carlos Calzada Grau</A>
+<BR><BR><I>Sobre el Author:</I><BR><P>
+
+    Soy licenciado en informática  y desde que me regalaron un
+Spectrum  me han gustado los  gráficos por ordenador.  Soy
+muy aficionado a Linux, a  su filosofía de desarrollo y  a
+todo lo que no tiene que  ver con micro$oft. Los bonsáis y
+los acuarios son mis   aficiones no relacionadas  con  los
+aparatitos, estos con pantalla y teclado.
+
+</P><P><FONT COLOR="#336633">Contenidos</FONT>:
+<OL>
+  <LI><A HREF="#lfindex0">Introducción</A></LI>
+  <LI><A HREF="#lfindex1">Escena simple:</A></LI>
+  <LI><A HREF="#lfindex2">Movimiento rectilíneo:</A></LI>
+  <LI><A HREF="#lfindex3">Movimiento parabólico:</A></LI>
+  <LI><A HREF="#lfindex4">Referencias</A></LI>
+</OL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Renderman III</H2>
+ <IMG SRC="../../common/images/lfmeta.gif" ALT="[Ilustracion]" HSPACE=10 HEIGHT=100 WIDTH=100><P><FONT COLOR="#336633">Resumen</FONT>:
+<P>
+
+  En este tercer artículo de la serie sobre Renderman
+(<a href=../May1998/article35.html>I</a><a href=../July1998/article50.html>II</a>) trataremos uno de los
+aspectos más importantes: la posibilidad de modelar y animar
+una escena utilizando "C" o "C++".
+</P><HR size="2" noshade><BR>
+<!-- BODY OF THE ARTICLE -->
+
+      
+      <a name="seccion1" ></a><A NAME="lfindex0">&nbsp;</A>
+<H2>Introducción</H2>
+</a>
+      <P>
+	Como hemos podido ver  en los dos artículos  anteriores, crear
+	una escena o  una   animación escribiendo directamente  en  un
+	fichero de texto es  una tarea tediosa. ¿Te imaginas  hacer un
+	fichero  "<tt>.rib</tt>" con  el   movimiento de  una   pelota
+	botando?.  Para hacernos la vida  un poco más fácil tenemos la
+	posibilidad de escribir en "C" o "C++" el  modelo de la escena
+	o animación con una serie de funciones que sacan por la salida
+	estándar los comandos Renderman  que queramos.  Esta salida la
+	podemos   pasar  a través  de   un tubo (<tt>pipe</tt>) a otro
+	proceso   (como        <tt>rendrib</tt>,   <tt>rendribv</tt> o
+	<tt>rgl</tt>) o  redireccionarla directamente hacia un fichero
+	<tt>.rib</tt>.
+      </p>
+
+      <P>
+	Cuando instalamos Blue Moon  Rendering Tools, nos aparecen dos
+	directorios llamados <tt>lib</tt> e <tt>include</tt>. En éstos
+	encontramos cuatro ficheros de los cuales  dos son los que nos
+	interesan:  <tt>ri.h</tt> y  <tt>libribout.a</tt>  que son las
+	declaraciones   y      la librería       de          funciones
+	respectivamente.  Debemos   copiar        <tt>ri.h</tt>      a
+	<tt>/usr/local/include</tt>    y     <tt>libribout.a</tt>    a
+	<tt>/usr/local/lib</tt> (también se pueden poner en otro sitio
+	pero este es un lugar adecuado) y ya está, estamos listos para
+	nuestro primer programa.
+      </p>
+
+      
+
+      <a name="seccion2"></a><A NAME="lfindex1">&nbsp;</A>
+<H2>Escena simple:</H2>
+</a>
+      <P>
+	En este  primer programa veremos lo  básico de la programación
+	con Renderman. Como en cualquier  programa C, debemos  incluir
+	el correspondiente .h   antes  de utilizar  una   librería, en
+	nuestro caso  será  <tt>ri.h</tt>.   Además  deberemos enlazar
+	(link) el programa con la  librería, para ello deberemos hacer
+	lo siguiente:
+	<P>
+
+      <PRE>
+gcc miprograma.c -o miprograma -lribout -lm
+      </PRE>
+
+
+      <P align="left">
+	Nosotros      utilizaremos      un    <A       HREF="../../common/src/article81/Makefile"
+	style="background-color:#f8fcc0"><tt>Makefile</tt></A>    para
+	ahorrarnos algo de trabajo a la hora de teclear:
+
+      <table bgcolor="#f8fcc0" align="center"  border="2">
+	<tr>
+	  <td>
+	    <font size="-1">
+	    <pre>LIBS = -lm -lribout
+PROGNAME = primero
+	 
+all: $(PROGNAME)
+	
+$(PROGNAME).o: $(PROGNAME).c
+	gcc -c $(PROGNAME).c
+	
+$(PROGNAME): $(PROGNAME).o 
+	gcc -o $(PROGNAME) $(PROGNAME).o $(LIBS)</pre>
+	  </font>
+	  </td>
+	</tr>
+      </table>
+    </p>
+      
+      <p>&nbsp;</p>
+
+      <P align="left" >
+	El primer programa  que haremos consistirá en  unos ejes y una
+	pelota  en  el  centro,   lo llamaremos   <A  HREF="../../common/src/article81/primero.c"
+	  style="background-color:#f8fcc0"><tt>primero.c</tt></A>  (¡que
+	original!) y es el siguiente:
+      <table bgcolor="#f8fcc0" align="center"  border="2" >
+	<tr>
+	  <td>  
+	    <font size="-1">
+<PRE> 1 #include &lt;stdio.h>
+ 2 #include &lt;math.h>
+ 3 #include &lt;ri.h>
+ 4
+ 5 void main(void)
+ 6 {
+ 7  int i;
+ 8  int x,y,z;
+ 9  int nf;
+10  float slopex,slopey,slopez;
+11
+12  RtColor Rojo={1,0,0};
+13  RtColor Verde={0,1,0};
+14  RtColor Azul={0,0,1};
+15  RtColor Blanco={1,1,1};
+16
+17  RtPoint p1={30,0,10}; /* Posicicion inicial de la pelota */
+18  RtPoint p2={0,20,10}; /*   Posicion final de la pelota   */
+19		
+20  RtPoint from={0,100,100}; /*   Direccion de la luz       */
+21  RtPoint to={0,0,0};
+22
+23  char name[]="primero.tif";
+24  RtFloat fov=45;
+25  RtFloat intensity1=0.1;
+26  RtFloat intensity2=1.5;
+27  RtInt init=0,end=1;
+28		
+29  RiBegin(RI_NULL);
+30    RiFormat(320,240,1);
+31    RiPixelSamples(2,2);	
+32    RiShutter(0,1);
+33    RiFrameBegin(1);
+34     RiDisplay(name,"file","rgb",RI_NULL);
+35     name[7]++;
+36     RiProjection("perspective","fov",&fov,RI_NULL);
+37     RiTranslate(0,-5,60);
+38     RiRotate(-120,1,0,0);
+39     RiRotate(25,0,0,1);
+40     RiWorldBegin();
+41       RiLightSource("ambientlight","intensity",&intensity1,RI_NULL);
+42       RiLightSource("distantlight","intensity",&intensity2,"from",from,"to",to,RI_NULL);
+43       RiColor(Azul);
+44       RiTransformBegin();
+45         RiCylinder(1,0,20,360,RI_NULL);
+46         RiTranslate(0,0,20);
+47         RiCone(2,2,360,RI_NULL);
+48       RiTransformEnd();
+49       RiColor(Verde);
+50       RiTransformBegin();
+51         RiRotate(-90,1,0,0);
+52 	   RiCylinder(1,0,20,360,RI_NULL);
+53 	   RiTranslate(0,0,20);
+54 	   RiCone(2,2,360,RI_NULL);
+55       RiTransformEnd();
+56       RiColor(Rojo);
+57       RiTransformBegin();
+58 	   RiRotate(90,0,1,0);
+59 	   RiCylinder(1,0,20,360,RI_NULL);
+60 	   RiTranslate(0,0,20);
+61 	   RiCone(2,2,360,RI_NULL);
+62       RiTransformEnd();
+63       RiColor(Blanco);
+64       RiSphere(5,-5,5,360,RI_NULL);
+65     RiWorldEnd();
+66    RiFrameEnd();
+67  RiEnd();
+68 };</PRE>
+	  </font>
+	  </td>
+	</tr>
+      </table>
+    </p>
+      
+      
+
+      <P>
+	En  las    tres   primeras   lineas   tenemos  una  serie   de
+	<tt>#includes</tt> entre los que  está <tt>ri.h</tt> que es el
+	que tiene   los prototipos de las   funciones. Cada llamada de
+	Renderman  tiene su función  equivalente en <tt>ri.h</tt>, así
+	pues, <tt>TransformBegin</tt> se  corresponde con  la  función
+	<tt>RiTransformBegin()</tt>,   etc.  Haciendo    <tt>make</tt>
+	generamos  el fichero    ejecutable  <tt>primero</tt>. Si   lo
+	ejecutamos  tendremos   por la salida  estándar   una serie de
+	comandos   Renderman, éstos  los  podemos  redireccionar a  un
+	fichero (<tt>primero >  primero.rib</tt>) o  redireccionarlo a
+	otro proceso  (<tt>primero | rendrib</tt>).  Si optamos por la
+	última forma, <tt>rendrib</tt> generará el fichero renderizado
+	<tt>primero.tif</tt>:
+      </p> 
+      
+      <CENTER>
+	<IMG SRC="../../common/images/article42/primero.gif" width="326" height="263">
+      </CENTER>
+
+      <p>
+	Antes  de poder  utilizar  cualquiera  de las  llamadas  en un
+	programa debemos hacer una llamada a <tt>RiBegin(RI_NULL)</tt>
+	y al acabar un llamada a <tt>RiEnd()</tt>. El parámetro que le
+	pasamos a   <tt>RiBegin</tt>  es típicamente <tt>RI_NULL</tt>.
+	Para evitar el envío de RIB's hacia la salida estándar podemos
+	poner     en este   argumento     el nombre   de   un  fichero
+	(<tt>"mifichero.rib"</tt>) e incluso  el nombre  de un proceso
+	(como  <tt>rendrib</tt>)  y   de  esta forma   pasárselo  a un
+	programa sin necesidad de crear un fichero RIB intermedio.
+      </p>
+
+      <P>
+	En el listado podemos  ver, además de  las cosas típicas de C,
+	algunos tipos y funciones propios  del interface de Renderman:
+	tenemos el  tipo <tt>RtColor</tt> que   es un vector  de  tres
+	reales  indicando la cantidad  de   rojo, verde  y azul   (con
+	valores   entre  0.0  y  1.0),      vemos  también el     tipo
+	<tt>RtPoint</tt>  que   indica posiciones  en   el espacio   y
+	<tt>RtFloat</tt>  y <tt>RtInt</tt>  que  son  el  tipo real  y
+	entero respectivamente.  
+      </p>
+      
+      <P align="left" >
+	En  la  línea 29 tenemos  la llamada <tt>RiBegin(RI_NULL)</tt>
+	que como  hemos dicho antes es  la primera que debemos usar. A
+	partir de aquí tenemos más o menos lo  que escribiríamos en un
+	fichero RIB. Esto  lo podemos comprobar ejecutando el programa
+	y  redireccionándolo   a    un   fichero   (<tt>./primero    >
+	primero.rib</tt>), obtendremos lo siguiente:
+      <table bgcolor="#f8fcc0" align="center"  border="2" >
+	<tr>
+	  <td>
+	    <font size="-1">
+<PRE>##RenderMan RIB-Structure 1.0
+version 3.03
+Format 320 240 1
+PixelSamples 2 2
+Shutter 0 1
+FrameBegin 1
+Display "camara.tif" "file" "rgb"
+Projection "perspective" "fov" [45 ]
+Translate 0 -5 60 
+Rotate -120 1 0 0 
+Rotate 25 0 0 1 
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1 ]
+LightSource "distantlight" 2 "intensity" [1.5 ] "from" [0 100 100] "to" [0 0 0]
+Color [0 0 1]
+TransformBegin
+Cylinder 1 0 20 360
+Translate 0 0 20 
+Cone 2 2 360
+TransformEnd
+Color [0 1 0]
+TransformBegin
+Rotate -90 1 0 0 
+Cylinder 1 0 20 360
+Translate 0 0 20 
+Cone 2 2 360
+TransformEnd
+Color [1 0 0]
+TransformBegin
+Rotate 90 0 1 0 
+Cylinder 1 0 20 360
+Translate 0 0 20 
+Cone 2 2 360
+TransformEnd
+Color [1 1 1]
+Sphere 5 -5 5 360
+WorldEnd
+FrameEnd</PRE>
+	    </font>
+	  </td>
+	</tr>
+      </table>
+    </p>
+      
+      <P>
+	Viendo  esto podemos pensar que  generar escenas de esta forma
+	es más costoso ya que tenemos  que hacer exactamente lo mismo,
+	definir todas las cosas y posicionarlas en  la escena, pero la
+	verdadera   potencia  de    la  librería    estriba   en   las
+	animaciones. Este ejemplo consta sólo de un <tt>frame</tt> así
+	que a continuación haremos que la pelota se mueva.
+      </P>
+     
+
+
+      <a name="seccion3"></a><A NAME="lfindex2">&nbsp;</A>
+<H2>Movimiento rectilíneo:</H2>
+</a>
+      <P>
+	En este segundo programa usaremos  exactamente la misma escena
+	pero  haremos que la  pelota  se  desplace desde la   posición
+	(30,0,10) a la posición (0,20,10) que es más  o menos desde la
+	derecha  de   la pantalla   hasta  la   izquierda. Estas   dos
+	posiciones las  definiremos como <tt>RtPoint</tt> (lineas 18 y
+	19).  El   número de <tt>frames</tt>  o   imágenes  de las que
+	constará nuestra   animación  lo  definimos  con la   variable
+	<tt>nf</tt>. A   partir  de este número  y   de las posiciones
+	inicial y final obtenemos  el  paso por <tt>frame</tt> en  los
+	tres   ejes  (<tt>slopex, slopey</tt>  y <tt>slopez</tt>). Con
+	todo esto, lo único que nos falta  es variar la posición de la
+	pelota  en función del  número  de  <tt>frame</tt> en que  nos
+	encontremos. Esto  lo hacemos en las lineas  75 a 78, donde un
+	<tt>TransformBegin</tt>/<tt>TransformEnd</tt> se   encarga  de
+	definir  la posición de la bola.  La posición la calculamos de
+	una forma muy simple como podemos ver en la línea 76.
+      </p>
+      <table bgcolor="#f8fcc0" align="center"  border="2" >
+	<tr>
+	  <td>  
+	    <font size="-1">
+<PRE> 1 #include &lt;stdio.h>
+ 2 #include &lt;math.h>
+ 3 #include &lt;ri.h>
+ 4 #include "filename.h"
+ 5
+ 6 void main(void)
+ 7 {
+ 8  int i;
+ 9  int x,y,z;
+10  int nf;
+11  float slopex,slopey,slopez;  
+12
+13  RtColor Rojo={1,0,0};
+14  RtColor Verde={0,1,0};
+15  RtColor Azul={0,0,1};
+16  RtColor Blanco={1,1,1};
+17
+18  RtPoint p1={30,0,10}; /* Posicicion inicial de la pelota */
+19  RtPoint p2={0,20,10}; /*   Posicion final de la pelota   */
+20	
+21  RtPoint from={0,100,100}; /*      Direccion de la luz        */
+22  RtPoint to={0,0,0};
+23
+24  char base[]="camara_";
+25  char ext[]="tif";
+26  char name[50];
+27  RtFloat fov=45;
+28  RtFloat intensity1=0.1;
+29  RtFloat intensity2=1.5;
+30  RtInt init=0,end=1;
+31	
+32  nf=100; /*        Numero de frames         */
+33  slopex=(p2[0]-p1[0])/nf;
+34  slopey=(p2[1]-p1[1])/nf;
+35  slopez=(p2[2]-p1[2])/nf;
+36
+37  RiBegin(RI_NULL);
+38    RiFormat(320,240,1);
+39    RiPixelSamples(2,2);	
+40    RiShutter(0,1);
+41    for (i=1;i &lt;= nf;i++)
+42 	{
+43 	RiFrameBegin(i);
+44	  filename(base,ext,sizeof(base)+4,i-1,name);
+45	  RiDisplay(name,"file","rgb",RI_NULL);
+46	  name[7]++;
+47	  RiProjection("perspective","fov",&fov,RI_NULL);
+48	  RiTranslate(0,-5,60);
+49	  RiRotate(-120,1,0,0);
+50	  RiRotate(25,0,0,1);
+51	  RiWorldBegin();
+52	    RiLightSource("ambientlight","intensity",&intensity1,RI_NULL);
+53	    RiLightSource("distantlight","intensity",&intensity2,"from",from,"to",to,RI_NULL);
+54	    RiColor(Azul);
+55	    RiTransformBegin();
+56	    	RiCylinder(1,0,20,360,RI_NULL);
+57	  	RiTranslate(0,0,20);
+58	  	RiCone(2,2,360,RI_NULL);
+59	    RiTransformEnd();
+60	    RiColor(Verde);
+61	    RiTransformBegin();
+62		RiRotate(-90,1,0,0);
+63		RiCylinder(1,0,20,360,RI_NULL);
+64		RiTranslate(0,0,20);
+65		RiCone(2,2,360,RI_NULL);
+66	    RiTransformEnd();
+67	    RiColor(Rojo);
+68	    RiTransformBegin();
+69		RiRotate(90,0,1,0);
+70		RiCylinder(1,0,20,360,RI_NULL);
+71		RiTranslate(0,0,20);
+72		RiCone(2,2,360,RI_NULL);
+73	    RiTransformEnd();
+74	    RiColor(Blanco);
+75	    RiTransformBegin();
+76		RiTranslate(p1[0]+slopex*(i-1),p1[1]+slopey*(i-1),p1[2]+slopez*(i-1));
+77		RiSphere(5,-5,5,360,RI_NULL);
+78	    RiTransformEnd();
+79	  RiWorldEnd();
+80	RiFrameEnd();
+81	}
+82  RiEnd();
+83 };</PRE>
+	  </font>
+	  </td>
+	</tr>
+      </table>
+      
+      <P>
+	Podemos  pasar  ahora  a  probar  nuestro programa,  para ello
+	procederemos de la misma forma que en el programa anterior: lo
+	compilamos y lo  ejecutamos redireccionándolo, por ejemplo,  a
+	<tt>rendribv</tt>.   Podemos de  esta   forma ver  como  queda
+	nuestra  animación de   forma   rápida  y   a  una   velocidad
+	aceptable. Para ver el fichero rib que se genera no tienes más
+	que redireccionar la salida hacia un fichero. Podrás comprobar
+	que el  fichero   es bastante  grande   (<A HREF="../../common/src/article81/segundo.rib"
+	style="background-color:#f8fcc0">segundo.rib</A>   ocupa 70kb)
+	ya que  tenemos repetido la definición  de la escena 100 veces
+	(una por cada <tt>frame</tt>).
+      </p>
+
+      <P>
+	En las siguientes figuras podemos ver una serie de imágenes de
+	la animación:
+      <P>
+
+      <CENTER>
+	<IMG SRC="../../common/images/article42/segundo_fotos.gif" width="601" height="310">
+<!--
+	<IMG SRC="segundo_0000.jpg" width="320" height="240">
+	<IMG SRC="segundo_0020.jpg" width="320" height="240">
+	<IMG SRC="segundo_0040.jpg" width="320" height="240">
+	<IMG SRC="segundo_0060.jpg" width="320" height="240">
+	<IMG SRC="segundo_0080.jpg" width="320" height="240">
+	<IMG SRC="segundo_0100.jpg" width="320" height="240">
+-->
+      </CENTER>
+
+      <P>
+	Por supuesto podemos animar  cualquier cosa que se nos ocurra:
+	la posición  de los objetos,  su  tamaño, la intensidad de  la
+	luz, la cámara, hacer que aparezcan o desaparezcan cosas, etc.
+      </P>
+
+
+      <a name="seccion4"></a><A NAME="lfindex3">&nbsp;</A>
+<H2>Movimiento parabólico:</H2>
+</a>
+  
+      <P>
+	En este último ejemplo veremos  como hacer que la pelota bote.
+	Para ello definimos una función <tt>rebote()</tt> a la cual le
+	pasamos tres parámetros: el  número de frame actual, el número
+	total de  frames   por rebote y   la  máxima altura  a  la que
+	queremos     rebotar.    A  continuación     podemos  ver   la
+	implementación:
+      </p>
+      <table bgcolor="#f8fcc0"  align="center" border="2" >
+	<tr>
+	  <td>  
+	    <font size="-1">
+<PRE>float rebote (int i, int nframes, int max)
+{
+  float min, z;
+
+  while (i &gt; nframes) i-=nframes;
+
+  min=sqrt(max);
+
+  z=i-((float)nframes/2.0);
+  z=(z*min)/((float)nframes/2.0);
+  z=(float)max - (z*z);
+  return(z);
+}</PRE>
+	    </font>
+	  </td>
+	</tr>
+      </table>
+
+
+      <P>
+	Con unos sencillos cálculos transformamos la típica función de
+	parábola    <tt>(y=x^2)</tt>   para  que   se   ajuste  al   número  de
+	<tt>frames</tt> y a la  altura que deseamos. En las siguientes
+	figuras tenemos  un parte de las imágenes  que se generan para
+	cada    rebote  en     el   programa   <A     HREF="../../common/src/article81/tercero.c"
+	style="background-color:#f8fcc0">tercero.c</A>:
+      <CENTER>
+	<IMG SRC="../../common/images/article42/tercero_fotos.gif" width="601" height="310">
+<!--
+	<IMG SRC="tercero_0000.jpg" width="320" height="240">
+	<IMG SRC="tercero_0020.jpg" width="320" height="240">
+	<IMG SRC="tercero_0040.jpg" width="320" height="240">
+	<IMG SRC="tercero_0060.jpg" width="320" height="240">
+	<IMG SRC="tercero_0080.jpg" width="320" height="240">
+	<IMG SRC="tercero_0100.jpg" width="320" height="240">
+-->
+      </CENTER>
+    </p>
+
+      <P>
+	Para  ver las animaciones hemos  creado unos GIF's animados de
+	las escenas  aunque van un  poco lentos  (por lo menos  con el
+	Netscape) aunque con <tt>xanim</tt>  funcionan a una velocidad
+	aceptable:
+      </p>
+
+      <P>
+	Movimiento   rectilíneo:     <A        HREF="../../common/images/article42/segundo_anim.gif"
+	style="background-color:#f8fcc0">segundo_anim.gif</A>
+	</p>
+      <P>
+	Movimiento parabólico: <A HREF="../../common/images/article42/tercero_anim.gif" style="background-color:#f8fcc0">tercero_anim.gif</A>
+      </p>
+      <P>
+	Con  esto acabamos con los  aspectos  básicos del interface de
+	Renderman  y su programación. La parte  más avanzada y también
+	la   más      espectacular     es   la   programación       de
+	<tt>shaders</tt>. Con esto conseguimos  un control total sobre
+	el proceso de rendering y sobre el aspecto  final de la escena
+	ya que podemos controlar texturas, iluminación, etc.
+      </p>
+	      
+      <a name="referencias"></a><A NAME="lfindex4">&nbsp;</A>
+<H2>Referencias</H2>
+</a>
+
+      <ul>
+	<li>
+	  <a name="ref1"></a>Página de BMRT, <a href="http://www.seas.gwu.edu/student/gritz/bmrt.html">http://www.seas.gwu.edu/student/gritz/bmrt.html.</A>
+	</li>
+	<li>
+	  <a name="ref2"></a>RenderMan Repository, <a href="http://rmr.spinne.com/">http://rmr.spinne.com.</A>
+	</li>
+	<li>
+	  <a name="ref3"></a>Curso de RenderMan en formato PDF, <a href="http://rmr.spinne.com/KessonPDF/index.html">http://rmr.spinne.com/KessonPDF/index.html</A>
+	</li>
+	<li>Primer Artículo de la serie <a href="../May1998/article36.html">Renderman</a>.</li>
+		<li>Primer Artículo de la serie <a href="../July1998/article50.html">Renderman</a>.</li>
+		  
+      </ul>
+      
+    
+    
+
+
+
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#777777">
+<A HREF="../../common/lfteam.html"><FONT COLOR="#FFFFFF">Contactar con el equipo de LinuFocus</FONT></A>
+<BR><FONT COLOR="#FFFFFF">&copy; Carlos Calzada Grau <BR>LinuxFocus 1999</FONT></TD>
+<!-- OLD FORMAT, NO TRANSLATION INFO -->
+</TR></TABLE></CENTER>
+<p><font size=1>1999-07-02, generated by lfparser version 0.6</font></p></BODY></HTML>

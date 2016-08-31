@@ -1,0 +1,247 @@
+<HTML>
+<HEAD>
+<TITLE>SLIP-MiniComo: Configuraci&oacute;n de un servidor de comunicaciones:</TITLE>
+</HEAD>
+<BODY>
+<A HREF="SLIP-Como-1.html">Anterior</A>
+<A HREF="SLIP-Como-3.html">Siguiente</A>
+<A HREF="SLIP-Como.html#toc2">Indice</A>
+<HR>
+<H2><A NAME="s2">2. Configuraci&oacute;n de un servidor de comunicaciones:</A></H2>
+
+
+<P>Para ello usaremos el programa <CODE>dip</CODE> que hace el trabajo de
+configuraci&oacute;n y rutado por nosotros. </P>
+<P>Modificar el fichero <CODE>/etc/hosts</CODE> y poner las direcciones IP de
+ambas m&aacute;quinas. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+75.0.1.10      obe_slip  # maquina servidora o local
+75.0.1.11      ide_slip  # maquina cliente o remota (la que llama, leche)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Creamos un usuario slip con la utilidad <CODE>adduser</CODE>.</P>
+<P>
+<UL>
+<LI>usuario : <CODE>Sidefix</CODE></LI>
+<LI>grupo : <CODE>slip</CODE></LI>
+<LI>shell : <CODE>/sbin/diplogin</CODE> (asegurarse que <CODE>diplogin</CODE>
+est&aacute; en <CODE>/sbin</CODE>) </LI>
+<LI>Directorio home : <CODE>/tmp</CODE></LI>
+<LI>Password : Sidefix ( o el que quieras)</LI>
+</UL>
+</P>
+<P>Como <CODE>adduser</CODE> cambia los permisos del directorio al usuario, hacer lo
+siguiente: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chown root /tmp
+chgrp root /tmp
+chmod 777 /tmp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>@:-)</CODE></P>
+<P>Editamos el fichero <CODE>/etc/group</CODE> e incluimos un nuevo grupo
+<CODE>slip</CODE>, la l&iacute;nea quedar&aacute;:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+slip::16:Sidefix
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><B>NOTA</B> : el n&uacute;mero de grupo debe ser el m&aacute;s bajo posible despu&eacute;s de
+<CODE>man</CODE>.</P>
+<P>Editamos el fichero <CODE>/etc/diphosts</CODE> e incluimos la siguiente l&iacute;nea: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Sidefix::75.0.1.11:75.0.1.10:255.255.255.0::CSLIP,296
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esta l&iacute;nea se compone de campos separados por &quot;:&quot; . Vamos a
+ver qu&eacute; quiere decir cada campo. </P>
+<P>
+<UL>
+<LI> Usuario remoto</LI>
+<LI> Password, si queremos, &eacute;ste no hace falta encriptarlo</LI>
+<LI> Direcci&oacute;n remota (<CODE>ide_slip</CODE>)</LI>
+<LI> Direcci&oacute;n local (<CODE>obe_slip</CODE>)</LI>
+<LI> M&aacute;scara de red (suele ser siempre <CODE>255.255.255.0</CODE>)</LI>
+<LI> Comentarios</LI>
+<LI> Protocolo (SLIP, CSLIP, PPP, etc..), el protocolo va seguido del
+MTU (yo uso 296, se puede dar un valor mas alto si se tiene una UART que
+aguante, pero penaliza el trabajo que no sea ftp) </LI>
+</UL>
+</P>
+<P>Nos aseguramos que en <CODE>/sbin</CODE> tenemos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+lrwxrwxrwx   1 root     root           10 Apr 30 19:35 dip -&gt; dip-3.3.7l*
+-rws--x--x   1 root     bin         40964 Feb 16 13:37 dip-3.3.7l*
+lrwxrwxrwx   1 root     root           10 Apr 30 19:35 diplogin -&gt; dip-3.3.7l*
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si no los tenemos, instalar la serie <EM>N</EM> de disquetes (porting
+<EM>Slackware</EM>) </P>
+<P>Editar el fichero <CODE>/etc/inittab</CODE> y asegurarnos que tenemos la
+siguiente l&iacute;nea: </P>
+<P>Se asume que la conexi&oacute;n se har&aacute; por el segundo puerto serie (COM2) </P>
+<P>Para conexi&oacute;n directa, sin m&oacute;dem: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+s2:45:respawn:/sbin/agetty 38400 ttyS1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para los que tengan <CODE>mgetty</CODE> primero va el puerto (<CODE>ttyS1</CODE>) y
+luego la velocidad. </P>
+<P>Para conexi&oacute;n con m&oacute;dem:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+d2:45:respawn:/sbin/agetty -mt60 38400,19200,9600,2400,1200 ttyS1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(Ojo una almohadilla indica comentario)</P>
+<P>Una vez el fichero <CODE>inittab</CODE> correcto hacer lo siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+init q
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Bueno, el servidor est&aacute; configurado, vamos a ver el cliente;</P>
+<P>En esta m&aacute;quina nos debemos asegurar que existen los mismos programas
+<CODE>dip</CODE> en <CODE>/sbin</CODE>.</P>
+<P>Tambi&eacute;n modificaremos el fichero <CODE>/etc/hosts</CODE>, pero con la salvedad
+de que: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+75.0.1.10      obe_slip  # maquina servidora o remota
+75.0.1.11      ide_slip  # maquina cliente o local (la que llama, leche)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Asegurarnos que en el fichero <CODE>/etc/inittab</CODE> la l&iacute;nea
+correspondiente al m&oacute;dem o conexi&oacute;n est&aacute; deshabilitada, comentada con
+<CODE>#</CODE>. </P>
+<P>El usuario que quiere llamar debe tener un fichero de ordenes dip
+(<CODE>chat.dip</CODE>) que se debe parecer a algo como &eacute;sto: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  main:
+    get $remote obe_slip
+    get $local ide_slip
+    port cua1   # (cua0 para com1 o el que quiera)
+    speed 38400
+
+    # Resetea el modem y la linea
+    reset
+
+    # Cadena de inicializacion del modem
+    send ATQ0V1E1X4\r
+    wait OK 2
+    if $errlvl != 0 goto modem_trouble
+    # con esto llamas obe_slip (mi maquina)
+    dial 003461770949
+    if $errlvl != 1 goto modem_trouble
+
+    # Estamos conectados
+  login:
+    sleep 2
+    send \r\n\r\n
+    wait ogin: 20
+    if $errlvl != 0 goto login_error
+    send Sidefix\n
+    wait ord: 20
+    if $errlvl != 0 goto password_error
+    send Sidefix\n
+    if $errlvl != 0 goto password_error
+    wait ord: 20
+    if $errlvl != 0 goto password_error
+    send \n # (esto es el password definido en /etc/dip.hosts)
+  loggedin:
+    default
+    # Se acabo
+  done:
+    print CONECTADO $local ---&gt; $remote
+    mode CSLIP
+    goto exit
+
+  prompt_error:
+    print TIME-OUT esperando el inicio de SLIPlogin ...
+    goto error
+
+  login_trouble:
+    print Problemas esperando el login: prompt...
+    goto error
+
+  password:error:
+    print Problemas esperando el password: prompt...
+    goto error
+
+  modem_trouble:
+    print Problemas con el modem...
+  error:
+    print CONEXION con $remote fallada
+    quit
+
+  exit:
+    exit
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para iniciar una conversaci&oacute;n, hacer:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dip chat.dip
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Seg&uacute;n lo que parezca por pantalla, actuar en consecuencia.</P>
+<P>Si aparece el mensaje: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+CONECTADO 75.0.1.11 ---&gt; 75.0.1.10
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Entonces ya tienes acceso a todos los servicios TCP para esa conexi&oacute;n. </P>
+<P>Para finalizar la conexi&oacute;n, en la m&aacute;quina cliente, hacer: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dip -k
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para configurar una m&aacute;quina cliente/servidor de comunicaciones serie,
+crear todo lo que se ha visto en este texto en una sola m&aacute;quina. Ojo con
+los puertos serie dependiendo si queremos ser cliente, servidor o
+cliente/servidor. </P>
+<P>Para los que quieran usar PPP o SLIP sin compresi&oacute;n, en los ficheros de
+configuraci&oacute;n (<CODE>/etc/dip.hosts</CODE> y <CODE>chat.dip</CODE>), cambiar CSLIP
+por PPP o SLIP. F&aacute;cil. </P>
+<P>Bueno pues esto es todo, que te diviertas comunic&aacute;ndote. </P>
+
+<HR>
+<A HREF="SLIP-Como-1.html">Anterior</A>
+<A HREF="SLIP-Como-3.html">Siguiente</A>
+<A HREF="SLIP-Como.html#toc2">Indice</A>
+</BODY>
+</HTML>

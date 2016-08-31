@@ -1,0 +1,183 @@
+<HTML>
+<HEAD>
+<TITLE>Unidad JAZ: mini-COMO: Identificando la unidad al arrancar</TITLE>
+</HEAD>
+<BODY>
+<A HREF="JAZ-Como-3.html">Anterior</A>
+<A HREF="JAZ-Como-5.html">Siguiente</A>
+<A HREF="JAZ-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. Identificando la unidad al arrancar</A></H2>
+
+
+<P>Cuando el sistema arranca deber&iacute;a mostrar informaci&oacute;n sobre la controladora,
+y cualquier disco que est&eacute; introducido en la unidad.</P>
+<P>Los mensajes al arrancar variar&aacute;n dependiendo de la controladora, y son
+grabados en el fichero <CODE>/var/log/messages</CODE> (o <CODE>/var/adm/messages</CODE>). 
+Estos mensajes se pueden ver de nuevo desde el prompt con el comando <CODE>dmesg</CODE>.</P>
+<P>Aqu&iacute; esta el arranque del sistema con kernel 2.0.10 con una controladora
+<I>Adaptec 2940</I>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+    aic7xxx: BurstLen = 8 DWDs, Latency Timer = 64 PCLKS
+    aic7xxx: AHA-2940 Ultra Rev B.
+    aic7xxx: devconfig = 0x580.
+    aic7xxx: Reading SEEPROM...done.
+    aic7xxx: Extended translation enabled.
+    aic7xxx: Using 16 SCB's after checking for SCB memory.
+    AHA-2940 Ultra (PCI-bus):
+        irq 11
+        bus release time 40 bclks
+        data fifo threshold 100%
+        SCSI CHANNEL A:
+            scsi id 7
+            scsi selection timeout 256 ms
+            scsi bus reset at power-on enabled
+            scsi bus parity enabled
+            scsi bus termination (low byte) enabled
+    aic7xxx: Downloading sequencer code...done.
+    aic7xxx: Resetting the SCSI bus...done.
+    scsi0 : Adaptec AHA274x/284x/294x (EISA/VLB/PCI-Fast SCSI) 3.2/3.1/3.0
+    scsi : 1 host.
+    aic7xxx: Scanning channel A for devices.
+    aic7xxx: Target 4, channel A, now synchronous at 10.0MHz, offset(0xf).
+      Vendor: iomega    Model: jaz 1GB           Rev: G.60
+      Type:   Direct-Access                      ANSI SCSI revision: 02
+    Detected scsi removable disk sda at scsi0, channel 0, id 4, lun 0
+    scsi : detected 1 SCSI disk total.
+    SCSI device sda: hdwr sector= 512 bytes. Sectors= 2091050 [1021 MB] [1.0 GB
+]
+    sda: Write Protect is off
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En la nota de arriba el nombre del dispositivo SCSI (<CODE>sda</CODE>,<CODE>sdb</CODE>, etc). Ser&aacute;
+necesario para acceder a la unidad m&aacute;s tarde.</P>
+<P>Si estas l&iacute;neas no aparecen, entonces algo esta mal configurado en el
+hardware o en el kernel.</P>
+<P>Si la l&iacute;nea <CODE>scsi0:</CODE> no aparece, entonces no se tiene configurada la
+controladora y su driver correctamente. Algunos drivers dar&aacute;n una pista
+sobre lo que esta mal. Si la unidad no es detectada, probablemente haya un
+problema con el cable. Si no se asigna un nombre de unidad, probablemente se
+haya olvidado incluir soporte de discos SCSI al configurar el kernel cuando
+se compil&oacute;.</P>
+<P>Comprueba los ficheros <CODE>README</CODE> en el directorio <CODE>drivers/scsi</CODE> y 
+el SCSI-Howto para la b&uacute;squeda de otras pistas con fines depurativos (debug).</P>
+
+<H2><A NAME="ss4.1">4.1 <CODE>fdisk</CODE>, <CODE>mke2fs</CODE>, <CODE>mount</CODE>, etc.</A></H2>
+
+
+<P>Una vez que se sepa el nombre de la unidad Jaz, se est&aacute; preparado. Se puede
+manipular la unidad con los comandos habituales de manejo de discos del
+Linux, <CODE>fdisk</CODE>, <CODE>mke2fs</CODE>, <CODE>mount</CODE>, etc.</P>
+<P>Referirse a las p&aacute;ginas del manual de estos programas.</P>
+
+<H3>Discos con formato actual dos</H3>
+
+
+<P>Los discos formateados de f&aacute;brica por <I>Iomega</I> est&aacute;n particionados con una
+&uacute;nica partici&oacute;n (por alguna desconocida raz&oacute;n se usa la cuarta partici&oacute;n).</P>
+<P>Se puede montar este disco (asumiendo que el disco Jaz es el dispositivo SCSI
+<CODE>sda</CODE>) con los comandos</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir /jaz
+mount -t msdos /dev/sda4 /jaz
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>O si se est&aacute; usando los kernels 2.0 y se tiene compilado el kernel con
+soporte para VFAT Win95 se puede montar con</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir /jaz
+mount -t vfat /dev/sda4 /jaz
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(esto permite leer/escribir ficheros con nombres largos)</P>
+<P>Los ficheros del disco aparecer&aacute;n en <CODE>/jaz</CODE>. Mientras el disco est&eacute; 
+montado, no podr&aacute; ser expulsado.</P>
+<P>Para desmontar la unidad se usar&aacute; el comando:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+umount /dev/sda4  # Atencion a la nota del traductor
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><I>Nota del Traductor</I>: para evitar problemas con el n&uacute;mero de partici&oacute;n, 
+aconsejo desmontar usando el nombre del directorio en vez de usar el nombre 
+del dispositivo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+umount /jaz
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Una vez que el punto de montaje
+<SL>El Punto de montaje es el directorio 
+donde se va ha montar la unidad.</SL>
+ <CODE>/jaz</CODE> est&eacute; hecho - no ser&aacute; 
+necesario hacerlo otra vez, (tambi&eacute;n se deber&aacute; asegurar de no estar dentro 
+del directorio <CODE>/jaz</CODE> cuando se intente desmontar la unidad).</P>
+
+<H3>Reformateo como disco Linux nativo</H3>
+
+
+<P>Si se quiere borrar un disco Jaz y hacer un sistema de ficheros nativo de
+Linux en &eacute;l, Se deber&iacute;a usar fdisk en el disco entero:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+fdisk /dev/sda
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y borrar cualquier partici&oacute;n existente (con el comando <CODE>d</CODE>). Entonces crear
+una nueva partici&oacute;n con el comando <CODE>n</CODE>, hacerla partici&oacute;n primaria n&uacute;mero 1,
+usar <CODE>w</CODE> para escribir la tabla de particiones al disco, y salir con <CODE>q</CODE>.</P>
+<P>Formatear la partici&oacute;n:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mke2fs /dev/sda1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(el 1 es el n&uacute;mero que se le asign&oacute; a esta partici&oacute;n en el fdisk).</P>
+<P>Ahora se puede montar el disco:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -t ext2 /dev/sda1 /jaz
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(reusando el punto de montaje que se cre&oacute; anteriormente).</P>
+
+<H3>El disco de las <I>Jaz Tools</I>.</H3>
+
+
+<P>Hay alg&uacute;n trabajo extra que hacer si se quiere usar el disco que viene con
+la unidad Jaz. De f&aacute;brica, la protecci&oacute;n controlada por software est&aacute;
+activada. La mayor&iacute;a de la gente desbloquea el disco bajo DOS antes de
+intentar usarlo con Linux. Linux no puede acceder a un disco bloqueado, y
+debe ser desbloqueado con las herramientas de Iomega.</P>
+<P><I>Nota del Traductor</I>: En el caso de que por cualquier motivo no 
+consigamos/podamos desbloquearlo con las <I>JazTools</I> Yo personalmente he 
+conseguido desbloquear un disco Jaz (perdiendo la informaci&oacute;n, claro)
+formate&aacute;ndolo con las utilidades que vienen con algunas controladoras (como en 
+algunas <I>Adaptec</I>) en la BIOS.</P>
+
+
+<HR>
+<A HREF="JAZ-Como-3.html">Anterior</A>
+<A HREF="JAZ-Como-5.html">Siguiente</A>
+<A HREF="JAZ-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,276 @@
+
+		        _________________________
+		       | P R O G R A M A C I O N |
+		       |                         |
+		       |	  D E L          |
+                       |                         |
+		       |        S H E L L        |
+		       |_________________________|
+			
+				 Parte 2
+
+
+ Unas Palabras
+ =============
+
+	Bienvenido a esta segunda parte de la programación del shell.
+	
+	He decidido enviar, a partir de ahora, las entregas en formato texto
+ normal, para que así nadie tenga problemas para leerlo.  Quiero dar las gracias
+ a David, por revisar la primera entrega, que parece ser, tenía bastantes
+ errores ortográficos.  Espero que éso no vuelva a suceder.
+
+ Bueno, sin más preámbulos vamos a empezar con lo que nos interesa.
+
+
+ Argumentos En Los Guiones Shell
+ ===============================
+
+	Como ocurre en la programación en C (u otros lenguajes), y la mayoría de
+ órdenes de *NIX, se pueden crear guiones que admitan argumentos en la línea de
+ comandos cuando se llama a su ejecución.  El lenguaje shell dispone de un
+ conjunto de variables y órdenes para trabajar con estos parámetros.
+
+	Cuando se ejecuta un guión, las variables de shell se fijan
+ automáticamente para que coincidan con los argumentos de la línea de órdenes
+ dados al guión.  A estas variables se las conoce como "parámetros posicionales"
+ que permiten al guión acceder y trabajar con la información pasada a éste.
+
+	Los parámetros $1, $2, ..., $9 hacen referencia al primer, segundo, ...,
+ y noveno argumentos de la línea de comandos, respectivamente.  El parámetro
+ posicional $0 contiene el nombre del guión.  El parámetro $* contiene una
+ cadena con todos los argumentos de la línea de comandos y el parámetro $#
+ contiene el número de argumentos que se pasan al programa.
+
+	En la tabla que ahora se muestra, se puede ver la relación entre los
+ parámetros:
+ ____________________________________________________________________________
+| guión  arg1  arg2  arg3  arg4  arg5  arg6  arg7  arg8  arg9  cadena número |
+|									     |
+|  $0     $1    $2    $3    $4    $5    $6    $7    $8    $9     $*     $#   |
+ ----------------------------------------------------------------------------
+
+	Vamos a ver un ejemplo, para ver como están relacionados los parámetros:
+
+	$ cat muestra_args	# <-- esto no forma parte del guión, sólo es
+				# para que veais su contenido.
+	#!/bin/sh  
+	echo $0
+	echo $1
+	echo $2
+	echo $3
+	echo $*
+	echo $#
+
+	$ chmod u+x muestra_args	# ahora ya se puede ajecutar.
+ 
+ se puede ejecutar con cualquier parámetro, pero aconsejo que hagais lo
+ siguiente para ver mejor su funcionamiento:
+
+	$ muestra_args Esto es una prueba para el curso
+
+	La salida de este guión es la siguiente:
+
+	./muestra_args		# esto puede cambiar de una distribución a otra.				# En la Slack sólo sale "muestra_args"
+	Esto 
+	es
+	una
+	Esto es una prueba para el curso
+	7
+
+	Hay que destacar que el parámetro $0 no se incluye para el conteo de
+ parámetros.  $# toma el valor de 7 y no de 8.
+
+
+ Desplazamiento De Parámetros
+ ============================
+
+	Los parámetros posicionales se pueden desplazar con la orden "shift".
+ Este comando renombra los parámetros cambiando $2 a $1, $3 a $2, $4 a $3 y así
+ sucesivamente.  El parámetro incial de $1 se pierde.  Vamos a apoyarnos sobre
+ al guión anterior, lo único que debemos añadir es la orden "shift" al principio
+ del guión:
+
+	$ cat desplaza_args
+
+	#!/bin/sh	
+	shift
+	echo $0
+	echo $1
+	 .
+	 .
+	$#
+
+	Comprobar su ejecucion de la siguiente forma:
+
+	$ desplaza_args Ejemplo de como desplazar
+
+	La salida que produce es la siguiente:
+
+	./desplaza_args
+	de
+	como
+	desplazar
+	de como desplazar
+	3
+
+	Con esta ejecución se pueden ver varias cosas:
+
+ 1) Aunque el "shift" se encuentre antes del $0, no tiene efecto sobre éste.
+ 2) El valor del primer parámetro pasado al programa se pierde completamente,
+    ya que no aparece en $1.
+ 3) Ni siquiera $* y $# lo han cogido para la cadena pasada al guión ni el
+    conteo de parámetro.
+ 4) La orden shift da error cuando no se le pasan parámetros al guión.
+
+
+ Variables
+ =========
+
+	Veamos otro ejemplo, y sobre él explicaremos unos conceptos.
+
+	Un comando muy util, por no decir esencial, seria el "undelete" del
+ DO$.  Este tipo de comando en *NIX no se encuentra, por lo que sea.
+
+	Nosotros mismo podemos creanos un "del" y un "undelete" que nos hagan
+ las funciones que ofrecen en DO$.  La filosofia del comando "del" debe ser la
+ siguiente; no podemos borrar directamente el fichero por que si no lo perdemos
+ para siempre, pues lo que va a hacer nuestro "del" será mover el archivo a
+ borrar a una papelera.
+
+	$ cat del
+	#!/bin/sh
+	#
+	# del - mueve los archivos que recibe como parámetro a una papelera
+	#	oculta
+	#
+	PAPELERA=$HOME/.papelera
+	mv $* $PAPELERA
+
+	Explicaremos esto.  HOME es una variable del entorno que indica cual es
+ tu directorio dentro del sistema.  Cuando usamos $HOME el sistema lo reemplaza
+ por su valor.  .papelera es un directorio oculto de nuestro HOME.
+
+	PAPELERA es una variable nueva del entorno que nosotros mismos nos
+ creamos y le asignamos un valor.  Esto no es una cosa extraña, ya que lo
+ hacemos constantemente al entrar en nuestro sistema, pues el fichero .profile
+ no es más que un guión que se ejecuta cuando nos conectamos.
+	
+	Tanto en el .profile como en el ejemplo anterior declaramos variables
+ que usamos durante nuestra estancia en el sistema, o para la ejecución de un
+ comando.  Para que no haya confusión entre variables, éstas se pueden escribir
+ de la siguiente forma:
+
+	mv $* ${PAPELERA}
+
+	Esta forma de escribir las variables es muy útil cuando queremos añadir
+ extensiones a las mismas.
+
+	$ VIEJA=${PAPELERA}OLD
+
+
+ Valores por defecto
+ =====================
+
+	Tambien podemos especificar valores por defecto para las variables.  Hay
+ varias formas de hacerlo:
+
+	${variable:-lo_que_sea}		-	si variable no está definida o
+						su valor es nulo usa lo_que_sea
+
+	${variable:+lo_que_sea}		-	si variable está definida y su
+						valor distinto de nulo usa
+						lo_que_sea
+
+	${variable:=lo_que_sea}		-	si variable no está definida o
+						su valor es nulo asigna
+						lo_que_sea a variable
+
+	Si para la ejecución de un guión necesitamos que estén definidas unas
+ variables podemos chequearlas para continuar con la ejecución y si no lo están
+ salir del guión.
+
+	${variable:?manseje_de_error}	-	si variable no está definida
+						imprime mensaje_de_error y sal
+						del guión si no usa el valor de
+						variable.
+
+	Para el mensaje de error podemos usar el mensaje que nosotros pongamos
+ o dejarlo en blanco, con lo que el shell indicará el tipo de error, que siempre
+ sera "parameter null or not set", ya que el guión para su ejecución con un
+ valor de error igual a 1.
+
+	El uso de ":" es opcional y el de "{ }", casi.  De todas formas es útil
+ usar este tipo de nomenglatura para no enredarnos nosotros mismos al leer el
+ código y por ser un estilo limpio.
+
+
+ Variables especiales
+ ====================
+
+	$*	-	Contiene los valores de los parámetros posicionales
+			dentro de una sola cadena.
+
+	$@	-	Igual que $*, pero, para cada valor de un parámetro
+			existe una cadena.
+
+	$$	-	ID del proceso de shell actual.
+
+	$#	-	Contiene el número de parámetros posicionales.
+
+	$?	-	Estado de error después de la última orden ejecutada.
+			Si $? = 0 no hay error Sino hay error, según el tipo de
+			error $? contendrá un valor.
+
+	$!	-	Contiene el ID de proceso del último proceso
+			subordinado.
+
+	$PWD	-	Nombre del directorio de trabajo actual.
+
+	$OLDPWD	-	Nombre del directorio anterior.
+
+	$RANDOM	-	Contiene un entero aleatorio. Cada vez que se accede a
+			la variable su valor cambia.
+
+	$SECONDS	Tiempo transcurrido desde el comienzo de la sesión. 
+
+
+ Operaciones con cadenas
+ =======================
+
+	Para calcular la longitud de una cadena se puede usar la siguiente
+ instrucción ${#variable}.
+
+	$ cd /tmp
+	$ echo $PWD
+	/tmp
+	echo ${#PWD}
+	4		<--- nº de caracteres del contenido de PWD
+
+	Podemos extraer una parte de una variable, para cualquier proposito.
+ Supongamos que tenemos un ejecutable de DO$ llamado "program.exe" y queremos
+ quitarle la extension:
+
+	$ FICHERO_DOS=program.exe
+	$ FICHERO=${FICHERO_DOS%.*}
+	$ echo $FICHERO
+
+	Mas que extraer lo que hacemos es quitar una parte de la cadena:
+
+	%lo_que_sea	-> quita lo_que_sea por el final
+	#lo_que_sea	-> quita lo_que_sea por el principio
+
+ Despedida
+ =========
+
+	Bueno, pues esto es todo por ahora ... pero, no se vayan todavia
+ aun hay mas. ;-)
+	Quiero pedir disculpas por el retraso, pero es que cuando las cosas
+ no salen bien, no salen bien.
+	He estado estudiando para los dos ultimos examenes y me han comido el
+ tiempo sin darme cuenta con lo que no podia seguir con los capitulos.  Despues
+ de acabar los examenes voy a la universidad para enviar el capitulo que ahora
+ estas leyendo y resulta que me habian cancelado la cuenta ... asi que creo
+ que la tardanza esta justificada, no? :-) (No ha sido culpa mia)
+
+	Un saludo a todos.

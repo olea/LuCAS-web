@@ -1,0 +1,196 @@
+<html><head><title>17 Transparencias y dibujo con patr¢n</title><body>
+<h1><a name="17 Transparencias y dibujo con patrón">17 Transparencias y dibujo con patrón</a></h1>
+<p>
+<ul><h4>
+<li><a href="#drawing_mode">drawing_mode</a>
+<li><a href="#xor_mode">xor_mode</a>
+<li><a href="#solid_mode">solid_mode</a>
+<li><a href="#color_map">color_map</a>
+<li><a href="#create_light_table">create_light_table</a>
+<li><a href="#create_trans_table">create_trans_table</a>
+<li><a href="#create_color_table">create_color_table</a>
+<li><a href="#set_trans_blender">set_trans_blender</a>
+<li><a href="#set_blender_mode">set_blender_mode</a>
+</h4></ul>
+<p><br><br>
+<p>
+<b>void <a name="drawing_mode">drawing_mode</a>(int mode, BITMAP *pattern, int x_anchor, int y_anchor);</b><br>
+   Ajusta el modo de dibujo gráfico. Esto sólo afecta a las rutinas
+   geométricas como putpixel, lines, rectangles, circles, polygons,
+   floodfill, etc, y no a la salida de texto, blits o dibujado de sprites.
+   El modo debería ser uno de los siguientes valores.
+<p><pre>
+      DRAW_MODE_SOLID               - por defecto, dibujado sólido
+      DRAW_MODE_XOR                 - dibujado or-exclusivo
+      DRAW_MODE_COPY_PATTERN        - rellenado con patrón multicolor
+      DRAW_MODE_SOLID_PATTERN       - rellenado con patrón de un solo color
+      DRAW_MODE_MASKED_PATTERN      - rellenado con patrón enmascarado
+      DRAW_MODE_TRANS               - fundido de color translucente
+<p></pre>
+   En DRAW_MODE_XOR, los pixels son escritos en el bitmap con una operación
+   or-exclusiva en vez de con la copia simple, por lo que dibujar la misma
+   figura dos veces la borrará. Como esto requiere tanto leer como escribir
+   en el bitmap de memoria, el dibujado xor es mucho más lento que el modo
+   normal.
+<p>
+   Con los modos con patrón, usted indica un bitmap de patrón que será
+   dibujado sobre la superficie de la figura. Allegro almacena un puntero a
+   este bitmap en vez de una copia, por lo que no debe destruir el bitmap
+   mientras es usado como patrón. El ancho y alto del patrón debe ser un
+   múltiplo de dos, pero pueden ser diferentes, es decir, un patrón de 64x16
+   está bien, pero uno de 17x3 no. El patrón será repetido en una rejilla
+   comenzando en el punto (x_anchor, y_anchor). Normalmente debería pasar
+   cero para estos valores, lo que se dejará dibujar varias figuras y que
+   sus patrones se junten en los bordes. Un alineamiento de cero puede sin
+   embargo ser peculiar cuando mueves una figura con patrón por la pantalla,
+   porque la figura se moverá, pero el patrón no, por lo que en algunas
+   situaciones quizás se interese alterar las posiciones del ancla (anchor).
+<p>
+   Cuando selecciona DRAW_MODE_COPY_PATTERN, los pixels simplemente son
+   copiados del bitmap de patrón al bitmap destino. Esto le permite usar
+   patrones multicolor, y significa que el color que pase a la rutina de
+   dibujado es ignorado. Este es el más rápido de los modos con patrón.
+<p>
+   En DRAW_MODE_SOLID_PATTERN, cada pixel del patrón es comparado con el
+   color de máscara (cero en modos de 256 colores, rosa fucsia en modos
+   truecolor). Si el pixel del patrón es sólido, un pixel del color que pasó
+   a la rutina de dibujado es escrito en el bitmap destino, de otro modo
+   escribe un cero. El patrón es por esto tratado como una máscara
+   monocroma, que le permite usar el mismo patrón para dibujar diferentes
+   figuras con colores diferentes, pero previene el uso de patrones
+   multicolores.
+<p>
+   DRAW_MODE_MASKED_PATTERN es casi lo mismo que DRAW_MODE_SOLID_PATTERN,
+   pero los pixels enmascarados son ignorados en vez de copiados como cero,
+   por lo que el fondo se verá a través de los agujeros.
+<p>
+   En DRAW_MODE_TRANS, la tabla global color_map o las funciones de fundido
+   truecolor son usadas para imprimir pixels sobre la imagen existente. Esto
+   sólo lo puede usar después de haber creado una tabla de color (para modos
+   de 256 colores) o un mapa de fundido (para modos truecolor). Ya que esto
+   conlleva tanto leer como escribir en un bitmap de memoria, el dibujado
+   translúcido es muy lento si dibuja directamente en la memoria de vídeo,
+   por lo que siempre que pueda debería dibujar sobre un bitmap de memoria
+   en vez de sobre la pantalla.
+<p>
+<b>void <a name="xor_mode">xor_mode</a>(int xor);</b><br>
+   Esto es un atajo para activar o desactivar el modo de dibujado xor.
+   Llamar xor_mode(TRUE) es equivalente a drawing_mode(DRAW_MODE_XOR, NULL,
+   0, 0);
+<p>
+<b>void <a name="solid_mode">solid_mode</a>();</b><br>
+   Esto es un atajo para seleccionar el dibujado sólido. Es equivalente a
+   llamar drawing_mode(DRAW_MODE_SOLID, NULL, 0, 0);
+<p>
+<p><hr><p>
+En modos de vídeo con paleta, la translucencia y la iluminación son
+implementadas con una tabla precalculada de 64k, que contiene el resultado
+de la combinación de cualquier color c1 con c2. Tiene que crear esta tabla
+antes de usar cualquiera de las rutinas de iluminación o translucencia.
+Dependiendo de cómo se crea tabla, será posible hacer un rango diferente de
+efectos. Por ejemplo, la translucencia se puede implementar usando un color
+intermedio entre c1 y c2 como resultado de su combinación. La iluminación se
+consigue tratando uno de los colores como nivel de luz (0-255) en vez de
+como color, y creando la tabla apropiadamente. Un rango de efectos
+especializados es posible, si por ejemplo sustituye cualquier color con otro
+color haciendo los colores individuales de origen o destino totalmente
+sólidos o invisibles.
+<p>
+Las tablas de color pueden ser precalculadas con la utilidad colormap, o
+generadas en tiempo real. La estructura COLOR_MAP se define así:
+<p><pre>
+typedef struct {
+   unsigned char data[PAL_SIZE][PAL_SIZE];
+} COLOR_MAP;
+<p></pre>
+<b>extern COLOR_MAP *<a name="color_map">color_map</a>;</b><br>
+   Puntero global a una tabla de color. ¡Esto debe ser ajustado antes de usar
+   cualquiera de las funciones de dibujado translucente o iluminado en modos
+   de 256 colores!
+<p>
+<b>void <a name="create_light_table">create_light_table</a>(COLOR_MAP *table, PALETTE pal,</b>
+<b>                        int r, g, b, void (*callback)(int pos));</b><br>
+   Rellena la tabla de color especificada con los datos precalculados
+   necesarios para hacer efectos de luz con la paleta especificada. Cuando
+   se combinan los colores c1 y c2 en esta tabla, c1 es tratado como nivel
+   de luz entre 0-255. Con un nivel de luz de 255, la tabla devuelve el
+   color c2 sin cambiar, con un nivel de luz 0, devuelve los valores r, g, b
+   que especificaste al llamar a esta función, y con un valor de luz
+   intermedio, la tabla devolverá un color que esté entre los dos extremos.
+   Si la función de callback no es NULL, será llamada 256 veces durante el
+   cálculo, permitiéndole enseñar un indicador de progreso.
+<p>
+<b>void <a name="create_trans_table">create_trans_table</a>(COLOR_MAP *table, PALETTE pal,</b>
+<b>                        int r, g, b, void (*callback)(int pos));</b><br>
+   Rellena la tabla de color especificada con los datos precalculados
+   necesarios para hacer efectos de translucencia con la paleta
+   especificada. Cuando se combinan los colores c1 y c2 en esta tabla, el
+   resultado será un color intermedio entre los dos. Los valores r, g, b que
+   especificas es la solides de cada componente de color, desde 0
+   (totalmente transparente) hasta 255 (totalmente sólido). Para una solidez
+   del 50%, pasa 128. Esta función trata el color origen #0 como un caso
+   especial, dejando el destino sin cambiar siempre que se encuentre un
+   pixel del color cero, para que los sprites con máscara puedan ser
+   dibujados correctamente. Si la función de callback no es NULL, será
+   llamada 256 veces durante el cálculo, permitiéndole enseñar un indicador
+   de progreso.
+<p>
+<b>void <a name="create_color_table">create_color_table</a>(COLOR_MAP *table, PALETTE pal,</b>
+<b>                        RGB (*blend)(PALETTE pal, int x, int y),</b>
+<b>                        void (*callback)(int pos));</b><br>
+   Rellena la tabla de color especificada con los datos precalculados
+   necesarios para hacer efectos propios con la paleta especificada,
+   llamando a las funciones de fundido para determinar el resultado de cada
+   combinación de color. A su rutina de fundido se le pasará un puntero a la
+   paleta y a los dos colores que serán combinados, y su deberá devolver un
+   resultado en formato RGB (0-63). Allegro buscará entonces en la paleta el
+   color más parecido al color RGB que quiere, por lo que no hace falta que
+   la paleta tenga un color exacto al devuelto por la función. Si la función
+   de callback no es NULL, será llamada 256 veces durante el cálculo,
+   permitiéndole enseñar un indicador de progreso.
+<p>
+<p><hr><p>
+En los modos de vídeo truecolor, la translucencia y la iluminación son
+implementadas con un conjunto de funciones de fundido de la forma:
+<p><pre>
+unsigned long (*BLENDER_FUNC)(unsigned long x, unsigned long y);
+<p></pre>
+Esta rutina toma dos colores, los descompone en sus componentes de rojo,
+verde y azul, los combina como sea necesario, y entonces mezcla el resultado
+de vuelta en un solo color de retorno. Para soportar alpha variable (es
+decir, diferentes cantidades de translucencia o niveles de luz), hay 256
+versiones de la función de fundido: una para cada posible valor alpha. Estos
+se almacenan en una tabla:
+<p><pre>
+typedef struct {
+   BLENDER_FUNC blend[256];
+} BLENDER_MAP;
+<p></pre>
+Ya que estas rutinas pueden ser usadas para diferentes profundidades de
+color, hay tres de estas tablas, una para uso con pixels de 15 bits 5.5.5,
+una para pixels de 16 bits 5.6.5, y una para pixels de 24 bits 8.8.8 (esta
+se puede compartir con el código de 32 bits ya que el almacenamiento en bits
+es igual).
+<p>
+<b>void <a name="set_trans_blender">set_trans_blender</a>(int r, int g, int b, int a);</b><br>
+   Selecciona el conjunto de funciones de fundido truecolor a usar, que
+   realizan una simple interpolación lineal entre el color origen y destino.
+   Cuando una función de dibujado translucente es llamada, el parámetro
+   alpha ajustado por esta rutina es usado para seleccionar una de las
+   funciones de fundido de la tabla, y esa función es llamada para fundir
+   cada pixel con el color existente de destino (es decir, el parámetro
+   alpha controla la solidez de dibujado, de 0 a 255). Cuando una función de
+   iluminación es llamada, el parámetro alpha es ignorado, y se usa el color
+   pasado por la función de sprite para seleccionar un nivel alpha. La
+   rutina de fundido será usada entonces para interpolar entre el color del
+   sprite y el valor RGB que fue pasado a esta función (en un rango 0-255).
+<p>
+<b>void <a name="set_blender_mode">set_blender_mode</a>(BLENDER_MAP *b15, *b16, *b24, int r, g, b, a);</b><br>
+   Especifica un conjunto propio de rutinas de fundido truecolor, proveyendo
+   una tabla de punteros a función para todas las profundidades de color
+   posibles (estos parámetros pueden ser NULL si no va a usar ese formato
+   de pixel).
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

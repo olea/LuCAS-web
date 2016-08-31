@@ -1,0 +1,111 @@
+<html><head><title>25 Rutinas de grabaci¢n de sonido</title><body>
+<h1><a name="25 Rutinas de grabación de sonido">25 Rutinas de grabación de sonido</a></h1>
+<p>
+<ul><h4>
+<li><a href="#install_sound_input">install_sound_input</a>
+<li><a href="#remove_sound_input">remove_sound_input</a>
+<li><a href="#get_sound_input_cap_bits">get_sound_input_cap_bits</a>
+<li><a href="#get_sound_input_cap_stereo">get_sound_input_cap_stereo</a>
+<li><a href="#get_sound_input_cap_rate">get_sound_input_cap_rate</a>
+<li><a href="#get_sound_input_cap_parm">get_sound_input_cap_parm</a>
+<li><a href="#set_sound_input_source">set_sound_input_source</a>
+<li><a href="#start_sound_input">start_sound_input</a>
+<li><a href="#stop_sound_input">stop_sound_input</a>
+<li><a href="#read_sound_input">read_sound_input</a>
+<li><a href="#digi_recorder">digi_recorder</a>
+<li><a href="#midi_recorder">midi_recorder</a>
+</h4></ul>
+<p><br><br>
+<p>
+<b>int <a name="install_sound_input">install_sound_input</a>(int digi_card, int midi_card);</b><br>
+   Inicializa el módulo de grabación de sonido, devolviendo cero si no hubo
+   problemas. Debe instalar el sistema normal de reproducción de sonido
+   antes de llamar esta rutina. Los dos parámetros de tarjetas deben ser los
+   mismos que en install_sound(), incluyendo DIGI_NONE y MIDI_NONE para
+   desactivar partes del módulo, o DIGI_AUTODETECT y MIDI_AUTODETECT para
+   adivinar el hardware.
+<p>
+<b>void <a name="remove_sound_input">remove_sound_input</a>();</b><br>
+   Desactiva el módulo cuando haya acabado de usarlo. Normalmente no debe
+   llamar esta función, porque remove_sound() y/o allegro_exit() lo harán
+   por usted.
+<p>
+<b>int <a name="get_sound_input_cap_bits">get_sound_input_cap_bits</a>();</b><br>
+   Comprueba qué formatos de sonido son soportados por el controlador de
+   entrada de audio, devolviendo uno de los valores del campo de bits:
+<p>
+      0 = entrada de audio no soportada<br>
+      8 = entrada de audio de ocho bits soportada<br>
+      16 = entrada de audio de dieciséis bits soportada<br>
+      24 = entrada de audio de ocho y dieciséis bits soportada
+<p>
+<b>int <a name="get_sound_input_cap_stereo">get_sound_input_cap_stereo</a>();</b><br>
+   Comprueba si el controlador de entrada de audio actual es capaz de grabar
+   en estéreo.
+<p>
+<b>int <a name="get_sound_input_cap_rate">get_sound_input_cap_rate</a>(int bits, int stereo);</b><br>
+   Devuelve la frecuencia de grabación de samples máxima posible en el
+   formato especificado, o cero si los ajustes no son soportados.
+<p>
+<b>int <a name="get_sound_input_cap_parm">get_sound_input_cap_parm</a>(int rate, int bits, int stereo);</b><br>
+   Comprueba si la frecuencia de grabación especificada, número de bits y
+   mono/estéreo es soportado por el controlador de audio actual, devolviendo
+   uno de los siguientes valores:
+<p>
+      0 = es imposible grabar en este formato<br>
+      1 = grabar es posible, pero la salida de audio será suspendida<br>
+      2 = es posible grabar y reproducir sonidos a la vez<br>
+      -n = razón de muestreo no soportada, pero la razón 'n' puede funcionar
+<p>
+<b>int <a name="set_sound_input_source">set_sound_input_source</a>(int source);</b><br>
+   Selecciona la fuente de la entrada de audio, devolviendo cero si no hubo
+   problemas o -1 si el hardware no proporciona un registro de selección de
+   entrada. El parámetro debe ser uno de los valores:
+<p>
+      SOUND_INPUT_MIC<br>
+      SOUND_INPUT_LINE<br>
+      SOUND_INPUT_CD
+<p>
+<b>int <a name="start_sound_input">start_sound_input</a>(int rate, int bits, int stereo);</b><br>
+   Comienza a grabar en el formato especificado, suspendiendo la
+   reproducción de sonidos si es necesario (esto sucederá siempre con los
+   controladores actuales). Devuelve el tamaño del buffer en bytes si hubo
+   éxito, o cero si hubo algún error.
+<p>
+<b>void <a name="stop_sound_input">stop_sound_input</a>();</b><br>
+   Para la grabación, ajustando la tarjeta de vuelta al modo normal de
+   reproducción.
+<p>
+<b>int <a name="read_sound_input">read_sound_input</a>(void *buffer);</b><br>
+   Recupera el buffer de audio grabado más reciente en el lugar
+   especificado, devolviendo no-cero si el buffer ha sido copiado, o cero si
+   todavía no hay nuevos datos disponibles. El tamaño del buffer puede ser
+   obtenido comprobando el valor de retorno de start_sound_input(). Debe
+   llamar esta función a intervalos regulares durante la grabación
+   (típicamente unas 100 veces por segundo), o podría perder datos. Si no
+   puede hacer esto lo suficientemente rápido, use la función callback
+   digi_recorder() para almacenar la onda de sonido en un buffer más grande
+   que haya creado antes. Nota: muchas tarjetas de sonido reproducen un
+   click o sonido raro cuando alternan entre los modos de grabación y
+   reproducción, por lo que es buena idea descartar el primer buffer después
+   de comenzar la grabación. La onda siempre se almacena en formato sin
+   signo, con los datos estéreo siendo samples alternados izquierda/derecha.
+<p>
+<b>extern void (*<a name="digi_recorder">digi_recorder</a>)();</b><br>
+   Si está activada, esta función es llamada por el controlador de entrada
+   de sonido siempre que un nuevo buffer de sonido está disponible, momento
+   en el que puede usar read_sound_input() para copiar los datos a un lugar
+   permanente. Esta rutina se ejecuta en contexto de interrupción, por lo
+   que debe ejecutarse muy rápidamente, el código y la memoria que modifica
+   debe estar fijada (locked), y no puede llamar desde ella rutinas de
+   sistema o acceder a ficheros del disco.
+<p>
+<b>extern void (*<a name="midi_recorder">midi_recorder</a>)(unsigned char data);</b><br>
+   Si está activada, esta función es llamada por el controlador de entrada
+   MIDI siempre que un nuevo byte de datos MIDI esté disponible. Se ejecuta
+   en contexto de interrupción, por lo que debe ser muy rápida y su
+   código/datos deben estar fijados.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

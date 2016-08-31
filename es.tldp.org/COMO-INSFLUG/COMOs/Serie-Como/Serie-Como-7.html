@@ -1,0 +1,180 @@
+<HTML>
+<HEAD>
+<TITLE>Serie COMO de Linux: ¿C&oacute;mo puedo tener un terminal conectado a mi PC?</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Serie-Como-6.html">Anterior</A>
+<A HREF="Serie-Como-8.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc7">Indice</A>
+<HR>
+<H2><A NAME="s7">7. ¿C&oacute;mo puedo tener un terminal conectado a mi PC?</A></H2>
+
+
+<P>Las instrucciones de esta secci&oacute;n sirven para la conexi&oacute;n de terminales,
+as&iacute; como otros ordenadores a un puerto serie de su sistema Linux. </P>
+
+<H2><A NAME="ss7.1">7.1 Hardware requerido</A></H2>
+
+
+<P>Aseg&uacute;rese de tener el cable correcto. Un cable de m&oacute;dem nulo comprado en
+cualquier tienda de inform&aacute;tica puede valer. ¡Pero debe ser un cable de
+<EM>modem nulo</EM>!. Muchas tiendas de inform&aacute;tica venden este tipo de cable
+como cable serie de impresora. Aseg&uacute;rese de estar usando el puerto serie,
+el DB25 o el DB9 macho, y no el puerto paralelo (DB25 hembra o
+Centronics). </P>
+<P>Para un conector DB25, necesita como m&iacute;nimo:</P>
+<P>
+<PRE>
+DB25 macho en el PC                     DB25 en el Terminal
+TxD   Transmision de datos  2 --&gt; 3     RxD   Recepcion de datos
+RxD   Recepcion de datos    3 &lt;-- 2     TxD   Transmision de datos
+SG    Tierra                7 --- 7     SG    Tierra
+</PRE>
+</P>
+<P>Si quiere tener se&ntilde;ales de sincronizaci&oacute;n del hardware, debe tener
+un cable completo de m&oacute;dem nulo:</P>
+<P>
+<PRE>
+DB25 macho del PC                       DB25 del terminal
+TxD  Transmision de datos   2 --&gt; 3     RxD  Recepcion de datos
+RxD  Recepcion de datos     3 &lt;-- 2     TxD  Transmision de datos
+RTS  Peticion de envio      4 --&gt; 5     CTS  Listo para envio
+CTS  Listo para envio       5 &lt;-- 4     RTS  Peticion de envio
+DSR  Modem listo            6
+                            |
+DCD  Deteccion de portadora 8 &lt;-- 20    DTR  Terminal listo
+SG   Tierra                 7 --- 7     SG   Tierra
+                                  6     DSR  Modem listo
+                                  |
+DTR  Terminal listo        20 --&gt; 8     DCD  Deteccion de portadora
+</PRE>
+</P>
+<P>Si tiene un conector DB9 en el puerto serie, intente lo siguiente:</P>
+<P>
+<PRE>
+DB9 del PC                              DB25 del terminal
+RxD  Recepcion de datos     2 &lt;-- 2     TxD  Transmision de datos
+TxD  Transmision de datos   3 --&gt; 3     RxD  Recepcion de datos
+SG   Tierra                 5 --- 7     SG   Tierra
+</PRE>
+</P>
+<P>Alternativamente, un cable completo DB9-DB25 de m&oacute;dem nulo:</P>
+<P>
+<PRE>
+DB9 del PC                              DB25 del terminal
+RxD  Recepcion de datos     2 &lt;-- 2     TxD  Transmision de datos
+TxD  Transmision de datos   3 --&gt; 3     RxD  Recepcion de datos
+                                  6     DSR  Modem listo
+                                  |
+DTR  Terminal listo         4 --&gt; 8     DCD  Deteccion de portadora
+GND  Tierra                 5 --- 7     GND  Tierra
+DCD  Deteccion de portadora 1
+                            |
+DSR  Modem listo            6 &lt;-- 20    DTR  Terminal listo
+RTS  Peticion de envio      7 --&gt; 5     CTS  Listo para envio
+CTS  Listo para envio       8 &lt;-- 4     RTS  Peticion de envio
+(RI  Indicador de llamada   9, no se necesita)
+</PRE>
+</P>
+<P>(Efectivamente, ¡los pins 2 y 3 <EM>realmente</EM> tienen significados
+opuestos en los conectores DB9 a los que tienen en los conectores DB25!)</P>
+<P>Si no est&aacute; usando un cable completo de m&oacute;dem nulo, deber&aacute; hacer el
+siguiente truco: en la parte del conector que va al ordenador, conecte
+juntos RTS y CTS, y adem&aacute;s conecte juntos DSR, DCD y DTR. De este modo,
+cuando el ordenador busque una cierta se&ntilde;al de sincronismo, la coger&aacute; (de
+&eacute;l mismo). </P>
+<P>Ahora que tiene el tipo de cable adecuado, conecte el terminal al
+ordenador. Si puede, d&iacute;gale al terminal que ignore las se&ntilde;ales de control
+de m&oacute;dem. Pruebe a configurar el terminal a 9600 bps, 8 bits de datos, 1
+bit de parada y sin bit de paridad. </P>
+
+
+<H2><A NAME="ss7.2">7.2 Configurando <CODE>getty</CODE></A></H2>
+
+
+<P>A&ntilde;ada las siguientes entradas en <CODE>/etc/gettydefs</CODE> para usar
+<CODE>getty</CODE> en su terminal, si todav&iacute;a no est&aacute;n all&iacute;: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Entrada para un terminal no-inteligente a 38400 bps
+DT38400# B38400 CS8 CLOCAL # B38400 SANE -ISTRIP CLOCAL #@S @L login: #DT38400
+
+# Entrada para un terminal no-inteligente a 19200 bps
+DT19200# B19200 CS8 CLOCAL # B19200 SANE -ISTRIP CLOCAL #@S @L login: #DT19200
+
+# Entrada para un terminal no-inteligente a 9600 bps
+DT9600# B9600 CS8 CLOCAL # B9600 SANE -ISTRIP CLOCAL #@S @L login: #DT9600
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si lo desea, puede hacer que <CODE>getty</CODE> imprima cosas interesantes en el
+mensaje de login. En los ejemplos, imprime el nombre del sistema y la l&iacute;nea
+serie. Puede a&ntilde;adir m&aacute;s cosas: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+@B    Velocidad actual en bps (calculada en el momento que se lee @B).
+@D    Fecha actual, en MM/DD/AA.
+@L    Linea serie a la cual esta conectado getty.
+@S    Nombre del sistema.
+@T    Hora actual, en HH:MM:SS (24 horas).
+@U    Numero de usuarios actualmente conectados. Esto es, el numero
+      de entradas en el fichero /etc/utmp que tienen un campo ut_name
+      no nulo.
+@V    Valor de VERSION, dado en el fichero de opciones por defecto.
+Para que se vea el caracter '@', use '\@' o '@@'.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aseg&uacute;rese de que no existe un fichero de configuraci&oacute;n de <CODE>getty</CODE> o
+<CODE>uugetty</CODE> para el puerto serie al que est&aacute; conectado el terminal
+(<CODE>/etc/default/{uu}getty.ttyS</CODE><EM>N</EM> o
+<CODE>/etc/conf.{uu}getty.ttyS</CODE><EM>N</EM>), ya que probablemente esto
+interferir&aacute; si ejecuta <CODE>getty</CODE> en un terminal. Borre el fichero si
+existe. </P>
+<P>Edite el fichero <CODE>/etc/inittab</CODE> para ejecutar <CODE>getty</CODE> en un
+puerto serie (substituya la informaci&oacute;n por la correcta para su entorno -
+puerto, velocidad, y tipo de terminal por defecto): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+S1:456:respawn:/sbin/getty ttyS1 DT9600 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Vuelva a ejecutar <CODE>init</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# init q 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora, deber&iacute;a estar viendo una petici&oacute;n de login en el terminal.  Debe
+pulsar return para conseguir la atenci&oacute;n del terminal. </P>
+
+
+<H2><A NAME="ss7.3">7.3 Notas sobre c&oacute;mo configurar un PC como terminal</A></H2>
+
+
+<P>Mucha gente configura otros PCs como terminales conectados a un sistema
+Linux. Por ejemplo, un viejo 8088 u 80286 es perfecto para este prop&oacute;sito.
+Todo lo que necesita es un disco de arranque de DOS que contenga una
+versi&oacute;n de DOS apropiada para un terminal-PC, y un programa de
+comunicaciones para ejecutar en el terminal-PC. </P>
+<P><CODE>kermit</CODE> funciona muy bien para esto. Puede encontrar versiones
+precompiladas de <CODE>kermit</CODE> para casi todos los SO que existen en
+<CODE>
+<A HREF="ftp://watsun.cc.columbia.edu/pub/ftp/kermit">ftp://watsun.cc.columbia.edu/pub/ftp/kermit</A></CODE>. Otros programas
+de comunicaciones populares de DOS, como <CODE>Telix</CODE> y <CODE>procomm</CODE>
+funcionan igual de bien. Aseg&uacute;rese de introducir la informaci&oacute;n del puerto
+serie en la configuraci&oacute;n de comunicaciones del terminal-PC. </P>
+
+
+<HR>
+<A HREF="Serie-Como-6.html">Anterior</A>
+<A HREF="Serie-Como-8.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc7">Indice</A>
+</BODY>
+</HTML>

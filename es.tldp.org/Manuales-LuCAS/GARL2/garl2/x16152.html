@@ -1,0 +1,375 @@
+<HTML
+><HEAD
+><TITLE
+>Ejecución de Exim</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Poner Eximen marcha"
+HREF="x-087-2-exim.html"><LINK
+REL="PREVIOUS"
+TITLE="Poner Eximen marcha"
+HREF="x-087-2-exim.html"><LINK
+REL="NEXT"
+TITLE="Si el correo no llega a su destino"
+HREF="x16207.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 19. Poner Eximen marcha</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x16207.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN16152">19.1. Ejecución de Exim</H1
+><P
+>&#13;Para ejecutar Exim, primero debe decidir si quiere que gestione los mensajes por 
+SMTP entrantes ejecutándose como un demonio separado, o si quiere que
+<B
+CLASS="COMMAND"
+>inetd</B
+> se encargue del puerto SMTP invocando a Exim sólo 
+cuando se solicite una conexión SMTP desde el cliente. Normalmente preferirá 
+que funcione como demonio porque eso cargará menos el anfitrión que iniciar Exim 
+una y otra vez en cada conexión. Como el servidor de correo traslada la mayoría
+del correo entrante directamente a los usuarios, debería encargarle la gestión 
+a <B
+CLASS="COMMAND"
+>inetd</B
+> en la mayoría del resto de anfitriones.</P
+><P
+>&#13; 
+Sea cual sea el modo de funcionamiento para cada anfitrión, tiene que asegurarse
+de tener la siguiente entrada en su fichero
+<TT
+CLASS="FILENAME"
+>/etc/services</TT
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    smtp            25/tcp          # Simple Mail Transfer Protocol</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto define el número del puerto TCP que se usará en las comunicaciones SMTP.
+El puerto 25 es el estándar definido por el RFC de &ldquo;Números Asignados&rdquo;
+(RFC-1700).</P
+><P
+>Cuando se ejecuta como demonio, Exim se coloca en segundo plano y espera 
+conexiones por el puerto SMTP. Cuando se da una conexión se bifurca y el 
+proceso hijo lleva a cabo una conversación SMTP con el proceso compañero del 
+anfitrión que llama.  El demonio Exim se inicia normalmente invocándolo desde 
+el guión
+<TT
+CLASS="FILENAME"
+>rc</TT
+> durante el arranque por medio de la siguiente orden:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    /usr/sbin/exim -bd -q15m</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La opción <TT
+CLASS="OPTION"
+>&ndash;bd</TT
+> activa el modo demonio y
+<TT
+CLASS="OPTION"
+>&ndash;q15m</TT
+> hace que procese los mensajes que se hayan 
+acumulado en la cola durante los últimos quince minutos.</P
+><P
+>&#13; 
+Si quiere usar <B
+CLASS="COMMAND"
+>inetd</B
+> su fichero
+<TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> debería contener una línea como ésta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    smtp    stream  tcp nowait  root  /usr/sbin/exim  in.exim -bs</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Recuerde que tiene que hacer que <B
+CLASS="COMMAND"
+>inetd</B
+> relea
+<TT
+CLASS="FILENAME"
+>inetd.conf</TT
+> enviándole una señal
+<SPAN
+CLASS="SYSTEMITEM"
+>HUP</SPAN
+> tras 
+realizar cualquier cambio.<A
+NAME="X-087-2-FNEX04"
+HREF="#FTN.X-087-2-FNEX04"
+>[1]</A
+></P
+><P
+>Los modos demonio e <B
+CLASS="COMMAND"
+>inetd</B
+> se excluyen mutuamente. Si
+ejecuta Exim como demonio, debería asegurarse de descomentar cualquier línea de
+<TT
+CLASS="FILENAME"
+>inetd.conf</TT
+> para el servicio
+<SPAN
+CLASS="SYSTEMITEM"
+>smtp</SPAN
+>. De manera equivalente, cuando
+<B
+CLASS="COMMAND"
+>inetd</B
+> se encargue de Exim, asegúrese de que ningún guión
+<TT
+CLASS="FILENAME"
+>rc</TT
+> inicie el demonio Exim.</P
+><P
+>Puede comprobar si Exim está instalado correctamente para recibir mensajes SMTP
+entrantes conectándose por telnet al puerto SMTP de su anfitrión. Una conexión 
+con éxito al servidor SMTP sería algo así como esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>telnet localhost smtp</B
+></TT
+>
+    Trying 127.0.0.1...
+    Connected to localhost.
+    Escape character is '^]'.
+    220 richard.vbrew.com ESMTP Exim 3.13 #1 Sun, 30 Jan 2000 16:23:55 +0600
+    <TT
+CLASS="USERINPUT"
+><B
+>quit</B
+></TT
+>
+    221 richard.brew.com closing connection
+    Connection closed by foreign host.</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Si esta prueba no genera la leyenda del SMTP (la línea que comienza con el 
+código 220), compruebe si está ejecutando un demonio Exim o si 
+<B
+CLASS="COMMAND"
+>inetd</B
+> está configurado correctamente. Si eso no lo resuelve 
+mire en los ficheros de bitácora de Exim (que se describen a continuación) en 
+caso de que haya algún error en el fichero de configuración de Exim.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNEX04"
+HREF="x16152.html#X-087-2-FNEX04"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Use <TT
+CLASS="LITERAL"
+>kill HUP</TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>pid,</I
+></TT
+> siendo <TT
+CLASS="REPLACEABLE"
+><I
+>pid</I
+></TT
+> 
+el ID del proceso que <B
+CLASS="COMMAND"
+>inetd</B
+> obtiene a partir de un listado de 
+<B
+CLASS="COMMAND"
+>ps</B
+>.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x16207.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Poner Eximen marcha</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Si el correo no llega a su destino</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

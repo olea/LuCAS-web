@@ -1,0 +1,458 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf170, System Administration: Aprendiendo con el nmap</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<IMG src="../../common/images/DaniloLujambio.gif" alt="[Foto del Autor]" height="98" width="75">
+<BR>por  <A HREF="mailto:danilo@tau.org.ar">Danilo Lujambio</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P></P>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">
+Barrido utilizando el three way handshake del TCP (opci&oacute;n
+-sT)</A></LI>
+  <LI><A HREF="#lfindex1">
+Barrido utilizando los segmentos SYN
+( medio abierto o half open , opci&oacute;n -sS )
+</A></LI>
+  <LI><A HREF="#lfindex2">
+Barrido utilizando los segmentos FIN</A></LI>
+  <LI><A HREF="#lfindex3">
+Expresiones del tcpdump que pueden ayudar</A></LI>
+  <LI><A HREF="#lfindex4">Conclusi&oacute;n</A></LI>
+  <LI><A HREF="#lfindex5">Bibliograf&iacute;a</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=170&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Aprendiendo con el nmap</H2>
+ <IMG src="../../common/images/article170/nmap.gif" alt="[nmap]" hspace="10" height="51" width="400">
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+<P></P></P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<P>&iquest; Porqu&eacute; poseen importancia
+los barredores o scanners en seguridad dentro de redes ?. Fundamentalmente
+porque son herramientas esenciales para aquellos que desean atacar un sistema.
+Las metodolog&iacute;as para la preparaci&oacute;n de un ataque pueden
+ser :</P>
+
+<UL>
+<LI>barrer una m&aacute;quina o una red elegida
+como objetivo , observar que servicios ofrece y que sistemas operativos
+son los que implementan dichos servicios y trabajar sobre alguna vulnerabilidad
+conocida en cualquiera de ellos
+<LI>barrer cualquier red o m&aacute;quina buscando
+un servicio o sistema operativo ( esto incluye el chequeo de la versi&oacute;n)
+que est&eacute;n ofreciendo un servicio del cual se conoce su vulnerabilidad
+</UL>
+
+<p>Por ello para un administrador preocupado
+por la seguridad de su sistema le es importante realizar un barrido de
+su red, y buscar vulnerabilidades antes que lo hagan otros con no muy buenas
+intenciones
+
+<p>Existen varios barredores para esta finalidad
+, en el art&iacute;culo se trabajar&aacute; sobre el nmap que es seguramente
+uno de los m&aacute;s completos
+
+<p>El nmap permite a los administradores de sistemas y a los curiosos poder
+"scannear" ( o barrer ) las redes y poder determinar que servidores
+est&aacute;n activos y que servicios est&aacute;n ofreciendo.
+
+<p>El nmap ofrece varias t&eacute;cnicas de barrido. En este art&iacute;culo
+se pretende trabajar sobre un n&uacute;mero limitado de ellas , aprovech&aacute;ndolas
+para repasar ( &iquest; quiz&aacute;s aprender ? ) aspectos del protocolo TCP
+
+<p>La idea es que se pueda observar algunas de las formas de uso del nmap
+para obtener informaci&oacute;n sobre los sistemas y a la vez observar
+como se puede encontrar huellas del barrido realizado por el nmap desde
+el lado del objetivo
+
+<p>
+El nmap se obtiene de <a href="http://www.insecure.org/">www.insecure.org</a>
+, una vez bajado :
+<PRE>
+tar zxvf nmap-2.30BETA17.tgz
+cd ...../nmap-2.30BETA17/
+./configure
+make
+make install
+</PRE>
+con lo cual queda instalado
+</p>
+
+<p>
+El resultado que arroja el nmap es comunmente una lista de los puertos
+"interesantes" ( puertos activos) en la m&aacute;quina que est&aacute;
+siendo barrida . Para dichos puertos da el nombre del servicio conocido
+, el estado y el protocolo
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>
+Barrido utilizando el three way handshake del TCP (opci<font face="times, serif">&oacute;</font>n
+-sT)</H2>
+
+
+<p>La forma de barrido mas com&uacute;n que posee es utilizando la
+opci&oacute;n -sT . Este modo se basa en la metodolog&iacute;a de inicio
+de conexi&oacute;n que posee el TCP , conocida como three way handshake.
+Describi&eacute;ndolo resumidamente sucede la siguiente secuencia [1]
+<br>a) El servidor tiene que estar preparado para recibir una conexi&oacute;n
+( en general utilizando las funciones socket , bind y listen)
+<br>b) El cliente lanza una conexi&oacute;n activa - llama a connect() -
+Con esto env&iacute;a un segmento SYN para informarle al server el numero
+inicial de secuencia para los datos que el cliente va a enviar en la conexi&oacute;n.
+El SYN normalmente contiene un IP Header - un TCP Header y puede ser alg&uacute;n
+opci&oacute;n TCP
+<br>c) El servidor debe dar por conocido el SYN enviando un ACK y a su vez
+env&iacute;a un SYN con su n&uacute;mero de secuencia ( todo en un s&oacute;lo
+paquete TCP)
+<br>d) El cliente debe dar por conocido el SYN enviado con un ACK
+
+<p>
+Este modo de barrido posee dos ventajas :
+<UL>
+<LI>es r&aacute;pido ( incluso el nmap posee opciones para hacerlo aun
+mas r&aacute;pido en conexiones lentas, que no analizaremos)
+<LI>no se necesitan privilegios especiales para realizarlo en la m&aacute;quina
+que lanza el barrido
+</UL>
+y posee la gran desventaja que es muy sencillo de detectar y es f&aacute;cil
+de filtrar
+</p>
+
+<p>Se analiza a continuaci&oacute;n&nbsp; el proceso que general el nmap
+con la opci&oacute;n -sT , corriendo el tcpdump en la m&aacute;quina objetivo.
+Para ello se ejecuta el nmap en la m&aacute;quina 192.168.255.20 y se dirige
+hacia la m&aacute;quina casa2.xxx.xxx.xxx, en una red ethernet
+<br>1) 08:24:18.393108 192.168.255.20.1024 > casa2.xxx.xxx.xxx.653: S 2632227152:2632227152(0)
+win 16060 &lt;mss 1460,sackOK,timestamp 232602[|tcp]> (DF)
+<br>2) 08:24:18.393167 casa2.xxx.xxx.xxx.653 > 192.168.255.20.1024: R 0:0(0)
+ack 2632227153 win 0
+<br>3) 08:24:18.393227 192.168.255.20.1025 >
+casa2.xxx.xxx.xxx.6141: S 2644226118:2644226118(0) win 16060 &lt;mss 1460,sackOK,timestamp
+232602[|tcp]> (DF)
+<br>4) 08:24:18.393258 casa2.xxx.xxx.xxx.6141 > 192.168.255.20.1025: R
+0:0(0) ack 2644226119 win 0
+<br>5) 08:24:18.453343 192.168.255.20.1298 > casa2.xxx.xxx.xxx.pop3: S 2640612362:2640612362(0)
+win 16060 &lt;mss 1460,sackOK,timestamp 232608[|tcp]> (DF)
+<br>6) 08:24:18.453542 casa2.xxx.xxx.xxx.pop3
+> 192.168.255.20.1298: S 1658259980:1658259980(0) ack 2640612363 win 16060
+&lt;mss 1460,sackOK,timestamp 243353[|tcp]> (DF)
+<br>7) 08:24:18.458667 192.168.255.20.1298 >
+casa2.xxx.xxx.xxx.pop3: . ack 1 win 16060 &lt;nop,nop,timestamp 232609
+243353> (DF)
+<br>8) 08:24:18.461280 192.168.255.20.1298 >
+casa2.xxx.xxx.xxx.pop3: F 1:1(0) ack 1 win 16060 &lt;nop,nop,timestamp
+232609 243353> (DF)
+
+<p>
+La numeraci&oacute;n de l&iacute;neas se ha agregado para una mejor explicaci&oacute;n:
+<br>en la l&iacute;nea 1) la m&aacute;quina "atacante" 192.168.255.20 lanza desde
+el puerto 1024 un segmento SYN hacia el puerto 653 de la m&aacute;quina objetivo
+casa2.xxx.xxx.xxx . Se reconoce que se trata de un segmento SYN por la
+S que se observa despu&eacute;s del 653. Se estar&iacute;a hasta all&iacute;
+en el punto b) del three way handshake explicado.
+<br>en la l&iacute;nea 2) la m&aacute;quina objetivo responde con un paquete RESET (
+n&oacute;tese la R luego del 1024) indicando esto que no posee un proceso "escuchando"
+sobre el puerto 653
+<br>las l&iacute;neas 3 y 4 son similares a las dos primeras , lo fundamental que
+varia es que se chequea si hay un proceso en el puerto 6141 de la m&aacute;quina
+objetivo, como nuevamente no lo hay , se vuelve a responder con un RESET
+<br>la l&iacute;nea 5) muestra como la m&aacute;quina 192.168.255.20 lanza un segmento
+SYN al puerto pop 3 de la m&aacute;quina objetivo ( puerto 110) , esta vez la
+m&aacute;quina objetivo responde con un ACK dando por reconocido el SYN y el n&uacute;mero
+de secuencia enviado ( se env&iacute;a el numero de secuencia propio de
+la m&aacute;quina objetivo , en este caso 1658259980 y el nro de secuencia enviado
+por la m&aacute;quina 192.168.255.20 , + 1 es decir 2640612363) . F&iacute;jese
+que el paquete que responde casa2 posee los bits de control SYN y ACK activos
+. Esto se observa en la l&iacute;nea 6) y se estar&iacute;a en el paso
+c) del three way handshake.
+<br>La l&iacute;nea 7) muestra el reconocimiento del &uacute;ltimo paquete recibido
+en la m&aacute;quina 192.168.255.20 con un segmento ACK , llegando as&iacute;
+al punto d) del handshake . La l&iacute;nea 8) es la finalizaci&oacute;n de la
+conexi&oacute;n por parte de 192.168.255.20 , cuesti&oacute;n que se realiza
+enviando un segmento FIN ( notese la F luego de pop3)
+
+<p>Este proceso permiti&oacute; al nmap ejecutado detectar que el puerto
+110 ( pop3) de casa2 es un puerto activo en dicha m&aacute;quina
+
+<p>Se mencion&oacute; que esta forma de barrido es facilmente detectable
+, notese las huellas que dejaron en el archivo /var/log/messages ( esto
+depende de como est&eacute; configurado el syslog.conf) la conexi&oacute;n vista
+en la l&iacute;nea 5 , 6 , 7 y 8 :
+<pre>May 6 08:24:01 casa2 in.pop3d[205]: connect from root@192.168.255.20</pre>
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>
+Barrido utilizando los segmentos SYN
+( medio abierto o half open , opci&oacute;n -sS )
+</H2>
+
+
+<p>
+Este tipo de barrido se obtiene ejecutando al nmap con la opci&oacute;n
+-sS . La t&eacute;cnica que utiliza es abrir una "media conexi&oacute;n"
+, es decir env&iacute;a un segmento SYN y si recibe un ACK es porque ha
+detectado un puerto activo en la m&aacute;quina objetivo , despu&eacute;s
+de lo cual env&iacute;a un RESET para cortar en forma abrupta la comunicaci&oacute;n.
+Si en vez de un ACK recibe un RST es porque el puerto de la m&aacute;quina objetivo
+no se encuentra activo. Este modo de barrido posee la desventaja que se
+deben tener privilegios de root para ejecutarlo . Pero posee la ventaja
+que es de dif&iacute;cil detecci&oacute;n en la m&aacute;quina que es barrida
+
+<p>Veamos ahora un an&aacute;lisis similar de la tarea desarrollada por
+el nmap con esta opci&oacute;n, analizandola con el tcpdump ( nuevamente
+las l&iacute;neas se numeran por comodidad)
+<br>1) 22:25:45.856936 192.168.255.20.40175 >
+casa2.tau.org.ar.946: S 1292785825:1292785825(0) win 3072
+<br>2) 22:25:45.857078 casa2.tau.org.ar.946 >
+192.168.255.20.40175: R 0:0(0) ack 1292785826 win 0
+
+<p>
+las l&iacute;neas 1) y 2) son muy similares a las l&iacute;neas 1) y 2) del apartado
+anterior , simplemente se ve el segmento SYN enviado por la m&aacute;quina 192.168.255.20
+al puerto 946 de la m&aacute;quina casa2 y la respuesta de esta enviando un RESET
+por no ser ese un puerto activo de ella
+
+<p>3) 22:25:45.970365 192.168.255.20.40175 >
+casa2.tau.org.ar.pop3: S 1292785825:1292785825(0) win 3072
+<br>4) 22:25:45.976022 casa2.tau.org.ar.pop3
+> 192.168.255.20.40175: S 185944428:185944428(0) ack 1292785826 win 16080
+&lt;mss 536> (DF)
+<br>5) 22:25:45.979578 192.168.255.20.40175 >
+casa2.tau.org.ar.pop3: R 1292785826:1292785826(0) win 0
+
+<p>las l&iacute;neas 3) 4) y 5) son obtenidas por el
+hallazgo exitoso del puerto 110 ( pop3) en la m&aacute;quina casa2 . Como se mencion&oacute;
+, no se desarrolla completo el three way handshake sino que al recibir
+el nmap el reconocimiento de su segmento SYN ( mediante el segmento ACK
+enviado por casa2 , l&iacute;nea 4 ), env&iacute;a un segmento RESET que fuerza
+la interrupci&oacute;n de la comunicaci&oacute;n.
+
+<p>Este barrido sobre casa2 no dej&oacute; huella en
+el archivo /var/log/messages , tal como se hab&iacute;a anticipado
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>
+Barrido utilizando los segmentos FIN</H2>
+
+
+<p>
+La idea sobre la que se basa este tipo
+de barrido es que los puertos no activos de la m&aacute;quina objetivo responden
+a un paquete FIN con un paquete RST. Los puertos activos, por otra parte
+ignoran dichos paquetes. Por lo tanto se obtiene la lista interesante de
+puertos observando cuales son los que no han "contestado". Las m&aacute;quinas
+corriendo sistemas operativos microsoft no son vulnerables a este tipo
+de barrido, ya que realizan una implementaci&oacute;n no standard de lo
+que deber&iacute;a ser la forma correcta de operaci&oacute;n del TCP.</p>
+
+<p>Hay tres formas de operaci&oacute;n del nmap
+utilizando t&eacute;cnicas parecidas , ellas se obtienen con las opciones
+-sF , -sX y -sN.
+
+<p>Analizamos en este articulo el comportamiento
+bajo la opci&oacute;n -sF. Realizamos para ello un trabajo similar al hecho
+para las otras opciones
+<br>1) 06:50:45.643718 192.168.255.20.35600 >
+casa2.tau.org.ar.864: F 0:0(0) win 2048
+<br>2) 06:50:45.643865 casa2.tau.org.ar.864 >
+192.168.255.20.35600: R 0:0(0) ack 0 win 0
+
+<p>en las l&iacute;neas 1) y 2) se observa el env&iacute;o
+del segmento FIN ( notese la F luego del 864 en la l&iacute;nea 1) a la m&aacute;quina
+objetivo y la respuesta de ella con un paquete RST ( notese la R en la
+l&iacute;nea 2 luego del 35600). nmap concluye entonces que el puerto 864
+de casa2 no se encuentra activo.
+
+<p>3) 06:50:47.933227 192.168.255.20.35600 >
+casa2.tau.org.ar.pop3: F 0:0(0) win 2048
+<br>4) 06:50:48.251147 192.168.255.20.35601 >
+casa2.tau.org.ar.pop3: F 0:0(0) win 2048
+
+<p>las l&iacute;neas 3) y 4) vuelven a tomar como ejemplo
+al puerto pop3 de casa2 .En la l&iacute;nea 3 se ve el env&iacute;o del segmento
+FIN , segmento que no obtiene respuesta por parte de casa2 . La l&iacute;nea 4)
+constituy&oacute; una sorpresa y debe ser una seguridad que toma el nmap para
+puertos que "no contestan" , vuelve a enviarle un segmento FIN al cabo
+de un lapso para ver si realmente ese puerto no esta contestando. En ambos
+casos, casa2 ignor&oacute; los paquetes , mostr&aacute;ndole as&iacute;
+al nmap que su puerto pop3 se encuentra activo.
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>
+Expresiones del tcpdump que pueden ayudar</H2>
+
+
+<p>
+En el apartado "barrido utilizando el three way handshake del tcp" se mencion&oacute;
+y se mostr&oacute; las huellas que puede dejar el barrido del nmap con
+la opcion -sT . En los dos siguientes apartados se vi&oacute; que las opciones
+-sS y -sF no dejan huellas. Podemos utilizar el programa tcpdump para detectar
+este tipo de barridos en una m&aacute;quina que esta conectada a la red y que
+puede recibir ataques. El inconveniente es que el programa tcpdump genera
+una cantidad de informaci&oacute;n enorme que trae dificultades de espacio
+de almacenamiento y luego tambi&eacute;n de an&aacute;lisis. Se ofrecen
+aqu&iacute; algunas expresiones que act&uacute;an sobre el tcpdump como
+filtros de manera que la informaci&oacute;n obtenida por &eacute;l sea
+menor y m&aacute;s sencilla de analizar.
+
+<p>Para entender las expresiones utilizadas , se muestra en la siguiente
+figura como es el formato del paquete TCP [2]
+
+<p><b>TCP (RFC 793)</b><BR>
+<font color="#330000"><pre>&nbsp;0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3
+&nbsp;0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Source Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Destination Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Sequence Number&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Acknowledgement Number&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Offset |&nbsp; Reserver |U|A|P|R|S|F|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Window&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Checksum&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Urgent Pointer&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Options&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |&nbsp;&nbsp;&nbsp; Padding&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Data&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</font>
+</pre>
+
+<p>Como puede observarse es en el byte 13
+es donde se encuentran las banderas que identifican al paquete como un segmento
+SYN , FIN , etc. Conociendo esto y utilizando la expresi&oacute;n and (&amp;)
+con m&aacute;scaras para detectar cuales son los bits activos podemos realizar
+las siguientes expresiones
+<pre>tcpdump 'tcp[13] &amp; 7 !=0 and dst 192.168.255.20' > /tmp/salida7</pre>
+as&iacute; se filtraran y se obtendr&aacute;n
+los paquetes que poseen los bits R , S o F ( la m&aacute;scara es 00000111)
+activos y que tiene por destino la m&aacute;quina 192.168.255.20 ( obviamente
+este n&uacute;mero IP ser&aacute; el de la m&aacute;quina a proteger)
+</p>
+
+<p>Utilizando
+<pre>tcpdump 'tcp[13] &amp; 1 !=0 and dst 192.168.255.20' > /tmp/salida1</pre>
+obtendremos los paquetes que poseen el
+bit FIN activo ( la m&aacute;scara es 00000001). Nos puede servir para
+detectar los barridos del nmap que utilizan la opci&oacute;n -sF . Y realizando
+<pre>tcpdump 'tcp[13] &amp; 2 !=0 and dst 192.168.255.20' > /tmp/salida2</PRE>
+obtendremos solo los paquetes que poseen
+el bit SYN activo , sirvi&eacute;ndonos para detectar los barridos con
+opci&oacute;n -sS
+
+<p>Para este &uacute;ltimo tipo ( el barrido
+nmap -sS ) existen programas de detecci&oacute;n disponibles [3]
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Conclusi&oacute;n</H2>
+
+
+<p>Programas como el nmap son muy &uacute;tiles
+para mejorar la seguridad de un sistema verificando que partes d&eacute;biles
+posee. Aqu&iacute; solo se ha mostrado el funcionamiento de una parte muy
+reducida de &eacute;l, pero creo que sirve para entender un poco m&aacute;s, desde adentro
+como funcionan los scanner</p>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Bibliograf&iacute;a</H2>
+
+
+<P>[1] W. Richard Stevens Unix Network Programming Volume 1
+<BR>[2] RFC 793
+<BR>[3] ver la documentaci&oacute;n del nmap
+</P>
+
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=170&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Danilo Lujambio, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article170.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<!-- OLD FORMAT, NO TRANSLATION INFO -->
+</TR></TABLE></CENTER>
+<p><font size=1>2001-05-16, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

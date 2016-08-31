@@ -1,0 +1,202 @@
+<HTML>
+<HEAD>
+<TITLE>C&oacute;mo pasar de DOS a Linux.: Disquetes, discos duros y otros m&eacute;todos de almacenamiento.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Dos-a-Linux-Como-3.html">Anterior</A>
+<A HREF="Dos-a-Linux-Como-5.html">Siguiente</A>
+<A HREF="Dos-a-Linux-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="Disquetes"></A> <A NAME="s4">4. Disquetes, discos duros y otros m&eacute;todos de almacenamiento.</A></H2>
+
+
+
+<H2><A NAME="ss4.1">4.1 Administraci&oacute;n de dispositivos</A></H2>
+
+
+<P>Nunca habr&aacute; pensado acerca de ello, pero el comando de DOS <CODE>FORMAT A:</CODE>
+hace mucho m&aacute;s de lo que parece. De hecho, cuando ordene el comando
+<CODE>FORMAT</CODE>: </P>
+<P>
+<OL>
+<LI>Formatear&aacute; f&iacute;sicamente el disco</LI>
+<LI>Crear&aacute; el directorio <CODE>A:</CODE> (crear&aacute; un sistema de ficheros)</LI>
+<LI>Pondr&aacute; el disco disponible para el usuario (montar&aacute; el disco).</LI>
+</OL>
+</P>
+<P>Estos tres pasos se ordenan separadamente bajo Linux. Puede usar disquetes
+con formato MS-DOS, aunque haya otros formatos disponibles y sean mejores
+(el formato MS-DOS no le dejar&aacute; usar nombres de fichero largos). A
+continuaci&oacute;n se explica c&oacute;mo preparar un disco (necesitar&aacute; iniciar una
+sesi&oacute;n como root): </P>
+<P>
+<UL>
+<LI>Para formatear un disquete est&aacute;ndar de 1.44 megas (A:):
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# fdformat /dev/fd0H1440
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Para crear un sistema de ficheros:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# mkfs -t ext2 -c /dev/fd0H1440
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+o para crear un sistema de ficheros MS-DOS:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# mformat a:
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Antes de usar el disco, debe montarlo.
+</LI>
+<LI>Para montar el disco:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount -t ext2 /dev/fd0 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+o
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount -t msdos /dev/fd0 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Ahora puede dirigirse a los ficheros del disquete. Cuando haya acabado,
+antes de sacar el disco deber&aacute; desmontarlo. 
+</LI>
+<LI>Para desmontar el disco:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# umount /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Ahora puede extraer el disco. Obviamente, debe hacer un <CODE>fdformat</CODE> y un
+<CODE>mkfs</CODE> s&oacute;lo a los discos no formateados, que no han sido usados nunca. 
+Si quiere utilizar la unidad B:, ponga <CODE>fd1H1440</CODE> y <CODE>fd1</CODE> en lugar
+de <CODE>fd0H1440</CODE> y <CODE>fd0</CODE> en los ejemplos anteriores. </LI>
+</UL>
+</P>
+<P>Todo lo que sol&iacute;a hacer con A: y B: se hace ahora utilizando <CODE>/mnt</CODE>
+en su lugar.  Ejemplos: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+DOS                                     Linux
+--------------------------------------------------------------------
+
+C:\GUIDO&gt;dir a:                         $ ls /mnt
+C:\GUIDO&gt;copy a:*.*                     $ cp /mnt/* /docs/temp
+C:\GUIDO&gt;copy *.zip a:                  $ cp *.zip /mnt/zip
+C:\GUIDO&gt;a:                             $ cd /mnt
+A:&gt;_                                    /mnt/$ _
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>No hace falta decir que la manera de proceder con los disquetes tambi&eacute;n
+funciona con otros dispositivos, como por ejemplo, otro disco duro o una
+unidad CD-ROM. Esto es para montar el CD-ROM: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount -t iso9660 /dev/cdrom /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>&Eacute;sta era la manera ``oficial'' de montar discos, pero hay un truco. Como
+es algo inc&oacute;modo tener que ser root para montar un disquete o un CD-ROM,
+puede darse permisos a cada usuario de esta manera:</P>
+<P>
+<UL>
+<LI>como root, crear los directorios <CODE>/mnt/floppy</CODE>,
+<CODE>mnt/a:</CODE>, y <CODE>/mnt/cdrom</CODE>
+ </LI>
+<LI>a&ntilde;adir en <CODE>/etc/fstab</CODE> las siguientes l&iacute;neas:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+/dev/cdrom        /mnt/cdrom    iso9660   ro,user,noauto          0       0
+/dev/fd0          /mnt/a:       msdos     user,noauto             0       0
+/dev/fd0          /mnt/floppy   ext2      user,noauto             0       0
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+</P>
+<P>Ahora, para montar un disquete MS-DOS, un disquete ext2, y un CD-ROM:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ mount /mnt/a:
+$ mount /mnt/floppy
+$ mount /mnt/cdrom
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Cualquier usuario puede acceder a <CODE>/mnt/floppy</CODE>, <CODE>/mnt/a:</CODE>,
+y <CODE>/mnt/cdrom</CODE>. Para escribir en <CODE>/mnt/floppy</CODE> sin ser root,
+despu&eacute;s de preparar el floppy es necesario hacer: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# mount /mnt/floppy
+# chmod 777 /mnt/floppy
+# umount /mnt/floppy
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Recuerde que si considera importante la seguridad, dejar que todo el mundo
+pueda montar discos de esta manera constituye un buen agujero en la misma. </P>
+
+
+<H2><A NAME="ss4.2">4.2 Copias de Seguridad</A></H2>
+
+
+<P>Ahora que sabe c&oacute;mo se manejan disquetes, etc. un par de l&iacute;neas bastan
+para ver c&oacute;mo hacer una copia de seguridad. Hay muchos paquetes que pueden
+servirle, pero lo m&aacute;s simple para hacer una copia de seguridad
+multivolumen (como root) es: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tar -M -cvf /dev/fd0H1440 /directorio_a_guardar
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aseg&uacute;rese de tener un disquete formateado en la unidad, y otros ya
+preparados. Para restaurar sus ficheros, inserte el primer disquete en la
+unidad y utilice: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# tar -M -xpvf /dev/fd0H1440
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Dos-a-Linux-Como-3.html">Anterior</A>
+<A HREF="Dos-a-Linux-Como-5.html">Siguiente</A>
+<A HREF="Dos-a-Linux-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

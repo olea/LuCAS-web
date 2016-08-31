@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 39 Reduciendo el tamaño de su ejecutable
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="39 Reduciendo el tamaño de su ejecutable">39 Reduciendo el tamaño de su ejecutable</a></h1>
+
+<p>
+Hay gente que se queja de que Allegro produce ejecutables muy grandes. Esto
+es cierto: con la versión DJGPP, un simple programa "hola mundo" ocupará unas
+200k, aunque este tamaño por ejecutable es mucho menor en plataformas que
+soportan enlazado dinámico. Pero no se preocupe, Allegro ocupa un tamaño
+relativamente fijo, y no aumentará a medida que lo hace su programa. Tal y
+como George Foot dijo sin tapujos, quien esté preocupado por la relación
+entre código de biblioteca y programa debería ponerse manos a la obra y
+escribir más código de programa para equilibrar la cosa :-)
+
+<p>
+Dicho esto, hay varias cosas que puede hacer para reducir el tamaño de sus
+ejecutables:
+<ul><li>
+Para todas las plataformas, puede usar el compresor de ejecutables UPX, el
+cual está disponible en http://upx.tsx.org/ . Este normalmente consigue una
+compresión de alrededor de un 40%.
+Cuando use DJGPP: para empezar, lea la sección 8.14 del FAQ de DJGPP, y tome
+nota del parámetro -s. ¡Y no se olvide de compilar su programa con las
+optimizaciones activadas!
+<li>
+Si un programa DOS va a ser usado en un número limitado de resoluciones,
+puede especificar los controladores gráficos que desea incluir con su código:
+<blockquote class="code"><pre>
+   BEGIN_GFX_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_GFX_DRIVER_LIST
+</pre></blockquote>
+donde los nombres driverx son cualquiera de las definiciones:
+<blockquote class="text"><pre>
+   GFX_DRIVER_VBEAF
+   GFX_DRIVER_VGA
+   GFX_DRIVER_MODEX
+   GFX_DRIVER_VESA3
+   GFX_DRIVER_VESA2L
+   GFX_DRIVER_VESA2B
+   GFX_DRIVER_XTENDED
+   GFX_DRIVER_VESA1
+</pre></blockquote>
+Esta construcción debe ser incluida sólo en uno de sus ficheros C. El orden
+de los nombres es importante, porque la rutina de auto detección funciona de
+arriba a abajo hasta encontrar un controlador capaz de soportar el modo
+solicitado. Yo le sugiero que use la lista de arriba ordenada por defecto, y
+borre simplemente las líneas que no vaya a necesitar.
+<li>
+Si su programa DOS no necesita usar todas las profundidades de color
+posibles, puede especificar cuales desea que sean soportadas por su programa:
+<blockquote class="code"><pre>
+   BEGIN_COLOR_DEPTH_LIST
+      depth1
+      depth2
+      etc...
+   END_COLOR_DEPTH_LIST
+</pre></blockquote>
+donde los nombres de profundidades de color son cualquiera de los defines:
+<blockquote class="text"><pre>
+   COLOR_DEPTH_8
+   COLOR_DEPTH_15
+   COLOR_DEPTH_16
+   COLOR_DEPTH_24
+   COLOR_DEPTH_32
+</pre></blockquote>
+Quitar cualquier profundidad de color le ahorrará un poco de espacio, con la
+excepción de los modos de 15 y 16 bits: éstos comparten una buena porción de
+código, así que si está incluyendo uno, no hay razón para quitar el otro.
+Esté avisado de que si intenta usar una profundidad de color no incluida en
+esta lista, ¡su programa se colgará de forma horrible!
+<li>
+Del mismo modo que arriba, puede especificar qué controladores de sonido
+para DOS quiere incluir en su código:
+<blockquote class="code"><pre>
+   BEGIN_DIGI_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_DIGI_DRIVER_LIST
+</pre></blockquote>
+usando las definiciones de controladores digitales:
+<blockquote class="text"><pre>
+   DIGI_DRIVER_SOUNDSCAPE
+   DIGI_DRIVER_AUDIODRIVE
+   DIGI_DRIVER_WINSOUNDSYS
+   DIGI_DRIVER_SB
+</pre></blockquote>
+y para la música MIDI:
+<blockquote class="code"><pre>
+   BEGIN_MIDI_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_MIDI_DRIVER_LIST
+</pre></blockquote>
+usando las definiciones de controladores MIDI:
+<blockquote class="text"><pre>
+   MIDI_DRIVER_AWE32
+   MIDI_DRIVER_DIGMID
+   MIDI_DRIVER_ADLIB
+   MIDI_DRIVER_MPU
+   MIDI_DRIVER_SB_OUT
+</pre></blockquote>
+Si va a usar alguno de éstas construcciones, debe usar las dos. Si sólo
+quiere incluir controladores de sonido digital, simplemente escriba
+DECLARE_MIDI_DRIVER_LIST() para no incluir controladores de música.
+<li>
+De igual modo para los controladores de joystick de DOS puede declarar una
+lista:
+<blockquote class="code"><pre>
+   BEGIN_JOYSTICK_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_JOYSTICK_DRIVER_LIST
+</pre></blockquote>
+usando las definiciones de controladores de joystick:
+<blockquote class="text"><pre>
+   JOYSTICK_DRIVER_WINGWARRIOR
+   JOYSTICK_DRIVER_SIDEWINDER
+   JOYSTICK_DRIVER_GAMEPAD_PRO
+   JOYSTICK_DRIVER_GRIP
+   JOYSTICK_DRIVER_STANDARD
+   JOYSTICK_DRIVER_SNESPAD
+   JOYSTICK_DRIVER_PSXPAD
+   JOYSTICK_DRIVER_N64PAD
+   JOYSTICK_DRIVER_DB9
+   JOYSTICK_DRIVER_TURBOGRAFX
+   JOYSTICK_DRIVER_IFSEGA_ISA
+   JOYSTICK_DRIVER_IFSEGA_PCI
+   JOYSTICK_DRIVER_IFSEGA_PCI_FAST
+</pre></blockquote>
+El controlador estándar incluye soporte para joysticks duales, número
+superior de botones, Flightstick Pro, y Wingman Extreme, porque éstos son
+variaciones menores del código básico.
+<li>
+Si _realmente_ está decidido a reducir los tamaños, mire el comienzo del
+fichero include/allegro/alconfig.h y verá las líneas:
+<blockquote class="code"><pre>
+   #define ALLEGRO_COLOR8
+   #define ALLEGRO_COLOR16
+   #define ALLEGRO_COLOR24
+   #define ALLEGRO_COLOR32
+</pre></blockquote>
+Si comenta cualquiera de estas definiciones y reconstruye la librería,
+tendrá una versión sin soporte para las profundidades de color ausentes, lo
+que incluso reducirá más el ejecutable que la macro
+DECLARE_COLOR_DEPTH_LIST(). El quitar el define ALLEGRO_COLOR16 eliminará
+el soporte para los modos de 15 y 16bits, ya que éstos comparten mucho
+código.
+</ul>
+Nota: los métodos mencionados para quitar drivers gráficos no usados sólo es
+aplicable a las versiones de la biblioteca enlazadas estáticamente, ejemplo:
+DOS. En plataformas Windows y Unix, puede crear Allegro como una DLL o
+biblioteca compartida, lo cual evita que se puedan usar estos métodos, pero
+ahorra tanto espacio que probablemente ni se llegará a preocupar. No
+obstante, quitar profundidades de color de alconfig.h funcionará en cualquier
+plataforma.
+
+<p>
+Si está distribuyendo una copia del programa setup junto con su juego, puede
+conseguir una reducción de tamaño dramática mezclando el código del programa
+setup con su programa principal, para que sólo sea necesario enlazar una
+copia de Allegro. Lea setup.txt para más detalles. En la versión DJGPP, tras
+comprimir su ejecutable, esto le ahorrará unos 200k en comparación con tener
+dos programas separados para setup y el propio juego.
+
+
+
+<p><br>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

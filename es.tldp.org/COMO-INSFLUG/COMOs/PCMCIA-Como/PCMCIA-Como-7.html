@@ -1,0 +1,377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA COMO : Trucos para depurar e informaci&oacute;n de programaci&oacute;n</TITLE>
+ <LINK HREF="PCMCIA-Como-8.html" REL=next>
+ <LINK HREF="PCMCIA-Como-6.html" REL=previous>
+ <LINK HREF="PCMCIA-Como.html#toc7" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PCMCIA-Como-8.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-6.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc7">Índice general</A>
+<HR>
+<H2><A NAME="tips"></A> <A NAME="s7">7. Trucos para depurar e informaci&oacute;n de programaci&oacute;n</A></H2>
+
+<P>
+<P>
+<H2><A NAME="bugs"></A> <A NAME="ss7.1">7.1 Env&iacute;o de informes de <I>bugs</I> que son de utilidad </A>
+</H2>
+
+<P>
+<P>La mejor forma de informar de <I>bugs</I> es usar las listas de mensajes de
+HyperNews en el servidor web de Linux PCMCIA. De este modo, otras personas
+podr&aacute;n ver los problemas actuales (y reparaciones o trabajos relacionados,
+si est&aacute;n disponibles). He aqui algunas cosas que se deben incluir en los
+informes de <I>bugs</I>: 
+<P>
+<UL>
+<LI>El tipo de sistema, y la salida del comando <CODE>probe</CODE>.
+</LI>
+<LI>Qu&eacute; tarjetas PCMCIA est&aacute; usando.
+</LI>
+<LI>Su versi&oacute;n del kernel de Linux, y la versi&oacute;n del controlador PCMCIA.
+</LI>
+<LI>Cualquier cambio que haya hecho a los archivos de inicio en
+<CODE>/etc/pcmcia</CODE>, o al script de inicio de PCMCIA. 
+</LI>
+<LI>Todos los mensajes relacionados con PCMCIA en el registro de su
+sistema. 
+</LI>
+</UL>
+<P>Todos los m&oacute;dulos PCMCIA y el demonio <CODE>cardmgr</CODE> env&iacute;an mensajes de
+estado al registro del sistema, que estar&aacute; normalmente en sitios como
+<CODE>/var/log/messages</CODE> o <CODE>/usr/adm/messages</CODE>. Este archivo debe
+ser el primer lugar a comprobar cuando se est&eacute; rastreando un problema.
+Cuando env&iacute;e una notificaci&oacute;n de bug, incluya siempre el contenido de este
+archivo. Si tiene problemas para encontrar los mensajes de su sistema,
+revise <CODE>/etc/syslog.conf</CODE> para ver cuantas clases diferentes de
+mensajes se manejan.
+<P>Antes de enviar una notificaci&oacute;n de bug, por favor aseg&uacute;rese que no est&eacute;
+usando una copia obsoleta del paquete de controladores. Aunque resulte
+gratificante leer informes sobre un bug que ya he reparado, no supone un
+uso particularmente constructivo de mi tiempo. 
+<P>Si no tiene acceso a web, puede enviarme los informes de <I>bugs</I> a
+<CODE>
+<A HREF="mailto:dhinds@hyper.stanford.edu">dhinds@hyper.stanford.edu</A></CODE>. Sin embargo, prefiero que sean
+introducidos en mi servidor web, as&iacute; pueden ser vistos por otros. 
+<P>
+<H2><A NAME="trampas"></A> <A NAME="ss7.2">7.2 Interpretaci&oacute;n de los informes generados por los <I>traps</I> del kernel </A>
+</H2>
+
+<P>
+<P>Si su problema incluye un fallo del kernel, el vaciado del registro del
+fallo s&oacute;lo es &uacute;til si puede traducir la direcci&oacute;n del error, EIP, o algo
+semejante. Las versiones recientes de <CODE>klogd</CODE> intentan traducir las
+direcciones de fallos bas&aacute;ndose en el mapa actual de s&iacute;mbolos del kernel,
+pero puede que no funcione si el error se produce en un m&oacute;dulo, o si el
+problema es lo bastante severo como para que que <CODE>klogd</CODE> no pueda
+terminar de escribir la informaci&oacute;n del fallo en el registro del sistema.
+<P>Si se localiza en el kernel principal, la direcci&oacute;n de fallo puede
+encontrarse en el archivo <CODE>System.map</CODE>. El cual puede estar instalado
+en <CODE>/System.map</CODE> o en <CODE>/boot/System.map</CODE>. Si est&aacute; en un
+m&oacute;dulo, el comando <CODE>nm</CODE> proporciona la misma informaci&oacute;n; sin embargo,
+la direcci&oacute;n del fallo necesita ajustarse bas&aacute;ndose en la direcci&oacute;n de
+carga del m&oacute;dulo. Digamos que experimenta el siguiente fallo del kernel:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       Unable to handle kernel NULL pointer dereference
+       current->tss.cr3 = 014c9000, %cr3 = 014c9000
+       *pde = 00000000
+       Oops: 0002
+       CPU:    0
+       EIP:    0010:[&lt;c2026081>]
+       EFLAGS: 00010282
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La direcci&oacute;n de fallo es <CODE>0xc2026081</CODE>. Si buscamos en <CODE>System.map</CODE>,
+vemos que esto est&aacute; m&aacute;s all&aacute; de los l&iacute;mites del kernel, por ejemplo, es un
+m&oacute;dulo del kernel. Para determinar qu&eacute; m&oacute;dulo, revise la salida de
+<CODE>ksyms -m | sort</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       Address   Symbol                            Defined by
+       c200d000  (35k)                             [pcmcia_core]
+       c200d10c  register_ss_entry                 [pcmcia_core]
+       c200d230  unregister_ss_entry               [pcmcia_core]
+                 ...
+       c2026000  (9k)                              [3c574_cs]
+       c202a000  (4k)                              [serial_cs]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>As&iacute;, <CODE>0xc2026081</CODE> est&aacute; en el m&oacute;dulo <CODE>3c574_cs</CODE> con un desplazamiento
+de <CODE>0x0081</CODE> desde el inicio del m&oacute;dulo. Todav&iacute;a no podemos ver m&aacute;s all&aacute;
+de este desplazamiento en <CODE>3c574_cs.o</CODE>: cuando el kernel carga un
+m&oacute;dulo, inserta un encabezado en la direcci&oacute;n de carga del mismo, as&iacute; el
+inicio real se desplaza desde la direcci&oacute;n mostrada en <CODE>ksyms</CODE>.  El
+tama&ntilde;o del encabezado var&iacute;a con la versi&oacute;n del kernel:  para encontrar el
+tama&ntilde;o en su kernel, busque un m&oacute;dulo que exporte s&iacute;mbolos (como
+<CODE>pcmcia_core</CODE>), y compare la direcci&oacute;n del s&iacute;mbolo con la salida de
+<CODE>nm</CODE> para ese mismo s&iacute;mbolo. En este ejemplo, <CODE>register_ss_entry</CODE> se
+carga con un desplazamiento de <CODE>0xc200d10c - 0xc200d000 = 0x010c</CODE>,
+mientras que <CODE>nm pcmcia_core.o</CODE> muestra el desplazamiento como
+<CODE>0x00c0</CODE>, as&iacute; que el tama&ntilde;o del encabezado es <CODE>0x010c - 0x00c0 =
+0x004c</CODE> bytes. 
+<P>Regresando a <CODE>3c574_cs.o</CODE>, nuestro desplazamiento de fallo es
+<CODE>0x0081</CODE>, y restando el encabezado <CODE>0x004c</CODE>, el desplazamiento real
+del m&oacute;dulo es <CODE>0x0035</CODE>. Ahora comprobando el resultado de un <CODE>nm
+3c574_cs.o | sort</CODE>, observamos: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  0000002c d if_names
+  0000002c t tc574_attach
+  00000040 d mii_preamble_required
+  00000041 d dev_info
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El fallo se localiza en <CODE>tc574_attach()</CODE>.
+<P>En este ejemplo, el fallo no caus&oacute; un congelamiento total del sistema, as&iacute;
+que <CODE>ksyms</CODE> puede ejecutarse despu&eacute;s de haber tenido lugar el fallo. En
+otros casos, puede que tenga que deducir indirectamente las direcciones de
+carga del m&oacute;dulo. La misma secuencia de eventos cargar&aacute; normalmente los
+m&oacute;dulos en el mismo orden y en las mismas direcciones. Si se produce un
+fallo cuando se inserta cierta tarjeta, obtenga la salida de <CODE>ksyms</CODE>
+antes de insertar la tarjeta, o con una tarjeta diferente insertada. Puede
+cargar manualmente los m&oacute;dulos controladores de la tarjeta con <CODE>insmod</CODE>
+y ejecutar <CODE>ksyms</CODE> antes de insertarla. 
+<P>Para profundizar, consulte <CODE>man insmod</CODE>, <CODE>man ksyms</CODE>, y <CODE>man
+klogd</CODE>. En el &aacute;rbol de los fuentes del kernel,
+<CODE>Documentation/oops-tracing.txt</CODE> tambi&eacute;n es relevante. He aqu&iacute; unas
+cuantas pistas para depurar el kernel:
+<P>
+<UL>
+<LI>Dependiendo del error, puede ser &uacute;til traducir direcciones en el
+<I>Trazado de llamadas</I>, usando el mismo procedimiento para la direcci&oacute;n
+de error principal.
+</LI>
+<LI>Para diagnosticar un congelamiento silencioso, pruebe provocar el
+problema con X desactivado, porque los mensajes del kernel se env&iacute;an a la
+consola en texto, y no ser&aacute;n visibles bajo X. 
+</LI>
+<LI>Si mata a <CODE>klogd</CODE> muchos de los mensajes del kernel har&aacute;n eco
+directamente a la consola de texto, el cual puede ser &uacute;til si el problema
+impide a <CODE>klogd</CODE> escribir en el registro del sistema.
+</LI>
+<LI>Para hacer que todos los mensajes del kernel se env&iacute;en a la consola,
+para kernels <CODE>2.1.x</CODE>, si existe <CODE>/proc/sys/kernel/printk</CODE>,
+hacer: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+       echo 8 > /proc/sys/kernel/printk
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>La combinaci&oacute;n de teclas <CODE>&lt;RightAlt&gt;&lt;ScrLk&gt;</CODE> imprime
+un vaciado del registro en la consola de texto. Esto puede funcionar en
+caso de que el sistema est&eacute; o no completamente sin responder, y la
+direcci&oacute;n EIP puede interpretarse como fallo del kernel.
+</LI>
+<LI>Para los kernels <CODE>2.1.x</CODE> configurados con <CODE>CONFIG_MAGIC_SYSRQ</CODE>
+activado, se pueden activar varias funciones de emergencia por medio de
+las combinaciones especiales de las teclas <CODE>&lt;Alt&gt;&lt;SysRq&gt;</CODE>,
+que est&aacute;n documentadas en <CODE>Documentation/sysrq.txt</CODE> dentro del
+&aacute;rbol de los fuentes del kernel. 
+</LI>
+</UL>
+<P>
+<H2><A NAME="aux"></A> <A NAME="ss7.3">7.3 Primeros auxilios al depurar a bajo nivel </A>
+</H2>
+
+<P>
+<P>Los m&oacute;dulos PCMCIA contienen bastante c&oacute;digo de depuraci&oacute;n compilado de
+forma condicional. La mayor parte de este c&oacute;digo est&aacute; bajo el control de
+las definiciones del preprocesador de <CODE>PCMCIA_DEBUG</CODE>. Si no est&aacute;
+definido, el c&oacute;digo de depuraci&oacute;n no se compilar&aacute;. Si se establece a
+<CODE>0</CODE>, se compilar&aacute; pero no estar&aacute; activo. Los n&uacute;meros mayores
+especifican el incremento del nivel de detalle del registro. Cada m&oacute;dulo
+compilado con <CODE>PCMCIA_DEBUG</CODE> definido tendr&aacute; un par&aacute;metro entero,
+<CODE>pc_debug</CODE>, que controla el nivel de detalle de su salida. Esto puede
+ajustarse cuando se carga el m&oacute;dulo, as&iacute; la salida puede controlarse en
+base a cada m&oacute;dulo sin necesidad de recompilar. 
+<P>Su configuraci&oacute;n por omisi&oacute;n para <CODE>syslogd</CODE> puede descartar los
+mensajes de depuraci&oacute;n del kernel. Para asegurarse de que se est&aacute;n
+registrando, edite <CODE>/etc/syslog.conf</CODE> y compruebe que los mensajes
+<CODE>kern.debug</CODE> se registren en alg&uacute;n lugar. Consulte <CODE>man syslog.conf</CODE>
+para m&aacute;s detalles. 
+<P>Hay algunas herramientas de depuraci&oacute;n en el subdirectorio
+<CODE>debug_tools</CODE> dentro de la distribuci&oacute;n de PCMCIA. Las utilidades
+<CODE>dump_tcic</CODE> y <CODE>dump_i365</CODE> generan volcados completos de los
+controladores PCMCIA, y decodifican mucha de la informaci&oacute;n del registro. 
+Son &uacute;tiles si tiene acceso a una hoja con los datos del chip controlador
+correspondiente. El comando <CODE>dump_cis</CODE> (<CODE>dump_tuples</CODE> en las
+distribuciones <CODE>pre-3.0.2</CODE>) lista el contenido de la CIS (<I>Card
+Information Structure</I>) (Estructura de Informaci&oacute;n de Tarjeta), y
+decodifica algunos bits importantes. <CODE>dump_cisreg</CODE> muestra los
+registros de configuraci&oacute;n local de una tarjeta. 
+<P>El controlador de tarjetas de memoria <CODE>memory_cs</CODE> a veces tambi&eacute;n es
+&uacute;til para depurar problemas con PC Cards de 16 bits. Puede utilizarse con
+cualquier tarjeta, y no interfiere con otros controladores. Puede usarse
+para acceder directamente a los atributos de memoria o memoria com&uacute;n de
+cualquier tarjeta. De igual modo, con las tarjetas <I>CardBus</I>, el
+controlador <CODE>memory_cb</CODE> puede utilizarse con cualquier tarjeta de 32
+bits, para dar acceso directo a los espacios de direcciones de esa
+tarjeta. Revise las p&aacute;ginas del manual para m&aacute;s informaci&oacute;n.
+<P>
+<H2><A NAME="pccard"></A> <A NAME="ss7.4">7.4 <CODE>/proc/bus/pccard</CODE> </A>
+</H2>
+
+<P>
+<P>A partir de los kernels <CODE>2.1.103</CODE>, el paquete PCMCIA crea un &aacute;rbol de
+informaci&oacute;n de estado bajo <CODE>/proc/bus/pccard</CODE>. La entrada
+<CODE>memory</CODE> muestra las posiciones de memoria para dispositivos PC Card en
+un formato similar a <CODE>/proc/ioports</CODE>. Cada socket tiene tambi&eacute;n su
+propio subdirectorio de entradas de estado. La entrada <CODE>info</CODE>
+identifica el controlador del host y describe sus caracter&iacute;sticas. La
+entrada <CODE>exca</CODE> es un volcado del registro <CODE>ExCA</CODE> compatible con
+<I>Intel i82365sl</I> que se configura para ese socket. Para los puentes
+<I>CardBus</I>, la entrada <CODE>pci</CODE> es el volcado del espacio de la
+configuraci&oacute;n PCI del puente, y la entrada <CODE>cardbus</CODE> es el vaciado de
+los registros de configuraci&oacute;n de <I>CardBus</I>.
+<P>
+<H2><A NAME="escribiendo"></A> <A NAME="ss7.5">7.5 Programaci&oacute;n de controladores de servicios PCMCIA para nuevas tarjetas</A>
+</H2>
+
+<P>
+<P>El <I>Linux PCMCIA Programmer's Guide</I> constituye la mejor documentaci&oacute;n
+acerca de la interfaz de los controladores. La &uacute;ltima versi&oacute;n estar&aacute;
+siempre disponible en <CODE>hyper.stanford.edu</CODE> en <CODE>/pub/pcmcia/doc</CODE>,
+o v&iacute;a WWW en <CODE>
+<A HREF="http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html">http://hyper.stanford.edu/HyperNews/get/pcmcia/home.html</A></CODE>. 
+<P>Con los dispositivos relativamente similares a los dispositivos ISA
+normales, probablemente pueda Vd. usar parcialmente controladores Linux
+existentes. En algunos casos, el tropiezo m&aacute;s grande ser&aacute; modificar un
+controlador existente que pueda manejar la inserci&oacute;n y extracci&oacute;n de
+dispositivos despu&eacute;s del momento de iniciar. De los controladores
+actuales, el controlador de tarjeta de memoria es el &uacute;nico controlador
+aut&oacute;nomo, que no depende de otras partes del kernel de Linux para hacer la
+mayor parte del trabajo sucio. 
+<P>En muchos casos, el mayor impedimento para soportar un nuevo tipo de
+tarjeta es el obtener informaci&oacute;n t&eacute;cnica por parte del fabricante. Puede
+ser dif&iacute;cil el encontrar a qui&eacute;n preguntar, o a quien explicar que
+informaci&oacute;n se necesita. Sin embargo, con pocas excepciones, es muy
+dif&iacute;cil, si no imposible, el implementar un controlador para una tarjeta
+sin informaci&oacute;n t&eacute;cnica por parte del fabricante.
+<P>He escrito un controlador modelo con muchos comentarios que explican
+bastante c&oacute;mo el controlador se comunica con los Servicios de Tarjetas; lo
+encontrar&aacute; en la distribuci&oacute;n fuente de PCMCIA en
+<CODE>clients/dummy_cs.c</CODE>.
+<P>
+<H2><A NAME="sugerencias"></A> <A NAME="ss7.6">7.6 Sugerencias para los autores de controladores PCMCIA</A>
+</H2>
+
+<P>
+<P>He decidido que no es realmente factible para mi el distribuir todos los
+controladores de PCMCIA como parte del paquete PCMCIA. Cada controlador
+nuevo hace que el paquete principal sea incrementalmente m&aacute;s dificil de
+mantener, e incluir un controlador inevitablemente transfiere algo del
+trabajo de mantenimiento del autor del controlador hacia m&iacute;. En lugar de
+ello, decidir&eacute; caso por caso si se incluyen o no los controladores que
+sean contribuciones, bas&aacute;ndome en la demanda de los usuarios y tambi&eacute;n en
+la facilidad de mantenerlos. Para los controladores que no se incluyen en
+el paquete principal, sugiero que los autores de los controladores adopten
+el esquema siguiente para empaquetar sus controladores de cara a su
+distribuci&oacute;n.
+<P>Los archivos controladores deben acomodarse en el mismo esquema del
+directorio que utiliza la distribuci&oacute;n fuente de PCMCIA, as&iacute; el
+controlador puede ser desempaquetado en la parte m&aacute;s alta del &aacute;rbol de los
+fuentes de PCMCIA. Debe incluir los archivos fuentes (en
+<CODE>./modules/</CODE>), una p&aacute;gina del manual (en <CODE>./man/</CODE>), y los
+archivos de configuraci&oacute;n (en <CODE>./etc/ </CODE>). El directorio m&aacute;s alto
+debe incluir tambi&eacute;n un archivo <CODE>README</CODE>.
+<P>El directorio de m&aacute;s alto nivel debe incluir un <I>makefile</I>, configurado
+para que <CODE>make -f ... all</CODE> y <CODE>make -f ... install</CODE> compilen el
+controlador e instalen los archivos apropiados. Si este archivo tiene una
+extensi&oacute;n <CODE>.mk</CODE>, ser&aacute; invocado autom&aacute;ticamente por el <CODE>Makefile</CODE> de
+m&aacute;s alto nivel para los destinos <CODE>all</CODE> e <CODE>install</CODE>. He aqu&iacute; un
+ejemplo de c&oacute;mo debe elaborarse un <CODE>Makefile</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       # Un simple Makefile para un controlador de contribuci&oacute;n
+       FILES = sample_cs.mk README.sample_cs \
+               modules/sample_cs.c modules/sample_cs.h \
+               etc/sample etc/sample.opts man/sample_cs.4
+       all:
+               $(MAKE) -C modules MODULES=sample_cs.o
+       install:
+               $(MAKE) -C modules install-modules MODULES=sample_cs.o
+               $(MAKE) -C etc install-clients CLIENTS=sample
+               $(MAKE) -C man install-man4 MAN4=sample_cs.4
+       dist:
+               tar czvf sample_cs.tar.gz $(FILES)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este <CODE>Makefile</CODE> usa los destinos de instalaci&oacute;n que se definen en la
+versi&oacute;n <CODE>2.9.10</CODE> y versiones posteriores del paquete PCMCIA. Este
+makefile tambi&eacute;n incluye un destino <CODE>dist</CODE> para conveniencia del autor
+del controlador.  Probablemente desee a&ntilde;adir un n&uacute;mero de versi&oacute;n al final
+del nombre del paquete (por ejemplo, <CODE>sample_cs-1.5.tar.gz</CODE>). Una
+distribuci&oacute;n completa puede ser similar a: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       sample_cs.mk
+       README.sample_cs
+       modules/sample_cs.c
+       modules/sample_cs.h
+       etc/sample
+       etc/sample.opts
+       man/sample_cs.4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>De esta forma, cuando un controlador de contribuci&oacute;n se desempaquete, se
+convierte en parte esencial del &aacute;rbol de los fuentes de PCMCIA. Puede
+hacer uso de los archivos de encabezados de PCMCIA, as&iacute; como tambi&eacute;n de la
+maquinaria para comprobar la configuraci&oacute;n del sistema del usuario, y
+chequeo autom&aacute;tico de dependencias, tal y como un controlador «normal». 
+<P>Aceptar&eacute; controladores preparados de acuerdo a esta especificaci&oacute;n y los
+colocar&eacute; en el directorio <CODE>/etc/pcmcia/contrib</CODE> en mi servidor FTP,
+<CODE>hyper.stanford.edu</CODE>. El archivo <CODE>README</CODE> en este directorio
+describir&aacute; c&oacute;mo desempaquetar un controlador de contribuci&oacute;n.
+<P>La interface de controlador no ha cambiado mucho a pesar del tiempo, y ha
+preservado casi siempre su compatibilidad con las versiones anteriores. Un
+controlador normalmente no necesitar&aacute; actualizarse para revisiones menores
+en el paquete principal. Tratar&eacute; de notificar a los autores de los
+controladores «externos» de los cambios que se requiera realizar a sus
+controladores.
+<P>
+<H2><A NAME="encargados"></A> <A NAME="ss7.7">7.7 Sugerencias para encargados de las distribuciones de Linux</A>
+</H2>
+
+<P>
+<P>Si su distribuci&oacute;n tiene herramientas para configuraci&oacute;n del sistema que
+quiera que sean compatibles PCMCIA, por favor, use los archivos
+<CODE>*.opts</CODE> en <CODE>/etc/pcmcia</CODE> para su «integraci&oacute;n». Dichos archivos
+no ser&aacute;n modificados si un usuario compila e instala una nueva versi&oacute;n del
+paquete PCMCIA. Si modifica los scripts principales de configuraci&oacute;n, una
+instalaci&oacute;n fresca sobreescribir&aacute; silenciosamente sus scripts
+personalizados y romper&aacute; la conexi&oacute;n con sus herramientas de
+configuraci&oacute;n. Contacte conmigo si no est&aacute; seguro de c&oacute;mo escribir un
+script de opciones apropiado, o si necesita caracter&iacute;sticas adicionales.
+<P>Resulta muy &uacute;til para los usuarios (y para mi) que documente c&oacute;mo deriva
+su distribuci&oacute;n del paquete PCMCIA que se describe en este documento. En
+particular, por favor documente los cambios al script de inicio y a los
+scripts de configuraci&oacute;n. Si me manda la informaci&oacute;n apropiada, la
+incluir&eacute; en la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#distribuciones">Notas acerca de distribuciones de Linux espec&iacute;ficas</A>.
+<P>Cuando construya una distribuci&oacute;n PCMCIA, considere el incluir los
+controladores aportados, que no son parte del paquete PCMCIA principal. 
+Por razones de mantenimiento, estoy tratando de limitar el tama&ntilde;o del
+paquete principal, a&ntilde;adiendo solamente controladores nuevos si considero
+que son de inter&eacute;s general. Los dem&aacute;s controladores se distribuir&aacute;n por
+separado, como se describe en la secci&oacute;n anterior. La divisi&oacute;n entre
+controladores generales y separados es algo arbitraria y en parte
+hist&oacute;rica, y no deber&iacute;a implicar diferencia alguna en cuanto a calidad. 
+<P>
+<HR>
+<A HREF="PCMCIA-Como-8.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-6.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc7">Índice general</A>
+</BODY>
+</HTML>

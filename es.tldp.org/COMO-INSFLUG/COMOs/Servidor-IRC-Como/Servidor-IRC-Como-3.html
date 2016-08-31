@@ -1,0 +1,301 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Instalaci&oacute;n y configuraci&oacute;n de un servidor de IRC: Demonio de IRC: ircd </TITLE>
+ <LINK HREF="Servidor-IRC-Como-4.html" REL=next>
+ <LINK HREF="Servidor-IRC-Como-2.html" REL=previous>
+ <LINK HREF="Servidor-IRC-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Servidor-IRC-Como-4.html">Página siguiente</A>
+<A HREF="Servidor-IRC-Como-2.html">Página anterior</A>
+<A HREF="Servidor-IRC-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="s3">3. Demonio de IRC: <CODE>ircd</CODE> </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss3.1">3.1 Funci&oacute;n de un demonio <CODE>ircd</CODE> </A>
+</H2>
+
+<P>
+<P>En una arquitectura centralizada como es la <I>arquitectura
+cliente-servidor</I> se distinguen precisamente estas dos partes: 
+<I>cliente</I>, que es el que demanda un servicio; y el
+<I>servidor</I>, que es el que lo oferta. En la m&aacute;quina servidor
+coexistir&aacute;n tantos programas esperando a la escucha de nuevas peticiones
+como servicios diferentes se oferten.
+<P>Estos programas, denominados <I>demonios</I> (<I>daemons</I> en la
+terminolog&iacute;a inglesa) son programas que est&aacute;n en ejecuci&oacute;n, cargados en
+memoria, y que est&aacute;n encargados de responder a las peticiones que hacen
+los programas clientes, que generalmente est&aacute;n ubicados en otras m&aacute;quinas,
+pero que pueden ejecutarse tambi&eacute;n en la propia m&aacute;quina servidor. Por
+tanto, siempre hay una correspondencia directa entre el programa o demonio
+del servidor y el programa cliente de la m&aacute;quina cliente. 
+<P>En nuestro caso particular de IRC, el servidor ser&aacute; la m&aacute;quina que ejecute
+el demonio <I>ircd</I> y los clientes ser&aacute;n los programas que los
+usuarios utilicen para <I>engancharse</I> a este servidor. 
+<P>
+<H2><A NAME="ss3.2">3.2 Descripci&oacute;n de <CODE>ircd-hybrid</CODE> </A>
+</H2>
+
+<P>
+<P>A la hora de instalar un servidor de IRC hay que elegir un demonio de
+<CODE>ircd</CODE>. Existen algunos como el <CODE>irdu</CODE>, utilizado en la red
+<I>Undernet</I>, o el m&aacute;s b&aacute;sico, <CODE>ircd</CODE>, sin modificaci&oacute;n alguna.
+Pero nosotros hemos escogido el <CODE>ircd-hybrid</CODE> versi&oacute;n <CODE>5.2p1</CODE> por ser
+el m&aacute;s completo. Es el usado en la red <I>Efnet</I>.
+<P>
+<H2><A NAME="ss3.3">3.3 Obtenci&oacute;n e instalaci&oacute;n </A>
+</H2>
+
+<P>
+<P>Algunas distribuciones como <I>Debian</I> incluyen este software entre
+sus paquetes b&aacute;sicos. Si utilizamos otra distribuci&oacute;n, se puede recurrir
+al FTP o contactar con sus autores en la direcci&oacute;n <CODE>
+<A HREF="mailto:ircd-hybrid@vol.com">ircd-hybrid@vol.com</A></CODE>.
+<P>El primer paso es descomprimir el paquete con el comando:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tar xvzf ircd.tar.gz
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los ficheros descomprimidos los alojaremos en el directorio
+<CODE>/usr/src/ircd-hybrid-5.2p1/</CODE>.
+<P>Algunos de los ficheros m&aacute;s importantes son:
+<P>
+<UL>
+<LI><CODE>INSTALL</CODE>: describe los pasos a realizar para la instalaci&oacute;n.
+</LI>
+<LI><CODE>README.FIRST, README.hybrid, README.small_nets</CODE>: como
+siempre, conviene leerlos antes de proceder a la instalaci&oacute;n. 
+</LI>
+<LI><CODE>Opers.txt</CODE>: describe los comandos para el operador del
+servidor IRC. 
+</LI>
+<LI><CODE>Doc/</CODE>: este directorio contiene documentaci&oacute;n sobre IRC.</LI>
+</UL>
+<P>
+<H2><A NAME="ss3.4">3.4 Configuraci&oacute;n previa a la compilaci&oacute;n </A>
+</H2>
+
+<P>
+<P>Como sugiere la documentaci&oacute;n, es preciso revisar algunos ficheros donde
+se definen varios par&aacute;metros, por lo que ser&aacute; necesario compilar el
+programa.  Sin embargo, el primer paso es adaptar los ficheros de
+configuraci&oacute;n y compilaci&oacute;n a nuestro sistema. Esto lo haremos ejecutando
+el <I>script</I> <CODE>./configure</CODE>.
+<P>A continuaci&oacute;n, editaremos parte del c&oacute;digo fuente (por motivos de
+optimizaci&oacute;n): puesto que nuestra red no va a tener las pretensiones de
+afluencia de usuarios que tiene <I>Efnet</I>, acortaremos un poco los
+recursos reservados por el <I>ircd</I> para que consuma menos memoria.
+<P>El primer fichero que cambiaremos ser&aacute; <CODE>include/config.h</CODE>, que
+define muchas de las directrices de comportamiento del servidor.
+Modificaremos dos l&iacute;neas <I>define</I> de esta forma: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define HARD_FDLIMIT    256
+#define INIT_MAXCLIENTS 150
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Tambi&eacute;n quitaremos la l&iacute;nea
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#define DO_IDENTD
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>para que no chequee constantemente la identidad de todo aquel que entre,
+ralentizando los accesos al servidor. 
+<P>El fichero <CODE>src/list.c</CODE> define el tama&ntilde;o de algunas tablas mediante
+s&iacute;mbolos del preprocesador. Pondremos el valor 64 a las variables
+<CODE>LINK_PREALLOCATE</CODE> y <CODE>CLIENTS_PREALLOCATE</CODE>, lo que es
+suficiente para una red donde no se prevee un acceso mayor a 60 usuarios. 
+<P>El &uacute;ltimo paso antes de la compilaci&oacute;n es editar el fichero
+<CODE>Makefile</CODE> resultante de ejecutar el <I>script</I>
+<CODE>./configure</CODE>, para que la l&iacute;nea que especifica los par&aacute;metros que
+usar&aacute; el compilador <CODE>gcc</CODE> quede de la siguiente forma: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Default CFLAGS
+CFLAGS= -g -O2 -DCPU=586 -m486
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los dos &uacute;ltimos par&aacute;metros son opcionales, y sirven para optimizar el
+c&oacute;digo generado para m&aacute;quinas <I>Pentium</I>/<I>AMD</I>. 
+<P>
+<H2><A NAME="ss3.5">3.5 Compilaci&oacute;n </A>
+</H2>
+
+<P>
+<P>Una vez hechos todos los ajustes pertinentes, se puede proceder a la
+compilaci&oacute;n propiamente dicha, con el comando: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+make
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La compilaci&oacute;n transcurrir&aacute; durante unos minutos, tras los cuales, si no
+se ha producido ning&uacute;n error, s&oacute;lo faltar&aacute; crear el directorio
+<CODE>/usr/local/ircd/</CODE>, donde se instalar&aacute;n los ficheros ejecutables
+gracias a la orden: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+make install
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.6">3.6 El fichero <CODE>ircd.conf</CODE> </A>
+</H2>
+
+<P>
+<P>Ahora se configura el servidor de IRC. Esto se hace editando el fichero
+<CODE>/usr/local/ircd/ircd.conf</CODE>, que se estructura en diferentes
+l&iacute;neas, identificadas con una letra, y que contienen par&aacute;metros separados
+por el signo ':'. Algunas de las l&iacute;neas m&aacute;s importantes son: 
+<P>
+<UL>
+<LI><CODE>A</CODE>: informaci&oacute;n sobre los administradores:
+
+<OL>
+<LI>Compa&ntilde;&iacute;a</LI>
+<LI>Localizaci&oacute;n</LI>
+<LI>Direcci&oacute;n de contacto</LI>
+</OL>
+
+</LI>
+<LI><CODE>M</CODE>: informaci&oacute;n sobre el servidor:
+
+<OL>
+<LI>Nombre del host</LI>
+<LI>Direcci&oacute;n IP (opcional)</LI>
+<LI>Nombre del servidor IRC</LI>
+<LI>Puerto (generalmente, 6667).</LI>
+</OL>
+
+</LI>
+<LI><CODE>K</CODE>: restricciones de acceso a usuarios o redes completas:
+
+<OL>
+<LI>Nombre del host.</LI>
+<LI>Horario.</LI>
+<LI>Nombre de usuario.</LI>
+</OL>
+
+</LI>
+<LI><CODE>C</CODE> y <CODE>N</CODE>: conexiones a otros servidores de IRC.
+</LI>
+<LI><CODE>R</CODE>: establece restricciones a trav&eacute;s de un programa externo
+de validaci&oacute;n. 
+</LI>
+<LI><CODE>D</CODE>: otra forma de impedir conexiones a redes enteras,
+mostrando un comentario. 
+</LI>
+<LI><CODE>E</CODE>: excepciones a la l&iacute;nea <CODE>K</CODE>.
+</LI>
+<LI><CODE>F</CODE>: super-excepci&oacute;n (similar a la anterior, pero se salta
+los l&iacute;mites de clases de usuarios). 
+</LI>
+<LI><CODE>Y</CODE>: define una clase de usuario:
+
+<OL>
+<LI>N&uacute;mero de clase.</LI>
+<LI>Frecuencia de ping (segundos).</LI>
+<LI>Usuarios por IP.</LI>
+<LI>N&uacute;mero m&aacute;ximo de enlaces.</LI>
+<LI>Tama&ntilde;o de la cola de env&iacute;o.</LI>
+</OL>
+
+</LI>
+<LI><CODE>I</CODE>: permite el acceso a algunas m&aacute;quinas:
+
+<OL>
+<LI>Dominio o direcci&oacute;n IP.</LI>
+<LI>Password del cliente.</LI>
+<LI>No documentado (generalmente '*').</LI>
+<LI>No documentado.</LI>
+<LI>N&uacute;mero de clase asociada.</LI>
+</OL>
+
+</LI>
+<LI><CODE>o</CODE>: define operadores locales (recomendado):
+
+<OL>
+<LI>usuario@host.</LI>
+<LI>Clave encriptada.</LI>
+<LI><I>Nick</I> del operador.</LI>
+<LI>No documentado (generalmente 0).</LI>
+<LI>No documentado (generalmente 0).</LI>
+</OL>
+
+</LI>
+<LI><CODE>O</CODE>: define operadores globales.</LI>
+<LI><CODE>P</CODE>: configura puertos adicionales.</LI>
+</UL>
+<P>Tras las modificaciones oportunas, nuestro fichero <CODE>ircd.conf</CODE> es:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+M:maquina.euitio.uniovi.es:156.35.98.138:IRC EUITIO:6667
+A:Universidad de Oviedo EUITIO:Asturias:SysAdm &lt;root@maquina.euitio.uniovi.es>
+Y:0:90:3:2:100000
+Y:1:90:3:20:100000
+I:*.euitio.uniovi.es::*::1
+I:156.35.53.*::*::1
+Y:3:90:1:100:100000
+I:NOMATCH::*@*PPP*::3
+I:NOMATCH::*@*slip*::3
+o:root@maquina.euitio.uniovi.es:mAJif8plpvVls:Operador:0:0
+# Fin del fichero
+# No especificamos nada en las l&iacute;neas
+# - C, N, L y N: porque no nos conectamos a ning&uacute;n otro servidor
+# - K, R, D, E y F: porque no establecemos restricciones tan fuertes
+# - P: porque no tenemos m&aacute;s puertos
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Nota: para obtener el campo <I>clave encriptada</I> de la l&iacute;nea <CODE>o</CODE>,
+hay que utilizar la herramienta <CODE>mkpasswd</CODE>, ubicada en el directorio
+<CODE>tools</CODE>, que toma una cadena de texto y la devuelve encriptada.
+<P>Podemos verificar la correcta sintaxis del fichero de configuraci&oacute;n
+<CODE>ircd.conf</CODE> mediante la utilizaci&oacute;n de la herramienta
+<CODE>tools/chkconf</CODE>. 
+<P>Tambi&eacute;n podemos modificar el fichero <CODE>ircd.motd</CODE> para establecer el
+mensaje del d&iacute;a que aparecer&aacute; a los usuarios que establezcan contacto con
+el servidor.
+<P>
+<H2><A NAME="ss3.7">3.7 Ejecuci&oacute;n del demonio </A>
+</H2>
+
+<P>
+<P>Por motivos de seguridad, no es posible lanzar el demonio como <CODE>root</CODE>,
+as&iacute; que, o bien se lanza a mano como usuario <CODE>irc</CODE>, simplemente con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/usr/local/ircd/ircd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>o a&ntilde;adiendo la siguiente l&iacute;nea en el fichero <CODE>/etc/inetd.conf</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ircd stream tcp wait irc /etc/ircd ircd -i
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>para que arranque autom&aacute;ticamente cada vez que se inicie el equipo servidor.
+Sin embargo, este segundo m&eacute;todo no lo hemos podido confirmar porque,
+aparentemente, no ha funcionado.
+<P>
+<P>
+<HR>
+<A HREF="Servidor-IRC-Como-4.html">Página siguiente</A>
+<A HREF="Servidor-IRC-Como-2.html">Página anterior</A>
+<A HREF="Servidor-IRC-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

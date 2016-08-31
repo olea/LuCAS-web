@@ -1,0 +1,334 @@
+<HTML
+><HEAD
+><TITLE
+>Las tres formas posibles de filtrado</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="Configuración de Linux como cortafuegos"
+HREF="x-087-2-firewall.howto.html"><LINK
+REL="NEXT"
+TITLE="El cortafuegos original de IP (núcleos 2.0)"
+HREF="x-087-2-firewall.original.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.howto.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.original.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.FILTERINGMETHODS">9.5. Las tres formas posibles de filtrado</H1
+><P
+>Considérese cómo una máquina Unix, o de hecho cualquier máquina capaz
+de realizar encaminamiento de IP, procesa los datagramas de IP. Los pasos
+básicos,
+mostrados en la <A
+HREF="x-087-2-firewall.filteringmethods.html#X-087-2-FIREWALL.METHODS.GRAPHIC"
+>Figura 9-2</A
+> son:</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.METHODS.GRAPHIC"><P
+><B
+>Figura 9-2. Las etapas del procesamiento de un datagrama de IP</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0902.jpg"></P
+></DIV
+></DIV
+><P
+></P
+><UL
+><LI
+><P
+>Se recibe el datagrama de IP. (1)</P
+></LI
+><LI
+><P
+>Se examina el datagrama de IP entrante para determinar si está destinado
+a un proceso de esta máquina.</P
+></LI
+><LI
+><P
+>Si el datagrama es para esta máquina, se procesa localmente.(2)</P
+></LI
+><LI
+><P
+>Si no está destinado a esta máquina, se realiza una búsqueda en la tabla
+de encaminamiento de una ruta adecuada y 
+el datagragama se reenvía  por la interfaz
+adecuada o se elimina si no se puede encontrar una ruta. (3)</P
+></LI
+><LI
+><P
+>Los datagramas procedentes de procesos locales se envían hacia el 'software' de
+encaminamiento para ser reenviados hacia la interfaz apropiada. (4)</P
+></LI
+><LI
+><P
+>Se examina el datagrama de IP saliente para determinar si existe una ruta
+válida que escoger, si no es así, se elimina.</P
+></LI
+><LI
+><P
+>Se transmite el datagrama de IP. (5)</P
+></LI
+></UL
+><P
+>En nuestro diagrama, el flujo 1&rarr;3&rarr;5
+representa nuestra máquina encaminando datos entre un 'host'
+sobre nuestra red Ethernet y un 'host' alcanzable
+vía nuestro enlace de PPP.
+Los flujos 1&rarr;2 y 4&rarr;5 representan
+los flujos de entrada y de salida de datos de un programa de red ejecutándose
+en nuestro 'host' local.
+El flujo 4&rarr;3&rarr;2 representaría un flujo de datos vía una conexión
+'loopback'. Naturalmente, los datos fluyen tanto hacia dentro como hacia
+fuera de los dispositivos de red. Los símbolos de interrogación del
+diagrama representan los puntos donde la capa de IP realiza las decisiones
+de encaminamiento.</P
+><P
+>El cortafuegos de IP del núcleo de Linux es capaz de aplicar filtrados
+en varias etapas de este proceso. Es decir, se pueden filtrar los
+datagramas de IP que entren en su máquina, aquellos que estén siendo
+reenviados a través de su máquina y aquellos que estén preparados para
+ser transmitidos.</P
+><P
+>En <B
+CLASS="COMMAND"
+>ipfwadm</B
+> y en <B
+CLASS="COMMAND"
+>ipchains</B
+>, una
+regla de tipo 'Input'
+<A
+NAME="X-087-2-FW-TFN11"
+HREF="#FTN.X-087-2-FW-TFN11"
+>[1]</A
+>
+se aplica al flujo 1 del diagrama, una
+regla de tipo 'Forwarding'
+<A
+NAME="X-087-2-FW-TFN12"
+HREF="#FTN.X-087-2-FW-TFN12"
+>[2]</A
+>
+al flujo 3 y una regla de
+tipo 'Output'
+<A
+NAME="X-087-2-FW-TFN13"
+HREF="#FTN.X-087-2-FW-TFN13"
+>[3]</A
+>
+al flujo 5.
+
+Cuando se discuta
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> más adelante se verá que los puntos
+de interceptación han cambiado de tal forma que una regla
+de tipo 'Input' se aplica ahora en el flujo 2, y una regla de tipo
+'Output' en el flujo 4.
+Esto tiene implicaciones importantes sobre cómo se deben estructurar los
+conjuntos de reglas, pero los principios generales permanecen válidos
+para todos los tipos de cortafuegos de GNU/Linux.</P
+><P
+>Todo esto puede parecer complicado de forma innecesaria en un primer
+momento, pero proporciona una flexibilidad que permite construir
+configuraciones muy sofisticadas y poderosas.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN11"
+HREF="x-087-2-firewall.filteringmethods.html#X-087-2-FW-TFN11"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "entrada"</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN12"
+HREF="x-087-2-firewall.filteringmethods.html#X-087-2-FW-TFN12"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "reenvío"</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN13"
+HREF="x-087-2-firewall.filteringmethods.html#X-087-2-FW-TFN13"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "salida"</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.howto.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.original.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Configuración de Linux como cortafuegos</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>El cortafuegos original de IP (núcleos 2.0)</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

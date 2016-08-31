@@ -1,0 +1,136 @@
+<html><head><title>02 Rutinas de rat¢n</title><body>
+<h1><a name="02 Rutinas de ratón">02 Rutinas de ratón</a></h1>
+<p>
+<ul><h4>
+<li><a href="#install_mouse">install_mouse</a>
+<li><a href="#remove_mouse">remove_mouse</a>
+<li><a href="#mouse_x">mouse_x</a>
+<li><a href="#mouse_y">mouse_y</a>
+<li><a href="#mouse_b">mouse_b</a>
+<li><a href="#mouse_pos">mouse_pos</a>
+<li><a href="#show_mouse">show_mouse</a>
+<li><a href="#scare_mouse">scare_mouse</a>
+<li><a href="#unscare_mouse">unscare_mouse</a>
+<li><a href="#freeze_mouse_flag">freeze_mouse_flag</a>
+<li><a href="#position_mouse">position_mouse</a>
+<li><a href="#set_mouse_range">set_mouse_range</a>
+<li><a href="#set_mouse_speed">set_mouse_speed</a>
+<li><a href="#set_mouse_sprite">set_mouse_sprite</a>
+<li><a href="#set_mouse_sprite_focus">set_mouse_sprite_focus</a>
+<li><a href="#get_mouse_mickeys">get_mouse_mickeys</a>
+<li><a href="#mouse_callback">mouse_callback</a>
+</h4></ul>
+<p><br><br>
+<p>
+El controlador de ratón de Allegro usa el controlador de ratón del DOS
+int33, por lo que sólo funcionará cuando el controlador de DOS (normalmente
+mouse.com o mouse.exe) esté activo. Esto es útil a modo de traducción de las
+funciones int33, y porque puede enseñar punteros de ratón en modos SVGA,
+algo que muchas implementaciones del controlador estándar no pueden.
+<p>
+<b>int <a name="install_mouse">install_mouse</a>();</b><br>
+   Instala el controlador del ratón de Allegro. Debe hacer esto antes de
+   usar cualquier otra función del ratón. Devuelve -1 si hubo error (ej. si
+   el controlador int33 no está cargado), o el número de botones del ratón.
+<p>
+<b>void <a name="remove_mouse">remove_mouse</a>();</b><br>
+   Quita el controlador de ratón. Normalmente no necesita llamar esta
+   función, porque allegro_exit() lo hará por usted.
+<p>
+<b>extern volatile int <a name="mouse_x">mouse_x</a>;</b><br>
+<b>extern volatile int <a name="mouse_y">mouse_y</a>;</b><br>
+<b>extern volatile int <a name="mouse_b">mouse_b</a>;</b><br>
+<b>extern volatile int <a name="mouse_pos">mouse_pos</a>;</b><br>
+   Variables globales que contienen la posición actual del ratón y el estado
+   de los botones. Las posiciones mouse_x y mouse_y son enteros que van de
+   cero a la esquina inferior derecha de la pantalla. La variable mouse_b es
+   un campo de bits indicando el estado de cada botón: bit 0 es el botón
+   izquierdo, bit 1 es del derecho, y bit 2 el botón central. Por ejemplo:
+<p><pre>
+      if (mouse_b & 1)
+         printf("El botón izquierdo está pulsado\n");
+<p>
+      if (!(mouse_b & 2))
+         printf("El botón derecho no está pulsado\n");
+<p></pre>
+   La variable pouse_pos contiene la coordenada X actual en la palabra alta
+   y la coordenada Y en la palabra baja. Esto es útil en bucles rápidos de
+   lectura donde una interrupción del ratón podría ocurrir mientras lee las
+   dos variables por separado, ya que puede copiar este valor a una variable
+   local con una instrucción, y entonces separarlo con tranquilidad.
+<p>
+<b>void <a name="show_mouse">show_mouse</a>(BITMAP *bmp);</b><br>
+   Le dice a Allegro que muestre el puntero del ratón en la pantalla. Esto
+   sólo funcionará si el módulo de temporización está instalado. El puntero
+   del ratón será dibujado sobre el bitmap especificado, que será
+   normalmente 'screen' (lee más abajo información sobre bitmaps). Para
+   ocultar el puntero del ratón, llame show_mouse(NULL). Aviso: si dibuja
+   algo en la pantalla mientras el puntero está visible, podría ocurrir una
+   interrupción de movimiento en medio de su operación de dibujo. Si esto
+   ocurre, el buffer del ratón y el código de cambio de banco SVGA se
+   confundirán, y dejarán 'rastros de ratón' por toda la pantalla. Para
+   evitar esto, debe asegurarse que oculta el puntero del ratón siempre que
+   vaya a dibujar la pantalla.
+<p>
+<b>void <a name="scare_mouse">scare_mouse</a>();</b><br>
+   Función de ayuda para ocultar el puntero del ratón antes de una operación
+   de dibujado. Esto se deshará temporalmente del puntero del ratón, pero
+   sólo si es realmente necesario (ej. el ratón es visible, y está siendo
+   visualizado en la pantalla física, y no se trata de un cursor por
+   hardware). El estado previo del ratón es almacenado para las llamadas
+   siguientes a unscare_mouse().
+<p>
+<b>void <a name="unscare_mouse">unscare_mouse</a>();</b><br>
+   Deshace el efecto de una llamada previa a scare_mouse(), recuperando el
+   estado original del puntero.
+<p>
+<b>extern int <a name="freeze_mouse_flag">freeze_mouse_flag</a>;</b><br>
+   Si este biestable está activo, el puntero del ratón no será redibujado
+   cuando mueva el ratón. Esto le puede evitar tener que ocultar el puntero
+   cada vez que dibuje en la pantalla, siempre que no dibuje sobre la
+   posición actual del puntero.
+<p>
+<b>void <a name="position_mouse">position_mouse</a>(int x, int y);</b><br>
+   Mueve el ratón a la posición de pantalla especificada. Puede llamar esta
+   función incluso mientras el puntero esté visible.
+<p>
+<b>void <a name="set_mouse_range">set_mouse_range</a>(int x1, int y1, int x2, int y2);</b><br>
+   Crea un área de pantalla sobre la que el ratón se podrá desplazar. Pase
+   los parámetros de las esquinas del recuadro (coordenadas inclusivas). Si
+   no llama esta función, el área por defecto se activará a (0, 0,
+   SCREEN_W-1, SCREEN_H-1).
+<p>
+<b>void <a name="set_mouse_speed">set_mouse_speed</a>(int xspeed, int yspeed);</b><br>
+   Ajusta la velocidad del ratón. Valores grandes de xspeed e yspeed
+   significan un movimiento más lento: por defecto ambos son 2.
+<p>
+<b>void <a name="set_mouse_sprite">set_mouse_sprite</a>(BITMAP *sprite);</b><br>
+   ¿No le gusta mi puntero de ratón? No problemo. Use esta función para usar
+   uno propio alternativo. Si cambia el puntero y luego quiere volver a
+   ver mi querida flecha otra vez, llame set_mouse_sprite(NULL).
+<p>
+<b>void <a name="set_mouse_sprite_focus">set_mouse_sprite_focus</a>(int x, int y);</b><br>
+   El foco del ratón es la parte del puntero que representa la posición
+   actual del ratón, vamos, la posición (mouse_x, mouse_y). Por defecto el
+   foco está arriba a la izquierda de la flecha, pero si va a usar un
+   puntero de ratón diferente, quizás deba alterar esto.
+<p>
+<b>void <a name="get_mouse_mickeys">get_mouse_mickeys</a>(int *mickeyx, int *mickeyy);</b><br>
+   Mide cómo de lejos se ha movido el ratón desde la última llamada a esta
+   función. El ratón seguirá generando unidades de movimiento incluso cuando
+   llegue al borde de la pantalla, por lo que esta forma de control puede
+   ser útil en juegos que requieran un rango de movimiento del ratón
+   infinito.
+<p>
+<b>extern void (*<a name="mouse_callback">mouse_callback</a>)(int flags);</b><br>
+   Llamado por el controlador de interrupciones siempre cuando el ratón se
+   mueva o el valor de los botones cambie. Esta función debe ser fijada en
+   memoria (locked), y debe ejecutarse ¡muy rápido! Se le pasan los
+   biestables de evento que activaron la llamada, que son una máscara de bits
+   que puede contener cualquiera de los siguientes valores MOUSE_FLAG_MOVE,
+   MOUSE_FLAG_LEFT_DOWN, MOUSE_FLAG_LEFT_UP, MOUSE_FLAG_RIGHT_DOWN,
+   MOUSE_FLAG_RIGHT_UP, MOUSE_FLAG_MIDDLE_DOWN, y MOUSE_FLAG_MIDDLE_UP.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

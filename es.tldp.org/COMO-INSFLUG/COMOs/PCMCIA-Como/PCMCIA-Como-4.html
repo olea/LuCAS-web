@@ -1,0 +1,1234 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA COMO : Uso y caracter&iacute;sticas </TITLE>
+ <LINK HREF="PCMCIA-Como-5.html" REL=next>
+ <LINK HREF="PCMCIA-Como-3.html" REL=previous>
+ <LINK HREF="PCMCIA-Como.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PCMCIA-Como-5.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-3.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="usoycar"></A> <A NAME="s4">4. Uso y caracter&iacute;sticas </A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss4.1">4.1 Herramientas para configurar y monitorizar dispositivos PCMCIA</A>
+</H2>
+
+<P>
+<P>Si los m&oacute;dulos son todos cargados correctamente, la salida del comando
+<CODE>lsmod</CODE> deber&iacute;a verse como sigue, cuando no hay tarjetas insertadas:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  Module                  Size  Used by
+  ds                      5640   2
+  i82365                 15452   2
+  pcmcia_core            30012   3  [ds i82365]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El registro del sistema deber&aacute; tambi&eacute;n incluir la salida del controlador
+del socket, describiendo el(los) controlador(es) del host encontrado(s) y
+el n&uacute;mero de sockets detectados. 
+<P>
+<H3><A NAME="cardmgr"></A> El demonio de configuraci&oacute;n <CODE>cardmgr</CODE> </H3>
+
+<P>
+<P>El demonio <CODE>cardmgr</CODE> es responsable de monitorizar los sockets PCMCIA,
+cargando los controladores cuando se necesita, y corriendo scripts a nivel
+de usuario en respuesta a las inserciones y extracciones de tarjetas. 
+Graba sus acciones en el registro del sistema, y tambi&eacute;n usa pitidos para
+se&ntilde;alar cambios en el estado de las tarjetas.  Los tonos de los pitidos
+indican el &eacute;xito o fracaso de un paso de la configuraci&oacute;n en particular.
+Dos pitidos agudos indican que la tarjeta fue identificada y configurada
+correctamente. Un pitido agudo seguido de un pitido grave indica que la
+tarjeta fue identificada, pero no pudo ser configurada por alguna raz&oacute;n.
+Un pitido grave indica que la tarjeta no pudo ser identificada. 
+<P><CODE>cardmgr</CODE> registra informaci&oacute;n del dispositivo para cada socket en <CODE>/var/run/stab</CODE>
+<P>He aqu&iacute; el contenido de un ejemplo de <CODE>/var/run/stab:</CODE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       Socket 0: Adaptec APA-1460 SlimSCSI
+       0       scsi    aha152x_cs      0       sda     8       0
+       0       scsi    aha152x_cs      1       scd0    11      0
+       Socket 1: Serial or Modem Card
+       1       serial  serial_cs       0       ttyS1   5       65
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para las l&iacute;neas que describen dispositivos, el primer campo es el socket,
+el segundo es la clase del dispositivo, el tercero es nombre del
+controlador, el cuarto se usa para numerar m&uacute;ltiples dispositivos
+asociados con el mismo controlador, el quinto es el nombre del
+dispositivo, y los dos campos finales son los n&uacute;meros mayor y menor para
+este dispositivo (si es aplicable). 
+<P>El demonio <CODE>cardmgr</CODE> configura tarjetas basadas en una base de datos de
+tipos de tarjetas conocidas almacenadas en <CODE>/etc/pcmcia/config</CODE>. 
+Este archivo describe una variedad de controladores, describe c&oacute;mo
+identificar esas tarjetas, y cual(es) controlador(es) pertenecen a cada
+tarjeta. El formato de este archivo se describe en la p&aacute;gina del manual de
+<CODE>pcmcia(5)</CODE>.
+<P>
+<H3><A NAME="cc"></A> Las utilidades <CODE>cardctl</CODE> y <CODE>cardinfo</CODE></H3>
+
+<P>
+<P>El comando <CODE>cardctl</CODE> puede ser usado para comprobar el estado de un
+socket, o para ver c&oacute;mo est&aacute; configurado. Tambi&eacute;n puede ser usado para
+alterar el estado de configuraci&oacute;n de una tarjeta. He aqu&iacute; un ejemplo de
+la salida del comando <CODE>cardctl config</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  Socket 0:
+    not configured
+  Socket 1:
+    Vcc = 5.0, Vpp1 = 0.0, Vpp2 = 0.0
+    Card type is memory and I/O
+    IRQ 3 is dynamic shared, level mode, enabled
+    Speaker output is enabled
+    Function 0:
+      Config register base = 0x0800
+        Option = 0x63, status = 0x08
+      I/O window 1: 0x0280 to 0x02bf, auto sized
+      I/O window 2: 0x02f8 to 0x02ff, 8 bit
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>O <CODE>cardctl ident</CODE>, para obtener informaci&oacute;n de la identificaci&oacute;n de la
+tarjeta: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       Socket 0:
+         no product info available
+       Socket 1:
+         product info: "LINKSYS", "PCMLM336", "A", "0040052D6400"
+         manfid: 0x0143, 0xc0ab
+         function: 0 (multifunction)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Los comandos <CODE>cardctl suspend</CODE> y <CODE>cardctl resume</CODE> pueden usarse para
+desactivar una tarjeta sin descargar sus controladores asociados. El
+comando <CODE>cardctl reset</CODE> intenta resetear y reconfigurar una tarjeta.
+<CODE>cardctl insert</CODE> y <CODE>cardctl eject</CODE> emulan las acciones realizadas
+cuando una tarjeta es insertada o expulsada, incluyendo la carga y
+descarga de los controladores, y configurando o desactivando los
+dispositivos. 
+<P>Si est&aacute; Vd. corriendo X, <CODE>cardinfo</CODE> produce de forma gr&aacute;fica el estado
+actual de todos los sockets PCMCIA, similar en contenido a <CODE>cardctl
+config</CODE>. Tambi&eacute;n proporciona una interfaz gr&aacute;fica para la mayor&iacute;a de las
+otras funciones de <CODE>cardctl</CODE>. 
+<P>
+<H3><A NAME="insexp"></A> Inserci&oacute;n y extracci&oacute;n de tarjetas </H3>
+
+<P>
+<P>En teor&iacute;a, puede insertar y extraer tarjetas PCMCIA en cualquier momento. 
+Sin embargo, es una buena idea no expulsar una tarjeta que est&aacute; siendo
+utilizada por alg&uacute;n programa de aplicaci&oacute;n. Los kernels anteriores al
+<CODE>1.1.77</CODE> sol&iacute;an congelarse cuando las tarjetas serie/m&oacute;dem eran
+expulsadas, aunque esto parece estar ya solucionado.
+<P>
+<H3><A NAME="aae"></A> Servicios de Tarjetas y Administraci&oacute;n Avanzada de Energ&iacute;a</H3>
+
+<P>
+<P>Los servicios de tarjetas pueden ser compilados con soporte para APM
+(<I>Advanced Power Management</I>) (En castellano: <I>Administraci&oacute;n
+Avanzada de Energ&iacute;a</I>), si configur&oacute; su kernel con soporte APM. APM est&aacute;
+actualmente a cargo de Stephen Rothwell, <CODE>
+<A HREF="mailto:Stephen.Rothwell@canb.auug.org.au">Stephen.Rothwell@canb.auug.org.au</A></CODE>. El demonio <CODE>apmd</CODE> es
+mantenido por Avery Pennarun, <CODE>
+<A HREF="mailto:apenwarr@worldvisions.ca">apenwarr@worldvisions.ca</A></CODE>), con m&aacute;s informaci&oacute;n disponible en
+<CODE>
+<A HREF="http://www.worldvisions.ca/~apenwarr/apmd/">http://www.worldvisions.ca/~apenwarr/apmd/</A></CODE>. Los m&oacute;dulos
+PCMCIA ser&aacute;n configurados autom&aacute;ticamente para APM si es detectada una
+versi&oacute;n compatible en el sistema. 
+<P>Est&eacute; APM configurado o no, puede usar <CODE>cardctl suspend</CODE> antes de
+suspender su port&aacute;til, y <CODE>cardctl resume</CODE> despu&eacute;s de «despertarlo»,
+para apagar y reactivar sus tarjetas PCMCIA. No funcionar&aacute; con un m&oacute;dem
+que est&eacute; en uso, porque el controlador serie no puede guardar y
+restablecer los par&aacute;metros operativos del m&oacute;dem.
+<P>APM parece ser inestable en algunos sistemas. Si experimenta problemas con
+APM y PCMCIA en su sistema, intente localizar el problema en un paquete u
+otro antes de informar de un <I>bug</I>. 
+<P>Algunos controladores, notablemente los controladores PCMCIA SCSI, no
+pueden recuperarse de un ciclo de suspender/despertar. Cuando se usa una
+tarjeta PCMCIA SCSI, use siempre <CODE>cardctl eject</CODE> antes de suspender el
+sistema.
+<P>
+<H3><A NAME="apagar"></A> Apagado del sistema PCMCIA </H3>
+
+<P>
+<P>Para descargar el paquete PCMCIA completo, invoque <CODE>rc.pcmcia</CODE> con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        /etc/rc.d/rc.pcmcia stop
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este script tomar&aacute; algunos segundos para ejecutarse, para darle tiempo a
+todos los controladores a desactivarse correctamente. Si un dispositivo
+est&aacute; en uso actualmente, el proceso de desactivaci&oacute;n ser&aacute; incompleto, y
+puede que algunos m&oacute;dulos del kernel no sean descargados. Para prevenir
+esto, use <CODE>cardctl eject</CODE> para desactivar todos los sockets antes de
+invocar <CODE>rc.pcmcia</CODE>. El estado de salida del comando <CODE>cardctl</CODE>
+indicar&aacute; si alguno de los sockets no pudo ser desactivado.
+<P>
+<H2><A NAME="configuracion"></A> <A NAME="ss4.2">4.2 Un vistazo a los scripts de configuraci&oacute;n de PCMCIA </A>
+</H2>
+
+<P>
+<P>Cada dispositivo PCMCIA tiene una «clase» asociada que describe c&oacute;mo debe
+ser configurado y manejado. Las clases est&aacute;n asociadas con los
+controladores de dispositivos en <CODE>/etc/pcmcia/config</CODE>. Actualmente
+hay cinco clases de dispositivos de E/S (red, SCSI, cdrom, disco, y serie) 
+y dos clases de dispositivos de memoria (memoria y FTL).  Para cada clase,
+hay dos scripts en <CODE>/etc/pcmcia</CODE>: un script principal de
+configuraci&oacute;n (por ejemplo, <CODE>/etc/pcmcia/scsi</CODE> para dispositivos
+SCSI), y un script de opciones (por ejemplo,
+<CODE>/etc/pcmcia/scsi.options</CODE>). El script principal de un dispositivo
+ser&aacute; invocado para configurarlo cuando se inserte una tarjeta, y para
+desactivar el dispositivo cuando sea extra&iacute;da.  Para tarjetas con varios
+dispositivos asociados, el script ser&aacute; invocado para cada dispositivo.
+<P>Los scripts de configuraci&oacute;n inician al extraer algo de informaci&oacute;n acerca
+del dispositivo de <CODE>/var/run/stab</CODE>. Cada script construye una
+«direcci&oacute;n de dispositivo», que &uacute;nicamente describe el dispositivo que ha
+sido solicitado para configurar, en la variable de shell ADDRESS. Esto es
+pasado al script <CODE>*.opts</CODE>, el cual debe proporcionar informaci&oacute;n
+acerca de c&oacute;mo debe ser configurado un dispositivo en esta direcci&oacute;n. Para
+algunos, la direcci&oacute;n del dispositivo es s&oacute;lo el n&uacute;mero de socket. Para
+otros, se incluye informaci&oacute;n extra que puede ser &uacute;til para decidir c&oacute;mo
+configurar el dispositivo. Por ejemplo, los dispositivos de red pasan su
+direcci&oacute;n ethernet de hardware como parte de la direcci&oacute;n del dispositivo,
+as&iacute;, el script <CODE>network.opts</CODE> puede usar esto para seleccionar
+diversas configuraciones.
+<P>La primera parte de todas las direcciones de dispositivos es el «esquema»
+PCMCIA actual. Ese par&aacute;metro es usado para soportar m&uacute;ltiples conjuntos de
+configuraciones de dispositivos basadas en una simple variable externa
+definida por el usuario. Una uso de los esquemas puede ser el tener un
+esquema de «casa», y un esquema de «trabajo», el cual puede incluir
+diferentes conjuntos de par&aacute;metros de configuraci&oacute;n de red.  El esquema
+actual se selecciona usando el comando <CODE>cardctl scheme</CODE>. Si no se
+define un esquema, por omisi&oacute;n se establece el esquema <CODE>default</CODE>.
+<P>Como regla general, cuando se configura Linux para un equipo port&aacute;til, los
+dispositivos PCMCIA deben ser configurados desde los scripts para
+dispositivos PCMCIA. No intente configurar un dispositivo PCMCIA de la
+misma forma en que configurar&iacute;a un dispositivo conectado de forma
+permanente. No obstante, algunas distribuciones de Linux suministran
+paquetes PCMCIA que est&aacute;n relacionadas con las herramientas de
+configuraci&oacute;n de dispositivos propios de la misma distribuci&oacute;n. En ese
+caso, alguna de las siguientes secciones puede o no aplicar; idealmente,
+esto ser&iacute;a documentado por los encargados de la distribuci&oacute;n.
+<P>
+<H2><A NAME="net"></A> <A NAME="ss4.3">4.3 Adaptadores de red PCMCIA </A>
+</H2>
+
+<P>
+<P>Las interfaces de red tipo ethernet normalmente tienen nombres como
+<CODE>eth0</CODE>, <CODE>eth1</CODE>, y as&iacute; sucesivamente. Los adaptadores Token-Ring se
+manejan de forma similar, sin embargo, son llamadas com&uacute;nmente
+<CODE>tr0</CODE>, <CODE>tr1</CODE> y as&iacute; sucesivamente. El comando
+<CODE>ifconfig</CODE> se usa para ver o modificar el estado de una interface
+de red. Una peculiaridad de Linux es que las interfaces de red no tienen
+archivos de dispositivo correspondientes en <CODE>/dev/</CODE>, as&iacute; que no se
+sorprenda si no los encuentra. 
+<P>Cuando se detecta una tarjeta ethernet, le ser&aacute; asignado el primer nombre
+de interface que est&eacute; libre, normalmente <CODE>eth0</CODE>. <CODE>cardmgr</CODE> ejecutar&aacute;
+el script <CODE>/etc/pcmcia/network</CODE> para configurar la interface, la
+cual normalmente lee las configuraciones de red de
+<CODE>/etc/pcmcia/network.opts</CODE>. Los scripts <CODE>network</CODE>, y
+<CODE>network.opts</CODE> ser&aacute;n ejecutados s&oacute;lo cuando su tarjeta ethernet
+est&eacute; presente. Si su sistema tiene la facilidad de configuraci&oacute;n de red
+autom&aacute;tica, puede o no ser PCMCIA. Consulte la documentaci&oacute;n de su
+distribuci&oacute;n de Linux y la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#distribuciones"> Notas acerca de distribuciones de Linux espec&iacute;ficas</A> para determinar si los
+dispositivos de red PCMCIA deben ser configurados con herramientas
+autom&aacute;ticas, o editando <CODE>network.opts</CODE>. 
+<P>La direcci&oacute;n de dispositivo pasada a <CODE>network.opts</CODE> consiste en
+cuatro campos separados por comas: el esquema, el n&uacute;mero de socket, la
+instancia de dispositivo, y la direcci&oacute;n ethernet de hardware de la
+tarjeta, La instancia de dispositivo es usada para numerar dispositivos
+para tarjetas que tienen varias interfaces de red, as&iacute; que normalmente
+ser&aacute; <CODE>0</CODE>.  Si tiene varias tarjetas de red usadas para prop&oacute;sitos
+diferentes, una opci&oacute;n puede ser el configurar las tarjetas basadas en la
+posici&oacute;n del socket, como en:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,0,*,*)
+           # definiciones para tarjeta de red en el socket 0
+           ;;
+       *,1,*,*)
+           # definiciones para tarjeta de red en el socket 1
+           ;;
+       esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Alternat&iacute;vamente, pueden ser configuradas usando su direcci&oacute;n de hardware,
+como en:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  case "$ADDRESS" in
+  *,*,*,00:80:C8:76:00:B1)
+      # definiciones para una tarjeta D-Link
+      ;;
+  *,*,*,08:00:5A:44:80:01)
+      # definiciones para una tarjeta IBM
+  esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="netpar"></A> Par&aacute;metros de dispositivos de red </H3>
+
+<P>
+<P>Los siguientes par&aacute;metros se pueden definir en <CODE>network.opts</CODE>:
+<P>
+<DL>
+<P>
+<DT><B>IF_PORT</B><DD><P>Especifica el tipo de transceptor ethernet, para tarjetas que
+no sean autodetectadas. Consulte <CODE>man ifport</CODE> para ver los nombres
+de los transceptores. 
+<P>
+<DT><B>PUMP</B><DD><P>Una opci&oacute;n booleana (y/n): indica si la direcci&oacute;n IP e
+informaci&oacute;n de rutado del host se puede obtener ya sea por BOOTP o DHCP,
+con el demonio <CODE>pump</CODE>. 
+<P>
+<DT><B>BOOTP</B><DD><P>Una opci&oacute;n booleana (y/n): indica si la direcci&oacute;n IP del host y
+su informaci&oacute;n de rutado se obtendr&aacute;n usando el protocolo BOOTP, con <CODE>bootpc</CODE>. 
+<P>
+<DT><B>DHCP</B><DD><P>Un opci&oacute;n booleana (y/n): indica si la direcci&oacute;n IP del host y
+su informaci&oacute;n de rutado se obtendr&aacute;n de un servidor DHCP, con
+<CODE>dhcpcd</CODE>.
+<P>
+<DT><B>IPADDR</B><DD><P>La direcci&oacute;n IP para esta interface.
+<P>
+<DT><B>NETMASK, BROADCAST, NETWORK</B><DD><P>Par&aacute;metros b&aacute;sicos de red: revise el COMO
+de red para m&aacute;s informaci&oacute;n.
+<P>
+<DT><B>GATEWAY</B><DD><P>La direcci&oacute;n IP de una m&aacute;quina pasarela para la subred de
+este host.  Los paquetes con destinos hacia afuera de esta subred ser&aacute;n
+destinados a dicha pasarela. 
+<P>
+<DT><B>DOMAIN</B><DD><P>El nombre de dominio de la red local para este host, es usado
+al crear <CODE>/etc/resolv.conf</CODE>. 
+<P>
+<DT><B>SEARCH</B><DD><P>Una lista de b&uacute;squeda para b&uacute;squeda de nombres, es a&ntilde;adida a
+<CODE>/etc/resolv.conf</CODE>. DOMAIN y SEARCH son mutuamente exclusivos:
+revise <CODE>man resolver</CODE> para m&aacute;s informaci&oacute;n. 
+<P>
+<DT><B>DNS_1,DNS_2,DNS_3</B><DD><P>Nombres de host o direcciones IP para servidores de
+nombres para esta interface, para ser a&ntilde;adidos a <CODE>/etc/resolv.conf</CODE>
+<P>
+<DT><B>MOUNTS</B><DD><P>Una lista de puntos de montaje NFS para ser montados por esta
+interface. 
+<P>
+<DT><B>IPX_FRAME, IPX_NETNUM</B><DD><P>Para redes IPX: el tipo de <I>frame</I> y n&uacute;mero
+de red, pasado al comando <CODE>ipx_interface</CODE>. 
+<P>
+</DL>
+<P>Por ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  case "$ADDRESS" in
+  *,*,*,*)
+      IF_PORT="10base2"
+      BOOTP="n"
+      IPADDR="10.0.0.1"
+      NETMASK="255.255.255.0"
+      NETWORK="10.0.0.0"
+      BROADCAST="10.0.0.255"
+      GATEWAY="10.0.0.1"
+      DOMAIN="dominio.org"
+      DNS_1="dns1.dominio.org"
+      ;;
+  esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para montar y desmontar autom&aacute;ticamente sistemas de archivos NFS, primero
+a&ntilde;ada todos esos sistemas de archivos a <CODE>/etc/fstab</CODE>, incluyendo
+<CODE>noauto</CODE> en las opciones de montaje. En <CODE>network.opts</CODE>,
+liste los puntos de montaje de los sistemas de archivos en la variable
+MOUNTS. Es especialmente importante usar ya sea <CODE>cardctl</CODE> o
+<CODE>cardinfo</CODE> para apagar una tarjeta de red cuando NFS se encuentre
+activo. No es posible desmontar limpiamente los sistemas de archivos NFS
+si una tarjeta de red es s&iacute;mplemente expulsada sin precauci&oacute;n. 
+<P>En adici&oacute;n a los par&aacute;metros usuales de configuraci&oacute;n de red, el script
+<CODE>network.opts</CODE> puede especificar acciones extra a tomar despu&eacute;s de
+que una interface es configurada, o antes de que se apague la interface. 
+Si <CODE>network.opts</CODE> define una funci&oacute;n de shell llamada
+<CODE>start_fn</CODE>, ser&aacute; invocada por el script de red despu&eacute;s de que la
+interface sea configurada, y el nombre de interface se pasar&aacute; a la funci&oacute;n
+como su primer (y &uacute;nico)  argumento. Similarmente, si es definido,
+<CODE>stop_fn</CODE> se invocar&aacute; antes de apagar una interfaz. 
+<P>El tipo de transceptor se puede seleccionar usando la configuraci&oacute;n
+<CODE>IF_PORT</CODE>. Esto puede ser, ya sea un valor num&eacute;rico como en las
+versiones anteriores de PCMCIA, o una palabra clave que identifique el
+tipo de transceptor. Todos los controladores de red est&aacute;n configurados por
+omisi&oacute;n para autodetectar la interface si es posible, o bien, utilizar
+10baseT. El comando <CODE>ifport</CODE> se puede utilizar para comprobar el tipo
+de transceptor actual. Por ejemplo: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       # ifport eth0 10base2
+       #
+       # ifport eth0
+       eth0    2 (10base2)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El controlador actual (<CODE>3.0.10</CODE> o posterior) de <CODE>3c589</CODE> debe
+autodetectar r&aacute;pidamente los cambios de transceptor en cualquier momento. 
+Las primeras versiones del controlador 3x589 ten&iacute;an un algoritmo de
+autodetecci&oacute;n de transceptores algo lento y no muy amistoso. Para esas
+versiones, el cable de red apropiado debe ser conectado a la tarjeta
+cuando la tarjeta es configurada, o se puede forzar la autodetecci&oacute;n con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       ifconfig eth0 down up
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="netcom"></A> Comentarios acerca de tarjetas espec&iacute;ficas </H3>
+
+<P>
+<P>
+<UL>
+<LI>Con las tarjetas <I>IBM CCAE</I> y <I>Socket EA</I>, el tipo de
+transceptor (10base2, 10baseT, AUI), necesita configurarse cuando el
+dispositivo de red est&aacute; configurado. Aseg&uacute;rese de que el tipo de
+transceptor que aparece en el registro del sistema concuerda con su
+conexi&oacute;n.
+</LI>
+<LI>Los controladores para tarjetas SMC, Megahertz, Ositech, y 3Com
+deben autodetectar el tipo de red conectada (10base2 o 10baseT). 
+Establecer el tipo de transceptor cuando se carga el controlador sirve
+para definir la «primera b&uacute;squeda» de la tarjeta. 
+</LI>
+<LI>La <I>Farallon EtherWave</I> actualmente est&aacute; basada en la <I>3Com
+3c589</I>, con un transceptor especial. Aunque la EtherWave usa conexiones al
+estilo 10baseT, su transceptor requiere que la 3c589 sea configurada en
+modo 10base2.
+</LI>
+<LI>Si tiene problemas con un adaptador <I>IBM CCAE</I>, <I>NE4100</I>,
+<I>Thomas Conrad</I>, o Kingston, pruebe a incrementar el tiempo de acceso
+con la opci&oacute;n <CODE>mem_speed=#</CODE> al m&oacute;dulo <CODE>pcnet_cs</CODE>. Un ejemplo de
+c&oacute;mo hacer esto se muestra en el archivo <CODE>config.opts</CODE>. Pruebe con
+velocidades por encima de <CODE>1000</CODE> (en nanosegundos).
+</LI>
+<LI>Para el adaptador <I>New Media Ethernet</I>, en algunos sistemas,
+puede ser necesario incrementar el tiempo de acceso al puerto de E/S con
+la opci&oacute;n <CODE>io_speed=#</CODE> cuando se cargue el m&oacute;dulo <CODE>pcmcia_core</CODE>.
+Edite <CODE>CORE_OPTS</CODE> en el script de inicio para activar esta opci&oacute;n.
+</LI>
+<LI>El soporte multicast en el controlador <I>New Media Ethernet</I> est&aacute;
+incompleto. El &uacute;ltimo controlador funcionar&aacute; con kernels multicast, pero
+ignorar&aacute; los paquetes multicast. El modo promiscuo debe funcionar
+apropiadamente. 
+</LI>
+<LI>El controlador usado por los controladores token ring IBM y 3Com
+parecen comportarse bastante mal si las tarjetas no est&aacute;n conectadas
+cuando son inicializadas. Conecte siempre esas tarjetas a la red antes de
+activarlas. Si <CODE>ifconfig</CODE> informa que la direcci&oacute;n de harware como todo
+<CODE>0</CODE>, esto debe ser debido a un problema de configuraci&oacute;n de la ventana
+de memoria. 
+</LI>
+<LI>Algunas tarjetas Linksys, D-Link, e IC-Card 10baseT/10base2 tienen
+una forma &uacute;nica de seleccionar el tipo de transceptor que no es manejado
+por los controladores de Linux. Una soluci&oacute;n es arrancar DOS y utilizar la
+utilidad proporcionada por el fabricante para seleccionar el transceptor,
+haciendo entonces un arranque «en caliente» de Linux. Alternativamente,
+hay una utilidad Linux para realizar esta funci&oacute;n, que est&aacute; disponible en
+<CODE> 
+<A HREF="ftp://hyper.stanford.edu/pub/pcmcia/extras/dlport.c">ftp://hyper.stanford.edu/pub/pcmcia/extras/dlport.c</A></CODE>.
+</LI>
+<LI>Para adaptadores de red inal&aacute;mbricos WaveLAN, Jean Tourrilhes,
+<CODE>
+<A HREF="mailto:jt@hpl.hp.com">jt@hpl.hp.com</A></CODE>)  tiene
+disponible el <I>Wireless HOWTO</I> (C&oacute;mo inal&aacute;mbrico) en <CODE>
+<A HREF="http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/">http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/</A></CODE>
+</LI>
+</UL>
+<P>
+<H3><A NAME="diagnet"></A> Diagn&oacute;stico de problemas con adaptadores de red </H3>
+
+<P>
+<P>
+<UL>
+<LI>¿Es reconocida su tarjeta como una tarjeta ethernet? Revise el
+registro del sistema y aseg&uacute;rese de que <CODE>cardmgr</CODE> identifique la
+tarjeta correctamente e inicia uno de los controladores de red. Si no lo
+hace, su tarjeta puede ser utilizable todav&iacute;a si es compatible con una
+tarjeta soportada. Esto es posible hacerlo f&aacute;cilmente si la tarjeta dice
+ser <I>NE2000 compatible</I>. 
+</LI>
+<LI>¿Est&aacute; configurada la tarjeta apropiadamente? Si est&aacute; usando una
+tarjeta soportada, y fue reconocida por <CODE>cardmgr</CODE>, pero todav&iacute;a no
+funciona, pudo ser un conflicto de interrupci&oacute;n o puerto con otro
+dispositivo. Determine qu&eacute; recursos est&aacute; utilizando la tarjeta (en el
+registro del sistema), e intente de nuevo excluy&eacute;ndolos en
+<CODE>/etc/pcmcia/config.opts</CODE> para forzar a la tarjeta a usar otros. 
+</LI>
+<LI>Si su tarjeta parece estar configurada adecuadamente, pero a veces
+se congela, particularmente bajo carga alta, puede ser que necesite
+intentar cambiar los par&aacute;metros de sincronizaci&oacute;n de su controlador del
+socket. Revise la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#inicio">Opciones de Inicio</A> para
+m&aacute;s informaci&oacute;n.
+</LI>
+<LI>Si obtiene mensajes de <CODE>network unreachable</CODE> cuando intenta
+acceder a la red, la informaci&oacute;n especificada en
+<CODE>/etc/pcmcia/network.opts</CODE> es incorrecta. Este mensaje es una
+indicaci&oacute;n absolutamente a prueba de tontos de que hay un error de rutado.
+Por otra parte, las tarjetas mal configuradas normalmente fallar&aacute;n
+silenciosamente. 
+</LI>
+<LI>Para diagnosticar problemas en <CODE>/etc/pcmcia/network.opts</CODE>,
+empiece tratando de hacer <CODE>ping</CODE> a otros sistemas en la misma subred
+usando sus direcciones IP. Trate entonces de hacer <CODE>ping</CODE> a su puerta
+de enlace o «pasarela» (<I>gateway</I>), y a m&aacute;quinas en otras subredes.
+Debe ser posible hacer <CODE>ping</CODE> a las m&aacute;quinas por su nombre si lleva a
+cabo dichas pruebas con &eacute;xito. 
+</LI>
+<LI>Aseg&uacute;rese que su problema sea PCMCIA. Puede ser muy &uacute;til comprobar
+si la tarjeta funciona correctamente bajo DOS con los controladores del
+fabricante.  Verifique bien sus modificaciones al script
+<CODE>/etc/pcmcia/network.opts</CODE>. Aseg&uacute;rese que su cable, conector «T»,
+terminador, etc. est&eacute;n funcionando. 
+</LI>
+</UL>
+<P>
+<H2><A NAME="serie"></A> <A NAME="ss4.4">4.4 Dispositivos serie PCMCIA y m&oacute;dems </A>
+</H2>
+
+<P>
+<P>Los dispositivos serie de Linux son gestionados por medio de los archivos
+de dispositivo especiales <CODE>/dev/ttyS*</CODE> y <CODE>/dev/cua*</CODE>. En los
+kernels <CODE>pre-2.2</CODE> los dispositivos <CODE>ttyS*</CODE> eran para conexiones
+entrantes, como m&oacute;dems. El uso de dispositivos <CODE>cua*</CODE> se desaprueba
+en los kernels actuales, y se puede usar <CODE>ttyS*</CODE> para todas las
+aplicaciones. La configuraci&oacute;n de un dispositivo serie se puede examinar y
+modificar con el comando <CODE>setserial</CODE>.
+<P>Cuando se detecta una tarjeta serie o m&oacute;dem, se le asignar&aacute; el primer slot
+de dispositivo serie que se encuentre disponible. Este ser&aacute; usualmente
+<CODE>/dev/ttyS1 (cua1)</CODE> o <CODE>/dev/ttyS2 (cua2)</CODE>, dependiendo del
+n&uacute;mero de puertos serie que tenga. El dispositivo <CODE>ttyS*</CODE> es el que
+aparecer&aacute; en <CODE>/var/run/stab</CODE>. El script de opciones por omisi&oacute;n
+para dispositivos serie, <CODE>/etc/pcmcia/serial.opts</CODE>, enlazar&aacute; el
+dispositivo a <CODE>/dev/modem</CODE> por conveniencia. Para los kernels
+<CODE>pre-2.2</CODE>, el enlace se hace al dispositivo <CODE>cua*</CODE>.
+<P>No intente usar <CODE>/etc/rc.d/rc.serial</CODE> para configurar un m&oacute;dem
+PCMCIA. Este script s&oacute;lo deber&iacute;a ser utilizado para configurar
+dispositivos no extra&iacute;bles. Modifique <CODE>/etc/pcmcia/serial.opts</CODE> si
+quiere hacer algo especial para configurar su m&oacute;dem. No intente tampoco
+cambiar las configuraciones de E/S y puerto de un dispositivo serie
+utilizando <CODE>setserial</CODE>. Esto podr&iacute;a decir al controlador serie que
+busque al dispositivo en un lugar diferente, pero no cambiar c&oacute;mo el
+hardware de la tarjeta est&aacute; configurado actualmente. El script de
+configuraci&oacute;n serie le permite especificar otras opciones para
+<CODE>setserial</CODE>, as&iacute; como si se debe a&ntilde;adir una l&iacute;nea a
+<CODE>/etc/inittab</CODE> para este puerto. 
+<P>La direcci&oacute;n del dispositivo pasada a <CODE>serial.opts</CODE> tiene tres campos
+separados por comas: el primero es el esquema, el segundo es el n&uacute;mero de
+socket, y el tercero es la instancia del dispositivo. La instancia del
+dispositivo puede tomar varios valores para tarjetas que soporten
+m&uacute;ltiples puertos serie, pero para tarjetas de un s&oacute;lo puerto, siempre
+ser&aacute; <CODE>0</CODE>. Si comunmente usa m&aacute;s de un m&oacute;dem, puede especificar
+diferentes configuraciones basadas en la posici&oacute;n del socket, como en:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,0,*)
+           # Opciones para un modem en el socket 0
+           LINK=/dev/modem0
+           ;;
+       *,1,*)
+           # Opciones para un modem en el socket 1
+           LINK=/dev/modem1
+           ;;
+       esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si un m&oacute;dem PCMCIA ya est&aacute; configurado cuando Linux arranca, puede ser
+identificado incorrectamente como un puerto serie ordinario. Esto es
+inofensivo, sin embargo, cuando los controladores PCMCIA toman el control
+del m&oacute;dem, se le asignar&aacute; un slot de dispositivo diferente.  Por ello es
+mejor, ya sea analizar <CODE> /var/run/stab</CODE> o usar <CODE>/dev/modem</CODE>,
+en lugar de indicar que este m&oacute;dulo debe recargarse. Edite la entrada del
+dispositivo serie, de modo que se lea:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       device "serial_cs"
+         class "serial" module "misc/serial", "serial_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="seriepar"></A> Par&aacute;metros de dispositivos serie </H3>
+
+<P>
+<P>Los siguientes par&aacute;metros se pueden definir en <CODE>serial.opts</CODE>:
+<P>
+<DL>
+<P>
+<DT><B>LINK</B><DD><P>Especifica una ruta para un enlace simb&oacute;lico a crear al
+dispositivo <I>callout</I> (para llamar hacia el exterior) (ejemplo,
+<CODE>/dev/cua*</CODE> para kernels pre-2.2 o <CODE>/dev/ttyS*</CODE> para kernels
+<CODE>2.2.x</CODE>). 
+<P>
+<DT><B>SERIAL_OPTS</B><DD><P>Especifica las opciones que se pasan al comando
+<CODE>setserial</CODE>. 
+<P>
+<DT><B>INITTAB</B><DD><P>Si se especifica, se usar&aacute; para a&ntilde;adir una entrada
+<CODE>inittab</CODE> para el dispositivo.
+<P>
+</DL>
+<P>Por ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,*,*,*)
+           LINK="/dev/modem"
+           SERIAL_OPTS=""
+           INITTAB="/sbin/getty"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="seriediag"></A> Diagn&oacute;stico de problemas con dispositivos serie </H3>
+
+<P>
+<P>
+<UL>
+<LI>¿Se reconoce su tarjeta como un m&oacute;dem? Revise el registro del
+sistema y aseg&uacute;rese que <CODE>cardmgr</CODE> identifica la tarjeta correctamente e
+inicia el controlador <CODE>serial_cs</CODE>. Si no, necesitar&aacute; a&ntilde;adir una nueva
+entrada en el fichero <CODE>/etc/pcmcia/config</CODE> para que pueda ser
+identificado apropiadamente. Consulte la secci&oacute;n 
+<A HREF="PCMCIA-Como-6.html#configurando">Configuraci&oacute;n de tarjetas no reconocidas</A> para m&aacute;s detalles. 
+</LI>
+<LI>¿Es el m&oacute;dem configurado satisfactoriamente por <CODE>serial_cs</CODE>? 
+Nuevamente, revise el registro del sistema y busque los mensajes del
+controlador <CODE>serial_cs</CODE>. Si ve mensajes como <CODE>register_serial() failed</CODE> debe tener un conflicto de puerto de E/S con otro dispositivo.
+Otra causa de conflictos tiene lugar cuando el dispositivo es reconocido
+como una <I>UART 8250</I>;  la mayor&iacute;a de m&oacute;dems modernos deben
+identificarse como UART 16550A. Si piensa que est&aacute; viendo un conflicto de
+puertos, edite <CODE>/etc/pcmcia/config.opts</CODE> y excluya el rango de
+puertos que fue reservado para el m&oacute;dem. 
+</LI>
+<LI>¿Hay un conflicto de interrupciones? Si el registro del sistema se
+parece normal, pero el m&oacute;dem no funciona, pruebe a cambiar la irq a <CODE>0</CODE>
+usando <CODE>setserial</CODE> y comprobar si el m&oacute;dem funciona. Esto causa que el
+controlador serie use un modo de b&uacute;squeda m&aacute;s bajo en lugar de usar
+interrupciones. Si esto parece solucionar el problema, es probable que
+otro dispositivo del sistema est&eacute; usando la interrupci&oacute;n seleccionada por
+<CODE>serial_cs</CODE>. Deber&aacute; a&ntilde;adir una l&iacute;nea a <CODE>/etc/pcmcia/config.opts</CODE>
+para excluir esta interrupci&oacute;n. 
+</LI>
+<LI>Si el m&oacute;dem parece funcionar muy, muy lento, esto es casi un
+indicador seguro de un conflicto de interrupciones. Aseg&uacute;rese que su
+problema sea realmente PCMCIA. Puede ayudarle comprobar si la tarjeta
+funciona bajo DOS con los controladores del fabricante. As&iacute; mismo, evite
+probar la tarjeta con algo complicado como SLIP o PPP hasta que est&eacute;
+seguro que haga conexiones simples. Si es capaz de establecer «conexiones
+simples», pero no con SLIP, su problema es m&aacute;s probable que tenga que ver
+con SLIP, y no con PCMCIA.
+</LI>
+<LI>Si obtiene mensajes del kernel indicando que el m&oacute;dulo
+<CODE>serial_cs</CODE> no puede cargarse, significa que su kernel no tiene soporte
+para dispositivo serie. Si ha compilado el controlador serie como m&oacute;dulo,
+debe modificar <CODE>/etc/pcmcia/config</CODE> para indicar que el m&oacute;dulo
+serie debe cargarse antes de <CODE>serial_cs</CODE>. 
+</LI>
+</UL>
+<P>
+<H2><A NAME="parport"></A> <A NAME="ss4.5">4.5 Dispositivos PCMCIA de puerto paralelo </A>
+</H2>
+
+<P>
+<P>El controlador de puerto paralelo de Linux est&aacute; estructurado por capas,
+as&iacute; que varios tipos de dispositivos de alto nivel pueden compartir el
+mismo controlador de puerto de bajo nivel. Los dispositivos se gestionan a
+trav&eacute;s de los archivos especiales de dispositivo <CODE>/dev/lp*</CODE>. La
+configuraci&oacute;n de un dispositivo de impresora puede examinarse y
+modificarse con el comando <CODE>tunelp</CODE>.
+<P>El m&oacute;dulo <CODE>parport_cs</CODE> depende de los controladores <CODE>parport</CODE> y
+<CODE>parport_pc</CODE>, los cuales pueden ser compilados dentro del kernel o bien
+compilados como m&oacute;dulos. La estructura del controlador por capas significa
+que cualquiera de los controladores paralelos de alto nivel (tales como el
+controlador <CODE>plip</CODE>, el controlador de impresora, etc.) deben ser
+compilados como m&oacute;dulos. Estos controladores s&oacute;lo reconocen dispositivos
+de puerto paralelo en el momento de iniciar el m&oacute;dulo, as&iacute; que pueden
+cargarse despu&eacute;s de que cualquier dispositivo paralelo PC Card sea
+configurado.
+<P>La direcci&oacute;n del dispositivo pasada a <CODE>parport.opts</CODE> tiene tres campos
+separados por comas: el primero es el esquema, el segundo es el n&uacute;mero de
+socket, y el tercero es la instancia del dispositivo. La instancia del
+dispositivo puede tomar varios valores para tarjetas que soportan
+m&uacute;ltiples puertos paralelos, pero para tarjetas de un solo puerto, siempre
+ser&aacute; <CODE>0</CODE>. Si usa habitualmente m&aacute;s de una tarjeta, necesitar&aacute;
+especificar diferentes configuraciones basadas en la posici&oacute;n del socket,
+como en: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,0,*)
+           # Opciones para una tarjeta en el socket 0
+           LINK=/dev/printer0
+           ;;
+       *,1,*)
+           # Opciones para una tarjeta en el socket 1
+           LINK=/dev/printer1
+           ;;
+       esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si configura el kernel para cargar el controlador b&aacute;sico de puerto
+paralelo como m&oacute;dulo, debe editar <CODE>/etc/pcmcia/config</CODE> para indicar
+qu&eacute; m&oacute;dulos necesitan cargarse. Edite la entrada para el dispositivo
+paralelo de modo que se lea: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       device "parport_cs"
+         class "parport" module "misc/parport", "misc/parport_pc", "parport_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="parportpar"></A> Par&aacute;metros de dispositivos paralelos </H3>
+
+<P>
+<P>Los siguientes par&aacute;metros pueden especificarse en <CODE>parport.opts</CODE>:
+<P>
+<DL>
+<P>
+<DT><B>LINK</B><DD><P>Especifica la ruta del enlace simb&oacute;lico a crear hacia el puerto
+de impresora. 
+<P>
+<DT><B>LP_OPTS</B><DD><P>Especifica las opciones a pasar al comando <CODE>tunelp</CODE>.
+<P>
+</DL>
+<P>Por ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,*,*,*)
+           LINK="/dev/printer"
+           LP_OPTS=""
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3><A NAME="parportdiag"></A> Diagn&oacute;stico de problemas con dispositivos de puertos paralelos </H3>
+
+<P>
+<P>
+<UL>
+<LI>¿Hay un conflicto de interrupciones? Si el registro del sistema
+parece estar bien, pero el puerto no funciona, cambie la irq a <CODE>0</CODE>
+usando <CODE>tunelp</CODE>, y compruebe si las cosas mejoran.  Esto cambia el
+controlador a modo de b&uacute;squeda. Si parece solucionar el problema, es
+probable que otro dispositivo en su sistema est&eacute; utilizando la
+interrupci&oacute;n seleccionada por <CODE>parport_cs</CODE>. Deber&aacute; a&ntilde;adir una l&iacute;nea a
+<CODE>/etc/pcmcia/config.opts</CODE> para excluir esta interrupci&oacute;n. 
+</LI>
+<LI>Si su kernel genera mensajes indicando que el m&oacute;dulo <CODE>parport_cs</CODE>
+no puede cargarse, significa que el kernel no tiene soporte para
+dispositivos paralelos. Si tiene compilado el controlador paralelo como
+m&oacute;dulo, necesita modificar <CODE>/etc/pcmcia/config</CODE> para indicar que
+los m&oacute;dulos <CODE>parport</CODE> y <CODE>parport_pc</CODE> deben cargarse antes que
+<CODE>parport_cs</CODE>.
+</LI>
+</UL>
+<P>
+<H2><A NAME="scsi"></A> <A NAME="ss4.6">4.6 Adaptadores SCSI PCMCIA </A>
+</H2>
+
+<P>
+<P>Todos los controladores que dan soporte actualmente a tarjetas SCSI PCMCIA
+son trabajos basados en alguna de las siguientes tarjetas bus ISA:
+<I>Qlogic</I>, <I>Adaptec AHA-152X</I>, o <I>Future Domain TMC-16x0</I>. Los
+controladores PCMCIA son compilados enlazando parcialmente c&oacute;digo
+espec&iacute;fico PCMCIA (en <CODE>qlogic_cs.c</CODE>, <CODE>toaster_cs.c</CODE>, o
+<CODE>fdomain_cs.c</CODE>) con el controlador SCSI normal de Linux. Debido a las
+limitaciones en el modelo del controlador SCSI de Linux, s&oacute;lo se soporta
+una tarjeta extra&iacute;ble por controlador.
+<P>Cuando se detecta un nuevo adaptador SCSI, los controladores SCSI
+sondear&aacute;n la presencia de dispositivos. Revise el registro del sistema
+para asegurar que los dispositivos sean detectado apropiadamente. Los
+nuevos dispositivos SCSI se asignar&aacute;n a los primeros archivos de
+dispositivo SCSI disponibles. El primer disco SCSI ser&aacute; <CODE>/dev/sda</CODE>,
+la primera cinta SCSI ser&aacute; <CODE>/dev/st0</CODE>, y el primer CD-ROM ser&aacute;
+<CODE>/dev/scd0</CODE>. 
+<P>En <CODE>/var/run/stab</CODE> se muestra una lista de los dispositivos
+conectados a este adaptador, y el script de configuraci&oacute;n
+<CODE>/etc/pcmcia/scsi</CODE> se llamar&aacute; una vez para cada dispositivo
+conectado, ya sea para configurar o apagar ese dispositivo. El script por
+omisi&oacute;n no toma ninguna acci&oacute;n para configurar dispositivos SCSI, pero
+desmontar&aacute; apropiadamente los sistemas de archivos en dispositivos SCSI
+cuando se extraiga la tarjeta. 
+<P>Las direcciones de dispositivo que se pasan a <CODE>scsi.opts</CODE> son
+complicadas, debido a la variedad de cosas que pueden conectarse a un
+adaptador SCSI. Las direcciones consisten de de seis o siete campos
+separados por comas: el esquema actual, el tipo de dispositivo, el n&uacute;mero
+de socket, el canal SCSI, ID, y el n&uacute;mero l&oacute;gico de unidad, y
+opcionalmente, el n&uacute;mero de partici&oacute;n. El tipo de dispositivo ser&aacute; <CODE>sd</CODE>
+para discos, <CODE>st</CODE> para cintas, <CODE>sr</CODE> para unidades de CD-ROM, y
+<CODE>sg</CODE> para dispositivos SCSI gen&eacute;ricos. Para la mayor&iacute;a de
+configuraciones, la unidad l&oacute;gica y el canal SCSI ser&aacute;n <CODE>0</CODE>. Para
+unidades de disco con varias particiones, <CODE>scsi.opts</CODE> se llamar&aacute;
+primero para toda la unidad, con direcciones de cinco campos. El script
+deber&aacute; establecer la variable PARTS una lista de particiones.  Entonces,
+<CODE>scsi.opts</CODE> ser&aacute; llamado para cada partici&oacute;n, con las direcciones m&aacute;s
+largas, de siete campos. 
+<P>Si su kernel no tiene un controlador de alto nivel (disco, cinta, etc) 
+para un dispositivo SCSI en particular, entonces no ser&aacute; configurado por
+los controladores PCMCIA. Como efecto lateral, el nombre del dispositivo
+en <CODE>/var/run/stab</CODE> ser&aacute; algo como <CODE>sd#nnnn</CODE> donde <CODE>nnnn</CODE>
+es un n&uacute;mero hexadecimal de cuatro d&iacute;gitos. Esto pasa cuando <CODE>cardmgr</CODE>
+no puede traducir una ID de un dispositivo SCSI a su nombre de dispositivo
+correspondiente en Linux.
+<P>Es posible modularizar los controladores SCSI de alto nivel para que
+puedan cargarse seg&uacute;n demanda. Para hacerlo, necesita editar
+<CODE>/etc/pcmcia/config</CODE> para decirle a <CODE>cardmgr</CODE> qu&eacute; m&oacute;dulos extra
+necesitan ser cargados cuando sea configurado su adaptador. Por ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       device "aha152x_cs"
+         class "scsi" module "scsi/scsi_mod", "scsi/sd_mod", "aha152x_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Especificar&iacute;a que se cargase el m&oacute;dulo principal SCSI y el m&oacute;dulo
+controlador de disco antes de cargar el m&oacute;dulo controlador PCMCIA normal.
+El script <CODE>Configure</CODE> de PCMCIA no detectar&aacute; autom&aacute;ticamente m&oacute;dulos
+SCSI modularizados, as&iacute; que necesitar&aacute; usar la opci&oacute;n de configuraci&oacute;n
+manual para habilitar el soporte SCSI. 
+<P>Encienda siempre los dispositivos SCSI antes de encender su port&aacute;til, o
+antes de insertar la tarjeta adaptadora, para que el bus SCSI est&eacute; listo
+cuando el adaptador se configure. Tambi&eacute;n hay que ser muy cuidadoso al
+expulsar un adaptador SCSI. Aseg&uacute;rese que todos los dispositivos SCSI
+asociados sean desmontados y cerrados antes de expulsar la tarjeta. La
+mejor forma de asegurar esto es usar <CODE>cardctl</CODE> o <CODE>cardinfo</CODE> para
+solicitar que se desactive la tarjeta antes de expulsarla f&iacute;sicamente. Por
+ahora, todos los dispositivos SCSI deber&aacute;n encenderse antes de conectar un
+adaptador SCSI, y deber&aacute;n permanecer conectados hasta que desconecte el
+adaptador y/o apague su port&aacute;til. 
+<P>Hay una complicaci&oacute;n potencial cuando se usan tarjetas que no se presentan
+con adaptadores de bus ISA ordinarios. El bus SCSI transporta una se&ntilde;al
+<I>termination power</I> (corriente de terminaci&oacute;n) que se necesita para que
+los terminadores pasivos SCSI ordinarios funcionen apropiadamente. Los
+adaptadores PCMCIA SCSI no suministran corriente de terminaci&oacute;n, as&iacute; que
+si se requiere, deber&aacute; proporcionarlo el dispositivo externo. Algunos
+dispositivos externos SCSI deben configurarse para suministrarlo. Otros,
+como el <I>Iomega Zip</I> y el <I>Syquest EZ</I>, usan terminadores activos
+que no dependen de ello. En algunos casos, puede ser necesario usar un
+bloque terminador especial como el <I>APS SCSI Sentry 2</I>, el cual tiene
+una fuente de alimentaci&oacute;n externa. Cuando configure la entrada para el
+dispositivo SCSI, h&aacute;galo teniendo en cuenta si alguno de sus dispositivos
+requieren o pueden suministrar corriente de terminaci&oacute;n o no.
+<P>
+<H3><A NAME="scsipar"></A> Par&aacute;metros de dispositivos SCSI </H3>
+
+<P>
+<P>Los siguientes par&aacute;metros pueden ser especificados en <CODE>scsi.opts</CODE>:
+<P>
+<DL>
+<P>
+<DT><B>DO_FSTAB</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si se debe a&ntilde;adir
+una entrada <CODE>/etc/fstab</CODE> para este dispositivo. 
+<P>
+<DT><B>DO_FSCK</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si se debe comprobar
+este dispositivo antes de ser montado, con <CODE>fsck -Ta</CODE>.
+<P>
+<DT><B>DO_MOUNT</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si este dispositivo
+debe montarse autom&aacute;ticamente al momento de insertar la tarjeta. 
+<P>
+<DT><B>FSTYPE, OPTS, MOUNTPT</B><DD><P>El tipo de sistema de archivos, opciones de
+montaje, y punto de montaje que se utilizar&aacute;n para la entrada en
+<CODE>fstab</CODE> y/o para montar el dispositivo. 
+<P>
+</DL>
+<P>Por ejemplo, un script para configurar una unidad de disco en SCSI ID 3,
+con dos particiones, y un CD-ROM en SCSI ID 6:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  case "$ADDRESS" in
+  *,sd,*,0,3,0)
+      # Este dispositivo tiene dos particiones...
+      PARTS="1 2"
+      ;;
+  *,sd,*,0,3,0,1)
+      # Opciones para la particion 1:
+      #  actualizar /etc/fstab, y montar un sistema de archivos ext2 en /usr1
+      DO_FSTAB="y" ; DO_FSCK="y" ; DO_MOUNT="y"
+      FSTYPE="ext2"
+      OPTS=""
+      MOUNTPT="/usr1"
+      ;;
+  *,sd,*,0,3,0,2)
+      # Opciones para la partici&oacute;n 2:
+      #  actualizar /etc/fstab, y montar un sistema de archivos MS-DOS en /usr2
+      DO_FSTAB="y" ; DO_FSCK="y" ; DO_MOUNT="y"
+      FSTYPE="msdos"
+      OPTS=""
+      MOUNTPT="/usr2"
+      ;;
+  *,sr,*,0,6,0)
+      # Opciones para un CD-ROM en SCSI ID 6
+      PARTS=""
+      DO_FSTAB="y" ; DO_FSCK="n" ; DO_MOUNT="y"
+      FSTYPE="iso9660"
+      OPTS="ro"
+      MOUNTPT="/cdrom"
+      ;;
+  esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3><A NAME="scsicom"></A> Comentarios acerca de tarjetas espec&iacute;ficas </H3>
+
+<P>
+<P>
+<UL>
+<LI>La tarjeta <I>Adaptec APA-1480 CardBus</I> necesita una ventana de
+puerto de E/S grande (256 puertos contiguos alineados en un l&iacute;mite de 256
+puertos). Puede que sea necesario incluir las regiones de los puertos de
+E/S en <CODE>/etc/pcmcia/config.opts</CODE> para garantizar que cada ventana
+pueda encontrarse.
+</LI>
+<LI>No est&aacute; soportado el adaptador <I>Adaptec APA-460 SlimSCSI</I>. Esta
+tarjeta se vendi&oacute; originalmente bajo el nombre de Trantor, y cuando
+Adaptec se uni&oacute; a Trantor, continuaron vendiendo la tarjeta Trantor con
+etiqueta Adaptec. La <I>APA-460</I> no es compatible con ning&uacute;n controlador
+de Linux existente.
+</LI>
+<LI>He sido informado de la mala interacci&oacute;n entre la tarjeta <I>New
+Media Bus Toaster</I> y un scanner <I>UMAX Astra 1200s</I>. Debido a la
+complejidad del protocolo SCSI, cuando se diagnostican problemas con
+dispositivos SCSI, es digno de considerar que combinaciones incompatibles
+como esta pueden existir y no pueden documentarse. 
+</LI>
+</UL>
+<P>
+<P>
+<H3><A NAME="scsidiag"></A> Diagn&oacute;stico de problemas con adaptadores SCSI </H3>
+
+<P>
+<P>
+<UL>
+<LI>Con el controlador <CODE>aha152x_cs</CODE> (usado por Adaptec, New Media, y
+algunos m&aacute;s), parece que el soporte SCSI de conexi&oacute;n/reconexi&oacute;n constituye
+una fuente de problemas frecuentes con dispositivos de cinta. Para
+desactivar esta «caracter&iacute;stica», a&ntilde;ada lo siguiente a
+<CODE>/etc/pcmcia/config.opts</CODE>: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+  module "aha152x_cs" opts "reconnect=0"
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Con el controlador <CODE>aha152x_cs</CODE>, ciertos dispositivos parecen
+requerir un tiempo de espera de inicio m&aacute;s grande, controlado con el
+par&aacute;metro <CODE>reset_delay</CODE> del m&oacute;dulo. La unidad CDR <I>Yamaha 4416S</I> es
+uno de esos dispositivos. El resultado es que el dispositivo es
+identificado sin problemas, y luego se congela el sistema. En esos casos,
+pruebe:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+       module "aha152x_cs" opts "reset_delay=500"
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Otra fuente potencial de problemas en el sondeo de dispositivos SCSI
+es el tanteo de LUNs m&uacute;ltiples. Si ve que la detecci&oacute;n de un dispositivo
+es realizada sin problemas, seguida de «timeouts» del bus SCSI cuando se
+sondea el LUN 1 para ese dispositivo, debe desactivar la opci&oacute;n
+<CODE>CONFIG_SCSI_MULTI_LUN</CODE> del kernel. 
+</LI>
+<LI>Si tiene compilado el soporte SCSI modularmente (<CODE>CONFIG_SCSI</CODE> es
+<CODE>m</CODE>), debe modificar <CODE>/etc/pcmcia/config</CODE> para cargar los
+m&oacute;dulos SCSI antes de que se cargue el controlador <CODE>*_cs</CODE> apropiado. 
+</LI>
+<LI>Si obtiene mensajes de tipo <CODE>aborting command due to timeout</CODE>
+(abortando el comando debido a timeout), cuando se sondea el bus SCSI, es
+muy probable que tenga un conflicto de interrupciones.
+</LI>
+<LI>Si el controlador del host avisa <CODE>no SCSI devices found</CODE> (no se
+han encontrado dispositivos SCSI), verifique que el kernel fue compilado
+con los controladores SCSI de alto nivel apropiados para sus dispositivos
+(por ejemplo, disco, cinta, CD-ROM, y/o gen&eacute;ricos). Si falta un
+controlador de alto nivel, los dispositivos de ese tipo se ignorar&aacute;n. 
+</LI>
+</UL>
+<P>
+<P>
+<H2><A NAME="mem"></A> <A NAME="ss4.7">4.7 Tarjetas de memoria PCMCIA </A>
+</H2>
+
+<P>
+<P>El controlador <CODE>memory_cs</CODE> maneja todos los tipos de tarjetas de
+memoria, y tambi&eacute;n proporciona acceso directo al espacio de la direcci&oacute;n
+de memoria PCMCIA para tarjetas que tienen otras funciones. Cuando se
+carga, crea una combinaci&oacute;n de dispositivos de caracteres y de bloques.
+Revise la p&aacute;gina del manual del m&oacute;dulo para ver una descripci&oacute;n completa
+del esquema de nombres de estos dispositivos. Los dispositivos de bloques
+se usan para tener acceso a disco (creando y montando sistemas de
+archivos, etc.).  Los dispositivos de caracteres son para lecturas en
+bruto (que no se procesan) que no se guardan en el buffer y son escritas
+en posiciones arbitrarias. 
+<P>La direcci&oacute;n de dispositivo que se pasa a <CODE>memory.opts</CODE> consiste de dos
+campos: el esquema, y el n&uacute;mero de socket. Las opciones se aplican a la
+primera partici&oacute;n de memoria com&uacute;n en la tarjeta correspondiente.
+<P>Algunas tarjetas de memoria antiguas, y la mayor&iacute;a de las tarjetas de RAM
+simple est&aacute;tica, carecen de <I>Card Information Structure, CIS</I>
+(Estructura de Informaci&oacute;n de Tarjeta), que es el esquema que las tarjetas
+PCMCIA usan para identificarse a si mismas. Normalmente, <CODE>cardmgr</CODE>
+asumir&aacute; que una tarjeta que carece de CIS es una tarjeta de memoria
+simple, y cargar&aacute; el controlador <CODE>memory_cs</CODE>. Por tanto, un efecto
+lateral es que otros tipos de tarjetas pueden detectarse err&oacute;neamente como
+tarjetas de memoria. 
+<P>El controlador <CODE>memory_cs</CODE> usa un algoritmo heur&iacute;stico para determinar
+la capacidad de esas tarjetas. Este algoritmo no funciona con tarjetas
+protegidas contra escritura, y puede cometer errores en algunos otros
+casos. Si una tarjeta se configura de forma err&oacute;nea, su tama&ntilde;o puede
+especificarse expl&iacute;citamente cuando se haga uso de los comandos <CODE>dd</CODE> o
+<CODE>mkfs</CODE>. 
+<P>
+<H3><A NAME="mempar"></A> Par&aacute;metros de dispositivos de memoria </H3>
+
+<P>
+<P>
+<DL>
+<P>
+<DT><B>DO_FSTAB</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si se debe a&ntilde;adir
+una entrada <CODE>/etc/fstab</CODE> para este dispositivo. 
+<P>
+<DT><B>DO_FSCK</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si se debe comprobar
+este dispositivo antes de ser montado, con <CODE>fsck -Ta</CODE>.
+<P>
+<DT><B>DO_MOUNT</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si este dispositivo
+debe montarse autom&aacute;ticamente en el momento de insertar la tarjeta. 
+<P>
+<DT><B>FSTYPE, OPTS, MOUNTPT</B><DD><P>El tipo de sistema de archivos, opciones de
+montaje, y punto de montaje que se utilizar&aacute;n para la entrada en
+<CODE>fstab</CODE> y/o para montar el dispositivo.
+<P>
+</DL>
+<P>He aqu&iacute; un ejemplo de un script que montar&aacute; autom&aacute;ticamente las tarjetas
+de memoria bas&aacute;ndose en el socket en que est&eacute;n insertadas:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,0,0)
+           # Montar sistema de archivos, pero no actualizar /etc/fstab
+           DO_FSTAB="n" ; DO_FSCK="y" ; DO_MOUNT="y"
+           FSTYPE="ext2" ; OPTS=""
+           MOUNTPT="/mem0"
+           ;;
+       *,1,0)
+           # Montar sistema de archivos, pero no actualizar /etc/fstab
+           DO_FSTAB="n" ; DO_FSCK="y" ; DO_MOUNT="y"
+           FSTYPE="ext2" ; OPTS=""
+           MOUNTPT="/mem1"
+           ;;
+       esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3><A NAME="flash"></A> Uso de tarjetas de memoria flash </H3>
+
+<P>
+<P>La direcci&oacute;n de dispositivo que se pasa a <CODE>ftl.opts</CODE> consiste en tres o
+cuatro campos: el esquema, el n&uacute;mero de socket, el n&uacute;mero de regi&oacute;n, y
+opcionalmente, el n&uacute;mero de partici&oacute;n. La mayor&iacute;a de tarjetas flash tienen
+s&oacute;lo una regi&oacute;n de memoria flash, as&iacute; que el n&uacute;mero de regi&oacute;n ser&aacute;
+generalmente cero siempre. 
+<P>Para usar una tarjeta de memoria flash como un dispositivo de bloques del
+tipo de un disco ordinario, primero se crea una partici&oacute;n FTL, o <I>flash
+translation layer</I>, en el dispositivo por medio del comando
+<CODE>ftl_format</CODE>. Esta capa oculta los detalles espec&iacute;ficos de dispositivo
+de la programaci&oacute;n de la memoria flash y hace que la tarjeta se vea como
+un simple dispositivo de bloques. Por ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       ftl_format -i /dev/mem0c0c
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>N&oacute;tese que este comando accede a la tarjeta por medio de la interface
+<I>raw</I> de la tarjeta de memoria. Una vez formateada, la tarjeta puede
+tratarse como un dispositivo de bloques ordinario por medio del
+controlador <CODE>ftl_cs</CODE>. Por ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       mke2fs /dev/ftl0c0
+       mount -t ext2 /dev/ftl0c0 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La nomenclatura de dispositivos FTL es dif&iacute;cil. Los n&uacute;meros menores de los
+dispositivos tienen tres partes: el n&uacute;mero de tarjeta, el n&uacute;mero de regi&oacute;n
+en esa tarjeta, y opcionalmente, la partici&oacute;n dentro de esa regi&oacute;n. Una
+regi&oacute;n puede ser tratada como un simple dispositivo de bloques sin tabla
+de partici&oacute;n (como un disquete), o puede particionarse como un disco duro.
+El dispositivo <CODE>ftl0c0</CODE> es la tarjeta <CODE>0</CODE>, regi&oacute;n de memoria com&uacute;n
+<CODE>0</CODE>, la regi&oacute;n entera. Los dispositivos de <CODE>ftl0c0p1</CODE> a
+<CODE>ftl0c0p4</CODE> son primariamente las particiones de <CODE>1</CODE> a <CODE>4</CODE> si la
+regi&oacute;n ha sido particionada.
+<P>Hay dos formatos mayores para tarjetas de memoria flash: el estilo
+<I>FTL</I>, y el sistema de archivos <I>Microsoft Flash</I>. El formato FTL es
+generalmente m&aacute;s flexible porque permite que pueda utilizarse cualquier
+sistema de archivos de alto nivel en una tarjeta flash como si fuera un
+dispositivo de disco ordinario. El <I>FFS</I> es un tipo sistema de archivos
+completamente diferente. Linux no puede manejar actualmente tarjetas
+formateadas con <I>FFS</I>. 
+<P>Las tarjetas flash <I>Intel Series 100</I> usan el primer bloque flash de
+128k para almacenar la informaci&oacute;n de la configuraci&oacute;n de la tarjeta. Para
+prevenir el borrado accidental de esta informaci&oacute;n, <CODE>ftl_format</CODE>
+autom&aacute;ticamente detectar&aacute; esto y saltar&aacute; al primer bloque cuando se cree
+una partici&oacute;n FTL. 
+<P>
+<H2><A NAME="ss4.8">4.8 Tarjetas PCMCIA para unidades ATA/IDE</A>
+</H2>
+
+<P>
+<P>El soporte para unidades ATA/IDE se basa en el controlador IDE regular del
+kernel. La parte espec&iacute;fica PCMCIA del controlador es <CODE>ide_cs</CODE>.
+Aseg&uacute;rese de usar <CODE>cardctl</CODE> o <CODE>cardinfo</CODE> para apagar la tarjeta
+ATA/IDE antes de expulsarla, porque el controlador no fue programado a
+prueba de extracci&oacute;n en caliente. 
+<P>La direcci&oacute;n de dispositivo que se pasa a <CODE>ide.opts</CODE> consiste de tres o
+cuatro campos: el esquema actual, el n&uacute;mero de socket, el n&uacute;mero de serie
+de la unidad, y un n&uacute;mero opcional de partici&oacute;n. El comando <CODE>ide_info</CODE>
+puede usarse para obtener el n&uacute;mero de serie del dispositivo IDE. Tal y
+como sucede con los dispositivos SCSI, <CODE>ide.opts</CODE> se llama primero para
+el dispositivo entero. Si <CODE>ide.opts</CODE> retorna una lista de particiones
+en la variable <CODE>PARTS</CODE>, el script entonces se llamar&aacute; para cada
+partici&oacute;n.
+<P>
+<H3><A NAME="ide"></A> Par&aacute;metros para discos ATA/IDE </H3>
+
+<P>
+<P>Los siguientes par&aacute;metros se pueden especificar en <CODE>ide.opts</CODE>:
+<P>
+<DL>
+<P>
+<DT><B>DO_FSTAB</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si se debe a&ntilde;adir
+una entrada <CODE>/etc/fstab</CODE> para este dispositivo. 
+<P>
+<DT><B>DO_FSCK</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si se debe comprobar
+este dispositivo antes de ser montado, con <CODE>fsck -Ta</CODE>.
+<P>
+<DT><B>DO_MOUNT</B><DD><P>Es una opci&oacute;n booleana (y/n): Especifica si este dispositivo
+debe montarse autom&aacute;ticamente al momento de insertar la tarjeta. 
+<P>
+<DT><B>FSTYPE, OPTS, MOUNTPT</B><DD><P>El tipo de sistema de archivos, opciones de
+montaje, y punto de montaje que se utilizar&aacute;n para la entrada en
+<CODE>fstab</CODE> y/o para montar el dispositivo.
+<P>
+</DL>
+<P>He aqui un ejemplo del archivo <CODE>ide.opts</CODE> para montar la primera
+partici&oacute;n de cualquier tarjeta ATA/IDE en <CODE>/mnt</CODE>. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       case "$ADDRESS" in
+       *,*,*,1)
+           DO_FSTAB="y" ; DO_FSCK="y" ; DO_MOUNT="y"
+           FSTYPE="msdos"
+           OPTS=""
+           MOUNTPT="/mnt"
+           ;;
+       *,*,*)
+           PARTS="1"
+           ;;
+       esac
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<H3><A NAME="idediag"></A> Diagn&oacute;stico de problemas con adaptadores ATA/IDE </H3>
+
+<P>
+<P>
+<UL>
+<LI>Algunas unidades IDE violan la especificaci&oacute;n PCMCIA al requerir un
+tiempo mayor para iniciar que el m&aacute;ximo permitido para la configuraci&oacute;n de
+la tarjeta. Desde la versi&oacute;n <CODE>3.0.6</CODE>, el controlador <CODE>ide_cs</CODE>
+autom&aacute;ticamente intentar&aacute; sondear el dispositivo para darle tiempo de
+iniciarlos. Con los controladores antiguos, necesita cargar el m&oacute;dulo
+<CODE>pcmcia_core</CODE> con:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+       CORE_OPTS="unreset_delay=400"
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Para usar una unidad de CD-ROM ATA/IDE, el kernel debe compilarse
+con <CODE>CONFIG_BLK_DEV_IDECD</CODE> activado. Normalmente ser&aacute; el caso para los
+kernels est&aacute;ndar, sin embargo es bueno estar enterado por si compila un
+kernel personalizado. 
+</LI>
+</UL>
+<P>
+<H2><A NAME="multi"></A> <A NAME="ss4.9">4.9 Tarjetas multifunci&oacute;n </A>
+</H2>
+
+<P>
+<P>Se puede compartir una simple interrupci&oacute;n entre varios controladores,
+como el controlador serie y el controlador ethernet: en efecto: la
+especificaci&oacute;n PCMCIA requiere que todas las funciones de las tarjetas
+compartan la misma interrupci&oacute;n. Normalmente, todas las funciones de las
+tarjetas est&aacute;n disponibles sin tener que intercambiar controladores. 
+<P>El uso simult&aacute;neo de dos funciones de tarjetas es algo «dif&iacute;cil» y varios
+fabricantes de hardware han implementado el compartir interrupciones en
+sus propias formas incompatibles (y a veces propietarias). Los
+controladores para algunas tarjetas (Ositech Jack de Diamond, 3Com 3c562,
+Linksys) soportan de forma apropiada el acceso simult&aacute;neo, pero otras
+(Megahertz en particular) no.
+<P>Los kernels antiguos no soportan el compartir interrupciones entre
+diferentes controladores de dispositivos, as&iacute; que no es posible para los
+controladores PCMCIA el configurar esta tarjeta para acceso simult&aacute;neo
+ethernet y m&oacute;dem. Los controladores ethernet y serie se cargan
+autom&aacute;ticamente. Sin embargo, el controlador ethernet por omisi&oacute;n «posee»
+la interrupci&oacute;n de la tarjeta. Para usar el m&oacute;dem, puede descargar el
+controlador ethernet y reconfigurar el puerto serie haciendo algo como:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       ifconfig eth0 down
+       rmmod 3c589_cs
+       setserial /dev/modem autoconfig auto_irq
+       setserial /dev/modem
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El segundo <CODE>setserial</CODE> debe verificar que el puerto ha sido configurado
+para usar la interrupci&oacute;n que previamente utilizaba el controlador
+ethernet. 
+<P>
+<P>
+<HR>
+<A HREF="PCMCIA-Como-5.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-3.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc4">Índice general</A>
+</BODY>
+</HTML>

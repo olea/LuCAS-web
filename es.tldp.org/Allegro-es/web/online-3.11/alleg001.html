@@ -1,0 +1,422 @@
+<html><head><title>01 Rutinas de configuraci¢n</title><body>
+<h1><a name="01 Rutinas de configuración">01 Rutinas de configuración</a></h1>
+<p>
+<ul><h4>
+<li><a href="#set_config_file">set_config_file</a>
+<li><a href="#set_config_data">set_config_data</a>
+<li><a href="#override_config_file">override_config_file</a>
+<li><a href="#override_config_data">override_config_data</a>
+<li><a href="#push_config_state">push_config_state</a>
+<li><a href="#pop_config_state">pop_config_state</a>
+<li><a href="#hook_config_section">hook_config_section</a>
+<li><a href="#config_is_hooked">config_is_hooked</a>
+<li><a href="#get_config_string">get_config_string</a>
+<li><a href="#get_config_int">get_config_int</a>
+<li><a href="#get_config_hex">get_config_hex</a>
+<li><a href="#get_config_float">get_config_float</a>
+<li><a href="#get_config_id">get_config_id</a>
+<li><a href="#get_config_argv">get_config_argv</a>
+<li><a href="#get_config_text">get_config_text</a>
+<li><a href="#set_config_string">set_config_string</a>
+<li><a href="#set_config_int">set_config_int</a>
+<li><a href="#set_config_hex">set_config_hex</a>
+<li><a href="#set_config_float">set_config_float</a>
+<li><a href="#set_config_id">set_config_id</a>
+</h4></ul>
+<p><br><br>
+<p>
+Varias partes de Allegro, como las rutinas de sonido y la función
+load_joystick_data, requieren cierta información de configuración. Estos
+datos son almacenados en ficheros de texto como una colección de líneas
+"variable=valor", junto con comentarios que empiezan con el caracter '#' y
+acaban al fina de la línea. El fichero de configuración puede estar dividido
+en secciones que empiezan con una línea "[nombresección]". Cada sección
+tiene un nombre único, para prevenir conflictos con los nombres, pero la
+variable que no esté en una sección determinada es considerada perteneciente
+a todas simultáneamente.
+<p>
+Por defecto los datos de configuración son leídos de un fichero llamado
+allegro.cfg o sound.cfg, que puede estar en el mismo directorio que el
+programa ejecutable, o el en directorio apuntado por la variable de entorno
+ALLEGRO. Si no te gusta esto, puedes usar cualquier nombre de fichero
+específico que quieras, o usar un bloque binario de datos de configuración
+propio de tu programa (que por ejemplo podría ser cargado desde un fichero
+de datos).
+<p>
+Puedes almacenar cualquier información que quieras en el fichero de
+configuración, junto con las variables estándar usadas por Allegro (mira
+abajo).
+<p>
+<b>void <a name="set_config_file">set_config_file</a>(char *filename);</b><br>
+   Especifica el fichero de configuración que será usado por las siguientes
+   rutinas de configuración. Si no llama esta función, Allegro usará el
+   fichero allegro.cfg, mirando primero en el directorio de su programa y
+   luego en el directorio apuntado por la variable de entorno ALLEGRO.
+<p>
+<b>void <a name="set_config_data">set_config_data</a>(char *data, int length);</b><br>
+   Especifica un bloque de datos que será usados por las siguientes rutinas
+   de configuración, que previamente ha cargado del disco (ejemplo: como
+   parte de un formato propio más complicado, o desde un fichero de datos).
+   Esta rutina hace una copia de la información, por lo que puede liberar
+   los datos después de llamarla.
+<p>
+<b>void <a name="override_config_file">override_config_file</a>(char *filename);</b><br>
+   Especifica un fichero que contiene una configuración de sobreescritura.
+   Sus datos serán usados además de los parámetros del fichero de
+   configuración principal, y si hay una misma variable en ambos ficheros,
+   la del fichero de sobreescritura tendrá preferencia. Esto puede ser usado
+   por las aplicaciones del programador que deben tener ciertos valores de
+   configuración fijos, pero otros del fichero de configuración principal
+   pueden ser modificados por el usuario. Por ejemplo, podría especificar
+   una frecuencia de muestreo de sonido y un fichero de instrumentos IBK
+   específicos, pero el usuario podría usar un fichero sound.cfg o
+   allegro.cfg para especificar los ajustes de su tarjeta de sonido
+   (puertos, valores IRQ, etc).
+<p>
+<b>void <a name="override_config_data">override_config_data</a>(char *data, int length);</b><br>
+   Versión de override_config_file() que usa un bloque de datos que ya ha
+   sido cargado en memoria.
+<p>
+<b>void <a name="push_config_state">push_config_state</a>();</b><br>
+   Almacena el estado actual de configuración (nombre de fichero, valores de
+   las variables, etc) en una pila interna, permitiéndole seleccionar otro
+   fichero de configuración para después recuperar la configuración actual
+   llamando pop_config_state(). Esta función está pensada para uso interno
+   por otras funciones de la biblioteca, por ejemplo, cuando quiere
+   especificar el fichero de configuración de la función
+   save_joystick_data(), almacena la configuración actual antes de usar la
+   del fichero especificado.
+<p>
+<b>void <a name="pop_config_state">pop_config_state</a>();</b><br>
+   Recupera el estado previo de la configuración almacenado por la función
+   push_config_state() sobreescribiendo el código del fichero de
+   configuración actual.
+<p>
+<b>void <a name="hook_config_section">hook_config_section</a>(char *section,</b><br>
+<b>                         int (*intgetter)(char *name, int def),</b><br>
+<b>                         char *(*stringgetter)(char *name, char *def),</b><br>
+<b>                         void (*stringsetter)(char *name, char *value));</b><br>
+   Toma control de la sección especificada del fichero de configuración,
+   para que sus funciones de enganche sean usadas para manipularlo, en vez
+   del acceso de disco normal. Si tanto las funciones getter como setter son
+   NULL, un enganche presente será desenganchado. Las funciones enganchadas
+   tienen la máxima prioridad. Si una sección está enganchada, la función de
+   enganche siempre será llamada, por lo que puede enganchar una sección
+   '#': incluso tengrá prioridad sobre la función verride_config_file().
+<p>
+<b>int <a name="config_is_hooked">config_is_hooked</a>(char *section);</b><br>
+   Devuelve TRUE si la sección especificada está siendo enganchada.
+<p>
+<b>char *<a name="get_config_string">get_config_string</a>(char *section, char *name, char *def);</b><br>
+   Recupera la cadena de texto de la variable name del fichero de
+   configuración actual. Si la variable mencionada no es encontrada, el
+   valor def es devuelto. El nombre de sección puede ser NULL para aceptar
+   variables de cualquier parte del fichero, o puede ser usado para
+   controlar en qué conjunto de parámetros (ejemplo: sonido o joystick) va a
+   buscar la variable.
+<p>
+<b>int <a name="get_config_int">get_config_int</a>(char *section, char *name, int def);</b><br>
+   Lee un entero de la variable name del fichero de configuración actual.
+   Lea el comentario de la función get_config_string().
+<p>
+<b>int <a name="get_config_hex">get_config_hex</a>(char *section, char *name, int def);</b><br>
+   Lee un entero de la variable name del fichero de configuración actual, en
+   formato hexadecimal. Lea el comentario de la función get_config_string().
+<p>
+<b>float <a name="get_config_float">get_config_float</a>(char *section, char *name, float def);</b><br>
+   Lee un número en coma flotante de la variable name del fichero de
+   configuración actual. Lea el comentario de la función
+   get_config_string().
+<p>
+<b>int <a name="get_config_id">get_config_id</a>(char *section, char *name, int def);</b><br>
+   Lee una variable ID de 4 letras del fichero de configuración actual. Lea
+   el comentario de la función get_config_string();
+<p>
+<b>char **<a name="get_config_argv">get_config_argv</a>(char *section, char *name, int *argc);</b><br>
+   Lee una lista de tokens (palabras separadas por espacios) del fichero de
+   configuración actual, devolviendo una lista de argumentos al estilo de
+   argv, y ajustando argc al número de tokens (a diferencia de argc/argv,
+   esta lista tiene como base el cero). Devuelve NULL y ajusta argc a cero
+   si la variable no esta presente. La lista de tokens es almacenada en un
+   buffer temporal que será sobreescrito por la siguiente llamada a
+   get_config_argv(), por lo que no espere que los datos persistan allí.
+<p>
+<b>char *<a name="get_config_text">get_config_text</a>(char *msg);</b><br>
+   Esta función es usada principalmente por código interno de la biblioteca,
+   pero también puede serle útil a los programadores de aplicaciones. Usa el
+   fichero language.dat para mirar una versión traducida del parámetro en el
+   lenguage actualmente seleccionado, devolviendo una traducción si ésta
+   existe o una copia del parámetro si no hay otra cosa disponible. Esto es
+   básicamente lo mismo que llamar get_config_string() con [language] como
+   sección, msg como nombre de variable, y msg como como valor por defecto.
+<p>
+<b>void <a name="set_config_string">set_config_string</a>(char *section, char *name, char *val);</b><br>
+   Escribe una cadena en la variable name del fichero de configuración
+   actual, sobreescribiendo cualquier valor previo, o borra la variable si
+   val es NULL. El nombre de sección puede ser NULL para escribir la
+   variable en la raíz del fichero, o puede ser usada para especificar la
+   sección en la que desea insertar la variable. El fichero alterado será
+   puesto en memoria cache, y no será escrito en disco hasta que llame
+   allegro_exit(). Tenga en cuenta que sólo puede escribir en los ficheros
+   de este modo, por lo que la función no tendrá efecto si el fichero de
+   configuración actual fue especificado con set_config_data() en vez de con
+   set_config_file().
+<p>
+   Como caso especial, las variables o nombres de sección que comienzan con
+   el carácter '#' son tratadas especialmente y no serán leydas o escritas
+   en disco. Los paquetes adicionales pueden usar esto para almacenar
+   información de version y otra información de estado en el módulo de
+   configuración, desde el cual puede ser leída con la función
+   get_config_string().
+<p>
+<b>void <a name="set_config_int">set_config_int</a>(char *section, char *name, int val);</b><br>
+   Escribe un entero en una variable en el fichero de configuración actual.
+   Lea el comentario de set_config_string().
+<p>
+<b>void <a name="set_config_hex">set_config_hex</a>(char *section, char *name, int val);</b><br>
+   Escribe un entero en una variable en el fichero de configuración actual,
+   en formato hexadecimal. Lea el comentario de set_config_string().
+<p>
+<b>void <a name="set_config_float">set_config_float</a>(char *section, char *name, float val);</b><br>
+   Escribe un número en coma flotante en una variable en el fichero de
+   configuración actual. Lea el comentario de set_config_string().
+<p>
+<b>void <a name="set_config_id">set_config_id</a>(char *section, char *name, int val);</b><br>
+   Escribe una variable ID de 4 letras en el fichero de configuración
+   actual. Lea el comentario de la función set_config_string().
+<p>
+<p><hr><p>
+Allegro usa las siguientes variables estándar del fichero de configuración:
+<p><ul><li>
+gfx_card = x<br>
+   Especifica el controlador gráfico a usar cuando el programa haga una
+   petición GFX_AUTODETECT. Se pueden sugerir múltiples controladores
+   posibles con líneas extra en la forma "gfx_card2 = x", "gfx_card3 = x",
+   etc. La identificación ID del controlador debe ser una de las siguientes:
+<p><pre>
+      VGA      - VGA Estándar
+      MODX     - Mode-X
+      VBE1     - VESA 1.x
+      VB2B     - VBE 2.0 (con bancos)
+      VB2L     - VBE 2.0 (lineal)
+      VBE3     - VBE 3.0
+      VBAF     - VBE/AF
+      XTND     - modo Xtended
+<p></pre><li>
+vbeaf_driver = x<br>
+   Especifica dónde buscar el controlador VBE/AF (vbeaf.drv). Si esta
+   variable no está activada, Allegro buscará en el directorio del programa,
+   y si no encuentra el driver buscará en los sitios estándar (c:\, o el
+   directorio especificado con la variable de entorno VBEAF_PATH).
+<p><li>
+keyboard = x<br>
+   Especifica el mapa de teclado a usar. El parámetro es el nombre de un
+   mapa de teclado producido con la utilidad keyconf, y puede ser un nombre
+   de fichero normal o un nombre base como "us" o "uk". En el último caso,
+   Allegro buscará primero un fichero de configuración independiente con ese
+   nombre (ej: "uk.cfg") y después un objeto con ese nombre en el fichero
+   keyboard.dat (ej: "UK_CFG"). El fichero de configuración o el fichero
+   keyboard.dat pueden ser almacenados en el mismo directorio que su
+   programa, o en una directorio apuntado por la variable de entorno
+   ALLEGRO. Mire en el fichero keyboard.dat para ver los mapas de teclado
+   disponibles: en el momento de escribir esto están:
+<p><pre>
+      BE       - Bélgica
+      CH       - Suiza
+      CZ       - Checoslovaquia
+      DE       - Alemania
+      DK       - Dinamarca
+      DVORAK   - Dvorak
+      ES       - España
+      FI       - Finlandia
+      FR       - Francia
+      IT       - Italia
+      NO       - Noruega
+      PT       - Portugal
+      RU       - Rusia
+      SE       - Suecia
+      UK       - Reino Unido
+      US       - Estados Unidos
+<p></pre><li>
+language = x<br>
+   Especifica el fichero de lenguage que usarán los mensajes de error y de
+   sistema. El parámetro es el nombre de un fichero de traducción, y puede
+   ser el PATH absoluto de un fichero o un nombre base como "en" o "sp". Si
+   es lo último, Allegro buscará primero un fichero de configuración con un
+   nombre tipo "entext.cfg", y luego buscará un objeto con ese nombre en el
+   fichero language.dat (ejemplo: "ENTEXT_CFG"). El fichero de configuración
+   o el fichero language.dat pueden ser copiados en el mismo directorio que
+   el programa, o en un lugar apuntado por la variable de entorno ALLEGRO.
+   Mire el fichero language.dat para ver que traducciones están disponibles:
+   en el momento de escribir esto están:
+<p><pre>
+      CZ       - Checoslovaco
+      DE       - Alemán
+      DK       - Danés
+      EN       - Inglés
+      ES       - Español
+      FI       - Finlandes
+      FR       - Frances
+      IT       - Italiano
+      RU       - Ruso
+      SE       - Sueco
+<p></pre><li>
+mouse = x<br>
+   Tipo de ratón (Microsoft, Logitech, o NT). Cualquiera de estos métodos de
+   entrada deberían funcionar en la mayoría de los sistemas, a pesar de que
+   el código de Microsoft es más fiable. Algunos controladores de Logitech
+   tienen un fallo que hace que el ratón se mueva a un octavo de la
+   velocidad real, y debería usar el ajuste de Logitech si sufre este
+   problema.
+<p><li>
+[sound]<br>
+   Sección que contiene información sobre la configuración de sonido, usando
+   las variables:
+<p><ul><li>
+digi_card = x<br>
+   Elige el controlador para reproducir samples, donde x es un valor de los
+   siguientes:
+<p><pre>
+      0        - nada
+      SB       - Sound Blaster (autodetecta la versión)
+      SB10     - Sound Blaster 1.0
+      SB15     - Sound Blaster 1.5
+      SB20     - Sound Blaster 2.0
+      SBP      - Sound Blaster Pro
+      SB16     - Sound Blaster 16
+      ESS      - ESS AudioDrive
+      ESC      - Ensoniq Soundscape
+<p></pre><li>
+midi_card = x<br>
+   Elige el controlador para reproducir música MIDI, donde x es un valor de
+   los siguientes:
+<p><pre>
+      0        - nada
+      OPL      - Adlib (autodetecta versión OPL)
+      OPL2     - chip FM OPL2
+      OPLX     - Dual OPL2 (SB Pro-1)
+      OPL3     - chip FM OPL3
+      SB       - interfaz SB MIDI
+      MPU      - interfaz MIDI MPU-401
+      DIGI     - DIGMID software wavetable
+      AWE      - AWE32
+<p></pre><li>
+digi_input_card = x<br>
+   Determina el controlador de entrada de sonido digital, en el mismo
+   formato que la variable digi_card. Esto normalmente lo puede dejar en
+   blanco.
+<p><li>
+midi_input_card = x<br>
+   Determina el controlador de entrada de datos MIDI, en el mismo formato
+   que la variable midi_card. Esto normalmente lo puede dejar en blanco.
+<p><li>
+digi_voices = x<br>
+   Especifica el número mínimo de voces que reservará el controlador de
+   sonido digital. El número de voces posibles depende del controlador.
+<p><li>
+midi_voices = x<br>
+   Especifica el número mínimo de voces que reservará el controlador de
+   música MIDI. El número de voces posibles depende del controlador.
+<p><li>
+quality = x<br>
+   Controla la balanza calidad vs. rapidez del sonido del código de mezcla
+   de samples. Esto puede ser cualquiera de los siguientes valores:<pre>
+      0 - mezcla rápida de datos 8 bit en buffers de 16 bits
+      1 - mezcla verdadera de 16 bits (requiere una tarjeta de 16 bits
+          estéreo)
+      2 - mezcla 16 bits interpolada</pre>
+<p><li>
+flip_pan = x<br>
+   Ajustando esto entre 0 y 1 invierte la panoramización izquierda/derecha
+   de los samples, que puede ser necesaria porque algunas tarjetas SB
+   (incluyendo la mía :-) crean la imagen estéro al revés.
+<p><li>
+sb_port = x<br>
+   Determina el puerto de la SB (esto es normalmente 220).
+<p><li>
+sb_dma = x<br>
+   Determina el canal DMA de la SB (esto es normalmente 1).
+<p><li>
+sb_irq = x<br>
+   Determina el IRQ de la SB (esto es normalmente 7).
+<p><li>
+sb_freq = x<br>
+   Ajusta la frecuencia de los samples. Con el controlador de la SB, los
+   valores posibles son 11906 (cualquier SB), 16129 (cualquier SB), 22727
+   (SB 2.0 y superiores), y 45454 (solo en SB 2.0 o SB16, no la SB Pro
+   estéreo). Con el controlador de la ESS Audiodrive, los valores posibles
+   son 11363, 17046, 22729, o 44194. Con la Ensoniq Soundscape, los valores
+   posibles son 11025, 16000, 22050, o 48000. No se preocupe si ajusta un
+   valor inexistente por error: Allegro lo redondeará automáticamente a la
+   frecuencia más cercana soportada por su tarjeta de sonido.
+<p><li>
+fm_port = x<br>
+   Determina el puerto del chip OPL (esto es normalmente 388).
+<p><li>
+mpu_port = x<br>
+   Determina el puerto de la interfaz MIDI MPU-401 (esto es normalmente 330).
+<p><li>
+mpu_irq = x<br>
+   Determina el IRQ del MPU-401 (esto es normalmente igual a sb_irq).
+<p><li>
+digi_volume = x<br>
+   Ajusta el volumen de reproducción de sonidos, de 0 a 255.
+<p><li>
+midi_volume = x<br>
+   Ajusta el volumen de reproducción de música midi, de 0 a 255.
+<p><li>
+ibk_file = x<br>
+   Especifica el nombre de un fichero .IBK que será usado para sustituir el
+   conjunto estándar de instrumentos Adlib.
+<p><li>
+ibk_drum_file = x<br>
+   Especifica el nombre de un fichero .IBK que será usado para sustituir el
+   conjunto estándar de percusión Adlib.
+<p><li>
+patches = x<br>
+   Especifica dónde encontrar el conjunto de samples para el controlador
+   DIGMID. Esto puede ser un directorio al estilo Gravis conteniendo una
+   colección de ficheros .pat y un índice default.cfg, o un fichero de datos
+   producido por la utilidad pat2dat. Si esta variable no es especificada,
+   Allegro buscará un fichero default.cfg o patches.dat en el directorio del
+   programa, en el directorio apuntado por la variable de entorno ALLEGRO, y
+   en un directorio estándar GUS apuntado por la variable de entorno
+   ULTRASND.
+<p></ul><li>
+[midimap]<br>
+   Si está usando los controladores de salida MIDI SB o MPU-401 con un
+   sintetizador externo que no es compatible General MIDI, puede usar la
+   sección midmap del fichero de configuración para especificar una tabla de
+   mapa para convertir los números de los patches GM en sonidos apropiados
+   de su sintetizador. Esto es una muestra real de indulgencia propia. Tengo
+   un Yamaha TG500, que tiene algunos sonidos geniales pero no tiene
+   conjunto de patches GM, y simplemente tenía que hacerlo funcionar de
+   alguna manera...
+<p>
+   Esta sección consiste de una serie de líneas en la forma:
+<p><ul><li>
+p&lt;n&gt; = bank0 bank1 prog pitch<br>
+   Con este comando, n es el número de programa GM a cambiar (1-128), bank0
+   y bank1 son los dos bancos de mensajes de cambio a mandar a tu
+   sintetizador (en controladores #0 y #32), prog es el mensaje de cambio de
+   programa a tu sintetizador, y pitch es el número de semitonos a cambiar
+   para todo lo que suene con ese sonido. Ajustando los números de cambio de
+   banco a -1 hará que no sean mandados.
+<p>
+   Por ejemplo, la línea:
+<p>
+      p36 = 0 34 9 12
+<p>
+   especifica que cuando el programa 36 GM (que es un bajo) sea
+   seleccionado, Allegro mandará un mensaje de cambio de banco #0 con el
+   parámetro 0, un mensaje de cambio de banco #32 con el parámetro 34, un
+   cambio de programa con el parámetro 9, y entonces lo subirá todo una
+   octava.
+<p></ul><li>
+[joystick]<br>
+   Sección que contiene un conjunto de variables usadas por las funciones
+   save_joystick_data() y load_joystick_data().
+<p></ul>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

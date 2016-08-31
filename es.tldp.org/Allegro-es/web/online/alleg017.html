@@ -1,0 +1,634 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 17 Renderización de polígonos
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="17 Renderización de polígonos">17 Renderización de polígonos</a></h1>
+
+<ul>
+<li><a href="#clear_scene">clear_scene</a>
+<li><a href="#clear_zbuffer">clear_zbuffer</a>
+<li><a href="#clip3d">clip3d</a>
+<li><a href="#clip3d_f">clip3d_f</a>
+<li><a href="#create_scene">create_scene</a>
+<li><a href="#create_sub_zbuffer">create_sub_zbuffer</a>
+<li><a href="#create_zbuffer">create_zbuffer</a>
+<li><a href="#destroy_scene">destroy_scene</a>
+<li><a href="#destroy_zbuffer">destroy_zbuffer</a>
+<li><a href="#polygon3d">polygon3d</a>
+<li><a href="#polygon3d_f">polygon3d_f</a>
+<li><a href="#quad3d">quad3d</a>
+<li><a href="#quad3d_f">quad3d_f</a>
+<li><a href="#render_scene">render_scene</a>
+<li><a href="#scene_gap">scene_gap</a>
+<li><a href="#scene_polygon3d">scene_polygon3d</a>
+<li><a href="#scene_polygon3d_f">scene_polygon3d_f</a>
+<li><a href="#set_zbuffer">set_zbuffer</a>
+<li><a href="#triangle3d">triangle3d</a>
+<li><a href="#triangle3d_f">triangle3d_f</a>
+</ul>
+
+<p><br>
+<b>void <a name="polygon3d">polygon3d</a>(BITMAP *bmp, int type, BITMAP *texture, int vc, V3D *vtx[]);</b><br>
+<b>void <a name="polygon3d_f">polygon3d_f</a>(BITMAP *bmp, int type, BITMAP *texture, int vc, V3D_f *vtx[]);</b><br>
+   Dibuja polígonos 3d en el bitmap especificado, usando el modo de render
+   especificado. A diferencia de la función polygon(), estas rutinas no
+   soportan figuras cóncavas o con intersecciones, y no pueden dibujar sobre
+   bitmaps de pantalla en modo-X ( si quiere escribir código en modo-X,
+   dibuja en un bitmap de memoria y cópialo a la pantalla). El ancho y alto
+   del bitmap de la textura debe ser un múltiplo de dos, pero puede ser
+   diferente, ejemplo: una textura 64x16 está bien, pero una de 17x3 no. El
+   parámetro que cuenta los vértices (vc) debe ser seguido por un array que
+   contiene el número apropiado de punteros a estructuras vertex:
+   polygon3d() usa la estructura de punto fijo V3D, mientras que
+   polygon3d_f() usa la estructura coma flotante V3D_f. Estas son definidas
+   así:
+<blockquote class="code"><pre>
+      typedef struct V3D
+      {
+         fixed x, y, z;       - posición
+         fixed u, v;          - coordenadas de la textura
+         int c;               - color
+      } V3D;
+   
+      typedef struct V3D_f
+      {
+         float x, y, z;       - posición
+         float u, v;          - coordenadas de la textura
+         int c;               - color
+      } V3D_f;
+</pre></blockquote>
+   El cómo se almacenan los datos de los vértices depende del modo de
+   render:
+
+<p>
+   Los valores x e y especifican la posición del vértice en coordenadas de
+   pantalla 2d.
+
+<p>
+   El valor z sólo es necesario cuando use corrección de perspectiva en las
+   texturas, y especifica la profundidad del punto usando coordenadas del
+   mundo 3d.
+
+<p>
+   Las coordenadas u y v sólo son necesarias cuando use texturas, y
+   especifican la posición del punto en el bitmap de la textura que se
+   corresponde con el vértice indicado. El plano de la textura es un plano
+   infinito con el bitmap repetido sobre toda la superficie, y la imagen del
+   polígono resultante en este plano rellenará el polígono cuando se dibuje
+   en pantalla.
+
+<p>
+   Nos referimos a pixels en el plano de la textura como texels. Cada texel
+   es un bloque, nó sólo un punto, y los números enteros de u y v se
+   refieren a la esquina superior izquierda del texel. Esto tiene varias
+   implicaciones. Si quiere dibujar un polígono rectangular y aplicar una
+   textura de 32x32 sobre él, debe usar las coordenadas de textura (0,0),
+   (0,32), (32,32) y (32,0), asumiendo que los vértices son especificados en
+   órden antihorario. La textura será aplicada perfectamente sobre el
+   polígono. No obstante, note que si ajustamos u=32, la última columna de
+   texels que se verán en la pantalla serán los que están en u=31, y lo
+   mismo ocurre para v. Esto es porque las coordenadas se refieren a la
+   esquina superior izquierda de los texels. En efecto, las coordenadas de
+   textura por la derecha y por abajo son exclusivas.
+
+<p>
+   Aquí hay otro punto interesante. Si tiene dos polígonos juntos que
+   comparten dos vértices (como las dos partes de una pieza de cartón
+   doblada), y quiere aplicar sobre ellos una textura contínua, los valores
+   u y v de los vértices que están en la junta serán iguales para ambos
+   polígonos. Por ejemplo, si ambos son rectangulares, un polígono usará
+   (0,0), (0,32), (32,32) y (32,0), y el otro usará (32,0), (32,32), (64,32)
+   y (64,0). Esto aplicará la textura perfectamente.
+
+<p>
+   Por supuesto puede usar números con decimales para u y v indicando puntos
+   que están parcialmente en un texel. Además, dado que el plano de la
+   textura es infinito, puede especificar valores mayores que el tamaño de
+   la textura. Esto puede ser usado para repetir la textura varias veces
+   sobre el polígono.
+   
+<p>
+   El valor c especifica el color del vértice, y es interpretado de forma
+   diferente por los modos de render.
+
+<p>
+   El parámetro type especifica el modo de render, y puede ser cualquiera de
+   los siguientes:
+
+<p>
+   <b>POLYTYPE_FLAT:</b><br>
+      Un simple polígono con sombreado plano, que toma el color del valor c
+      del primer vértice. Este tipo de polígono es afectado por la función
+      drawing_mode(), por lo que puede ser usado para renderizar polígonos
+      transparentes o XOR.
+
+<p>
+   <b>POLYTYPE_GCOL:</b><br>
+      Un polígono con un color de sombreado goraud. Los colores de cada
+      vértice son tomados del valor c, e interpolados a través del polígono.
+      Esto es muy rápido, pero sólo funcionará en modos de 256 colores si su
+      paleta tiene un suave gradiente de colores. En modos truecolor
+      interpreta el color como valor empaquetado en formato directo de
+      hardware producido por la función makecol().
+
+<p>
+   <b>POLYTYPE_GRGB:</b><br>
+      Un polígono con sombreado goraud que interpola tripletes RGB en vez de
+      un solo color. En modos de 256 colores usa la tabla global rgb_map
+      para convertir el resultado a color de 8 bits, por lo que sólo puede
+      ser usado después de que haya creado una tabla de mapa de colores. Los
+      colores para cada vértice son tomados del valor c, que es interpretado
+      como un triplete RGB de 24 bits (0xFF0000 es rojo, 0x00FF00 es verde y
+      0x0000FF es azul).
+
+<p>
+   <b>POLYTYPE_ATEX:</b><br>
+      Un polígono con textura afín. Esto dibuja la textura a través del
+      polígono con una simple interpolación 2d lineal, que es rápida pero
+      matemáticamente incorrecta. Puede estar bien si el polígono es pequeño
+      o plano hacia la cámara, pero como no cuenta con la acortación de
+      perspectiva, puede producir extraños artefactos movidos en la textura.
+      Para ver lo que quiero decir, ejecuta test.exe y mire lo que pasa con
+      el test polygon3d() cuando hace un zoom muy cerca del cubo.
+
+<p>
+   <b>POLYTYPE_PTEX:</b><br>
+      Un polígono texturizado con corrección de perspectiva. Esto usa el
+      valor z de la estructura del vértice así como las coordenadas u/v, por
+      lo que las texturas se ven correctamente independientemente del ángulo
+      de visualización. Ya que esto envuelve cálculos de división en al
+      bucle interior de la texturización, este modo es mucho más lento que
+      POLYTYPE_ATEX, y usa coma flotante, por lo que será muy lento en
+      cualquier cosa peor que un Pentium (incluso con una FPU, un 486 no es
+      capaz de mezclar división de coma flotante con otras operaciones de
+      enteros tal y como puede hacer un Pentium).
+
+<p>
+   <b>POLYTYPE_ATEX_MASK:</b><br>
+   <b>POLYTYPE_PTEX_MASK:</b><br>
+      Como POLYTYPE_ATEX and POLYTYPE_PTEX, pero los pixels a cero de la
+      textura son ignorados, permitiendo que la textura sea transparente.
+
+<p>
+   <b>POLYTYPE_ATEX_LIT:</b><br>
+   <b>POLYTYPE_PTEX_LIT:</b><br>
+      Como POLYTYPE_ATEX y POLYTYPE_PTEX, pero la tabla global color_map
+      (para modos de 256 colores) o la función de fundido (para modos
+      truecolor no-MMX) es usada para fundir la textura con el nivel de luz
+      tomado del valor c en la estructura del vértice. ¡Esto sólo puede ser
+      usado después de que haya creado una tabla de mapa de color o
+      funciones de fundido!
+
+<p>
+   <b>POLYTYPE_ATEX_MASK_LIT:</b><br>
+   <b>POLYTYPE_PTEX_MASK_LIT:</b><br>
+      Como POLYTYPE_ATEX_LIT y POLYTYPE_PTEX_LIT, pero los pixels a cero de
+      la textura son ignorados, permitiendo que la textura sea transparente.
+
+<p>
+   <b>POLYTYPE_ATEX_TRANS:</b><br>
+   <b>POLYTYPE_PTEX_TRANS:</b><br>
+      Renderiza texturas translúcidas. Son aplicables todas las reglas
+      generales de dibujado translúcido. No obstante, estos modos tienen una
+      limitación: sólo funcionan con bitmaps en memoria o con memoria de
+      vídeo lineal (no con video por bancos). Ni si quiera lo intente en
+      estos casos, ya que las funciones no realizan chequeos y su programa
+      morirá horriblemente (o como mínimo dibujará mal las cosas).
+
+<p>
+   <b>POLYTYPE_ATEX_MASK_TRANS:</b><br>
+   <b>POLYTYPE_PTEX_MASK_TRANS:</b><br>
+      Como POLYTYPE_ATEX_TRANS y POLYTYPE_PTEX_TRANS, pero los pixels a
+      cero de la textura son ignorados.
+
+<p>
+   Si el bit CPU_MMX de la variable global cpu_capabilities está activado,
+   las rutinas GRGB y *LIT truecolor serán optimizadas usando instrucciones
+   MMX. Si el bit CPU_3DNOW está activado, las rutinas truecolor PTEX*LIT
+   tomarán ventaja de la extensión de CPU 3DNow!.
+
+<p>
+   Usar rutinas MMX para *LIT tiene un efecto secundario: normalmente (sin
+   MMX), estas rutinas usan las funciones de fundido y otras funciones de
+   luz, creadas con set_trans_blender() o set_blender_mode(). Las versiones
+   MMX sólo usan el valor RGB que se pasa a set_trans_blender() y hacen la
+   interpolación lineal internamente. Por esta razón, un nuevo conjundo de
+   funciones de fundido que se pasa a set_blender_mode() es ignorado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#triangle3d">triangle3d</a>,
+<a class="xref" href="#quad3d">quad3d</a>,
+<a class="xref" href="alleg012.html#polygon">polygon</a>,
+<a class="xref" href="#clip3d">clip3d</a>,
+<a class="xref" href="alleg000.html#cpu_capabilities">cpu_capabilities</a>.</font></blockquote>
+<b>void <a name="triangle3d">triangle3d</a>(BITMAP *bmp, int type, BITMAP *tex, V3D *v1, *v2, *v3);</b><br>
+<b>void <a name="triangle3d_f">triangle3d_f</a>(BITMAP *bmp, int type, BITMAP *tex, V3D_f *v1, *v2, *v3);</b><br>
+   Dibuja triángulos en 3d, usando las estructuras de vértices de punto fijo
+   o coma flotante. A diferencia de quad3d[_f], las funciones triangle3d[_f]
+   no envuelven polygon3d[_f]. Las funciones triangle3d[_f] usan sus propias
+   rutinas para determinar los grados del gradiente. Por esto,
+   triangle3d[_f](bmp, type, tex, v1, v2, v3) es más rápido que
+   polygon3d[_f](bmp, type, tex, 3, v[]).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#polygon3d">polygon3d</a>,
+<a class="xref" href="#quad3d">quad3d</a>,
+<a class="xref" href="alleg012.html#triangle">triangle</a>.</font></blockquote>
+<b>void <a name="quad3d">quad3d</a>(BITMAP *bmp, int type, BITMAP *tex, V3D *v1, *v2, *v3, *v4);</b><br>
+<b>void <a name="quad3d_f">quad3d_f</a>(BITMAP *bmp, int type, BITMAP *tex, V3D_f *v1, *v2, *v3, *v4);</b><br>
+   Dibuja cuadriláteros en 3d, usando las estructuras de vértices de punto
+   fijo o coma flotante. Esto es equivalente a llamar
+      polygon3d(bmp, type, tex, 4, v[]);
+   o
+      polygon3d_f(bmp, type, tex, 4, v[]);
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#polygon3d">polygon3d</a>,
+<a class="xref" href="#triangle3d">triangle3d</a>.</font></blockquote>
+<b>int <a name="clip3d_f">clip3d_f</a>(int type, float min_z, float max_z, int vc,</b>
+<b>             V3D_f *vtx[], V3D_f *vout[], V3D_f *vtmp[], int out[]);</b><br>
+   Recorta el polígono dado en vtx. vc es el número de vértices, el
+   resultado va en vout, y vtmp y out son necesarios para uso interno. Los
+   punteros en vtx, vout y vtmp deben apuntar a estructuras V3D_f válidas.
+   Como en el proceso de recorte pueden aparecer nuevos vértices, el tamaño
+   de vout, vtmp y out debería ser al menos vc * (1.5 ^ n), donde n es el
+   número de planos de corte (5 o 6), y '^' denota "elevado a la". El frustum
+   (volúmen visualizado) está definido por -z&lt;x&lt;z, -z&lt;y&lt;z,
+   0&lt;min_z&lt;z&lt;max_z. Si max_z&lt;=min_z, el recorte z&lt;max_z no se
+   hace. Como puede ver, el recorte se realiza en el espacio de la cámara,
+   con la perspectiva en mente, por lo que esta rutina debería ser llamada
+   despues de aplicar la matriz de cámara, pero antes de la proyección de
+   perspectiva. La rutina interpolará correctamente u, v, y c en la
+   estructura de vértices. Sin embargo, esto no está previsto para GCOL en
+   profundidades de color high/truecolor.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#polygon3d">polygon3d</a>,
+<a class="xref" href="#clip3d">clip3d</a>.</font></blockquote>
+<b>int <a name="clip3d">clip3d</a>(int type, fixed min_z, fixed max_z, int vc,</b>
+<b>           V3D *vtx[], V3D *vout[], V3D *vtmp[], int out[]);</b><br>
+   Versión de punto fijo de clip3d_f(). Esta función se debería usar con
+   cuidado, dad la precisión limitada de la aritmética de punto fijo, y las
+   altas posibilidades de errores por redondeo: el código de punto flotante
+   es mejor en la mayoría de situaciones.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#polygon3d">polygon3d</a>,
+<a class="xref" href="#clip3d_f">clip3d_f</a>.</font></blockquote>
+<br><center><h2><a name="Render con zbuffer">Render con zbuffer</a></h2></center><p>
+Un Z-buffer almacena la profundidad de cada pixel dibujado en una pantalla.
+Cuando un objeto 3d es renderizado, la profundidad de cada pixel es
+comparada con el valor ya almacenado en el Z-buffer: si el pixel es más
+cercano se dibuja, en caso contrario se ignora.
+
+<p>
+No hace falta ordenar los polígonos. No obstante, sigue siendo útil ignorar
+los polígonos que no están de cara a la cámara, ya que así se previene la
+comparación de muchos polígonos ocultos contra el Z-buffer. El render
+mediante Z-buffer es el único algoritmo soportado por Allegro que resuelve
+directamente la intersección entre figuras (mire por ejemplo exzbuf.c). El
+precio que hay que pagar son unas rutinas más complejas (y más lentas).
+
+<p>
+Los polígonos con Z-buffer son por diseño una extensión de los estilos de
+render normales POLYTYPE_*. Sólo hay que hacer una OR entre POLYTYPE y el
+valor POLYTYPE_ZBUF, y las rutinas normales como polygon3d(), polygon3d_f(),
+quad3d(), etc, renderizarán polígonos con Z-buffer.
+
+<p>
+Ejemplo:
+<blockquote class="code"><pre>
+   polygon3d(bmp, POLYTYPE_ATEX | POLYTYPE_ZBUF, tex, vc, vtx);
+</pre></blockquote>
+
+<p>
+Por supuesto, las coordenadas z deben ser válidas sin importar el estilo de
+render.
+
+<p>
+El procedimiento de render con Z-buffer parece un render con doble buffer.
+Debería seguir los siguientes pasos: crear el Z-buffer al comienzo de su
+programa y hacer que la librería lo use mediante set_zbuffer(). Entonces,
+por cada frame, borre el Z-buffer y dibuje polígonos con POLYTYPE_* |
+POLYTYPE_ZBUF para finalmente destruir el Z-buffer al finalizar su programa.
+
+<p>
+Notas sobre los renders con Z-buffer:
+<ul><li>
+A diferencia de las renderizaciones normales con POLYTYPE_FLAT, el render
+con Z-buffer no usa la rutina hline(). Por lo tanto, DRAW_MODE no tiene
+efecto sobre el resultado.
+<li>
+Las rutinas *LIT* funcionan del modo tradicional - a través del conjunto de
+rutinas de blending.
+<li>
+Todas las rutinas con Z-buffer son mucho más lentas que sin Z-buffer (todas
+usan el coprocesador para interpolar y comprobar valores 1/z).
+</ul>
+<b>ZBUFFER *<a name="create_zbuffer">create_zbuffer</a>(BITMAP *bmp);</b><br>
+   Crea el Z-buffer usando el tamaño del BITMAP que esté planeando usar para
+   dibujar sus polígonos. Se pueden definir varios Z-buffers, pero sólo se
+   puede usar uno a la vez, por lo que debe usar set_zbuffer() para elegir
+   cuál será activo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_sub_zbuffer">create_sub_zbuffer</a>,
+<a class="xref" href="#set_zbuffer">set_zbuffer</a>,
+<a class="xref" href="#clear_zbuffer">clear_zbuffer</a>,
+<a class="xref" href="#destroy_zbuffer">destroy_zbuffer</a>.</font></blockquote>
+<b>ZBUFFER *<a name="create_sub_zbuffer">create_sub_zbuffer</a>(ZBUFFER *parent, int x, int y, int width, int height);</b><br>
+   Crea un sub-z-buffer, es decir, un z-buffer que comparte memoria de
+   dibujado con un z-buffer ya existente, pero posiblemente con un tamaño
+   diferente. Son aplicables las mismas reglas que con los sub-bitmaps: la
+   anchura y altura pueden extenderse fuera de los bordes del z-buffer padre
+   (serán recortados), pero el punto de origen debe estar en una región del
+   padre.
+
+<p>
+   Cuando dibuje con z-buffer en un bitmap, la esquina superior izquierda
+   del bitmap siempre está alineada con la esquina superior izquierda del
+   z-buffer actual. Por lo que esta función es útil principalmente si quiere
+   dibujar en un sub-bitmap y usar el área correspondiente del z-buffer. En
+   otros casos, ej, si quiere dibujar en un sub-bitmap de la pantalla (y no
+   en otras partes de la pantalla), normalmente querrá crear un z-buffer
+   normal (no un sub-z-buffer) del tamaño de la pantalla. No necesita crear
+   un z-buffer del tamaño de la pantalla virtual y entonces un sub-z-buffer
+   de éste.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_zbuffer">create_zbuffer</a>,
+<a class="xref" href="alleg008.html#create_sub_bitmap">create_sub_bitmap</a>,
+<a class="xref" href="#destroy_zbuffer">destroy_zbuffer</a>.</font></blockquote>
+<b>void <a name="set_zbuffer">set_zbuffer</a>(ZBUFFER *zbuf);</b><br>
+   Hace que un Z-buffer sea el activo. Este deberá haber sido creado
+   previamente mediante create_zbuffer().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_zbuffer">create_zbuffer</a>,
+<a class="xref" href="#clear_zbuffer">clear_zbuffer</a>,
+<a class="xref" href="#destroy_zbuffer">destroy_zbuffer</a>.</font></blockquote>
+<b>void <a name="clear_zbuffer">clear_zbuffer</a>(ZBUFFER *zbuf, float z);</b><br>
+   Escribe z en el Z-buffer (0 significa muy lejos). Esta función debe ser
+   usada para iniciar el Z-buffer antes de cada frame. Realmente, las
+   rutinas de bajo nivel comparan la profundidad del pixel actual con 1/z:
+   por ejemplo, si quiere recortar polígonos más lejanos de 10, debe usar:
+   clear_zbuffer(zbuf, 0.1);
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_zbuffer">create_zbuffer</a>,
+<a class="xref" href="#set_zbuffer">set_zbuffer</a>,
+<a class="xref" href="#destroy_zbuffer">destroy_zbuffer</a>.</font></blockquote>
+<b>void <a name="destroy_zbuffer">destroy_zbuffer</a>(ZBUFFER *zbuf);</b><br>
+   Destruye el Z-buffer cuando haya finalizado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_zbuffer">create_zbuffer</a>,
+<a class="xref" href="#set_zbuffer">set_zbuffer</a>,
+<a class="xref" href="#clear_zbuffer">clear_zbuffer</a>.</font></blockquote>
+<br><center><h2><a name="Render de escenas">Render de escenas</a></h2></center><p>
+Allegro provee dos métodos simples para quitar caras ocultas:
+<ul><li>
+   Z-buffering - (vea más arriba)
+<li>
+   Algoritmos scan-line - a lo largo de cada línea de su pantalla, mantiene
+   información sobre el polígono "en el que está" y cuál es el más cercano.
+   Este estado cambia sólamente cuando la línea cruza el borde de un
+   polígono. Por lo que debe mantener una lista de bordes y polígonos. Y
+   debe ordenar los bordes para cada scanline (esto es contrarrestado
+   manteniendo el órden del scanline previo - no cambiará mucho). La GRAN
+   ventaja es que sólo dibuja cada pixel una vez. Si tiene muchos polígonos
+   que se solapan, puede obtener increíbles velocidades comparadas con
+   cualquiera de los algoritmos previos. Este algoritmo es cubierto por
+   las rutinas *_scene.
+</ul>
+
+<p>
+El render de escenas sigue los siguientes pasos aproximádamente:
+<ul><li>
+   Iniciar la escena (ajustar el área de recorte, limpiar el bitmap,
+   dibujar un fondo, etc).
+<li>
+   Llame clear_scene().
+<li>
+   Transformar todos sus puntos al espacio de la cámara.
+<li>
+   Recortar polígonos.
+<li>
+   Proyectar con persp_project() o persp_project_f().
+<li>
+   "Dibujar" polígonos con scene_polygon3d() y/o scene_polygon3d_f().
+   Esto realmente no dibuja nada, sólo inicializa las táblas.
+<li>
+   Renderizar todos los polígonos definidos previamente en el bitmap
+   con render_scene().
+<li>
+   Dibujar gráficos no tridimensionales.
+<li>
+   Mostrar el bitmap (blit a la pantalla, cambio de página, etc).
+</ul>
+
+<p>
+Por cada linea horizontal del área de visualización se usa una lista
+ordenada de bordes para saber qué polígonos "están dentro" y cuáles están
+cerca. Se usa coherencia vertical - la lista de bordes es ordenada a
+partir de la anterior - no cambiará mucho. Las rutinas de render de escenas
+usan las mismas rutinas de bajo nivel que polygon3d().
+
+<p>
+Notas del render de escena:
+<ul><li>
+   A diferencia de polygon3d(), scene_polygon3d() requiere coordenadas z
+   válidas para todos los vértices, indiferentemente del estilo de render
+   (en contraste con polygon3d(), que sólo usa coordenadas z para *PTEX*).
+<li>
+   Todos los polígonos pasados a scene_polygon3d() deben ser proyectados
+   con perspectiva.
+<li>
+   Tras usar render_scene(), el modo es ajustado a SOLID.
+</ul>
+Usar muchos polígonos con máscara reduce el rendimiento, porque cuando se
+encuentra un polígono con máscara en primera linea de visión, los polígonos
+que están detrás deben ser dibujados también. Lo mismo es aplicable a
+polígonos FLAT dibujados con DRAW_MODE_TRANS.
+
+<p>
+El render con Z-buffer también funciona con el render de escenas. Puede ser
+útil si tiene algunos polígonos que se interseccionan, pero la mayoría de
+los polígonos pueden ser renderizados sin problemas usando el algoritmo
+normal de ordenado de scanlines. Igual que antes: simplemente haga una OR
+del POLYTIPE con POLYTYPE_ZBUF. Además, tiene que limpiar el z-buffer al
+comienzo del frame. Ejemplo:
+<blockquote class="code"><pre>
+   clear_scene(buffer);
+   if (some_polys_are_zbuf) clear_zbuffer(0.);
+   while (polygons) {
+      ...
+      if (this_poly_is_zbuf) type |= POLYTYPE_ZBUF;
+      scene_polygon3d(type, tex, vc, vtx);
+   }
+   render_scene();
+</pre></blockquote>
+
+<p><br>
+<b>int <a name="create_scene">create_scene</a>(int nedge, int npoly);</b><br>
+   Reserva memoria para una escena, nedge y npoly son sus estimaciones de
+   cuántas aristas y polígonos renderizará (no puede salirse del límite que
+   especifica aquí). Si usa los mismos valores en llamadas sucesivas, el
+   espacio será reusado (no nuevos malloc()).
+
+<p>
+   La memoria reservada es algo menor que 150 * (nedge + npoly) bytes.
+   Devuelve cero con éxito, o negativo si no se pudo reservar la memoria.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_zbuffer">create_zbuffer</a>,
+<a class="xref" href="#scene_polygon3d">scene_polygon3d</a>,
+<a class="xref" href="#render_scene">render_scene</a>,
+<a class="xref" href="#clear_scene">clear_scene</a>,
+<a class="xref" href="#destroy_scene">destroy_scene</a>,
+<a class="xref" href="#scene_gap">scene_gap</a>.</font></blockquote>
+<b>void <a name="clear_scene">clear_scene</a>(BITMAP *bmp);</b><br>
+   Inicializa la escena. El bitmap es donde renderizará sus gráficos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_scene">create_scene</a>,
+<a class="xref" href="#scene_polygon3d">scene_polygon3d</a>,
+<a class="xref" href="#render_scene">render_scene</a>,
+<a class="xref" href="#destroy_scene">destroy_scene</a>,
+<a class="xref" href="#scene_gap">scene_gap</a>.</font></blockquote>
+<b>void <a name="destroy_scene">destroy_scene</a>();</b><br>
+   Libera la memoria previamente reservada por create_scene.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_scene">create_scene</a>,
+<a class="xref" href="#scene_polygon3d">scene_polygon3d</a>,
+<a class="xref" href="#clear_scene">clear_scene</a>,
+<a class="xref" href="#render_scene">render_scene</a>,
+<a class="xref" href="#scene_gap">scene_gap</a>.</font></blockquote>
+<b>int <a name="scene_polygon3d">scene_polygon3d</a>(int type, BITMAP *texture, int vc, V3D *vtx[]);</b><br>
+<b>int <a name="scene_polygon3d_f">scene_polygon3d_f</a>(int type, BITMAP *texture, int vc, V3D_f *vtx[]);</b><br>
+   Pone un polígono en la lista de render. Realmente no renderiza nada en
+   este momento. Debe llamar esta función entre clear_scene() y
+   render_scene().
+
+<p>
+   Los argumentos son iguales que para polygon3d(), excepto por el parámetro
+   de bitmap que falta. Se usará el que indicó mediante clear_scene().
+
+<p>
+   A diferencia de polygon3d(), los polígonos pueden ser cóncavos o estar
+   interseccionados. Las figuras que penetran en otras pueden salir bien,
+   pero no son manejadas realmente por este código.
+
+<p>
+   Note que sólo se almacena un puntero a la textura, por lo que debería
+   mantenerla en memoria hasta render_scene(), donde será usada.
+
+<p>
+   Ya que el estilo FLAT es implementado con la función de bajo nivel
+   hline(), el estilo FLAT está sujeto a DRAW_MODE. Todos los modos son
+   válidos. Junto con el polígono, el modo será almacenado para el momento
+   del render, y también otras variables relacionadas (puntero al mapa de
+   color, puntero al patron, ancla, valores de blending).
+
+<p>
+   El valor de los bits CPU_MMX y CPU_3DNOW de la variable global
+   cpu_capabilities afectará la elección de la rutina de bajo nivel en
+   ensamblador que será usada por render_scene() con este polígono.
+
+<p>
+   Devuelve cero con éxito o negativo si no será renderizado debido a que
+   falta la rutina de render apropiada.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg000.html#cpu_capabilities">cpu_capabilities</a>,
+<a class="xref" href="#create_scene">create_scene</a>,
+<a class="xref" href="#clear_scene">clear_scene</a>,
+<a class="xref" href="#render_scene">render_scene</a>,
+<a class="xref" href="#destroy_scene">destroy_scene</a>,
+<a class="xref" href="#polygon3d">polygon3d</a>.</font></blockquote>
+<b>void <a name="render_scene">render_scene</a>();</b><br>
+   Renderiza toda la escena creada con scene_polygon3d() en el bitmap que
+   pasó a clear_scene(). El render se realiza una linea a cada vez, sin
+   procesar dos veces el mismo pixel.
+
+<p>
+   Note que entre clear_scene() y render_scene() no debería modificar el
+   rectángulo de recorte del bitmap destino. Por razones de velocidad,
+   debería ajustar el rectángulo de recorte al mínimo.
+
+<p>
+   Tenga en cuenta también que las texturas pasadas a scene_polygon3d() son
+   almacenadas como punteros y serán usadas en render_scene().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_scene">create_scene</a>,
+<a class="xref" href="#clear_scene">clear_scene</a>,
+<a class="xref" href="#destroy_scene">destroy_scene</a>,
+<a class="xref" href="#scene_gap">scene_gap</a>,
+<a class="xref" href="#scene_polygon3d">scene_polygon3d</a>.</font></blockquote>
+<b>extern float <a name="scene_gap">scene_gap</a>;</b><br>
+   Este número (valor por defecto = 100.0) controla el comportamiento del
+   algoritmo de ordenado en z. Cuando un borde está muy cerca del plano de
+   otro polígono, hay un intervalo de incertidumbre en el cual no se puede
+   determinar qué objeto es visible (qué z es más pequeña). Esto es debido
+   a errores numéricos acumulativos para los bordes que han sufrido
+   bastantes transformaciones e interpolaciones.
+
+<p>
+   El valor por defecto significa que si los valores 1/z (en espacio
+   proyectado) difieren sólo en 1/100 (uno por ciento), serán considerados
+   iguales y el eje x de los planos será usado para saber qué plano está
+   acercándose mientras nos movemos hacia la derecha.
+
+<p>
+   Valores mayores significan márgenes menores, e incrementan la posibilidad
+   de confundir planos/bordes realmente adyacentes. Valores menores
+   significan márgenes mayores, e incrementan la posibilidad de confundir un
+   polígono cercano con uno adyacejte. El valor de 100 está cercano a lo
+   más óptimo. No obstante, el valor optimo oscila con diferentes
+   resoluciones, y puede ser dependiente de la aplicación. Está aquí para
+   que lo pueda ajustar al máximo.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_scene">create_scene</a>,
+<a class="xref" href="#clear_scene">clear_scene</a>,
+<a class="xref" href="#destroy_scene">destroy_scene</a>,
+<a class="xref" href="#render_scene">render_scene</a>,
+<a class="xref" href="#scene_polygon3d">scene_polygon3d</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

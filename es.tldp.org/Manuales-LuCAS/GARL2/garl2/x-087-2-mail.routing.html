@@ -1,0 +1,822 @@
+<HTML
+><HEAD
+><TITLE
+>¿Cómo funciona el encaminamiento del correo?</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Correo Electrónico"
+HREF="x-087-2-mail.html"><LINK
+REL="PREVIOUS"
+TITLE="Direcciones de correo electrónico"
+HREF="x-087-2-mail.address.html"><LINK
+REL="NEXT"
+TITLE="como configurar elm "
+HREF="x-087-2-mail.elm.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-mail.address.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 17. Correo Electrónico</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-mail.elm.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-MAIL.ROUTING">17.4. ¿Cómo funciona el encaminamiento del correo?</H1
+><P
+>Conocemos como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>encaminamiento</I
+></SPAN
+>el proceso de dirigir un mensaje al sistema anfitrión del receptor. Aparte de localizar una ruta desde el sitio del emisor hasta el de 
+destino, la elección de rutas implica la detección de errores e incluso la optimización de la velocidad y el coste. </P
+><P
+>Hay una gran diferencia entre la elección de rutas por parte de un sitio UUCP y un sitio de Internet. En Internet, la función principal a la hora de dirigir los datos al anfitrión 
+del receptor (cuando el protocolo IP lo conoce), la realiza la capa de red IP, mientras que en el entorno UUCP, la ruta tiene que ser provista por el usuario o generado por el 
+agente de transmisión de correo.&#13;</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-MAIL.ROUTING.INTERNET">17.4.1. Encaminamiento en Internet</H2
+><P
+>La configuración del sistema anfitrión del destinatario determina si se está trabajando con un determinado sistema 
+de localización de la ruta de correo en Internet. La opción predeterminada es transmitir el mensaje a su destino 
+determinando primero el anfitrión al que debe ser enviado, y mandándolo allí directamente.
+ 
+La mayoría de los sitios de Internet  buscan dirigir todo el correo entrante a un servidor de correo con alta disponibilidad capaz de manejar todo el tráfico y distribuirlo localmente. 
+Para dar a conocer este servicio, el sitio publica el llamado registro MX para su dominio local en su base de datos DNS. MX (Mail Exchanger) significa <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Intercambiador de Correo</I
+></SPAN
+> 
+y básicamente indica que el anfitrión del servidor es capaz de convertirse en emisor de correo para todas las direcciones del dominio. Los registros MX también pueden manejar el tráfico de 
+anfitriones que no están conectados a la red, como UCCP o FidoNet, que necesitan una pasarela de correo.</P
+><P
+>Los registros MX siempre tienen siempre asignada una <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>preferencia</I
+></SPAN
+> Esto es positivo. Si son muchos los proveedores de correo existentes (MX) para un anfitrión, 
+el agente de transporte de correo tratará de enviar el mensaje al proveedor cuya preferencia sea la menor. Sólo si esta operación falla, lo enviará a un anfitrión de mayor índice 
+de preferencia. Si el anfitrión local es el proveedor de correo para la dirección de destino, puede enviar los mensajes a un anfitrión menos preferente que él mismo; ésta es una 
+manera segura de evitar los bucles en el correo. Si no hay ningún registro MX para un determinado dominio, o no es disponible, el agente de transporte de correo puede comprobar 
+si la dirección IP del dominio está asociada a él, y así intentar mandarlo directamente a ese anfitrión.</P
+><P
+>Supongamos que hay una organización dada, por ejemplo Foobar, Inc., que quiere  que todo su correo lo controle el <SPAN
+CLASS="SYSTEMITEM"
+>servidor de correo</SPAN
+>de su ordenador.
+Por ello llevará registros MX como el que se muestra a continuación, en la base de datos DNS:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    green.foobar.com.        IN   MX      5    mailhub.foobar.com.</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto da a conocer a <SPAN
+CLASS="SYSTEMITEM"
+>mailhub.foobar.com</SPAN
+> como proveedor de correo para <SPAN
+CLASS="SYSTEMITEM"
+>green.foobar.com</SPAN
+>con un nivel de preferencia de 5. Un anfitrión que pretenda enviar un mensaje a
+<SPAN
+CLASS="SYSTEMITEM"
+>joe@green.foobar.com</SPAN
+> revisa la base de datos DNS y busca el MX en el
+<SPAN
+CLASS="SYSTEMITEM"
+>distribuidor de correo </SPAN
+>. Si no hay ningún MX con una preferencia menor a 5, el 
+mensaje se envía al <SPAN
+CLASS="SYSTEMITEM"
+>distribuidor de correo</SPAN
+>, que lo entrega a <SPAN
+CLASS="SYSTEMITEM"
+>green</SPAN
+>.</P
+><P
+>&#13;
+
+Ésta es una descripción muy básica de cómo funcionan los registros MX. Para obtener más información sobre el encaminamiento de correo en Internet, consulte RFC-821, RFC-974 y RFC-1123.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-MAIL.ROUTING.UUCP">17.4.2. Encaminamiento en el entorno UUCP</H2
+><P
+>El encaminamiento del correo en las redes UUCP es mucho más complicado que en Internet porque sus programas no realizan el encaminamiento ellos mismos. 
+Antes, todo el correo debía ser dirigido mediante las rutas bang path. Éstas especificaban una lista de sistemas anfitriones separados por signos de 
+exclamación y seguidos por el nombre del usuario, por los que el correo debía pasar. Por ejemplo, para escribir a un usuario llamado Janet que se encuentra en un ordenador llamado
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+>, usuaríamos la ruta
+<SPAN
+CLASS="SYSTEMITEM"
+>eek!swim!moria!janet</SPAN
+>.De esta manera el mensaje se enviaría desde su sistema anfitrión a 
+<SPAN
+CLASS="SYSTEMITEM"
+>eek</SPAN
+>,desde aquí a 
+<SPAN
+CLASS="SYSTEMITEM"
+>swim</SPAN
+>, y por último lugar a 
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+>.</P
+><P
+>El inconveniente obvio de este sistema es que es necesario que el usuario recuerde muchos más datos sobre topología de red que la que Internet requiere. 
+Y mucho peor son los cambios de la topología como los enlaces eliminados o anfitriones que desaparecen &mdash;&mdash; que produce fallos en los mensajes 
+al no ser el usuario consciente de estos cambios. Y por último, si usted cambia de sitio o se traslada, probablemente deberá actualizar estas rutas.</P
+><P
+>&#13;Una razón por la que el encaminamiento desde la fuente se hizo necesario fue la presencia de nombres de anfitrión ambiguos. Por ejemplo, imaginemos que hay dos sitios llamados 
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+>, uno en los Estados Unidos y otro en Francia.  ¿A cuál de los dos se referiría
+<SPAN
+CLASS="SYSTEMITEM"
+>moria!janet</SPAN
+> ahora?
+El problema quedaría solucionado especificando una ruta concreta para acceder a 
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+></P
+><P
+>&#13;
+
+
+El primer paso para evitar la ambigüedad con los nombres de anfitrión fue el proyecto de mapeado UUCP. Se encuentra en la Universidad de Rutgers y registra de manera oficial 
+todos los nombres de anfitrión, junto con información sobre otros sistemas UUCP y su situación geográfica, procurando que no se repita ninguno. 
+Esta información en manos del proyecto de mapeado UUCP, se publica bajo el nombre 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Mapas Usenet</I
+></SPAN
+> , y son distribuidos regularmente a través de Usenet. El formato típico de entrada a un mapa (eliminados ya los comentarios) es de la siguiente manera:<A
+NAME="X-087-2-FNMA06"
+HREF="#FTN.X-087-2-FNMA06"
+>[1]</A
+>
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    moria
+            bert(DAILY/2),
+            swim(WEEKLY)</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esta entrada indica que <SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> está vinculado a 
+<SPAN
+CLASS="SYSTEMITEM"
+>bert</SPAN
+>, al cual llama dos veces al día, y a <SPAN
+CLASS="SYSTEMITEM"
+>swim</SPAN
+>, 
+al cual llama semanalmente. Explicaremos con más detalle lo referente al formato de fichero de mapas.</P
+><P
+>&#13;
+
+Con la información sobre la conectividad que obtenemos de los mapas, podemos generar la totalidad de rutas existentes entre su sistema 
+anfitrión y cualquier sitio. Esta información se encuentra en el fichero de
+<TT
+CLASS="FILENAME"
+>rutas</TT
+>, también conocido como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>base ruta-alias</I
+></SPAN
+>. Supongamos que los mapas indican que usted puede ponerse en contacto con
+<SPAN
+CLASS="SYSTEMITEM"
+>bert</SPAN
+> a través de<SPAN
+CLASS="SYSTEMITEM"
+>ernie</SPAN
+>; una entrada en forma de alias de ruta para <SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> generado del retazo del mapa anterior podría ser de la siguiente manera:
+ <TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    moria           ernie!bert!moria!%s</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Si usted propone la dirección
+<SPAN
+CLASS="SYSTEMITEM"
+>janet@moria.uucp</SPAN
+>, el MTA seguirá la ruta anterior y enviará el mensaje a, 
+<SPAN
+CLASS="SYSTEMITEM"
+>ernie</SPAN
+> con la dirección<SPAN
+CLASS="SYSTEMITEM"
+>bert!moria!janet</SPAN
+>.</P
+><P
+>&#13;
+
+
+
+
+
+No obstante, crear un fichero de <TT
+CLASS="FILENAME"
+>rutas</TT
+> a partir de los mapas Usenet no es buena idea. 
+La información que contienen suele estar distorsionada, y también es posible que no esté actualizada. 
+Es por ello que sólo un determinado número de anfitriones utilizan los mapas UUCP completos para crear sus ficheros de
+<TT
+CLASS="FILENAME"
+>rutas</TT
+>. Muchos sitios mantienen la información de ruta sólo para sitios que se encuentran en su entorno, 
+y envían cualquier mensaje a los sitios que no están presentes en su base de datos a anfitriones más inteligentes con información 
+de ruta más completa. Este esquema se llama <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>encaminamiento por anfitrión inteligente</I
+></SPAN
+>. Los anfitriones que tienen 
+sólo un vínculo de correo UUCP (los llamados <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>leaf sites</I
+></SPAN
+>), no pueden realizar el encaminamiento por su cuenta, 
+deben dejar esa labor a un anfitrión inteligente.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN14587">17.4.3. Mezclar UUCP y RFC-822</H2
+><P
+>La mejor manera de evitar los problemas referentes al encaminamiento del correo en las redes UUCP es adoptar el sistema de nombre de dominio de dichas redes. 
+Por supuesto, usted no puede cuestionar un servidor de nombres de UUCP. Sin embargo, muchos sitios UUCP han creado pequeños dominios que coordinan su 
+encaminamiento internamente. En los mapas, estos dominios anuncian uno o dos anfitriones en forma de pasarela de correo propio de tal forma que no tiene 
+que existir un indicador de entrada al mapa para cada anfitrión en el dominio. Las pasarelas de correo controlan tanto el fluido de correo interno como 
+externo al dominio. El plan de encaminamiento dentro del dominio es independiente e invisible para el mundo exterior.</P
+><P
+>Esto funciona muy bien en el esquema de encaminamiento por anfitrión inteligente.
+El encaminamiento global de la información sólo lo mantienen los portales; los anfitriones menores dentro de un dominio pueden trabajar únicamente con ficheros de
+<TT
+CLASS="FILENAME"
+>rutas</TT
+> pequeños, escritos a mano que indiquen las rutas de ese dominio y el camino hacia el encaminador. Incluso las pasarelas 
+de correo ya no necesitan la información de ruta para cada anfitrión UUCP del mundo. Aparte de la información de ruta, ahora tan sólo necesitan conocer rutas hacia 
+dominios absolutos. Por ejemplo, esta entrada ruta-alias conducirá todo el correo hacia los sitios en el dominio 
+<SPAN
+CLASS="SYSTEMITEM"
+>sub.org</SPAN
+> hacia 
+<SPAN
+CLASS="SYSTEMITEM"
+>smurf</SPAN
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    .sub.org        swim!smurf!%s</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Todo el correo enviado a <SPAN
+CLASS="SYSTEMITEM"
+>claire@jones.sub.org</SPAN
+>
+será enviado a <SPAN
+CLASS="SYSTEMITEM"
+>swim</SPAN
+> con la dirección <SPAN
+CLASS="SYSTEMITEM"
+>smurf!jones!claire</SPAN
+>.</P
+><P
+>La organización jerárquica del nombre de dominio permite a los servidores de correo mezclar rutas más y menos específicas. Por ejemplo, 
+un sistema francés puede tener rutas específicas para los subdominios en o<SPAN
+CLASS="SYSTEMITEM"
+>fr</SPAN
+>, y encaminar el 
+correo hacia los anfitriones en el dominio, <SPAN
+CLASS="SYSTEMITEM"
+>us</SPAN
+> en algún sistema de los Estados Unidos. 
+De esta manera, gracias al encaminamiento basado en el dominio (nombre que recibe esta técnica) tanto el tamaño de las bases de 
+datos de encaminamiento como las necesidades administrativas, se ven reducidos. &#13;</P
+><P
+>La ventaja principal al usar nombres de dominio en un entorno UUCP es que las normas de conformidad con RFC-822 permiten el contacto entre las redes UUCP 
+en Internet. Actualmente, muchos dominios UUCP tienen vínculos con pasarelas de Internet que actúan como anfitrión. Es más rápida y más fiable la información 
+de encaminamiento si mandamos los mensajes por Internet, ya que éstos anfitriones pueden funcionar con DNS en lugar de Mapas  Usenet. </P
+><P
+>Con el fin de se ser localizados desde Internet, los dominios basados en UUCP muestran un registro MX (los registros MX se comentaron en la sección&ldquo;<A
+HREF="x-087-2-mail.routing.html#X-087-2-MAIL.ROUTING.INTERNET"
+>Sección 17.4.1</A
+>&rdquo;). Por ejemplo, supongamos que
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> pertenece al dominio
+<SPAN
+CLASS="SYSTEMITEM"
+>orcnet.org</SPAN
+>
+<SPAN
+CLASS="SYSTEMITEM"
+>gcc2.groucho.edu</SPAN
+> actúa como su pasarela a Internet. Entonces 
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> utilizaría <SPAN
+CLASS="SYSTEMITEM"
+>gcc2</SPAN
+> como anfitrión, para que toda la correspondencia dirigida a dominios 
+extranjeros se distribuyese a través de Internet. Por otro lado,
+<SPAN
+CLASS="SYSTEMITEM"
+>gcc2</SPAN
+> mostraría un registro MX para 
+<SPAN
+CLASS="SYSTEMITEM"
+>*.orcnet.org</SPAN
+> y llevaría todo el correo entrante para los sitios <SPAN
+CLASS="SYSTEMITEM"
+>orcnet</SPAN
+> a
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+>. El asterisco en
+<SPAN
+CLASS="SYSTEMITEM"
+>*.orcnet.org</SPAN
+> es un comodín que empareja todos los anfitriones de ese dominio que no están relacionados con ningún registro. 
+Esto ocurre con frecuencia sólo con los dominios UUCP.</P
+><P
+>El único problema que queda es que los programas de transmisión UUCP no pueden funcionar con nombres de dominio ilimitados. 
+Muchos sitios UUCP fueron diseñados para trabajar con nombres de hasta ocho caracteres, o incluso menos, y sin utilizar caracteres alfanuméricos como el punto.  </P
+><P
+>Por lo tanto, habría que hacer un mapeado entre los nombres RFC-822 y los nombres de anfitrión UUCP.  El mapeado depende totalmente de su puesta en práctica. 
+Una manera común de mapear los nombres FQDN y los UUCP, es usar el fichero del alias de ruta: 
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    moria.orcnet.org  ernie!bert!moria!%s</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto producirá un bang path al estilo UUCP desde una dirección que
+especifique un nombre de dominio completamente cualificado. algunos agentesd de transporte proporcionan un fichero especial
+para esto:
+<B
+CLASS="COMMAND"
+>sendmail</B
+>, por ejemplo, usa el fichero <TT
+CLASS="FILENAME"
+>uucpxtable</TT
+>.</P
+><P
+>La transformación inversa (conocida coloquialmente como
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>domainizing</I
+></SPAN
+>&thinsp;) a veces es necesaria cuando se envía un mensaje desde una red UUCP a Internet. Mientras el emisor utilice el nombre de 
+dominio completo en la dirección de destino, este problema se puede evitar si no eliminamos dicho nombre de dominio. Sin embargo, hay sitios UUCP que no pertenecen 
+a ningún dominio. Normalmente llevan el pseudo-dominio
+<SPAN
+CLASS="SYSTEMITEM"
+>uucp</SPAN
+>.</P
+><P
+>La base de datos ruta-alias proporciona la principal información de ruta en las redes basadas en UUCP. La entrada es de esta manera (el nombre del sitio y la ruta están separados mediante tabulaciones):
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    moria.orcnet.org  ernie!bert!moria!%s
+    moria             ernie!bert!moria!%s</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto hace que cualquier mensaje enviado a <SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> sea entregado pasando por <SPAN
+CLASS="SYSTEMITEM"
+>ernie</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>bert</SPAN
+>. Tanto el nombre 
+<SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+>como el nombre UUCP deben ser dados si el emisor no los incluye.</P
+><P
+>&#13;
+Si usted quiere dirigir todos los mensajes a los anfitriones dentro de un dominio a su repetidor de correo, puede especificar una ruta en la base de datos del alias de ruta, 
+indicando el nombre de dominio precedido por un punto como el destino. Por ejemplo, si a todos los anfitriones en <SPAN
+CLASS="SYSTEMITEM"
+>sub.org</SPAN
+> llegamos 
+por medio de <SPAN
+CLASS="SYSTEMITEM"
+>swim!smurf</SPAN
+>, la entrada de alias de ruta podrías ser de la siguiente manera: 
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    .sub.org        swim!smurf!%s</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Escribir el fichero de alias de ruta es aceptable sólo cuando accede a un sitio de Internet donde no son necesarias muchas operaciones de 
+encaminamiento. Si tiene que realizar diversas operaciones de encaminamiento para un gran número de anfitriones, la mejor manera de hacerlo es usar la orden 
+<B
+CLASS="COMMAND"
+>alias de ruta </B
+> para crear el fichero a partir del fichero de mapas.
+Los mapas son más fáciles de mantener, porque se añade o elimina un sistema editando la entrada al mapa del sistema y volviendo a crear el 
+fichero de mapa.  Aunque los mapas publicados por el Proyecto de Mapeado Usenet ya no se usan tanto para el encaminamiento, las redes pequeñas UUCP nos pueden 
+dar la información sobre el encaminamiento de sus propios mapas. </P
+><P
+>&#13;
+
+
+Un fichero de mapa consiste principalmente en una lista de sitios que cada sistema selecciona, o bien seleccionada por algún sistema. 
+El nombre del sistema empieza en la primera columna y va seguido por una lista de enlaces separados por una coma. La lista puede continuar 
+si la siguiente línea comienza por el tabulador. Cada vínculo consiste en el nombre del sitio seguido por un coste entre paréntesis. El 
+coste es una expresión aritmética formada por números y expresiones simbólicas como DAILY o WEEKLY. Las líneas que empiezan por &gt; se ignoran.</P
+><P
+>Por ejemplo, consideremos <SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+>, 
+que selecciona <SPAN
+CLASS="SYSTEMITEM"
+>swim.twobirds.com</SPAN
+> dos veces al día y <SPAN
+CLASS="SYSTEMITEM"
+>bert.sesame.com</SPAN
+> 
+que lo hace una por semana.
+El vínculo a <SPAN
+CLASS="SYSTEMITEM"
+>bert</SPAN
+> usa modem lento a 2.400 bps. <SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> 
+publicaría la siguiente entrada:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    moria.orcnet.org
+            bert.sesame.com(DAILY/2),
+            swim.twobirds.com(WEEKLY+LOW)
+    moria.orcnet.org = moria</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La última línea también da a conocer a <SPAN
+CLASS="SYSTEMITEM"
+>moria</SPAN
+> bajo su nombre UUCP.  Tenga en cuenta que el coste se 
+debe especificar como <SPAN
+CLASS="SYSTEMITEM"
+>DAILY/2</SPAN
+> porque conectando dos veces al día limita a la mitad el coste del vínculo</P
+><P
+>Al usar la información de los ficheros de mapas <B
+CLASS="COMMAND"
+>pathalias</B
+> es capaz de calcular las rutas óptimas a cualquier destino indicado en el 
+fichero de ruta y producir una base de datos ruta-alias con la que realizar el encaminamiento a estos sitios.</P
+><P
+>&#13;<B
+CLASS="COMMAND"
+>alias de ruta</B
+> proporciona otras opciones como el ocultamiento del sitio 
+(es decir, que sólo se pueda llegar a los sitios a través de una pasarela). Consulte la página sobre <B
+CLASS="COMMAND"
+>alias de ruta</B
+> del manual para obtener detalles y una lista completa de vínculos cost.</P
+><P
+>Los comentarios sobre el fichero de mapas suelen contener información adicional sobre los sitios descritos en él. 
+Existe un formato rígido en el que se puede especificar esta información de tal forma que se pueda recuperar a 
+partir de los mapas. Por ejemplo, un programa llamado <B
+CLASS="COMMAND"
+>uuwho</B
+> utiliza una base de datos creada a 
+partir de los ficheros de mapa para mostrar tal información de manera cómoda. Por ello, si usted contrata un sitio 
+con una organización que distribuye ficheros de mapas, deberá rellenar dicha entrada. A continuación se muestra 
+un ejemplo de entrada de mapa (es la perteneciente al sitio web de Olaf):
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    #N      monad, monad.swb.de, monad.swb.sub.org
+    #S      AT 486DX50; Linux 0.99
+    #O      private
+    #C      Olaf Kirch
+    #E      okir@monad.swb.de
+    #P      Kattreinstr. 38, D-64295 Darmstadt, FRG
+    #L      49 52 03 N / 08 38 40 E
+    #U      brewhq
+    #W      okir@monad.swb.de (Olaf Kirch); Sun Jul 25 16:59:32 MET DST 
+    1993
+    #
+    monad   brewhq(DAILY/2)
+    # Domains
+    monad = monad.swb.de
+    monad = monad.swb.sub.org</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El espacio en blanco que sigue a los dos primeros caracteres equivale a una tabulación. El significado de la mayoría de los campos 
+está bastante claro; de todas maneras, en caso de registrarse en cualquier dominio, recibiría dicha descripción detallada. El caso de la
+<SPAN
+CLASS="SYSTEMITEM"
+>L</SPAN
+> es el más curioso: proporciona la posición geográfica (latitud/longitud) del usuario y se 
+encarga de dibujar los mapas PostScript que controlan todos los sitios web de cada país e incluso de toda la red.<A
+NAME="X-087-2-FNMA07"
+HREF="#FTN.X-087-2-FNMA07"
+>[2]</A
+></P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNMA06"
+HREF="x-087-2-mail.routing.html#X-087-2-FNMA06"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Los mapas para los sitios registrados en el proyecto de mapeado UUCP se distribuyen a través del grupo de noticias <SPAN
+CLASS="SYSTEMITEM"
+>comp.mail.maps</SPAN
+>&thinsp;;
+otras organizaciones pueden publicar distintos mapas para sus redes. </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNMA07"
+HREF="x-087-2-mail.routing.html#X-087-2-FNMA07"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Suelen ser publicados en <SPAN
+CLASS="SYSTEMITEM"
+>news.lists.ps-maps</SPAN
+>.
+Ojo! Son INMENSOS.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-mail.address.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-mail.elm.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Direcciones de correo electrónico</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-mail.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>como configurar elm</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,443 @@
+<!doctype linuxdoc system>
+<article>
+
+<title>Configuración y uso de Server Side Includes (SSI) en Linux
+<author>Paco Brufal, &lt;<htmlurl url="mailto:pbrufal@ctv.es" name="pbrufal@ctv.es">&gt;
+<date>Versión 0.1, Octubre 1999
+
+<abstract>
+Este pequeño documento explica de manera sencilla cómo configurar y usar las
+instrucciones Server Side Includes (SSI) para crear documentos HTML de forma
+dinámica y sencilla. Asi mismo, este documento se distribuye SIN NINGUNA 
+GARANTIA bajo licencia GPL. No hace falta decir que se admiten sugerencias, 
+ejemplos, correcciones, etc. para posteriores revisiones.
+</abstract>
+
+<toc>
+
+<sect>Introducción.
+<p>
+El "lenguaje" SSI (Server Side Includes) son una serie de "tags" o
+etiquetas con un formato determinado, que se incluyen dentro del código HTML
+de una página, dándole dinamismo y ahorrándonos algo de trabajo. El formato
+de los tags tiene esta forma:
+
+<tscreen><code>
+[codigo HTML...]
+Hora local: <!--#echo var="$DATE_LOCAL"-->
+[codigo HMTL...]
+</code></tscreen>
+
+	El servidor, al enviar esa orden, la sustituiria por la variable
+$DATE_LOCAL, quedando más o menos así:
+
+<tscreen><code>
+Hora local: Tuesday, 14-Sep-1999 09:35:23 CEST
+</code></tscreen>
+
+El servidor web, antes de enviar éstas páginas, sustituye las
+etiquetas SSI por sus valores correspondientes, es decir, crea las páginas
+"on-the-fly" y las envía al navegador. No voy a extenderme más, puesto que
+el SSI no tiene demasiada dificultad de aprendizaje. Si deseas saber más
+sobre SSI, visita http://www.apache.org.
+
+<sect>Configuración de Apache
+<p>
+Vamos a configurar el servidor Apache. La distribución de Linux que
+he usado yo es Debian 2.1 (Slink), aunque no creo que difiera mucho de otras
+distribuciones. Revisa los ficheros de configuración de tu servidor y
+familiarizate con ellos. Si ves que algo de los que pongo no lo tienes en
+tus ficheros, añadelo. En caso que lo tengas, pero comentado, descomentalo.
+Lo primero que necesitamos es decirle que acepte etiquetas SSI descomentando
+la siguiente linea en la sección de los LoadModule, en el fichero
+/etc/apache/httpd.conf:
+
+<tscreen><code>
+LoadModule includes_module /usr/lib/apache/1.3/mod_include.so
+</code></tscreen>
+
+Para que el servidor reconozca la extensión .shtml (la que llevan
+las páginas que incluyen SSI), añadiremos esto al fichero
+/etc/apache/srm.conf:
+
+<tscreen><code>
+# To use server-parsed HTML files
+AddType text/html .shtml
+AddHandler server-parsed .shtml
+</code></tscreen>
+
+También podemos poner la opción "XBitHack". Poniendo esta opción, y
+haciendo ejecutables los ficheros HTML, el servidor comprobará si esos
+fichero tienen código SSI.
+
+Ahora vamos al fichero /etc/apache/access.conf. Miramos dentro del
+bloque "&lt;Directory /var/www&gt;" (o lo que es lo mismo, el DocumentRoot, donde
+se alojan las páginas del servidor) y buscamos una linea que empiece por
+"Options", que estará al principio del bloque. Bien, pues si esa linea es
+algo parecido a esto:
+
+<tscreen><code>
+Options Indexes FollowSymLinks
+</code></tscreen>
+
+	la dejaremos así
+
+<tscreen><code>
+Options Indexes FollowSymLinks +Includes
+</code></tscreen>
+
+Con esto ya podemos incluir etiquetas SSI en nuestras páginas web.
+Para hacer este documento un poco más util ;) voy a poner unos ejemplos de
+uso del SSI:
+
+<enum>
+<item>Datos de la conexión
+<item>Restringir el acceso a determinadas partes del servidor
+<item>Personalizar las páginas de error
+</enum>
+
+<sect1>Datos de la conexión
+<p>
+Este ejemplo servirá para familiarizarnos con SSI. Se trata de una
+simple página en la que pondremos todos los tags SSI que queramos, y al
+verla desde un navegador, el servidor sustituirá cada variable por su valor
+correspondiente, así sabremos qué es y para que sirve cada variable.
+
+<tscreen><code>
+DATE_GMT <!--#echo var="DATE_GMT" --> <br>
+DATE_LOCAL <!--#echo var="DATE_LOCAL" --> <br>
+DOCUMENT_NAME <!--#echo var="DOCUMENT_NAME" --> <br>
+DOCUMENT_PATH_INFO <!--#echo var="DOCUMENT_PATH_INFO" --> <br>
+DOCUMENT_ROOT <!--#echo var="DOCUMENT_ROOT" --> <br>
+DOCUMENT_URI <!--#echo var="DOCUMENT_URI" --> <br>
+LAST_MODIFIED <!--#echo var="LAST_MODIFIED" --> <br>
+GATEWAY_INTERFACE <!--#echo var="GATEWAY_INTERFACE" --> <br>
+HTTP_ACCEPT <!--#echo var="HTTP_ACCEPT" --> <br>
+HTTP_ACCEPT_CHARSET <!--#echo var="HTTP_ACCEPT_CHARSET" --> <br>
+HTTP_ACCEPT_ENCODING <!--#echo var="HTTP_ACCEPT_ENCODING" --> <br>
+HTTP_ACCEPT_LANGUAGE <!--#echo var="HTTP_ACCEPT_LANGUAGE" --> <br>
+HTTP_CONNECTION <!--#echo var="HTTP_CONNECTION" --> <br>
+HTTP_COOKIE <!--#echo var="HTTP_COOKIE" --> <br>
+HTTP_HOST <!--#echo var="HTTP_HOST" --> <br>
+HTTP_IF_MODIFIED_SINCE <!--#echo var="HTTP_IF_MODIFIED_SINCE" --> <br>
+HTTP_PRAGMA <!--#echo var="HTTP_PRAGMA" --> <br>
+HTTP_USER_AGENT <!--#echo var="HTTP_USER_AGENT" --> <br>
+PATH <!--#echo var="PATH" --> <br>
+QUERY_STRING <!--#echo var="QUERY_STRING" --> <br>
+REMOTE_ADDR <!--#echo var="REMOTE_ADDR" --> <br>
+REMOTE_HOST <!--#echo var="REMOTE_HOST" --> <br>
+REMOTE_PORT <!--#echo var="REMOTE_PORT" --> <br>
+REQUEST_METHOD <!--#echo var="REQUEST_METHOD" --> <br>
+SCRIPT_FILENAME <!--#echo var="SCRIPT_FILENAME" --> <br>
+SERVER_ADMIN <!--#echo var="SERVER_ADMIN" --> <br>
+SERVER_NAME <!--#echo var="SERVER_NAME" --> <br>
+SERVER_PORT <!--#echo var="SERVER_PORT" --> <br>
+SERVER_PROTOCOL <!--#echo var="SERVER_PROTOCOL" --> <br>
+SERVER_SIGNATURE <!--#echo var="SERVER_SIGNATURE" --> <br>
+SERVER_SOFTWARE <!--#echo var="SERVER_SOFTWARE" --> <br>
+SCRIPT_NAME <!--#echo var="SCRIPT_NAME" --> <br>
+USER_NAME <!--#echo var="USER_NAME" --> <br>
+</code></tscreen>
+
+<sect1>Restringir el acceso a determinadas partes del servidor
+<p>
+Con este pequeño trozo de código podemos ocultar un enlace según
+desde donde venga la petición de la página. Es decir, si alguien de nuestra
+red local solicita una página, el servidor comprobará la IP, y si cumple con
+la regla SSI, mostrará el enlace en la página web. En caso contrario, no lo
+mostrará.
+
+	El código sería algo así:
+
+<tscreen><code>
+[...resto de la página...]
+<!--#if expr="$REMOTE_ADDR = /^192.168.1./" -->
+	<a href="boletin_interno.html">Boletin Interno de la Empresa&lt;/a>
+<!--#endif -->
+[...resto de la página...]
+</code></tscreen>
+
+Si la IP que solicita la página está en el rango 192.168.1.xxx,
+podrá ver el enlace. En cambio, si la IP 212.23.125.56 (p. ej.) solicita la
+misma página, no verá el enlace.
+ 
+
+<sect1>Personalizar las páginas de error.
+<p>
+Con este ejemplo, lo que pretendemos es que cada vez que se produzca
+un error, el servidor nos diga qué clase de error se ha producido de una
+manera que cualquier persona lo pueda entender, y no con el típico error
+"Error 404" y esas cosas. Además, las haremos en varios idiomas, para que
+cada persona que vea un error, lo pueda leer según con el idioma preferente
+que tenga definido en el navegador.
+
+Lo primero que haremos será añadir este bloque al final del fichero
+/etc/apache/srm.conf
+
+
+<tscreen><code>
+# Asignamos un alias a la ruta /var/errordocs/,
+# es decir, que el path /var/errordocs/ será
+# la URL http://localhost/errordocs
+# (al igual que /usr/lib/cgi-bin/ es http://localhost/cgi-bin/...)
+Alias /errordocs /var/errordocs
+
+# Definimos las propiedades de ese directorio
+&lt;Directory /var/errordocs>
+  AllowOverride none
+  Options MultiViews IncludesNoExec FollowSymLinks
+  AddType text/html .shtml
+  AddHandler server-parsed .shtml
+&lt;/Directory>
+
+# Asignamos un documento por cada error (puedes poner tantos como errores
+# existan).
+ErrorDocument 403 /errordocs/403.shtml
+ErrorDocument 404 /errordocs/404.shtml
+ErrorDocument 500 /errordocs/500.shtml
+ErrorDocument 400 /errordocs/400.shtml
+</code></tscreen>
+
+Ahora vamos a crear las páginas de error, que se alojarán en el
+directorio /var/errordocs. Los nombres de los ficheros han de ser los que
+definimos en el fichero /etc/apache/srm.conf. El diseño de la página es
+común, lo único que cambia es el cuerpo y el pie de página. Para elegir el
+idioma del mensaje, usaremos algo así:
+
+<tscreen><code>
+<!--#if expr="$HTTP_ACCEPT_LANGUAGE = /^es-ES/" -->
+	<!--#include virtual="404_es.html" -->
+<!--#endif -->
+<!--#if expr="$HTTP_ACCEPT_LANGUAGE = /^en/" -->
+        <!--#include virtual="404_en.html" -->
+<!--#endif -->
+[...todas las condiciones que desees...]
+</code></tscreen>
+ 
+ 
+	Al final de cada página de error, incluiremos la orden
+
+<tscreen><code>
+<!--#include virtual="foot.shtml"-->
+</code></tscreen>
+
+para que en el pie de página aparezcan una serie de datos variables
+y comunes a todas las páginas de error. Con esto lo que nos ahorramos es
+trabajo, ya que lo escribimos una vez, y lo podemos usar en todos las
+páginas de error. Aqui pongo un pequeño fichero de ejemplo, concretamente el
+fichero /var/errordocs/404.shtml, que saldrá cuando alguien pida una página
+que no existe:
+
+<tscreen><code>
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="Author" content="Paco Brufal">
+   &lt;title>Error!&lt;/title>
+&lt;/head>
+
+<body text="#000000" bgcolor="#000000" link="#0000EF" vlink="#51188E"
+alink="#FF0000">
+
+<center>
+
+<!-- Incluimos una imagen de error -->
+<img src="/errordocs/error.jpg"  width="320" height="89" alt="Error!"
+border="0" align="top">
+<hr WIDTH="100%">
+
+<!-- Condiciones del idioma -->
+<!--#if expr="$HTTP_ACCEPT_LANGUAGE = /^es-ES/" -->
+        <!--#include virtual="404_es.html" -->
+<!--#endif -->
+<!--#if expr="$HTTP_ACCEPT_LANGUAGE = /^en/" -->
+        <!--#include virtual="404_en.html" -->
+<!--#endif -->
+<!-- [...todas las condiciones que desees...] -->
+
+<!-- El pie de página es comun -->
+<!--#include virtual="foot.shtml" -->
+
+&lt;/center>
+&lt;/body>
+&lt;/html>
+</code></tscreen>
+
+El contenido del fichero foot.shtml es este:
+
+<tscreen><code>
+<br>
+<a href="mailto:webmaster@dominio.com">WebMaster&lt;/a>
+<br>
+Direcci&oacute;n remota: <!--#echo var="REMOTE_HOST" --> 
+[<!--#echo var="REMOTE_ADDR" -->]
+<br>
+Hora local: <!--#echo var="DATE_LOCAL" -->
+&lt;/font>
+&lt;/center>
+</code></tscreen>
+
+Los ficheros de error en distintos idiomas han de ser nombrados
+siguiendo el patrón "&lt;numero-de-error&gt;_&lt;idioma&gt;.html", como por ejemplo:
+404_es.html (mensaje de error 404 en castellano), o 500_en.html (mensaje de
+error 500 en inglés). Ver Anexo C para los códigos de idioma.
+
+El fichero 404_es.html podría ser así:
+
+<tscreen><code>
+<br>
+<font face="Arial,Helvetica">
+<font color="#FFFFFF">
+<font size=+4>Error 404
+&lt;/font>&lt;/font>&lt;/font>
+<p><font face="Arial,Helvetica">
+<font color="#FFFFFF"><font size=+4>
+P&aacute;gina no encontrada
+&lt;/font>&lt;/font>&lt;/font>
+<p><font face="Arial,Helvetica"><font color="#FFFFFF">
+La p&aacute;gina que usted solicita no se encuentra en este servidor.
+&lt;/font>&lt;/font>
+<br>
+<hr WIDTH="100%">
+<br>
+<center>
+<font color="#FFFFFF">
+Si est&aacute; seguro que este error es fallo del
+servidor, y no suyo, contacte con
+</code></tscreen>
+
+Ahora solo nos falta hacer un buen diseño de las páginas, traducir
+los mensajes a sus respectivos idiomas y reiniciar el servidor Apache para
+que acepte los cambios.
+
+<sect1>Consideraciones
+<p>
+Lo explicado aqui es muy básico, las posibilidades que ofrece SSI
+son muy grandes, así que te recomiendo que visites http://www.apache.org
+para informarte más ampliamente.
+
+<sect>Anexos
+<sect1>Anexo A.- Algunas etiquetas interesantes de SSI
+<p>
+<tscreen><code>
+SSI:<!--#config errmsg="" -->
+SSI:<!--#config sizefmt="" -->
+SSI:<!--#config timefmt="" -->
+SSI:<!--#echo var="" -->
+SSI:<!--#exec cgi="" -->
+SSI:<!--#exec cmd="" -->
+SSI:<!--#fsize file="" -->
+SSI:<!--#fsize virtual="" -->
+SSI:<!--#flastmod file="" -->
+SSI:<!--#flastmod virtual="" -->
+SSI:<!--#if expr="" -->
+SSI:<!--#elif expr="" -->
+SSI:<!--#else -->
+SSI:<!--#endif -->
+SSI:<!--#include file="" -->
+SSI:<!--#include virtual="" -->
+SSI:<!--#printenv -->
+SSI:<!--#set var="" value="" -->
+</code></tscreen>
+
+<sect1>Anexo B.- Algunas variables que se pueden usar con SSI
+<p>
+<tscreen><code>
+Variables:$DATE_GMT
+Variables:$DATE_LOCAL
+Variables:$DOCUMENT_NAME
+Variables:$DOCUMENT_PATH_INFO
+Variables:$DOCUMENT_ROOT
+Variables:$DOCUMENT_URI
+Variables:$LAST_MODIFIED
+Variables:$GATEWAY_INTERFACE
+Variables:$HTTP_ACCEPT
+Variables:$HTTP_ACCEPT_CHARSET
+Variables:$HTTP_ACCEPT_ENCODING
+Variables:$HTTP_ACCEPT_LANGUAGE
+Variables:$HTTP_CONNECTION
+Variables:$HTTP_COOKIE
+Variables:$HTTP_HOST
+Variables:$HTTP_IF_MODIFIED_SINCE
+Variables:$HTTP_PRAGMA
+Variables:$HTTP_USER_AGENT
+Variables:$PATH
+Variables:$QUERY_STRING
+Variables:$REMOTE_ADDR
+Variables:$REMOTE_HOST
+Variables:$REMOTE_PORT
+Variables:$REQUEST_METHOD
+Variables:$SCRIPT_FILENAME
+Variables:$SERVER_ADMIN
+Variables:$SERVER_NAME
+Variables:$SERVER_PORT
+Variables:$SERVER_PROTOCOL
+Variables:$SERVER_SIGNATURE
+Variables:$SERVER_SOFTWARE
+Variables:$SCRIPT_NAME
+Variables:$USER_NAME
+</code></tscreen>
+
+<sect1>Anexo C.- Códigos de Idioma
+<p>
+<tscreen><code>
+afrikaans		af
+albanian		sq
+basque			eu
+bulgarian		bg
+byelorussian		be
+catalan			ca
+chinese			zh
+chinese/China		zh-CN
+chinese/Taiwan		zh-TW
+croatian		hr
+czech			cs
+danish			da
+dutch			nl
+dutch/Belgium		bl-BE
+english			en
+english/UK		en-GB
+english/USA		en-US
+fearoese		fo
+finnish			fi
+french			fr
+french/belgium		fr-BE
+french/canada		fr-CA
+french/france		fr-FR
+french/switzerland 	fr-CH
+galician		gl
+german			de
+german/austria		de-AT
+german/germanny		de-DE
+german/switzerland 	de-CH
+greek			el
+hungarian		hu
+icelandic		is
+indonesian		id
+irish			ga
+italian			it
+japanese		ja
+korean			ko
+macedonia		mk
+norwegian		no
+polish			pl
+portuguese		pt
+portuguese/brazil 	pt-BR
+romanian		ro
+russian			ru
+scots gaelic		gd
+serbian			sr
+slovak			sk
+slovenian		sl
+spanish			es
+spanish/argentina 	es-AR
+spanish/colombia  	es-CO
+spanish/mexico		es-MX
+spanish/spain		es-ES
+swedish			sv
+turkish			tr
+ukrainian		uk
+</code></tscreen>
+
+</article>

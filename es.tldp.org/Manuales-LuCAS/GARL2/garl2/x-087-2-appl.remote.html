@@ -1,0 +1,1272 @@
+<HTML
+><HEAD
+><TITLE
+>Configurando el Registro y Ejecución Remotos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Características Importantesde Redes"
+HREF="x-087-2-appl.html"><LINK
+REL="PREVIOUS"
+TITLE="Llamada a Procedimiento Remoto"
+HREF="x-087-2-appl.rpc.html"><LINK
+REL="NEXT"
+TITLE="El Sistema de Información de Red (NIS)"
+HREF="x-087-2-nis.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-appl.rpc.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 12. Características Importantesde Redes</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-APPL.REMOTE">12.5. Configurando el Registro y Ejecución Remotos</H1
+><P
+>Es a menudo muy útil ejecutar una orden en un host remoto y
+que la entrada o la salida de esa orden pueda leerse o escribirse a través de una conexión de red.</P
+><P
+>&#13;
+
+
+
+
+Los programas tradicionales para ejecutar órdenes en hosts remotos son
+<B
+CLASS="COMMAND"
+>rlogin</B
+>, <B
+CLASS="COMMAND"
+>rsh</B
+> y <B
+CLASS="COMMAND"
+>rcp</B
+>.
+Vimos un ejemplo de la orden <B
+CLASS="COMMAND"
+>rlogin</B
+> en <A
+HREF="x-087-2-intro.html"
+>Capítulo 1</A
+> 
+en la sección <A
+HREF="x-087-2-intro.tcpip.html#X-087-2-INTRO.TCPIP.INTRO"
+>Sección 1.2.1</A
+>.&rdquo; 
+vimos brevemente cuestiones de seguridad
+asociadas con esto en <A
+HREF="x1519.html#X-087-2-INTRO.SECURITY"
+>Sección 1.5.1</A
+>&rdquo; y
+sugerimos <B
+CLASS="COMMAND"
+>ssh</B
+> como alternativa.
+El paquete <B
+CLASS="COMMAND"
+>ssh</B
+> proporciona unos reemplazos  llamados
+<B
+CLASS="COMMAND"
+>slogin</B
+>, <B
+CLASS="COMMAND"
+>ssh</B
+>, y <B
+CLASS="COMMAND"
+>scp</B
+>.</P
+><P
+>&#13;Cada una de estas órdenes genera un intérprete de órdenes en el host remoto y permite al usuario
+ejecutar órdenes. Por supuesto, el cliente necesita tener una cuenta en el
+host remoto donde la orden va a ser ejecutada. Así, todas estas órdenes
+usan un proceso de autentificación. Las órdenes <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>r</I
+></SPAN
+> usan un simple
+intercambio de nombre de usuario y contraseña entre los hosts sin encriptación, de este modo cualquiera
+que esté escuchando puede fácilmente interceptar las contraseñas. El conjunto de órdenes <B
+CLASS="COMMAND"
+>ssh</B
+>
+proporcionan un  nivel de seguridad más alto: usan una técnica 
+llamada <B
+CLASS="COMMAND"
+>Criptografía de Clave Pública</B
+>, la cual proporciona autentificación y encriptación 
+entre los hosts para asegurar que tanto contraseñas como datos de la sesión sean interceptados por otros 
+hosts.</P
+><P
+>&#13;Es posible relajar la comprobación de la autentificación para ciertos usuarios 
+todavía más. Por ejemplo, si usted tiene que registrarse en otras máquinas de 
+su red frecuentemente, usted puede querer ser admitido sin tener que teclear 
+su contraseña cada vez. Esto era posible con las órdenes <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>r</I
+></SPAN
+>, 
+pero las órdenes <B
+CLASS="COMMAND"
+>ssh</B
+> le permiten hacer esto algo más sencillo. Esto 
+no es una gran idea porque significa que si una cuenta de una máquina
+es violada, se puede ganar el acceso a otras cuentas que el usuario ha configurado
+para registrarse sin password, pero esto es muy conveniente y la gente quiere usarlo.</P
+><P
+>Hablemos acerca de quitar las órdenes <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>r</I
+></SPAN
+> y usar
+<B
+CLASS="COMMAND"
+>ssh</B
+> para trabajar en su lugar.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN10486">12.5.1. Desactivando las Órdenes r</H2
+><P
+>Comencemos retirando las órdenes <B
+CLASS="COMMAND"
+>r</B
+> si están instaladas.
+La forma más fácil de desactivar las órdenes  <B
+CLASS="COMMAND"
+>r</B
+> antiguas es
+comentando (o borrando) sus entradas en el fichero
+<TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+>. Las entradas relevantes se parecen a algo
+como esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # Shell, login, exec y talk como protocolos BSD.
+    shell    stream  tcp     nowait  root  /usr/sbin/tcpd /usr/sbin/in.rshd
+    login    stream  tcp     nowait  root  /usr/sbin/tcpd /usr/sbin/in.rlogind
+    exec     stream  tcp     nowait  root  /usr/sbin/tcpd /usr/sbin/in.rexecd</PRE
+></TD
+></TR
+></TABLE
+>
+
+Puede comentarlas anteponiendo el carácter <TT
+CLASS="LITERAL"
+>#</TT
+> al principio 
+de cada línea, o borrando las líneas completamente. Recuerde, necesitará 
+reiniciar el demonio <B
+CLASS="COMMAND"
+>inetd</B
+> para que este cambio tenga efecto. 
+Idealmente, debería retirar los mismos ejecutables también.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN10495">12.5.2. Instalando y Configurando ssh</H2
+><P
+>&#13;
+OpenSSH es una versión libre del conjunto de programas ssh; el porte para GNU/Linux se puede encontrar en
+<SPAN
+CLASS="SYSTEMITEM"
+>http://violet.ibs.com.au/openssh/</SPAN
+> y en
+muchas distribuciones modernas de GNU/Linux.<A
+NAME="X-087-2-FNFE04"
+HREF="#FTN.X-087-2-FNFE04"
+>[1]</A
+>
+No explicaremos aquí la compilación; se incluyen buenas instrucciones en el código fuente. 
+Si usted puede instalarlo desde un paquete precompilado, es probablemente inteligente hacerlo así.</P
+><P
+>Hay dos partes en una sesión <B
+CLASS="COMMAND"
+>ssh</B
+>. Hay un cliente
+<B
+CLASS="COMMAND"
+>ssh</B
+> que usted necesita configurar y ejecutar en el host local
+y un demonio <B
+CLASS="COMMAND"
+>ssh</B
+> que debe ejecutarse en el host remoto.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN10511">12.5.2.1. El Demonio ssh</H3
+><P
+>&#13;
+El demonio <B
+CLASS="COMMAND"
+>sshd</B
+> es el programa que escucha conexiones de red
+desde clientes <B
+CLASS="COMMAND"
+>ssh</B
+>, gestiona la autentificación, y
+ejecuta las órdenes requeridas por el cliente. Hay un fichero de configuración principal llamado
+<TT
+CLASS="FILENAME"
+>/etc/ssh/sshd_config</TT
+> y un fichero especial que contiene
+una clave usada por los procesos de autentificación y encriptación para representar la parte del host. 
+Cada host y cada cliente tienen su propia clave.</P
+><P
+>&#13;
+
+
+Una utilidad llamada <B
+CLASS="COMMAND"
+>ssh-keygen</B
+> se proporciona para generar
+un clave aleatoria. Esto comúnmente se usa una vez en la instalación para
+generar la clave del host, la cual el administrador de sistema guarda
+en un fichero llamado <TT
+CLASS="FILENAME"
+>/etc/ssh/ssh_host_key</TT
+>.  Las claves
+pueden ser de cualquier longitud de 512 bits o mayores. Por omisión,
+<B
+CLASS="COMMAND"
+>ssh-keygen</B
+> genera claves de 1024 bits de longitud,
+y la mayoría de la gente usa lo predeterminado. Para generar una clave aleatoria, debe
+invocar la orden <B
+CLASS="COMMAND"
+>ssh-keygen</B
+> así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ssh-keygen -f /etc/ssh/ssh_host_key</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><P
+>Se le pedirá que introduzaca una frase de paso. Sin embargo, las claves host no deben usar
+frase de paso, en este caso pulse la tecla return para dejarla en blanco. La salida del programa
+será algo así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    Generating RSA keys:  ......oooooO...............................oooooO
+    Key generation complete.
+    Enter passphrase (empty for no passphrase): 
+    Enter same passphrase again: 
+    Your identification has been saved in /etc/ssh/ssh_host_key
+    Your public key has been saved in /etc/ssh/ssh_host_key.pub
+    The key fingerprint is:
+    1024 3a:14:78:8e:5a:a3:6b:bc:b0:69:10:23:b7:d8:56:82 root@moria</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;
+
+
+
+Puede encontrar al final que los dos ficheros han sido creados. El primero se
+llama la clave privada, el cual debe mantenerse en secreto y estará en
+<TT
+CLASS="FILENAME"
+>/etc/ssh/ssh_host_key</TT
+>. El segundo se llama la clave pública
+y es el que puede compartir; estará en
+<TT
+CLASS="FILENAME"
+>/etc/ssh/ssh_host_key.pub</TT
+>.</P
+><P
+>Armados con las claves para la comunicación <B
+CLASS="COMMAND"
+>ssh</B
+>,  necesita
+crear un fichero de configuración. las órdenes <B
+CLASS="COMMAND"
+>ssh</B
+> son muy 
+potentes y el fichero de configuración
+puede contener muchas opciones. Expondremos un ejemplo sencillo para que 
+empiece; debe dirigirse a la documentación de <B
+CLASS="COMMAND"
+>ssh</B
+> para activar otras
+características. El siguiente código muestra un fichero de configuración seguro y mínimo de
+<B
+CLASS="COMMAND"
+>sshd</B
+> . El resto de las opciones de configuración
+se detallan en las páginas del manual de <B
+CLASS="COMMAND"
+>sshd</B
+>&thinsp;(8) :</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # /etc/ssh/sshd_config
+    #
+    
+    # Las direcciones IP que escuchan conexiones entrantes. 0.0.0.0 significa todas las
+    # direcciones locales
+    ListenAddress 0.0.0.0
+    
+    # El puerto TCP que escucha conexiones entrantes. Por omisión el 22.
+    Port 22
+    
+    # El nombre del fichero clave del host.
+    HostKey /etc/ssh/ssh_host_key
+    
+    # La longitud de la clave en bits.
+    ServerKeyBits 1024
+    
+    # ¿Debemos permitir registros (login) del root por ssh?
+    PermitRootLogin no
+    
+    # ¿Debe el demonio ssh verificar que el directorio inicial (home) del usuario y los permisos de fichero
+    # sean seguros antes de permitir el registro (login)?
+    StrictModes yes
+    
+    # ¿Debemos permitir el método antiguo de autentificación  ~/.rhosts y /etc/hosts.equiv?
+    RhostsAuthentication no
+    # ¿Debemos permitir autenticación pura RSA?
+    RSAAuthentication yes
+    # ¿Debemos permitir autenticación por contraseña?
+    PasswordAuthentication yes
+    
+    # ¿Debemos permitir /etc/hosts.equiv combinado con autentificación host por RSA?
+    RhostsRSAAuthentication no
+    # ¿Ignorar los ficheros ~/.rhosts?
+    IgnoreRhosts yes
+    # ¿Permitimos registros (logins) a cuentas con contraseñas vacías?
+    PermitEmptyPasswords no</PRE
+></TD
+></TR
+></TABLE
+><P
+>Es importante estar seguro de que los permisos de los ficheros de configuración
+son correctos para asegurar que se mantiene el sistema de seguridad. Use las siguientes
+órdenes:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>chown -R root:root /etc/ssh</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>chmod 755 /etc/ssh</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>chmod 600 /etc/ssh/ssh_host_key</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>chmod 644 /etc/ssh/ssh_host_key.pub</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>chmod 644 /etc/ssh/sshd_config</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La etapa final de la administración del demonio <B
+CLASS="COMMAND"
+>sshd</B
+> es
+ejecutarlo. Normalmente necesitará crear un fichero <TT
+CLASS="FILENAME"
+>rc</TT
+>
+para ello o añadirlo a uno existente, de este modo se ejecutará automáticamente
+en el arranque. El demonio corre solo y no necesita ninguna entrada en el 
+fichero <TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+> . El demonio debe correr como 
+usuario <TT
+CLASS="LITERAL"
+>root</TT
+> . La sintaxis es simple:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    /usr/sbin/sshd</PRE
+></TD
+></TR
+></TABLE
+>
+
+El demonio <B
+CLASS="COMMAND"
+>sshd</B
+> automáticamente se ejecutará
+en segundo plano. Ahora esta listo para aceptar conexiones <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ssh</I
+></SPAN
+>.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN10579">12.5.2.2. El cliente ssh</H3
+><P
+>&#13;
+
+
+Existen variedad de programas clientes <B
+CLASS="COMMAND"
+>ssh</B
+>:
+<B
+CLASS="COMMAND"
+>slogin</B
+>, <B
+CLASS="COMMAND"
+>scp</B
+> y <B
+CLASS="COMMAND"
+>ssh</B
+>.
+Cada uno lee el mismo fichero de configuración, normalmente llamado
+<TT
+CLASS="FILENAME"
+>/etc/ssh/ssh_config</TT
+>. Cada uno de ellos también lee ficheros de configuración
+desde el directorio <TT
+CLASS="FILENAME"
+>.ssh</TT
+> en el directorio inicial (home) 
+del usuario que lo esté ejecutando. El más importante de estos ficheros es el
+<TT
+CLASS="FILENAME"
+>.ssh/config</TT
+>, el cual puede contener opciones que sustituirán a las especificadas
+en el fichero <TT
+CLASS="FILENAME"
+>/etc/ssh/ssh_config</TT
+>, el fichero
+<TT
+CLASS="FILENAME"
+>.ssh/identity</TT
+>, el cual contiene la propia clave privada del usuario,
+y el correspondiente fichero <TT
+CLASS="FILENAME"
+>.ssh/identity.pub</TT
+>,
+conteniendo la clave pública propia del usuario. Otros ficheros importantes son <TT
+CLASS="FILENAME"
+>.ssh/known_hosts</TT
+> y
+<TT
+CLASS="FILENAME"
+>.ssh/authorized_keys</TT
+>; hablaremos de ellos después en <A
+HREF="x-087-2-appl.remote.html#X-087-2-FEATURES.SSH.USING"
+>Sección 12.5.2.3</A
+>.&rdquo; Primero, vamos a crear el 
+fichero de configuración global y el fichero de claves de usuario.</P
+><P
+>El fichero <TT
+CLASS="FILENAME"
+>/etc/ssh/ssh_config</TT
+> es muy similar al de configuración del servidor.
+Otra vez, tenemos muchas características que usted puede configurar, pero
+una configuración minima puede ser como la expuesta en
+<A
+HREF="x-087-2-appl.remote.html#X-087-2-FEATURES.SSH.CONF"
+>Ejemplo 12-5</A
+>. El resto de las opciones de configuración
+están detalladas en la página de manual <B
+CLASS="COMMAND"
+>sshd(8)</B
+>. Puede añadir secciones que coincidan
+con hosts específicos o grupos de hosts. El parámetro a la declaración
+&ldquo;<TT
+CLASS="LITERAL"
+>Host</TT
+>&rdquo; puede ser cualquiera de los nombres completos de un host
+o una especificación de carácter comodín, como hemos usado en nuestro ejemplo, para que coincidan todos los
+hosts. Podemos crear una entrada que usada, por ejemplo,
+<TT
+CLASS="LITERAL"
+>Host *.vbrew.com</TT
+> haga coincidir cualquier host en el dominio
+<TT
+CLASS="LITERAL"
+>vbrew.com</TT
+>.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-FEATURES.SSH.CONF"><P
+><B
+>Ejemplo 12-5. Ejemplo De Fichero de Configuración del Cliente ssh</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # /etc/ssh/ssh_config
+    
+    # Opciones predeterminads a usar cuando se conecte a un host remoto
+    Host *
+      # ¿Comprimir los datos de sesión?
+      Compression yes
+      # .. usando qué nivel de compresión? (1 - rápida/escasa, 9 - lenta/mucha)
+      CompressionLevel 6
+    
+      # ¿Usar  rsh si la conexión segura falla?
+      FallBackToRsh no
+    
+      # ¿Debemos mandar mensajes para mantener la conexión (keep-alive)? Util si se usa enmascaramiento IP
+      KeepAlive yes
+    
+      # ¿Intentar autentificación RSA?
+      RSAAuthentication yes
+      # ¿Intentar autentificación RSA en combinación con autentificación .rhosts?
+      RhostsRSAAuthentication yes</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>&#13;Mencionamos en la sección de configuración de servidor que cada host y cada usario tiene una clave. La clave de usuario se guarda en su
+fichero <TT
+CLASS="FILENAME"
+>~/.ssh/indentity</TT
+> . Para generar la clave, se usa la misma orden
+<B
+CLASS="COMMAND"
+>ssh-keygen</B
+> que usamos para generar la clave de 
+host, excepto que esta vez no necesita especificar el nombre del fichero 
+donde usted guarda la clave. <B
+CLASS="COMMAND"
+>ssh-keygen</B
+> tiene predeterminada
+la localización correcta, pero le pregunta que introduzca un nombre de fichero
+en el caso que usted no quiera éste. Es útil algunas veces para  tener ficheros de identidad diferentes,
+así que <B
+CLASS="COMMAND"
+>ssh</B
+> permite esto.
+Como antes, <B
+CLASS="COMMAND"
+>ssh-keygen</B
+> le preguntará que introduzca una 
+frase de paso. Las frases de paso añaden otro nivel de seguridad y son una buena idea.
+Su frase de paso no será impresa en pantalla cuando usted la teclee.
+<DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Aviso</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>No hay forma de recuperar una frase de paso si la olvida. Cercióorese
+de que será algo que usted recordará, pero como toda contraseña, elija algo
+que no sea obvio, como nombres propios o su nombre. Para que una frase de paso sea efectiva,
+debe tener entre 10 y 30 caracteres de longitud
+y no debe ser prosa inglesa simple. Pruebe incluir algunos caracteres no usuales.
+Si usted pierde su frase de paso, deberá generar una clave nueva.</P
+></TD
+></TR
+></TABLE
+></DIV
+>
+
+
+
+
+Debería preguntar a cada uno de sus usuarios si han ejecutado la orden <B
+CLASS="COMMAND"
+>ssh-keygen</B
+>
+para asegurarse de que sus ficheros de claves se han generado correctamente. El
+<B
+CLASS="COMMAND"
+>ssh-keygen</B
+> creará sus directorios <TT
+CLASS="FILENAME"
+>~/.ssh/</TT
+>
+para ellos con los permisos apropiados y creará su clave privada y pública 
+en <TT
+CLASS="FILENAME"
+>.ssh/identity</TT
+> y
+<TT
+CLASS="FILENAME"
+>.ssh/identity.pub</TT
+>, respectivamente. Un ejemplo de sesión se muestra aquí:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>ssh-keygen</B
+></TT
+>
+    Generating RSA keys:  .......oooooO..............................
+    Key generation complete.
+    Enter file in which to save the key (/home/maggie/.ssh/identity): 
+    Enter passphrase (empty for no passphrase): 
+    Enter same passphrase again: 
+    Your identification has been saved in /home/maggie/.ssh/identity.
+    Your public key has been saved in /home/maggie/.ssh/identity.pub.
+    The key fingerprint is:
+    1024 85:49:53:f4:8a:d6:d9:05:d0:1f:23:c4:d7:2a:11:67 maggie@moria
+    $</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Ahora <B
+CLASS="COMMAND"
+>ssh</B
+> esta listo para ejecutarse.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FEATURES.SSH.USING">12.5.2.3. Utilización de ssh</H3
+><P
+>&#13;Ahora tenemos la orden <B
+CLASS="COMMAND"
+>ssh</B
+> y sus programas asociados
+instalados y listos para ejecutarse. Veamos rápidamente como se ejecutan.</P
+><P
+>&#13;
+
+Primero, probaremos un registro (login) remoto a un host. Podemos usar el programa <B
+CLASS="COMMAND"
+>slogin</B
+> de la misma forma que usamos el programa <B
+CLASS="COMMAND"
+>rlogin</B
+> 
+en nuestro ejemplo anterior en el libro. La primera vez que esperamos conectarnos a un host, 
+el cliente <B
+CLASS="COMMAND"
+>ssh</B
+> recuperará la clave
+publica del host y le preguntará si confirma esta identidad instándole 
+con una versión reducida de la clave pública llamada
+<B
+CLASS="COMMAND"
+>huella dactilar</B
+><A
+NAME="AEN10662"
+HREF="#FTN.AEN10662"
+>[2]</A
+>. </P
+><P
+>El administrador del host remoto le debería haber proporcinado previamente
+estas huellas dactilares, las cuáles usted debe añadir a su
+fichero <TT
+CLASS="FILENAME"
+>.ssh/known_hosts</TT
+> . Si el administrador remoto
+no le ha dado las claves apropiadas, usted puede
+conectarse al host remoto, pero <B
+CLASS="COMMAND"
+>ssh</B
+> le advertirá 
+que no tiene una clave y le pedirá que acepte una ofrecida por el host remoto.  
+Asumiendo que usted está seguro que nadie le engaña con
+DNS spoofing y que usted de hecho está hablando con el host correcto,
+conteste yes.  La clave se guarda automáticamente en su
+<TT
+CLASS="FILENAME"
+>.ssh/known_hosts</TT
+> y no se le preguntará otra vez.
+Si, en un futuro intento de conexión, 
+la clave pública recuperada desde este host no coincide con la que hay guardada,
+se le advertirá, porque esto representa un agujero de seguridad potencial.</P
+><P
+>La primera vez que conectamos con un host remoto veremos algo como esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>slogin vchianti.vbrew.com</B
+></TT
+>
+    The authenticity of host 'vchianti.vbrew.com' can't be established.
+    Key fingerprint is 1024 7b:d4:a8:28:c5:19:52:53:3a:fe:8d:95:dd:14:93:f5.
+    Are you sure you want to continue connecting (yes/no)? <TT
+CLASS="USERINPUT"
+><B
+>yes</B
+></TT
+>
+    Warning: Permanently added 'vchianti.vbrew.com,172.16.2.3' to the list of/
+        known hosts.
+    maggie@vchianti.vbrew.com's password: 
+    Last login: Tue Feb  1 23:28:58 2000 from vstout.vbrew.com
+    $</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Se le pedirá una clave, debe contestar con la clave de la cuenta remota,
+no con la local. Esta clave no tendrá eco por pantalla cuando la introduzca.</P
+><P
+>Sin ningún argumento especial, <B
+CLASS="COMMAND"
+>slogin</B
+> intentará utilizar el mismo
+identificador de usuario que en la máquina local. Puede cambiar esto
+usando el argumento <TT
+CLASS="LITERAL"
+>-l</TT
+> , dando un nombre de registro alternativo
+en el host remoto. Esto que lo que hicimos en nuestro ejemplo anterior en el libro.</P
+><P
+>&#13;Podemos copiar ficheros hacia y desde un host remoto usando el programa <B
+CLASS="COMMAND"
+>scp</B
+>.
+Su sintaxis es similar al convencional <B
+CLASS="COMMAND"
+>cp</B
+>
+con la excepción que debe especificar un nombre de host antes del fichero, significando
+que el camino del fichero está en el host especificado. El siguiente ejemplo ilustra
+la sintaxis de <B
+CLASS="COMMAND"
+>scp</B
+> copiando un fichero local llamado
+<TT
+CLASS="FILENAME"
+>/tmp/fred</TT
+> al <TT
+CLASS="FILENAME"
+>/home/maggie/</TT
+> del host remoto
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>chianti.vbrew.com</B
+></SPAN
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>scp /tmp/fred vchianti.vbrew.com:/home/maggie/</B
+></TT
+>
+    maggie@vchianti.vbrew.com's password:
+    fred                 100% |*****************************| 50165   00:01 ETA</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>De nuevo, se le pedirá una clave. La orden <B
+CLASS="COMMAND"
+>scp</B
+> 
+muestra el progreso de la copia por omisión. Puede copiar un fichero desde un host remoto 
+con la misma facilidad; simplemente especificando su nombre de host y ruta como origen
+y la ruta local como destino. También se puede copiar
+un fichero desde un host remoto a otro host remoto, pero habitualmente no necesitará hacer eso,
+porque todos los datos viajan a través de su host.</P
+><P
+>Puede ejecutar órdenes en host remotos usando la orden
+<B
+CLASS="COMMAND"
+>ssh</B
+>. De nuevo, su sintaxis es muy simple. Tengamos
+nuestro usuario <TT
+CLASS="USERINPUT"
+><B
+>maggie</B
+></TT
+> recuperando el directorio raíz del
+host remoto <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>vchianti.vbrew.com</B
+></SPAN
+>.
+Ella hará algo como esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>ssh vchianti.vbrew.com ls -CF /</B
+></TT
+>
+    maggie@vchianti.vbrew.com's password:
+    bin/    console@  dos/     home/    lost+found/  pub@   tmp/  vmlinuz@
+    boot/   dev/      etc/     initrd/  mnt/         root/  usr/  vmlinuz.old@
+    cdrom/  disk/     floppy/  lib/     proc/        sbin/  var/</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Puede utilizar <B
+CLASS="COMMAND"
+>ssh</B
+> con tuberías
+y entubar entradas/salidas de programas desde o hacia como cualquier otra orden,
+excepto que la entrada o la salida son dirigidas hacia o desde el host remoto
+mediante conexión <B
+CLASS="COMMAND"
+>ssh</B
+>. Aquí tenemos un ejemplo de como puede
+utilizar esta característica en combinación con la orden <B
+CLASS="COMMAND"
+>tar</B
+>
+para copiar un directorio entero con subdirectorios y ficheros desde un host remoto
+al host local:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>ssh vchianti.vbrew.com "tar cf - /etc/" | tar xvf -</B
+></TT
+>
+    maggie@vchianti.vbrew.com's password:
+    etc/GNUstep
+    etc/Muttrc
+    etc/Net
+    etc/X11
+    etc/adduser.conf
+    ..
+    ..</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Hacemos notar que la orden se debe ejecutar con comillas para clarificar qué
+se está pasando como un argumento a la orden <B
+CLASS="COMMAND"
+>ssh</B
+> y qué debe
+usar el intérprete de órdenes local. Esta orden ejecuta la orden <B
+CLASS="COMMAND"
+>tar</B
+>
+en el host remoto para archivar el directorio <TT
+CLASS="FILENAME"
+>/etc/</TT
+>
+y escribir en la salida estándar. Hemos entubado una instancia de la orden 
+<B
+CLASS="COMMAND"
+>tar</B
+> ejecutando en nuestro host local en modo extracción leyendo desde la entrada estándar.</P
+><P
+>&#13;De nuevo, se pide una clave. ¡Ahora puede ver por qué le animamos 
+a configurar <B
+CLASS="COMMAND"
+>ssh</B
+> para 
+que no se le pida las claves todo el tiempo! Vamos ahora a configurar
+nuestro cliente local <B
+CLASS="COMMAND"
+>ssh</B
+>  de modo que no nos pida la clave 
+cuando conectemos al host
+<SPAN
+CLASS="SYSTEMITEM"
+>vchianti.vbrew.com</SPAN
+>. Mencionamos antes 
+el fichero <TT
+CLASS="FILENAME"
+>.ssh/authorized_keys</TT
+>; aquí es donde se va a usar.
+El fichero <TT
+CLASS="FILENAME"
+>.ssh/authorized_keys</TT
+> contiene las
+claves <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>públicas</I
+></SPAN
+> de cada cuenta de usuario remota que queremos
+registrar automáticamente. Puede establecer registros automáticos copiando el contenido
+del
+<TT
+CLASS="FILENAME"
+>.ssh/identity.pub</TT
+> desde la cuenta <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>remota</I
+></SPAN
+>
+en nuestro fichero local <TT
+CLASS="FILENAME"
+>.ssh/authorized_keys</TT
+>. Es vital
+que los permisos de fichero de <TT
+CLASS="FILENAME"
+>.ssh/authorized_keys</TT
+> 
+permitan sólo que usted pueda leer y escribir; cualquiera puede robar y usar las claves
+para registrarse en esas cuentas remotas. Para asegurar que los permisos sean correctos,
+cambie <TT
+CLASS="FILENAME"
+>.ssh/authorized_keys</TT
+>, como sigue:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>chmod 600 ~/.ssh/authorized_keys</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Las claves públicas son una larga <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>sencilla</I
+></SPAN
+> línea de
+texto plano. Si usa copiar y pegar para duplicar la clave en su fichero local, 
+asegúrese de borrar cualquier carácter de final de línea que se pueden haber 
+introducido de esta manera. El fichero <TT
+CLASS="FILENAME"
+>.shh/uathorized_keys</TT
+>
+puede contener muchas de estas claves, cada una en una línea propia.</P
+><P
+>La suite de herramientas <B
+CLASS="COMMAND"
+>ssh</B
+> es muy potente y tiene
+muchas otras características y opciones que pueden ser interesantes de explorar.
+Por favor consulte las páginas del manual y otros documentos que se proporcionan con los paquetes
+para más información.</P
+></DIV
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNFE04"
+HREF="x-087-2-appl.remote.html#X-087-2-FNFE04"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>OpenSSH se desarrolló por el proyecto OpenBSD y representa un ejemplo de los beneficios del software libre.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10662"
+HREF="x-087-2-appl.remote.html#AEN10662"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>fingerprint</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.rpc.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Llamada a Procedimiento Remoto</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>El Sistema de Información de Red (NIS)</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

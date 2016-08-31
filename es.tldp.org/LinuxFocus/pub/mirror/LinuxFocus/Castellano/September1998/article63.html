@@ -1,0 +1,504 @@
+<!-- DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"-->
+
+<HTML lang="es">
+  
+  <HEAD>
+    <STYLE>
+      P { text-indent: 1em } 
+    </Style>
+    
+    <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+      <TITLE>LinuxFocus Julio 1998: Introducci&oacute;n al arranque por red y Etherboot</TITLE>
+  </HEAD>
+  
+  
+  
+  <BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+    
+    
+    
+    <!-- MAP for top navegation bar -->
+    <MAP name="top">
+      <AREA shape="rect" coords="367, 9, 418, 30" alt="Home" href="../">
+	<AREA shape="rect" coords="423, 9, 457, 30" alt="Map" href="../map.html">
+	  <AREA shape="rect" coords="463, 9, 508, 30" alt="Index" href="../indice.html">
+	    <AREA shape="rect" coords="514, 9, 558, 30" alt="Search" href="../search.html">
+    </MAP>
+    
+    
+    
+    <!-- MAP for bottom navegation bar -->
+    <MAP name="bottom">
+      <AREA shape="rect" coords="78, 0, 163, 15"   alt="News" href="../News/">
+	<AREA shape="rect" coords="189, 0, 284, 15"  alt="Archives" href="../Archives/">
+	  <AREA shape="rect" coords="319, 0,  395, 15" alt="Links" href="../Links">
+	    <AREA shape="rect" coords="436, 0,  523, 15" alt="About LF" href="../aboutus.html">
+    </MAP>
+    
+    
+    <CENTER>
+      <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top Bar]" ismap usemap="#top" ><BR>
+      <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom Bar]" ismap usemap="#bottom">
+    </CENTER>
+    <!-- BREVE BIO DEL AUTOR -->
+    <TABLE  align="left" width="30%" border="0" cellspacing="0" cellpadding="5">
+      
+      <TR>
+	<TD>
+	  <IMG src="../../common/images/Ken-Y.gif" width="173" height="164" alt="[Foto del Autor]"><BR>
+	      <FONT color="#336633" size="+2">Ken Yap</FONT><BR>
+		
+<!--	  <FONT color="#336633">Acerca del entrevistado:</FONT> -->
+		
+		<FONT size="2" font="Helvetica,Arial,Roman">
+
+		  <p>Reside en Sydney, Australia. Dio sus primeros pasos
+		  con Unix en 1979, y desde hace 4 a&ntilde;os ha estado
+		  utilizando Linux para edici&oacute;n de texto, acceso a
+		  Internet y como soporte para su afici&oacute;n, la
+		  electr&oacute;nica. Cuando no se entretiene con Linux o se
+		  encuentra en su trabajo, le gusta viajar, conocer
+		  gente, la gastronom&iacute;a, o simplemente disfrutar de
+		  los alrededores mientras pasea.</p>
+
+		  <P>Trabaja como cient&iacute;fico investigador en una
+		  compa&ntilde;&iacute;a multinacional.</p>
+
+
+		  <BR><A HREF="mailto:ken.yap@acm.org">Para contactar con el autor</A>
+		    
+<BR><BR>
+			<FONT color="#336633" size="+2">&Iacute;ndice</FONT>: <BR>
+			  
+			<!--   INDEX      -->
+			<A href="#section1">&iquest;Qu&eacute; es el arranque por red?</A><BR>
+			  <A href="#section2">&iquest;C&oacute;mo funciona?</A><BR>
+			    <A href="#section3">El arranque por red en la pr&aacute;ctica</A><BR>
+			      <A href="#section4">Usos del arranque por red</A><BR>
+			      <A href="#section6">Para M&aacute;s Informaci&oacute;n</A><BR>
+
+		</font>
+		<BR>
+		  
+	  <SPACER TYPE=VERTICAL SIZE=100>
+	</TD>
+      </TR>
+    </TABLE>
+    
+    
+    <!--   BODY OF THE ARTICLE    -->
+
+    <H2>Introducci&oacute;n al arranque en red y a Etherboot</H2>
+    <IMG src="../../common/images/illustration2.gif" alt="[Ilustration]" width="100" height="100" hspace="10" >
+    </img>
+    
+    <P align="top">
+      <FONT color="#336633" size="2">Resumen:</FONT> 
+      <FONT size="2" face="Helvetica,Arial,Roman">
+	&Eacute;ste es un art&iacute;culo para usuarios avanzados en el que se
+	explica c&oacute;mo realizar el arranque remoto de tu ordenador
+	desde un programa almacenado en una memoria no-volatil sin
+	necesidad de acceder al disco duro. &Eacute;sta es una t&eacute;cnica
+	ideal para la configuraci&oacute;n y mantenimiento de una "granja
+	de linux" (conjunto de linux trabajando de forma
+	coordianda).
+      </FONT>
+    </P>
+    
+    
+
+    
+    <HR size="0" noshadow></hr>
+    <a name="section1">    
+    <H3>&iquest;Qu&eacute; es el arranque por red?</H3> </a>
+
+    <p>&Eacute;sta es ya una vieja idea. B&aacute;sicamente consiste en que un
+    ordenador posee una rutina de arranque en una memoria permanente,
+    por ejemplo en una ROM, que le permite contactar con el servidor y
+    obtener el sistema de ficheros a trav&eacute;s de un enlace de red. Un
+    objetivo es evitar el uso de un disco duro para arrancar el
+    ordenador. Existen varias razones por las que hacer esto. Una de
+    ellas es la de reducir los costes de mantenimiento del software en
+    gran cantidad de m&aacute;quinas.  Mediante un arranque por red los
+    ficheros son mantenidos por un servidor central, con la ventaja de
+    poder ser actualizados exclusivamente sobre esta m&aacute;quina. Otra
+    raz&oacute;n es la de usar ordenadores en lugares donde los discos duros
+    no son suficientemente resistentes, como podr&iacute;a ser en la planta
+    de una factor&iacute;a en la que &eacute;stos pueden ser relativamente
+    fr&aacute;giles. Finalmente, una nueva posibilidad de un sistema como el
+    anteriormente descrito permitir&iacute;a conmutar entre diferentes
+    sistemas operativos sin tener que cargar el software de
+    nuevo.</p>
+
+    <P>El arranque por red a menudo coexiste con el arranque t&iacute;pico
+    (por disco). Por ejemplo, un sistema podr&iacute;a estar funcionando bajo
+    Windows en disco, y tener tambi&eacute;n la posibilidad de arrancar Linux
+    por red. Hay varias aplicaciones interesantes de esta t&eacute;cnica; un
+    amigo mio la utiliza para reinstalar Windows por red. Me explico:
+    cuando una instalaci&oacute;n de Windows se corrompe, algo que "puede"
+    suceder aunque os parezca imposible, el administrador del sistema
+    tiene la posibilidad de volver a cargar una instalaci&oacute;n de windows
+    fresquita usando el arranque remoto de Linux por red y dejando la
+    faena de formatear el disco y copiar la susodicha instalaci&oacute;n en
+    disco, a un 'script' autom&aacute;tico.</p>
+
+<a name="section2">
+<H3>&iquest;C&oacute;mo funciona?</H3></a>
+
+    <p>Para poder arrancar por red, el ordenador debe obtener: 1&ordm;
+    una identidad, 2&ordm; la imagen de un sistema operativo y 3&ordm;
+    normalmente, un sistema de ficheros con el que trabajar.</p>
+
+    <P>Supongamos un ordenador sin disco (DC-Diskless computer) que
+    tiene una ROM para el arranque por red. Podr&iacute;a ser uno entre
+    varios DCs id&eacute;nticos.  &iquest;C&oacute;mo podemos nosotros distinguir
+    este ordenador del resto? Existe una informaci&oacute;n que es &uacute;nica para
+    ese ordenador (en realidad para su adaptador de red) y que se
+    trata de su direcci&oacute;n Ethernet.  Cualquier adaptador de Ethernet
+    en el mundo posee una direcci&oacute;n Ethernet de 48 bits exclusiva para
+    &eacute;l, porque a todo fabricante de hardware Ethernet, le han sido
+    asignados bloques de direcciones. Por convenci&oacute;n estos bloques de
+    direcciones se representan en forma de d&iacute;gitos hexadecimales
+    separados por dos puntos en grupos de dos; por ejemplo:
+    <TT>00:60:08:C7:A3:D8</TT>.</p>
+      
+    <P>Los protocolos usados para obtener un direcci&oacute;n IP, dada una
+    direcci&oacute;n Ethernet, son llamados Boot Protocol (BOOTP) y Dynamic
+    Host Configuration Protocol (DHCP). DHCP es una evoluci&oacute;n del
+    BOOTP. En nuestro caso, si no se especifica lo contrario,
+    cualquier cosa que se diga del BOOTP, tambi&eacute;n es aplicable para el
+    DHCP. (En realidad es una mentirijilla decir que BOOTP y DHCP s&oacute;lo
+    se encargan de traducir direcciones Ethernet.  En previsi&oacute;n, los
+    dise&ntilde;adores de BOOTP y DHCP les dejaron la capacidad de
+    poder trabajar con cualquier tipo de direcciones hardware.  Sin
+    embargo, Ethernet es lo que la mayor&iacute;a de la gente usa.)</p>
+
+    <P>Un ejemplo de intercambio de BOOTP ser&iacute;a el siguiente:</p>
+
+    <P>DC: Hola, mi direcci&oacute;n hardware es <TT>00:60:08:C7:A3:D8</TT>,
+      por favor, dame mi direcci&oacute;n IP.</p>
+
+    <P>Servidor BOOPT: (busca la direcci&oacute;n en su base de datos) Tu
+    nombre es <TT>aldebaran,</TT> tu direcci&oacute;n IP es 192.168.1.100, tu
+    servidor es <TT>192.168.1.1</TT>, el fichero del que se supone que
+    debes arrancar es <TT>/tftpboot/vmlinux.nb</TT> (y alguna
+    informaci&oacute;n adicional).</p>
+
+    <P>Te podr&iacute;as preguntar c&oacute;mo fue capaz el DC de encontrar la
+    direcci&oacute;n del servidor de BOOTP en la primera fase. La respuesta
+    es que no lo hizo.  La petici&oacute;n de BOOTP se realiz&oacute; en forma de
+    multidifusi&oacute;n (broadcast) dentro de la red local, de forma que
+    cualquier servidor de BOOTP que pudiera responder a la petici&oacute;n,
+    lo har&iacute;a.</p>
+
+    <P>Despu&eacute;s de obtener la direcci&oacute;n IP, el DC debe conseguir la
+    imagen del sistema operativo y lanzarlo a ejecuci&oacute;n. En esta fase,
+    se usa otro protocolo de Internet, conocido como Trivial File
+    Transfer Protocol (TFTP). &Eacute;ste es una versi&oacute;n reducida del famoso
+    FTP: no contempla autentificaci&oacute;n, trabaja a trav&eacute;s del User
+    Datagram Protocol (UDP) en vez de Transmisi&oacute;n Control Protocol
+    (TCP).  Se prefiri&oacute; usar UDP a TCP por simplicidad. La
+    implementaci&oacute;n de UDP en el DC puede ser suficientemente reducida
+    como para caber en una ROM. Ya que UDP es un protocolo orientado
+    a la transmisi&oacute;n por bloques, en oposici&oacute;n a la transmisi&oacute;n por
+    cadenas, la transferencia se realiza bloque a bloque, de la
+    siguiente forma:</p>
+
+    <br>
+      DC: Dame el bloque 1 de <tt>/tftpboot/vmlinux.nb</tt>.</br><br>
+      TFTP servidor: Aqu&iacute; lo tienes.</br><br></br>
+    
+    DC: Dame el bloque 2.</p>
+    
+    <P>y as&iacute; en adelante, hasta que se transfiere el fichero completo.
+    El funcionamiento consiste b&aacute;sicamente en el reconocimiento de
+    cada bloque, y la p&eacute;rdida de paquetes se soluciona mediante su
+    retransmisi&oacute;n al cabo de un tiempo establecido. Cuando todos los
+    bloques han sido recibidos, la ROM de arranque de la red pasa el
+    control a la imagen del sistema operativo.</p>
+
+    <P>Finalmente, para poner en funcionamiento un sistema operativo,
+    se le debe proporcionar un sistema de ficheros ra&iacute;z. El protocolo
+    utilizado por Linux y otros sistemas Unix es normalmente el NFS
+    (Network File System), aunque no es el &uacute;nico. En este caso el
+    c&oacute;digo no necesita estar grabado en la ROM, sino que forma parte
+    del sistema operativo que acabamos de cargar. Sin embargo, el
+    sistema operativo debe ser capaz de ejecutarse con un sistema de
+    ficheros ra&iacute;z NFS, en vez de un disco real. Linux posee las
+    variables de configuraci&oacute;n necesarias para construir una versi&oacute;n
+    que soporte este modo de funcionamiento.</p>
+
+    <a name="section3">
+      <H3>El arranque por red en la pr&aacute;ctica</h3></a>
+    
+    <P>Adem&aacute;s de ROMs de arranque comerciales, existen dos fuentes
+    gratis de las que conseguir paquetes para el arranque por
+    red. Ellas son Etherboot y Netboot. Las dos pueden ser encontradas
+    a trav&eacute;s de <a href="http://www.slug.org.au/etherboot/"> la p&aacute;gina
+    Etherboot</a>. Para empezar debes asegurarte que tu tarjeta
+    de red  soporte Etherboot o Netboot. Seguramente deber&aacute;s
+    encontrar a alguien que te haga el favor de grabar el c&oacute;digo
+    en una EPROM (Erasable Programmable Read Only Memory - Memoria de
+    solo lectura, programable y borrable !! ), aunque al principio tu
+    mismo puedes arrancar por red simulando el c&oacute;digo que deber&iacute;a
+      estar en la EPROM con un diskette.</p>
+
+    <P>Para crear este disco de arranque, un bloque especial de
+    arranque se proporciona en la distribuci&oacute;n. Este peque&ntilde;o
+    programa de 512 'octetos' (bytes...) carga en memoria los bloques
+    del disco que lo siguen, y comienza la ejecuci&oacute;n. Por lo tanto,
+    para construir este disco &uacute;ncicamente hace falta concatenar el
+    bloque de arranque con el binario de Etherboot que contenga el
+    controlador de la tarjeta de red que cada uno tenga:</p>
+
+    <P>un ejemplo podr&iacute;a ser: <tt>cat floppyload.bin
+	3c509.lzrom /dev/fd0</tt></p>
+
+    <P>Antes de poner el disco de arranque en red, necesitas
+    configurar tres servicios en Linux: BOOTP (o DHCP), TFTP y
+    NFS. No hace falta que lo hagas todo de una vez, es posible
+    comprobar su correcto funcionamiento uno a uno.</p>
+
+    <P>Supongo que ya has instalado el servidor 'bootpd' (boot
+    protocol daemon) de una distribuci&oacute;n o bien comopil&aacute;ndolo desde el
+    c&oacute;digo fuente. Debes asegurarte que este servidor est&aacute; esperando
+    peticiones 'bootp' (cliente del protocolo 'bootp'). Hay dos formas
+    de comprobar esto: una es lanzar bootpd como un servicio de red
+    que siempre se encuentra a la escucha una vez el ordenador ha
+    arrancado, la otra consiste en lanzarlo desde 'inetd'. Para la
+    &uacute;ltima, <tt>/etc/inetd.conf</tt> deber&iacute;a  contener una l&iacute;nea
+    como esta:</p>
+
+    <P><tt>bootps dgram udp wait root /usr/sbin/tcpd bootpd</tt></p>
+
+    <P>Si tuviste que modificar <tt>/etc/inetd.conf</tt>, entonces te
+    har&aacute; falta reiniciar 'inetd' envi&aacute;ndole una se&ntilde;al 'HUP' al
+    proceso. A continuaci&oacute;n, necesitas dar a 'bootp' una base de datos
+    para mapear direcciones Ethernet a direcciones IP. Esta base de
+    datos se encuentra en <tt>/etc/bootptab.</tt> Contiene l&iacute;neas con
+    el siguinete aspecto:</p>
+
+    <P><tt>aldebaran.foo.com:ha=006008C7A3D8:ip=192.168.1.100:bf=/tftpboot/vmlinuz.nb</tt></p>
+
+    <P>Existe m&aacute;s informaci&oacute;n que se puede especificar pero, por
+    ahora, la obviaremos.</p>
+
+    <P>Ahora arranca el DC con el diskette. Deber&iacute;a detectar la
+    tarjeta Ethernet y lanzar una petici&oacute;n de BOOTP en forma de
+    multidifusi&oacute;n.  Si todo va bien, el servidor responder&iacute;a al DC con
+    la informaci&oacute;n requerida, aunque al no existir el fichero
+    <tt>/tftpboot/vmlinux.nb</tt> fallar&aacute; en cuanto intente cargar
+    el mismo.</p>
+
+    <P>Ahora necesitas compilar un n&uacute;cleo especial, uno que tenga la
+    opci&oacute;n de montar el sistema de ficheros ra&iacute;z v&iacute;a NFS
+    activado. Tambi&eacute;n hace falta habilitar en el n&uacute;cleo la opci&oacute;n de
+    obtener la direcci&oacute;n IP desde la respuesta BOOTP
+    original. Adicionalmente debes compilar el controlador para el
+    adaptador de red en el n&uacute;cleo en vez de como un m&oacute;dulo aparte. Es
+    posible cargar un 'ramdisk' inicial de forma que la carga del
+    m&oacute;dulo funcione, pero esto es algo que podr&iacute;as hacer m&aacute;s
+    adelante.</p>
+
+    <P>No puedes instalar la 'zImage', que conseguiste de la
+    compilaci&oacute;n del n&uacute;cleo, directamente. Debe ser convertida en una
+    'imagen marcada'. &Eacute;sta es una imagen normal del n&uacute;cleo con una
+    cabecera especial que le dice al cargador de arranque en red d&oacute;nde
+    han de almacenarse los bytes en memoria y en qu&eacute; direcci&oacute;n empieza
+    el programa. Para crear esta imagen 'marcada' se usa un programa
+    llamado 'mknbi-linux', que puede ser encontrado en la distribuci&oacute;n
+    Etherboot. Despu&eacute;s de crear la imagen, ponla en el directorio
+    <tt>/tftpboot</tt> con el nombre especificado en
+    <tt>/etc/bootptab</tt>. Aseg&uacute;rate de darle permiso de lectura para
+    todo el mundo a este archivo porque el servidor 'tftpd' no tiene
+    ning&uacute;n privilegio especial.</p>
+
+    <P>En cuanto a TFTP, supondr&eacute; que lo has instalado de una
+    distribucion o bien que has compilado sus fuentes. Normalmente, se
+    lanza 'tftpd' desde 'inetd' con una l&iacute;nea como &eacute;sta, en el fichero
+    <tt>/etc/inetd.conf</tt>.</p>
+
+    <P><tt>tftp dgram udp wait root /usr/sbin/tcpd in.tftpd -s
+    /tftpboot</tt></p>
+
+    <P>De nuevo debes reiniciar 'inetd' con una se&ntilde;al 'HUP'. Esta vez,
+    al arrancar deber&iacute;a llegar a cargar la imagen del n&uacute;cleo y empezar
+    a ejecutarlo. El arranque continuar&aacute; hasta el punto en que intenta
+    montar un sistema ra&iacute;z de ficheros. Una vez llegados a este punto,
+    has de configurar y exportar particiones v&iacute;a NFS, para poder
+    continuar.</p>
+
+    <P>Por varias razones, no es una buena idea la de asignar el
+    sistema ra&iacute;z de ficheros del servidor como sistema ra&iacute;z de
+    ficheros de los DCs. Una de ellas consiste sencillamente, en que
+    existen diferentes ficheros de configuraci&oacute;n, de forma que el DC
+    leer&iacute;a una informaci&oacute;n err&oacute;nea. Otra raz&oacute;n es la seguridad. Es
+    peligroso permitir acceso de escritura (y &eacute;ste es necesario para
+    el sistema ra&iacute;z de archivos, por varias razones) a tu servidor del
+    ra&iacute;z. Sin embargo, la buena noticia es que un sistema ra&iacute;z de
+    archivos para el DC no ocupa demasiado, solo unos 30 MB, adem&aacute;s,
+    gran parte de estos pueden ser compartidos entre varios DCs.</p>
+
+    <P>Idealmente para construir un sistema ra&iacute;z de archivos, te har&aacute;
+    falta saber qu&eacute; archivos espera encontrar la distribuci&oacute;n del
+    sistema operativo que est&eacute;s usando. Para arrancar son
+    especialmente delicados los ficheros de dispositivo y los ficheros
+    que se encuentran en <tt>/sbin</tt> y en <tt>/etc</tt>.  Te puedes
+    ahorrar gran parte de la faena m&aacute;s engorrosa haciendo una copia de
+    un sistema ra&iacute;z de ficheros ya existente, y modificando sobre &eacute;sta
+    algunos de los ficheros que requiera el DC. En la distribuci&oacute;n de
+    Etherboot, hay un tutorial y enlaces a un par de 'shell scripts'
+    que se encargan de crear este tipo de sistema ra&iacute;z de ficheros
+    para un DC, partiendo del sistema ra&iacute;z de ficheros del
+    servidor. Tambi&eacute;n hay una secci&oacute;n de problemas y soluciones en la
+    documentaci&oacute;n de Etherboot, ya que &eacute;sta es una de las partes m&aacute;s
+    problem&aacute;ticas del proceso de configuraci&oacute;n.</p>
+
+    <P>El n&uacute;cleo de Linux preparado para los DCs espera encontrar
+    sistema ra&iacute;z de ficheros en <tt>/tftpboot/</tt><I>&lt;IP address
+    of the DC&gt;</I>, por ejemplo: <tt>/tftpboot/192.168.1.100</tt> en
+    el caso anterior. Esto puede ser modificado durante la
+    configuraci&oacute;n del n&uacute;cleo, si as&iacute; se quiere.</p>
+
+    <P>Ahora crea o edita <tt>/etc/exports</tt> en el servidor y a&ntilde;ade
+    una l&iacute;nea de la siguiente forma:</p>
+
+    <P><tt>/tftpboot/192.168.1.100
+    aldebaran.foo.com(rw,no_root_squash)</tt></p>
+
+    <P>El acceso <tt>rw</tt> es requerido por varios servicios del
+    sistema. El atributo <tt>no_root_squash</tt> evita que el sistema
+    NFS mapee el ID de root en otro distinto. De no hacer esto,
+    conseguiriamos cabrear a una amplia gama de 'daemons' y
+    'loggers'.</p>
+
+    <P>Inicia o reinicia los servicios NFS (rpc.portmap y rpc.mountd)
+    y reintenta el arranque sin disco. Si todo va bien deber&iacute;as ver
+    como el n&uacute;cleo monta un sistema ra&iacute;z de ficheros y sigue
+    arrancando hasta presentarte el conocido login de
+    usuario. Seguramente, encontrar&aacute;s algunas cosas
+    desconfiguradas. La mayor&iacute;a de las distribuciones Linux est&aacute;n
+    orientadas hacia operaciones con disco y requieren unas peque&ntilde;as
+    modificaciones para acondicionar el arranque sin disco. El fallo
+    m&aacute;s com&uacute;n es la necesidad de los ficheros que hay en <tt>/usr</tt>
+    durante el proceso de arranque, el cual, posteriormente, ser&aacute;
+    importado de un servidor. Dos posibles soluciones son:
+    1. Facilitar los pocos ficheros requeridos en un peque&ntilde;o
+    directorio /usr en el sistema ra&iacute;z de archivos, el cual ocultado
+    (montado encima) cuando <tt>/usr</tt> sea importado, y
+    2. Modificar las rutas(paths) para buscar los ficheros en el
+    sistema ra&iacute;z. Los ficheros a editar se encuentran en
+    <tt>/tftpboot/192.168.1.100</tt> (recuerda, este es el directorio
+    ra&iacute;z de DC).</p>
+
+    <P>Puedes montar otros directorios del servidor, como
+    <tt>/usr</tt> (el cual puede ser exportado con permiso de s&oacute;lo
+    lectura).</p>
+
+    <P>Cuando hayas afinado el arranque por red y no te problemas,
+    tienes la posibilidad de poner el c&oacute;digo en una EPROM. Un
+    programador de EPROMs viene a costar unos 100 dolares americanos,
+    por lo que no es inversi&oacute;n rentable para un aficionado que lo vaya
+    a usar espor&aacute;dicamente. Quiz&aacute;s puedas encontrar alguna ganga de
+    segunda mano, aunque en este caso lo jodido (chungo,... dif&iacute;cil)
+    ser&aacute; encontrar software disponible para &eacute;ste. Un aficionado que
+    destaque en electr&oacute;nica podr&iacute;a construir uno usando alguno de los
+    diferentes dise&ntilde;os publicados gratuitamente en Internet, pero para
+    la mayor&iacute;a de los lectores, la mejor soluci&oacute;n es hacerle la pelota
+    a cualquier individuo con acceso a un dispositivo de esta clase,
+    quiz&aacute;s alguien en el seminario de electr&oacute;nica o alguien que
+    trabaje en la industria electr&oacute;nica.</p>
+
+
+    <P>Una peque&ntilde;a nota en la tecnolog&iacute;a de EPROMs: Los bits de una
+    EPROM son programados mediante la inyecci&oacute;n de electrones a una
+    elevada tensi&oacute;n en una puerta flotante de un transistor de efecto
+    de campo, en el que se desea grabar un 0. Los electrones all&iacute;
+    atrapados provocan la conducci&oacute;n del transistor, ley&eacute;ndose en &eacute;l
+    un 0. Para borrar la EPROM, los electrones atrapados deben recibir
+    la suficiente energ&iacute;a como para poder escapar de la puerta
+    flotante, y esto se consigue exponiendo el chip a radiaci&oacute;n
+    ultravioleta, que pasa a trav&eacute;s de la ventana de cuarzo. Para
+    evitar un lento borrado, provocado por la luz del sol y de los
+    tubos fluorescentes a lo largo de un periodo de a&ntilde;os, se suele
+    tapar esta ventana de cuarzo con una etiqueta opaca.</p>
+
+
+    <P>Existe otra tecnolog&iacute;a, llamada EEPROM o 'Electrically Erasable
+    PROM', a veces llamada Flash PROM. En ella los bits son borrados
+    mediante se&ntilde;ales el&eacute;ctricas. Esto evita el uso de un borrador de
+    luz ultravioleta en caso de que la EPROM sea reutilizada, pero
+    requiere circuiter&iacute;a adicional para soportar la fase de
+    borrado. Si a uno se le da bien la electr&oacute;nica, existe un dise&ntilde;o
+    p&uacute;blico de circuito y un controlador software para una tarjeta
+    EEPROM en la distribuci&oacute;n Ethernet. La tarjeta se introduce en
+    cualquier z&oacute;calo del bus ISA libre de un PC, y arranca una tarjeta
+    de red colocada en cualquier otro z&oacute;calo.</p>
+
+
+    <a name="section4">
+    <h3>Usos del arranque por red</h3></a>
+
+    <P>Los terminales de X son una de las aplicaciones m&aacute;s directas de
+    esta t&eacute;cnica. La ausencia de un disco en un terminal lo hace m&aacute;s
+    silencioso y contribuye a un entorno de trabajo m&aacute;s agradable.
+    Idealmente la m&aacute;quina tendr&iacute;a de 16MB de memoria o m&aacute;s y la mejor
+    tarjeta de v&iacute;deo que le puedas conseguir. Esta es una forma ideal
+    de aprovechar un 'buen' 486 o un Pentium que haya quedado obsoleto
+    por los avances hardware.</p>
+
+    <P>Otras personas han utilizado el arranque por red en de m&aacute;quinas
+    con poco tiempo de utilizaci&oacute;n y a las que no vale la pena
+    instalarles disco, e.g. un 'cluster' de m&aacute;quinas de en una clase
+    docente.</p>
+    
+    
+    <a name="section6">
+      <h3>Para M&aacute;s Informaci&oacute;n</h3></a>
+    
+    <P>Tu primera parada deber&iacute;a ser la p&aacute;gina de Etherboot:<br></br>
+      <tt><a href="http://www.slug.org.au/etherboot/">http://www.slug.org.au/etherboot/</a>
+      </tt></p>
+    
+    
+    <P>All&iacute; encontrar&aacute;s enlaces a otras fuentes, incluyendo una
+      lista de correo a la que te puedes suscribir y en la que
+      diferentes problemas y soluciones son discutidos.</p>
+    
+    
+    
+    <P>&iexcl;Que lo disfrut&eacute;is!</TD>
+      
+      
+      
+      <HR size="1" noshade>
+	
+	<p align=right><i>Traducido por <a href="mailto:jcano@iti.upv.es">Javi Cano</a></I></P>
+	
+	
+    
+    
+    
+    <!-- ARTICLE FOOT -->
+    <BR clear="all">
+    <CENTER>
+      <TABLE width="95%">
+	
+	<TR>
+	  <TD align="center" bgcolor="#666666">
+	    <FONT color="#ffffff">
+	      P&aacute;ginas web mantenidas por  Miguel &Aacute;ngel Sep&uacute;lveda<BR>
+	      <B>LinuxFocus 1998</B>
+		    </FONT>
+	  </TD>
+	</TR>
+	
+      </TABLE>
+    </CENTER>
+    
+  </BODY>
+  
+</HTML>
+
+
+

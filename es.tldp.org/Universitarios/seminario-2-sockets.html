@@ -1,0 +1,1795 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.0b2 (Win95; I) [Netscape]">
+   <TITLE>sockets</TITLE>
+<BASE HREF="http://www.fie.us.es/info/articulos/seminario-2.html">
+</HEAD>
+<BODY BGCOLOR="#80FFFF">
+<CENTER><!DOCYTPE HTML convertido con WPAHTML, JCRP></CENTER>
+<CENTER></CENTER>
+<CENTER><B><FONT SIZE=+2>DOCTORADO EN INFORM&Aacute;TICA</FONT></B></CENTER>
+<CENTER><B><FONT SIZE=+1></FONT></B></CENTER>
+<CENTER><B><FONT SIZE=+2>SOCKETS: COMUNICACI&Oacute;N ENTRE PROCESOS DISTRIBUIDOS</FONT></B></CENTER>
+<CENTER><B><FONT SIZE=+2></FONT></B></CENTER>
+<CENTER><B><FONT SIZE=+2><A HREF="http://www.lsi.us.es/~mrueda">Miguel Rueda Barranco</A></FONT></B></CENTER>
+<CENTER><FONT SIZE=+1><A HREF="MAILTO:mrueda@lsi.us.es">mrueda@lsi.us.es</A></FONT></CENTER>
+<CENTER>Junio 1.996
+<HR NOSHADE WIDTH="100%"></CENTER>
+
+<BR><B><A HREF="#1">1.- El concepto de red.</A></B>&nbsp;
+<BR>
+<BR><A HREF="#2"><B>2.- Redes Ethernet.</B>&nbsp;</A>
+<BR><B><A HREF="#3"></A></B>
+<BR><B><A HREF="#3">3.- Internet.</A></B>&nbsp;
+<BR><B>&nbsp;&nbsp;&nbsp; <A HREF="#31">3.1.- El modelo TCP/IP.</A></B><A HREF="#31">&nbsp;</A>
+<BR><B>&nbsp;&nbsp;&nbsp; <A HREF="#32">3.2.- Arquitectura y direccionamiento.</A></B>&nbsp;
+<BR><B><A HREF="#4"></A></B>
+<BR><B><A HREF="#4">4.- Los Sockets.</A></B>&nbsp;
+<BR><B>&nbsp;&nbsp;&nbsp; <A HREF="#41">4.1.- Tipos de sockets.</A></B><A HREF="#41">&nbsp;</A>
+<BR><B>&nbsp;&nbsp;&nbsp; <A HREF="#42">4.2.- El dominio de un socket.</A></B>&nbsp;
+<BR><B>&nbsp;&nbsp;&nbsp; <A HREF="#43">4.3.- Folosof&iacute;a Cliente-Servidor:
+el Servidor.</A></B>&nbsp;
+<BR><B>&nbsp;&nbsp;&nbsp; <A HREF="#44">4.4.- El Cliente.</A></B><A HREF="#44">&nbsp;</A>
+<BR>
+<BR>
+<HR NOSHADE WIDTH="100%">
+<BR><B><A HREF="#5"></A></B>
+<BR><B><A HREF="#5">Comparaci&oacute;n sockets-pipes.</A></B>
+<BR><B><A HREF="#6"></A></B>
+<BR><B><A HREF="#6">Ejemplo de comunicaci&oacute;n mediante Sockets UNIX (
+en la misma m&aacute;quina ).</A></B>
+<BR><B><A HREF="#7"></A></B>
+<BR><B><A HREF="#7">Ejemplo de comunicaci&oacute;n con sockets INET ( diferentes
+m&aacute;quinas ).</A></B>
+<BR><B><A HREF="#8"></A></B>
+<BR><B><A HREF="#8">C&oacute;digo fuente de las principales funciones de la
+Shell de comunicaciones.&nbsp;</A></B>
+<BR><A HREF="#8"></A>
+<BR>
+<HR NOSHADE WIDTH="100%">
+<BR>
+<BR>
+<BR><A NAME="1"></A>
+<BR><B><FONT SIZE=+1>1.- EL CONCEPTO DE RED.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Por <B>red</B> entendemos un sistema de ordenadores
+interconectados, a trav&eacute;s de los cuales se podr&aacute; compartir
+recursos e intercambiar informaci&oacute;n entre las diferentes m&aacute;quinas.
+El concepto <B>modo distribuido</B> en contraposici&oacute;n a <B>modo
+repartido</B> con respecto a los recursos de una red va tomando cada vez
+m&aacute;s auge en las redes. En el modo repartido, los recursos deben
+estar localizados expl&iacute;citamente. En el modo distribuido, el usuario
+no tiene por qu&eacute; saber donde se localiza cada uno de los recursos:
+para ellos cada tipo de recurso es un &uacute;nico <B>recurso virtual</B>,
+que englobar&aacute; a todos los recursos de ese tipo repartidos a trav&eacute;s
+de sus distintas localizaciones. Nace as&iacute; el concepto de <B>Sistemas
+Abiertos</B> introducido por la <B>ISO</B> ( International Standards Organization
+) definiendo las diferentes interacciones entre los equipos que integran
+una red.&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>Como consecuencia de ello, ISO define el modelo <B>OSI</B>
+(Open Systems Interconnection), una arquitectura de red basada en la descomposici&oacute;n
+en siete niveles de abstracci&oacute;n de red, cada uno de los cuales se
+apoya en los <B>servicios</B> que lo ofrece el nivel inmediatamente inferior.
+Cada nivel tiene una funci&oacute;n bien definida. El conjunto de reglas
+que rigen el di&aacute;logo ( virtual ) entre un nivel de un sistema y
+su hom&oacute;logo en otro sistema se conoce como el <B>protocolo</B> de
+ese nivel. El modelo OSI public&oacute; est&aacute;ndares para cada uno
+de estos niveles. Las m&aacute;quinas UNIX se basan en estos niveles, que
+son:</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     * Nivel 1: Nivel F&iacute;sico.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Nivel 2: Nivel de Enlace de Datos.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Nivel 3: Nivel de Red.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Nivel 4: Nivel de Transporte.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Nivel 5: Nivel de Sesi&oacute;n.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Nivel 6: Nivel de Presentaci&oacute;n.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Nivel 7: Nivel de Aplicaci&oacute;n.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>S&oacute;lo nos interesar&aacute; conocer algo sobre los
+niveles 3 ( de Red ), nivel 4 ( de Transporte ) y los niveles 5, 6 y 7.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     <B>- Nivel de Red:</B></FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          En &eacute;l se solucionan los problemas de encaminamiento
+de la informaci&oacute;n a trav&eacute;s de las distintas subredes. Por
+tanto, se necesita conocer la topolog&iacute;a de la red y la interconexi&oacute;n
+de redes. Encontrar una <B>ruta</B> para la comunicaci&oacute;n ser&aacute;
+su misi&oacute;n fundamental.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     </FONT>&nbsp;
+<BR><FONT SIZE=+1>     Aporta dos tipos de servicios:</FONT>&nbsp;
+<BR><FONT SIZE=+1>     <B>Servicio sin conexi&oacute;n</B>, recibiendo del
+nivel superior paquetes de informaci&oacute;n o <B>datagramas</B>. Se recalcula
+la ruta a seguir por cada paquete recibido. INTERNET posee este mecanismo.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     <B>Servicio orientado a conexi&oacute;n</B>, que establece
+un <B>circuito virtual</B> entre las m&aacute;quinas correspondientes.
+As&iacute; se asegura el flujo y el control de errores. X25.PLP adopta
+este esquema.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     <B>- Nivel de Transporte:</B></FONT>&nbsp;
+<BR><FONT SIZE=+1>          Aqu&iacute; se establece la comunicaci&oacute;n
+virtual entre aplicaciones y no ya entre m&aacute;quinas ( comunicaci&oacute;n
+extremo a extremo ). El servicio m&aacute;s importante que presenta es
+el <B>modo conectado</B> ( conexi&oacute;n segura, control de flujo, ensamblado,...
+). Mediante la <B>multiplexaci&oacute;n</B> se podr&aacute; establecer
+varias conexiones a nivel de transporte mediante el uso de una sola conexi&oacute;n
+de red. Los protocolos <B>TCP</B> y <B>UDP</B> pertenecen a este nivel
+en la familia ARPA (INTERNET).</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     <B>- Niveles de Sesi&oacute;n-Presentaci&oacute;n-Aplicaci&oacute;n:</B></FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          Ofrecen servicios orientados al usuario y no ya
+exclusivamente orientados a un nivel superior. El establecimiento de una
+<B>sesi&oacute;n</B> de comunicaci&oacute;n, la <B>gesti&oacute;n del di&aacute;logo</B>
+y la <B>sincronizaci&oacute;n</B> son servicios que aportan estos niveles.
+Tambi&eacute;n se ubican en este nivel las <B>RPC</B> ( llamadas a procedimientos
+remotos ), <B>XDR</B> y sistemas de ficheros tipo <B>NFS</B>.</FONT>&nbsp;
+<BR>
+<BR><A NAME="2"></A>
+<BR><B><FONT SIZE=+1>2.- REDES ETHERNET.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Las <B>Redes Ethernet</B> fueron desarrolladas por Xerox
+a principio de los sesenta, estandariz&aacute;ndose por otros fabricantes
+posteriormente. F&iacute;sicamente la red la compone un cable coaxial pasivo,
+con una longitud m&aacute;xima de 500 metros antes de tener que instalar
+un <B>repetidor</B>, siendo dos el n&uacute;mero m&aacute;ximo de repetidores
+que pueden situarse entre dos puntos. La conexi&oacute;n de una m&aacute;quina
+a la red se realiza por medio de un <B>transceiver</B>. La topolog&iacute;a
+de este <B>red difusora</B> es en <B>bus</B>, con <B>10 Mbits/sg.</B> de
+capacidad y protocolo <B>CSMA/CD</B>. Las direcciones a trav&eacute;s de
+esta red son de <B>48 bits</B> (6 grupos de 2 d&iacute;gitos hexadec. hh:hh:hh:hh:hh:hh).</FONT>&nbsp;
+<BR><FONT SIZE=+1>Estas direcciones las administra el IEEE.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>Las redes Ethernet son <B>LAN</B>s ( Local Area Networks
+) que mediante interconexiones a trav&eacute;s de <B>bridges</B> ( puentes
+), <B>routers</B> ( enrutadores ) y <B>gateways</B> ( pasarelas ) forman
+lo que se conoce como <B>WAN</B>s ( large Wide Area Networks ). La necesidad
+de intercambiar informaci&oacute;n entre todas estas LANs y WANs genera
+un esquema de direccionamiento y enrutado est&aacute;ndar para todas ellas:
+<B>Internet</B> agrupa al mayor n&uacute;mero de redes actualmente ( no
+todas son Ethernet ) y todas ellas utilizan el protocolo de comunicaci&oacute;n
+<B>TCP/IP</B>.</FONT>&nbsp;
+<BR>
+<BR><A NAME="3"></A>
+<BR><B><FONT SIZE=+1>3.- <I>INTERNET</I>.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     <B>Internet</B> se origina gracias a <B>DARPA</B> (
+<B>D</B>efense <B>A</B>dvanced <B>R</B>esearch <B>P</B>rojects <B>A</B>gency
+) y a su idea de crear una <B>red l&oacute;gica</B> que esconda la heterogeneidad
+de las redes que se interconectan. Debido a este af&aacute;n, se definen
+un <B>modelo de interconexi&oacute;n</B> basado en el protocolo internet
+<B>TCP/IP</B>, que describe su estructura de comunicaciones de red utilizando
+cinco niveles, a diferencia de lo marcado por el modelo de referencia OSI.</FONT>&nbsp;
+<BR><A NAME="31"></A>
+<BR><B><FONT SIZE=+1>3.1.- El modelo TCP/IP.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Los cinco niveles del modelo TCP/IP son:</FONT>&nbsp;
+
+<PRE><FONT SIZE=+1>&nbsp;                 TCP/IP                OSI
+&nbsp;           +------------------+--------------------+
+    (NFS)   |                  | 7. APLICACION      |
+            |                  +--------------------+
+    (XDR)   | 5. APLICACION    | 6. PRESENTACION    |
+            |                  +--------------------+
+    (RPC)   |                  | 5. SESION          |
+            +------------------+--------------------+
+ (TCP/UDP)  | 4. TRANSPORTE    | 4. TRANSPORTE      |
+            +------------------+--------------------+
+ (IP/ICMP)  | 3. INTERNET      | 3. RED             |
+            +------------------+--------------------+
+ TRAMA ETHER| 2. INTERFAZ RED  | 2. ENLACE DE DATOS |
+            +------------------+--------------------+
+ RED ETHER  | 1. HARDWARE      | 1. FISICO          |
+            +------------------+--------------------+</FONT></PRE>
+
+<BR>
+<BR><FONT SIZE=+1>        </FONT>&nbsp;
+<BR><FONT SIZE=+1>- <B>Nivel Interfaz de Red y Hardware:</B></FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     agrupa los bits en tramas para el manejo de la informaci&oacute;n
+y se ocupa de las caracter&iacute;sticas t&eacute;cnicas de la red ( voltajes,
+pines, ... )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>- <B>Nivel Internet:</B></FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     se corresponde con el nivel de Red OSI y controla el
+direccionamiento de la informaci&oacute;n. El <B>IP </B>se trata de un
+protocolo para el <B>intercambio de datagramas en modo no conectado</B>.
+Esto no garantiza la llegada de mensajes ( cosa que se har&aacute; con
+el TCP ).  El algoritmo de direccionamiento de Internet se basa en <B>tablas
+de direccionamiento</B> de los datagramas difundidos por los gateways.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>- <B>Nivel de Transporte</B>:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     se corresponde con el de Transporte OSI, garantizando
+la seguridad de la conexi&oacute;n y el control del flujo. Incluye el <I>Protocolo
+de Control de Transmisi&oacute;n </I>( <B>TCP</B> ) y el <I>Protocolo de
+Datagrama de Usuario</I> ( <B>UDP</B> ).&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * El <B>TCP</B> es un protocolo <B>orientado a conexi&oacute;n</B>
+que transporta de forma segura grupos de octetos ( segmentos ) <B>modo
+duplex</B> (en los dos sentidos).</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Utiliza el mecanismo de <B>puerto</B> ( al igual que
+el protocolo de transporte <B>UDP</B>, pero que act&uacute;a en modo datagrama
+no conectado ). Este mecanismo se basa en la asignaci&oacute;n para cada
+uno de los protocolos del nivel de transporte (TCP o UDP) de un conjunto
+de puertos de E/S identificados mediante un n&uacute;mero entero. As&iacute;
+TCP y UDP <B>multiplexar&aacute;n</B> las conexiones por medio de los n&uacute;meros
+de los puertos. Existen una serie de <B>puertos reservados</B> a aplicaciones
+est&aacute;ndares Internet (ECHO - puerto 7, FTP - puerto 21, TELNET - puerto
+23). El archivo <B>/etc/services</B> contiene la lista de los puertos est&aacute;ndar.
+En UNIX est&aacute;n reservados los n&uacute;meros de puerto inferiores
+a 1024. El resto pueden ser utilizados, cualidad fundamental que aprovechan
+los programas definidos por el usuario para el establecimiento de comunicaciones
+entre hosts.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>- <B>Nivel de Aplicaci&oacute;n</B>:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Incluye los niveles OSI de sesi&oacute;n, presentaci&oacute;n
+y aplicaci&oacute;n. Ejemplos de estos niveles son el <I>telnet, ftp</I>
+o el sistema de ficheros de red <I>NFS</I> para el nivel de aplicaci&oacute;n,
+el lenguaje de descripci&oacute;n de informaci&oacute;n <I>XDR</I> para
+el nivel de presentaci&oacute;n o la interfaz de llamada a procedimientos
+remotos <I>RPC</I>.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     -&gt; Por ejemplo, el formato de una trama telnet ser&iacute;a:</FONT>&nbsp;
+
+<PRE><FONT SIZE=+1>&nbsp;                             /etc/services
+&nbsp;   +--------------+--------+--------+----------------+
+    | Dir. Ethernet|   IP   |   TCP  |    telnetd     |
+    +--------------+--------+--------+----------------+
+       /etc/host    /etc/protocols       inetd.conf</FONT></PRE>
+
+<BR><A NAME="32"></A>
+<BR><B><FONT SIZE=+1>3.2.- Arquitectura y direccionamiento.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>Con respecto a la arquitectura de Internet, la uni&oacute;n
+de las redes se basa en la existencia de gateways entre ellas. Pero lo
+m&aacute;s importante dentro de esta incompatibilidad de redes es otorgar
+a los hosts implicados una <B>direcci&oacute;n l&oacute;gica</B> que se
+componga de:</FONT>&nbsp;
+<BR><FONT SIZE=+1>          - una <B>direcci&oacute;n de red</B></FONT>&nbsp;
+<BR><FONT SIZE=+1>          - una <B>direcci&oacute;n de la m&aacute;quina
+dentro de la red</B></FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>La direcci&oacute;n completa ocupa 32 bits, d&aacute;ndose
+en forma de 4 octetos:</FONT>&nbsp;
+<BR><FONT SIZE=+1>                    <B>n<SUB>1</SUB>.n<SUB>2</SUB>.n<SUB>3</SUB>.n<SUB>4</SUB></B></FONT>&nbsp;
+<BR><FONT SIZE=+1>Cada campo es un n&uacute;mero decimal entre 0 y 255.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     - La direcci&oacute;n nula se refiere a la red.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     - Para direccionar un mensaje a todas las m&aacute;quinas
+( <I>broadcast</I> ), se usa una direcci&oacute;n dentro de la red en la
+cual todos sus bits son iguales a 1.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     - El valor 127 en el primer campo se llama <I>loopback</I>
+y se refiere a una interfaz que permite al host enviarse paquetes a s&iacute;
+mismo.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>Existen varias clase de redes:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     <B>Redes clase A</B>:     gran tama&ntilde;o. El primer
+bit es 0, [1-127], con lo que su direcci&oacute;n son los 7 siguientes
+bits de la direcci&oacute;n de 32 bits (permite 127 redes de clase A).
+Los 24 bits restantes se usan para direccionar sus hosts locales.&nbsp;</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     <B>Redes clase B</B>:     tama&ntilde;o medio. Los dos
+primeros bits son 10, [128-191], y su direcci&oacute;n la componen los
+siguientes 14 bits de la direcci&oacute;n de 32 bits ( 16384 redes de clase
+B ). Los 16 bits restantes se usan para direccionar sus hosts locales.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1> </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     <B>Redes clase C</B>:     peque&ntilde;o tama&ntilde;o.
+Su direcci&oacute;n la componen los siguientes 21 bits a los tres primeros,
+110, caracter&iacute;sticos [192-223] ( 2097152 redes de clase C ). Los
+8 bits restantes se usan para direccionar sus hosts locales ( 256 hosts:
+del 0 al 255 ).</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     <B>Redes clase D: Direcci&oacute;n multicast:</B></FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          Sus primeros 4 bits son 1110 [224-239], indicando
+que s etrata de una direcci&oacute;n multicast. Los restantes 28 bits comprenden
+un grupo espec&iacute;fico multicast. Esta direcci&oacute;n es una direcci&oacute;n
+destino para una o varias m&aacute;quinas ( a diferencia de las clases
+anteriores, que se refer&iacute;an s&oacute;lo a una m&aacute;quina )</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+1>Para simplificar el direccionamiento, se utilizan <B>direcciones
+simb&oacute;locas</B> del tipo&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+1>       <B>host.organizaci&oacute;n</B> ( dominios )</FONT>&nbsp;
+<BR><FONT SIZE=+1>El fichero <B>/etc/hosts</B> muestra correspondencia entre
+las direcciones IP y los nombres de los hosts definidos por defecto.</FONT>&nbsp;
+<BR><A NAME="4"></A>
+<BR><B><FONT SIZE=+1>4.- LOS SOCKETS.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Los <I>sockets</I> no son m&aacute;s que puntos o mecanismos
+de comunicaci&oacute;n entre procesos que permiten que un proceso hable
+( emita o reciba informaci&oacute;n ) con otro proceso incluso estando
+estos procesos en distintas m&aacute;quinas. Esta caracter&iacute;stica
+de interconectividad entre m&aacute;quinas hace que el concepto de socket
+nos sirva de gran utilidad. Esta interfaz de comunicaciones es una de las
+distribuciones de Berkeley al sistema UNIX, implement&aacute;ndose las
+utilidades de interconectividad de este Sistema Operativo ( <I>rlogin,
+telnet, ftp, ...</I> ) usando sockets.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Un <B>socket</B> es al sistema de comunicaci&oacute;n
+entre ordenadores lo que un buz&oacute;n o un tel&eacute;fono es al sistema
+de comunicaci&oacute;n entre personas: un punto de comunicaci&oacute;n
+entre dos agentes ( procesos o personas respectivamente ) por el cual se
+puede emitir o recibir informaci&oacute;n. La forma de referenciar un socket
+por los procesos implicados es mediante un <B>descriptor</B> del mismo
+tipo que el utilizado para referenciar ficheros. Debido a esta caracter&iacute;stica,
+se podr&aacute; realizar redirecciones de los archivos de E/S est&aacute;ndar
+(descriptores 0,1 y 2) a los sockets y as&iacute; combinar entre ellos
+aplicaciones de la red. Todo nuevo proceso creado heredar&aacute;, por
+tanto, los descriptores de sockets de su padre.&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     La comunicaci&oacute;n entre procesos a trav&eacute;s
+de sockets se basa en la filosof&iacute;a <B>CLIENTE-SERVIDOR</B>: un proceso
+en esta comunicaci&oacute;n actuar&aacute; de <B>proceso servidor</B> creando
+un socket cuyo nombre conocer&aacute; el <B>proceso cliente</B>, el cual
+podr&aacute; &quot;hablar&quot; con el proceso servidor a trav&eacute;s
+de la conexi&oacute;n con dicho <B>socket nombrado</B>.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     El proceso crea un socket sin nombre cuyo valor de vuelta
+es un descriptor sobre el que se leer&aacute; o escribir&aacute;, permiti&eacute;ndose
+una comunicaci&oacute;n <B>bidireccional</B>, caracter&iacute;stica propia
+de los sockets y que los diferencia de los <B>pipes</B>, o canales de comunicaci&oacute;n
+unidireccional entre procesos de una misma m&aacute;quina. El mecanismo
+de comunicaci&oacute;n v&iacute;a sockets tiene los siguientes pasos:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     1&ordm;) El proceso servidor crea un socket con nombre
+y espera la</FONT>&nbsp;
+<BR><FONT SIZE=+1>          conexi&oacute;n.&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+1>     2&ordm;) El proceso cliente crea un socket sin nombre.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     3&ordm;) El proceso cliente realiza una petici&oacute;n
+de conexi&oacute;n al socket</FONT>&nbsp;
+<BR><FONT SIZE=+1>          servidor.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     4&ordm;) El cliente realiza la conexi&oacute;n a trav&eacute;s
+de su socket mientras el</FONT>&nbsp;
+<BR><FONT SIZE=+1>          proceso servidor mantiene el socket servidor original
+con</FONT>&nbsp;
+<BR><FONT SIZE=+1>          nombre.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>     Es muy com&uacute;n en este tipo de comunicaci&oacute;n
+lanzar un proceso hijo, una vez realizada la conexi&oacute;n, que se ocupe
+del intercambio de informaci&oacute;n con el proceso cliente mientras el
+proceso padre servidor sigue aceptando conexiones. Para eliminar esta caracter&iacute;stica
+se cerrar&aacute; el descriptor del socket servidor con nombre en cuanto
+realice una conexi&oacute;n con un proceso socket cliente.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>-&gt; Todo socket viene definido por dos caracter&iacute;sticas
+fundamentales:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     - El <B>tipo</B> del socket, que indica la naturaleza
+del mismo, el tipo de comunicaci&oacute;n que puede generarse entre los
+sockets.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     - El <B>dominio</B> del socket especifica el conjunto
+de sockets que pueden establecer una comunicaci&oacute;n con el mismo.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+1>Vamos a estudiar con m&aacute;s detalle estos dos aspectos:</FONT>&nbsp;
+<BR><A NAME="41"></A>
+<BR><B><FONT SIZE=+1>4.1.- Tipos de sockets.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Define las <B>propiedades</B> de las comunicaciones
+en las que se ve envuelto un socket, esto es, el tipo de comunicaci&oacute;n
+que se puede dar entre cliente y servidor. Estas pueden ser:</FONT>&nbsp;
+<BR><FONT SIZE=+1>     - Fiabilidad de transmisi&oacute;n.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     - Mantenimiento del orden de los datos.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     - No duplicaci&oacute;n de los datos.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     - El &quot;Modo Conectado&quot; en la comunicaci&oacute;n.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     - Env&iacute;o de mensajes urgentes.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>Los tipos disponibles son los siguientes:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * Tipo <B>SOCK_DGRAM</B>:     sockets para comunicaciones
+en <B>modo no conectado</B>, con env&iacute;o de <B>datagramas</B> de tama&ntilde;o
+<B>limitado</B> ( tipo telegrama ). En dominios Internet como la que nos
+ocupa el protocolo del nivel de transporte sobre el que se basa es el <B>UDP</B>.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * Tipo <B>SOCK_STREAM</B>:     para comunicaciones <B>fiables
+en modo conectado</B>, de <B>dos v&iacute;as</B> y con tama&ntilde;o <B>variable</B>
+de los mensajes de datos. Por debajo, en dominios Internet, subyace el
+protocolo <B>TCP</B>.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * Tipo <B>SOCK_RAW</B>:     permite el acceso a protocolos
+de m&aacute;s bajo nivel como el <B>IP</B> ( nivel de red )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * Tipo <B>SOCK_SEQPACKET</B>: tiene las caracter&iacute;sticas
+del    SOCK_STREAM pero adem&aacute;s el tama&ntilde;o de los mensajes
+es fijo.</FONT>&nbsp;
+<BR><A NAME="42"></A>
+<BR><B><FONT SIZE=+1>4.2.- El dominio de un socket.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Indica el formato de las direcciones que podr&aacute;n
+tomar los sockets y los protocolos que soportar&aacute;n dichos sockets.&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+1>     La estructura gen&eacute;rica es</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     <B>struct sockaddr {</B></FONT>&nbsp;
+<BR><B><FONT SIZE=+1>               u__short     sa__family;         /* familia
+*/</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>               char         sa__data[14];       /* direcci&oacute;n
+*/</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>          };</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>Pueden ser:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * Dominio <B>AF_UNIX</B> ( Address Family UNIX ):</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>               El cliente y el servidor deben estar en la
+misma m&aacute;quina. Debe incluirse el fichero cabecera <B>/usr/include/sys/un.h</B>.
+La estructura de una direcci&oacute;n en este dominio es:</FONT>&nbsp;
+<BR><FONT SIZE=+1>               <B>struct sockaddr__un {</B></FONT>&nbsp;
+<BR><B><FONT SIZE=+1>               short          sun__family;  /* en este
+caso AF_UNIX */</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>               char          sun__data[108]; /* direcci&oacute;n
+*/</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>                    };</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     * Dominio <B>AF_INET</B> ( Address Family INET ):</FONT>&nbsp;
+<BR><FONT SIZE=+1>               El cliente y el servidor pueden estar en cualquier
+m&aacute;quina de la red Internet. Deben incluirse los ficheros cabecera
+<B>/usr/include/netinet/in.h, /usr/include/arpa/inet.h, /usr/include/netdb.h</B>.
+La estructura de una direcci&oacute;n en este dominio es:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>               <B>struct in__addr {</B></FONT>&nbsp;
+<BR><B><FONT SIZE=+1>                    u__long     s__addr;</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>               };</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>               <B>struct sockaddr__in {</B></FONT>&nbsp;
+<BR><B><FONT SIZE=+1>               short          sin_family;  /* en este
+caso AF_INET */</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>               u__short     sin_port;   /* numero del
+puerto */</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>               struct in__addr          sin__addr; /*
+direcc Internet */</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>               char          sin_zero[8];    /* campo
+de 8 ceros */</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+1>                    };</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          Estos dominios van a ser los utilizados en xshine.
+Pero existen otros como:</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Dominio <B>AF_NS</B>:</FONT>&nbsp;
+<BR><FONT SIZE=+1>          Servidor y cliente deben estar en una red XEROX.</FONT>&nbsp;
+<BR><FONT SIZE=+1>     * Dominio <B>AF_CCITT</B>:</FONT>&nbsp;
+<BR><FONT SIZE=+1>          Para protocolos CCITT, protocolos X25, ...</FONT>&nbsp;
+<BR>
+<BR><A NAME="43"></A>
+<BR><B><FONT SIZE=+1>4.3.- FILOSOFIA CLIENTE-SERVIDOR: el Servidor.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Vamos a explicar el proceso de comunicaci&oacute;n servidor-cliente
+en <B>modo conectado</B>, modo utilizado por las aplicaciones est&aacute;ndar
+de Internet (telnet, ftp). El servidor es el proceso que crea el socket
+no nombrado y acepta las conexiones a &eacute;l. El orden de las llamadas
+al sistema para la realizaci&oacute;n de esta funci&oacute;n es:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>1&ordm;) int <B>socket</B> ( int <I>dominio</I>, int <I>tipo</I>,
+int <I>protocolo</I> )&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+1>          crea un socket sin nombre de un dominio, tipo y
+p</FONT>&nbsp;
+<BR><FONT SIZE=+1>rotocolo espec&iacute;fico</FONT>&nbsp;
+<BR><FONT SIZE=+1>          <I>dominio</I>   : AF_INET, AF_UNIX</FONT>&nbsp;
+<BR><FONT SIZE=+1>     <I>     tipo</I>      : SOCK__DGRAM, SOCK__STREAM</FONT>&nbsp;
+<BR><FONT SIZE=+1>     <I>     protocolo</I> : 0 ( protocolo por defecto )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>2&ordm;) int <B>bind</B> ( int <I>dfServer</I>, struct sockaddr*
+<I>direccServer</I>, int <I>longDirecc</I> )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          nombra un socket: asocia el socket no nombrado
+de descriptor <I>dfServer</I> con la direcci&oacute;n del socket almacenado
+en <I>direccServer</I>. La direcci&oacute;n depende de si estamos en un
+dominio AF_UNIX o AF_INET.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>3&ordm;) int <B>listen</B> ( int <I>dfServer</I>, int <I>longCola</I>
+)</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          especifica el m&aacute;ximo n&uacute;mero de peticiones
+de conexi&oacute;n pendientes.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>4&ordm;) int <B>accept</B> ( int <I>dfServer</I>, struct
+sockaddr* <I>direccCliente</I>, int* <I>longDireccCli</I>)</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          escucha al socket nombrado servidor <I>dfServer</I>
+y espera hasta que se reciba la petici&oacute;n de la conexi&oacute;n de
+un cliente. Al ocurrir esta incidencia, crea un socket sin nombre con las
+mismas caracter&iacute;sticas que el socket servidor original, lo conecta
+al socket cliente y devuelve</FONT>&nbsp;
+<BR><FONT SIZE=+1>un descriptor de fichero que puede ser utilizado para la
+comunicaci&oacute;n con el cliente.</FONT>&nbsp;
+<BR>
+<BR><A NAME="44"></A>
+<BR><B><FONT SIZE=+1>4.4.- El Cliente.</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>     Es el proceso encargado de crear un socket sin nombre
+y posteriormente enlazarlo con el socker servidor nombrado. O sea, es el
+proceso que demanda una conexi&oacute;n al servidor. La secuencia de llamadas
+al sistema es:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>1&ordm;) int <B>socket</B> ( int <I>dominio</I>, int <I>tipo</I>,
+int <I>protocolo</I> )&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          crea un socket sin nombre de un dominio, tipo y
+protocolo espec&iacute;fico</FONT>&nbsp;
+<BR><FONT SIZE=+1>          <I>dominio</I>   : AF_INET, AF_UNIX</FONT>&nbsp;
+<BR><FONT SIZE=+1>     <I>     tipo</I>      : SOCK__DGRAM, SOCK__STREAM</FONT>&nbsp;
+<BR><FONT SIZE=+1>     <I>     protocolo</I> : 0 ( protocolo por defecto )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>2&ordm;) int <B>connect</B> ( int <I>dfCliente</I>, struct
+sockaddr* <I>direccServer</I>, int <I>longDirecc</I> )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>          intenta conectar con un socket servidor cuya direcci&oacute;n
+se encuentra incluida en la estructura apuntada por <I>direccServer</I>.
+El descriptor <I>dfCliente</I> se utilizar&aacute; para comunicar con el
+socket servidor. El tipo de estructura depender&aacute; del dominio en
+que nos encontremos.</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+1>Una vez establecida la comunicaci&oacute;n, los descriptores
+de ficheros ser&aacute;n utilizados para almacenar la informaci&oacute;n
+a leer o escribir.</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>SERVIDOR                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  .                           CLIENTE&nbsp;</FONT>
+
+<CENTER><TABLE BORDER WIDTH="100%" >
+<TR>
+<TD>descrServer = <B>socket</B> ( dominio, SOCK_STREAM,PROTOCOLO)&nbsp;
+</TD>
+
+<TD><FONT SIZE=+0>descrClient = <B>socket</B> (dominio, SOCK_STREAM,PROTOCOLO)</FONT>&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD><FONT SIZE=+0><B>bind</B> (descrServer, PuntSockServer,longServer)</FONT>&nbsp;
+</TD>
+
+<TD>
+</TD>
+</TR>
+
+<TR>
+<TD>
+</TD>
+
+<TD>do {&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD><FONT SIZE=+0><B>listen</B> (descrServer, longCola)</FONT>&nbsp;
+</TD>
+
+<TD>
+</TD>
+</TR>
+
+<TR>
+<TD><FONT SIZE=+0>descrClient = <B>accept</B> (descrServer,PuntSockClient,longClient)</FONT>&nbsp;
+</TD>
+
+<TD><FONT SIZE=+0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; result = <B>connect</B>
+(descrClient, PuntSockServer,longserver)</FONT>&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD><FONT SIZE=+0>[  <B>close</B> (descrServer) ]   </FONT>&nbsp;
+</TD>
+
+<TD><FONT SIZE=+0>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } while ( result
+== -1 )  </FONT>&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD><FONT SIZE=+0>&lt; DIALOGO &gt;&nbsp;</FONT>&nbsp;
+</TD>
+
+<TD><FONT SIZE=+0>&lt; DIALOGO &gt;&nbsp;</FONT>&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD><FONT SIZE=+0><B>close</B> (descrClient)</FONT>&nbsp;
+</TD>
+
+<TD><FONT SIZE=+0>&nbsp; <B>close</B> (descrClient)&nbsp;</FONT>&nbsp;
+</TD>
+</TR>
+</TABLE></CENTER>
+
+<BR>&nbsp;<FONT SIZE=+0> <A NAME="5"></A></FONT>&nbsp;
+<BR><B><FONT SIZE=+1>COMPARACION SOCKETS-PIPES COMO MECANISMOS</FONT></B> <B><FONT SIZE=+1>DE
+COMUNICACION ENTRE PROCESOS</FONT></B>&nbsp;
+<BR>
+<CENTER><BR><B><FONT SIZE=+1>SOCKETS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+PIPES</FONT></B></CENTER>
+
+<CENTER><TABLE BORDER WIDTH="50%" >
+<TR>
+<TD>refenciado por descriptores&nbsp;
+</TD>
+
+<TD>referenciado&nbsp; por array de descriptores&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD>admite comunicaci&oacute;n entre procesos de distintas m&aacute;quinas&nbsp;
+</TD>
+
+<TD>s&oacute;lo admite comunicaci&oacute;n entre procesos de la misma m&aacute;quina&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD>comunicaci&oacute;n bidireccional&nbsp;
+</TD>
+
+<TD>comunicaci&oacute;n unidireccional&nbsp;
+</TD>
+</TR>
+
+<TR>
+<TD>filosof&iacute;a cliente-servidor&nbsp;
+</TD>
+
+<TD>simple intercambio de informaci&oacute;n&nbsp;
+</TD>
+</TR>
+</TABLE></CENTER>
+
+<BR><A NAME="6"></A><FONT SIZE=+1>        </FONT>&nbsp;
+<BR><B><FONT SIZE=+0>EJEMPLO DE COMUNICACION MEDIANTE</FONT></B> <B><FONT SIZE=+0>SOCKETS
+TIPO UNIX ( EN LA MISMA MAQUINA )</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/************************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/**************    servidor.c          **********************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/************************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/*********   proceso servidor con sockets AF_UNIX  **********/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/************************************************************/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>#include &lt;stdio.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;signal.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/types.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/socket.h&gt;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#include &lt;sys/un.h&gt;           /*  para sockets UNIX
+ */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#define PROTOCOLO_DEFECTO 0</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/****************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>main()</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int dfServer, dfClient, longServer, longClient;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> struct sockaddr_un dirUNIXServer;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_un dirUNIXClient;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> struct sockaddr* puntSockServer;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr* puntSockClient;</FONT>&nbsp;
+<BR><FONT SIZE=+0> signal ( SIGCHLD, SIG_IGN );    /*  para no crear zombies
+*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> puntSockServer = ( struct sockaddr* ) &amp;dirUNIXServer;</FONT>&nbsp;
+<BR><FONT SIZE=+0> longServer = sizeof ( dirUNIXServer );</FONT>&nbsp;
+<BR><FONT SIZE=+0> puntSockClient = ( struct sockaddr* ) &amp;dirUNIXClient;</FONT>&nbsp;
+<BR><FONT SIZE=+0> longClient = sizeof ( dirUNIXClient );</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dfServer = socket ( AF_UNIX, SOCK_STREAM, PROTOCOLO_DEFECTO
+);</FONT>&nbsp;
+<BR><FONT SIZE=+0>                 /* se crea un socket UNIX, bidireccional
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0> dirUNIXServer.sun_family = AF_UNIX;    /* tipo de dominio
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0> strcpy ( dirUNIXServer.sun_path, &quot;fichero&quot; );
+  /* nombre */</FONT>&nbsp;
+<BR><FONT SIZE=+0> unlink ( &quot;fichero&quot; );</FONT>&nbsp;
+<BR><FONT SIZE=+0> bind ( dfServer, puntSockServer, longServer );   /* crea
+el fichero */</FONT>&nbsp;
+<BR><FONT SIZE=+0>                                          /* o sea, nombra
+el socket */</FONT>&nbsp;
+<BR><FONT SIZE=+0> printf (&quot;\n estoy a la espera \n&quot;);</FONT>&nbsp;
+<BR><FONT SIZE=+0> listen ( dfServer, 5 );</FONT>&nbsp;
+<BR><FONT SIZE=+0> while (1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>     dfClient = accept ( dfServer, puntSockClient, &amp;longClient
+);</FONT>&nbsp;
+<BR><FONT SIZE=+0>                              /* acepta la conexion cliente
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0>     printf (&quot;\n acepto la conexion \n&quot;);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if ( fork() == 0 )  /* crea hijo y envia fichero */</FONT>&nbsp;
+<BR><FONT SIZE=+0>       {</FONT>&nbsp;
+<BR><FONT SIZE=+0>         escribeFichero ( dfClient );</FONT>&nbsp;
+<BR><FONT SIZE=+0>         close ( dfClient );        /* cierra el socket */</FONT>&nbsp;
+<BR><FONT SIZE=+0>         exit ( 0 );  </FONT>&nbsp;
+<BR><FONT SIZE=+0>        }</FONT>&nbsp;
+<BR><FONT SIZE=+0>     else</FONT>&nbsp;
+<BR><FONT SIZE=+0>       close ( dfClient );      /* cierra el descriptor cliente
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }                            /* en el padre */</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/******** funcion escribeFichero( df ) ***************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>escribeFichero ( int df )</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> static char* linea1 = &quot;esta es la linea 1, &quot;;</FONT>&nbsp;
+<BR><FONT SIZE=+0> static char* linea2 = &quot;y esta la linea 2. &quot;;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> write ( df, linea1, strlen (linea1) + 1 );&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>  write ( df, linea2, strlen (linea2) + 1 );</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>/******************   fin de servidor.c   ***********************/</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/************************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/**************  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  cliente.c           **********************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/************************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/*********  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ proceso cliente con sockets AF_UNIX   **********/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/************************************************************/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#include &lt;stdio.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;signal.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/types.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/socket.h&gt;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#include &lt;sys/un.h&gt;           /*  para sockets UNIX
+ */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#define PROTOCOLO_DEFECTO 0</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/****************************************************/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>main()</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int dfClient, longServer, resultado;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_un dirUNIXServer;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr* puntSockServer;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> puntSockServer = ( struct sockaddr* ) &amp;dirUNIXServer;</FONT>&nbsp;
+<BR><FONT SIZE=+0> longServer = sizeof ( dirUNIXServer );</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dfClient = socket ( AF_UNIX, SOCK_STREAM, PROTOCOLO_DEFECTO
+);</FONT>&nbsp;
+<BR><FONT SIZE=+0>                 /* se crea un socket UNIX, bidireccional
+*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dirUNIXServer.sun_family = AF_UNIX;    /* tipo de dominio
+server */</FONT>&nbsp;
+<BR><FONT SIZE=+0> strcpy ( dirUNIXServer.sun_path, &quot;fichero&quot; );
+  /* nombre server */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> do  </FONT>&nbsp;
+<BR><FONT SIZE=+0>  {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   resultado = connect ( dfClient, puntSockServer, longServer
+);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   if ( resultado == -1 ) sleep (1);   /* reintento */</FONT>&nbsp;
+<BR><FONT SIZE=+0> }</FONT>&nbsp;
+<BR><FONT SIZE=+0> while ( resultado == -1 );</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> leeFichero ( dfClient );     /* lee el fichero */</FONT>&nbsp;
+<BR><FONT SIZE=+0> close ( dfClient );      /* cierra el socket */</FONT>&nbsp;
+<BR><FONT SIZE=+0> exit (0);     /* buen fin */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*************     leeFichero ( df )  *****************/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>leeFichero ( int df )</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> char cad[200];</FONT>&nbsp;
+<BR><FONT SIZE=+0> while ( leeLinea ( df, cad ) )      /* lee hasta fin de
+la entrada */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   printf (&quot;%s\n&quot;, cad );            /* e imprime
+lo leido */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*************   leeLinea ( df, cad )  ******************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>leeLinea ( int df, char *cad )</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int n;</FONT>&nbsp;
+<BR><FONT SIZE=+0> do</FONT>&nbsp;
+<BR><FONT SIZE=+0>  {</FONT>&nbsp;
+<BR><FONT SIZE=+0>    n = read ( df, cad, 1 );          /* lectura de un caracter
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0>  }</FONT>&nbsp;
+<BR><FONT SIZE=+0> while ( n &gt; 0 &amp;&amp; *cad++ != NULL );   /* lee hasta
+NULL o fin entrada */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> return ( n &gt; 0 );   /* devuelve falso si fin de entrada
+*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/************* fin de cliente.c ****************************/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><A NAME="7"></A>
+<BR>
+<BR><B><FONT SIZE=+0>EJEMPLO DE COMUNICACION CON SOCKETS INET</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+0>( ENTRE DIFERENTES MAQUINAS )</FONT></B>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/****************   hora.c ***********************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/*************************************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>/*    visualiza el dia y la hora de un host      */</FONT>&nbsp;
+<BR><FONT SIZE=+0>/*************************************************/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#include &lt;stdio.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;signal.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;ctype.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/types.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/socket.h&gt;&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#include &lt;netinet/in.h&gt;          /* socket INET */</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;arpa/inet.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;netdb.h&gt;&nbsp;</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>#define PUERTO_HORA     13</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define PROTOCOLO_DEFECTO 0</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>unsigned long promptForINETAddress ();</FONT>&nbsp;
+<BR><FONT SIZE=+0>unsigned long nameToAddr ();</FONT>&nbsp;
+<BR><FONT SIZE=+0>/***********************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>main ()</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0>int clientFd;</FONT>&nbsp;
+<BR><FONT SIZE=+0>int serverLen;</FONT>&nbsp;
+<BR><FONT SIZE=+0>int result;</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>struct sockaddr_in serverINETAddress;</FONT>&nbsp;
+<BR><FONT SIZE=+0>struct sockaddr* serverSockAddrPtr;</FONT>&nbsp;
+<BR><FONT SIZE=+0>unsigned long inetAddress;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>serverSockAddrPtr = (struct sockaddr *) &amp;serverINETAddress;</FONT>&nbsp;
+<BR><FONT SIZE=+0>serverLen = sizeof (serverINETAddress);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>while (1)</FONT>&nbsp;
+<BR><FONT SIZE=+0> {</FONT>&nbsp;
+<BR><FONT SIZE=+0>  inetAddress = promptForINETAddress ();</FONT>&nbsp;
+<BR><FONT SIZE=+0>  if (inetAddress == 0) break;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>  bzero ((char *)&amp;serverINETAddress , sizeof(serverINETAddress));</FONT>&nbsp;
+<BR><FONT SIZE=+0>  serverINETAddress.sin_family = AF_INET;</FONT>&nbsp;
+<BR><FONT SIZE=+0>  serverINETAddress.sin_addr.s_addr = inetAddress;</FONT>&nbsp;
+<BR><FONT SIZE=+0>  serverINETAddress.sin_port = htons ( PUERTO_HORA );</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>  clientFd = socket ( AF_INET,  SOCK_STREAM,  PROTOCOLO_DEFECTO
+);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>  do</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>    result = connect( clientFd, serverSockAddrPtr, serverLen
+);</FONT>&nbsp;
+<BR><FONT SIZE=+0>    if (result == -1) sleep(1);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR><FONT SIZE=+0>  while (result == -1);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>  readTime(clientFd);</FONT>&nbsp;
+<BR><FONT SIZE=+0>  close(clientFd);</FONT>&nbsp;
+<BR><FONT SIZE=+0> }</FONT>&nbsp;
+<BR><FONT SIZE=+0> exit(0);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> }</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/******************  promptForINETAddress () **************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>unsigned long promptForINETAddress ()</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> char hostName [100];</FONT>&nbsp;
+<BR><FONT SIZE=+0> unsigned long inetAddress;</FONT>&nbsp;
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>  do</FONT>&nbsp;
+<BR><FONT SIZE=+0>  {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   printf (&quot;Nombre maquina (q = salir, s = maquina propia):
+&quot;);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   scanf(&quot;%s&quot;,hostName);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   if ( strcmp (hostName,&quot;q&quot;) == 0 ) return(0);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   inetAddress = nameToAddr (hostName);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   if (inetAddress == 0 ) printf (&quot;\n Maquina no encontrada\n&quot;);</FONT>&nbsp;
+<BR><FONT SIZE=+0>  }</FONT>&nbsp;
+<BR><FONT SIZE=+0> while ( inetAddress == 0 );</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*******************  nameToAddr ( name ) *************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>unsigned long nameToAddr (char *name)</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> char hostName[100];</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct hostent* hostStruct;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct in_addr* hostNode;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (isdigit (name[0])) return (inet_addr (name));</FONT>&nbsp;
+<BR><FONT SIZE=+0> if (strcmp (name,&quot;s&quot;) == 0)</FONT>&nbsp;
+<BR><FONT SIZE=+0>  {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   gethostname (hostName,100);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   printf(&quot;Nombre de la propia maquina es %s\n&quot;,hostName);</FONT>&nbsp;
+<BR><FONT SIZE=+0>  }</FONT>&nbsp;
+<BR><FONT SIZE=+0> else</FONT>&nbsp;
+<BR><FONT SIZE=+0>  strcpy(hostName,name);</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0> hostStruct = gethostbyname (hostName);</FONT>&nbsp;
+<BR><FONT SIZE=+0> if (hostStruct == NULL) return (0);                         /**
+maquina no encontrada **/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> hostNode = (struct in_addr*) hostStruct-&gt;h_addr;   /*
+saca la dir. IP de la struct */</FONT>&nbsp;
+<BR><FONT SIZE=+0> printf(&quot;Direccion IP = %s\n&quot;, inet_ntoa (*hostNode));</FONT>&nbsp;
+<BR><FONT SIZE=+0> return (hostNode-&gt;s_addr);                                     /*
+devuelve la dir IP */</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/******************** readTime ( fd ) **********************/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>readTime (int fd)</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> char str[200];</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> printf(&quot;La hora en el puerto destino es &quot;);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> while (readLine (fd,str))</FONT>&nbsp;
+<BR><FONT SIZE=+0>  printf(&quot;%s\n&quot;,str);</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/************   readLine ( fd, str ) ******************************/</FONT>&nbsp;
+<BR><FONT SIZE=+0>readLine (int fd,char* str)</FONT>&nbsp;
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int n;</FONT>&nbsp;
+<BR><FONT SIZE=+0> do</FONT>&nbsp;
+<BR><FONT SIZE=+0>  {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   n = read(fd,str,1);</FONT>&nbsp;
+<BR><FONT SIZE=+0> }</FONT>&nbsp;
+<BR><FONT SIZE=+0> while (n&gt;0 &amp;&amp; *str++ != '\n');</FONT>&nbsp;
+<BR><FONT SIZE=+0> return (n&gt;0);</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR><A NAME="8"></A>
+<BR><B><FONT SIZE=+0>CODIGO FUENTE DE LAS PRINCIPALES FUNCIONES</FONT></B>&nbsp;
+<BR><B><FONT SIZE=+0>DE COMUNICACION DE LA SHELL DE COMUNICACIONES</FONT></B>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-----------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   NOMBRE:      xshine.c</FONT>&nbsp;
+<BR><FONT SIZE=+0>*                Mois&eacute;s Fern&aacute;ndez Andr&eacute;s
+&amp; Miguel Rueda Barranco</FONT>&nbsp;
+<BR><FONT SIZE=+0>*              </FONT>&nbsp;
+<BR><FONT SIZE=+0> *   DESCRIPCION: Xwindow Shell for Internet network</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   FECHA:       06.09.94</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*------------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*----------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   NOMBRE:      shell.h</FONT>&nbsp;
+<BR><FONT SIZE=+0>*                </FONT>&nbsp;
+<BR><FONT SIZE=+0> *   DESCRIPCION: cabeceras para la shell de comunicaciones&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *                de xshine</FONT>&nbsp;
+<BR><FONT SIZE=+0>*          </FONT>&nbsp;
+<BR><FONT SIZE=+0> *   FECHA:       05.09.94&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *</FONT>&nbsp;
+<BR><FONT SIZE=+0>*---------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*      includes necesarios</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#include &lt;stdio.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;stdlib.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;string.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;signal.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;ctype.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/types.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/stat.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/file.h&gt;  </FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/ioctl.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/socket.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/socketvar.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;sys/un.h&gt;&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;netinet/in.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;arpa/inet.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;netdb.h&gt;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>#ifdef RS6000         /* necesario para sistemas RS/6000
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0>#include &lt;malloc.h&gt;</FONT>&nbsp;
+<BR><FONT SIZE=+0>#endif</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*       definicion de constantes                    </FONT>&nbsp;
+<BR><FONT SIZE=+0> *-------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>#define MAX_STRING          50</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define MAX_TOKENS          100</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define LONG_MAX_TOKEN      30</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define MAX_SIMPLE          3</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define MAX_PIPES           3</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define NO_ENCONTRADO       -1</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define REGULAR             -1</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define PERMISO_DEFECTO     0660</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define PROTOCOLO_DEFECTO   0</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define LONG_COLA_DEFECTO   5</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define SOCKET_DORMIR       1</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define FALSE               0</FONT>&nbsp;
+<BR><FONT SIZE=+0>#define TRUE                1</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-----------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*             macros                         </FONT>&nbsp;
+<BR><FONT SIZE=+0> *-----------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>#define obtienePuntNodo(a)  (a *) malloc(sizeof(a))      /*
+para la asignacion */</FONT>&nbsp;
+<BR><FONT SIZE=+0>                                                        /*
+de memoria         */</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*            tipos enumerados                 </FONT>&nbsp;
+<BR><FONT SIZE=+0> *------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>enum descriptorEnum { STDIN, STDOUT, STDERR };&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>enum pipeEnum { READ, WRITE };</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>enum IOEnum { NO_REDIREC, REDIREC_FICHERO,</FONT>&nbsp;
+<BR><FONT SIZE=+0>              REDIREC_SERVIDOR, REDIREC_CLIENTE, REDIREC_PANT
+};</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>enum socketEnum { CLIENTE, SERVIDOR };</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>enum tiposock{ SOCKET_DOS_VIAS, SOCKET_ENTRADA, SOCKET_SALIDA
+};</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*----------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*                 estructuras                    </FONT>&nbsp;
+<BR><FONT SIZE=+0> *----------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>struct simple</FONT>&nbsp;
+<BR><FONT SIZE=+0> {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   char *token[MAX_TOKENS];            /* tokens del comando
+     */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int contoken;                       /* numero de tokens
+       */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int redirecSalida;                  /* tipo de IO_enum
+        */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int redirecEntrada;                 /* tipo de IO_enum
+        */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int adicion;                        /* VERDAD para modo
+a&ntilde;adir */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   char fichSalida[MAX_STRING];        /* nombre fichero
+salida   */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   char fichEntrada[MAX_STRING];       /* nombre fichero
+entrada  */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   char socketSalida[MAX_STRING];      /* nombre socket salida
+   */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   char socketEntrada[MAX_STRING];     /* nombre socket entrada
+  */</FONT>&nbsp;
+<BR><FONT SIZE=+0> };</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>struct pipeline</FONT>&nbsp;
+<BR><FONT SIZE=+0> {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   struct simple simple [MAX_SIMPLE];      /* comandos en
+pipe           */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int contcom;                            /* numero de comandos
+simples */</FONT>&nbsp;
+<BR><FONT SIZE=+0> };</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>struct secuencia</FONT>&nbsp;
+<BR><FONT SIZE=+0> {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   struct pipeline pipeline[MAX_PIPES];    /* pipes en secuencia
+ */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int contpipe;                           /* numero de pipes
+    */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   int background;                         /* en background
+o no  */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> };</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *   PROTOTIPO:   void ejecutaSimple ( struct simple* )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   DESCRIPCION: ejecuta un comando simple        </FONT>&nbsp;
+<BR><FONT SIZE=+0> *</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>void ejecutaSimple ( struct simple *p )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     &nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      if (redireccion (p) == TRUE)&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     ejecutaPrimitiva (p);&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      }      </FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}  /* fin de ejecutaSimple */</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*------------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *   PROTOTIPO:   void ejecutaPrimitiva ( struct simple*
+)</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   DESCRIPCION: ejecuta una primitiva simple a trav&eacute;s
+del comando       </FONT>&nbsp;
+<BR><FONT SIZE=+0> *                &quot;execvp&quot;</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*------------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>void ejecutaPrimitiva ( struct simple *p )&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{  </FONT>&nbsp;
+<BR><FONT SIZE=+0>  </FONT>&nbsp;
+<BR><FONT SIZE=+0>   if ( ((p-&gt;redirecSalida != REDIREC_SERVIDOR) &amp;&amp;
+(p-&gt;redirecEntrada != REDIREC_SERVIDOR))</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>     &amp;&amp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>         </FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>     (&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>       (p-&gt;redirecSalida == REDIREC_CLIENTE)  ||</FONT>&nbsp;
+<BR><FONT SIZE=+0>       (p-&gt;redirecEntrada == REDIREC_CLIENTE) ||</FONT>&nbsp;
+<BR><FONT SIZE=+0>       (p-&gt;redirecSalida == REDIREC_FICHERO)  ||</FONT>&nbsp;
+<BR><FONT SIZE=+0>       (p-&gt;redirecEntrada == REDIREC_FICHERO)&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     )&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      )</FONT>&nbsp;
+<BR><FONT SIZE=+0>       </FONT>&nbsp;
+<BR><FONT SIZE=+0>       mandaPadre(SIGDIBUJAR);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      execvp (p-&gt;token[0], p-&gt;token);</FONT>&nbsp;
+<BR><FONT SIZE=+0>  </FONT>&nbsp;
+<BR><FONT SIZE=+0>  </FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (errno != 0)   /* ha ocurrido un error */</FONT>&nbsp;
+<BR><FONT SIZE=+0>     {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>       if (raiz-&gt;background == TRUE)        </FONT>&nbsp;
+<BR><FONT SIZE=+0>         {</FONT>&nbsp;
+<BR><FONT SIZE=+0>            mandaPadreExit(SIGERRCMD);</FONT>&nbsp;
+<BR><FONT SIZE=+0>         }</FONT>&nbsp;
+<BR><FONT SIZE=+0>       else</FONT>&nbsp;
+<BR><FONT SIZE=+0>         {</FONT>&nbsp;
+<BR><FONT SIZE=+0>            mandaPadre(SIGERRCMD);</FONT>&nbsp;
+<BR><FONT SIZE=+0>         }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     }&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>    </FONT>&nbsp;
+<BR><FONT SIZE=+0>}  /* fin de ejecutaPrimitiva */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   </FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *   PROTOTIPO:   int redireccion ( struct simple* )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   DESCRIPCION: implementa la redirecci&oacute;n correspondiente
+       </FONT>&nbsp;
+<BR><FONT SIZE=+0> *</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>int redireccion ( struct simple *p )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int masc;</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0> switch (p-&gt;redirecEntrada)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     case REDIREC_FICHERO:</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (!dupDf (p-&gt;fichEntrada, O_RDONLY, STDIN))&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>         return (FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>      break;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      case REDIREC_SERVIDOR:</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (raiz-&gt;background == FALSE)     /* se ha mandado
+un socket servidor en foreground */</FONT>&nbsp;
+<BR><FONT SIZE=+0>        {</FONT>&nbsp;
+<BR><FONT SIZE=+0>          mandaPadre(SIGERRSERBACK);</FONT>&nbsp;
+<BR><FONT SIZE=+0>          return(FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>        }  </FONT>&nbsp;
+<BR><FONT SIZE=+0>       </FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (!servidor (p-&gt;socketEntrada, SOCKET_ENTRADA))</FONT>&nbsp;
+<BR><FONT SIZE=+0>         return(FALSE);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      break;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      case REDIREC_CLIENTE:</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (!cliente (p-&gt;socketEntrada, SOCKET_ENTRADA))</FONT>&nbsp;
+<BR><FONT SIZE=+0>          return (FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>      break;</FONT>&nbsp;
+<BR><FONT SIZE=+0>        </FONT>&nbsp;
+<BR><FONT SIZE=+0>    }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>  switch (p-&gt;redirecSalida)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   </FONT>&nbsp;
+<BR><FONT SIZE=+0>      case REDIREC_FICHERO:</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      masc = O_CREAT|O_WRONLY|(p-&gt;adicion?O_APPEND:O_TRUNC);</FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (!dupDf (p-&gt;fichSalida, masc, STDOUT))</FONT>&nbsp;
+<BR><FONT SIZE=+0>          return (FALSE);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      break;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     case REDIREC_SERVIDOR:</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>         if (raiz-&gt;background == FALSE)     /* se ha mandado
+un socket servidor en foreground */</FONT>&nbsp;
+<BR><FONT SIZE=+0>        {</FONT>&nbsp;
+<BR><FONT SIZE=+0>          mandaPadre(SIGERRSERBACK);</FONT>&nbsp;
+<BR><FONT SIZE=+0>          return(FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>        }&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR><FONT SIZE=+0>      if (!servidor (p-&gt;socketSalida, SOCKET_SALIDA))&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>         return (FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>      break;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      case REDIREC_CLIENTE:</FONT>&nbsp;
+<BR><FONT SIZE=+0>      </FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (!cliente (p-&gt;socketSalida, SOCKET_SALIDA))&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>          return (FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>      break;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      case REDIREC_PANT:</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>       masc=O_CREAT|O_WRONLY|O_TRUNC;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>       if (!dupDf (&quot;resultado&quot;, masc, STDOUT))</FONT>&nbsp;
+<BR><FONT SIZE=+0>          return (FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>       break;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>  </FONT>&nbsp;
+<BR><FONT SIZE=+0>  return (TRUE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}&nbsp;</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-----------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *   PROTOTIPO:   int dupDf ( char *, int, int )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   DESCRIPCION: realiza la redirecci&oacute;n duplicando
+los descriptores        </FONT>&nbsp;
+<BR><FONT SIZE=+0> *                de ficheros</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*-----------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>int dupDf ( char *nombre , int mascara , int dfStd )&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int df;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> df = open (nombre, mascara, PERMISO_DEFECTO);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (df == -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     mandaPadre(SIGERRREDIREC);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     return (FALSE);&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>    }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dup2 (df, dfStd);  /* copia sobre el descriptor de fichero
+est&aacute;ndar */</FONT>&nbsp;
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>  close (df);        /* cierra el original */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> return (TRUE);&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}  /* fin de dupDf */</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    PROTOTIPO:   int direccionInternet ( char* )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    DESCRIPCION: obtiene la direcci&oacute;n Internet del
+host</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>int direccionInternet ( char *nombre )     </FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> return (strpbrk (nombre, &quot;01234567890&quot;) != NULL);</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*---------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    PROTOTIPO:   void obtenerHostyPuerto ( char* , char*,
+int* )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    DESCRIPCION: almacena en &quot;nombre&quot; y &quot;puerto&quot;
+el nombre del&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *                 nodo y su puerto de comunicaciones respectivamente</FONT>&nbsp;
+<BR><FONT SIZE=+0>*                 a partir de la variable &quot;cad&quot;</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>void obtenerHostyPuerto ( char *cad, char *nombre, int* puerto)</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> char *tok1,  *tok2;        /* decodifica Host y Puerto de
+una */</FONT>&nbsp;
+<BR><FONT SIZE=+0>                           /* entrada cadena tipo NOMBRE.PUERTO
+*/</FONT>&nbsp;
+<BR><FONT SIZE=+0> tok1 = strtok (cad, &quot;.&quot;);</FONT>&nbsp;
+<BR><FONT SIZE=+0> tok2 = strtok (NULL,&quot;.&quot;);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>if (tok2 == NULL )       /* nombre perdido y toma por defecto
+el local */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>     strcpy (nombre, &quot;&quot;);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     sscanf (tok1, &quot;%d&quot;, puerto);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR><FONT SIZE=+0> else</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>     strcpy (nombre, tok1);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     sscanf (tok2, &quot;%d&quot;, puerto);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR><FONT SIZE=+0>}</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    PROTOTIPO:   int cliente ( char* , int )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    DESCRIPCION: implementa el manejo del socket cliente</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>int cliente ( char *nombre, int tipo )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int dfCliente, resultado, internet, dominio, longServidor,
+puerto, time_out=0;</FONT>&nbsp;
+<BR><FONT SIZE=+0> char nombreHost[100];</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_un direccUNIXServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_in direccINETServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr* puntDireccSockServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct hostent* estructHost;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct in_addr* nodoHost;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*  Abriremos un socket cliente con un nombre y tipo espec&iacute;fico
+*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>  internet = direccionInternet ( nombre );   /* &iquest;es
+socket internet? */</FONT>&nbsp;
+<BR><FONT SIZE=+0> dominio = internet ? AF_INET : AF_UNIX;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dfCliente = socket (dominio, SOCK_STREAM, PROTOCOLO_DEFECTO);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (dfCliente == -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>     mandaPadre(SIGERRCLISOCK);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      return(FALSE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (internet)    /* es un socket internet */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     obtenerHostyPuerto (nombre, nombreHost, &amp;puerto);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (nombreHost[0] == NULL) gethostname (nombreHost,100);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     direccINETServidor.sin_family = AF_INET;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     estructHost = gethostbyname (nombreHost);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     if (estructHost==NULL)</FONT>&nbsp;
+<BR><FONT SIZE=+0>      {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>        mandaPadre(SIGERRCLISOCK);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>         return (FALSE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     nodoHost = (struct in_addr*) estructHost-&gt;h_addr;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     /*printf(&quot;Direccion IP %s \n&quot;, inet_ntoa (*nodoHost));*/</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      direccINETServidor.sin_addr = *nodoHost;    /* nos
+da la direccion IP */</FONT>&nbsp;
+<BR><FONT SIZE=+0>     direccINETServidor.sin_port = puerto;       /* nos da
+el puerto de comunic */&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      puntDireccSockServidor = (struct sockaddr*) &amp;direccINETServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     longServidor = sizeof (direccINETServidor);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> else    /* socket del dominio UNIX */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     direccUNIXServidor.sun_family = AF_UNIX;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     strcpy (direccUNIXServidor.sun_path, nombre);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     puntDireccSockServidor = (struct sockaddr*) &amp;direccUNIXServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     longServidor = sizeof (direccUNIXServidor);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> do  /* conexion a un servidor */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>      resultado = connect (dfCliente, puntDireccSockServidor,
+longServidor);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (resultado == -1) { sleep (SOCKET_DORMIR); time_out++;
+}</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (time_out == 2 ) {</FONT>&nbsp;
+<BR><FONT SIZE=+0>                         mandaPadre(SIGERRCLISOCK);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>                          return(FALSE);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>                          }</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR><FONT SIZE=+0> while (resultado == -1);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (tipo == SOCKET_SALIDA) dup2 (dfCliente, STDOUT);</FONT>&nbsp;
+<BR><FONT SIZE=+0> if (tipo == SOCKET_ENTRADA) dup2 (dfCliente, STDIN);  </FONT>&nbsp;
+<BR><FONT SIZE=+0>    </FONT>&nbsp;
+<BR><FONT SIZE=+0>  close (dfCliente);  /* cierra el descriptor del fichero
+cliente original */</FONT>&nbsp;
+<BR><FONT SIZE=+0> return (TRUE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}  /* fin de cliente */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    PROTOTIPO:   int servidor (char* , int )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    DESCRIPCION: implementa el manejo del socket servidor</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>int servidor ( char *nombre, int tipo )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int dfServidor, dfCliente, longServidor, longCliente;</FONT>&nbsp;
+<BR><FONT SIZE=+0> int dominio, internet, puerto;</FONT>&nbsp;
+<BR><FONT SIZE=+0> char nombreHost[100];</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_un direccUNIXServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_un direccUNIXCliente;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_in direccINETServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_in direccINETCliente;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr* puntDireccSockServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr* puntDireccSockCliente;</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>  internet = direccionInternet (nombre);</FONT>&nbsp;
+<BR><FONT SIZE=+0> dominio = internet ? AF_INET : AF_UNIX;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dfServidor = socket (dominio, SOCK_STREAM, PROTOCOLO_DEFECTO);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (dfServidor == -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>     mandaPadre (SIGERRSERSOCK);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     return(FALSE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> mandaPadre (SIGDIBUJAR);   /* envia la se&ntilde;al de dibujar
+*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (internet)   /* es un socket internet */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>      sscanf (nombre, &quot;%d&quot;, &amp;puerto);  /* obtiene
+numero y puerto */</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      longServidor = sizeof (direccINETServidor);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     bzero ((char*) &amp;direccINETServidor, longServidor);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     direccINETServidor.sin_family = AF_INET;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     direccINETServidor.sin_addr.s_addr = htonl (INADDR_ANY);
+  </FONT>&nbsp;
+<BR><FONT SIZE=+0>      direccINETServidor.sin_port = htons (puerto);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     puntDireccSockServidor = (struct sockaddr*) &amp;direccINETServidor;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> else   /* socket dominio UNIX */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     direccUNIXServidor.sun_family = AF_UNIX;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     strcpy (direccUNIXServidor.sun_path, nombre);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     puntDireccSockServidor = (struct sockaddr*) &amp;direccUNIXServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     longServidor = sizeof (direccUNIXServidor);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      unlink (nombre);  /* borra el socket si ya existe */</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0> if (bind (dfServidor, puntDireccSockServidor, longServidor)
+== -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     mandaPadre (SIGERRSERSOCK);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     return (FALSE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (listen (dfServidor, LONG_COLA_DEFECTO) == -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     mandaPadre (SIGERRSERSOCK);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     return (FALSE);&nbsp;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>    }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (internet)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     longCliente = sizeof (direccINETCliente);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     puntDireccSockCliente = (struct sockaddr*) &amp;direccINETCliente;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> else</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     longCliente = sizeof (direccUNIXCliente);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     puntDireccSockCliente = (struct sockaddr*) &amp;direccUNIXCliente;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>  </FONT>&nbsp;
+<BR><FONT SIZE=+0>  dfCliente = accept (dfServidor, puntDireccSockCliente,
+&amp;longCliente);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> close (dfServidor);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (dfCliente == -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     mandaPadre (SIGERRSERSOCK);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     return (FALSE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (tipo == SOCKET_SALIDA) dup2 (dfCliente, STDOUT);</FONT>&nbsp;
+<BR><FONT SIZE=+0> if (tipo == SOCKET_ENTRADA) dup2 (dfCliente, STDIN);  </FONT>&nbsp;
+<BR><FONT SIZE=+0>    </FONT>&nbsp;
+<BR><FONT SIZE=+0>  close (dfCliente);  /* cierra el descriptor del fichero
+cliente original */</FONT>&nbsp;
+<BR><FONT SIZE=+0> return (TRUE);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   </FONT>&nbsp;
+<BR><FONT SIZE=+0>}  /* fin de servidor */&nbsp;</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    PROTOTIPO:   int borraServer ( char* )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*    DESCRIPCION: desactiva un socket servidor creado</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*--------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>int borraServer ( char *nombre )</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>{</FONT>&nbsp;
+<BR><FONT SIZE=+0> int dfCliente, resultado, internet, dominio, longServidor,
+puerto, time_out=0;</FONT>&nbsp;
+<BR><FONT SIZE=+0> char nombreHost[100];</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_un direccUNIXServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr_in direccINETServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct sockaddr* puntDireccSockServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct hostent* estructHost;</FONT>&nbsp;
+<BR><FONT SIZE=+0> struct in_addr* nodoHost;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>/*  Abriremos un socket cliente con un nombre y tipo espec&iacute;fico
+*/</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>  internet = direccionInternet ( nombre );   /* &iquest;es
+socket internet? */</FONT>&nbsp;
+<BR><FONT SIZE=+0> dominio = internet ? AF_INET : AF_UNIX;</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> dfCliente = socket (dominio, SOCK_STREAM, PROTOCOLO_DEFECTO);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (dfCliente == -1)</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR><FONT SIZE=+0>     Xerror(ERRORBORRAR);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      return(FALSE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> if (internet)    /* es un socket internet */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     obtenerHostyPuerto (nombre, nombreHost, &amp;puerto);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (nombreHost[0] == NULL) gethostname (nombreHost,100);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     direccINETServidor.sin_family = AF_INET;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     estructHost = gethostbyname (nombreHost);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     if (estructHost==NULL)</FONT>&nbsp;
+<BR><FONT SIZE=+0>      {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>        Xerror(ERRORBORRAR);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>         return (FALSE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>      }</FONT>&nbsp;
+<BR><FONT SIZE=+0>          </FONT>&nbsp;
+<BR><FONT SIZE=+0>      nodoHost = (struct in_addr*) estructHost-&gt;h_addr;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     /*printf(&quot;Direccion IP %s \n&quot;, inet_ntoa (*nodoHost));*/</FONT>&nbsp;
+<BR><FONT SIZE=+0>     </FONT>&nbsp;
+<BR><FONT SIZE=+0>      direccINETServidor.sin_addr = *nodoHost;    /* nos
+da la direccion IP */</FONT>&nbsp;
+<BR><FONT SIZE=+0>     direccINETServidor.sin_port = puerto;       /* nos da
+el puerto de comunic */&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>      puntDireccSockServidor = (struct sockaddr*) &amp;direccINETServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     longServidor = sizeof (direccINETServidor);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> else    /* socket del dominio UNIX */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>     direccUNIXServidor.sun_family = AF_UNIX;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     strcpy (direccUNIXServidor.sun_path, nombre);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     puntDireccSockServidor = (struct sockaddr*) &amp;direccUNIXServidor;</FONT>&nbsp;
+<BR><FONT SIZE=+0>     longServidor = sizeof (direccUNIXServidor);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0> do  /* conexion a un servidor */</FONT>&nbsp;
+<BR><FONT SIZE=+0>   {</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0> </FONT>&nbsp;
+<BR><FONT SIZE=+0>      resultado = connect (dfCliente, puntDireccSockServidor,
+longServidor);</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (resultado == -1) { sleep (SOCKET_DORMIR); time_out++;
+}</FONT>&nbsp;
+<BR><FONT SIZE=+0>     if (time_out == 2 ) {</FONT>&nbsp;
+<BR><FONT SIZE=+0>                         Xerror(ERRORBORRAR);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>                          return(FALSE);&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0>                          }</FONT>&nbsp;
+<BR><FONT SIZE=+0>   }</FONT>&nbsp;
+<BR><FONT SIZE=+0> while (resultado == -1);</FONT>&nbsp;
+<BR><FONT SIZE=+0>   </FONT>&nbsp;
+<BR><FONT SIZE=+0>  close (dfCliente);  /* cierra el descriptor del fichero
+cliente */</FONT>&nbsp;
+<BR><FONT SIZE=+0> return (TRUE);</FONT>&nbsp;
+<BR>
+<BR><FONT SIZE=+0>}  /* fin de borraServer */</FONT>&nbsp;
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR>
+<BR><FONT SIZE=+0>/*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*---------------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   PROTOTIPO:   void trataSignal ( void )</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*   DESCRIPCION: especifica la acci&oacute;n a tomar al llegar
+cada&nbsp;</FONT>&nbsp;
+<BR><FONT SIZE=+0> *                una de las se&ntilde;ales definidas posibles</FONT>&nbsp;
+<BR><FONT SIZE=+0>*</FONT>&nbsp;
+<BR><FONT SIZE=+0>*---------------------------------------------------------------------</FONT>&nbsp;
+<BR><FONT SIZE=+0>*/</FONT>&nbsp;
+<BR>
+<BR>
+<BR><FONT SIZE=+0>void trataSignal ( void )</FONT>&nbsp;
+<BR><FONT SIZE=+0> {</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGPANT, XmanejaPantalla );</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGERRCMD, manejaErrorCmd );</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGERRSERBACK, manejaErrorSerBack );</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGERRCLISOCK, manejaErrorCliSock );</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGERRSERSOCK, manejaErrorSerSock );</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGERRREDIREC, manejaErrorRedirec );</FONT>&nbsp;
+<BR><FONT SIZE=+0>   signal ( SIGDIBUJAR, manejaDibujar );</FONT>&nbsp;
+<BR><FONT SIZE=+0> }</FONT>&nbsp;
+<BR>
+
+</BODY>
+</HTML>

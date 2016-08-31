@@ -1,0 +1,426 @@
+<HTML>
+<HEAD>
+<TITLE>TERM Como: tredir </TITLE>
+</HEAD>
+<BODY>
+<A HREF="Term-Como-6.html">Anterior</A>
+<A HREF="Term-Como-8.html">Siguiente</A>
+<A HREF="Term-Como.html#toc7">Indice</A>
+<HR>
+<H2><A NAME="s7">7. <CODE>tredir</CODE> </A></H2>
+
+<P> </P>
+<P><CODE>tredir</CODE> es una de las utilidades m&aacute;s potentes de <CODE>term</CODE>,
+permitiendo que la mayor&iacute;a de los servicios de red importantes puedan
+obtenerse en un enlace <CODE>term</CODE>. Antes de explicar c&oacute;mo se usa
+<CODE>tredir</CODE>, es necesario dar algunas nociones sobre los servicios de
+red.</P>
+<P>Ya se ha hablado antes sobre los servicios de red, pero no se ha dicho
+exactamente qu&eacute; son. Los servicios son justo eso - servicios que
+proporciona la red. Ejemplos de servicios incluyen <CODE>telnet</CODE>, que proporciona
+logins entre m&aacute;quinas, el <CODE>ftp</CODE> (<I>File Transfer Protocol</I>), o
+Protocolo de Transferencia de Ficheros, que transfiere ficheros entre
+m&aacute;quinas, y <I>smtp</I>, el protocolo de transmisi&oacute;n de correo, que se usa
+siempre que se env&iacute;a un correo electr&oacute;nico.</P>
+<P>Cada servicio de red tiene un n&uacute;mero de puerto asociado a &eacute;l. El mapeo de
+n&uacute;meros de puerto con los servicios correspondientes se da en el fichero
+<CODE>/etc/services</CODE>. Este fichero deber&iacute;a ser el mismo en todas las
+m&aacute;quinas conectadas a Internet.</P>
+<P>¿Como se accede a estos servicios? Cada m&aacute;quina en red corre un demonio
+llamado <CODE>inetd</CODE>, el cual escucha los intentos de conexi&oacute;n a los puertos
+de red. Estas peticiones pueden llegar tanto desde la red, como desde la
+propia m&aacute;quina. Un servicio de red se obtiene conectando con un puerto
+<CODE>inetd</CODE> en particular. Cuando se hace una solicitud de red, <CODE>inetd</CODE>
+conoce exactamente qu&eacute; servicio est&aacute; implicado, por el n&uacute;mero de puerto al
+que se hizo la solicitud. Si se configura <CODE>inetd</CODE> para hacerlo,
+proporcionar&aacute; el servicio adecuado a la conexi&oacute;n que lo solicita. La
+configuraci&oacute;n de <CODE>inetd</CODE> es la que se da en el fichero
+<CODE>/etc/inetd.conf</CODE>, que contiene una lista de los servicios que
+proporciona <CODE>inetd</CODE>. Para m&aacute;s informaci&oacute;n vea las p&aacute;ginas de manual de
+<CODE>inetd</CODE> e <CODE>inetd.conf</CODE>. </P>
+<P>Se puede comunicar directamente con los servicios de red usando
+<CODE>telnet</CODE> (n&oacute;tese bien, no <CODE>termtelnet</CODE>). Por ejemplo, para hablar
+con el demonio de <CODE>sendmail</CODE> (o <I>smtp</I>) en la m&aacute;quina
+<CODE>nombre_de_m&aacute;quina;</CODE>, se puede hacer un <CODE>telnet
+nombre_de_m&aacute;quina smtp</CODE> , o <CODE>telnet
+nombre_de_m&aacute;quina 25</CODE>, (ya que 25 es el puerto asignado
+a <CODE>smtp</CODE> en <CODE>/etc/services</CODE>). Deber&iacute;a obtener una agradable
+bienvenida del demonio de la m&aacute;quina remota. Este es un truco muy &uacute;til
+para depurar problemas de red y chequear puertos redirigidos con
+<CODE>tredir</CODE> (ver abajo). </P>
+<P><CODE>tredir</CODE> funciona de modo similar a <CODE>inetd</CODE>. Funciona en
+<I>background</I> como un demonio, escuchando los puertos de red, esperando
+a una petici&oacute;n. Cuando se hace una solicitud de un servicio, en vez de
+proporcionar ese servicio, como hace <CODE>inetd</CODE>, <CODE>tredir</CODE> traslada
+la solicitud a trav&eacute;s del enlace <CODE>term</CODE> hasta el <CODE>term</CODE>
+remoto, quien hace la solicitud a la red, devolviendo el resultado de
+nuevo por el enlace hasta el cliente local. <CODE>tredir</CODE> puede
+trasladar la solicitud a cualquier m&aacute;quina de la red, pero por defecto la
+env&iacute;a a la m&aacute;quina al otro extremo del enlace <CODE>term</CODE>.
+<CODE>tredir</CODE> ``redirige'' los servicios <CODE>TCP</CODE> (<I>Transmision Control
+Protocol</I>) a trav&eacute;s del enlace <CODE>term</CODE>.</P>
+<P>Un ejemplo lo aclarar&aacute;. Vamos a redirigir un puerto local al puerto <CODE>telnet</CODE>
+de la m&aacute;quina remota. Para hacer esto pondr&iacute;amos <CODE>tredir 2023 23</CODE>.
+Ahora, cualquiera que conecte al puerto 2023 de la m&aacute;quina local ser&aacute;
+redirigido al puerto 23 (<CODE>telnet</CODE>) de la m&aacute;quina remota. Aqu&iacute; va una
+sesi&oacute;n de ejemplo; la m&aacute;quina local es <CODE>mimaquina.modem.casa</CODE> y la
+remota es <CODE>netsun</CODE>. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ tredir 2023 23
+Redirecting 2023 to 23
+$ telnet localhost 2023
+Trying 127.0.0.1...
+Connected to mimaquina.modem.casa
+Escape character is '^]'.
+
+
+SunOS UNIX (netsun)
+login:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Este ejemplo es realmente muy &uacute;til. Si en su lugar hiciera el
+<CODE>tredir</CODE> sobre <CODE>netsun</CODE>, entonces podr&iacute;a hacer <CODE>telnet</CODE> a
+<CODE>mimaquina</CODE> desde la red simplemente conect&aacute;ndome al puerto redirigido
+de la m&aacute;quina en red (usando <CODE>telnet</CODE>) - esto es, <CODE>telnet netsun
+2023</CODE>.</P>
+<P>El principio general de uso del <CODE>tredir</CODE> es redirigir el servicio
+deseado a una m&aacute;quina de la red. El siguiente ejemplo nos permitir&aacute; leer
+las News en la m&aacute;quina local a trav&eacute;s del enlace <CODE>term</CODE> desde un
+servidor de News de la red. Las News las proporciona el servicio
+<CODE>nntp</CODE>, puerto 119. Todos los lectores de News decentes permiten
+especificar qu&eacute; puerto van a utilizar, ya sea en un fichero de
+configuraci&oacute;n o en una variable de entorno. Vamos a especificar que el
+puerto local sea el 2119.  Ahora supongamos que el servidor de News es
+<CODE>news.domain.org</CODE>; entonces le diremos al software de lectura de News
+que el servidor <CODE>nntp</CODE> se encuentra en el puerto 2119 del <I>host</I>
+local. Como esto depender&aacute; del lector de News que se use, probaremos el
+enlace con <CODE>telnet</CODE> en lugar de ejecutar un lector de News:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ tredir 2119 news.domain.org:119
+Redirecting 2119 to news.domain.org:119
+$ telnet localhost 2119
+Trying 127.0.0.1...
+Connected to mimaquina.modem.casa.
+Escape character is '^]'.
+200 news.domain.org InterNetNews NNRP server INN 1.4 07-Dec-41 ready
+(posting ok).
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si ha podido llegar tan lejos, todo lo que tiene que hacer es configurar
+su lector de News para poder leer las News desde casa v&iacute;a <CODE>term</CODE>. 
+(n&oacute;tese bien, si lee las News de este modo, aseg&uacute;rese de que en todos los
+mensajes que deje ponga una cabecera <CODE>Reply-To:</CODE> a una direcci&oacute;n de
+correo en la que pueda ser localizado, o de lo contrario la gente que
+quiera ponerse en contacto con Ud. mandar&aacute; el correo a cualquier dato que
+su lector de News ponga en la cabecera <CODE>From:</CODE>).</P>
+
+<H2><A NAME="ss7.1">7.1 ¡<CODE>tredir</CODE> puede morder!</A></H2>
+
+
+<P>El astuto lector, tras leer el &uacute;ltimo ejemplo se preguntar&aacute; porqu&eacute; se
+redirigi&oacute; en puerto 2119 al puerto 119 --ya que el puerto por defecto de
+los lectores de News es el 119--, ¿porqu&eacute; no podr&iacute;a hacer un <CODE>tredir
+119 news.domain.org:119</CODE> y evitar la configuraci&oacute;n del lector de News?
+La respuesta es que todos los puertos con n&uacute;meros inferiores a 1024 son
+``puertos reservados'', y &uacute;nicamente el superusuario puede escucharlos. Si
+se desea tomar un riesgo en seguridad y hacer de <CODE>tredir</CODE> un programa
+<I>suid</I>, o ejecutar <CODE>tredir</CODE> como <CODE>root</CODE>, entonces se pueden
+redirigir puertos reservados y evitar as&iacute; la molestia de renombrar
+servicios. </P>
+<P>Otro problema de usar los puertos reservados es que <CODE>inetd</CODE> a menudo ya
+est&aacute; escuchando en esos puertos, y solamente un programa puede escuchar un
+puerto a la vez. Si se quiere usar tal puerto, se debe cambiar
+<CODE>inetd.conf</CODE> de modo que <CODE>inetd</CODE> ya no escuche en ese puerto que se
+quiere redirigir.  Esto se hace f&aacute;cilmente comentando la l&iacute;nea
+correspondiente al servicio poniendo el car&aacute;cter <CODE>#</CODE> al comienzo de
+la misma. El superusuario tiene que mandar una se&ntilde;al <CODE>HUP</CODE> a
+<CODE>inetd</CODE> (<CODE>kill -1 &lt;inetd-pid&gt;</CODE>) 
+para hacer que vuelva a leer su configuraci&oacute;n. </P>
+
+
+<H2><A NAME="ss7.2">7.2 Trucos tontos de <CODE>tredir</CODE></A></H2>
+
+
+<P>En esta secci&oacute;n describiremos algunos de los usos m&aacute;s comunes de
+<CODE>tredir</CODE>. Ya hemos descrito como redirigir los servicios <CODE>nntp</CODE> y
+<CODE>telnet</CODE>; Ahora daremos algunos ejemplos m&aacute;s complicados. </P>
+<H3>X window</H3>
+
+
+<P>En una secci&oacute;n previa, se describi&oacute; como hacer que un cliente X que corre
+en la red abra una ventana en la m&aacute;quina de casa usando <CODE>txconn</CODE>. 
+La misma t&eacute;cnica se podr&iacute;a usar en la m&aacute;quina de casa para mostrar un
+cliente en la m&aacute;quina del lado remoto del enlace <CODE>term</CODE>. ¿Pero c&oacute;mo
+puede uno ver un cliente X en una m&aacute;quina de red que no es el extremo
+remoto? La respuesta se basa en conocer que X usa un servicio de red
+concreto igual que los otros programas que hemos explicado. Un servidor X
+escucha peticiones de red en un puerto cuyo n&uacute;mero viene dado por la
+f&oacute;rmula: <I>puerto = 6000 + n&uacute;mero de display</I>, p.ej. un servidor X
+manejando la pantalla 0 en una m&aacute;quina escuchar&iacute;a el puerto 6000, si
+estuvi&eacute;ramos manejando la pantalla 2, escuchar&iacute;a el puerto 6002. Si se
+pone la variable de entorno <CODE>DISPLAY</CODE> en maquinaX:n, los clientes X
+tratar&aacute;n de conectar con el puerto <F>6000+n</F> de maquinaX.</P>
+<P>Podemos usar esto para trucar los clientes X de la m&aacute;quina local y abrir
+ventanas en displays remotos. Supongamos que quiero abrir un
+<CODE>xterm</CODE>, corriendo en mi m&aacute;quina local, en el display 0 de la
+m&aacute;quina maquinaX, que esta corriendo en alg&uacute;n lugar de la red. Primero
+escoger&eacute; un n&uacute;mero de display local, digamos que el 2 (no se usa el 0, ya
+que es el que estar&aacute; usando el servidor X local). Mapear&eacute; este display al
+display 0 de maquinaX.  En t&eacute;rmino de puertos, esto significa que quiero
+redirigir el puerto local 6002 al puerto remoto 6000. Har&eacute; lo siguiente: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ tredir 6002 xmachine:6000 
+$ setenv DISPLAY localhost:2
+$ xterm 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto deber&iacute;a abrir un <CODE>xterm</CODE> en la m&aacute;quina maquinaX. Observe que
+he puesto el <CODE>DISPLAY</CODE> a <CODE>localhost:2</CODE>. Esto es porque los
+clientes X usan a veces <I>sockets</I> de dominio unix en lugar de
+<I>sockets</I> de dominio Internet, a su propio criterio, cuando conectan con
+un display local, si <CODE>DISPLAY</CODE> se pone a <CODE>:2</CODE>.
+<CODE>localhost:2</CODE> indica que use una conexi&oacute;n <CODE>TCP</CODE>.</P>
+<P>Observe que en lo que concierne a maquinaX, la solicitud X viene de la
+m&aacute;quina del extremo remoto del enlace <CODE>term (m&aacute;quinaremota)</CODE> - de modo
+que si necesita autorizar la conexi&oacute;n, deber&iacute;a hacer bien <CODE>xhost +
+m&aacute;quinaremota</CODE> en maquinaX, o bien usar <CODE>xauth</CODE> para actualizar el
+fichero <CODE>.Xauthority</CODE> en su m&aacute;quina local para el display n&uacute;mero 2,
+usando la clave de maquinaX.</P>
+<P>De nuevo, para acelerar las conexiones X, se puede usar el programa
+<CODE>sxpc</CODE>, que incluye una explicaci&oacute;n sobre c&oacute;mo usar <CODE>tredir</CODE>
+para establecer el enlace y autorizarlo usando <CODE>xauth</CODE>.</P>
+
+<H3>Correo con <CODE>TERM</CODE></H3>
+
+
+<P>Est&aacute; bien, vosotros lo ped&iacute;steis. El correo electr&oacute;nico tiene la
+justificada reputaci&oacute;n de ser una de las cosas m&aacute;s dificiles de hacer
+funcionar bien en un sistema UNIX. Para conseguir que el <CODE>term</CODE>
+funcione correctamente con el correo es preciso entender c&oacute;mo funciona el
+correo, lo cual va m&aacute;s all&aacute; del objetivo de este documento.</P>
+<P>Para aprender m&aacute;s sobre correo, deber&iacute;a consultar un libro de
+administraci&oacute;n de sistemas UNIX y/o la FAQ de la conferencia
+<CODE>comp.mail.misc</CODE>, disponible en el <CODE>ftp</CODE> an&oacute;nimo de
+<CODE>
+<A HREF="ftp://rtfm.mit.edu/pub/usenet/comp.mail.misc">ftp://rtfm.mit.edu/pub/usenet/comp.mail.misc</A></CODE>.</P>
+<P>Tambi&eacute;n tiene a su disposici&oacute;n 2 paquetes en el <CODE>ftp</CODE> an&oacute;nimo de
+<CODE>sunsite.unc.edu</CODE> que le ayudar&aacute;n a poner en marcha el correo bajo
+<CODE>term</CODE> - son <CODE>term.mailerd+smail</CODE> de Byron A. Jeff y
+<CODE>BCRMailHandlerXXX</CODE> de Bill C. Riemers. </P>
+<P>Como se ha dicho, haremos una breve descripci&oacute;n de como funciona el correo
+electr&oacute;nico. Hay dos partes que hacen funcionar el correo, el env&iacute;o de
+mensajes y la recepci&oacute;n de los mismos. Comenzaremos con el env&iacute;o de
+mensajes desde su ordenador local a la red. </P>
+<P>Hay dos clases de programas de correo. El primero es el <I>Agente de
+Correo de Usuario</I> (<I>MUA - Mail User Agent</I>). Los <I>MUA</I>s ayudan a
+leer, componer y mandar mensajes. Ejemplos de <I>MUA</I>s son el
+<CODE>elm</CODE>, <CODE>pine</CODE>, <CODE>mail</CODE> y <CODE>vm</CODE>. Los <I>MUA</I>s no
+usan para nada la red; solamente agrupan los mensajes - el trabajo duro de
+env&iacute;o de correo se hace a trav&eacute;s de la segunda clase de programas, los
+agentes de transferencia de correo (<I>MTA - Mail Transfer Agent</I>). Estos
+son invocados desde los <I>MUA</I>s. Toman el mensaje, deciden d&oacute;nde
+enviarlo observando la direcci&oacute;n, y finalmente lo env&iacute;an a trav&eacute;s de la
+red. </P>
+<P>Los dos <I>MTA</I>s mas comunes en sistemas Linux son <CODE>sendmail</CODE> y
+<CODE>smail</CODE>. La idea b&aacute;sica es hacer que su <I>MTA</I> se conecte a otro
+<I>MTA</I> que est&eacute; corriendo en otra m&aacute;quina de la red que sepa qu&eacute; hacer
+con su mensaje. Esto se consigue redirigiendo un puerto local hacia el
+puerto <CODE>smtp</CODE> de la m&aacute;quina en red.  Entonces debe indicar a su
+<I>MTA</I> que tome todos los mensajes con los que no sepa que hacer, y los
+env&iacute;e fuera a trav&eacute;s del puerto redirigido de su m&aacute;quina local al <I>MTA</I>
+de la m&aacute;quina remota, la cual encaminar&aacute; los mensajes hacia su destino
+correcto.</P>
+<P>¿C&oacute;mo hacemos esto usando <CODE>smail</CODE>? Primero redirigiremos un puerto al
+puerto <CODE>smtp</CODE> de la m&aacute;quina de correo de la red (<CODE>mailhost</CODE>): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tredir XXXX mailhost:25
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>donde <CODE>XXXX</CODE> es el n&uacute;mero de puerto al que se conecta <CODE>smail</CODE> en
+el host local (tenga en cuenta que hay que dar un nombre al puerto en
+<CODE>/etc/services</CODE> para hacer que <CODE>smail</CODE> lo reconozca). <CODE>smail</CODE>
+tiene varios ficheros de configuraci&oacute;n que generalmente est&aacute;n en
+<CODE>/usr/local/lib/smail</CODE>.  Los que nos interesan son <CODE>config,
+routers</CODE> y <CODE>transports</CODE>.  Observar que presumimos que ya ha
+configurado <CODE>smail</CODE> correctamente para el correo local - env&iacute;o a
+ficheros y tuber&iacute;as y dem&aacute;s cosas. De nuevo, consulte la documentaci&oacute;n si
+no lo ha hecho.</P>
+<P>En el fichero <CODE>config</CODE>, ponemos la siguiente definici&oacute;n:      </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+smart_path=localhost
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P><CODE>localhost</CODE> es la m&aacute;quina a la que se conecta <CODE>smail</CODE> cuando no sabe que 
+hacer con un mensaje.</P>
+<P>En <CODE>routers</CODE> ponemos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+smart_host: 
+driver=smarthost, 
+transport=termsmtp; 
+path = localhost 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En <CODE>transports</CODE> ponemos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  
+termsmtp:        driver=tcpsmtp, 
+        inet,                    
+        return_path, 
+        remove_header=&quot;From&quot;, 
+        append_header=&quot;From: SU_DIRECCION_DE_RED&quot;, 
+        -received, 
+        -max_addrs, -max_chars; 
+        service=SU_SERVICIO_SMTP, 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En el de arriba, las l&iacute;neas <CODE>header</CODE> cambian la cabecera <CODE>From</CODE>
+en todo correo saliente por la direcci&oacute;n
+<CODE>SU_DIRECCION_DE_RED</CODE>, que ser&aacute; la direcci&oacute;n de red a la que quiere
+que le env&iacute;en el correo. Si su enlace <CODE>term</CODE> va a ser usado por m&aacute;s
+de una persona, tendr&aacute; que hacer algo m&aacute;s laborioso, como mantener una
+base de datos de direcciones de red de usuarios locales e insertar las
+mismas en las cabeceras <CODE>From:</CODE>. </P>
+<P>La l&iacute;nea <CODE>service</CODE> es el nombre del n&uacute;mero de puerto local que ha
+redirigido al puerto <CODE>smtp</CODE> de la m&aacute;quina conectada a la red. En mi
+versi&oacute;n de <CODE>smail</CODE> no es posible ponerlo como un n&uacute;mero, asi que tengo
+que ponerlo como un nombre, como ``<CODE>foo</CODE>'', y entonces definir
+``<CODE>foo</CODE>'' en <CODE>/etc/services</CODE> de modo que sea el n&uacute;mero del
+puerto redirigido. Si usa un <I>suid</I> de <CODE>tredir</CODE> y se redirige el
+puerto <CODE>smtp</CODE> (25), no es necesario definir esto. </P>
+<P>Esto deber&iacute;a ser suficiente para hacerlo funcionar. Si decide usar
+<CODE>sendmail</CODE> la base es la misma pero difiere en los detalles. Ronald
+Florence (<CODE>
+<A HREF="mailto:ron@mlfarm.com">ron@mlfarm.com</A></CODE>) me dijo que el <CODE>sendmail</CODE> de <I>Sun</I>
+no mandar&aacute; mensajes m&uacute;ltiples encolados a trav&eacute;s de un puerto redirigido;
+el <CODE>sendmail</CODE> 8.6.9 de <I>BSD</I> funciona bien. &Eacute;l hizo los
+siguientes cambios al <CODE>sendmail.cf</CODE> para que funcionase con <CODE>term</CODE>.
+En este caso se usa el puerto por defecto de <CODE>sendmail</CODE> (25) para
+el tr&aacute;fico sobre una ethernet local de forma que el correo Internet se
+pasa al puerto <CODE>TCP</CODE> redirigido. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#
+# Crear el mailer termsmtp, el cual envia el correo via el puerto TCP 
+# redirigido
+#
+Mtermsmtp,P=[TCP], F=mDFMuCXe, S=22, R=22, A=TCP $h PORTNUMBER
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aqu&iacute;, <CODE>PORTNUMBER</CODE> es el n&uacute;mero del puerto redirigido en la m&aacute;quina
+local. Este deber&iacute;a ser un puerto sin usar por encima del 2000.
+Seguidamente le decimos a <CODE>sendmail</CODE> a que m&aacute;quina conectarse, y
+ponemos a <CODE>termsmtp</CODE> como <I>mailer</I> por defecto. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#
+# relevo de correo principal
+#
+DMtermsmtp
+#
+# maquina del relevo principal: usa el mailer $M para enviar el
+# correo de otros dominios
+#
+DR HOSTNAME
+CR HOSTNAME
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aqu&iacute; <CODE>HOSTNAME</CODE> es el nombre de tu host local (¿funcionar&aacute;
+<CODE>localhost</CODE>?). La &uacute;ltima entrada va debajo de <CODE>Rule 0</CODE> para pasar
+el correo Internet.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Pass other valid names up the ladder to our forwarder
+R$*&lt;@$*.$+&gt;$*           $#$M    $@$R $:$1&lt;@$2.$3&gt;$4     user@any.domain
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Cuando la conexi&oacute;n <CODE>term</CODE> se haya establecido con el host Internet,
+ejecute los siguientes comandos en la m&aacute;quina local. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tredir PORTNUMBER internet.host:25
+/usr/lib/sendmail -q
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Pasamos ahora a la recepci&oacute;n de correo electr&oacute;nico usando <CODE>term</CODE>.
+Asumiremos que el correo se env&iacute;a a su cuenta en el servidor de correo
+(<CODE>mailhost</CODE>) de la red. La soluci&oacute;n m&aacute;s simple es usar <CODE>trsh</CODE> o
+<CODE>termtelnet</CODE> para acceder al servidor y leer su correo all&iacute;. </P>
+<P>Sin embargo, tambi&eacute;n es posible hacer pasar el correo autom&aacute;ticamente a su
+m&aacute;quina local. Una forma de hacer esto es usar el <I>Post Office
+Protocol</I>, (<I>POP</I>). <I>POP</I> fue dise&ntilde;ado precisamente para este
+prop&oacute;sito: enviar correo a m&aacute;quinas que tienen conexiones de red
+espor&aacute;dicas.</P>
+<P>Para usar <I>POP</I> ha de tener instalado un servidor <I>POP</I> en
+<I>mailhost</I>. Suponiendo que lo tiene, puede usar entonces un cliente
+<I>POP</I> para recoger su correo cada poco tiempo. Esto se hace, como
+podr&iacute;a esperar, usando <CODE>tredir</CODE>. El servicio <I>POP</I> es el 110
+(Observe que hay un protocolo m&aacute;s antiguo, <I>POP-2</I>, que usa el puerto
+109; en este documento describiremos <I>POP-3</I>, que es la &uacute;ltima versi&oacute;n
+de <I>POP</I>). Hay varios clientes <I>POP</I> disponibles. Uno, escrito en el
+lenguaje de scripts <CODE>perl</CODE>, es <CODE>pop-perl-1.X</CODE>, escrito por
+William Perry y mantenido por m&iacute; mismo - puede encontrarse en <CODE>sunsite</CODE>
+en <CODE>/pub/Linux/system/Mail</CODE>.</P>
+<P>Para usar <I>POP</I> se redirige un puerto local al puerto 110 de
+<CODE>mailhost</CODE> y se configura el cliente para recoger su correo de
+<CODE>localhost</CODE> usando el puerto local. Como ejemplo, supongamos que hay un
+servidor <I>POP</I> corriendo en <CODE>mailhost</CODE>. Redirigiremos en puerto
+local 2110, y ejecutamos el cliente pop-perl: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ tredir 2110 mailhost:110
+Redirecting 2110 to mailhost:110
+$ pop 
+Username: bill
+Password: &lt;introduzca su password para mailhost&gt;
+Pop Host: name of local 
+Pop Port: 2110 
+Starting popmail daemon for bill 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si no tiene un servidor <I>POP</I> disponible, el paquete
+<CODE>BCRMailHandler</CODE> tiene un programa para capturar su correo desde un
+enlace <CODE>term</CODE> hasta su m&aacute;quina local. No lo he usado, pero
+cualquier comentario de alguien que lo haya hecho ser&aacute; bienvenido. Tambi&eacute;n
+puede usar el paquete <CODE>term.mailerd+smail</CODE> para este prop&oacute;sito. Sin
+embargo, <CODE>BCRMailHandler</CODE> y <CODE>term.mailerd+smail</CODE> ya no
+funcionan con versiones de <CODE>term</CODE> 2.0.0 o superiores.</P>
+
+
+<HR>
+<A HREF="Term-Como-6.html">Anterior</A>
+<A HREF="Term-Como-8.html">Siguiente</A>
+<A HREF="Term-Como.html#toc7">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,757 @@
+
+<!doctype linuxdoc system>
+
+<article>
+
+<title>Ponga a toda su oficina en Internet con un solo módem y RedHat Linux
+<author>Por Max de Mendizábal <htmlurl url="mailto:max@acer.com.mx" name="max@acer.com.mx">
+<date>1.0 ($Revision: 1.00 $), 6 July 1999
+<abstract>
+Resuelve de forma simple el problema de conectar una pequeña oficina al Internet utilizando
+Linux con énfasis en la distribución de RedHat versiones 5.2 y 6.0
+</abstract>
+
+<toc>
+
+<sect>Copyright/Copyleft
+<P>
+El copyright de esta guía es el mismo que la licencia de GNU versión
+2 de junio de 1991 o, a su elección, una versión superior. Copyright
+(C) 1989, 1991 Free Software Foundation, Inc. 675 Mass Ave,
+Cambridge, MA 02139, USA. Cualquier persona tiene derecho a copiar y
+distribuir copias exactas de este documento, pero no está permitido
+alterarlo sin consentimiento del autor.<P>
+
+<sect>Motivación de esta guía
+<P>
+Enmascarar direcciones IP tiene un sabor a misterio muy particular,
+pero su significado es quizá aún más apetitoso, pues permite que una
+sola máquina Linux conectada a través de un simple módem pueda actuar
+como puente entre una pequeña red local y el Internet.<P>
+
+Esto quiere decir que, cualquier computadora conectada a la red local
+puede gozar de los beneficios del Internet utilizando sólo una línea
+telefónica.<P>
+
+Aún cuando ésto es posible conseguirlo con algunos programas para
+Windows muy populares como WinGate, WinProxy y hasta el muy costoso
+MS Proxy, las ventajas de Linux sobre estos sistemas son muy grandes
+como se verá más adelante en esta guía.<P>
+
+Para fines prácticos, en esta guía sólo se considerará una red local
+con Windows 95 o 98 y una máquina Linux que tiene instalado un módem
+que se puede conectar al Internet. Al final de esta guía se dará
+bibliografía que enseña como aprovechar estos beneficios con otros
+sistemas operativos.<P>
+
+<sect>La brújula de ésta guía
+<P>
+
+<enum>
+<item><htmlurl url="#Motivacion" name="Motivación de esta guía">
+<ITEM><htmlurl url="#LaBrujulaDeEstaGuia" name="La brújula de ésta guía">
+<ITEM><htmlurl url="#ListaDeMateriales" name="Lista de materiales">
+<ITEM><htmlurl url="#LaConexion" name="La conexión">
+<ITEM><htmlurl url="#ElEnmascaramiento" name="El enmascaramiento">
+<ITEM><htmlurl url="#ConfiguracionWindows" name="Configuración de un Windows 95/98">
+<ITEM><htmlurl url="#ElProxyTransparente" name="El proxy con cache transparente">
+<ITEM><htmlurl url="#ElCorreo" name="El manejo de cuentas de correo">
+<ITEM><htmlurl url="#DNS" name="Configuración de un servidor de nombres para la
+red local">
+<ITEM><htmlurl url="#Conclusion" name="Conclusión">
+<ITEM><htmlurl url="#Bibliografia" name="Bibliografía">
+</enum>
+<P>
+
+<sect>Lista de materiales
+<P>
+
+Esta lista no sólo contiene materiales físicos, sino que también
+enlista algunos programas que no son parte de la distribución
+estándar de RedHat pero que facilitan mucho la puesta a punto de
+nuestro enmascarador de direcciones IP.<P>
+
+<sect1>Hardware
+<P>
+
+<enum>
+<ITEM>Una computadora 386 con 8 MB de RAM y un disco
+duro de 300 Mb es la configuración mínima recomendada
+<ITEM>Un módem de verdad, no un winmódem
+</enum>
+<P>
+
+<sect1>Software
+<P>
+
+<enum>
+<ITEM>Cualquier versión moderna de RedHat Linux, de preferencia 5.0 o mejor <htmlurl url="http://www.redhat.com" name="http://www.redhat.com">
+<ITEM>El <tt>wvdial</tt> que se puede encontrar, como un paquete RPM en <htmlurl url="http://www.worldvisions.ca/wvdial/index.html" name="http://www.worldvisions.ca/wvdial/index.html">
+<ITEM>El <tt>fetchmail</tt> si se quiere traer el correo al servidor local <htmlurl url="http://www.tuxedo.org/~esr/fetchmail" name="http://www.tuxedo.org/~esr/fetchmail">
+<ITEM>El <tt>ssh</tt> si se requiere de seguridad <htmlurl url="http://www.ssh.fi/sshprotocols2/" name="http://www.ssh.fi/sshprotocols2/">
+</enum>
+<P>
+
+Es importante apuntar que algunas distribuciones de RedHat, como la
+de México, ya contienen todo este software y que no es necesario
+conseguirlo en los sitios antes mencionados.<P>
+
+<sect>La conexión
+<P>
+La parte fundamental para que tengamos este sistema en operación es
+lograr una conexión a un proveedor de Internet. La forma más fácil de
+lograrlo es utilizando el programa <tt>wvdial</tt>. Consígalo e
+instálelo de la siguiente manera:<P>
+
+<VERB>
+rpm -ivh wvdial-1.20-1.i386.rpm 
+</VERB>
+<P>
+
+Por una extraña razón, el wvdial estará instalado en /usr/local/bin,
+por lo cual deberá colocar correr desde allí todos los programas, o
+colocarlo en su variable ambiental PATH. Para que quede para siempre,
+debe editar el archivo /etc/profile y agregar a la línea de PATH la
+ruta anterior, por ejemplo, mi línea quedó así:<P>
+
+<VERB>
+PATH="$PATH:/usr/X11R6/bin:/usr/local/bin"
+</VERB>
+<P>
+
+Luego ejecute el siguiente programa<P>
+
+<VERB>
+wvdialconf /etc/wvdial.conf
+</VERB>
+<P>
+
+Este programa detectará su módem y generará un guión básico en el
+archivo /etc/wvdial.conf<P>
+
+Edite el archivo con su editor preferido para poner los siguientes
+datos: el teléfono de su proveedor de internet, el nombre del usuario
+y su clave o password. Como se ve en el siguiente ejemplo:<P>
+
+<VERB>
+[Dialer Defaults]
+Modem = /dev/ttyS3
+Baud = 115200
+Init1 = ATZ
+Init2 = ATQ0 V1 E1 S0=0 & C1 & D2 S11=55 +FCLASS=0
+Phone = 5666-3333
+Username = max
+Password = xxxxxxx
+</VERB>
+
+Observe que las únicas líneas que tiene que cambiar son las últimas
+tres, las demás las ha generado el programa de configuración. Ahora,
+simplemente, marque el teléfono con la siguiente orden
+
+<VERB>
+wvdial
+</VERB>
+
+Y listo! Muy probablemente estará conectado al Internet. Para
+garantizarlo pruebe escribir 
+
+<VERB>
+ping -c3 www.linux.org.mx
+</VERB>
+
+Si le indica que no puede encontrar el host, es probable que necesite
+editar el archivo /etc/resolv.conf y allí poner la dirección ip de un
+servidor de nombres. Esa dirección del servidor de nombres
+normalmente es proporcionada por el proveedor de internet. Así, un
+ejemplo del archivo /etc/resolv.conf es el siguiente:
+
+<VERB>
+search miredlocal.org.mx
+nameserver 192.168.1.254
+nameserver 200.23.80.17
+</VERB>
+
+Cuando logre ver algunas computadoras del Internet usted habrá
+terminado con esta sección. Si quiere ampliar más la información
+sobre este tema, puede leer el COMO del PPP en español <htmlurl url="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/PPP-Como/PPP-Como.html" name="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/PPP-Como/PPP-Como.html">.<P>
+
+Para automatizar el marcado a internet, puede colocar la siguiente
+línea en el archivo /etc/crontab<P>
+
+<VERB>
+0,15,30,45 * * * * root /usr/local/bin/wvdial >> /var/log/wvdial.log 1>&2 &
+</VERB>
+<P>
+
+<sect>El enmascaramiento
+<P>
+
+Esta es la sección en donde se hace la verdadera magia: convertir una
+dirección interna en otra externa y ¡no confundir los paquetes IP!
+Parece complicado, pero como se verá a continuación es verdaderamente
+simple hacer un archivo de configuración para lograr nuestra meta.<P>
+
+Edite el archivo /etc/sysconfig/network y allí verifique que la línea que
+permite el traspaso de paquetes IP diga lo siguiente:<P>
+
+<VERB>
+FORWARD_IPV4=true
+</VERB>
+
+Edite el archivo /etc/ppp/ip-up.local. Si no existe, no hay problema,
+cree uno nuevo. Allí se escribirán las instrucciones que son el
+tema nuclear de este documento:
+
+<VERB>
+#!/bin/bash
+# ip-up.local
+# Este archivo se ejecuta una vez que el enlace PPP se ha levantado
+
+# Envía los mensajes pendientes
+sendmail -q &
+
+# Inicia el enmascaramiento
+
+if [ ! -e /proc/net/ip_fwchains ] ; then
+	# Versión que utiliza ipfwadm para núcleos 2.0.xx
+	# Rechaza todo
+	/sbin/ipfwadm -F -p deny
+
+	# Permite el enmascaramiento de las direcciones de la red local
+	/sbin/ipfwadm -F -a masquerade -S 192.168.1.0/24 -D 0.0.0.0/0
+
+	# Redirige el puerto 80 (el de web) al servidor local para hacer el
+	# proxy cache con el Squid, tema que trataremos más adelante
+	/sbin/ipfwadm -I -a accept -P tcp -D 0.0.0.0/0 80 -r 80
+else
+	# Hace exactamente lo mismo que arriba pero con ipchains (kernel 2.1.102 o mayor)
+
+	/sbin/ipchains -P forward DENY
+	/sbin/ipchains -A forward -j MASQ -s 192.168.1.0/24 -d 0.0.0.0/0
+	/sbin/ipchains -A input -p tcp -d 0.0.0.0/0 80 -j REDIRECT 80
+fi
+
+
+(
+cd /lib/modules/preferred/ipv4
+insmod ip_masq_cuseeme
+insmod ip_masq_ftp
+insmod ip_masq_quake
+insmod ip_masq_raudio
+insmod ip_masq_vdolive
+)
+</VERB>
+<P>
+
+No olvide cambiar los permisos para que el ip-up.local pueda ser
+ejecutado pues, si no lo hace no funcionará. Para ello escriba
+simplemente<P>
+
+<VERB>
+chmod +x /etc/ppp/ip-up.local
+</VERB>
+
+Si quiere más información sobre las opciones del ipfwadm, debe leer
+el siguiente documento <htmlurl url="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/Cortafuegos-Como/Cortafuegos-Como.html" name="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/Cortafuegos-Como/Cortafuegos-Como.html">.
+Si utiliza un kernel 2.2.x o superior, ya no funciona el programa
+ipfwadm y deberá utilizar el programa ipchains, cuya sintáxis varía
+ligeramente. Para más información sobre cómo utilizar ipchains puede ver el siguiente documento <htmlurl url="http://www.rustcorp.com/linux/ipchains/translations/ipchains-HOWTO-html-spanish/HOWTO.html" name="http://www.rustcorp.com/linux/ipchains/translations/ipchains-HOWTO-html-spanish/HOWTO.html"><P>
+
+<sect>Configuración de un Windows 95/98
+<P>
+
+Lo único que debe hacer es instalar el protocolo TCP/IP en su
+computadora y configurar las siguientes cajitas: dirección IP,
+gateway y servidor de nombres.<P>
+
+Por simplicidad tomaremos una clase C que puede tener un máximo de
+254 computadoras conectadas a una misma red y entonces los datos por
+cada computadora son los siguientes:<P>
+
+<verb>
+Dirección IP         192.168.1.nn       nn es un número entre 1 y 253
+                                        que NO puede estar duplicado en la misma red
+Máscara              255.255.255.0      es la estándar de la clase C
+Gateway              192.168.1.254      es la dirección IP de
+                                        la computadora con Linux
+Servidor de nombres  192.168.1.254      ¡de nuevo la dirección IP del Linux!
+</verb>
+<P>
+
+<IMG SRC=windows-direccion-ip.gif><P>
+<IMG SRC=windows-puerta-de-enlace.gif><P>
+<IMG SRC=windows-configuracion-dns.gif><P>
+
+Para más explicaciones sobre este asunto de la clase C y ese tipo de
+rarezas, puede leer el excelente libro de Comer citado en la
+bibliografía.<P>
+
+<sect>El proxy con cache transparente
+<P>
+
+Esto no sólo suena misterioso, sino verdaderamente indescifrable.
+Intentaré explicarlo: proxy, en español, es apoderado. Como cuando
+uno firma un documento llamado poder y que sirve para que un pariente
+o amigo puedan actuar en nombre de uno mismo. De nuestro amigo o
+pariente se dice que es nuestro <tt>apoderado</tt>. En el caso
+computacional, Linux actúa como el apoderado de nuestra máquina
+Windows conectada a la red local para hacer las peticiones de páginas
+Web. ¿Y que es eso de cache transparente? ¿un nuevo tipo de lencería?
+Pues no, es un espacio en el disco duro de la máquina Linux que
+designamos para el almacenamiento temporal de las páginas Web que
+vayamos consultando, así, si una persona dentro de la red local,
+visita un conocido sitio para adultos, la próxima persona que lo
+visite no tendrá que ir hasta el sitio pues simplemente tomará la
+misma página del disco duro de la máquina Linux, con lo cual se
+ahorrará muchísimo tráfico en la red y, por consiguiente, la
+velocidad de acceso del conjunto de la red local mejorará. ¿y la
+transparencia? Esa consiste en que no configuramos nada en nuestra
+máquina Windows, simplemente usamos el Netscape o el Explorer como si
+estuviésemos conectados directamente al Internet. ¿Claro como el
+agua? Bueno, si no quedó suficientemente claro es posible leer el
+siguiente documento <htmlurl url="http://squid.nlanr.net/Squid/" name="http://squid.nlanr.net/Squid/">
+en donde se explican éstas y muchas más cosas.<P>
+
+Si aún no ha instalado el squid, que es el proxy, instálelo de la
+siguiente manera<P>
+
+<VERB>
+rpm -ivh squid-1.1.22-2.i386.rpm 
+</VERB>
+
+Si ya está instalado el squid que viene con el RedHat, simplemente
+habrá que indicarle a Linux que lo arranque siempre que tengamos red,
+para ello habrá que hacer lo siguiente: primero edite el archivo
+/etc/rc.d/init.d/squid y revise que la opción<P>
+
+<VERB>
+SQUID_OPTS="-D"
+</VERB>
+
+no tenga un signo # que lo preceda, ya que ésto invalidaría su
+funcionamiento cuando no se está conectado al internet.<P>
+
+Luego agrégelo a los programas de arranque de la siguiente manera:<P>
+
+<VERB>
+chkconfig --level 345 squid on
+</VERB>
+<P>
+
+Para ver el resultado de su configuración deberá escribir<P>
+
+<VERB>
+chkconfig --list squid
+</VERB>
+<P>
+
+quien contestará algo similar a lo siguiente<P>
+
+<VERB>
+squid 0:off 1:off 2:off 3:on 4:on 5:on 6:off
+</VERB>
+<P>
+
+Para que esto funcione de forma transparente, es necesario evitar que
+corra el apache en el puerto 80. Por simplicidad se evitará esta
+discusión y simplemente supondré que el apache no correrá en esta
+máquina. Para evitar que el apache corra puede escribir lo siguiente<P>
+
+<VERB>
+chkconfig --del httpd
+</VERB>
+<P>
+
+Finalmente, edite el archivo /etc/squid.conf y modifique los
+siguientes parámetros de tal forma que queden como sigue:<P>
+
+<VERB>
+http_port	80
+icp_port	3130
+httpd_accel virtual 80
+httpd_accel_with_proxy on
+</VERB>
+<P>
+
+Opcionalmente puede ampliar el espacio de disco duro dedicado al
+cache, modificando la siguiente opción<P>
+
+<VERB>
+cache_swap 300
+</VERB>
+<P>
+
+En donde 300 representan 300 Mb de disco duro dedicados a almacenar
+páginas Web. Con esto terminamos la parte de la configuración del
+proxy cache transparente.<P>
+
+Si utiliza el squid versión 2, es probable que sea necesario hacer
+unos pequeños cambios con respecto a lo que escribimos anteriormente.
+Para empezar, cambió un poco la sintáxis y ahora deberá escribir:<P>
+
+<VERB>
+http_port 80
+icp_port 3130
+httpd_accel_host virtual
+httpd_accel_port 80
+httpd_accel_with_proxy on
+
+acl localnet src 192.168.1.0/255.255.255.0
+http_access allow localnet
+</VERB>
+
+<sect>El manejo de cuentas de correo
+<P>
+
+Lo primero que hay que hacer es relajar un poco la seguridad del
+sendmail, pues en sus nuevas versiones, está ciego y sordo al mundo
+que lo rodea. Para que podamos mandar correo desde la red local
+utilizando al servidor, deberemos dar de alta el conjunto de
+direcciones al que le es permitido mandar correo hacia afuera y esto
+se consigue editando el archivo /etc/mail/ip_allow en donde
+simplemente escribiremos lo siguiente<P>
+
+<VERB>
+192.168.1.
+</VERB>
+<P>
+
+De la misma forma procedemos con el archivo /etc/mail/relay_allow<P>
+
+<VERB>
+192.168.1.
+</VERB>
+<P>
+
+¡Y listo! Con esto basta para que SendMail se comporte decentemente
+con los miembros de la red local.<P>
+
+<tt>Nota importante</tt>. A partir de la versión 8.9.3 de sendmail hay cambios
+importantes en las tablas.<P>
+
+
+Revise el archivo /etc/services. Allí debe verificar que existan los
+servicios para pop-2, pop-3 e imap<P>
+
+<VERB>
+pop-2           109/tcp         postoffice      # POP version 2
+pop-2           109/udp
+pop-3           110/tcp                         # POP version 3
+pop-3           110/udp
+...
+imap2           143/tcp         imap            # Interim Mail Access Proto v2
+imap2           143/udp         imap
+</VERB>
+<P>
+
+También debe revisar el archivo /etc/inetd.conf en donde los
+protocolos pop-2, pop-3 e imap deben estar activados:<P>
+
+<VERB>
+# Pop and imap mail services et al
+#
+pop-2   stream  tcp     nowait  root    /usr/sbin/tcpd  ipop2d
+pop-3   stream  tcp     nowait  root    /usr/sbin/tcpd  ipop3d
+imap    stream  tcp     nowait  root    /usr/sbin/tcpd  imapd
+</VERB>
+<P>
+
+Luego, si se tiene una serie de cuentas de correo electrónico en un
+servidor externo a nuestra red local, en donde se pueda guardar
+nuestra información hasta que la recojamos, se puede utilizar el
+sistema fetchmail.<P>
+
+Por ejemplo para recoger el correo de todos nuestros usuarios cada
+media hora deberemos escribir un archivo llamado /root/.fetchmailrc
+con el siguiente contenido:<P>
+
+<VERB>
+# /root/.fetchmail
+set postmaster "root"
+set logfile "/var/log/fetchmail.log"
+
+poll maquina_externa.xxx.com.mx port 110 with protocol pop3:
+   user juanperez with pass xxxxx is JuanPerez here
+   user pedroglez with pass xxxxx is PedroGlez here
+   user robertohdz with pass xxxxx is RobertoHernandez here
+   user concepcion with pass xxxxx is ConcepcionGomez here
+# ... hasta poner a todos los usuarios
+# Limitamos a máximo 1.5 Mb
+   limit 1500000
+</VERB>
+
+Los derechos que debe tener este archivo son 0600. Para poner estos
+derechos deberemos escribir
+
+<VERB>
+chmod 0600 /root/.fetchmail
+</VERB>
+
+Luego editamos el archivo /etc/crontab para que fetchmail traiga el
+correo cada media hora en un horario de oficina normal, es decir, de
+esclavistas.<P>
+
+<VERB>
+# /etc/crontab
+
+0,30 8-22 * * * root /usr/bin/fetchmail
+</VERB>
+<P>
+
+Si lo prefiere, puede invocar a fetchmail como a un demonio. Dibuje
+con sangre un pentáculo en el suelo y... bueno, no es precisamente
+una buena idea hacerlo así. Mejor genere un archivo llamado
+/etc/rc.d/init.d/fetchmail con el siguiente contenido:
+
+<VERB>
+#!/bin/sh
+#
+# fetchmail       Este guión sirve para iniciar y detener al programa
+#                 fetchmail como un demonio
+#
+# chkconfig: 345 45 50
+# description: fetchmail sirve para traer mensajes de correo de \
+#              uno o varios usuarios desde un servidor de correo remoto
+
+# Trae el fuente de la biblioteca de funciones
+. /etc/rc.d/init.d/functions
+
+# Trae la configuración de la red
+. /etc/sysconfig/network
+
+# Revisa que la red esté activada
+[ ${NETWORKING} = "no" ] && exit 0
+
+# Analiza la forma como fue invocado
+case "$1" in
+  start)
+        # Arranca al demonio y trae el correo cada 1800 segundos
+		# (media hora)
+        echo -n "Starting fetchmail: "
+        daemon fetchmail -d 1800
+        echo
+        touch /var/lock/subsys/fetchmail
+        ;;
+  stop)
+        # Detiene al demonio de fetchmail
+        echo -n "Shutting down fetchmail: "
+        killproc fetchmail
+        echo "done"
+        rm -f /var/lock/subsys/fetchmail
+        ;;
+  status)
+        status fetchmail
+        exit $?
+        ;;
+  restart)
+		killproc fetchmail
+		daemon fetchmail -d 1800
+		echo "restarted"
+        ;;
+  *)
+        echo "Usage: fetchmail {start|stop|status|restart}"
+        exit 1
+esac
+
+exit 0
+</VERB>
+
+<VERB>
+chmod 0755 /etc/rc.d/init.d/fetchmail
+chkconfig --add fetchmail
+</VERB>
+
+<sect>Configuración de un servidor de nombres para la red local
+<P>
+
+Configurar un servidor de nombres local puede ser útil para algunas
+cosas. La más simple es para que el telnet hacia la máquina Linux sea
+rapidísimo pues, de otra forma, Linux desconfiará de la dirección
+local, de quien no sabe su verdadero nombre.<P>
+
+Primero es importante asegurarse de que el programa bind esté
+instalado y configurado para ser un DNS cache. Si no es así,
+simplemente instale los paquetes de la siguiente manera.<P>
+
+<VERB>
+rpm -ivh bind-8.1.2-5.i386.rpm
+rpm -ivh bind-utils-8.1.2-5.i386.rpm
+rpm -ivh caching-nameserver-5.2-1.noarch.rpm
+</VERB>
+
+Luego es necesario escribir un par de archivos de configuración muy
+estándar, tanto que puedo poner a la disposición de todos los
+archivos de DNS que con seguridad funcionarán correctamente en su red
+local.<P>
+
+<VERB>
+; /var/named/miredlocal.hosts
+$ORIGIN miredlocal.org.mx.
+@       IN      SOA     linux.miredlocal.org.mx. root.linux.miredlocal.org.mx.  (
+                                      1999051000 ; Número de serie
+												 ; que debe ser cambiado cada vez
+												 ; que se modifica este archivo
+                                      28800      ; Refresco cada 8 horas
+                                      14400      ; Reintenta cada 4 horas
+                                      3600000    ; Expira cada 1000 horas
+                                      86400 )    ; Mínimo cada día
+                IN      NS      linux
+                IN      MX      10      linux
+linux           IN      A       192.168.1.254
+m1              IN      A       192.168.1.1
+m2              IN      A       192.168.1.2
+m3              IN      A       192.168.1.3
+m4              IN      A       192.168.1.4
+m5              IN      A       192.168.1.5
+m6              IN      A       192.168.1.6
+...
+m253			IN		A		192.168.1.253
+</VERB>
+<P>
+
+Si le da pereza rellenar todos los números, del 1 al 253, puede
+escribir lo siguiente:<P>
+
+<VERB>
+perl -e'for($i=1;$i<254;$i++){print "m$i\t\tIN\tA\t192.168.1.$i\n";}' >> /var/named/miredlocal.hosts
+</VERB>
+
+Ahora se muestra el archivo de resolución inversa:<P>
+
+<VERB>
+; /var/named/miredlocal-r.hosts
+$ORIGIN 1.168.192.in-addr.arpa.
+@       IN      SOA     linux.miredlocal.org.mx. root.linux.miredlocal.org.mx.  (
+                                      1999051000 ; Número de serie
+												 ; que debe ser cambiado cada vez
+												 ; que se modifica este archivo
+                                      28800      ; Refresco cada 8 horas
+                                      14400      ; Reintenta cada 4 horas
+                                      3600000    ; Expira cada 1000 horas
+                                      86400 )    ; Mínimo cada día
+                IN      NS      linux.miredlocal.org.mx.
+254		IN		PTR		linux.miredlocal.org.mx.
+1       IN      PTR     m1.miredlocal.org.mx.
+2       IN      PTR     m2.miredlocal.org.mx.
+3       IN      PTR     m3.miredlocal.org.mx.
+4       IN      PTR     m4.miredlocal.org.mx.
+5       IN      PTR     m5.miredlocal.org.mx.
+6       IN      PTR     m6.miredlocal.org.mx.
+...
+253     IN      PTR     m253.miredlocal.org.mx.
+</VERB>
+
+De manera similar, también se pueden rellenar automáticamente todos
+los números.<P>
+
+<VERB>
+perl -e'for($i=1;$i<254;$i++){print "$i\tIN\tPTR\tm$i.miredlocal.org.mx.\n";}' >> /var/named/miredlocal-r.hosts
+</VERB>
+<P>
+
+En las versiones más nuevas de Bind, como la 8.2, es posible abreviar
+las últimas 253 líneas con una sola:<P>
+
+<VERB>
+$GENERATE 1-253 $ PTR m$.miredlocal.org.mx.
+</VERB>
+<P>
+
+Para saber que versión de bind se está usando, se puede escribir<P>
+
+<VERB>
+rpm -qi bind
+</VERB>
+<P>
+
+Finalmente es necesario editar el archivo /etc/named.conf y allí
+agregar las siguientes líneas.<P>
+
+<VERB>
+# /etc/named.conf
+# ...
+zone "miredlocal.org.mx" {
+        type master;
+        file "miredlocal.hosts";
+};
+
+zone "1.168.192.in-addr.arpa" {
+        type master;
+        file "miredlocal-r.hosts";
+};
+</VERB>
+<P>
+
+Para activar el servidor de nombres escriba lo siguiente<P>
+
+<VERB>
+/etc/rc.d/init.d/named restart
+</VERB>
+<P>
+
+Para verificar que no haya errores, debe escribir lo siguiente y leer
+la bitácora así<P>
+
+<VERB>
+tail -80 /var/log/messages |grep named
+</VERB>
+<P>
+
+Si todo funcionó correctamente verá un par de mensajes como los
+siguientes:
+
+<VERB>
+May 12 17:37:48 linux named[271]: master zone "miredlocal.org.mx" (IN) loaded (serial 1999051000)
+May 12 17:37:49 linux named[271]: master zone "1.168.192.in-addr.arpa" (IN) loaded (serial 1999051000)
+</VERB>
+<P>
+
+Si por algún motivo desea hacer algún cambio en el DNS no olvide
+cambiar el número de serie del encabezado pues, si no lo hace, el
+cambio no surtirá efecto.<P>
+
+
+<sect>Conclusión
+<P>
+
+Antes de concluir propiamente, es conveniente apuntar que es posible
+hacer a esta máquina un servidor de internet completo. Para ello es
+necesario un enlace dedicado, o bien, un servicio de DNS dinámico que
+permita enrutar nuestro correo al lugar correcto, es decir, a nuestro
+servidor. Estos servicios existen y por lo pronto le sugiero dos: <htmlurl url="http://www.sashanet.com/internet/dynip.html" name="http://www.sashanet.com/internet/dynip.html">
+y <htmlurl url="http://www.dhs.org/" name="http://www.dhs.org/">. Con cualquiera
+de estos servicios podrá registrar su propio dominio y recibir correo
+directamente hacia su máquina Linux. Es muy importante que su
+servidor Linux esté el mayor tiempo posible conectado a Internet, de
+otra forma, podría perder mensajes de correo.<P>
+
+Finalmente es posible concluir que es muy simple configurar un
+servidor de Internet con RedHat Linux y los beneficios son
+muchísimos. Una pequeña oficina puede operar con todos los servicios
+de Internet a un costo ridículamente bajo y con la confiabilidad que
+proporcionan todos los sistemas Linux: un 98% de tiempo funcionando
+sin problemas.<P>
+
+<sect>Bibliografía
+<P>
+
+La mayor parte de la bibliografía es electrónica, pero también es
+conveniente mencionar algunos magníficos libros en papel que tienen
+un alcance mayor y que tratan con profundidad muchos de los temas que
+van más allá del alcance de este documento.<P> 
+
+<htmlurl url="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/PPP-Como/PPP-Como.html" name="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/PPP-Como/PPP-Como.html"><P>
+
+<htmlurl url="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/IP-Masquerade-Como/IP-Masquerade-Como.html" name="http://lucas.linux.org.mx/COMO-INSFLUG/COMOs/IP-Masquerade-Como/IP-Masquerade-Como.html"><P>
+
+<htmlurl url="http://www.rustcorp.com/linux/ipchains/translations/ipchains-HOWTO-html-spanish/HOWTO.html" name="http://www.rustcorp.com/linux/ipchains/translations/ipchains-HOWTO-html-spanish/HOWTO.html"><P>
+
+Comer, Douglas. <IT>Internetworking with TCP/IP Vol. I</IT>&nbsp;&nbsp; 3a. ed., New Jersey. Prentice Hall, 1995.
+<P>
+
+Nemeth, Evi. <IT>Unix System Administration Handbook</IT>&nbsp;&nbsp; 2a. ed., New Jersey. Prentice Hall, 1995.<P>
+
+Albitz, Paul. <IT>DNS and BIND in a Nutshell</IT>&nbsp;&nbsp; Sebastopol, O'Reilly & Associates, 1992.<P>
+
+</article>
+

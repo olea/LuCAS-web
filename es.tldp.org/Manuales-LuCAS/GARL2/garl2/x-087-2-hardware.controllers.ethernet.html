@@ -1,0 +1,540 @@
+<HTML
+><HEAD
+><TITLE
+>Instalación de una Ethernet</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Configuración del hardware de red "
+HREF="x-087-2-hardware.html"><LINK
+REL="PREVIOUS"
+TITLE="Un vistazo a los dispositivos de red de Linux"
+HREF="x-087-2-hwconfig.tour.html"><LINK
+REL="NEXT"
+TITLE="El controlador PLIP"
+HREF="x-087-2-hardware.controllers.plip.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-hwconfig.tour.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 3. Configuración del hardware de red</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-hardware.controllers.plip.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-HARDWARE.CONTROLLERS.ETHERNET">3.3. Instalación de una Ethernet</H1
+><P
+>Las versiones actuales de GNU/Linux soportan una gran variedad de tarjetas Ethernet.
+La mayoria de los controladores fueron escritos por Donald Becker, que es el
+autor de los controladores para una familia de tarjetas basadas en el chip de National
+Semiconductor 8390; éstos son conocidos como las Series de Controladores de Becker.
+Aunque muchos desarrolladores también han contribuido, actualmente hay algunas
+tarjetas Ethernet comunes que no están soportadas por GNU/Linux. La lista de las
+tarjetas Ethernet soportadas crece continuamente,  así que si su
+tarjeta de red no esta soportada ahora, pronto lo estará.</P
+><P
+>Algunas veces en la temprana historia de GNU/Linux hemos intentado
+hacer un listado de todas las tarjetas Ethernet soportadas, pero esto
+podría llevarnos mucho tiempo y espacio. Afortunadamente, Paul Gortmaker
+mantiene una lista con cada una de las tarjetas soportadas y el método para
+hacerlas funcionar bajo GNU/Linux, <A
+NAME="X-087-2-FNHW04"
+HREF="#FTN.X-087-2-FNHW04"
+>[1]</A
+> Éste es enviado mensualmente al grupo de noticias  <SPAN
+CLASS="SYSTEMITEM"
+>comp.os.linux.answers</SPAN
+>, y también está disponible
+en cualquiera de las réplicas de la web del Linux Documentation Project.</P
+><P
+>Aun si está seguro de saber como instalar una tarjeta Ethernet particular
+en su máquina, a menudo merece la pena echar un vistazo a
+lo que pone en el Ethernet HOWTO. Podrá encontrar mucha información
+a parte de los simples asuntos de configuración. Por ejemplo, puede
+ahorrarle un montón de dolores de cabeza conocer el comportamiento
+de muchas tarjetas Ethernet basadas en DMA que usan el mismo canal
+DMA que la controladora SCSI Adaptec 1542 por omisión. Si no cambia
+una de ellas a un canal DMA diferente puede terminar con la tarjeta
+Ethernet escribiendo paketes de datos en lugares al azar de su disco 
+duro.</P
+><P
+>Para usar cualquiera de las tarjetas Ethernet soportadas con GNU/Linux, debe usar
+un núcleo precompilado procedente de alguna de las principales distribuciones de GNU/Linux.
+Estos generalmente tienen modulos disponibles para todos los controladores soportados, y
+el proceso de instalación normalmente permite seleccionar qué controladores quiere cargar.
+A largo plazo, sin embargo, es mejor contruirse su propio núcleo y compilarlo sólo
+con los controladores que necesita; esto ahorra espacio y memoria.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN2652">3.3.1. Ethernet Autoprobing</H2
+><P
+>Muchos de los controladores Ethernet de GNU/Linux son lo suficientemente listos
+para saber como encontrar a su tarjeta Ethernet. Esto le ahorra tener que
+decirle al núcleo dónde está. El Ethernet HOWTO tiene un listado donde
+pone qué controladores usan autoverificación y en qué orden buscan por las
+direcciones E/S a la tarjeta.</P
+><P
+>Hay tres limitaciones en el código de autoverificación. Primero, éste no
+reconoce bien todas las tarjetas. Esto es especialmente cierto para algunos
+clones de tarjetas habituales. Segundo, el núcleo no autocomprobará para buscar
+más de una tarjeta a no ser que se le ordene. Esto fue una concisa decisión
+de diseño, asumiendo que se quería tener el control sobre qué tarjeta es asignada
+a cada interfaz. La mejor manera de hacer esto con seguridad es configurar
+manualmente cada tarjeta Ethernet en su máquina. Tercero, el controlador puede que
+no busque en las direcciones en que su tarjeta está configurada.
+Generalmente hablando, los controladores autocomprobarán en las direcciones en que
+el dispositivo en particular es capaz de ser configurado, pero algunas veces
+ciertas direcciones son ignoradas para evitar conflictos de hardware con otros
+tipos de tarjetas que usan normalmente la misma dirección.</P
+><P
+>Las tarjetas de red PCI suelen ser detectadas correctamente. Pero si está usando
+más de una tarjeta, o si la autodetección falla, tiene una forma de decirle
+al núcleo la dirección base y el nombre de la tarjeta.</P
+><P
+>&#13;
+
+
+En el arranque puede dar al núcleo información y mandatos que cualquiera de los
+componentes de éste leerán. Este mecanismo le permite enviar información al núcleo
+que el controlador Ethernet pueda usar para localizar a su tarjeta Ethernet o hacer
+que la detecte.</P
+><P
+>Si usa lilo para arrancar, puede enviarle al núcleo parámetros
+ especificándolos a través de la opción
+<SPAN
+CLASS="SYSTEMITEM"
+>append</SPAN
+> en el fichero
+<TT
+CLASS="FILENAME"
+>lilo.conf</TT
+>. Para informar al núcleo acerca de
+un dispositivo Ethernet puede escribir los siguientes parámetros:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ether=<TT
+CLASS="REPLACEABLE"
+><I
+>irq</I
+></TT
+>,<TT
+CLASS="REPLACEABLE"
+><I
+>base_addr</I
+></TT
+>,[<TT
+CLASS="REPLACEABLE"
+><I
+>param1</I
+></TT
+>,][<TT
+CLASS="REPLACEABLE"
+><I
+>param2</I
+></TT
+>,]<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Los primeros cuatro parámetros son numéricos, mientras que el último es el
+nombre del dispositivo. Los parámetros <TT
+CLASS="REPLACEABLE"
+><I
+>irq</I
+></TT
+>,
+<TT
+CLASS="REPLACEABLE"
+><I
+>base_addr</I
+></TT
+>, y
+<TT
+CLASS="REPLACEABLE"
+><I
+>name</I
+></TT
+> son necesarios, pero los dos parámetros
+<TT
+CLASS="REPLACEABLE"
+><I
+>param</I
+></TT
+> son opcionales. Si cualquiera de los
+valores numéricos es puesto a cero, el núcleo determinará el valor por
+medio de la autoverificación.</P
+><P
+>&#13;
+El primer parámetro especifica el IRQ asignado al dispositivo. Por defecto,
+el núcleo intentará autocomprobar el canal IRQ del dispositivo. El controlador 3c503,
+por ejemplo, tiene una característica especial que selecciona un IRQ libre
+de entre el 5, 9, 3, 4 y configura la tarjeta para usar uno.
+El párametro <TT
+CLASS="REPLACEABLE"
+><I
+>base_addr</I
+></TT
+> proporciona la dirección base de
+E/S de la tarjeta, un valor de 0 le dirá al núcleo que pruebe las direcciones listadas
+arriba.</P
+><P
+>Varios controladores usan los dos parámetros siguentes de forma diferentes.
+Para tarjetas de memoria-compartida, como la WD80x3, éstos especificarán las
+direcciones de principio y final del área de memoria compartida. Otras tarjetas
+normalmente usan el <TT
+CLASS="REPLACEABLE"
+><I
+>param1</I
+></TT
+> para especificar el nivel de
+información para debuging que es mostrada. Con valores del 1 al 7 variará la
+cantidad de información mostrada, con 8 no se mostrará nada; con 0 se usará el valor por
+omisión.
+El controlador 3c503 usa el <TT
+CLASS="REPLACEABLE"
+><I
+>param2</I
+></TT
+> para elegir entre el
+transceptor (transceiver) interno (por defecto) o el transceptor externo (el valor de 1).
+El anterior usa el conector BNC de la tarjeta, el posterior usa el puerto AUI.
+Los argumentos de <TT
+CLASS="REPLACEABLE"
+><I
+>param</I
+></TT
+> no son necesarios
+en todo si no tiene nada especial que configurar.</P
+><P
+>El primer argumento no numerico es interpretado por el núcleo como el nombre del
+dispositivo. Debe especificar un nombre de dispositivo para cada tarjeta Ethernet.</P
+><P
+>Si tiene dos tarjetas Ethernet, puede dejar que Linux autodetecte una e
+indicarle los parámetros de la segunda con <B
+CLASS="COMMAND"
+>lilo</B
+>,
+pero probablemente querrá configurar manualmente las dos. Si decide
+que el núcleo busque la primera y configurar manualmente la segunda,
+tendrá que asegurarse de que el núcleo no ha encontrado accidentalmente
+la segunda tarjeta primero, o cualquiera que no quiera que sea registrada.
+Haga esto introduciendo en <B
+CLASS="COMMAND"
+>lilo</B
+> la opción
+<SPAN
+CLASS="SYSTEMITEM"
+>reserve</SPAN
+>, con esto le dice
+al núcleo que evite la comprobacion de la direccion base E/S que usa la
+segunda tarjeta. Para hacer que Linux instale una segunda tarjeta Ethernet en
+<TT
+CLASS="LITERAL"
+>0x300</TT
+> como <TT
+CLASS="FILENAME"
+>eth1</TT
+>, tendrá que usar
+los siguientes argumentos en el núcleo:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    reserve=0x300,32 ether=0,0x300,eth1</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La opción <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>reserve</I
+></SPAN
+> asegura que ningún controlador accederá
+a la dirección E/S de la segunda tarjeta cuando compruebe algún dispositivo. También
+puede usar los parámetros del núcleo para evitar la autoverificación para
+<TT
+CLASS="FILENAME"
+>eth0</TT
+>&thinsp;:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    reserve=0x340,32 ether=0,0x340,eth0</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>También puede desactivar la autoverificación. Debe de hacer esto, por ejemlo,
+para detener la búsqueda de una tarjeta Ethernet que ha quitado temporalmente.
+Deshabilitar la autoverificación es tan simple como especificar el
+<TT
+CLASS="REPLACEABLE"
+><I
+>base_addr</I
+></TT
+> con un &ndash;1:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ether=0,-1,eth0</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Para indicar al núcleo éstos parámetros antes de arrancar, introducirá los parámetros
+en el indicador "boot:" del lilo. Para que <B
+CLASS="COMMAND"
+>lilo</B
+> muestre
+el indicador <TT
+CLASS="PROMPT"
+>"boot:"</TT
+>, tiene que pulsar una de las siguientes
+teclas: Control, Alt o Shift, mientras
+<B
+CLASS="COMMAND"
+>lilo</B
+> esté arrancando. Si pulsa la tecla del tabulador
+en el indicador, le aparecerá la lista de núcleos que puede arrancar.
+Para arrancar un núcleo con los parámetos suministrados escriba el nombre
+del núcleo que desea que arranque, seguido de un espacio, acompañándolo
+con el parámetro que desea. Cuando pulse la tecla Enter,
+<B
+CLASS="COMMAND"
+>lilo</B
+> cargará ese núcleo y lo iniciará con el parámetro
+que ha escrito.</P
+><P
+>Para que este cambio ocurra automáticamente en cada arranque, introduzca los
+parámetros en el fichero <TT
+CLASS="FILENAME"
+>/etc/lilo.conf</TT
+> usando la palabra
+<TT
+CLASS="LITERAL"
+>append=</TT
+>. Quedando algo parecido a esto por ejemplo:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    boot=/dev/hda
+    root=/dev/hda2
+    install=/boot/boot.b
+    map=/boot/map
+    vga=normal
+    delay=20
+    append="ether=10,300,eth0"
+    
+    image=/boot/vmlinuz-2.2.14
+    label=2.2.14
+    read-only</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Después de que haya editado <TT
+CLASS="FILENAME"
+>lilo.conf</TT
+>, debe ejecutar
+<B
+CLASS="COMMAND"
+>lilo</B
+> para activar el cambio.</P
+><P
+>&#13;&#13;</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNHW04"
+HREF="x-087-2-hardware.controllers.ethernet.html#X-087-2-FNHW04"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>en el Ethernet HOWTO, Paul puede ser localizado en <SPAN
+CLASS="SYSTEMITEM"
+>gpg109@rsphy1.anu.edu.au</SPAN
+></P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-hwconfig.tour.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-hardware.controllers.plip.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Un vistazo a los dispositivos de red de Linux</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-hardware.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>El controlador PLIP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

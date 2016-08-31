@@ -1,0 +1,413 @@
+<pre>
+/* vim: set sw=8 ts=8 si : */
+/*************************************************************************
+Title:    linuxfocus frequency counter
+Author:   guido socher &lt;guido(at)linuxfocus.org&gt;
+Copyright: GPL
+**************************************************************************/
+
+#include &lt;io.h&gt;
+#include &lt;progmem.h&gt;
+#include &lt;interrupt.h&gt;
+#include &lt;string-avr.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sig-avr.h&gt;
+#include "lcd.h"	/* these are the prototypes and defines for lcd.c */
+#include "avr-util.h"
+#include "uart.h"
+
+/* Input Push Buttons */
+#define BUTTON0 PIND6
+#define BUTTON0DDR DDRD
+#define BUTTON0PIN PIND
+#define BUTTON1 PIND3
+#define BUTTON1DDR DDRD
+#define BUTTON1PIN PIND
+/* reset line to 74hc390 */
+#define CCLEAR PC4
+#define CCLEARDDR DDRC
+#define CCLEARPORT PORTC
+/* LED0=green */
+#define LED0 PC5
+#define LED0DDR DDRC
+#define LED0PORT PORTC
+static char uart_outbuf[UART_RX_BUFFER_SIZE+1];
+static unsigned char clock64Hz; 
+static unsigned char hflag; 
+static unsigned char mode; /* 0=cout up, 1=freq 1Hz resultion, 2=freq 64Hz resolution */
+static unsigned char dmode; /* add 2 zeros behind the display output */
+static unsigned char clocklimit;
+/* our counter is 16bit wide but we multiply in the fast mode
+* with 64 (gate frequency) therefore we need a 24 bit variable */
+static unsigned char counterval[3]; /* 24 bit */
+static unsigned char counterval_cp[3]; /* 24 bit */
+static unsigned char overflowflag;
+
+#define reply_ok() uart_sendstr_P("ok\n")
+#define reply_err() uart_sendstr_P("err\n")
+
+/* devide the 24 bit integer unsigned char i[3] by 10 and return
+* the value in i[3] */
+void divby10(unsigned char *i,unsigned char *rest){
+        unsigned char loop;
+        unsigned int tmp; // 16 bit
+        loop=3;
+        /* start with highest byte */
+        *rest=0;
+        while(loop&gt;0){
+                tmp=*rest * 256 + i[loop-1];
+                i[loop-1]=tmp / 10;
+                *rest=tmp % 10;
+                loop--;
+        }
+}
+
+/* convert a 3 time 8 bit interger (24 bit=i[3]) to decimal ascii and
+* print it using the printfun. */
+void longtoascii(void (*printfun)(char),unsigned char *i,unsigned char dodot)
+{
+        char str[14];
+        unsigned char pos=14;
+	unsigned char dot=0;
+	if (dmode==1){
+		/* take the 2 zeros that will be added into account */
+		dot=2;
+	}
+        do{
+		/* write a  "." every 1000 and 1000000 to make the
+		* number more readable. 1234 will be 1.234 */
+		if (dot==3 &amp;&amp; dodot==1){
+			dot=0;
+			str[pos-1]='.'; 
+			pos--;
+		}else{
+			divby10(i,&amp;str[pos-1]);
+			str[pos-1]+= '0';
+			pos--;
+			dot++;
+		}
+        }while((i[0]|i[1]|i[2]) &amp;&amp; pos &gt; 0);
+        /* now reverse the string and print */
+        while(pos&lt;14){
+                (*printfun)(str[pos]);
+                pos++;
+        }
+	if (dmode==1){
+		(*printfun)('0');
+		(*printfun)('0');
+	}
+}
+
+/* setup the T1 (PD5) counter to get ready for counting.
+* You must call once sei() in the main program */
+void cnt_readyforstart(void)
+{
+        /* add: set nand gates */
+        /* timer should generate interrupt on compate match */
+        sbi(TIMSK,TOIE1);
+        /* write high byte first */
+        outp(0x0,TCNT1H); /* set counter to zero*/
+        outp(0x0,TCNT1L); /* set counter to zero*/
+        /* write high byte first */
+        outp(0xFF,OCR1H); /* set internal compare register to max */
+        outp(0xFF,OCR1L); /* set internal compare register to max */
+        outp(0,TCCR1A); /* Timer/Counter1 disconnected from output pin OC1 */
+        outp(0,TCCR1B); /* off */
+}
+/* write info about mode to display */
+void displaymode(void)
+{
+	lcd_gotoxy(0,1);
+	if (mode==0){
+		lcd_puts_P("gate:cont   ");
+	}
+	if (mode==1){
+		lcd_puts_P("gate:1sec   ");
+	}
+	if (mode==2){
+		lcd_puts_P("gate:1/64sec");
+	}
+}
+
+/* the following function will be called when the counter
+* is out of range. This is a 16bit counter! */
+SIGNAL(SIG_OVERFLOW1) {
+        /* add: set nand gates */
+        overflowflag=1;
+        outp(0x0,TCNT1H); /* set counter to zero*/
+        outp(0x0,TCNT1L); /* set counter to zero*/
+        outp(0,TCCR1B); // stop counter
+}
+
+/* we can not use large functions in 
+* an interrupt handle. Therefore the interrupt routine reads only
+* the counter values and the rest is done later via this function
+* which is called from the main program */
+void handlecounterresult(void){
+	/* display the result value e.g c:123 */
+	uart_sendchar('c');
+	uart_sendchar(':');
+	lcd_clrscr();
+	if (overflowflag){
+		/* overflow */
+		uart_sendchar('-');
+		uart_sendchar('1');
+		lcd_puts_P("overflow");
+	}else{
+		if (mode==2) {
+			/* mult by 64 */
+			counterval[2]=counterval[1]&gt;&gt;2;
+			counterval[1]=((counterval[0]&gt;&gt;2)|(counterval[1]&lt;&lt;6)); 
+			counterval[0]=counterval[0]&lt;&lt;6; 
+		}
+		/* make a copy of the counter value */
+		counterval_cp[2]=counterval[2];
+		counterval_cp[1]=counterval[1];
+		counterval_cp[0]=counterval[0];
+		/* longtoascii sets counterval to zero */
+		longtoascii(lcd_putc,counterval_cp,1);
+		longtoascii(uart_sendchar,counterval,0);
+		if (mode){
+			/* not for cont count */
+			lcd_puts_P(" Hz ");
+		}
+		if (dmode==1){
+			/* indicate that the dispaly has 2 additional zeros */
+			lcd_puts_P("x100");
+		}
+	}
+	uart_sendchar('\n');
+	displaymode();
+	clock64Hz=0;
+}
+
+/* this function will be called in 64Hz intervals if
+* a 4.194304 MHz crystal is used */
+SIGNAL(SIG_OVERFLOW0)
+{
+	outp(0,TCNT0); /* clear 64Hz timer value */
+	if (clock64Hz == clocklimit){
+		/* read counter */
+		/* stop 64Hz timer */
+		outp(0,TCCR0);
+		//if (mode==1){
+			/* use this to calibrate the counter result
+			* for 1 sec gate */
+		//	delay_us(700); 
+		//}else{
+			/* calibrate for 1/64 sec gate: */
+		//	delay_us(10); 
+		//}
+		outp(0,TCCR1B); // stop counter
+		counterval[0]=inp(TCNT1L); /* read low first !! */
+		counterval[1]=inp(TCNT1H);
+		hflag=1; /* call the handlecounterresult function */
+		sbi(LED0PORT,LED0);
+	}else{
+		if (clock64Hz==0){
+			overflowflag=0;
+			cbi(LED0PORT,LED0);
+			/* start counter */
+			/* write high byte first */
+			outp(0x0,TCNT1H); /* set counter to zero*/
+			outp(0x0,TCNT1L); /* set counter to zero*/
+			outp(7,TCCR1B); /* enable 16bin counter from T1 pin */
+		}
+	}
+	clock64Hz++;
+}
+void changemode(void)
+{
+	outp(0x0,TCNT1H); /* set counter to zero*/
+	outp(0x0,TCNT1L); /* set counter to zero*/
+	hflag=0;
+	clock64Hz=0;
+	overflowflag=0;
+	/* clear the 74hc390 divider, clear = 5V */
+	sbi(CCLEARPORT,CCLEAR);
+	counterval[0]=0;
+	counterval[1]=0;
+	counterval[2]=0;
+	outp(0,TCCR1B); // stop counter
+	/* LED off */
+	sbi(LED0PORT,LED0);
+	if (mode==0){
+		/* continious up counting */
+		outp(0,TCCR0); /* stop 64Hz timer */
+		outp(0,TCNT0); /* clear timer value */
+		outp(7,TCCR1B); /* enable counter from T1 pin */
+		/* LED on */
+		cbi(LED0PORT,LED0);
+	}
+	if (mode==1){
+		/* one sec gate */
+		clocklimit=64;
+		/* start 64Hz timer, clock/256 overflow0 every 256 */
+		outp(4,TCCR0);
+	}
+	if (mode==2){
+		clocklimit=1;
+		/* start 64Hz timer, clock/256 overflow0 every 256 */
+		outp(4,TCCR0);
+	}
+	displaymode();
+	/* enable counting for the 74hc390 divider, clear=0V */
+	cbi(CCLEARPORT,CCLEAR);
+}
+
+
+int main(void)
+{
+	unsigned char i,rxresult,status;
+	unsigned int ignorebutton,pausetodisplay;
+	char cmd;
+	char *val;
+
+
+	ignorebutton=0;
+	pausetodisplay=0;
+	/* initialize display, cursor off */
+	lcd_init(LCD_DISP_ON);
+	/* initialize LED as output */
+	sbi(LED0DDR,LED0);
+	/* initialize clear line to 74hc390 as output */
+	sbi(CCLEARDDR,CCLEAR);
+	/* clear line off */
+	cbi(CCLEARPORT,CCLEAR);
+	/* button as digital input */
+	cbi(BUTTON0DDR,BUTTON0);
+	cbi(BUTTON1DDR,BUTTON1);
+	/* initialize rs232 */
+	uart_init();
+
+	/* setup the counter */
+        cnt_readyforstart();
+
+	/* setup the 64Hz timer */
+	sbi(TIMSK,TOIE0); /* enable T0 overflow0 interrupt */
+	outp(0,TCNT0); /* start value */
+
+	mode=1;
+	dmode=0;
+	changemode();
+
+	sei(); /* enable interrupt */
+	lcd_clrscr();
+
+
+	while(1){
+		if (hflag==1){
+			handlecounterresult();
+			hflag=2; 
+			pausetodisplay=65000; // wait a bit for the LCD to show result
+		}
+		if (hflag==2 &amp;&amp; pausetodisplay==0){
+			/* prevent flickering of LCD display */
+			hflag=0;
+			/* start 64Hz timer */
+			outp(4,TCCR0);
+		}
+		/* for countup mode display result in regular intervalls */
+		if (mode==0 &amp;&amp; pausetodisplay==0){
+			pausetodisplay=65000; 
+			counterval[0]=inp(TCNT1L); /* read low first !! */
+			counterval[1]=inp(TCNT1H);
+			handlecounterresult();
+		}
+
+		rxresult=uart_getrxbufnl(uart_outbuf);
+		if (ignorebutton==0){
+			/* button 0 is the mode button */
+			if (bit_is_clear(BUTTON0PIN,BUTTON0)){
+				mode++;
+				if (mode&gt;2) mode=0;
+				changemode();
+				ignorebutton=55000; // debounce, ignore button for a while
+			}
+			/* button 1 is the clear button 
+			* press twice to add 00 behind the numbers */
+			if (bit_is_clear(BUTTON1PIN,BUTTON1)){
+				/* call changemode not to change the mode
+				* but to clear the 74hc390 counter */
+				changemode();
+				/* the second function of this clear button
+				* is to show 00 on the display */
+				dmode++;
+				if (dmode &gt; 1){
+					dmode=0;
+				}
+				outp(0x0,TCNT1H); /* set counter to zero*/
+				outp(0x0,TCNT1L); /* set counter to zero*/
+				ignorebutton=55000; // debounce, ignore button for a while
+				outp(7,TCCR1B); /* enable counter from T1 pin, needed in case there was an overflow */
+				overflowflag=0;
+			}
+		}
+		if (ignorebutton) ignorebutton--;
+		if (pausetodisplay) pausetodisplay--;
+		if (rxresult==0){
+			continue;
+		}
+		/* valid command are: 
+		* */
+		/* now parse the comands and act on them */
+		if (strlen(uart_outbuf) &lt; 3) {
+			reply_err();
+			continue;
+		}
+		if (uart_outbuf[1] != '='){
+			reply_err();
+			continue;
+		}
+		val=&amp;(uart_outbuf[2]);
+		cmd=uart_outbuf[0];
+		status=0;
+		/* act on the commands */
+		if (cmd=='h'){
+			if (*val =='1'){
+				dmode=1;
+				status=1;
+			}
+			if (*val =='0'){
+				dmode=0;
+				status=1;
+			}
+			if (*val == '?'){
+				uart_sendstr_P("h:");
+				uart_sendchar('0'+ dmode);
+				uart_sendchar('\n');
+				continue;
+			}
+		}
+		if (cmd=='c' &amp;&amp; *val =='1'){
+			/* call changemode not to change the mode
+			* but to clear the 74hc390 counter */
+			changemode();
+			outp(0x0,TCNT1H); /* set counter to zero*/
+			outp(0x0,TCNT1L); /* set counter to zero*/
+			status=1;
+		}
+		if (cmd=='m'){
+			i=*val;
+			if (i == '?'){
+				uart_sendstr_P("m:");
+				uart_sendchar('0'+ mode);
+				uart_sendchar('\n');
+				continue;
+			}
+			if (i &lt; '3' &amp;&amp; i &gt;= '0'){
+				mode= i - '0'; // convert to integer;
+				changemode();
+				status=1;
+			}
+		}
+		/* command handling done. now return status */
+		if (status==1){
+			reply_ok();
+		}
+		if (status==0){
+			reply_err();
+		}
+	}
+
+}

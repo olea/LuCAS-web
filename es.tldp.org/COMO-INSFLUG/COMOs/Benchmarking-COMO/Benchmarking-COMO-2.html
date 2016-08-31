@@ -1,0 +1,296 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Benchmarking C&Oacute;MO: Procedimientos de medida e interpretaci&oacute;n de resultados</TITLE>
+ <LINK HREF="Benchmarking-COMO-3.html" REL=next>
+ <LINK HREF="Benchmarking-COMO-1.html" REL=previous>
+ <LINK HREF="Benchmarking-COMO.html#toc2" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Benchmarking-COMO-3.html">Página siguiente</A>
+<A HREF="Benchmarking-COMO-1.html">Página anterior</A>
+<A HREF="Benchmarking-COMO.html#toc2">Índice general</A>
+<HR>
+<H2><A NAME="s2">2. Procedimientos de medida e interpretaci&oacute;n de resultados</A></H2>
+
+<P>
+<P>Unas cuantas recomendaciones semiobvias:
+<OL>
+<LI>Primera y principal, <B>identifique el rendimiento
+objetivo</B>. ¿Qu&eacute; es exactamente lo que trata de medir? ¿De qu&eacute;
+forma la medida del rendimiento le ayudar&aacute; despu&eacute;s a tomar una
+decisi&oacute;n? ¿Cu&aacute;nto tiempo y cu&aacute;ntos recursos est&aacute; dispuesto a gastar en
+el proceso de medida?</LI>
+<LI><B>Utilice herramientas est&aacute;ndar</B>. Use una versi&oacute;n del
+n&uacute;cleo estable y actualizada, as&iacute; como un gcc, libc, y una herramienta
+de medida del rendimiento actualizados y est&aacute;ndares. Abreviando,
+utilice el LBT (ver m&aacute;s adelante).</LI>
+<LI>D&eacute; una <B>descripci&oacute;n completa</B> de su configuraci&oacute;n (vea el
+art&iacute;culo LBT m&aacute;s adelante).</LI>
+<LI>Trate de <B>aislar una variable</B>. Las medidas comparativas
+dan m&aacute;s informaci&oacute;n que las ``absolutas''. <B>Ya no puedo insistir
+m&aacute;s en este punto</B>.</LI>
+<LI><B>Verifique sus resultados</B>. Ejecute sus pruebas unas
+cuantas veces y compruebe las fluctuaciones en los resultados, de
+haberlas. Las fluctuaciones inexplicables invalidar&aacute;n sus resultados.</LI>
+<LI>Si cree que su esfuerzo en la medici&oacute;n del rendimiento ha
+producido informaci&oacute;n &uacute;til, <B>comp&aacute;rtala</B> con la comunidad Linux
+de forma <B>breve</B> y <B>concisa</B>.</LI>
+<LI>Por favor, <B>olv&iacute;dese de los BogoMips</B>. Me he prometido
+que alg&uacute;n d&iacute;a implementar&eacute; un rapid&iacute;simo ASIC con el bucle de los
+BogoMips enganchado en &eacute;l. ¡Entonces veremos lo que tengamos que
+ver!</LI>
+</OL>
+<P>
+<H2><A NAME="ss2.1">2.1 Entendiendo la elecci&oacute;n de la herramienta</A>
+</H2>
+
+<P>
+<P>
+<H3>Las herramientas de medida sint&eacute;ticas vs. las de aplicaciones</H3>
+
+<P>
+<P>Antes de perder el tiempo escogiendo entre todos los tipos de
+herramientas de medida, se debe hacer una elecci&oacute;n b&aacute;sica entre las
+herramientas ``sint&eacute;ticas'' y las de ``aplicaci&oacute;n''.
+<P>Las herramientas sint&eacute;ticas est&aacute;n especialmente dise&ntilde;adas para medir
+el rendimiento de un componente individual de un ordenador,
+normalmente llevando el componente escogido a su m&aacute;xima capacidad. Un
+ejemplo de una herramienta sint&eacute;tica muy conocida es el
+<B>Whetstone</B>, programado originalmente en 1972 por Harold Curnow en
+FORTRAN (¿o fue en ALGOL?) y todav&iacute;a ampliamente utilizada. El
+conjunto de herramientas Whetstone medir&aacute; el rendimiento de la unidad
+de punto flotante de la CPU.
+<P>La cr&iacute;tica principal que puede hac&eacute;rsele a las medidas ``sint&eacute;ticas''
+es que no representan el rendimiento del sistema en las situaciones de
+la vida real. Tomemos por ejemplo las herramientas Whetstone: el
+blucle principal es muy peque&ntilde;o y podr&iacute;a caber f&aacute;cilmente en la cach&eacute;
+primaria de la CPU, manteniendo el bus de la unidad de punto flotante
+(FPU) constantemente lleno y ejercitando, por tanto, la FPU a su
+m&aacute;xima velocidad. No podemos criticar las herramientas Whetstone por
+esto, ya que hemos de tener presente que fueron programadas hace 25
+a&ntilde;os (¡y dise&ntilde;adas en fechas anteriores!), pero hemos de
+asegurarnos de que interpretamos los resultados con cuidado cuando
+medimos microprocesadores modernos.
+<P>Otro punto a tener en cuenta sobre los tests sint&eacute;ticos es que,
+idealmente, deber&iacute;an darnos informaci&oacute;n acerca de un aspecto
+<B>espec&iacute;fico</B> del sistema que estamos comprobando,
+independientemente del resto de componentes: un test sint&eacute;tico sobre
+la E/S de las tarjetas Ethernet deber&iacute;a devolver el mismo resultado (o
+al menos similar) independientemente de si se ejecuta en un 386SX-16
+con 4 MBytes de RAM o de si se ejecuta en un Pentium 200 MMX con 64
+MBytes de RAM. Sin embargo, el test medir&aacute; la rendimiento global de la
+combinaci&oacute;n CPU/placa base/Bus/tarjeta Ethernet/Subsistema de
+memoria/DMA: no es muy &uacute;til, ya que la variaci&oacute;n en el procesador
+podr&iacute;a causar un impacto mayor en los resultados que la variaci&oacute;n en
+la tarjeta de red Ethernet (naturalmente, &eacute;sto es suponiendo que
+estamos utilizando la misma combinaci&oacute;n de controlador/n&uacute;cleo, que
+tambi&eacute;n pueden producir grandes cambios).
+<P>Para terminar, un error muy com&uacute;n es hacer la media de varios tests
+sint&eacute;ticos y decir que esta media es una buena representaci&oacute;n del
+rendimiento en la vida real de un sistema.
+<P>Aqu&iacute; tenemos un comentario acerca de los tests FPU, citado con permiso
+de Cyrix Corp.:
+<BLOCKQUOTE>
+<EM>``Una Unidad de Coma Flotante (<I>Floating Point Unit</I>,
+FPU) acelera los programas dise&ntilde;ados para utilizar matem&aacute;ticas en coma
+flotante: suelen ser programas de CAD, hojas de c&aacute;lculo, juegos 3D y
+dise&ntilde;o de aplicaciones. Sin embargo, hoy en d&iacute;a las aplicaciones m&aacute;s
+populares para PC utilizan al mismo tiempo instrucciones en enteros y
+en coma flotante. Como resultado, Cyrix ha decidido poner &eacute;nfasis en
+el ``paralelismo'' a la hora de dise&ntilde;ar el procesador 6x86 para acelerar
+los programas que entremezclan estos dos tipos de instrucciones.</EM>
+</BLOCKQUOTE>
+
+<BLOCKQUOTE>
+<EM>El modelo de exclusi&oacute;n de la unidad de coma flotante de los x86
+permite la resoluci&oacute;n de instrucciones con enteros mientras se ejecuta
+una instrucci&oacute;n en coma flotante. Por contra, no se puede ejecutar una
+segunda instrucci&oacute;n en coma flotante si ya se estaba ejecutando
+anteriormente una. Para eliminar la limitaci&oacute;n en el rendimiento
+creada por el modelo de exclusi&oacute;n de la unidad de coma flotante, el
+procesador 6x86 puede realizar especulativamente hasta cuatro
+instrucciones en coma flotante al chip FPU mientras sigue ejecutando
+instrucciones enteras. Por ejemplo, en una secuencia de c&oacute;digo con dos
+instrucciones en coma flotante (FLTs) seguidas por seis instrucciones
+enteras (INTs) y seguidas por dos FLTs m&aacute;s, el procesador 6x86 puede
+mandar las diez instrucciones anteriores a las unidades de ejecuci&oacute;n
+apropiadas antes de que se termine la primera FLT. Si ninguna de las
+instrucciones falla (el caso t&iacute;pico), la ejecuci&oacute;n continua con las
+unidades de enteros y de coma flotante terminando las instrucciones en
+paralelo. Si una de las FLTs falla (el caso at&iacute;pico), la capacidad de
+ejecuci&oacute;n especulativa del 6x86 permite que se restaure el estado del
+procesador de forma que sea compatible con el modelo de exclusi&oacute;n de
+la unidad de coma flotante del x86.</EM>
+</BLOCKQUOTE>
+
+<BLOCKQUOTE>
+<EM>Un examen de los test de rendimiento revela que los test
+sint&eacute;ticos de la unidad de coma flotante utiliza un c&oacute;digo con
+solo operaciones de coma flotante, que no es lo que nos encontramos en
+las aplicaciones del mundo real. Este tipo de tests no aprovecha la
+capacidad de ejecuci&oacute;n especulativa presente en el procesador
+6x86. Cyrix cree que las pruebas que utilizan herramientas no
+sint&eacute;ticas, basadas en aplicaciones del mundo real reflejan
+mejor el rendimiento real que pueden obtener los usuarios. Las
+aplicaciones del mundo real contienen instrucciones mezcladas de
+enteros y de coma flotante y utilizan por tanto, la capacidad de
+ejecuci&oacute;n especulativa del 6x86.''</EM>
+</BLOCKQUOTE>
+<P>Por lo tanto, la tendencia en los tests de rendimiento es elegir las
+aplicaciones m&aacute;s comunes y utilizarlas para medir el rendimiento del
+sistema completo. Por ejemplo, <B>SPEC</B>, la organizaci&oacute;n sin &aacute;nimo de
+lucro que dise&ntilde;&oacute; las herramientas SPECINT y SPECFP, ha lanzado un
+proyecto para un nuevo conjunto de herramientas basadas en
+aplicaciones. Pero de nuevo, ser&iacute;a muy raro que alguna herramienta
+comercial de medida del rendimiento incluya c&oacute;digo Linux.
+<P>Resumiendo, los tests sint&eacute;ticos son v&aacute;lidos mientras comprenda sus
+prop&oacute;sitos y limitaciones. Las herramientas basadas en aplicaciones
+reflejar&aacute;n mejor el rendimiento global del sistema, pero no hay
+ninguna disponible para Linux.
+<P>
+<H3>Tests de alto nivel vs. test de bajo nivel</H3>
+
+<P>
+<P>Los tests de bajo nivel miden directamente el rendimiento de los
+componentes: el reloj de la CPU, los tiempos de la DRAM y de la cach&eacute;
+SRAM, tiempo de acceso medio al disco duro, latencia, tiempo de cambio
+de pista, etc... esto puede ser util en caso de comprar un sistema y
+no se sabe con que componentes viene, pero una forma mejor de
+comprobar estos datos es abrir la caja, hacer un listado con los
+nombres que pueda conseguir y obtener una hoja de caracter&iacute;sticas de
+cada componente encontrado (normalmente disponibles en la red).
+<P>Otro uso de los tests de bajo nivel es comprobar que un controlador de
+n&uacute;cleo ha sido correctamente instalado para un componente espec&iacute;fico:
+si tiene la hoja de especificaciones del componente, puede comparar
+los resultados del test de bajo nivel con las especificaciones
+te&oacute;ricas (las impresas).
+<P>Los tests de alto nivel est&aacute;n m&aacute;s enfocados a medir el rendimiento de
+la combinaci&oacute;n componente/controlador/SO de un aspecto espec&iacute;fico del
+sistema, como por ejemplo el rendimiento de E/S con ficheros, o el
+rendimiento de una determinada combinaci&oacute;n de
+componentes/controlador/SO/aplicaci&oacute;n, p.e. un test Apache en
+diferentes sistemas.
+<P>Por supuesto, todos los tests de bajo nivel son sint&eacute;ticos. Los tests
+de alto nivel pueden ser sint&eacute;ticos o de aplicaci&oacute;n.
+<P>
+<H2><A NAME="ss2.2">2.2 Tests est&aacute;ndares disponibles para Linux</A>
+</H2>
+
+<P>
+<P>EMMO un test sencillo que cualquiera puede hacer cuando actualiza
+cualquier componentes en su Linux es hacer una compilaci&oacute;n del n&uacute;cleo
+antes y despu&eacute;s de la actualizaci&oacute;n del componente o del programa y
+comparar los tiempos de compilaci&oacute;n. Si todas las dem&aacute;s combinaciones
+se mantienen igual, entonces el test es v&aacute;lido como medida del
+rendimiento en la compilaci&oacute;n, y uno ya puede decir que:
+<BLOCKQUOTE>
+"Cambiar de A a B lleva a una mejora de un x % en el
+tiempo de compilaci&oacute;n del n&uacute;cleo de Linux bajo estas y estas
+condiciones".
+</BLOCKQUOTE>
+<P>¡Ni m&aacute;s, ni menos!
+<P>Ya que la compilaci&oacute;n del n&uacute;cleo es una tarea muy normal en Linux, y
+ya que ejercita muchas de las funciones que se realizan normalmente en
+los tests (excepto el rendimiento con las instrucciones en coma
+flotante), podemos concluir que es un test <B>individual</B> bastante
+bueno. Sin embargo en muchos casos, los resultados de un test no puede
+ser reproducido por otros usuarios Linux debido a las variaciones en la
+configuraci&oacute;n de los programas/componentes y por tanto este tipo de
+pruebas no puede utilizarse como ``vara de medida'' para comparar
+distintos sistemas (a menos que nos pongamos todos de acuerdo en
+compilar un n&uacute;cleo est&aacute;ndar - ver m&aacute;s adelante).
+<P>Desgraciadamente, no hay herramientas de medida del rendimiento
+espec&iacute;ficas para Linux, exceptuando el Byte Linux Benchmarks, que son
+una versi&oacute;n modificada del The Byte Unix Benchmarks que data de Mayo
+de 1991 (los m&oacute;dulos de Linux se deben a Jon Tombs, autores originales
+Ben Smith, Rick Grehan y Tom Yager).
+<P>Hay una p&aacute;gina central
+<CODE>
+<A HREF="http://www.silkroad.com/bass/linux/bm.html">http://www.silkroad.com/bass/linux/bm.html</A></CODE>
+para el Byte Linux Benchmarks.
+<P>David C. Niemi puso por ah&iacute; una versi&oacute;n del Byte Unix Benchmarks
+mejorada y actualizada. Para evitar confusiones con alguna versi&oacute;n
+anterior la llam&oacute; UnixBench 4.01. Aqu&iacute; est&aacute; lo que David escribi&oacute;
+sobre sus modificaciones:
+<BLOCKQUOTE>
+<EM>``La versi&oacute;n original y las versiones ligeramente
+modificadas de BYTE Unix Benchmarks se diferencian en varias cosas que
+los hacen ser un indicador inusualmente poco fiable del rendimiento
+del sistema. He hecho que los valores de mis ``&iacute;ndices'' parezcan muy
+diferentes para evitar confusiones con el viejo test.''</EM>
+</BLOCKQUOTE>
+<P>David ha creado una lista de correo majordomo para la discusi&oacute;n sobre
+las pruebas de rendimiento para Linux y para el resto de SOs. Puede
+unirse a la lista enviando un mensaje a <CODE>
+<A HREF="mailto:majordomo@wauug.erols.com">majordomo@wauug.erols.com</A></CODE> escribiendo en el cuerpo
+``subscribe bench''. El Grupo de Usuarios de Unix del Area de
+Washington est&aacute; en proceso de crear una p&aacute;gina Web
+<CODE>
+<A HREF="http://wauug.erols.com/bench">http://wauug.erols.com/bench</A></CODE>
+sobre los test de rendimiento en Linux.
+<P>Tambi&eacute;n recientemente, Uwe F. Mayer, <CODE>
+<A HREF="mailto:mayer@math.vanderbilt.edu">mayer@math.vanderbilt.edu</A></CODE> port&oacute; el conjunto de pruebas Byte
+Bytemark a Linux. &Eacute;ste es un moderno conjunto de herramientas que Rick
+Grehan envi&oacute; a BYTE Magazine para comprobar la CPU, FPU y el
+rendimiento del sistema de memoria de los modernos sistemas de
+microordenador (hay pruebas estrictamente orientadas al rendimiento
+del procesador, sin tener en cuenta el rendimiento de la E/S o del
+sistema).
+<P>Uwe tambi&eacute;n ha creado una p&aacute;gina Web <CODE>
+<A HREF="http://math.vanderbilt.edu:80/~mayer/linux/bmark.html">http://math.vanderbilt.edu:80/~mayer/linux/bmark.html</A></CODE>
+con una base de datos de los resultados de las pruebas de su versi&oacute;n
+del Linux BYTEmark benchmarks.
+<P>Si busca pruebas sint&eacute;ticas para Linux, en sunsite.unc.edu podr&aacute;
+encontrar unas cuantas. Para comprobar la velocidad relativa de los
+servidores X y de las tarjetas gr&aacute;ficas, el conjunto de herramientas
+xbench-0.2 creado por Claus Gittinger est&aacute; disponible en
+sunsite.unc.edu, ftp.x.org y otros lugares. Xfree86.org rechaza
+(prudentemente) el llevar o recomendar ninguna prueba.
+<P>El <EM>XFree86-benchmarks Survey</EM> <CODE>
+<A HREF="http://www.goof.com/xbench/">http://www.goof.com/xbench/</A></CODE>
+es una p&aacute;gina Web con una base de datos de los resultados de x-bench.
+<P>Para el intercambio de E/S de disco, el programa hdparm (incluido con
+muchas distribuciones, si no lo tiene puede encontrarlo en
+sunsite.unc.edu) puede medir las tasas de transferencia si lo invoca
+con las opciones -t y -T.
+<P>Hay muchas otras herramientas disponibles de forma libre en Internet
+para comprobar varios aspectos del rendimiento de su Linux.
+<P>
+<H2><A NAME="ss2.3">2.3 Enlaces y referencias</A>
+</H2>
+
+<P>
+<P>El comp.benchmarks.faq creado por Dave Sill es la referencia est&aacute;ndar
+en las pruebas de rendimiento. No es espec&iacute;fico de Linux, pero es una
+lectura recomendada para cualquiera que se quiera ver seriamente
+implicado en las pruebas de rendimiento. Est&aacute; disponible en muchos
+FTPs y p&aacute;ginas Web y muestra <B>56 pruebas diferentes</B>, con enlaces a
+direcciones FTP o p&aacute;ginas Web donde se pueden recoger. Algunas de las
+pruebas que se mencionan son comerciales (SPEC, por ejemplo).
+<P>No voy a nombrar todos y cada uno de los tests que se mencionan en
+comp.benchmarks.faq, pero hay al menos una prueba de bajo nivel que me
+gustar&iacute;a comentar: la prueba lmbench <CODE>
+<A HREF="http://reality.sgi.com/lm/lmbench/lmbench.html">http://reality.sgi.com/lm/lmbench/lmbench.html</A></CODE>
+de Larry McVoy. Citando a David C. Niemi:
+<BLOCKQUOTE>
+<EM>``Linus y David Miller la utilizan mucho ya que es capaz de
+realizar medidas &uacute;tiles de bajo nivel y tambi&eacute;n puede medir el
+trasvase y la latencia de la red si tiene dos ordenadores para hacer
+los tests. Pero no intenta conseguir algo as&iacute; como un ``rendimiento
+del sistema'' general...''</EM>
+</BLOCKQUOTE>
+<P>Alfred Aburto puso en marcha un lugar FTP bastante completo en cuanto a
+utilidades <B>libres</B> de medida del rendimiento (<CODE>
+<A HREF="ftp://ftp.nosc.mil/pub/aburto">ftp://ftp.nosc.mil/pub/aburto</A></CODE>).
+Las herramientas Whetstone utilizadas en el LBT se encontraron aqu&iacute;.
+<P>Tambi&eacute;n tenemos el <B>FAQ multiparte de Eugene Miya</B> que deja
+regularmente en comp.benchmarks; es una referencia excelente.
+<P>
+<HR>
+<A HREF="Benchmarking-COMO-3.html">Página siguiente</A>
+<A HREF="Benchmarking-COMO-1.html">Página anterior</A>
+<A HREF="Benchmarking-COMO.html#toc2">Índice general</A>
+</BODY>
+</HTML>

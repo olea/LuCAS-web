@@ -1,0 +1,993 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.7.4">
+ <TITLE>Linux netfilter Hacking COMO: Informaci&oacute;n para programadores</TITLE>
+ <LINK HREF="netfilter-hacking-COMO-5.html" REL=next>
+ <LINK HREF="netfilter-hacking-COMO-3.html" REL=previous>
+ <LINK HREF="netfilter-hacking-COMO.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="netfilter-hacking-COMO-5.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-3.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="s4">4.</A> <A HREF="netfilter-hacking-COMO.html#toc4">Informaci&oacute;n para programadores</A></H2>
+
+<P>Le voy a contar un secreto: mi h&aacute;mster hizo todo el c&oacute;digo. Yo s&oacute;lo 
+era una v&iacute;a, una `fachada' si quiere, en el gran plan de mi mascota. Por 
+tanto, no me culpe a m&iacute; si existen fallos. Culpe al lindo peludo.</P>
+
+<H2><A NAME="ss4.1">4.1 Comprendiendo ip_tables</A>
+</H2>
+
+<P>iptables proporciona simplemente un vector de reglas en memoria (de 
+ah&iacute; el nombre `iptables'), e informaci&oacute;n tal como por d&oacute;nde deber&iacute;an 
+comenzar el recorrido los paquetes de cada gancho. Despu&eacute;s de que una 
+tabla es registrada, el espacio de usuario puede leer y reemplazar sus 
+contenidos utilizando getsockopt() y setsockopt().</P>
+
+<P>iptables no se registra en ning&uacute;n gancho de netfilter: cuenta con que 
+otros m&oacute;dulos lo hagan y le administren los paquetes apropiados.</P>
+
+<H3>Estructuras de datos de ip_tables</H3>
+
+<P>Por conveniencia, se utiliza la misma estructura de datos para 
+representar un regla en el espacio de usuario y dentro del kernel, aunque
+algunos campos s&oacute;lo se utilizan dentro del kernel.</P>
+
+<P>Cada regla consiste en las partes siguientes:
+<OL>
+<LI> Una estructura `struct ipt_entry'.</LI>
+<LI> Cero o m&aacute;s estructuras `struct ipt_entry_match', cada una con una  
+cantidad variable de datos (0 o m&aacute;s bytes) dentro de ella.</LI>
+<LI> Una estructura `struct ipt_entry_target', con una cantidad         
+variable de datos (0 o m&aacute;s bytes) dentro de ella.</LI>
+</OL>
+</P>
+<P>La naturaleza variable de las reglas proporciona una enorme flexibilidad 
+a las extensiones, como veremos, especialmente porque cada concordancia 
+(match) u objetivo (target) puede llevar una cantidad de datos
+arbitraria. Eso, sin embargo, acarrea unas cuantas trampas: tenemos que 
+tener cuidado con la alineaci&oacute;n. Esto lo hacemos asegur&aacute;ndonos de que las 
+estructuras `ipt_entry', `ipt_entry_match' e `ipt_entry_target' tienen el 
+tama&ntilde;o conveniente, y de que todos los datos son redondeados a la m&aacute;xima 
+alineaci&oacute;n de la m&aacute;quina, utilizando la macro IPT_ALIGN().</P>
+
+<P>La estructura `struct ipt_entry' tiene los siguientes campos:
+<OL>
+<LI> Una parte `struct ipt_ip', que contiene las especificaciones para 
+la cabecera IP que tiene que concordar.
+</LI>
+<LI> Un campo de bits `nf_cache' que muestra qu&eacute; partes del paquete ha 
+examinado esta regla.
+</LI>
+<LI> Un campo `target_offset' que indica el <I>offset</I> del 
+principio de esta regla donde comienza la estructura ipt_entry_target.
+Esto siempre debe alinearse correctamente (con la macro IPT_ALIGN).
+</LI>
+<LI> Un campo `next_offset' que indica el tama&ntilde;o total de esta regla, 
+incluyendo las concordancias y el objetivo. Esto siempre debe alinearse 
+correctamente con la macro IPT_ALIGN.
+</LI>
+<LI> Un campo `comefrom', utilizado por el kernel para seguir el
+recorrido del paquete.
+</LI>
+<LI> Un campo `struct ipt_counters' que contiene los contadores de 
+paquetes y de bytes que han concordado con esta regla.</LI>
+</OL>
+</P>
+
+<P>Las estructuras `struct ipt_entry_match' y `struct ipt_entry_target' son 
+muy similares, en el sentido de que contienen un campo de longitud total, 
+alineado con IPT_ALIGN, (`match_size' y `target_size' respectivamente) y 
+una uni&oacute;n que contiene el nombre de la concordancia u objetivo (para el 
+espacio de usuario), y un puntero (para  el kernel).</P>
+
+<P>Debido a la naturaleza enga&ntilde;osa de la estructura de datos de las reglas, 
+se proporcionan algunas rutinas de ayuda:</P>
+<P>
+<DL>
+<DT><B>ipt_get_target()</B><DD><P>Esta funci&oacute;n (inline) devuelve un puntero al 
+objetivo de una regla.</P>
+
+<DT><B>IPT_MATCH_ITERATE()</B><DD><P>Esta macro llama a la funci&oacute;n especificada 
+cada vez que se produce una concordancia en la regla en cuesti&oacute;n. El
+primer argumento de la funci&oacute;n es la estructura `struct ipt_match_entry', 
+y el resto de argumentos (si los hay) son los proporcionados por la macro 
+IPT_MATCH_ITERATE().</P>
+
+<DT><B>IPT_ENTRY_ITERATE()</B><DD><P>Esta funci&oacute;n recibe un puntero a una 
+entrada, el tama&ntilde;o total de la tabla de entradas, y una funci&oacute;n a la que 
+llamar. El primer argumento de la funci&oacute;n es la estructura `struct 
+ipt_entry', y el resto de argumentos (si los hay) son los proporcionados 
+por la macro IPT_ENTRY_ITERATE().</P>
+</DL>
+</P>
+
+<H3>ip_tables desde el espacio de usuario</H3>
+
+<P>El espacio de usuario dispone de cuatro operaciones: puede leer la 
+tabla actual, leer la informaci&oacute;n (posiciones de los ganchos y tama&ntilde;o de 
+la tabla), reemplazar la tabla (y obtener los contadores antiguos), y 
+a&ntilde;adir nuevos contadores.</P>
+
+<P>Esto permite simular cualquier operaci&oacute;n at&oacute;mica desde el espacio de 
+usuario: se hace mediante la biblioteca libiptc, que proporciona una 
+c&oacute;moda sem&aacute;ntica "a&ntilde;adir/borrar/reemplazar" para los programas.</P>
+
+<P>Ya que estas tablas son trasladadas al espacio del kernel, la 
+alineaci&oacute;n se convierte en un asunto importante en m&aacute;quinas que tienen 
+reglas de tipo distintas para el espacio de usuario y el espacio del 
+kernel (p.ej. Sparc64 con un (userland) de 32 bits). Estos casos se 
+resuelven cancelando la definici&oacute;n de IPT_ALIGN para estas plataformas en 
+`libiptc.h'.</P>
+
+<H3>Recorrido y uso de ip_tables</H3>
+
+<P>El kernel comienza el recorrido en la posici&oacute;n indicada por el gancho 
+en particular. Esa regla se examina, y si los elementos de `struct 
+ipt_ip' concuerdan, se comprueba cada `struct ipt_entry_match' en orden 
+(se llama a la funci&oacute;n de concordancia asociada con esa concordancia). Si 
+la  funci&oacute;n de concordancia devuelve 0, la iteraci&oacute;n se deteiene en esa 
+regla. Si establece el valor de `hotdrop' a 1, el paquete ser&aacute; rechazado 
+inmediatamente (esto se usa para algunos paquetes sospechosos, como en la 
+funci&oacute;n de concordancia tcp).</P>
+
+<P>Si la iteraci&oacute;n contin&uacute;a hasta el final, los contadores se incrementan 
+y se examina la estructura `struct ipt_entry_target': si es un objetivo 
+est&aacute;ndar, se lee el campo `veredict' (negativo significa el veredicto de 
+un paquete, positivo significa un offset al que saltar). Si la respuesta 
+es positiva y el offset no es el de la regla siguiente, se establece la 
+variable `back', y el valor anterior de `back' se coloca en el campo 
+`comefrom' de esa regla.</P>
+
+<P>Para objetivos no est&aacute;ndar, se llama a la funci&oacute;n de objetivo: &eacute;sta
+devuelve un veredicto (los objetivos no est&aacute;ndar no pueden saltar, ya que 
+esto interrumpir&iacute;a el c&oacute;digo est&aacute;tico de loop-detection). El veredicto 
+puede ser IPT_CONTINUE, para continuar en la siguiente regla.</P>
+
+<H2><A NAME="ss4.2">4.2 Extendiendo iptables</A>
+</H2>
+
+<P>Como soy vago, <CODE>iptables</CODE> es muy extensible. Esto es 
+b&aacute;sicamente una excusa para encajarle el trabajo a otras personas, que es 
+de lo que se trata el open source (cf. el Software Libre, como dir&iacute;a RMS, 
+va sobre la libertad, y yo me he basado en sus palabras para escribir 
+esto).</P>
+
+<P>Extender <CODE>iptables</CODE> implica potencialmente dos partes: extender 
+el kernel escribiendo un nuevo m&oacute;dulo, y posiblemente extender el 
+programa de espacio de usuario <CODE>iptables</CODE>, escribiendo una nueva 
+biblioteca compartida.</P>
+
+<H3>El kernel</H3>
+
+<P>Escribir un m&oacute;dulo para el kernel es bastante sencillo, como puede ver 
+a partir de los ejemplos. Una cosa de la que hay que estar avisado es que 
+su c&oacute;digo debe ser reentrante: puede haber un paquete entrando desde 
+el espacio de usuario, mientras que otro llega a trav&eacute;s de una
+interrupci&oacute;n. De hecho, con SMP puede haber un paquete por interrupci&oacute;n 
+y por CPU en las versiones 2.3.4 y superiores.</P>
+
+<P>Las funciones que necesita conocer son las siguientes:</P>
+<P>
+<DL>
+<DT><B>init_module()</B><DD><P>&Eacute;sta es el punto de entrada del m&oacute;dulo. Devuelve 
+un n&uacute;mero de error negativo, o 0 si se registra con &eacute;xito en netfilter.</P>
+
+<DT><B>cleanup_module()</B><DD><P>&Eacute;sta es el punto de salida del m&oacute;dulo; lo 
+desregistra de netfilter.</P>
+
+<DT><B>ipt_register_match()</B><DD><P>&Eacute;sta se utiliza para registrar un nuevo 
+tipo de concordancia. Se le pasa una estructura `struct ipt_match', que 
+normalmente se declara como una variable est&aacute;tica (file-scope).</P>
+
+<DT><B>ipt_register_target()</B><DD><P>&Eacute;sta se utiliza para registrar un nuevo 
+tipo de objetivo. Se le pasa una estructura `struct ipt_target', que 
+normalmente se declara como una variable est&aacute;tica (file-scope).</P>
+
+<DT><B>ipt_unregister_target()</B><DD><P>Utilizada para desregistrar su 
+objetivo.</P>
+
+<DT><B>ipt_unregister_match()</B><DD><P>Utilizada para desregistrar su 
+concordancia.</P>
+</DL>
+</P>
+
+<P>Una advertencia sobre hacer cosas delicadas (como proporcionar 
+contadores) en el espacio extra de su nueva concordancia u objetivo. En 
+las m&aacute;quinas SMP, toda la tabla se duplica utilizando memcpy en cada CPU: 
+si realmente quiere preservar informaci&oacute;n central, deber&iacute;a echarle un 
+vistazo al m&eacute;todo utilizado en la concordancia `limit'.</P>
+
+<H3>Nuevas funciones de concordancia</H3>
+
+<P>Las nuevas funciones de concordancia se escriben normalmente como un 
+m&oacute;dulo independiente. Es posible tener extensibilidad en estos m&oacute;dulos, 
+aunque normalmente no es necesario. Una manera ser&iacute;a utilizar la funci&oacute;n 
+`nf_register_sockopt' del sistema netfilter para permitir a los usuarios 
+hablar directamente al m&oacute;dulo. Otra manera ser&iacute;a exportar los s&iacute;mbolos 
+para que otros m&oacute;dulos se registren, de la misma manera que lo hacen 
+netfilter e iptables.</P>
+
+<P>El coraz&oacute;n de su nueva funci&oacute;n de concordancia es la estructura 
+`struct ipr_match' que le pasa a `ipt_register_match()'. Esta estructura 
+tiene los siguientes campos:</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>En este campo se puede poner lo que sea, digamos `{ NULL, 
+NULL 
+}'.</P>
+
+<DT><B>name</B><DD><P>Este campo es el nombre de la funci&oacute;n de concordancia, 
+referido por el espacio de usuario. El nombre deber ser igual al nombre 
+del m&oacute;dulo (es decir, si el nombre es "mac", el m&oacute;dulo debe ser 
+"ipt_mac.o") para que funcione la auto-carga.</P>
+
+<DT><B>match</B><DD><P>Este campo es un puntero a una funci&oacute;n de concordancia, 
+que recibe el skb, los punteros a los dispositivos <I>in</I> y 
+<I>out</I> (uno de los cuales podr&iacute;a ser NULL, dependiendo del gancho), 
+un puntero a los datos de concordancia de la regla que concord&oacute;, el 
+tama&ntilde;o de esa regla, el offset IP (si es distinto de cero se refiere a un 
+fragmento no inicial), un puntero a la cabecera del protocolo (es decir, 
+justo despu&eacute;s de la cabecera IP), la longitud de los datos (es decir, la 
+longitud del paquete menos la longitud de la cabecera IP), y finalmente 
+un puntero a una variable `hotdrop'. Devuelve algo distinto de cero si el 
+paquete concuerda, y puede poner `hotdrop' a 1 si devuelve 0, para 
+indicar que el paquete debe rechazarse inmediantemente.</P>
+
+<DT><B>checkentry</B><DD><P>Este campo es un puntero a una funci&oacute;n que 
+comprueba las especificaciones de una regla; si devuelve 0, no se 
+aceptar&aacute; la regla del usuario. Por ejemplo, el tipo de concordancia "tcp" 
+s&oacute;lo aceptar&aacute; paquetes tcp, y por tanto, si la estructura `struct ipt_ip' 
+de la regla no especifica que el protocolo debe ser tcp, se devuelve 
+cero. El argumento tablename permite a su concordancia controlar en qu&eacute; 
+tablas puede utilzarse, y `hook_mask' es una m&aacute;scara de bits de ganchos 
+desde los que se puede llamar a esta regla: si su concordancia no tiene 
+sentido desde algunos ganchos netfilter, puede evitarlo aqu&iacute;.</P>
+
+<DT><B>destroy</B><DD><P>Este campo es un puntero a una funci&oacute;n que es llamada
+cuando se borra una entrada que utiliza esta concordancia. Esto le 
+permite reservar recursos din&aacute;micamente en el checkentry y limpiarlos 
+aqu&iacute;.</P>
+
+<DT><B>me</B><DD><P>A este campo se le asigna `&amp;__this_module', que da un 
+puntero a su m&oacute;dulo. Hace que el contador de uso suba y baje al crearse y 
+destruirse reglas de ese tipo. Esto impide que un usuario pueda eliminar
+el m&oacute;dulo (y por tanto llamar a cleanup_module()) si una regla se refiere 
+a &eacute;l.</P>
+</DL>
+</P>
+
+<H3>Nuevos objetivos</H3>
+
+<P>Los objetivos nuevos se escriben normalmente como un m&oacute;dulo 
+independiente. Las discusiones de la secci&oacute;n de arriba sobre las `Nuevas 
+funciones de concordancia' se aplican igualmente aqu&iacute;.</P>
+
+<P>El n&uacute;cleo de su nuevo objetivo es la estructura `struct ipt_target' 
+que le pasa a `ipt_register_target()'. Esta estructura consta de los 
+siguientes campos:</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>En este campo se puede poner lo que sea, digamos `{ 
+NULL, NULL }'.</P>
+
+<DT><B>name</B><DD><P>Este campo es el nombre de la funci&oacute;n de objetivo,
+referido por el espacio de usuario. El nombre debe concordar con el
+nombre del m&oacute;dulo (es decir, si el nombre es "REJECT", el m&oacute;dulo debe
+ser "ipt_REJECT.o") para que funcione la auto-carga.</P>
+
+<DT><B>target</B><DD><P>Esto es un puntero a la funci&oacute;n de objetivo, que
+recibe el skbuff, los punteros a los dispositivos <I>in</I> y
+<I>out</I> (de los que cualquiera puede ser NULL), un puntero a los
+datos del objetivo, el tama&ntilde;o de los datos del objetivo, y la posici&oacute;n
+de la regla en la tabla. La funci&oacute;n de objetivo devuelve una posici&oacute;n
+absoluta no negativa hacia la que saltar, o un veredicto negativo (que
+es el veredicto negado menos uno).</P>
+
+<DT><B>checkentry</B><DD><P>Este campo es un puntero a una funci&oacute;n que
+comprueba las especificaciones de una regla; si devuelve 0, entonces no
+se aceptar&aacute; la regla del usuario.</P>
+
+<DT><B>destroy</B><DD><P>Este campo es un puntero a una funci&oacute;n que es llamada
+cuando se borra una entrada que utiliza este objetivo. Esto le permite
+reservar recursos din&aacute;micamente en el checkentry y limpiarlos aqu&iacute;.</P>
+
+<DT><B>me</B><DD><P>A este campo se le asigna `&amp;__this_module', que da un
+puntero a su m&oacute;dulo. Hace que el contador de uso suba y baje al crearse
+reglas con este objetivo. Esto impide que un usuario pueda eliminar el
+m&oacute;dulo (y por tanto llamar a cleanup_module()) si una regla se refiere a
+&eacute;l.</P>
+</DL>
+</P>
+
+<H3>Nuevas tablas</H3>
+
+<P>Puede crear una tabla nueva para sus prop&oacute;sitos espec&iacute;ficos si lo 
+desea. Para hacerlo, llame a `ipt_register_table()' con una estructura
+`struct ipt_table', que tiene los siguientes campos:</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>En este campo se puede poner lo que sea, digamos `{ 
+NULL, NULL }'.</P>
+
+<DT><B>name</B><DD><P>Este campo es el nombre de la funci&oacute;n de tabla, referido
+por el espacio de usuario. El nombre debe concordar con el nombre del
+m&oacute;dulo (es decir, si el nombre es "nat", el m&oacute;dulo debe ser
+"iptable_nat.o") para que funcione la auto-carga.</P>
+
+<DT><B>table</B><DD><P>Esto es una estructura `struct ipt_replace'
+completamente rellenada, utilizada por el espacio de usuario para
+reemplazar una tabla. Al puntero `counters' debe asign&aacute;rsele NULL.
+Esta estructura de datos puede declararse como `__initdata' para que sea 
+descartada despu&eacute;s del arranque.</P>
+
+<DT><B>valid_hooks</B><DD><P>Esto es una m&aacute;scara de bits de los ganchos IPv4
+de netfilter que introducir&aacute; en la tabla: se utiliza para comprobar que
+esos puntos de entrada son v&aacute;lidos, y para calcular los posibles ganchos
+para las funciones `checkentry()' de ipt_match e ipt_target.</P>
+
+<DT><B>lock</B><DD><P>Esto es el read-write spinlock para toda la tabla;
+inicial&iacute;cela a RW_LOCK_UNLOCKED.
+This is the read-write spinlock for the entire table;
+initialize it to RW_LOCK_UNLOCKED.</P>
+
+<DT><B>private</B><DD><P>Este campo es utilizado internamente por el c&oacute;digo de
+ip_tables.</P>
+</DL>
+</P>
+
+<H3>Herramienta del espacio de usuario</H3>
+
+<P>Ahora que ya ha escrito un bonito y reluciente m&oacute;dulo del kernel, 
+quiz&aacute; quiera controlar sus opciones desde el espacio de usuario. En vez 
+de tener una versi&oacute;n independiente de <CODE>iptables</CODE> para cada 
+extensi&oacute;n, he utilizado la &uacute;ltima tecnolog&iacute;a de los a&ntilde;os 90: los furbies. 
+Perd&oacute;n, quer&iacute;a decir bibliotecas compartidas.</P>
+
+<P>Generalmente, las nuevas tablas no requieren ninguna extensi&oacute;n de 
+<CODE>iptables</CODE>: el usuario s&oacute;lo tiene que utilizar la opci&oacute;n `-t' para 
+hacer que use la nueva tabla.</P>
+
+<P>La biblioteca compartida debe tener una funci&oacute;n `_init()', a la que se 
+llamar&aacute; autom&aacute;ticamente durante la carga: el equivalente moral de la 
+funci&oacute;n del m&oacute;dulo del kernel `init_module()'. &Eacute;sta llamar&aacute; a 
+`register_match()' o a `register_target()', dependiendo de si su 
+biblioteca compartida proporciona una nueva concordancia o un nuevo 
+objetivo.</P>
+
+<P>S&oacute;lo necesita proporcionar una biblioteca compartida si quiere 
+inicializar parte de la estructura o proporcionar opciones adicionales. 
+Por ejemplo, el objetivo `REJECT' no requiere nada de esto, por lo que no 
+hay ninguna biblioteca compartida.</P>
+
+<P>Hay funciones &uacute;tiles definidas en la cabecera `iptables.h', 
+especialmente:
+<DL>
+<DT><B>check_inverse()</B><DD><P>comprueba si un argumento es realmente un `!', 
+y si es as&iacute;, activa el flag `invert' si no estaba ya activado. Si 
+devuelve verdadero, hay que incrementar optind, como en los ejemplos.</P>
+
+<DT><B>string_to_number()</B><DD><P>convierte una cadena en un n&uacute;mero dentro 
+del rango dado, devolviendo -1 si est&aacute; malformada o fuera de rango.</P>
+
+<DT><B>exit_error()</B><DD><P>debe llamarse si se encuentra un error. 
+Normalmente, el primer argumento es `PARAMETER_PROBLEM', que significa 
+que el usuario no us&oacute; correctamente la l&iacute;nea de comandos.</P>
+</DL>
+</P>
+
+<H3>Nuevas funciones de concordancia</H3>
+
+<P>Su funci&oacute;n de biblioteca compartida _init() le pasa a 
+`register_match()' un puntero a una estructura est&aacute;tica `struct 
+iptables_match' que tiene los siguientes campos:</P>
+<P>
+<DL>
+<DT><B>next</B><DD><P>Este puntero se utiliza para construir una lista enlazada 
+de concordancias (como la utiliza para listar las reglas). Inicialmente 
+debe asign&aacute;rsele el valor NULL.</P>
+
+<DT><B>name</B><DD><P>El nombre de la funci&oacute;n de concordancia. Debe concordar 
+con el nombre de la librer&iacute;a (por ejemplo "tcp" para `libipt_tcp.so').</P>
+
+<DT><B>version</B><DD><P>Normalmente se le asigna la macro NETFILTER_VERSION: 
+esto se hace para asegurar que el binario <CODE>iptables</CODE> no utiliza 
+por error una biblioteca compartida equivocada.</P>
+
+<DT><B>size</B><DD><P>El tama&ntilde;o de los datos de concordancia para esta 
+concordancia; debe utilizar la macro IPT_ALIGN() para asegurarse de que 
+est&aacute; alineado correctamente.</P>
+
+<DT><B>userspacesize</B><DD><P>En algunas concordancias, el kernel cambia 
+internamente algunos campos (el objetivo `limit' es un caso). Esto 
+significa que un simple `memcmp()' es insuficiente para comparar dos 
+reglas (algo requerido para la funcionalidad de borrar reglas 
+concordantes). Si &eacute;ste es el caso, coloque todos los campos que no 
+cambian al principio de la estructura, y ponga aqu&iacute; el tama&ntilde;o de estos 
+campos. De todas formas, esto ser&aacute; casi siempre id&eacute;ntico al campo `size'.</P>
+
+<DT><B>help</B><DD><P>Una funci&oacute;n que imprime la sintaxis de la opci&oacute;n.</P>
+
+<DT><B>init</B><DD><P>Esta funci&oacute;n se puede utilizar para inicializar el 
+espacio extra (si lo hay) de la estructura ip_entry_match, y establecer 
+alg&uacute;n bit de nfcache; si est&aacute; examinando algo no expresable mediante los 
+contenidos de `linux/include/netfilter_ipv4.h', entonces haga simplemente 
+un OR con el bit NFC_UNKNOWN. Se llamar&aacute; a la funci&oacute;n despu&eacute;s de 
+`parse()'.</P>
+
+<DT><B>parse</B><DD><P>Esta funci&oacute;n es llamada cuando se observa una opci&oacute;n 
+desconocida en la l&iacute;nea de comandos: devuelve distinto de cero si la 
+opci&oacute;n era realmente para su bilbioteca. `invert' es verdadero si ya se 
+ha observado un `!'. El puntero `flags' es de uso exclusivo para su 
+biblioteca de concordancia, y normalmente se utiliza para guardar una 
+m&aacute;scara de bits de opciones que se han especificado. Aseg&uacute;rese de ajustar 
+el campo nfcache. Si es necesario, puede extender el tama&ntilde;o de la 
+estructura `ipt_entry_match' haciendo una nueva reserva de memoria, pero 
+entonces debe asegurarse de que el tama&ntilde;o se pasa a trav&eacute;s de la macro 
+IPT_ALIGN()</P>
+
+<DT><B>final_check</B><DD><P>Esta funci&oacute;n es llamada despu&eacute;s de que se haya 
+analizado sint&aacute;cticamente la l&iacute;nea de comandos, y se le pasa el entero 
+`flags' reservado para su biblioteca. Esto le permite comprobar si no se 
+ha especificado alguna de las opciones obligatorias, por ejemplo: llamar 
+a `exit_error()' si &eacute;ste es el caso.</P>
+
+<DT><B>print</B><DD><P>Esta funci&oacute;n es utilizada por el c&oacute;digo de listado de 
+cadenas, para imprimir (a la salida est&aacute;ndar) la informaci&oacute;n de 
+concordancia extra (si la hay) de una regla. El flag num&eacute;rico se activa 
+si el usuario especific&oacute; la opci&oacute;n `-n'.</P>
+
+<DT><B>save</B><DD><P>Esta funci&oacute;n es el inverso de parse: es utilizada por 
+`iptables-save' para reproducir las opciones que crearon la regla.</P>
+
+<DT><B>extra_opts</B><DD><P>Esto es una lista (terminada en NULL) de las 
+opciones extra que ofrece su biblioteca. Se unen a las opciones actuales 
+y son pasadas a getopt_long; para m&aacute;s detalles, lea la p&aacute;gina man. El 
+c&oacute;digo devuelto por getopt_long se convierte en el primer argumento (`c') 
+de su funci&oacute;n `parse()'.</P>
+</DL>
+</P>
+<P>Existen elementos adicionales al final de esta estructura para el uso 
+interno de <CODE>iptables</CODE>: no necesita asignarles nada.</P>
+
+<H3>Nuevos objetivos</H3>
+
+<P>La funci&oacute;n _init() de su biblioteca compartida le pasa a 
+`register_target()' un puntero a una estructura est&aacute;tica `struct 
+iptables_target', que tiene campos similares a la estructura 
+iptables_match detallada m&aacute;s arriba.</P>
+
+<P>A veces, un objetivo no necesita de una biblioteca de espacio de 
+usuario; de todas formas, debe crear una trivial: exist&iacute;an demasiados 
+problemas con bibliotecas mal colocadas.</P>
+
+<H3>Utilizando `libiptc'</H3>
+
+<P><CODE>libiptc</CODE> es la biblioteca de control de iptables, dise&ntilde;ada 
+para listar y manipular las reglas del m&oacute;dulo del kernel iptables. Aunque 
+su aplicaci&oacute;n actual es para el programa iptables, hace muy sencillo
+escribir otras herramientas. Necesita ser root para utilizar estas 
+funciones.</P>
+
+<P>Las propias tablas del kernel son simplemente una tabla de reglas, y 
+una serie de n&uacute;meros que representan los puntos de entrada. Mediante la 
+biblioteca, se proporcionan los nombres de las cadenas ("INPUT", etc.) 
+como una abstracci&oacute;n. Las cadenas definidas por el usuario se etiquetan 
+insertando un nodo de error antes de la cabecera de la cadena, que 
+contiene el nombre de la cadena de la secci&oacute;n de datos extra del objetivo 
+(las posiciones de la cadena montada est&aacute;n definidas por los tres puntos 
+de entrada de la tabla).</P>
+
+<P>Cuando se llama a `iptc_init()', se lee la tabla, incluyendo los 
+contadores. La tabla se manipula mediante las funciones 
+`iptc_insert_entry()', `iptc_replace_entry()', `iptc_append_entry()', 
+`iptc_delete_entry()', `iptc_delete_num_entry()', `iptc_flush_entries()',
+`iptc_zero_entries()', `iptc_create_chain()' `iptc_delete_chain()',
+y `iptc_set_policy()'.</P>
+
+<P>Los cambios en la tabla no se efect&uacute;an hasta que se llama a la funci&oacute;n 
+`iptc_commit()'. Esto significa que es posible que dos usuarios de la 
+biblioteca operando en la misma cadena compitan; para prevenir esto 
+habr&iacute;a que hacer un bloqueo, y actualmente no se hace.</P>
+
+<P>Sin embargo, no existe carrera entre los contadores; los contadores se 
+a&ntilde;aden al kernel de tal manera que los incrementos de contador que hay 
+entre la lectura y escritura de la tabla todav&iacute;a siguen present&aacute;ndose en 
+la nueva tabla.</P>
+
+<P>Hay varias funciones de ayuda:</P>
+<P>
+<DL>
+<DT><B>iptc_first_chain()</B><DD><P>Esta funci&oacute;n devuelve el primer nombre de 
+cadena de la tabla.</P>
+
+<DT><B>iptc_next_chain()</B><DD><P>Esta funci&oacute;n devuelve el siguiente nombre de 
+cadena de la tabla: NULL significa que no hay m&aacute;s cadenas.</P>
+
+<DT><B>iptc_builtin()</B><DD><P>Devuelve verdadero si el nombre de cadena dado 
+es el nombre de una cadena montada.</P>
+
+<DT><B>iptc_first_rule()</B><DD><P>Esta funci&oacute;n devuelve un puntero a la 
+primera regla del nombre de cadena dado: NULL si es una cadena vac&iacute;a.</P>
+
+<DT><B>iptc_next_rule()</B><DD><P>Esta funci&oacute;n devuelve un puntero a la 
+siguiente regla de la cadena: NULL significa el final de la cadena.</P>
+
+<DT><B>iptc_get_target()</B><DD><P>Esta funci&oacute;n obtiene el objetivo de una 
+regla dada. Si es un objetivo extendido, se devuelve el nombre del 
+objetivo. Si es un salto a otra cadena, se devuelve el nombre de esa 
+cadena. Si es un veredicto (p.ej. DROP), se devuelve su nombre. Si no 
+tiene objetivo (una regla tipo accounting), entonces se devuelve la 
+cadena vac&iacute;a.</P>
+
+<P>Tenga en cuenta que debe utilizarse esta funci&oacute;n en vez de utilizar 
+directamente el valor del campo `veredicto' de la estructura ipt_entry, 
+ya que ofrece todas las interpretaciones del veredicto est&aacute;ndar 
+especificadas arriba.</P>
+
+<DT><B>iptc_get_policy()</B><DD><P>Esta funci&oacute;n obtiene la pol&iacute;tica de una 
+cadena montada, y rellena el argumento `counters' con las estad&iacute;sticas de 
+esa pol&iacute;tica.</P>
+
+<DT><B>iptc_strerror()</B><DD><P>Esta funci&oacute;n devuelve una explicaci&oacute;n m&aacute;s 
+detallada de un fallo de c&oacute;digo en la biblioteca iptc. Si una funci&oacute;n 
+falla, siempre establece la variable errno: este valor puede pasarse a 
+iptc_strerror() para producir un mensaje de error.</P>
+</DL>
+</P>
+
+<H2><A NAME="ss4.3">4.3 Comprendiendo NAT</A>
+</H2>
+
+<P>Bienvenido a la Traducci&oacute;n de Direcciones de Red del kernel. Tenga en 
+cuenta que la infraestructura ofrecida est&aacute; dise&ntilde;ada m&aacute;s para ser completa 
+que para ser eficiente, y puede que algunos ajustes futuros aumenten 
+notablemente la eficiencia. Por el momento estoy contento de que al menos 
+funcione.</P>
+
+<P>El NAT est&aacute; separado en el seguimiento de conexiones (que no manipula 
+paquetes) y el propio c&oacute;digo NAT. El seguimiento de conexiones tambi&eacute;n 
+est&aacute; dise&ntilde;ado para que pueda utilizarlo un m&oacute;dulo de iptables, por lo que 
+hace distinciones sutiles en los estados, que a NAT no le interesan en 
+absoluto.</P>
+
+<H3>Seguimiento de conexiones</H3>
+
+<P>El seguimiento de conexiones se acopla en los ganchos de alta
+prioridad NF_IP_LOCAL_OUT y NF_IP_PRE_ROUTING para poder interceptar los 
+paquetes antes de que entren en el sistema.</P>
+
+<P>El campo nfct del skb es un puntero al interior de la estructura 
+ip_conntrack, a un elemento  del vector infos[]. As&iacute; podemos saber el 
+estado del skb mediante el elemento de este vector al que est&aacute; apuntando: 
+este puntero codifica la estructura de estado y la relaci&oacute;n de este skb 
+con ese estado.</P>
+
+<P>La mejor manera de extraer el campo `nfct' es llamando a 
+`ip_conntrack_get()', que devuelve NULL si no est&aacute; inicializado, o el 
+puntero de conexi&oacute;n, y rellena ctinfo, que describe la relaci&oacute;n del 
+paquete con esa conexi&oacute;n. Este tipo enumerado tiene varios valores:</P>
+<P>
+<DL>
+
+<DT><B>IP_CT_ESTABLISHED</B><DD><P>El paquete es parte de una conexi&oacute;n 
+establecida, y va en la direcci&oacute;n original.</P>
+
+<DT><B>IP_CT_RELATED</B><DD><P>El paquete est&aacute; relacionado con la conexi&oacute;n, y 
+est&aacute; pasando en la direcci&oacute;n original.</P>
+
+<DT><B>IP_CT_NEW</B><DD><P>El paquete intenta crear una nueva conexi&oacute;n 
+(obviamente, va en la direcci&oacute;n original).</P>
+
+<DT><B>IP_CT_ESTABLISHED + IP_CT_IS_REPLY</B><DD><P>El paquete es parte de una 
+conexi&oacute;n extablecida, en la direcci&oacute;n de respuesta.</P>
+
+<DT><B>IP_CT_RELATED + IP_CT_IS_REPLY</B><DD><P>El paquete est&aacute; relacionado con 
+la conexi&oacute;n, y est&aacute; pasando en la direcci&oacute;n de respuesta.</P>
+</DL>
+</P>
+<P>Por tanto, se puede identificar un paquete de respuesta comprobando si es 
+>= IP_CT_IS_REPLY.</P>
+
+<H2><A NAME="ss4.4">4.4 Extendiendo el seguimiento de conexiones/NAT</A>
+</H2>
+
+<P>Estos sistemas est&aacute;n dise&ntilde;ados para alojar cualquier n&uacute;mero de 
+protocolos y diferentes tipos de correspondencia (mapping). Algunos de 
+estos tipos de correspondencia pueden ser bastante espec&iacute;ficos, como el 
+tipo de correspondencia load-balancing/fail-over.</P>
+
+<P>Internamente, el seguimiento de conexiones convierte un paquete en una 
+"n-upla", que representa las partes interesantes del paquete, antes de 
+buscar ligaduras o reglas que concuerden con &eacute;l. Esta n-upla tiene una 
+parte manipulable y una parte no manipulable, llamadas "src" y "dst", ya 
+que &eacute;ste es el aspecto del primer paquete en el mundo del Source NAT 
+[SNAT, NAT de origen] (ser&iacute;a un paquete de respuesta en el mundo del 
+Destination NAT [DNAT, NAT de destino]). En todos los paquetes del mismo 
+flujo y en la misma direcci&oacute;n, esta n-upla es igual.</P>
+
+<P>Por ejemplo, la parte manipulable de la n-upla de un paquete TCP son 
+la IP de origen y el puerto de origen, y la parte no manipulable son la 
+IP de destino y el puerto de destino. Sin embargo, las partes manipulable 
+y no manipulable no necesitan ser del mismo tipo; por ejemplo, la parte 
+manipulable de la n-upla de un paquete ICMP es la IP de origen y el id 
+ICMP, y la parte no manipulable es la IP de destino y el tipo y c&oacute;digo 
+ICMP.</P>
+
+<P>Toda n-upla tiene una inversa, que es la n-upla de los paquetes de 
+respuesta del flujo. Por ejemplo, la inversa de un paquete ICMP ping con 
+id 12345, desde 192.168.1.1 y hacia 1.2.3.4, es un paquete ping-reply con 
+id 12345, desde 1.2.3.4 hacia 192.168.1.1.</P>
+
+<P>Estas n-uplas, representadas por la estructura `struct 
+ip_conntrack_tuple', se utilizan ampliamente. De hecho, junto con el
+gancho desde el que vino el paquete (que tiene influye en el tipo de 
+manipulaci&oacute;n esperada) y el dispositivo implicado, suponen toda la 
+informaci&oacute;n del paquete.</P>
+
+<P>La mayor&iacute;a de las n-uplas est&aacute;n contenidas dentro de una estructura 
+`struct ip_conntrack_tuple_hash', que a&ntilde;ade una entrada que es una lista 
+doblemente enlazada, y un puntero a la conexi&oacute;n a la que pertenece la 
+n-upla.</P>
+
+<P>Una conexi&oacute;n est&aacute; representada por la estructura `struct 
+ip_conntrack'; tiene dos campos `struct ip_conntrack_tuple_hash': uno 
+referido a la direcci&oacute;n del paquete original 
+(tuplehash[IP_CT_DIR_ORIGINAL]), y otro referido a los paquetes de la 
+direcci&oacute;n de respuesta (tuplehash[IP_CT_DIR_REPLY]).</P>
+
+<P>De todas maneras, la primera cosa que hace el c&oacute;digo NAT es ver si el 
+c&oacute;digo de seguimiento de conexiones consigui&oacute; extraer una n-upla y 
+encontrar una conexi&oacute;n existente, mirando el campo nfct del skbuff; esto 
+nos dice si es un intento de conexi&oacute;n nueva, y si no lo es, qu&eacute; direcci&oacute;n 
+tiene; en el &uacute;ltimo caso, se realizan con anterioridad las manipulaciones 
+determinadas para esa conexi&oacute;n.</P>
+
+<P>Si era el comienzo de una conexi&oacute;n nueva, buscamos una regla para esa 
+n-upla, utilizando el mecanismo de recorrido est&aacute;ndar de iptables. Si una 
+regla concuerda, se utiliza para inicializar las manipulaciones para esa 
+direcci&oacute;n y para la respuesta; se le dice al c&oacute;digo de seguimiento de 
+conexiones que la respuesta que espera ha cambiado. Luego, es manipulado 
+como se explica arriba.</P>
+
+<P>Si no hay regla, se crea una ligadura (binding) `null': normalmente, 
+esto no hace corresponder al paquete, pero existe para asegurarnos de que 
+no hacemos corresponder otro flujo sobre uno ya existente. A veces no 
+puede crearse la ligadura null, porque ya hemos hecho corresponder un 
+flujo existente sobre ella, en cuyo caso la manipulaci&oacute;n por-protocolo 
+(per-protocol) puede intentar rehacer la correspondencia (remap), aunque 
+sea nominalmente una ligadura `null'.</P>
+
+<H3>Objetivos NAT est&aacute;ndar</H3>
+
+<P>Los objetivos NAT son como cualquier otro objetivo de iptables, 
+excepto en que insisten en ser utilizados s&oacute;lo en la tabla `nat'. Los 
+objetivos SNAT y DNAT reciben una estructura `struct ip_nat_multi_range' 
+como datos extra; esto se utiliza para especificar el rango de 
+direcciones a los que se puede enlazar una correspondencia. Un elemento 
+de rango, la estructura `struct ip_nat_range', consiste en una direcci&oacute;n 
+IP inclusiva m&iacute;nima y m&aacute;xima, y un valor espec&iacute;fico de protocolo (p.ej. 
+puertos TCP) inclusivo m&aacute;ximo y m&iacute;nimo. Tambi&eacute;n hay sitio para flags, que 
+dicen si la direcci&oacute;n IP puede corresponderse (a veces s&oacute;lo queremos 
+corresponder la parte espec&iacute;fica de protocolo de una n-upla, no la IP), y 
+otra para decir que la parte espec&iacute;fica de protocolo del rango es v&aacute;lida.</P>
+
+<P>Un multi-rango es un vector de estos elementos `struct ip_nat_range'; 
+esto significa que un rango podr&iacute;a ser "1.1.1.1-1.1.1.2 ports 50-55 AND 
+1.1.1.3 port 80". Cada elemento se a&ntilde;ade al rango (una uni&oacute;n, 
+para los que les guste la teor&iacute;a).</P>
+
+<H3>Nuevos protocolos</H3>
+
+<H3>Dentro del kernel</H3>
+
+<P>Implementar un protocolo nuevo significa primero decidir cu&aacute;les 
+deben ser las partes manipulables y no manipulables de la n-upla. Todo en 
+la n-upla tiene la propiedad de que identifica al flujo un&iacute;vocamente. La
+parte manipulable de la n-upla es la parte con la que usted puede hacer 
+NAT: para el TCP esto es el puerto de origen, para el ICMP es el id; algo 
+que se utiliza para que sea un "identificador de flujo". La parte no
+manipulable es el resto del paquete que identifica un&iacute;vocamente al flujo, 
+pero con lo que no podemos trastear (p.ej. el puerto TCP de destino, o el 
+tipo ICMP).</P>
+
+<P>Una vez que ha decidido esto, puede escribir una extensi&oacute;n al c&oacute;digo 
+de seguimiento de conexiones en el directorio, y meterse a rellenar la 
+estructura `ip_conntrack_protocol' que necesita pasarle a 
+`ip_conntrack_register_protocol()'.</P>
+
+<P>Los campos de `struct ip_conntrack_protocol' son:</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>As&iacute;gnele '{ NULL, NULL }'; utilizado para coserle a la 
+lista.</P>
+
+<DT><B>proto</B><DD><P>Su n&uacute;mero de protocolo; vea `/etc/protocols'.</P>
+
+<DT><B>name</B><DD><P>El nombre de su protocolo. &Eacute;ste es el nombre que ver&aacute; el 
+usuario; normalmente, es mejor si es el nombre can&oacute;nico que aparece en
+`/etc/protocols'.</P>
+
+<DT><B>pkt_to_tuple</B><DD><P>La funci&oacute;n que rellena las partes espec&iacute;ficas de 
+protocolo de la n-upla, dado un paquete. El puntero `datah' apunta al 
+principio de su cabecera (justo despu&eacute;s de la cabecera IP), y datalen es 
+la longitud del paquete. Si el paquete no es lo suficientemente largo 
+para contener la informaci&oacute;n de la cabecera, devuelve 0; sin embargo, 
+datalen siempre tendr&aacute; al menos 8 bytes (forzado por el sistema).</P>
+
+<DT><B>invert_tuple</B><DD><P>Esta funci&oacute;n se usa simplemente para transformar 
+la parte espec&iacute;fica de protocolo de la n-upla en el aspecto que tendr&iacute;a 
+una respuesta a ese paquete.</P>
+
+<DT><B>print_tuple</B><DD><P>Esta funci&oacute;n se utiliza para imprimir la parte 
+espec&iacute;fica de protocolo de una n-upla; normalmente se almacena mediante 
+sprintf() en el b&uacute;fer especificado. Se devuelve el n&uacute;mero de caracteres 
+utilizados del b&uacute;fer. Esto se utiliza para imprimir los estados para la 
+entrada en /proc.</P>
+
+<DT><B>print_conntrack</B><DD><P>Esta funci&oacute;n se utiliza para imprimir la parte 
+privada de la estructura conntrack, si hay alguna. Tambi&eacute;n se utiliza 
+para imprimir los estados en /proc.</P>
+
+<DT><B>packet</B><DD><P>Se llama a esta funci&oacute;n cuando se observa un paquete 
+que es parte de una conexi&oacute;n establecida. Se obtiene un puntero a la 
+estructura conntrack, la cabecera IP, la longitud y el ctinfo. Hay que 
+devolver un veredicto para el paquete (normalmente NF_ACCEPT), o -1 si el 
+paquete no es una parte v&aacute;lida de la conexi&oacute;n. Puede borrar la conexi&oacute;n 
+de esta funci&oacute;n si lo desea, pero debe utilizar el siguiente idioma para 
+evitar carreras (vea ip_conntrack_proto_icmp.c):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+if (del_timer(&amp;ct->timeout))
+        ct->timeout.function((unsigned long)ct);
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<DT><B>new</B><DD><P>Se llama a esta funci&oacute;n cuando un paquete crea una 
+conexi&oacute;n por primera vez; no hay argumento ctinfo, ya que el primer 
+paquete tiene ctinfo IP_CT_NEW por definici&oacute;n. Devuelve 0 para no aprobar 
+la creaci&oacute;n de la conexi&oacute;n, o el timeout de la conexi&oacute;n en
+<I>jiffies</I>.</P>
+</DL>
+</P>
+<P>Una vez que ha escrito su nuevo protocolo y comprobado que puede hacer 
+seguimiento con &eacute;l, es hora de ense&ntilde;arle a NAT c&oacute;mo traducirlo. Esto
+significa escribir un nuevo m&oacute;dulo, una extensi&oacute;n al c&oacute;digo NAT, y 
+meterse a rellenar la estructura `ip_nat_protocol' que necesita pasarle a 
+`ip_nat_protocol_register()'.</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>As&iacute;gnele '{ NULL, NULL }'; utilizado para coserle a la 
+lista.</P>
+
+<DT><B>name</B><DD><P>El nombre de su protocolo. &Eacute;ste es el nombre que ver&aacute; el 
+usuario; es mejor si es el nombre can&oacute;nico que aparece en 
+`/etc/protocols' para que funcione la auto-carga, como veremos despu&eacute;s.</P>
+
+<DT><B>protonum</B><DD><P>Su n&uacute;mero de protocolo; vea `/etc/protocols'.</P>
+
+<DT><B>manip_pkt</B><DD><P>&Eacute;sta es la otra mitad de la funci&oacute;n de seguimiento 
+de conexiones pkt_to_tuple: puede pensar en ella como en "tuple_to_pkt". 
+Sin embargo, hay algunas diferencias: se obtiene un puntero al comienzo 
+de la cabecera IP y la longitud total del paquete. Esto es as&iacute; porque 
+algunos protocolos (UDP, TCP) necesitan conocer la cabecera IP. Se 
+obtiene el campo ip_nat_tuple_manip de la n-upla (es decir, el campo 
+"src"), en vez de toda la n-upla, y el tipo de manipulaci&oacute;n que se va a 
+realizar.</P>
+
+<DT><B>in_range</B><DD><P>Esta funci&oacute;n se usa para saber si la parte 
+manipulable de una n-upla dada est&aacute; dentro del rango dado. Esta funci&oacute;n 
+tiene un poco de trampa: obtenemos el tipo de manipulaci&oacute;n que se ha 
+aplicado a la n-upla, que nos dice c&oacute;mo interpretar el rango (¿es un 
+rango de origen o un rango de destino lo que tratamos de obtener?).</P>
+
+<P>Esta funci&oacute;n se utiliza para comprobar si una correspondencia 
+(mapping) existente nos coloca dentro del rango adecuado, y tambi&eacute;n 
+comprueba si no se necesita ninguna manipulaci&oacute;n.</P>
+
+<DT><B>unique_tuple</B><DD><P>Esta funci&oacute;n es el coraz&oacute;n de NAT: dada una 
+n-upla y un rango, vamos a alterar la parte del protocolo de la n-upla 
+para colocarla dentro del rango, y hacerla &uacute;nica. Si se puede encontrar 
+una n-upla sin utilizar dentro del rango, devuelve 0. Tambi&eacute;n obtenemos 
+un puntero a la estructura conntrack, que se requiere para 
+ip_nat_used_tuple().</P>
+
+<P>El m&eacute;todo usual es simplemente iterar la parte del protocolo de la 
+n-upla a trav&eacute;s del rango, aplicando `ip_nat_used_tuple()' sobre ella, 
+hasta que una devuelva falso.</P>
+
+<P>Tenga en cuenta que ya se ha comprobado el caso de correspondencia 
+nula (null-mapping): o est&aacute; fuera del rango dado, o ya est&aacute; cogido.</P>
+
+<P>Si IP_NAT_RANGE_PROTO_SPECIFIED no est&aacute; activado, significa que el 
+usuario est&aacute; haciendo NAT, no NAPT: hace algo razonable con el rango. Si 
+no es deseable ninguna correspondencia (por ejemplo, en TCP, una 
+correspondencia de destino no debe cambiar el puerto TCP a menos que se 
+le ordene), devuelve 0.</P>
+
+<DT><B>print</B><DD><P>Dado un b&uacute;fer de caracteres, una n-upla de concordancia 
+y una m&aacute;scara, escribe la parte espec&iacute;fica de protocolo y devuelve la 
+longitud del b&uacute;fer utilizado.</P>
+
+<DT><B>print_range</B><DD><P>Dado un b&uacute;fer de caracteres y un rango, escribe la 
+parte de protocolo del rango y devuelve la longitud del b&uacute;fer utilizado. 
+Si IP_NAT_RANGE_PROTO_SPECIFIED no est&aacute; activado para este rango, no se 
+llamar&aacute; a esta funci&oacute;n.</P>
+</DL>
+</P>
+
+<H3>Nuevos objetivos NAT</H3>
+
+<P>&Eacute;sta es la parte realmente interesante. Se pueden escribir nuevos 
+objetivos NAT que proporcionen un nuevo tipo de correspondencia; el 
+paquete por defecto trae dos nuevos objetivos adicionales: MASQUERADE y 
+REDIRECT. Son bastante sencillos e ilustran el potencial que tiene 
+escribir un objetivo NAT nuevo.</P>
+
+<P>Est&aacute;n escritos igual que cualquier otro objetivo de iptables, pero 
+internamente extraen la conexi&oacute;n y llaman a `ip_nat_setup_info()'.</P>
+
+<H3>Ayudantes de protocolo para UDP y TCP</H3>
+
+<P>Esto todav&iacute;a est&aacute; en desarrollo.</P>
+
+<H2><A NAME="ss4.5">4.5 Comprendiendo netfilter</A>
+</H2>
+
+<P>Netfilter es muy sencillo, y est&aacute; descrito con bastante profundidad en 
+las secciones anteriores. Sin embargo, a veces es necesaro ir m&aacute;s all&aacute; de 
+lo que ofrecen las infraestructuras de NAT o ip_tables, o usted puede 
+querer reemplazarlas completamente.</P>
+
+<P>Una cuesti&oacute;n importante de netfilter (bueno, en el futuro) es el 
+cacheado. Todo skb tiene un campo `nfcache': una m&aacute;scara de bits que 
+indica qu&eacute; campos de la cabecera se examinaron, y si el paquete fue 
+alterado o no. La idea es que cada gancho desactivado de netfilter haga 
+OR en su bit relevante,
+*The idea is that each hook off netfilter OR's in the bit relevant to it,*
+para que luego podamos escribir un sistema de cach&eacute; que 
+sea lo suficientemente listo para darse cuenta de cu&aacute;ndo no es necesario 
+que los paquetes pasen a trav&eacute;s de netfilter.</P>
+
+<P>Los bits m&aacute;s importantes son NFC_ALTERED, que significa que el paquete 
+fue alterado (esto ya se utiliza en el gancho IPv4 NF_IP_LOCAL_OUT para 
+re-enrutar los paquetes alterados), y NFC_UNKNOWN, que significa que no 
+debe hacerse cacheado porque se ha examinado una propiedad que no puede 
+ser expresada. En caso de duda, simplemente active el flag NFC_UNKNOWN 
+del campo nfcache del skb de su gancho.</P>
+
+<H2><A NAME="ss4.6">4.6 Escribiendo nuevos m&oacute;dulos netfilter</A>
+</H2>
+
+<H3>Conect&aacute;ndose a los ganchos netfilter</H3>
+
+<P> Para recibir/filtrar paquetes dentro del kernel, simplemente hay que 
+escribir un m&oacute;dulo que registre un "gancho netfilter". Esto es 
+b&aacute;sicamente una expresi&oacute;n de inter&eacute;s en alg&uacute;n punto dado; los puntos 
+actuales son espec&iacute;ficos para un protocolo, y est&aacute;n definidos en las
+cabeceras de netfilter espec&iacute;ficas para un protocolo, como 
+"netfilter_ipv4.h".</P>
+
+<P> Para registrar y desregistrar ganchos netfilter, se utilizan las 
+funciones `nf_register_hook' y `nf_unregister_hook'. Ambas reciben un 
+puntero a una estructura `struct nf_hook_ops', que se rellenan de la 
+manera siguiente:</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>Utilizado para coserle a la lista enlazada: as&iacute;gnele '{ 
+NULL, NULL }'</P>
+
+<DT><B>hook</B><DD><P>La funci&oacute;n a la que se llama cuando un paquete llega a 
+este punto de gancho. Su funci&oacute;n debe devolver NF_ACCEPT, NF_DROP o 
+NF_QUEUE. Si es NF_ACCEPT, se llamar&aacute; al pr&oacute;ximo gancho enlazado a ese 
+punto. Si es NF_DROP, el paquete es rechazado. Si es NF_QUEUE, se coloca 
+el paquete en la cola. Se recibe un puntero a un puntero skb, por lo que 
+puede reemplazar completamente el skb si lo desea.</P>
+
+<DT><B>flush</B><DD><P>Actualmente no se usa: est&aacute; dise&ntilde;ada para transmitir la 
+cuenta de paquetes cuando se limpia la cach&eacute;. Puede que nunca se 
+implemente: as&iacute;gnele NULL.</P>
+
+<DT><B>pf</B><DD><P>La familia de protocolos, por ejemplo, `PF_INET' para IPv4.</P>
+
+<DT><B>hooknum</B><DD><P>El n&uacute;mero del gancho en el que est&aacute; interesado, por 
+ejemplo, `NF_IP_LOCAL_OUT'.</P>
+</DL>
+</P>
+
+<H3>Procesando paquetes en la cola</H3>
+
+<P>Actualmente, esta interfaz la utiliza ip_queue; puede registrarse para 
+manejar los paquetes de la cola de un protocolo dado. Esto tiene una 
+sem&aacute;ntica parecida a registrarse para un gancho, excepto en que puede 
+bloquearse procesando un paquete, y s&oacute;lo puede ver los paquetes a los que 
+un gancho haya respondido `NF_QUEUE'.</P>
+
+<P>Las dos funciones utilizadas para registrar inter&eacute;s en los paquetes de 
+la cola son `nf_register_queue_handler()' y
+`nf_unregister_queue_handler()'. La funci&oacute;n que usted registra ser&aacute; 
+llamada con el puntero `void *' que le pas&oacute; a 
+`nf_register_queue_handler()'.</P>
+
+<P>Si nadie est&aacute; registrado para manejar el protocolo, entonces devolver 
+NF_QUEUE es lo mismo que devolver NF_DROP.</P>
+
+<P>Una vez que ha registrado inter&eacute;s en los paquetes de cola, empiezan a 
+entrar en la cola. Puede hacer lo que quiera con ellos, pero debe llamar 
+a `nf_reinject()' cuando haya acabado (no sirve hacer simplemente un 
+kfree_skb()). Se le pasa el dkb, la estuctura `struct nf_info' que
+recibi&oacute; el manejador de la cola, y un veredicto: NF_DROP hace que sean 
+rechazados, NF_ACCEPT hace que contin&uacute;en iterando a trav&eacute;s de los 
+ganchos, NF_QUEUE hace que entren de nuevo en la cola, y NF_REPEAT 
+hace que se consulte de nuevo el gancho que puso al paquete en la cola 
+(cuidado con los bucles infinitos).</P>
+
+<P>Puede mirar dentro de la estructura `struct nf_info' si quiere 
+informaci&oacute;n auxiliar sobre el paquete, como las interfaces y el gancho en 
+el que estaba.</P>
+
+<H3>Recibiendo comandos desde el espacio de usuario</H3>
+
+<P>Es corriente que los componentes de netfilter quieran interactuar con 
+el espacio de usuario. El m&eacute;todo para hacer esto es utilizar el mecanismo 
+setsockopt. Tenga en cuenta que cada protocolo tiene que modificarse para 
+llamar a nf_setsockopt() para los n&uacute;meros setsockopt que no entiende (y 
+nf_getsockopt() para los n&uacute;meros getsockopt), y hasta ahora s&oacute;lo se han 
+modificado IPv4, IPv6 y DECnet.</P>
+
+<P>Utilizando una t&eacute;cnica ya familiar, registramos una estructura `struct 
+nf_sockopt_ops' utilizando la llamada nf_register_sockopt(). Los campos 
+de esta estructura son como sigue:</P>
+<P>
+<DL>
+<DT><B>list</B><DD><P>Utilizado para coserlo a la lista enlazada: as&iacute;gnele '{ 
+NULL, NULL }'.</P>
+
+<DT><B>pf</B><DD><P>La familia de protocolos que est&aacute; manejando, p.ej. PF_INET.</P>
+
+<DT><B>set_optmin</B><DD><P>y</P>
+<DT><B>set_optmax</B><DD><P>&Eacute;stos especifican el rango (exclusivo) de n&uacute;meros setsockopt manejados. 
+Por tanto, poner 0 y 0 significa que no tiene n&uacute;meros setsockopt.</P>
+
+<DT><B>set</B><DD><P>&Eacute;sta es la funci&oacute;n a la que se llama cuando el usuario llama a uno de sus 
+setsockopts. Debe comprobar que tienen capacidad NET_ADMIN dentro de 
+esta funci&oacute;n.</P>
+
+<DT><B>get_optmin</B><DD><P>y</P>
+<DT><B>get_optmax</B><DD><P>&Eacute;stos especifican el rango (exclusivo) de n&uacute;meros getsockopt manejados. 
+Por tanto, poner 0 y 0 significa que no tiene n&uacute;meros getsockopt.</P>
+
+<DT><B>get</B><DD><P>&Eacute;sta es la funci&oacute;n que se llama cuando el usuario llama a 
+uno de sus n&uacute;meros getsockopt. Debe comprobar que tienen capacidad 
+NET_ADMIN dentro de esta funci&oacute;n.</P>
+</DL>
+</P>
+
+<P>Los dos campos finales son de uso interno.</P>
+
+<H2><A NAME="ss4.7">4.7 Manejo de paquetes en el espacio de usuario</A>
+</H2>
+
+<P>Utilizando la bilbioteca libipq y el m&oacute;dulo `ip_queue', ahora casi 
+todo lo que se puede hacer dentro del kernel se puede hacer desde el 
+espacio de usuario. Esto significa que, con una peque&ntilde;a p&eacute;rdida de 
+velocidad, puede desarrollar completamente su c&oacute;digo en el espacio de 
+usuario. A menos que trate de filtrar anchos de banda muy grandes, este 
+m&eacute;todo es superior a la manipulaci&oacute;n de paquetes desde el kernel.</P>
+
+<P>En los primeros d&iacute;as de netfilter, prob&eacute; esto portando al espacio de 
+usuario una versi&oacute;n embrionaria de iptables. Netfilter abre las puertas 
+para que la gente escriba sus propios y eficientes m&oacute;dulos de 
+manipulaci&oacute;n de paquetes en el lenguaje que quieran.</P>
+
+<HR>
+<A HREF="netfilter-hacking-COMO-5.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-3.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc4">Índice general</A>
+</BODY>
+</HTML>

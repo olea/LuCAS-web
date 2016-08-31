@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.6">
+ <TITLE>C&Oacute;MO configurar los ajustes de v&iacute;deo en XFree86: Magia negra y pulsos de sincronizaci&oacute;n.</TITLE>
+ <LINK HREF="XFree86-Config-COMO-10.html" REL=next>
+ <LINK HREF="XFree86-Config-COMO-8.html" REL=previous>
+ <LINK HREF="XFree86-Config-COMO.html#toc9" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="XFree86-Config-COMO-10.html">Página siguiente</A>
+<A HREF="XFree86-Config-COMO-8.html">Página anterior</A>
+<A HREF="XFree86-Config-COMO.html#toc9">Índice general</A>
+<HR>
+<H2><A NAME="magic"></A> <A NAME="s9">9.</A> <A HREF="XFree86-Config-COMO.html#toc9">Magia negra y pulsos de sincronizaci&oacute;n.</A></H2>
+
+
+<P>Bien. Ya ha calculado los n&uacute;meros de LHI/LVI para su FRTV elegida, encontrado
+la tasa de refresco aceptable, y comprobado que tiene suficiente VRAM.  Ahora
+llegamos a la aut&eacute;ntica magia negra -- necesita saber cu&aacute;ndo y d&oacute;nde colocar
+un pulso de sincronizaci&oacute;n.</P>
+<P>Los pulsos de sincronizaci&oacute;n realmente controlan las frecuencias horizontal y
+vertical del monitor.  La FSH y la FSV que usted ha extra&iacute;do de la hoja de 
+especificaciones son nominales, aproximadamente las frecuencias m&aacute;ximas de 
+sincronizaci&oacute;n.  El pulso de sincronizaci&oacute;n inclu&iacute;do en la se&ntilde;al que procede
+de la tarjeta de v&iacute;deo le dice al monitor a qu&eacute; velocidad debe funcionar.</P>
+<P>¿Recuerda las dos figuras de arriba?  S&oacute;lo una parte del tiempo requerido para
+barrer una imagen se utiliza para mostrar un determinada pantalla (p.e. su 
+resoluci&oacute;n). </P>
+
+<H2><A NAME="ss9.1">9.1 Sincronizaci&oacute;n horizontal.</A>
+</H2>
+
+
+<P>Seg&uacute;n la definici&oacute;n previa, se tarda LIH impulsos de reloj para trazar una
+l&iacute;nea horizontal. Llamaremos a partir de ahora al n&uacute;mero de impulsos visibles 
+(su resoluci&oacute;n horizontal de pantalla) RH. Entonces, l&oacute;gicamente, RH &lt; LIH por
+definici&oacute;n. Para mayor concreci&oacute;n, asumamos que ambas empiezan en el mismo 
+instante, tal y como se explica aqu&iacute;:</P>
+<P>
+<PRE>
+  |___ __ __ __ __ __ __ __ __ __ __ __ __
+  |_ _ _ _ _ _ _ _ _ _ _ _                |
+  |_______________________|_______________|_____ 
+  0                       ^               ^     unidad: impulsos de reloj
+                          |   ^       ^   |
+                          RH  |       |  LIH
+                          |   |-------|   |
+                          |---|  PSH  |---|
+                          TGH1         TGH2
+</PRE>
+</P>
+<P>Ahora, nos gustar&iacute;a colocar un pulso de sincronizaci&oacute;n de longitud PSH tal y como
+se explica en el gr&aacute;fico, por ejemplo, entre el final de los impulsos de reloj para
+mostar datos y el final de los impulsos de reloj para toda la imagen. ¿Por qu&eacute; as&iacute;?.
+Porque si podemos hacer esto, entonces su imagen no se mover&aacute; a la derecha o a la
+izquierda. Permanecer&aacute; en el lugar de la pantalla donde debe estar, cubriendo 
+perfectamente la zona visualizable de su monitor.</P>
+<P>A&uacute;n m&aacute;s, deseamos poner alrededor de 30 impulsos de "tiempo de guardia" a cada
+lado del pulso de sincronizaci&oacute;n.  Esto est&aacute; representado como TGH1 y TGH2. En
+una configuraci&oacute;n t&iacute;pica TGH1 es distinto de TGH2, pero si est&aacute; construyendo una
+configuraci&oacute;n partiendo de cero, desear&aacute; comenzar sus experimentos con ambos
+equivalentes (esto es, con el pulso de sincronizaci&oacute;n centrado).</P>
+<P>El s&iacute;ntoma de un pulso de sincronizaci&oacute;n mal colocado es que la imagen se encuentra
+desplazada en la pantalla, con un borde demasiado ancho y con el otro lado de la 
+imagen mostr&aacute;ndose cerca del borde de la pantalla, produciendo una l&iacute;nea blanca y
+una banda de "imagen fantasma" en ese lado.  Un pulso de sincronizaci&oacute;n vertical
+fuera de su lugar puede hacer que la imagen baile como en una televisi&oacute;n con un
+marco vertical mal ajustado (de hecho, est&aacute; causado por el mismo fen&oacute;meno).</P>
+<P>Si tiene suerte, la anchura de los pulsos de sincronizaci&oacute;n de su monitor estar&aacute;n
+documentada en su p&aacute;gina de especificaci&oacute;n.  Si no, aqu&iacute; comienza la verdadera
+magia negra...</P>
+<P>Aqu&iacute; tendr&aacute; que actuar con el m&eacute;todo ensayo-error.  Pero en casi todos los casos,
+podremos asegurar con certeza que un pulso de sincronizaci&oacute;n tiene de 3,5 a 4
+microsegundos de duraci&oacute;n.</P>
+<P>Para concretar de nuevo, tomemos PSH para que sea 3,8 microsegundos, (lo que por
+cierto, no es un mal valor para comenzar a experimentar).</P>
+<P>Ahora, utilizando el reloj de 65Mhz de arriba, sabremos que PSH es equivalente a
+247 impulsos de reloj (= 65 * 10^6 * 3,8 * 10^-6)[recordatorio M=10^6, micro=10^-6] </P>
+<P>A algunos fabricantes les gusta mencionar sus par&aacute;metros horizontales de imagen como
+tiempos m&aacute;s que como anchura de puntos.  Uste puede ver los siguientes t&eacute;rminos:</P>
+<P>
+<DL>
+<DT><B>tiempo activo, active time (TAH)</B><DD><P>Corresponde a RH, pero en milisegundos.  TAH * FRTV = RH.</P>
+<DT><B>tiempo de borrado, blanking time (TBH)</B><DD><P>Corresponde a (LIH - RH), pero en milisegundos.  TBH * FRTV = (LIH - RH).</P>
+<DT><B>p&oacute;rtico frontal, front porch (PFH)</B><DD><P>Este es TGH1.</P>
+<DT><B>tiempo de sincronizaci&oacute;n</B><DD><P>Este es PSH.</P>
+<DT><B>p&oacute;rtico posterior, back porch (PPH)</B><DD><P>Este es TGH2.</P>
+</DL>
+</P>
+
+<H2><A NAME="ss9.2">9.2 Sincronizaci&oacute;n Vertical.</A>
+</H2>
+
+
+<P>Volviendo al dibujo anterior, ¿c&oacute;mo colocamos los 247 impulsos de reloj tal y 
+como se muestra en el gr&aacute;fico?.</P>
+<P>Usando nuestro ejemplo, RH es 944 y LIH es 1176.  La diferencia entre los dos
+es de 1176 - 944 = 232 &lt; 247!!  Obviamente tenemos que realizar un apa&ntilde;o aqu&iacute;.
+¿Qu&eacute; podemos hacer?.</P>
+<P>Lo primero es aumentar 1176 a 1184, y bajar 944 a 936. Ahora la diferencia es
+1184-936=248. Algo m&aacute;s cerca.</P>
+<P>Luego, en lugar de utilizar 3,8 utilizaremos 3,5 para calcular PSH; entonces
+tendremos 65*3.5=227.  Tiene mejor aspecto.  Pero 248 no es mucho mayor que 
+227.  Suele ser necesario tener alrededor de 30 impulsos de reloj entre RH y el
+comienzo del pulso de sincronizaci&oacute;n, y lo mismo con el final del pulso y LIH.
+¡Y ambos deben ser m&uacute;ltiplos de ocho! ¿Estamos atascados?.</P>
+<P>No.  Hagamos esto: 936 % 8 = 0, (936 + 32) % 8 = 0 tambi&eacute;n.  Pero 936 + 32 = 968,
+968 + 227 = 1195, 1195 + 32 = 1227.  Hmm.. No parece tener mal aspecto.  Pero no
+es un m&uacute;ltiplo de 8: redondeamos hasta 1232.</P>
+<P>Pero ahora tenemos un problema potencial, el pulso de sincronizaci&oacute;n no puede estar
+situado justo en la mitad entre h y H nunca m&aacute;s.  Felizmente, utilizando nuestra
+calculadora encontramos 1232 - 32 = 1200 que es tambi&eacute;n m&uacute;ltiplo de 8 y 
+(1232 - 32) - 968 = 232 que corresponden a utilizar un pulso de sincronizaci&oacute;n de 
+3,57 microsegundos de duraci&oacute;n, todav&iacute;a dentro de lo razonable.</P>
+<P>Adem&aacute;s, 936/1232 &nbsp; 0.76 o 76%, no demasiado alejado de 80%, por lo que deber&iacute;a
+funcionar bien.</P>
+<P>A&uacute;n m&aacute;s: utilizando la actual longitud de imagen horizontal, b&aacute;sicamente le pedimos
+a nuestro monitor que sincronice a 52.7kHz (= 65MHz/1232) lo que est&aacute; dentro de
+su capacidad.  No hay problema.</P>
+<P>Utilizando la regla sencilla mencionada antes, 936*75%=702. Esta es nuestra nueva
+resoluci&oacute;n vertical. 702 * 1.05 = 737, nuestra nueva longitud de imagen vertical.</P>
+<P>Tasa de refresco de la pantalla = 65Mhz/(737*1232)=71.6 Hz.  A&uacute;n excelente. </P>
+<P>Imaginemos que la distribuci&oacute;n del pulso vertical es similar:</P>
+<P>
+<PRE>
+   |___ __ __ __ __ __ __ __ __ __ __ __ __
+   |_ _ _ _ _ _ _ _ _ _ _ _                |
+   |_______________________|_______________|_____ 
+   0                      RV              LIV     unit: pulsos de reloj
+                           ^   ^       ^
+                           |   |       |
+                           |---|-------|
+                            TGV    PSV
+</PRE>
+</P>
+<P>Comenzamos el pulso de sincronizaci&oacute;n nada m&aacute;s pasar el final de los impulsos
+de datos visualizables. TGV es el tiempo de guardia requerido para el pulso
+vertical.  La mayor&iacute;a de los monitores se sienten c&oacute;modos con un TGV de 0 (sin
+tiempo de guardia) y utilizaremos ese valor en este ejemplo.  Unos pocos necesitan
+dos o tres impulsos de reloj de tiempo de guardia, y normalmente no penaliza 
+a&ntilde;adirlos.</P>
+<P>Volviendo al ejemplo: al igual que la definici&oacute;n de longitud de imagen, un impulso
+vertical de reloj es el tiempo empleado por trazar una l&iacute;nea horizontal completa. 
+En nuestro ejemplo, es 1232/65MHz=18.9us.</P>
+<P>La experiencia demuestra que el pulso vertical debe estar en el rango de entre
+50us y 300us. Como ejemplo utilizaremos 150us, lo que se traduce a 8 impulsos verticales de reloj (150us/18.95us&nbsp;8). </P>
+<P>Algunos fabricantes mencionan sus par&aacute;metros de imagen vertical como tiempos en
+lugar de anchura de puntos.  Puede observar los siguientes t&eacute;rminos:</P>
+<P>
+<DL>
+<DT><B>tiempo activo, active time (TAV)</B><DD><P>Corresponde a RV, pero en milisegundos.  TAV * FSV = RV.</P>
+<DT><B>tiempo de borrado, blanking time (TBV)</B><DD><P>Corresponde a (LIV - RV), pero en milisegundos.  TBV * FSV = (LIV - RV).</P>
+<DT><B>p&oacute;rtico frontal, front porch (PFV)</B><DD><P>Equivalente a TGV.</P>
+<DT><B>tiempo de sincronizaci&oacute;n</B><DD><P>Equivalente a PSV.</P>
+<DT><B>p&oacute;rtico posterior, back porch (PPV)</B><DD><P>Es como un segundo tiempo de guardia tras el pulso de sinc. vertical. 
+A menudo es cero.</P>
+</DL>
+</P>
+
+<HR>
+<A HREF="XFree86-Config-COMO-10.html">Página siguiente</A>
+<A HREF="XFree86-Config-COMO-8.html">Página anterior</A>
+<A HREF="XFree86-Config-COMO.html#toc9">Índice general</A>
+</BODY>
+</HTML>

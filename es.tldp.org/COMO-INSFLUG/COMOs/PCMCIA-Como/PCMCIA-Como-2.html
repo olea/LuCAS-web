@@ -1,0 +1,465 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA COMO : Compilaci&oacute;n e instalaci&oacute;n</TITLE>
+ <LINK HREF="PCMCIA-Como-3.html" REL=next>
+ <LINK HREF="PCMCIA-Como-1.html" REL=previous>
+ <LINK HREF="PCMCIA-Como.html#toc2" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PCMCIA-Como-3.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-1.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc2">Índice general</A>
+<HR>
+<H2><A NAME="compilacion"></A> <A NAME="s2">2. Compilaci&oacute;n e instalaci&oacute;n</A></H2>
+
+<P> 
+<P>
+<H2><A NAME="requisitos"></A> <A NAME="ss2.1">2.1 Prerequisitos y configuraci&oacute;n del kernel </A>
+</H2>
+
+<P>
+<P>Antes de empezar, deber&iacute;a pensar si realmente necesita compilar el paquete
+por s&iacute; mismo. Todas las distribuciones comunes de Linux vienen con
+paquetes de controladores precompilados. Generalmente, s&oacute;lo necesita
+instalar los controladores si necesita una caracter&iacute;stica nueva de los m&aacute;s
+actuales, o si ha actualizado y/o reconfigurado su kernel de forma que es
+incompatible con los incluidos en su distribuci&oacute;n de Linux. A pesar de que
+compilar el paquete no es t&eacute;cnicamente dif&iacute;cil, requiere algo de
+familiaridad general con Linux. 
+<P>Las siguientes cosas deben estar instaladas en su sistema antes de
+comenzar: 
+<P>
+<UL>
+<LI>El &aacute;rbol de fuentes del kernel, serie <CODE>2.0.*</CODE>,
+<CODE>2.1.*</CODE>, o <CODE>2.2.*</CODE>
+</LI>
+<LI>Un conjunto apropiado de utilidades de m&oacute;dulos.
+</LI>
+<LI>La interface de utilidades <CODE>XForms</CODE> para X11 (Opcional).
+</LI>
+</UL>
+<P>Necesita tener la estructura completa del c&oacute;digo fuente del kernel, no
+s&oacute;lo una imagen actualizada del kernel. Los m&oacute;dulos de los controladores
+contienen algunas referencias a los archivos fuentes del kernel. Mientras
+que Vd. busca compilar un kernel nuevo para eliminar manejadores
+innecesarios, instalar PCMCIA no requiere que lo haga as&iacute;. 
+<P>Los fuentes y parches «estables» actuales del kernel est&aacute;n disponibles en<BR>
+  <CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0">ftp://sunsite.unc.edu/pub/Linux/kernel/v2.0</A></CODE>, o en <BR>
+<CODE>
+<A HREF=" ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0">ftp://tsx-11.mit.edu/pub/linux/sources/system/v2.0</A></CODE> Los
+kernels en desarrollo los puede encontrar en los subdirectorios <CODE>v2.1</CODE>. 
+las utilidades de m&oacute;dulos actuales puede encontrarlas en la misma
+ubicaci&oacute;n.
+<P>En los fuentes del kernel de Linux, el archivo
+<CODE>Documentation/Changes</CODE> describe las versiones de todas las clases
+de otros componentes del sistema que son requeridas por esa versi&oacute;n del
+kernel. Probablemente quiera revisarlo y verificar que su sistema est&aacute;
+actualizado, especialmente si tiene actualizado el kernel. Si est&aacute; usando
+un kernel en desarrollo, aseg&uacute;rese de estar usando la combinaci&oacute;n correcta
+de bibliotecas compartidas y herramientas de m&oacute;dulos. 
+<P>Cuando configure su kernel, si planea usar una tarjeta ethernet PCMCIA,
+debe activar el soporte para red, y desactivar los controladores normales
+de tarjetas de red de Linux, incluyendo <CODE>pocket and portable adapters</CODE>. 
+Todos los controladores para tarjetas de red PCMCIA est&aacute;n compilados como
+m&oacute;dulos cargables. Cualquiera de los controladores compilados dentro de su
+kernel s&oacute;lo desperdiciar&aacute; espacio. 
+<P>Si quiere usar SLIP, PPP o PLIP, necesitar&aacute; ya sea configurar el kernel
+con ese soporte activado, o usar la versi&oacute;n de los m&oacute;dulos cargables de
+esos controladores. Hay una desafortunada deficiencia en el proceso de
+configuraci&oacute;n de los kernels <CODE>1.2.X</CODE>, en el que no es posible
+establecer opciones de configuraci&oacute;n (como compresi&oacute;n SLIP) para un m&oacute;dulo
+cargable, as&iacute; que es probablemente mejor enlazar SLIP dentro del kernel si
+es que lo necesita. 
+<P>Para usar un adaptador token ring PCMCIA, el kernel debe estar configurado
+con la opci&oacute;n <CODE>Token Ring driver support</CODE> (<CODE>CONFIG_TR</CODE>) activada,
+aunque debe dejar <CODE>CONFIG_IBMTR</CODE> desactivado.
+<P>Si requiere usar un adaptador IDE PCMCIA, su kernel debe estar configurado
+con la opci&oacute;n <CODE>CONFIG_BLK_DEV_IDE_PCMCIA</CODE> activada, para los kernels
+desde <CODE>2.0.*</CODE> hasta <CODE>2.1.*</CODE>. Los kernels antiguos no soportan
+dispositivos IDE extra&iacute;bles; los nuevos no requieren una configuraci&oacute;n
+especial.
+<P>Si va a usar un adaptador SCSI PCMCIA, debe habilitar <CODE>CONFIG_SCSI</CODE>
+cuando configure el kernel. Debe activar tambi&eacute;n cualquier controlador de
+alto nivel (disco SCSI, cinta, cdrom, gen&eacute;rico) que espere usar. Debe
+desactivar todos los controladores de bajo nivel para adaptadores en
+particular, porque s&oacute;lo le quitar&aacute;n espacio. 
+<P>Si busca modularizar un controlador que se necesita para un dispositivo
+PCMCIA, debe modificar <CODE>/etc/pcmcia/config</CODE> para especificar qu&eacute;
+m&oacute;dulos necesitan ser cargados para qu&eacute; tipos de tarjetas. Por ejemplo, si
+el controlador serie est&aacute; modularizado, entonces la definici&oacute;n del
+dispositivo serie deber&iacute;a ser: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       device "serial_cs"
+         class "serial" module "misc/serial", "serial_cs"  
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este paquete incluye una utilidad llamada <CODE>cardinfo</CODE> que est&aacute; basada en
+X para monitorizar el estado de la tarjeta. Est&aacute; basada en un <I>toolkit</I>
+de libre distribuci&oacute;n, la biblioteca <I>XForms</I>. Esta librer&iacute;a est&aacute;
+disponible como un paquete separado de la mayor&iacute;a de distribuciones de
+Linux. Si desea compilar <CODE>cardinfo</CODE>, deber&aacute; instalar <CODE>XForms</CODE> y
+todas las cabeceras y bibliotecas de desarrollo habituales para X antes de
+configurar el paquete PCMCIA. 
+<P>
+<H2><A NAME="instalacion"></A> <A NAME="ss2.2">2.2 Instalaci&oacute;n </A>
+</H2>
+
+<P>
+<P>He aqu&iacute; una sinopsis del proceso de instalaci&oacute;n: 
+<P>
+<UL>
+<LI>Descomprima <CODE>pcmcia-cs-3.0.?.tar.gz</CODE> en <CODE>/usr/src</CODE>
+</LI>
+<LI>Ejecute <CODE>make config</CODE> en el nuevo directorio 
+<CODE>pcmcia-cs-3.0.?</CODE>
+</LI>
+<LI>Ejecute <CODE>make all</CODE>, y luego <CODE>make install</CODE>.
+</LI>
+<LI>Configure el script de inicio y los archivos de opciones en <CODE>/etc/pcmcia</CODE> para su sistema.
+</LI>
+</UL>
+<P>Si planea instalar cualquier controlador que sea una contribuci&oacute;n y que no
+est&eacute; inclu&iacute;do en la distribuci&oacute;n principal de PCMCIA, descomprima cada uno
+de ellos en el directorio ra&iacute;z del &aacute;rbol PCMCIA. Luego siga las
+instrucciones normales de compilaci&oacute;n. Los controladores extras se
+compilar&aacute;n e instalar&aacute;n autom&aacute;ticamente.
+<P>Cuando ejecute <CODE>make config</CODE>, se le preguntar&aacute;n algunas opciones de
+configuraci&oacute;n y se comprobar&aacute; su sistema para verificar que se satisfagan
+todos los prerequisitos para instalar soporte PCMCIA. En la mayor&iacute;a de los
+casos, s&oacute;lo tendr&aacute; que aceptar todas las opciones de configuraci&oacute;n que
+vienen por omisi&oacute;n. Aseg&uacute;rese de comprobar cuidadosamente la salida de
+&eacute;ste comando en caso de que hubiera problemas. Est&aacute;n disponibles las
+siguientes opciones: 
+<P>
+<DL>
+<P>
+<DT><B>¿Hay un directorio de instalaci&oacute;n alternativo?</B><DD><P>Si est&aacute; compilando el
+paquete para instalarlo en otro equipo, especifique un directorio destino
+alternativo cuando se le pregunte. Debe ser una ruta absoluta. Todos los
+archivos ser&aacute;n instalados relativos a este directorio. Entonces estar&aacute;
+listo para aplicar <CODE>tar</CODE> a este directorio y copiarlo a su equipo
+destino, y desempaquetarlo relativo a su directorio ra&iacute;z para instalar
+todo en los lugares apropiados.
+<P>
+<DT><B>¿Necesita indicadores de compilaci&oacute;n para depurar?</B><DD><P>Vea la secci&oacute;n
+<A HREF="PCMCIA-Como-7.html#aux">Primeros auxilios al depurar a bajo nivel</A> para mayor
+informaci&oacute;n acerca de esta opci&oacute;n. 
+<P>
+<DT><B>¿Necesita compilar versiones «trusting» de las utilidades de
+tarjetas?</B><DD><P>Algunas de las utilidades de soporte (<CODE>cardctl</CODE> y
+<CODE>cardinfo</CODE>) pueden ser compiladas ya sea de forma <CODE>safe</CODE> o
+<CODE>trusting</CODE>. La forma <CODE>safe</CODE> previene a los usuarios no-root de
+modificar configuraciones de tarjetas. La forma <CODE>trusting</CODE> permite a
+los usuarios ordinarios ejecutar comandos para suspender y reactivar
+tarjetas, resetear tarjetas, y cambiar el esquema de configuraci&oacute;n actual. 
+La forma configurada por omisi&oacute;n es <CODE>safe</CODE>. 
+<P>
+<DT><B>¿Necesita incluir soporte para tarjetas de 32-bits (<I>CardBus</I>)?</B><DD><P>Deber&aacute; seleccionar esta opci&oacute;n si desea usar tarjetas <I>CardBus</I> de
+32-bits.  No se requiere para tener soporte con puentes <I>CardBus</I> si
+s&oacute;lo planea usar tarjetas PC de 16-bits.
+<P>
+<DT><B>¿Necesita incluir chequeo de recursos para BIOS PnP?</B><DD><P>Esto compila
+c&oacute;digo adicional en el m&oacute;dulo principal PCMCIA para comunicarse con el
+BIOS PnP de un sistema para obtener informaci&oacute;n de los recursos que est&aacute;n
+incluidos en la «placa madre» (puertos serie y paralelos, sonido, etc),
+para ayudar a prevenir conflictos de recursos. Si se habilita, se crear&aacute;n
+algunos archivos extra de recursos bajo <CODE>/proc/bus/pccard</CODE>, y las
+herramientas <CODE>lspnp</CODE> y <CODE>setpnp</CODE> se pueden usar para visualizar y
+manipular los dispositivos PnP del BIOS. 
+<P>
+<DT><B>¿C&oacute;mo configurar opciones espec&iacute;ficas del kernel?</B><DD><P>Hay algunas
+opciones de configuraci&oacute;n del kernel que afectan a las herramientas
+PCMCIA. El script de configuraci&oacute;n puede deducirlo desde el kernel actual
+(el caso por omisi&oacute;n y m&aacute;s com&uacute;n).  Alternativamente, si est&aacute; compilando
+para instalar en otro equipo, puede leer la configuraci&oacute;n del &aacute;rbol de los
+fuentes del kernel, o cada opci&oacute;n se puede establecer interactivamente.
+<P>
+</DL>
+<P>El script de configuraci&oacute;n se puede ejecutar de forma no-interactiva, para
+compilar autom&aacute;ticamente o para reconfigurar r&aacute;pidamente despu&eacute;s de una
+actualizaci&oacute;n del kernel. Algunas opciones adicionales no utilizadas con
+frecuencia s&oacute;lo pueden ser establecidas desde la l&iacute;nea de comandos.
+Ejecutando: <CODE>Configure --help</CODE> se listar&aacute;n todas las opciones
+disponibles. 
+<P>Al ejecutar <CODE>make all</CODE> seguido de <CODE>make install</CODE> compilar&aacute; y luego
+instalar&aacute; los m&oacute;dulos del kernel y los programas de utilidades.  Los
+m&oacute;dulos del kernel ser&aacute;n instalados en
+<CODE>/lib/modules/&lt;version&gt;/pcmcia</CODE>. Los programas <CODE>cardctl</CODE> y
+<CODE>cardmgr</CODE> ser&aacute;n instalados en <CODE>/sbin</CODE>. Si <CODE>cardinfo</CODE> se
+compila, ser&aacute; instalado en <CODE>/usr/bin/X11</CODE>.
+<P>Los archivos de configuraci&oacute;n ser&aacute;n instalados en el directorio
+<CODE>/etc/pcmcia</CODE>. Si est&aacute; instalando sobre una versi&oacute;n antigua, sus
+scripts de configuraci&oacute;n anteriores se respaldar&aacute;n antes de ser
+reemplazados. Los scripts guardados tendr&aacute;n la extensi&oacute;n de tipo <CODE>*.O</CODE>. 
+<P>Si no sabe qu&eacute; tipo de controlador usa su sistema, puede utilizar la
+utilidad <CODE>probe</CODE> en el subdirectorio <CODE>cardmgr/</CODE> para
+determinarlo.  Hay dos tipos principales: el tipo <I>Databook TCIC-2</I> y
+el tipo compatible con Intel <I>i82365SL</I>.
+<P>En raras ocasiones, el comando <CODE>probe</CODE> ser&aacute; incapaz de determinar su
+tipo de controlador autom&aacute;ticamente. Si tiene un sistema <I>Halikan NBD
+486</I>, tiene un controlador <I>TCIC-2</I> en una localizaci&oacute;n inusual:
+necesitar&aacute; editar <CODE>rc.pcmcia</CODE> para cargar el m&oacute;dulo <CODE>tcic</CODE>, y
+tambi&eacute;n especificar el par&aacute;metro <CODE>PCIC_OPTS</CODE> a <CODE>tcic_base=0x02c0</CODE>. 
+<P>En algunos sistemas que usan controladores Cirrus, incluyendo el <I>Nec
+Versa M</I>, la bios pone el controlador en un estado especial de suspensi&oacute;n
+al iniciar el sistema. En esos sistemas, el comando <CODE>probe</CODE> fallar&aacute; al
+encontrar cualquier controlador conocido. Si esto pasa, edite <CODE>rc.pcmcia</CODE> y especifica <CODE>PCIC</CODE> a <CODE>i82365</CODE>, y <CODE>PCIC_OPTS</CODE> a
+<CODE>wakeup=1</CODE>. 
+<P>
+<H2><A NAME="inicio"></A> <A NAME="ss2.3">2.3 Opciones de inicio</A>
+</H2>
+
+<P>
+<P>El script de inicio de PCMCIA reconoce varios grupos de opciones de
+inicio, establecidas por medio de variables de entorno. Se pueden separar
+m&uacute;ltiples opciones por medio de espacios y encerradas en comillas. La
+colocaci&oacute;n de las opciones de inicio depende de la distribuci&oacute;n de Linux
+que se est&eacute; usando. Pueden ser colocados directamente en el script de
+inicio, o pueden mantenerse en un archivo de opciones separado. Revise la
+secci&oacute;n 
+<A HREF="#distribuciones">Notas acerca de distribuciones de Linux espec&iacute;ficas</A> para m&aacute;s detalles. Se pueden establecer las siguientes
+variables: 
+<P>
+<DL>
+<P>
+<DT><B>PCMCIA</B><DD><P>Esta variable especifica si el soporte PCMCIA debe ser
+iniciado o no. Si est&aacute; especificado de forma diferente a <CODE>yes</CODE>, el
+script de inicio ser&aacute; desactivado. 
+<P>
+<DT><B>PCIC</B><DD><P>Esto identifica el m&oacute;dulo controlador de <I>PC Card Interface
+Controller</I>. Hay dos opciones: <CODE>tcic</CODE> o <CODE>i82365</CODE>. Virtualmente todos
+los controladores actuales est&aacute;n en el grupo <I>i82365</I>. Esta es la &uacute;nica
+opci&oacute;n obligatoria a establecer. 
+<P>
+<DT><B>PCIC_OPTS</B><DD><P>Esto especifica las opciones para el m&oacute;dulo PCIC. Algunos
+controladores tienen caracter&iacute;sticas opcionales que pueden o no ser
+implementadas en un sistema en particular. En algunos casos, es imposible
+para el socket controlador detectar si esas caracter&iacute;sticas est&aacute;n
+implementadas. Revise la p&aacute;gina del manual correspondiente para una
+descripci&oacute;n completa de las opciones disponibles. 
+<P>
+<DT><B>CORE_OPTS</B><DD><P>Esto especifica las opciones para el m&oacute;dulo
+<CODE>pcmcia_core</CODE>, el cual implementa los servicios principales del
+controlador PC Card. Es conveniente echar un vistazo a <CODE>man
+pcmcia_core</CODE> para m&aacute;s informaci&oacute;n.
+<P>
+<DT><B>CARDMGR_OPTS</B><DD><P>Esto especifica las opciones que se pasar&aacute;n al demonio
+<CODE>cardmgr</CODE>. Revise <CODE>man cardmgr</CODE> para m&aacute;s informaci&oacute;n. 
+<P>
+<DT><B>SCHEME</B><DD><P>Si est&aacute; activado, el esquema de configuraci&oacute;n de PC Card ser&aacute;
+inicializado a este modo en el momento de arrancar. Revise la secci&oacute;n 
+<A HREF="PCMCIA-Como-4.html#configuracion">Un vistazo a los scripts de configuraci&oacute;n de PCMCIA</A> para ver la discusi&oacute;n de esquemas. 
+<P>
+</DL>
+<P>Los controladores de sockets de bajo nivel, <CODE>tcic</CODE> e <CODE>i82365</CODE>,
+tienen varios par&aacute;metros de sincronizaci&oacute;n de bus que pueden necesitar ser
+ajustados para sistemas con velocidades de bus no muy usuales. Los
+s&iacute;ntomas de los problemas de sincronizaci&oacute;n incluyen problemas al
+reconocer las tarjetas, congelamiento bajo carga pesada, tasas de error
+altas, o rendimiento pobre de dispositivos. S&oacute;lo ciertos puentes tienen
+par&aacute;metros de sincronizaci&oacute;n ajustables, revise la p&aacute;gina correspondiente
+del manual para ver qu&eacute; opciones existen para su controlador. He aqu&iacute; un
+peque&ntilde;o resumen:
+<P>
+<UL>
+<LI>Los controladores Cirrus tienen muchos par&aacute;metros de sincronizaci&oacute;n. 
+Lo m&aacute;s importante parece ser el indicador <CODE>cmd_time</CODE>, la cual determina
+la longitud de los ciclos de bus PCMCIA. En los sistemas r&aacute;pidos 486
+(DX4-100, por ejemplo) parece ser beneficioso el incrementar esto de
+<CODE>6</CODE> (por omisi&oacute;n) a <CODE>12</CODE> o <CODE>16</CODE>. 
+</LI>
+<LI>El controlador Cirrus <I>PD6729 PCI</I> tiene el indicador
+<CODE>fast_pci</CODE>, la cual debe establecerse si la velocidad del bus PCI es
+mayor a 25 Mhz.
+</LI>
+<LI>Para controladores <I>Vadem VG-468</I> y <I>Databook TCIC-2</I>, el
+indicador <CODE>async_clock</CODE> cambia la velocidad relativa del bus PCMCIA y
+los ciclos de bus del equipo. Activar este indicador a&ntilde;ade estados de
+espera extra a algunas operaciones. Sin embargo, todav&iacute;a no he sabido de
+ning&uacute;n port&aacute;til que necesite esto.
+  </LI>
+<LI>El m&oacute;dulo <CODE>pcmcia_core</CODE> tiene el par&aacute;metro <CODE>cis_speed</CODE> para
+cambiar la velocidad de la memoria, la cual se usa para acceder a la
+<I>Estructura de Informaci&oacute;n de Tarjeta</I> (<I>Card Information
+Structure</I>) (<I>CIS</I>) de una tarjeta. En algunos sistemas con pulsos de
+bus r&aacute;pidos, incrementar este par&aacute;metro (por ejemplo, reducir la velocidad
+de los accesos a tarjeta) puede resultar beneficioso para quien tenga
+problemas al reconocerlas.
+</LI>
+<LI>Esto no es cuesti&oacute;n de sincronizaci&oacute;n, pero si Vd. tiene m&aacute;s de un
+controlador ISA-a-PCMCIA en su sistema o tiene bah&iacute;as extra en una
+estaci&oacute;n, el m&oacute;dulo <CODE>i82365</CODE> debe ser cargado con el par&aacute;metro
+<CODE>extra_sockets</CODE> establecido a <CODE>1</CODE>. Esto no deber&aacute; ser necesario para
+detecci&oacute;n de puentes PCI-a-PCMCIA y PCI-a-CardBus.
+</LI>
+</UL>
+<P>He aqu&iacute; algunas configuraciones de sincronizaci&oacute;n para algunos sistemas
+espec&iacute;ficos:
+<P>
+<UL>
+<LI>En un <I>ARM Pentium-90</I> o en un <I>Midwest Micro Soundbook Plus</I>,
+use <CODE>freq_bypass=1 cmd_time=8</CODE>. 
+</LI>
+<LI>En un <I>Midwest Micro Soundbook Elite</I>, use <CODE>cmd_time=12</CODE>.
+</LI>
+<LI>En un <I>Gateway Liberty</I>, pruebe con <CODE>cmd_time=16</CODE>.
+</LI>
+<LI>En un <I>Samsung SENS 810</I>, use <CODE>fast_pci=1</CODE>.
+</LI>
+</UL>
+<P>
+<H2><A NAME="confrec"></A> <A NAME="ss2.4">2.4 Configuraci&oacute;n de recursos del sistema </A>
+</H2>
+
+<P>
+<P>Los servicios de tarjetas deben evitar autom&aacute;ticamente el ocupar puertos e
+interrupciones que ya est&eacute;n en uso por otros dispositivos est&aacute;ndar. 
+Intentar&aacute; as&iacute; mismo detectar conflictos con dispositivos desconocidos,
+pero esto no es del todo fiable, y en algunos casos puede que necesite
+excluir expl&iacute;citamente recursos para un dispositivo en
+<CODE>/etc/pcmcia/config.opts.</CODE>
+<P>He aqu&iacute; algunas configuraciones de recursos para tipos espec&iacute;ficos de
+port&aacute;tiles. Rev&iacute;selas con cuidado: pueden darle informaci&oacute;n necesaria para
+resolver problemas, pero algunas est&aacute;n (inevitablemente) obsoletas y
+ciertamente contienen errores. Las correcciones y adiciones ser&aacute;n
+bienvenidas.
+<P>
+<UL>
+<LI>En un <I>AMS SoundPro</I>, excluya la irq 10.
+</LI>
+<LI>En algunos modelos <I>AMS TravelPro 5300</I>, use el rango de memoria
+<CODE>0xc8000-0xcffff</CODE>. 
+</LI>
+<LI>En un <I>BMX 486DX2-66</I>, excluya irq 5, irq 9.
+</LI>
+<LI>En un <I>Chicony NB5</I>, use el rango de memoria <CODE>0xda000-0xdffff</CODE>.
+</LI>
+<LI>En un <I>Compaq Presario 1020</I>, excluya el puerto <CODE>0x2f8-0x2ff</CODE>,
+irq 3, irq 5. 
+</LI>
+<LI>En un <I>HP Omnibook 4000C</I>, excluya el puerto <CODE>0x300-0x30f</CODE>.
+</LI>
+<LI>En un <I>IBM ThinkPad 380</I>, y posiblemente en las series 385 y 600,
+excluya el puerto <CODE>0x230-0x233</CODE>, e irq 5. 
+</LI>
+<LI>En un <I>IBM ThinkPad 600</I>, excluya el puerto <CODE>0x2f8-0x2ff</CODE>.
+</LI>
+<LI>En un <I>Micron Millenia Transport</I>, excluya irq 5, irq 9.
+</LI>
+<LI>En un <I>NEC Versa M</I>, excluya irq 9, y el puerto <CODE>0x2e0-2ff</CODE>.
+</LI>
+<LI>En un <I>NEC Versa P/75</I>, excluya irq 5, irq 9.
+</LI>
+<LI>En un <I>NEC Versa S</I>, excluya irq 9, irq 12.
+</LI>
+<LI>En las series <I>NEC Versa 6000</I>, excluya el puerto
+<CODE>0x2f8-0x33f</CODE>, irq 9, irq 10
+</LI>
+<LI>En un <I>ProStar 9200</I>, <I>Altima Virage</I>, y <I>Acquiline
+Hurricane DX4-100</I>, excluya irq 5, y el puerto <CODE>0x330-0x35f</CODE>.  Puede
+usar el rango de memoria <CODE>0xd8000-0xdffff</CODE>. 
+</LI>
+<LI>En un <I>Siemens Nixdorf SIMATIC PG 720C</I>, use el rango de memoria
+<CODE>0xc0000-0xcffff</CODE>, y el puerto <CODE>0x300-0x3bf</CODE>. 
+</LI>
+<LI>En un <I>TI TravelMate 5000</I>, use el rango de memoria
+<CODE>0xd4000-0xdffff</CODE>. 
+</LI>
+<LI>En un <I>Toshiba T4900 CT</I>, excluya irq 5, y los puertos
+<CODE>0x2e0-0x2e8</CODE>, <CODE>0x330-0x338</CODE>.
+</LI>
+<LI>En un <I>Twinhead 5100</I>, HP 4000, <I>Sharp PC-8700</I> and PC-8900,
+excluya irq 9 (sonido), irq 12. 
+</LI>
+<LI>En un <I>MPC 800 Series</I>, excluya irq 5, y el puerto
+<CODE>0x300-0x30f</CODE> para el CD-ROM. 
+</LI>
+</UL>
+<P>
+<H2><A NAME="distribuciones"></A> <A NAME="ss2.5">2.5 Notas acerca de distribuciones de Linux espec&iacute;ficas</A>
+</H2>
+
+<P>
+<P>Esta secci&oacute;n est&aacute; incompleta. Todas las correcciones y adiciones ser&aacute;n
+bienvenidas. 
+<P>
+<H3><A NAME="debian"></A> Debian </H3>
+
+<P>
+<P>Debian usa el conjunto de scripts de arranque de tipo System V. El script
+de inicio PCMCIA est&aacute; instalado en <CODE>/etc/init.d/pcmcia</CODE>, y las
+opciones de inicio se especifican en <CODE>/etc/pcmcia.conf</CODE>. La
+configuraci&oacute;n de <CODE>syslog</CODE> de Debian colocar&aacute; los mensajes del kernel en
+<CODE>/var/log/messages</CODE> y los mensajes del demonio <CODE>cardmgr</CODE> en
+<CODE>/var/log/daemon.log</CODE>. 
+<P>Debian distribuye el sistema PCMCIA en dos paquetes: el paquete
+<CODE>pcmcia-cs</CODE> que contiene <CODE>cardmgr</CODE> y otras herramientas, p&aacute;ginas del
+manual, y los scripts de configuraci&oacute;n; y el paquete <CODE>pcmcia-modules</CODE>
+que contiene los m&oacute;dulos controladores del kernel. 
+<P>
+<H3><A NAME="rh"></A> Red Hat, Caldera, Mandrake </H3>
+
+<P>
+<P>Estas distribuciones usan la organizaci&oacute;n de scripts System V. El script
+de inicio de PCMCIA est&aacute; instalado en <CODE>/etc/rc.d/init.d/pcmcia</CODE>, y
+las opciones de arranque se guardan en <CODE>/etc/sysconfig/pcmcia</CODE>. 
+Observe que al instalar el paquete de Red Hat puede instalar un archivo de
+opciones de inicio por omisi&oacute;n que tiene PCMCIA desactivado.  Para
+habilitar PCMCIA, la variable <CODE>PCMCIA</CODE> debe establecerse en <CODE>yes</CODE>.
+La configuraci&oacute;n por omisi&oacute;n del <CODE>syslogd</CODE> de Red Hat grabar&aacute; todos los
+mensajes interesantes en <CODE>/var/log/messages</CODE>. 
+<P>El paquete PCMCIA de Red Hat contiene un reemplazo para el script de
+inicio de red, <CODE>/etc/pcmcia/network</CODE>, el cual se acopla al panel de
+control de red de Red Hat. Esto es conveniente para el caso donde s&oacute;lo se
+usa un adaptador de red, con un conjunto de par&aacute;metros de red, pero no
+tiene la flexibilidad completa del script regular de red PCMCIA. Compilar
+e instalar una distribuci&oacute;n fuente de PCMCIA nueva, sobreescribir&aacute; el
+script de red, rompiendo el enlace con el panel de control. Si prefiere el
+script de Red Hat, puede evitarlo bien usando &uacute;nicamente RPMS de Red Hat,
+o creando <CODE>/etc/pcmcia/network.opts</CODE> que contenga lo siguiente: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       if [ -f /etc/sysconfig/network-scripts/ifcfg-eth0 ] ; then
+           start_fn () {
+               /sbin/ifup $1
+           }
+           stop_fn () {
+               /sbin/ifdown $1
+           }
+       fi
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Red Hat maneja su distribuci&oacute;n de los fuentes de PCMCIA con pocas
+modificaciones dentro de su SRPM del kernel, en lugar de gestionarlo como
+un paquete separado. 
+<P>
+<H3><A NAME="slack"></A> Slackware </H3>
+
+<P>
+<P>Slackware usa el conjunto de scripts de inicio de BSD. El script de inicio
+de PCMCIA est&aacute; instalado en <CODE>/etc/rc.d/rc.pcmcia</CODE>, y las opciones
+de inicio se especifican en el mismo <CODE>rc.pcmcia</CODE>. El script de inicio
+de PCMCIA se invoca desde <CODE>/etc/rc.d/rc.S.</CODE>
+<P>
+<H3><A NAME="suse"></A> SuSE </H3>
+
+<P>
+<P>SuSE usa el conjunto de scripts System V, con los scripts de inicio
+almacenados en <CODE>/sbin/init.d</CODE>. El script de inicio de PCMCIA est&aacute;
+instalado en <CODE>/sbin/init.d/pcmcia</CODE>, y las opciones de arranque se
+guardan en <CODE>/etc/rc.config</CODE>. El script de inicio de SuSE est&aacute; algo
+limitado y no permite que las variables de inicio de PCMCIA sean
+invalidados desde el prompt de inicio de <CODE>lilo</CODE>.
+<P>
+<HR>
+<A HREF="PCMCIA-Como-3.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-1.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc2">Índice general</A>
+</BODY>
+</HTML>

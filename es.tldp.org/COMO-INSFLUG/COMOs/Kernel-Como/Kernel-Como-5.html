@@ -1,0 +1,194 @@
+<HTML>
+<HEAD>
+<TITLE>Kernel-Como: Parchear el n&uacute;cleo </TITLE>
+</HEAD>
+<BODY>
+<A HREF="Kernel-Como-4.html">Anterior</A>
+<A HREF="Kernel-Como-6.html">Siguiente</A>
+<A HREF="Kernel-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Parchear el n&uacute;cleo </A></H2>
+
+
+
+<H2><A NAME="ss5.1">5.1 Aplicaci&oacute;n de un parche </A></H2>
+
+
+<P>Las actualizaciones incrementales del n&uacute;cleo se distribuyen como
+parches
+<SL>No tomar con sentido peyorativo el t&eacute;rmino
+``<I>parche</I>'', no se trata de un ``<I>remiendo</I>'', o ``<I>chapuza</I>'',
+lo que hacemos al ``<I>parchear</I>'' es modificar directamente los
+<B>fuentes</B> del n&uacute;cleo, incluyendo las variaciones que se hayan
+introducido.ver el comando <CODE>diff</CODE> y <CODE>patch</CODE> para m&aacute;s
+referencias.</SL>
+ Por ejemplo, si tiene la versi&oacute;n <CODE>1.1.45</CODE> y ve
+que existe un parche `<CODE>patch46.gz</CODE>', con ese fichero podr&aacute; actualizarse
+a la <CODE>1.1.46</CODE>.  Deber&iacute;a antes de nada guardar una copia del &aacute;rbol de
+directorios de las fuentes del n&uacute;cleo actual (haciendo `<CODE>make
+clean</CODE>', luego `<CODE>tar cvfz antiguas-fuentes.tar.gz linux</CODE>' desde
+el directorio <CODE>/usr/src</CODE>).</P>
+
+
+<P>Ahora, supongamos que tiene `<CODE>patch46.gz</CODE>' en <CODE>/usr/src</CODE>. Vaya a
+ese directorio y escriba</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+zcat patch46.gz | patch -p0 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(o bien
+<BLOCKQUOTE><CODE>
+<PRE>
+patch -p0 &lt; patch46 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>si ya estaba descomprimido). Ver&aacute; r&aacute;pida (o lentamente, depende del
+ordenador) una serie de mensajes que le dicen que se intentan aplicar los
+cambios, cu&aacute;les tienen &eacute;xito y cu&aacute;les no.  Normalmente, esto ir&aacute; bien y no
+habr&aacute; que preocuparse de tanto mensaje, aunque con la opci&oacute;n <CODE>-s</CODE>
+solo saldr&aacute;n los mensajes de error.</P>
+<P><B>Inciso de la revisi&oacute;n 2.1:</B></P>
+<P>No es infrecuente que haya que borrar el &aacute;rbol de los fuentes entero y
+reinstalarlos de nuevo; muchas veces, se tiene un <CODE>.tar.gz</CODE> con los
+fuentes m&aacute;s un mont&oacute;n de parches; para evitarse el tener que parchear uno
+a uno, puede invocar lo siguiente desde la l&iacute;nea de comandos: (asumo que
+tratamos de parchear p. ej. con parches a partir del <CODE>2.0.20</CODE> hasta el
+<CODE>2.0.27</CODE>, usamos <CODE>bash</CODE> y estamos en <CODE>/usr/src</CODE>, teclee
+<CODE>pwd</CODE> para cerciorarse).</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# for i in patch-2.0.2[1234567].gz; do
+&gt;zcat $i | patch -p0
+&gt;done
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Investigue por su cuenta, ver&aacute; qu&eacute; potencia hay en la l&iacute;nea de comandos
+*nix... </P>
+<P><B>fin del inciso</B></P>
+<P>Para ver qu&eacute; partes no se han modificado correctamente, busque los
+ficheros <CODE>.rej</CODE> en el directorio de las fuentes. Si se usan algunas
+versiones de <CODE>patch</CODE> (antiguas, sobre todo) esos ficheros tendr&aacute;n
+extensi&oacute;n `<CODE>#</CODE>'. Con el comando <CODE>find</CODE> encontrar&aacute; f&aacute;cilmente los
+ficheros: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+find . -name '*.rej' -print
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>imprime todos los ficheros <CODE>.rej</CODE> que est&aacute;n en el directorio actual
+o subdirectorios. </P>
+<P>Si todo ha ido bien, haga `<CODE>make clean</CODE>', `<CODE>config</CODE>' y `<CODE>dep</CODE>'
+como se describi&oacute; en las secciones 
+<A HREF="Kernel-Como-4.html#compilacion">compilacion</A> y 
+<A HREF="Kernel-Como-4.html#momento">momento</A>. </P>
+<P>Hay algunas opciones m&aacute;s en el comando <CODE>patch</CODE>. Con <CODE>-s</CODE>, como
+hemos dicho, se suprimen todos los mensajes salvo los errores. Si guarda
+las fuentes del n&uacute;cleo en otro lugar que no sea <CODE>/usr/src/linux</CODE>,
+con <CODE>patch -p1</CODE> se parchear&aacute;n las cosas limpiamente. Otras opciones
+de inter&eacute;s se encuentran bien documentadas en las p&aacute;ginas <CODE>man</CODE>.</P>
+
+
+<H2><A NAME="ss5.2">5.2 Si algo va mal </A></H2>
+
+
+<P>El problema m&aacute;s com&uacute;n es que una ejecuci&oacute;n de <CODE>patch</CODE> intente modificar
+el fichero `<CODE>config.in</CODE>' y no parezca quedar bien, porque haya
+hecho cambios en &eacute;l de acuerdo con su m&aacute;quina. Este problema sucede con
+versiones antiguas. Para corregirlo, busque el fichero
+<CODE>config.in.rej</CODE>, y vea qu&eacute; tiene el parche originado. Los cambios
+suelen ir marcados con `<CODE>+</CODE>' o `<CODE>-</CODE>' al principio de las l&iacute;neas.
+Ed&iacute;telo, recordando si las opciones estaban puestas a <CODE>Y</CODE> o a <CODE>N</CODE>, y
+ejecute</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+patch -p0 &lt; config.in.rej 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y si no tiene fallos, puede continuar con el resto del proceso. El
+fichero <CODE>config.in.rej</CODE> permanecer&aacute;, aunque puede borrarlo.</P>
+<P>Si encuentra otros problemas, puede que haya aplicado un parche fuera de
+orden. Si el programa <CODE>patch</CODE> responde con</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+previously applied patch detected: Assume -R? 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>probablemente estar&aacute; intentando aplicar un parche anterior a su versi&oacute;n
+actual. Si responde `<CODE>y</CODE>', intentar&aacute; degradar sus fuentes, y
+normalmente fallar&aacute;, oblig&aacute;ndole a preparar un nuevo &aacute;rbol de fuentes. </P>
+<P>Para anular el efecto de un parche, use `<CODE>patch -R</CODE>' con el parche
+original.</P>
+<P>Lo mejor ante un problema es reinstalar un &aacute;rbol de fuentes limpio y
+empezar de nuevo. </P>
+
+
+<H2><A NAME="ss5.3">5.3 Limpieza de ficheros <CODE>.orig</CODE> </A></H2>
+
+
+<P>Despu&eacute;s de algunos parches, los ficheros <CODE>.orig</CODE> empezar&aacute;n a
+abultar mucho. Por ejemplo, si estamos ya con el n&uacute;cleo 1.1.51 y empezamos
+con el <CODE>1.1.48</CODE>, borrar los <CODE>.orig</CODE> nos ahorrara medio megabyte. Con</P>
+<P>
+<PRE>
+find .-name '*.orig' -exec rm -f {} ';'
+</PRE>
+</P>
+<P>se automatizar&aacute; esa limpieza. En versiones que usen el <CODE>#</CODE> en
+lugar de <CODE>.rej</CODE>, sustituya el <CODE>.orig</CODE> por un `<CODE>~</CODE>'. </P>
+<P>Una forma mejor de hacer esto es usar <CODE>xargs</CODE> de <I>GNU</I>: </P>
+<P>
+<PRE>
+find .-name '*.orig' | xargs rm
+</PRE>
+</P>
+<P>o el m&eacute;todo ``m&aacute;s seguro pero m&aacute;s pesado'':</P>
+<P>
+<PRE>
+find . -name '*.orig' -print0 | xargs --null rm --
+</PRE>
+</P>
+
+
+<H2><A NAME="ss5.4">5.4 Otros parches </A></H2>
+
+
+<P>Hay otros parches (los llamaremos ``no est&aacute;ndares'') que si se aplican,
+probablemente provocar&aacute;n que los parches de Linus no funcionen
+correctamente, teniendo que retroceder, corregir las fuentes o el parche,
+instalar de nuevo las fuentes, o una combinaci&oacute;n de lo anterior.</P>
+<P><B>inciso de la R. 2.1:</B>
+Existe una p&aacute;gina con informaci&oacute;n centralizada sobre este tipo de parches
+en:</P>
+<P><CODE>
+<A HREF="http://www.ecsnet.com/html/linux_21_upatch.html">http://www.ecsnet.com/html/linux_21_upatch.html</A></CODE></P>
+<P>Este es un buen sitio para buscar si necesita soporte para alg&uacute;n
+dispositivo esot&eacute;rico o implementaci&oacute;n reciente. Tenga en cuenta, no
+obstante, que la mayor&iacute;a ser&aacute;n para el kernel actual de desarrollo, aunque
+puedan aplicarse algunos ( eiste otra p&aacute;gina en la misma localizaci&oacute;n
+citada anteriormente) en el kernel de producci&oacute;n. </P>
+<P><B>fin del inciso</B></P>
+<P>Por ejemplo, el autor utilizaba el parche `<CODE>noblink</CODE>' que anula el
+parpadeo del cursor en las consolas virtuales. Este parche se actualiza (o
+actualizaba) frecuentemente para los nuevos n&uacute;cleos. Como ahora muchos
+manejadores se pueden cargar como m&oacute;dulos, los parches ya son menos
+necesarios. </P>
+
+
+<HR>
+<A HREF="Kernel-Como-4.html">Anterior</A>
+<A HREF="Kernel-Como-6.html">Siguiente</A>
+<A HREF="Kernel-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

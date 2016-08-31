@@ -1,0 +1,111 @@
+<pre>
+/* vim: set sw=8 ts=8 si : */
+/*********************************************
+* Author: Guido Socher, Copyright: GPL 
+* Clock frequency     : 4,000000 MHz
+* Copyright: GPL
+**********************************************/
+#include &lt;sig-avr.h&gt;
+#include &lt;string-avr.h&gt;
+#include &lt;io.h&gt;
+#include "uart.h"
+
+/* the RTSOUT must be on port D */
+#define RTSOUT PD2
+/* this is to fix a bug in the avr-libc-20020106: */
+#define UCR 0x0A
+
+
+static char uart_rxbuf[UART_RX_BUFFER_SIZE+1];
+volatile static unsigned char uart_rx_pos; /* end of string in rx */
+volatile static unsigned char uart_rx_linecomplete; /* one complete line in buffer */
+volatile static unsigned char uart_tx_busy; /* uart is still transmitting */
+
+/* the following function will be called when the receive is complete */
+SIGNAL(SIG_UART_RECV) {
+	uart_rxbuf[uart_rx_pos]=inp(UDR);
+	if (uart_rxbuf[uart_rx_pos] == '\n' || uart_rxbuf[uart_rx_pos] == '\r'){
+		uart_rx_linecomplete=1;
+	}else{
+		uart_rx_pos++;
+		/* prevent overflow */
+		if (uart_rx_pos &gt; UART_RX_BUFFER_SIZE){
+			uart_rx_pos=0;
+		}
+		if (uart_rx_pos &gt; UART_RX_BUFFER_SIZE -1 ){
+			/* buffer full, set RTS/CTS to off */
+			uart_rx_linecomplete=1;
+			cbi(PORTD,RTSOUT);
+		}
+	}
+}
+
+/* the following function will be called when the data
+* in UDR register is sent out */
+SIGNAL(SIG_UART_TRANS) {
+	uart_tx_busy=0;
+}
+
+
+void uart_init(void) 
+{
+	uart_tx_busy=0;
+	uart_rx_pos=0;
+	uart_rx_linecomplete=0;
+	outp(BV(RXCIE)|BV(RXEN)|BV(TXCIE)|BV(TXEN),UCR); /* enable tx/rx and interrupt on tx/rx */
+	outp((unsigned char) 25, UBRR); /* set baud rate for 4MHz, 25=9600, 12=19200 */
+	/* configure the RTS as output */
+	sbi(DDRD,RTSOUT);
+	/* RTS on = I am ready to receive data */
+	sbi(PORTD,RTSOUT);
+	/* you must enable interrupt in main prog by calling sei() */
+
+}
+void uart_reset(void)
+{
+	uart_tx_busy=0;
+	uart_rx_pos=0;
+	uart_rx_linecomplete=0;
+	sbi(PORTD,RTSOUT);
+}
+/* send one character to the rs232 */
+void uart_sendchar(char c) 
+{
+	while (uart_tx_busy);
+	uart_tx_busy=1;
+	outp(c, UDR);
+}
+/* send string to the rs232 */
+void uart_sendstr(char *s) 
+{
+	while (*s){
+		uart_sendchar(*s);
+		s++;
+	}
+}
+
+void uart_sendstr_p(const prog_char *progmem_s)
+/* print string from program memory on rs232 */
+{
+	char c;
+	while ((c = PRG_RDB(progmem_s++))) {
+		uart_sendchar(c);
+	}
+
+}
+
+
+/* read a complet line from the rs232 */
+unsigned char uart_getrxbufnl(char *uart_outbuf)  
+{
+	if (uart_rx_linecomplete==0) return(0);
+	uart_rxbuf[uart_rx_pos]='\0';
+	strcpy(uart_outbuf,uart_rxbuf);
+	/* RTS on = I am ready to receive data */
+	sbi(PORTD,RTSOUT);
+	uart_rx_pos=0;
+	uart_rx_linecomplete=0;
+	return(1);
+}
+
+</pre>

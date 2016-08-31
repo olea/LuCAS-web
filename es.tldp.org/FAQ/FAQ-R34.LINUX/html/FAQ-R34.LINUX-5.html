@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>FAQ de R34.LINUX: Compilaci&oacute;n del Kernel</TITLE>
+ <LINK HREF="FAQ-R34.LINUX-6.html" REL=next>
+ <LINK HREF="FAQ-R34.LINUX-4.html" REL=previous>
+ <LINK HREF="FAQ-R34.LINUX.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="FAQ-R34.LINUX-6.html">Página siguiente</A>
+<A HREF="FAQ-R34.LINUX-4.html">Página anterior</A>
+<A HREF="FAQ-R34.LINUX.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="s5">5. Compilaci&oacute;n del Kernel</A></H2>
+
+<H2><A NAME="ss5.1">5.1 C&oacute;mo compilar el Kernel</A>
+</H2>
+
+<P>
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>¿Alguien me podr&iacute;a guiar en c&oacute;mo empezar para recompilar el Kernel?
+<P>
+<DT><B>RESPUESTA</B><DD><P>Sencillo. Por pasos: <BR>
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+make [config | menuconfig | xconfig]
+make dep
+make clean
+make [zImage | zdisk | zlilo | bzlilo | bzImage]
+make modules
+cp -R /lib/modules/`uname -r` /lib/modules/`uname -r`-old
+rm -r /lib/modules/`uname -r`
+make modules_install
+depmod -a
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<DT><B></B><DD><P><CODE>make config</CODE> te pedir&aacute; que contestes a una serie de preguntas que
+definen tu kernel. Tambi&eacute;n puedes hacer <CODE>make menuconfig</CODE> para configurar
+el kernel de una manera m&aacute;s c&oacute;moda. Cuantos menos dispositivos innecesarios soporte, m&aacute;s peque&ntilde;o y r&aacute;pido ser&aacute;, al ocupar menos memoria. <I>make zImage</I> suele
+ser un proceso largo, desde diez minutos en un Pentium con 16Mb hasta tres o
+cuatro horas en un 386/4Mb. <BR>
+<P>Ya est&aacute;! Tienes el nuevo kernel en <EM>archive/i386/boot/zImage</EM>. Lo copias a tu <CODE>/vmlinuz</CODE> o donde sea que tienes tu imagen de arranque y a rodar!
+Otras alternativas son <CODE>make zlilo</CODE> (si utilizas <EM>LILO</EM> en el 
+arranque del sistema), <CODE>make bzlilo</CODE> si el kernel es muy grande, o <CODE>make zdisk</CODE> si arrancas desde disquete, en vez 
+de <CODE>make zImage</CODE>. <BR>
+<P>Ah! Me dejaba lo m&aacute;s importante: Leerte el <I>HOWTO-Kernel</I>. Es muy 
+informativo y est&aacute; muy bien explicado. <BR>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[1]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+</DL>
+<P>
+<H2><A NAME="ss5.2">5.2 Parcheado del Kernel</A>
+</H2>
+
+<P>
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>¿C&oacute;mo puedo parchear el Kernel?
+<P>
+<DT><B>RESPUESTA</B><DD><P>Sigue los siguientes pasos: <BR>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+make clean
+</PRE>
+</CODE></BLOCKQUOTE>
+<DT><B></B><DD><P>Copiar el o los ficheros que contienen los patch a <EM>/usr/src</EM>.
+<P>Ahora haremos una copia de seguridad de la instalaci&oacute;n actual.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd ..
+tar cvfz old-tree.tar.gz linux
+zcat patch-2.0.xx.gz | patch -p0 -s
+</PRE>
+</CODE></BLOCKQUOTE>
+<DT><B></B><DD><P><I>patch-2.0.xx.gz</I> es el fichero del patch. Si tuvieras varios ficheros de patch, repite el proceso 
+con cada uno de ellos. Se pueden meter cuantos parches se quieran, 
+correlativos por supuesto.
+<P>Tambi&eacute;n hay otra forma de parchear el Kernel, que es usando un script que ya
+viene incluido con los fuentes del kernel. En el directorio
+<EM>/usr/src/linux/scripts/</EM> puedes encontrar dicho script, se llama
+<EM>patch-kernel</EM>. Si no tiene atributo de ejecutable, solo tienes que
+d&aacute;rselo con la orden:
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod +x patch-kernel
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Una vez hecho esto, tendr&aacute;s que copiar todos los parches que quieras aplicar
+al directorio <EM>/usr/src/linux/</EM> y desde ah&iacute; ejecutar el script de la
+siguiente forma:
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /usr/src/linux
+./scripts/patch-kernel
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Y el mismo script ir&aacute; pillando todos los parches uno por uno.
+<P>Comprueba si ha quedado alg&uacute;n fichero con extensi&oacute;n '*.rej'. Eso
+significar&iacute;a que ha habido alg&uacute;n problema. Si has sido h&aacute;bil
+y tienes el backup que hicimos antes, no habr&iacute;a problema en volver atr&aacute;s.
+<P>Si todo va bien, limpiamos.
+<BLOCKQUOTE><CODE>
+<PRE>
+cd linux
+find . -name '*.rej' -print
+find . -name '*.orig' -print -exec rm {} \;
+make clean
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B></B><DD><P>Recompilar el Kernel, yo sustituyo el <CODE>make zImage</CODE> por <CODE>make
+zdisk</CODE>. De este modo, metiendo un disquete en la disquetera A:, me carga
+la nueva imagen del kernel en &eacute;l, y puedo arrancar con el disquete y
+probar; si va bien lo pongo donde debe estar. En caso contrario a empezar de
+nuevo.   <BR>
+<BLOCKQUOTE><CODE>
+<PRE>
+[1]
+</PRE>
+</CODE></BLOCKQUOTE>
+</DL>
+<P>
+<H2><A NAME="ss5.3">5.3 Error compilando el kernel</A>
+</H2>
+
+<P>
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>Cuando voy a compilar el kernel, el make me da este error:
+<BLOCKQUOTE><CODE>
+<PRE>
+make: as86: Command not found
+</PRE>
+</CODE></BLOCKQUOTE>
+
+¿Qu&eacute; programa es el as86 y de donde lo saco?
+<P>
+<DT><B>RESPUESTA</B><DD><P>El as86 es el compilador de ensamblador para arqutectura x86. Debes instalar el paquete "binutils"
+para poder compilar el kernel. Si usas Debian, el paquetes que debes instalar es "bin86".
+<P>
+</DL>
+<P>
+<HR>
+<A HREF="FAQ-R34.LINUX-6.html">Página siguiente</A>
+<A HREF="FAQ-R34.LINUX-4.html">Página anterior</A>
+<A HREF="FAQ-R34.LINUX.html#toc5">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,485 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 27 Rutinas de ficheros y compresión
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="27 Rutinas de ficheros y compresión">27 Rutinas de ficheros y compresión</a></h1>
+
+<ul>
+<li><a href="#al_findclose">al_findclose</a>
+<li><a href="#al_findfirst">al_findfirst</a>
+<li><a href="#al_findnext">al_findnext</a>
+<li><a href="#append_filename">append_filename</a>
+<li><a href="#delete_file">delete_file</a>
+<li><a href="#exists">exists</a>
+<li><a href="#file_exists">file_exists</a>
+<li><a href="#file_size">file_size</a>
+<li><a href="#file_time">file_time</a>
+<li><a href="#find_allegro_resource">find_allegro_resource</a>
+<li><a href="#fix_filename_case">fix_filename_case</a>
+<li><a href="#fix_filename_path">fix_filename_path</a>
+<li><a href="#fix_filename_slashes">fix_filename_slashes</a>
+<li><a href="#for_each_file">for_each_file</a>
+<li><a href="#get_executable_name">get_executable_name</a>
+<li><a href="#get_extension">get_extension</a>
+<li><a href="#get_filename">get_filename</a>
+<li><a href="#pack_fclose">pack_fclose</a>
+<li><a href="#pack_fclose_chunk">pack_fclose_chunk</a>
+<li><a href="#pack_feof">pack_feof</a>
+<li><a href="#pack_ferror">pack_ferror</a>
+<li><a href="#pack_fgets">pack_fgets</a>
+<li><a href="#pack_fopen">pack_fopen</a>
+<li><a href="#pack_fopen_chunk">pack_fopen_chunk</a>
+<li><a href="#pack_fputs">pack_fputs</a>
+<li><a href="#pack_fread">pack_fread</a>
+<li><a href="#pack_fseek">pack_fseek</a>
+<li><a href="#pack_fwrite">pack_fwrite</a>
+<li><a href="#pack_getc">pack_getc</a>
+<li><a href="#pack_igetl">pack_igetl</a>
+<li><a href="#pack_igetw">pack_igetw</a>
+<li><a href="#pack_iputl">pack_iputl</a>
+<li><a href="#pack_iputw">pack_iputw</a>
+<li><a href="#pack_mgetl">pack_mgetl</a>
+<li><a href="#pack_mgetw">pack_mgetw</a>
+<li><a href="#pack_mputl">pack_mputl</a>
+<li><a href="#pack_mputw">pack_mputw</a>
+<li><a href="#pack_putc">pack_putc</a>
+<li><a href="#packfile_password">packfile_password</a>
+<li><a href="#put_backslash">put_backslash</a>
+<li><a href="#replace_extension">replace_extension</a>
+<li><a href="#replace_filename">replace_filename</a>
+</ul>
+
+<p>
+Las siguientes rutinas implementan un sistema de ficheros I/O con buffer
+rápido, que soporta la lectura y escritura de ficheros comprimidos usando un
+algoritmo de buffer de anillo basado en el compresor LZSS de Haruhiko
+Okumura. Esto no consigue tan buenas compresiones como zip o lha, pero la
+descompresión es muy rápida y no requiere mucha memoria. Los ficheros
+comprimidos siempre comienzan con el valor de 32 bits F_PACK_MAGIC, y
+autodetecta ficheros con el valor F_NOPACK_MAGIC.
+
+<p>
+Los siguients bit FA_* están garantizados en todas las plataformas:
+FA_RDONLY, FA_HIDDEN, FA_SYSTEM, FA_LABEL, FA_DIREC y FA_ARCH. No use otros
+bits de DOS/Windows, o su código no compilará en otras plataformas. Los bits
+FA_SYSTEM, FA_LABEL y FA_ARCH sólo son útiles bajo DOS/Windows (entradas con
+el bit de sistema, archivo y etiquetas de volúmen). FA_RDONLY es para
+directorios con el bit de sólo lectura en sistemas tipo DOS, o directorios
+sin permiso de escritura por el usuario actual en sistemas tipo Unix.
+FA_HIDDEN es para ficheros ocultos en DOS, o aquellos que compeinzan con '.'
+en sistemas Unix (excepto los ficheros '.' y '..'). FA_DIREC representa
+directorios. Los bits se pueden combinar usando '|' (operador OR binario).
+
+<p>
+Cuando estos bits son pasados a las funciones como el parámetro 'attrib',
+representan un superconjunto de los bits que debe tener un fichero para ser
+incluído en la búsqueda. Esto es, para que un fichero encaje con el patrón,
+sus atributos pueden contener cualquiera de los bits especificados, pero no
+debe contener ningúno de los bits no especificados. Por lo tanto, si usa
+'FA_DIREC | FA_RDONLY', los ficheros y directorios normales serán incluídos
+junto con los ficheros y directorios de sólo lectura, pero no los ficheros y
+directorios ocultos. Similarmente, si usa 'FA_ARCH' entonces tanto los
+ficheros archivados como no archivados serán incluídos.
+
+<p><br>
+<b>void <a name="get_executable_name">get_executable_name</a>(char *buf, int size);</b><br>
+   Llena buf con la ruta completa del ejecutable actual, escribiendo como
+   mucho size bytes. Esto normalmente viene de argv[0], pero en los sistemas
+   Unix donde argv[0] no especifica la ruta, se buscará el fichero en $PATH.
+
+<p><br>
+<b>char *<a name="fix_filename_case">fix_filename_case</a>(char *path);</b><br>
+   Convierte un nombre de fichero a un estado estandarizado. En platadormas
+   DOS, los nombres serán todo mayúsculas. Devuelve una copia del parámetro
+   de camino.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fix_filename_slashes">fix_filename_slashes</a>,
+<a class="xref" href="#fix_filename_path">fix_filename_path</a>.</font></blockquote>
+<b>char *<a name="fix_filename_slashes">fix_filename_slashes</a>(char *path);</b><br>
+   Convierte los separadores de directorios de un nombre de fichero a un
+   carácter estándar. En plataformas DOS, esto es la antibarra. Devuelve una
+   copia del parámetro de camino.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fix_filename_case">fix_filename_case</a>,
+<a class="xref" href="#fix_filename_path">fix_filename_path</a>.</font></blockquote>
+<b>char *<a name="fix_filename_path">fix_filename_path</a>(char *dest, const char *path, int size);</b><br>
+   Convierte un nombre de fichero parcial en una ruta completa, escribiendo
+   en dest como máximo el número de bytes especificados. Devuelve una copia
+   del parámetro dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fix_filename_case">fix_filename_case</a>,
+<a class="xref" href="#fix_filename_slashes">fix_filename_slashes</a>.</font></blockquote>
+<b>char *<a name="replace_filename">replace_filename</a>(char *dest, const char *path,</b>
+<b>         const char *filename, int size);</b><br>
+   Sustituye el camino+nombre de fichero especificados con un nuevo nombre
+   de fichero, escribiendo en dest como máximo el número de bytes
+   especificados. Devuelve una copia del parámetro dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_filename">get_filename</a>,
+<a class="xref" href="#replace_extension">replace_extension</a>,
+<a class="xref" href="#append_filename">append_filename</a>.</font></blockquote>
+<b>char *<a name="replace_extension">replace_extension</a>(char *dest, const char *filename,</b>
+<b>          const char *ext, int size);</b><br>
+   Sustituye el nombre de fichero+extensión especificados con una nueva
+   extensión, escribiendo en dest como máximo el número de bytes
+   especificados. Devuelve una copia del parámetro dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_extension">get_extension</a>,
+<a class="xref" href="#replace_filename">replace_filename</a>.</font></blockquote>
+<b>char *<a name="append_filename">append_filename</a>(char *dest, const char *path,</b>
+<b>        const char *filename, int size);</b><br>
+   Concatena el nombre de fichero especificado al final del camino
+   especificado, escribiendo en dest como máximo el número de bytes
+   especificados. Devuelve una copia del parámetro dest.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#replace_filename">replace_filename</a>.</font></blockquote>
+<b>char *<a name="get_filename">get_filename</a>(const char *path);</b><br>
+   Cuando se le pasa el path específico de un fichero, devuelve un puntero a
+   la porción del nombre del fichero. Tanto '\' como '/' son reconocidos
+   como separadores de directorios.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_extension">get_extension</a>,
+<a class="xref" href="#put_backslash">put_backslash</a>,
+<a class="xref" href="#replace_filename">replace_filename</a>.</font></blockquote>
+<b>char *<a name="get_extension">get_extension</a>(const char *filename);</b><br>
+   Cuando se le pasa un nombre de fichero completo (con o sin información
+   de path) devuelve un puntero a la extensión del fichero.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_filename">get_filename</a>,
+<a class="xref" href="#put_backslash">put_backslash</a>,
+<a class="xref" href="#replace_extension">replace_extension</a>.</font></blockquote>
+<b>void <a name="put_backslash">put_backslash</a>(char *filename);</b><br>
+   Si el último caracter de un nombre no es '\', '/', '#' o un separador de
+   dispositivo (ej: ':' bajo DOS), esta rutina concatenará un '\' o '/'
+   (dependiendo de la plataforma). Nota: ignore el nombre de la función, está
+   anticuado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_extension">get_extension</a>,
+<a class="xref" href="#get_filename">get_filename</a>.</font></blockquote>
+<b>int <a name="file_exists">file_exists</a>(const char *filename, int attrib, int *aret);</b><br>
+   Chequea la existencia de un fichero de nombre y atributos dados (lea más
+   arriba), devolviendo distinto de cero si el fichero existe. Si aret no es
+   NULL, contendrá los atributos del fichero existente al acabar la llamada.
+   Si ocurre un error, el código de error de sistema será almacenado en
+   errno.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#exists">exists</a>,
+<a class="xref" href="#file_size">file_size</a>,
+<a class="xref" href="#file_time">file_time</a>.</font></blockquote>
+<b>int <a name="exists">exists</a>(const char *filename);</b><br>
+   Versión reducida de file_exists(), que comprueba la existencia de ficheros
+   normales, los cuales pueden tener los bits de archivo o sólo lectura
+   activados, pero no son ocultos, directorios, ficheros de sistema, etc.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#file_exists">file_exists</a>,
+<a class="xref" href="#file_size">file_size</a>,
+<a class="xref" href="#file_time">file_time</a>.</font></blockquote>
+<b>long <a name="file_size">file_size</a>(const char *filename);</b><br>
+   Devuelve el tamaño del fichero en bytes. Si el fichero no existe u ocurre
+   un error, devolverá cero y almacenará el código de error de sistema en
+   errno.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#file_exists">file_exists</a>,
+<a class="xref" href="#file_time">file_time</a>.</font></blockquote>
+<b>time_t <a name="file_time">file_time</a>(const char *filename);</b><br>
+   Devuelve el tiempo de modificación de un fichero (número de segundos desde
+   las 00:00:00 GMT del 1 de Enero de 1970).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#file_exists">file_exists</a>,
+<a class="xref" href="#file_size">file_size</a>.</font></blockquote>
+<b>int <a name="delete_file">delete_file</a>(const char *filename);</b><br>
+   Borra un fichero.
+
+<p><br>
+<b>int <a name="for_each_file">for_each_file</a>(const char *name, int attrib,</b>
+<b>                  void (*callback)(const char *filename, int attrib,</b>
+<b>                  int param), int param);</b><br>
+   Encuentra todos los ficheros que se ajusten a la máscara (ej: *.exe) y
+   atributos especificados (lea más arriba), y ejecuta callback() por cada
+   uno de ellos. A callback() se le pasan tres parámetros, el primero es la
+   cadena que contiene el nombre completo del fichero, el segundo los
+   atributos del fichero, y el tercer parámetro es un entero que es copia de
+   param (puede usar esto para lo que quiera). Si ocurre un error, el código
+   de error será almacenado en errno, y callback() puede abortar
+   for_each_file al activar errno. Devuelve el número de llamadas con éxito
+   hechas a callback().
+
+<p><br>
+<b>int <a name="al_findfirst">al_findfirst</a>(const char *pattern, struct al_ffblk *info, int attrib);</b><br>
+   Función de bajo nivel para buscar ficheros. Esta función busca el primer
+   fichero que concuerde con el patrón y los atributos de fichero
+   especificados (lea más arriba). La información sobre el fichero (si
+   existe) será puesta en la estructura al_ffblk que debe proveer usted. La
+   función devuelve cero si se encontró un fichero, distinto de cero si no se
+   encontró ninguno, y en este caso ajusta errno apropiadamente. La
+   estructura al_ffblk tiene la siguiente forma:
+<blockquote class="code"><pre>
+     struct al_ffblk
+     {
+         int attrib;       - atributos del fichero encontrado
+         time_t time;      - tiempo de modificación del fichero
+         long size;        - tamaño del fichero
+         char name[512];   - nombre del fichero
+     };
+</pre></blockquote>
+   Hay más cosas en esta estructura, pero son para uso interno.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#al_findnext">al_findnext</a>,
+<a class="xref" href="#al_findclose">al_findclose</a>.</font></blockquote>
+<b>int <a name="al_findnext">al_findnext</a>(struct al_ffblk *info);</b><br>
+   Esto encuentra el siguiente fichero en una búsqueda comenzada por
+   al_findfirst. Devuelve cero si se encontró un fichero, distinto de cero si
+   no se encontró ninguno, y en éste caso ajusta errno apropiadamente.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#al_findfirst">al_findfirst</a>,
+<a class="xref" href="#al_findclose">al_findclose</a>.</font></blockquote>
+<b>void <a name="al_findclose">al_findclose</a>(struct al_ffblk *info);</b><br>
+   Esto cierra una búsqueda previamente abierta mediante al_findfirst().
+   
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#al_findfirst">al_findfirst</a>,
+<a class="xref" href="#al_findnext">al_findnext</a>.</font></blockquote>
+<b>int <a name="find_allegro_resource">find_allegro_resource</a>(char *dest, const char *resource,</b>
+<b>                          const char *ext, const char *datafile,</b>
+<b>                          const char *objectname, const char *envvar,</b>
+<b>                          const char *subdir, int size);</b><br>
+   Busca un archivo de recursos, ej allegro.cfg o language.dat. Pasándole
+   una cadena resource describiendo qué se está buscando, junto con una
+   información extra opcional como la extensión por defecto, en qué datafile
+   mirar, qué nombre de objeto debería tener en el datafile, cualquier
+   variable de entorno que se tenga que chequear, y cualquier subdirectorio
+   que le gustaría comprobar, así como la localización por defecto, esta
+   función mira en un infierno de sitios distintos :-) Devuelve cero si
+   ha tenido éxito, y guarda el path absoluto del fichero (como mucho size
+   bytes) en el parámetro dest.
+
+<p><br>
+<b>void <a name="packfile_password">packfile_password</a>(const char *password);</b><br>
+   Activa el password de encriptación que será usado para todas las
+   operaciones de lectura/escritura con ficheros abiertos en el futuro con
+   las funciones packfile de Allegro (estén comprimidos o nó), incluyendo las
+   rutinas de configuración, salvado y cargado. Los ficheros escritos con un
+   password no pueden ser leídos a no ser que se seleccione el password
+   correcto, por lo que cuidado: si olvida la clave, ¡nadie podrá recuperar
+   su datos! Pase NULL o una cadena vacía para volver al modo normal, no
+   encriptado. Si está usando esta función para evitar que otros accedan a
+   sus ficheros de datos, tenga cuidado de no salvar una copia obvia de su
+   clave en el ejecutable: si hay cadenas como "Soy la clave del fichero de
+   datos", sería muy fácil acceder a sus datos :-)
+
+<p>
+   Importante: tan pronto como haya abierto un fichero usando un password de
+   encriptación, llame a packfile_password(NULL). Mejor aún, no use esta
+   función. Nunca.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pack_fopen">pack_fopen</a>,
+<a class="xref" href="alleg028.html#load_datafile">load_datafile</a>.</font></blockquote>
+<b>PACKFILE *<a name="pack_fopen">pack_fopen</a>(const char *filename, const char *mode);</b><br>
+   Abre un fichero según el modo, que puede contener cualquiera de los
+   siguientes letras.
+<ul><li>
+      'r' - abrir fichero para leer.
+<li>
+      'w' - abrir fichero para escribir, sobreescribiendo datos existentes.
+<li>
+      'p' - abrir fichero en modo comprimido. Los datos serán comprimidos a
+       medida que se escriben en el fichero, y automáticamente
+       descomprimidos durante las operaciones de lectura. Los ficheros
+       creados de este modo producirán basura si se intentan leer sin
+       activar antes este modo.
+<li>
+      '!' - abrir fichero para escribir en modo normal, sin compresión, pero
+       añade el valor F_NOPACK_MAGIC al comienzo del fichero, para que luego
+       pueda ser abierto en modo comprimido y Allegro autodetectará que los
+       datos no necesitan ser descomprimidos.
+</ul>
+   En vez de estos modos, una de las constantes F_READ, FWRITE,
+   F_READ_PACKED, F_WRITE_PACKED o F_WRITE_NOPACK puede ser usada como el
+   parámetro de modo. Si todo funciona, pack_fopen() devuelve un puntero a
+   una estructura de fichero, y con error, devuelve NULL y almacena el
+   código de error en errno. Un intento de leer un fichero normal en modo
+   comprimido activará errno a EDOM.
+
+<p>
+   Las funciones de ficheros también entienden varios nombres "mágicos" que
+   pueden ser usados por varios motivos. Estos nombres son:
+<ul><li>
+      "#" - lee datos que han sido añadidos al fichero ejecutable con la
+      utilidad exedat, como si fuesen de un fichero independiente.
+<li>
+      'nombre.dat#nombre_obj' - abre un objeto específico de un fichero de
+      datos, y lo lee como si fuese de un fichero normal. Puede crear
+      ficheros de datos anidados exáctamente como una estructura normal de
+      directorios, por ejemplo podría abrir el fichero
+      'nombre.dat#graficos/nivel1/datomapa'.
+<li>
+      '#nombre_obj' - combinación de lo de arriba, leer un objeto de un
+      fichero de datos que ha sido añadido al ejecutable.
+</ul>
+   Con estos nombres especiales, los contenidos de un objeto de un fichero de
+   datos o de un fichero añadido pueden ser leídos de modo idéntico que un
+   fichero normal, por lo que cualquiera de las funciones de acceso a
+   ficheros de Allegro (ejemplo: load_pcx() y set_config_file()) pueden ser
+   usadas para leerlos. Sin embargo, no podrá escribir en estos ficheros:
+   sólo pueden ser leídos. Además, debe tener su fichero de datos
+   descomprimido o con compresión por objetos si planea leer objetos
+   individuales (de otra manera, habrá una sobrecarga de búsqueda al ser
+   leído). Finalmente, tenga en cuenta que los tipos de objetos especiales de
+   Allegro no son los mismos que los de los ficheros de los que importe los
+   datos. Cuando importe datos como bitmaps o samples en el grabber, éstos
+   son convertidos a un formato específico de Allegro, pero el marcador de
+   sintaxis de ficheros '#' lee los objetos como trozos binarios raw. Esto
+   significa, que si por ejemplo, quiere usar load_pcx para leer una imagen
+   de un fichero de datos, debería importarla como un bloque binario en vez
+   de un objeto BITMAP.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg032.html#file_select">file_select</a>,
+<a class="xref" href="#packfile functions">packfile functions</a>,
+<a class="xref" href="#pack_fopen_chunk">pack_fopen_chunk</a>,
+<a class="xref" href="#packfile_password">packfile_password</a>.</font></blockquote>
+<br><center><h2><a name="packfile functions">packfile functions</a></h2></center><p>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pack_fopen">pack_fopen</a>.</font></blockquote>
+<b>int  <a name="pack_fclose">pack_fclose</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_fseek">pack_fseek</a>(PACKFILE *f, int offset);</b><br>
+<b>int  <a name="pack_feof">pack_feof</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_ferror">pack_ferror</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_getc">pack_getc</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_putc">pack_putc</a>(int c, PACKFILE *f);</b><br>
+<b>int  <a name="pack_igetw">pack_igetw</a>(PACKFILE *f);</b><br>
+<b>long <a name="pack_igetl">pack_igetl</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_iputw">pack_iputw</a>(int w, PACKFILE *f);</b><br>
+<b>long <a name="pack_iputl">pack_iputl</a>(long l, PACKFILE *f);</b><br>
+<b>int  <a name="pack_mgetw">pack_mgetw</a>(PACKFILE *f);</b><br>
+<b>long <a name="pack_mgetl">pack_mgetl</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_mputw">pack_mputw</a>(int w, PACKFILE *f);</b><br>
+<b>long <a name="pack_mputl">pack_mputl</a>(long l, PACKFILE *f);</b><br>
+<b>long <a name="pack_fread">pack_fread</a>(void *p, long n, PACKFILE *f);</b><br>
+<b>long <a name="pack_fwrite">pack_fwrite</a>(const void *p, long n, PACKFILE *f);</b><br>
+<b>char *<a name="pack_fgets">pack_fgets</a>(char *p, int max, PACKFILE *f);</b><br>
+<b>int  <a name="pack_fputs">pack_fputs</a>(const char *p, PACKFILE *f);</b><br>
+
+<p>
+   Todas estas funcionan como las funciones equivalentes stdio, excepto que
+   pack_fread() y pack_fwrite() toman un sólo parámetro de tamaño en vez de
+   ese estúpido sistema de tamaño y num_elements, sólo puede avanzar en un
+   fichero hacia delante desde la posición relativa actual, y pack_fgets() no
+   incluye el retorno de carro en las cadenas que devuelve. Las rutinas
+   pack_i* y pack_m leen y escriben valores de 16 y 32 bits usando los
+   sistemas de orden de Intel y Motorola respectivamente. Tome nota que la
+   búsqueda es muy lenta cuando lea ficheros comprimidos, y que debería ser
+   evitada a no ser que sepa que el fichero no está comprimido.
+
+<p><br>
+<b>PACKFILE *<a name="pack_fopen_chunk">pack_fopen_chunk</a>(PACKFILE *f, int pack);</b><br>
+   Abre sub-chunks en un fichero. Los chunks son primariamente usados por el
+   código de ficheros de datos, pero pueden serle útiles para sus propias
+   rutinas de ficheros. Un chunk provee una vista lógica de parte de un
+   fichero, que puede ser comprimido como un ente individual y será
+   automáticamente insertado y comprobará los contadores de tamaño para
+   prevenir la lectura después del final del chunk. Para escribir un chunk
+   en un fichero f, use este código:
+<blockquote class="code"><pre>
+      /* Asumo que f es un PACKFILE * que ha sido abierto en modo escritura*/
+      f = pack_fopen_chunk(f, pack);
+      escribe datos en f
+      f = pack_fclose_chunk(f);
+</pre></blockquote>
+   Los datos escritos en el chunk serán precedidos con dos contadores de
+   tamaño (32 bits, big-endian). Para los chunks sin compresión, éstos serán
+   ajustados al tamaño de los datos del chunk. Para chunks comprimidos
+   (creados al activar la variable pack), el primer tamaño es el tamaño real
+   del chunk, y el segundo será el tamaño negativo de los datos
+   descomprimidos.
+
+<p>
+   Para leer el chunk, use este código:
+<blockquote class="code"><pre>
+      /* Asumo que f es un PACKFILE * que ha sido abierto en modo escritura*/
+      f = pack_fopen_chunk(f, FALSE);
+      lee datos de f
+      f = pack_fclose_chunk(f);
+</pre></blockquote>
+   Esta secuencia leerá los contadores de tamaño creados cuando el chunk fue
+   escrito, y automáticamente descomprimirá el contenido del chunk si fue
+   comprimido. El tamaño también evitará leer después del final del chunk
+   (Allegro devolverá EOF si intenta esto), y automáticamente ignora los
+   datos no leídos del chunk cuando llamae pack_fclose_chunk().
+
+<p>
+   Los chunks pueden ser anidados unos dentro de otros al hacer llamadas
+   repetidas a pack_fopen_chunk(). Al escribir un fichero, el estado de
+   compresión es heredado del fichero padre, por lo que sólo tiene que
+   activar la variable pack si el fichero padre no fue comprimido pero
+   quiere comprimir los datos del chunk. Si el fichero padre ya está
+   abierto en modo comprimido, activar la variable pack hará que los datos
+   sean comprimidos dos veces: una cuando los datos son escritos en el
+   chunk, y otra cuando el chunk es escrito en el fichero padre.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pack_fclose_chunk">pack_fclose_chunk</a>,
+<a class="xref" href="#pack_fopen">pack_fopen</a>.</font></blockquote>
+<b>PACKFILE *<a name="pack_fclose_chunk">pack_fclose_chunk</a>(PACKFILE *f);</b><br>
+   Cierra un sub-chunk de un fichero, que previamente ha sido obtenido al
+   llamar pack_fopen_chunk().
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pack_fopen_chunk">pack_fopen_chunk</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

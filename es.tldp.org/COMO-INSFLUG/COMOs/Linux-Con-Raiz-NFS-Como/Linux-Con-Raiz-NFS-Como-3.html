@@ -1,0 +1,194 @@
+<HTML>
+<HEAD>
+<TITLE>Linux con Ra&iacute;z-NFS Mini-COMO: Configuraci&oacute;n del servidor</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Linux-Con-Raiz-NFS-Como-2.html">Anterior</A>
+<A HREF="Linux-Con-Raiz-NFS-Como-4.html">Siguiente</A>
+<A HREF="Linux-Con-Raiz-NFS-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Configuraci&oacute;n del servidor</A></H2>
+
+
+
+<H2><A NAME="ss3.1">3.1 Compilaci&oacute;n del n&uacute;cleo</A></H2>
+
+
+<P>Incluir soporte <CODE>RARP</CODE> en el n&uacute;cleo del servidor ser&aacute; probablemente una
+buena idea.  Deber&aacute; estar habilitada si se arranca el n&uacute;cleo sin
+par&aacute;metros.  Por otro lado, &eacute;sto no le ayudar&aacute; si el cliente no est&aacute; en la
+misma subred que el servidor. </P>
+<P>El n&uacute;cleo para la estaci&oacute;n de trabajo necesita como configuraciones
+m&iacute;nimas compiladas las siguientes: </P>
+<P>
+<UL>
+<LI>Soporte para sistema de archivos NFS compilado (no es necesario que
+tenga soporte <CODE>ext2</CODE> compilado monol&iacute;ticamente, como m&oacute;dulo es
+suficiente)
+</LI>
+<LI>La opci&oacute;n "<CODE>Root on NFS</CODE>" debe estar habilitada.
+</LI>
+<LI>El controlador que da soporte a la tarjeta de red de la estaci&oacute;n de
+trabajo debe estar compilado.
+</LI>
+<LI>De acuerdo a sus necesidades tendr&aacute; que incluir soporte <CODE>RARP</CODE> o
+<CODE>BOOTP</CODE> para <CODE>NFS-Root</CODE>. (con esto me refiero a las opciones que
+siguen al apartado NFS del men&uacute; configurador del n&uacute;cleo)</LI>
+</UL>
+</P>
+<P>Si la estaci&oacute;n de trabajo va a ser iniciada sin pasar par&aacute;metros al
+n&uacute;cleo, ser&aacute; necesario declarar el dispositivo ra&iacute;z en <CODE>0:255</CODE>.  Haga
+esto creando el fichero de dispositivo: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mknod /dev/nfsroot b 0 255
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Una vez creado, puede establecer el directorio ra&iacute;z de la imagen del
+n&uacute;cleo con: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rdev imagen_del_nucleo /dev/nfsroot
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss3.2">3.2 Creaci&oacute;n del sistema de archivos ra&iacute;z</A></H2>
+
+
+
+<H3>Copiando el sistema de archivos</H3>
+
+
+<P><B>Atenci&oacute;n:</B> si bien estas instrucciones pueden resultar suficientes
+para Usted, no significa que sean &oacute;ptimas en un sistema de trabajo. Hay un
+m&eacute;todo mejor para configurar m&aacute;quinas clientes con el sistema archivos
+ra&iacute;z en NFS en el <I>Cliente-Con-Ra&iacute;z-NFS mini-COMO</I> de Ofer Maor,
+<CODE>
+<A HREF="mailto:ofer@hadar.co.il">ofer@hadar.co.il</A></CODE></P>
+<P>Una vez decida d&oacute;nde va a ser colocado el &aacute;rbol ra&iacute;z, cree &eacute;ste con (por
+ejemplo):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir -p directorio
+tar cClf / - | tar xpCf directorio 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si inicia el n&uacute;cleo sin LILO, entonces el directorio ra&iacute;z tiene que ser
+<CODE>/tftpboot/direcci&oacute;n-IP</CODE>.  Si no le gusta esto, debe cambiarlo en
+la cabecera del <CODE>Makefile</CODE> de los fuentes del n&uacute;cleo, busque una l&iacute;nea
+como: <CODE>NFS_ROOT = -DNFS_ROOT=</CODE>. Si cambia esto, ser&aacute; necesario
+recompilar el n&uacute;cleo. </P>
+
+<H3>Cambios en el sistema de archivos ra&iacute;z</H3>
+
+
+<P>Elimine los archivos innecesarios y revise las instrucciones de los
+ficheros de inicializaci&oacute;n de <CODE>/etc/rc.d.</CODE> Algunos puntos
+importantes: </P>
+<P>
+<UL>
+<LI>Un aspecto importante es la configuraci&oacute;n de la tarjeta ethernet. 
+La estaci&oacute;n de trabajo llega con una, al menos parcial, configuraci&oacute;n de
+<CODE>eth0</CODE>.  Configurar la direcci&oacute;n-IP de la estaci&oacute;n de trabajo como la
+direcci&oacute;n-IP del servidor no es correcto. (Como comprob&oacute; el autor en uno
+de sus primeros intentos) 
+</LI>
+<LI>Otro punto es el archivo <CODE>/etc/fstab</CODE> de la estaci&oacute;n de
+trabajo, que debe estar configurado para un sistema de archivos NFS.
+</LI>
+<LI><B>CUIDADO:</B> No confundir el sistema de archivos ra&iacute;z del
+servidor y el sistema de archivos ra&iacute;z de la estaci&oacute;n de trabajo.  (Yo
+configuraba el <CODE>rc.inet1</CODE> del servidor y me sorprend&iacute;a al ver que la
+estaci&oacute;n de trabajo segu&iacute;a sin funcionar) </LI>
+</UL>
+</P>
+
+<H3>Exportando el sistema de archivos</H3>
+
+
+<P>Exporte el directorio ra&iacute;z a la estaci&oacute;n de trabajo. Consulte
+<CODE>exports(5)</CODE>. Se deber&aacute; reiniciar <CODE>nfsd/mountd</CODE> despu&eacute;s de este
+cambio.  Con RedHat esto puede llevarse a cabo f&aacute;cilmente ejecutando:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/etc/rc.d/init.d/nfs stop 
+/etc/rcd/init.d/nfs start
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Configuraci&oacute;n RARP</H3>
+
+
+<P>Configure <CODE>RARP</CODE> en alg&uacute;n servidor de su red.  Si arranca sin
+par&aacute;metros en <CODE>nfsroot</CODE>, el servidor <CODE>RARP</CODE> debe adem&aacute;s ser servidor
+NFS.  Generalmente este ser&aacute; el servidor NFS. Para poder hacerlo, se
+necesita que el n&uacute;cleo tenga soporte <CODE>RARP</CODE>.</P>
+<P>Para hacer esto, ejecute (y coloque en alg&uacute;n lugar de <CODE>/etc/rc.d</CODE>
+en el servidor): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/rarp -s direccion-ip direccion-MAC-de-la-tarjeta
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>donde</P>
+<P>
+<DL>
+<DT><B>direccion-ip:</B><DD><P>Direcci&oacute;n IP de la estaci&oacute;n de trabajo y,</P>
+
+<DT><B>direccion-MAC-de-la-tarjeta:</B><DD><P>Direcci&oacute;n MAC o hardware de la
+tarjeta de red de la estaci&oacute;n de trabajo.</P>
+</DL>
+</P>
+<P>ejemplo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/rarp -s 131.131.90.200 00:00:c0:47:10:12
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tambi&eacute;n puede usar un mnem&oacute;nico en lugar de la direcci&oacute;n-IP, cuando el
+servidor est&eacute; capacitado para resolverlo, bien por poder encontrarlo en
+(<CODE>/etc/hosts</CODE> o por b&uacute;squedas en DNS) </P>
+
+<H3>Configuraci&oacute;n de <CODE>BOOTP</CODE></H3>
+
+
+<P>Para configurar BOOTP necesita editar <CODE>/etc/bootptab</CODE>.  Por favor
+consulte las p&aacute;ginas <CODE>man</CODE> sobre <CODE>bootpd(8)</CODE> y <CODE>bootptab(5)</CODE>. </P>
+
+<H3>C&oacute;mo averiguar las direcciones del hardware</H3>
+
+
+<P><I>¡No s&eacute; cu&aacute;les son las direcciones MAC o de hardware! ¿C&oacute;mo puedo
+averiguarlas?</I> </P>
+<P>
+<UL>
+<LI>Arranque Linux con el disquete que ha hecho y busque la l&iacute;nea donde
+se reconoce la tarjeta de red. Normalmente se muestran 6 bytes
+hexadecimales que son la direcci&oacute;n de la tarjeta. 
+</LI>
+<LI>Arranque la m&aacute;quina con cualquier sistema operativo que tenga
+soporte TCP/IP y haga un <CODE>ping</CODE> a la estaci&oacute;n de trabajo desde el
+servidor.  Revise el cache-ARP ejecutando: <CODE>/sbin/arp -a</CODE></LI>
+</UL>
+</P>
+
+
+<HR>
+<A HREF="Linux-Con-Raiz-NFS-Como-2.html">Anterior</A>
+<A HREF="Linux-Con-Raiz-NFS-Como-4.html">Siguiente</A>
+<A HREF="Linux-Con-Raiz-NFS-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

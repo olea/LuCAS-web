@@ -1,0 +1,962 @@
+<HTML
+><HEAD
+><TITLE
+>El Protocolo NNTP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="NNTP y elDemonio nntpd"
+HREF="x-087-2-nntp.html"><LINK
+REL="PREVIOUS"
+TITLE="NNTP y elDemonio nntpd"
+HREF="x-087-2-nntp.html"><LINK
+REL="NEXT"
+TITLE="Instalar el servidor NNTP"
+HREF="x-087-2-nntp.nntpd.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nntp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 22. NNTP y elDemonio nntpd</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nntp.nntpd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NNTP.PROTOCOL">22.1. El Protocolo NNTP</H1
+><P
+>Hemos mencionado dos órdenes NNTP que son clave en cuanto a cómo los artículos
+de noticias se impulsan o seleccionan entre servidores. Ahora, le echaremos un 
+vistazo a todo esto en una sesión NNTP real para mostrarle cuán sencillo es el 
+protocolo. Para ilustrar nuestros propósitos, usaremos un sencillo cliente
+<B
+CLASS="COMMAND"
+>telnet</B
+> para conectar con un servidor de noticias basado
+en INN de la Cervecera Virtual llamado <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>news.vbrew.com</B
+></SPAN
+>. 
+El servidor está corriendo una configuración mínima para que los
+ejemplos sean cortos. Ya veremos cómo completar la configuración de este
+servidor en <A
+HREF="x-087-2-inn.html"
+>Capítulo 23</A
+>.
+En nuestras pruebas pondremos especial cuidado en generar artículos sólo en
+el grupo de noticias <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>es.pruebas</I
+></SPAN
+> para evitar molestar a 
+nadie.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18049">22.1.1. Conectar con el servidor de noticias</H2
+><P
+>&#13;Conectar con el servidor de noticias es tan sencillo como abrir una conexión
+TCP con su puerto NNTP. Cuando esté conectado, aparecerá un anuncio de
+bienvenida. Una de las primeras órdenes que puede probar es 
+<SPAN
+CLASS="SYSTEMITEM"
+>help</SPAN
+>. La respuesta que reciba dependerá
+generalmente de si el servidor cree que somos un servidor NNTP o un cliente
+de noticias, al requerirse grupos de órdenes diferentes. Puede cambiar el
+modo de operación con la orden <B
+CLASS="COMMAND"
+>mode</B
+>; veremos eso en un 
+momento:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>telnet news.vbrew.com nntp</B
+></TT
+>
+    Trying 172.16.1.1...
+    Connected to localhost.
+    Escape character is '^]'.
+    200 news.vbrew.com InterNetNews server INN 1.7.2 08-Dec-1997 ready
+    <TT
+CLASS="USERINPUT"
+><B
+>help</B
+></TT
+>
+    100 Legal commands
+            authinfo
+    		help
+    		ihave
+    		check
+    		takethis
+    		list
+    		mode
+    		xmode
+    		quit
+    		head
+    		stat
+    		xbatch
+    		xpath
+    		xreplic
+    For more information, contact "usenet" at this machine.
+    .</PRE
+></TD
+></TR
+></TABLE
+><P
+>Las respuestas a las órdenes NNTP siempre acaban con un punto (.) en
+una línea separada. Los números que ve en el listado de salida son
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>códigos de respuesta</I
+></SPAN
+> que usa el servidor para indicar
+éxito o fallo de la orden. Los códigos de respuesta se describen en el RFC-977;
+hablaremos de los más importantes conforme vayamos avanzando.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18062">22.1.2. Empujar un artículo de noticias a un servidor</H2
+><P
+>&#13;
+
+
+Mencionamos la orden <B
+CLASS="COMMAND"
+>IHAVE</B
+> cuando hablamos de hacer "pushing"
+de noticias a servidores. Fijémonos ahora en cómo funciona realmente
+la orden <B
+CLASS="COMMAND"
+>IHAVE</B
+>:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>ihave &lt;123456@gw.vk2ktj.ampr.org&gt;</B
+></TT
+>
+    335
+    <TT
+CLASS="USERINPUT"
+><B
+>From: terry@gw.vk2ktj.ampr.org
+Subject: mensaje de prueba enviado con ihave
+Newsgroups: es.pruebas
+Distribution: mundo
+Path: gw.vk2ktj.ampr.org
+Date: 26 Abril 1999
+Message-ID: &lt;123456@gw.vk2ktj.ampr.org&gt;
+Body: 
+
+Esto es un mensaje de prueba enviado usando la orden NNTP IHAVE.
+
+.</B
+></TT
+>
+    235</PRE
+></TD
+></TR
+></TABLE
+><P
+>Ninguna orden NNTP es sensible al uso de mayúsculas o minúsculas, por lo
+que resulta indiferente cómo se introduzcan las órdenes. La orden
+<B
+CLASS="COMMAND"
+>IHAVE</B
+> toma una variable obligada, siendo el ID del mensaje
+lo que se impulsa.
+Se asigna un ID de mensaje único a cada artículo cuando se crea. La orden
+<B
+CLASS="COMMAND"
+>IHAVE</B
+> proporciona al servidor NNTP una manera de decir
+qué articulos tiene cuando quiere impulsar artículos a otro servidor.
+El servidor que envíe usará una orden <B
+CLASS="COMMAND"
+>IHAVE</B
+> para cada
+artículo que desee impulsar. Si el código de respuesta de la orden que genere
+el servidor NNTP receptor se encuentra en el rango &ldquo;3xx&rdquo;,
+el servidor NNTP remitente transmitirá el artículo completo,
+incluyendo toda su cabecera y haciéndolo terminar con un punto en una línea
+aparte. Si el código de respuesta se encuentra en el rango &ldquo;4xx&rdquo;,
+el servidor receptor ha elegido no aceptar el artículo, posiblemente porque
+ya lo tiene o a causa de algún problema, como que se esté quedando sin 
+suficiente espacio en disco.</P
+><P
+>Cuando se ha transmitido el artículo, el servidor receptor emite otro
+código de respuesta indicando si la transferencia del artículo ha concluido
+con éxito.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18086">22.1.3. Cambiar el modo de lectura NNRP</H2
+><P
+>&#13;
+Los lectores de noticias usan sus propios grupos de órdenes cuando se comunican
+con los servidores de noticias. Para activar estas órdenes, el servidor de
+noticias tiene que estar operando en modo <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>de lectura</I
+></SPAN
+>.
+La mayoría de servidores de noticias funcionan en modo de lectura de manera
+predeterminada, a menos que la dirección IP de la máquina con la que conecten
+se encuentre lista como un punto de reenvío de noticias. En cualquier caso,
+NNTP incluye una orden para cambiar explícitamente al modo de lectura:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>mode reader</B
+></TT
+>
+    200 news.vbrew.com InterNetNews NNRP server INN 1.7.2 08-Dec-1997 ready/
+        (posting ok).
+    <TT
+CLASS="USERINPUT"
+><B
+>help</B
+></TT
+>
+    100 Legal commands
+      authinfo user Name|pass Password|generic &lt;prog&gt; &lt;args&gt;
+      article [MessageID|Number]
+      body [MessageID|Number]
+      date
+      group newsgroup
+      head [MessageID|Number]
+      help
+      ihave
+      last
+      list [active|active.times|newsgroups|distributions|distrib.pats|/
+          overview.fmt|subscriptions]
+      listgroup newsgroup
+      mode reader
+      newgroups yymmdd hhmmss ["GMT"] [&lt;distributions&gt;]
+      newnews newsgroups yymmddhhmmss ["GMT"] [&lt;distributions&gt;]
+      next
+      post
+      slave
+      stat [MessageID|Number]
+      xgtitle [group_pattern]
+      xhdr header [range|MessageID]
+      xover [range]
+      xpat header range|MessageID pat [morepat...]
+      xpath MessageID
+    Report problems to &lt;usenet@vlager.vbrew.com&gt;
+    .</PRE
+></TD
+></TR
+></TABLE
+><P
+>En el modo de lectura de NNTP se dispone de muchas órdenes. La mayoría de
+ellas están diseñadas para facilitar la vida de un lector de noticias.
+Mencionamos antes que hay órdenes para pedir al servidor que envíe la
+cabecera y el cuerpo de los artículos de manera separada. También hay
+órdenes que listan los grupos y artículos disponibles, y otras que permiten
+publicar, un medio alternativo de enviar noticias a un servidor.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18100">22.1.4. Listar los grupos disponibles</H2
+><P
+>&#13;
+
+
+La orden <B
+CLASS="COMMAND"
+>list</B
+> lista diferentes tipos de información;
+de manera notable los grupos que soporta el servidor:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>list newgroups</B
+></TT
+>
+    215 Descriptions in form "group description".
+    control                 News server internal group
+    junk                    News server internal group
+    local.general           General local stuff
+    local.test              Local test group
+    .</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18117">22.1.5. Listar grupos activos</H2
+><P
+>&#13;
+<TT
+CLASS="OPTION"
+>list active</TT
+> muestra cada grupos soportado y ofrece información
+sobre ellos. Los dos números de cada línea de la salida son las marcas de agua 
+alta y baja&mdash;es decir, el artículo numerado más alto y el artículo
+numerado más bajo en cada grupo. El lector de noticias es capaz de hacerse 
+una idea del número de artículos del grupo a partir de éstos. Hablaremos un
+poco más sobre estos números en un momento. El último campo de la salida
+muestra variables que controlan si se permite publicar en el grupo, si el
+grupo está moderado y si los artículos publicados tienen o no que guardarse.
+Estas variables se describen con detalle en <A
+HREF="x-087-2-inn.html"
+>Capítulo 23</A
+>. 
+Éste es el aspecto de un ejemplo:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>list active</B
+></TT
+>
+    215 Newsgroups in form "group high low flags".
+    control 0000000000 0000000001 y
+    junk 0000000003 0000000001 y
+    alt.test 0000000000 0000000001 y
+    .</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18129">22.1.6. Publicar un artículo</H2
+><P
+>&#13;
+
+
+Hemos mencionado que había una diferencia entre impulsar un artículo y
+publicar uno. Cuando se impulsa un artículo, se asume implícitamente que
+el artículo ya existe, que tiene un identificador del mensaje que el servidor
+ha asignado al que se publicó originalmente, y que tiene un juego completo de
+cabeceras. Cuando se publica un artículo, se crea el artículo por primera 
+vez y las únicas cabeceras que se aportan son las que puedan tener algún
+sentido para nosotros, como el título o el grupo de noticias al que se 
+desea enviar el artículo. El servidor de noticias en el que publiquemos
+el artículo se encargará de añadir el resto de cabeceras y de crear un ID
+para el mensaje que usará cuando impulse el artículo a otros servidores.</P
+><P
+>Todo esto significa que publicar un artículo es incluso más sencillo que
+impulsar uno. Un ejemplo de publicar sería algo como esto:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>post</B
+></TT
+>
+    340 Ok
+    <TT
+CLASS="USERINPUT"
+><B
+>From: terry@richard.geek.org.au
+Subject: mensaje de prueba número 1
+Newsgroups: es.pruebas
+Body: 
+
+Esto es un mensaje de prueba, ignórelo libremente.
+
+.</B
+></TT
+>
+    240 Article posted</PRE
+></TD
+></TR
+></TABLE
+><P
+>Hemos generado dos mensajes más como éste para dotar de algo de realismo
+a nuestro siguientes ejemplos.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18149">22.1.7. Listar nuevos artículos</H2
+><P
+>&#13;
+
+
+Cuando un lector de noticias se conecta por primera vez con un servidor de
+noticias y el usuario elige leer un grupo de noticias, el lector querrá
+descargar una lista con los nuevos artículos publicados o recibidos desde
+la última vez que el usuario entró al sistema. La orden
+<TT
+CLASS="OPTION"
+>newnews</TT
+> se usa con este propósito.
+Hay variables obligatorias que tienen que proporcionarse: el nombre del
+grupo o grupos a consultar, la fecha de comienzo y la hora a partir de la
+cual listar los mensajes. La fecha y la hora se especifican con números
+de seis dígitos cada una, con la información más significativa primero;
+<TT
+CLASS="REPLACEABLE"
+><I
+>aammdd</I
+></TT
+> y
+<TT
+CLASS="REPLACEABLE"
+><I
+>hhmmss</I
+></TT
+>, respectivamente:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>newnews junk 990101 000000</B
+></TT
+>
+    230 New news follows
+    &lt;7g2o5r$aa$6@news.vbrew.com&gt;
+    &lt;7g5bhm$8f$2@news.vbrew.com&gt;
+    &lt;7g5bk5$8f$3@news.vbrew.com&gt;
+    .</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18169">22.1.8. Elegir un grupo con el que trabajar</H2
+><P
+>&#13;
+
+Cuando el usuario elige un grupo de noticias a leer, el lector de noticias
+puede decirle al servidor que se ha elegido ese grupo. Esto simplifica
+la interacción entre el lector y el servidor de noticias eliminando la 
+necesidad de enviar constantemente el nombre del grupo con cada orden. La
+orden <TT
+CLASS="OPTION"
+>group</TT
+> simplemente toma el nombre del grupo elegido
+como una variable. Muchas de las órdenes siguientes usan el grupo elegido
+como el predeterminado, a menos que se especifique otro grupo de noticias
+explícitamente:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>group es.pruebas</B
+></TT
+>
+    211 3 1 3 es.pruebas</PRE
+></TD
+></TR
+></TABLE
+><P
+>La orden <TT
+CLASS="OPTION"
+>group</TT
+> devuelve un mensaje en el que se indica
+el número de mensajes activos, la marca de agua baja, la marca de agua
+alta y el nombre del grupo respectivamente. Tenga en cuenta que mientras
+que el número de mensajes activos y la marca de agua alta coinciden en
+nuestro ejemplo, a menudo no es éste el caso; en un servidor de noticias
+activo, algunos artículos pueden haber expirado o haberse borrado, 
+haciendo descender el número de mensajes activos pero dejando intacta la
+marca de agua alta.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18185">22.1.9. Listar artículos en un grupo</H2
+><P
+>&#13;
+
+Para dirigirse a los artículos de noticias, el lector tiene que saber qué
+números de artículos representan a los artículos activos. La orden
+<TT
+CLASS="OPTION"
+>listgroup</TT
+> ofrece una lista con los números de los artículos
+activos en el grupo actual o en un grupo explícito si se proporciona el nombre
+del grupo:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>listgroup es.pruebas</B
+></TT
+>
+    211 Article list follows
+    1
+    2
+    3
+    .</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18199">22.1.10. Descargar sólo la cabecera de un artículo</H2
+><P
+>&#13;
+
+
+El usuario tiene que disponer de información acerca de un artículo antes
+de saber si desea leerlo. Hemos mencionado antes que algunas órdenes nos
+permiten descargar la cabecera y el cuerpo de los artículos de manera 
+separada. La orden <TT
+CLASS="OPTION"
+>head</TT
+> se usa para solicitar al servidor
+que sólo transfiera la cabecera del artículo especificado al lector de 
+noticias. Si el usuario no quiere leer el artículo, no hemos desperdiciado
+tiempo y ancho de banda transfiriendo innecesariamente el cuerpo de un artículo
+potencialmente grande.</P
+><P
+>Puede hacerse referencia a los artículos tanto por su número (el de la orden 
+<TT
+CLASS="OPTION"
+>listgroup</TT
+>) como por el identificador del mensaje:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>head 2</B
+></TT
+>
+    221 2 &lt;7g5bhm$8f$2@news.vbrew.com&gt; head
+    Path: news.vbrew.com!not-for-mail
+    From: terry@richard.geek.org.au
+    Newsgroups: es.pruebas
+    Subject: mensaje de prueba número 2
+    Date: 27 Apr 1999 21:51:50 GMT
+    Organization: La Cervecera Virtual
+    Lines: 2
+    Message-ID: &lt;7g5bhm$8f$2@news.vbrew.com&gt;
+    NNTP-Posting-Host: localhost
+    X-Server-Date: 27 Apr 1999 21:51:50 GMT
+    Body: 
+    Xref: news.vbrew.com es.pruebas:2
+    .</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18219">22.1.11. Descargar sólo el cuerpo de un artículo</H2
+><P
+>&#13;
+Si, por otra parte, el usuario decide que quiere leer el artículo, su lector
+de noticias necesita una manera de solicitar que se le transfiera el cuerpo
+del mensaje. La orden <TT
+CLASS="OPTION"
+>body</TT
+> se usa con este propósito. Funciona
+de una manera muy similar a la orden <TT
+CLASS="OPTION"
+>head</TT
+>, exceptuando
+que sólo se devuelve el cuerpo del mensaje.</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>body 2</B
+></TT
+>
+    222 2 &lt;7g5bhm$8f$2@news.vbrew.com&gt; body
+    Esto es otro mensaje de prueba, ignórelo también libremente.
+    
+    .</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN18231">22.1.12. Leer un artículo de un grupo</H2
+><P
+>&#13;
+
+
+Aunque normalmente es más eficiente transferir las cabeceras y los cuerpos
+de manera separada, hay ocasiones en las que puede resultarnos mejor
+descargar el artículo completo. Un buen ejemplo de esto es en aplicaciones
+a través de las que queramos transferir todos los artículos de un grupo 
+sin ningún tipo de preselección, como cuando usamos un programa con caché
+NNTP tipo <B
+CLASS="COMMAND"
+>leafnode</B
+>.<A
+NAME="X-087-2-FNNN03"
+HREF="#FTN.X-087-2-FNNN03"
+>[1]</A
+>&#13;</P
+><P
+>Naturalmente, NNTP nos ofrece una forma de hacer esto, y de manera ya
+poco sorprendente, funciona de manera casi idéntica a como lo hace la
+orden <TT
+CLASS="OPTION"
+>head</TT
+>.  La orden <TT
+CLASS="OPTION"
+>article</TT
+> también
+acepta un número de artículo o un ID de mensaje como variable, pero devuelve
+el artículo completo incluyendo su cabecera:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>article 1</B
+></TT
+>
+    220 1 &lt;7g2o5r$aa$6@news.vbrew.com&gt; article
+    Path: news.vbrew.com!not-for-mail
+    From: terry@richard.geek.org.au
+    Newsgroups: es.pruebas
+    Subject: mensaje de prueba número 1
+    Date: 26 Apr 1999 22:08:59 GMT
+    Organization: La Cerveceraa Virtual
+    Lines: 2
+    Message-ID: &lt;7g2o5r$aa$6@news.vbrew.com&gt;
+    NNTP-Posting-Host: localhost
+    X-Server-Date: 26 Apr 1999 22:08:59 GMT
+    Body: 
+    Xref: news.vbrew.com es.pruebas:1
+    
+    Esto es un mensaje de prueba, ignórelo libremente.
+    
+    .</PRE
+></TD
+></TR
+></TABLE
+><P
+>Si intenta descargar un artículo desconocido el servidor le devolverá
+un mensaje con un código de respuestas apropiado y quizá un mensaje de
+texto legible:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>article 4</B
+></TT
+>
+    423 Bad article number</PRE
+></TD
+></TR
+></TABLE
+><P
+>En esta sección hemos descrito cómo se usan las órdenes NNTP más importantes.
+Si está interesado en desarrollar software que implemente el protocolo NNTP,
+debería acudir a los documentos RFC relevantes; ellos le proporcionarán
+información al detalle que aquí no podemos incluir.</P
+><P
+>Veamos ahora a NNTP en acción mediante el servidor <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>nntpd</B
+></SPAN
+>.</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNN03"
+HREF="x-087-2-nntp.protocol.html#X-087-2-FNNN03"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>leafnode</I
+></SPAN
+> se encuentra disponible por FTP anónimo en
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>wpxx02.toxi.uni-wuerzburg.de</B
+></SPAN
+>
+en el directorio <TT
+CLASS="FILENAME"
+>/pub/</TT
+>.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nntp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nntp.nntpd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>NNTP y elDemonio nntpd</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nntp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Instalar el servidor NNTP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

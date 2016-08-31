@@ -1,0 +1,434 @@
+<HTML
+><HEAD
+><TITLE
+>Algunos aspectos internos de INN</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Noticias de Internet"
+HREF="x-087-2-inn.html"><LINK
+REL="PREVIOUS"
+TITLE="Noticias de Internet"
+HREF="x-087-2-inn.html"><LINK
+REL="NEXT"
+TITLE="INN y los lectores de noticias"
+HREF="x18518.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-inn.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 23. Noticias de Internet</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x18518.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN18438">23.1. Algunos aspectos internos de INN</H1
+><P
+>&#13;El núcleo de INN es el demonio <B
+CLASS="COMMAND"
+>innd</B
+>. La tarea de <B
+CLASS="COMMAND"
+>innd</B
+> 
+es manejar todos los artículos entrantes, los almacena y se los pasa a cualquier proveedor 
+de noticias que los requiera. innd se activa cuando se carga el núcleo del sistema y queda 
+trabajando de forma continua en segundo plano. Ejecutándose como demonio se incrementa el 
+rendimiento ya que sólamente cuando se inicia se leerán los ficheros de estado. Dependiendo 
+del volumen del proveedor de noticias, algunos ficheros como por ejemplo <TT
+CLASS="FILENAME"
+>history</TT
+> (que contiene una lista de todos los artículos procesados recientemente) puede 
+estar en el rango que va desde unos pocos megabytes hasta varias decenas.</P
+><P
+>Otra característica importante de INN es que sólamente hay una copia de <B
+CLASS="COMMAND"
+>innd</B
+>
+ejecutándose todo el tiempo. Esto es muy beneficioso a nivel de rendimiento, ya que el demonio puede 
+procesar todos los artículos sin tener que preocuparse por el sincronismo de sus estados internos con 
+otras copias de <B
+CLASS="COMMAND"
+>innd</B
+> que se encuentran revolviendo la cola del servidor al mismo 
+tiempo. Sin embargo, esta opción afecta el diseño global del sistema de noticias. Debido a ésto, es 
+importante que las noticias entrantes sean procesadas lo más rápidamente, es inaceptable que el 
+servidor esté ocupado en tareas mundanas tales como darle acceso a un cliente de noticias vía NNTP o 
+descomprimir paquetes que lleguen por UUCP. En consecuencia, este tipo de tareas deben ser separadas 
+del servidor principal e implementadas por otros programas.
+<A
+HREF="x18438.html#X-087-2-INN.INN.ARCHITECTURE"
+>Figura 23-1</A
+> intenta ilustrar las relaciones entre <B
+CLASS="COMMAND"
+>innd</B
+>, las otras tareas locales, los servidores y clientes de noticias remotos.</P
+><P
+>&#13;
+
+
+Hoy día, NNTP es el medio de transporte más común en cuanto a noticias se refiere, y es el único que
+<B
+CLASS="COMMAND"
+>innd</B
+> soporta directamente.
+Esto significa que <B
+CLASS="COMMAND"
+>innd</B
+> continuamente está escuchando el puerto 119 (TCP) 
+y acepta las conexiones que utilizan el protocolo &ldquo;ihave&rdquo;.</P
+><P
+>Los artículos que llegan por otro tipo de transporte que no sea NNTP son soportados de forma indirecta
+haciendo que otros procesos acepten los artículos y se los reenvíen a <B
+CLASS="COMMAND"
+>innd</B
+> por NNTP.
+Los paquetes que provienen de un enlace UUCP, por ejemplo, son tradicionalmente manipulados por el programa
+<B
+CLASS="COMMAND"
+>rnews</B
+>. Este programa descomprime los paquetes si es necesario, y separa cada uno 
+de los artículos; hecho esto, se los ofrece a <B
+CLASS="COMMAND"
+>innd</B
+> uno por uno.</P
+><P
+>Los clientes de noticias, pueden entregar un artículo escrito por un usuario. Como el manejo de 
+estos clientes merece especial atención, volveremos a este tema un poco más tarde.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-INN.INN.ARCHITECTURE"><P
+><B
+>Figura 23-1. Arquitectura de INN (simplificada)</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_2301.jpg"></P
+></DIV
+></DIV
+><P
+>Cuando recibe un artículo, <B
+CLASS="COMMAND"
+>innd</B
+> primero mira el identificador el mensaje (message ID) en el 
+fichero <TT
+CLASS="FILENAME"
+>history</TT
+>. Los artículos y ocurrencias duplicados, son descartados y 
+opcionalmente registrados en algún fichero de registro. Lo mismo sucede con artículos muy viejos o por 
+ausencia de algún campo requerido, por ejemplo <TT
+CLASS="LITERAL"
+>Subject:</TT
+>.<A
+NAME="AEN18482"
+HREF="#FTN.AEN18482"
+>[1]</A
+>Si <B
+CLASS="COMMAND"
+>innd</B
+> encuentra que el artículo está en orden, 
+busca en el campo <TT
+CLASS="LITERAL"
+>Newsgroups:</TT
+> para saber a qué grupos de noticias fue remitido.
+Si alguno o todos estos grupos se encuentran en el fichero <TT
+CLASS="FILENAME"
+>active</TT
+>, el artículo 
+se archiva en el disco. En caso contrario, se archiva en un grupo especial llamado 
+<SPAN
+CLASS="SYSTEMITEM"
+>junk</SPAN
+> (Basura).</P
+><P
+>Los artículos individuales se guardan en <TT
+CLASS="FILENAME"
+>/var/spool/news</TT
+>, también llamado 
+cola de noticias <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>(news spool)</I
+></SPAN
+>. Cada grupo de noticias tiene su propio directorio,
+en el cuál cada artículo se guarda por separado en un fichero. 
+Los nombres de estos ficheros son números consecutivos, por ejemplo, un artículo publicado en 
+<SPAN
+CLASS="SYSTEMITEM"
+>comp.risks</SPAN
+> se guardará como  <TT
+CLASS="FILENAME"
+>comp/risks/217</TT
+>. 
+En el momento de guardarlo, <B
+CLASS="COMMAND"
+>innd</B
+> busca el directorio donde debería ubicarse, si no se 
+encuentra, lo crea automáticamente.</P
+><P
+>&#13;Aparte de guardar los artículos localmente, puede reenviarlos a otros servidores. Esto se controla por
+el fichero <TT
+CLASS="FILENAME"
+>newsfeeds</TT
+> donde están listados todos los servidores de menor jerarquía a los 
+cuáles se les deben pasar los artículos.</P
+><P
+>De la misma forma que <B
+CLASS="COMMAND"
+>innd&thinsp;</B
+> gestiona el proceso de entrada de los mensajes, gestiona 
+en una sola interfaz, los que salen. Él mismo puede gestionar todo el transporte saliente. Sin embargo, necesita 
+varios motores que envíen los artículos a los demás servidores. Todos los recursos para el envío se llaman en 
+forma colectiva &ldquo;canales<A
+NAME="AEN18501"
+HREF="#FTN.AEN18501"
+>[2]</A
+>&rdquo;. Dependiendo de su propósito, un 
+canal puede tener diferentes atributos que determinen exactamente qué información debe pasarle <B
+CLASS="COMMAND"
+>innd</B
+>.</P
+><P
+>&#13;Para un suministro NNTP saliente, por ejemplo, <B
+CLASS="COMMAND"
+>innd</B
+> podría bifurcar el suministro 
+hacia el programa <B
+CLASS="COMMAND"
+>innxmit</B
+> al comienzo, y por cada artículo pasarle el identificador, 
+el tamaño, y el nombre del fichero hacia su entrada estándar, por otra parte, si se usa UUCP como  
+suministro,<B
+CLASS="COMMAND"
+>innd</B
+> puede escribir el tamaño del artículo y su nombre en un registro 
+especial, el cuál es la cabecera de un proceso diferente a intervalos regulares en orden de crear los 
+ficheros por lotes y hacer la cola para el subsistema UUCP.</P
+><P
+>Además de estos dos ejemplos, existen otros tipos de canales que no son estrictamente para suministros 
+de salida. Éstos son usados, por ejemplo, cuando se desea archivar ciertos grupos de noticias, o 
+cuando se quiere generar información general. Esta información general se crea con la intención de 
+ayudar a los lectores de noticias a seguir el hilo de un tema de manera más eficaz. 
+Los antiguos lectores de noticias tienen que buscar en todos los artículos de forma separada para obtener la 
+información contenida en las cabeceras utilizada para seguir el hilo de los mensajes. Esto impone una pesada 
+carga al servidor, especialmente cuando se usa NNTP; adicionalmente, es muy lento.
+<A
+NAME="AEN18511"
+HREF="#FTN.AEN18511"
+>[3]</A
+>
+El mecanismo de información general alivia este problema pregrabando las cabeceras que son 
+relevantes en un fichero separado (llamado <TT
+CLASS="FILENAME"
+>.overview</TT
+>) por cada grupo de noticias.
+Esta información puede ser recogida por los lectores de noticias leyendo directamente desde el directorio 
+donde se encuentra la cola de los mensajes, o usando la instrucción <B
+CLASS="COMMAND"
+>XOVER</B
+>
+estando conectado vía NNTP. INN tiene al demonio <B
+CLASS="COMMAND"
+>innd</B
+>
+para suministrar todos los mensajes usando la instrucción <B
+CLASS="COMMAND"
+>overchan</B
+> la cuál se adosa 
+al demonio a través del canal. Luego veremos este método cuando se discutan las configuraciones de los 
+suministros de noticias.&#13;</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN18482"
+HREF="x18438.html#AEN18482"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> 
+Esto es indicado por la cabecera <TT
+CLASS="REPLACEABLE"
+><I
+>Date:</I
+></TT
+>; y el límite es usualmente 
+dos semanas.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN18501"
+HREF="x18438.html#AEN18501"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>channels</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN18511"
+HREF="x18438.html#AEN18511"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Hilar 1.000 artículos cuando se conversa con un servidor activo 
+puede tomar fácilmente alrededor de cinco minutos, que sólamente el más dedicado 
+adicto a las noticias de Internet encontraría aceptable.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-inn.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x18518.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Noticias de Internet</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-inn.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>INN y los lectores de noticias</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

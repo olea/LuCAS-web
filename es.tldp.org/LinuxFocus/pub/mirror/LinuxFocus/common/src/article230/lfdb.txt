@@ -1,0 +1,229 @@
+REBOL [
+    Title: "Lfdb"
+    Date: 11-Jan-2002
+    Version: 1.0.0
+    File: %lfdb.r
+    Author: "Georges Tarbouriech"
+    Purpose: "A simple article database."
+    Email: georges.t@linuxfocus.org
+    Category: [file db util vid view 3]
+]
+
+numbers-path: %articles.r ;data file
+number-list: none
+fields: [number category title author english spanish french german dutch russian turkish issue updat]
+
+numbers: either exists? numbers-path [load numbers-path][
+    [[number "1" category "Forum" title "What is Linux ?" author "M.Torrealba"
+    english "M.A.Sepulveda" spanish "M.Torrealba" french "F.Gaurand" german
+    "K.Socher" dutch "J.Onbekend" russian "unk" turkish "unk" issue
+    "November1997"]]
+]
+
+dex-styles: stylize [
+    lab: label  60x20 right bold middle font-size 11
+    btn: button 64x20 font-size 11 edge [size: 1x1]
+    fld: field  200x20 font-size 11 middle edge [size: 1x1]
+    inf: info   font-size 11 middle edge [size: 1x1]
+    ari: field wrap font-size 11 edge [size: 1x1] with [flags: [field tabbed]]
+]
+
+dex-pane1: layout/offset [
+    origin 0 space 2x0 across
+    styles dex-styles
+    lab "Number"    number: fld bold return
+    lab "Category"  category: fld return
+    lab "Title"     title: fld return
+    lab "Author"    author: fld return
+    lab "English"   english: fld return
+    lab "Spanish"   spanish: fld return
+    lab "French"    french: fld return
+    lab "German"    german: fld return
+    lab "Dutch"     dutch: fld return
+    lab "Russian"   russian: fld return
+    lab "Turkish"   turkish: fld return
+    lab "Issue"     issue: fld return
+    lab "Updated" updat: inf 200x20 return
+    pad 136x1 btn "Close" #"^q" [store-entry save-file quit]
+] 0x0
+updat/flags: none
+
+dex: layout [
+    backdrop 128.128.128
+    origin 8x8
+    space 0x1
+    styles dex-styles
+    srch: fld 196x20 bold
+    across
+    rslt: list 180x150 [
+        nt: txt 178x15 middle font-size 11 [
+            store-entry curr: cnt find-number nt/text update-entry unfocus show dex
+        ]
+    ]
+    supply [
+        cnt: count + scroll-off
+        face/text: ""
+        face/color: snow
+        if not n: pick number-list cnt [exit]
+        face/text: select n 'number  face/font/color: black
+        if curr = cnt [face/color: system/view/vid/vid-colors/field-select]
+    ]
+    sl: slider 16x150 [scroll-list] return
+
+    return
+    btn "New" #"^n" [new-number]
+    btn "Del" #"^d" [delete-number unfocus update-entry search-all show dex]
+    btn "Sort" [sort numbers sort number-list show rslt]
+    return
+    
+    at srch/offset + (srch/size * 1x0)
+    bx1: box dex-pane1/size
+    
+    return
+]
+
+bx1/pane: dex-pane1/pane
+rslt/data: []
+this-number: first numbers
+number-list: copy numbers
+curr: none
+search-text: ""
+scroll-off: 0
+
+srch/feel: make srch/feel [
+    redraw: func [face act pos][
+        face/color: pick face/colors face <> system/view/focal-face
+        if all [face = system/view/focal-face face/text <> search-text] [
+            search-text: copy face/text search-all
+            if 1 = length? number-list [this-number: first number-list update-entry show dex]
+        ]
+    ]
+]
+
+update-file: func [data] [
+    set [path file] split-path numbers-path
+    if not exists? path [make-dir/deep path]
+    write numbers-path data
+]
+
+save-file: has [buf] [
+    buf: reform [{REBOL [Title: "Article Database" Date:} now "]^/[^/"]
+    foreach n numbers [repend buf [mold n newline]]
+    update-file append buf "]"
+]
+
+delete-number: does [
+    remove find/only numbers this-number
+    if empty? numbers [append-empty]
+    save-file
+    new-number
+]
+
+clean-numbers: function [][n][
+    forall numbers [
+        if any [empty? first numbers none? n: select first numbers 'number empty? n][
+            remove numbers
+        ]
+    ]
+    numbers: head numbers
+]
+
+search-all: function [] [ent flds] [
+    clean-numbers
+    clear number-list
+    flds: [number] 
+    either empty? search-text [insert number-list numbers][
+        foreach num numbers [
+            foreach word flds [
+                if all [ent: select num word  find ent search-text][
+                    append/only number-list num
+                    break
+                ]
+            ]
+        ]
+    ]
+    scroll-off: 0
+    sl/data: 0
+    resize-drag
+    scroll-list
+    curr: none
+    show [rslt sl]
+]
+
+new-number: does [
+    store-entry
+    clear-entry
+    search-all
+    append-empty
+    focus number
+;   update-entry
+]
+
+append-empty: does [append/only numbers this-number: copy []]
+
+find-number: function [str][] [
+    foreach num numbers [
+        if str = select num 'number [
+            this-number: num
+            break
+        ]
+    ]
+]
+
+store-entry: has [val ent flag] [
+    flag: 0
+    if not empty? trim number/text [
+        foreach word fields [
+            val: trim get in get word 'text
+            either ent: select this-number word [
+                if ent <> val [insert clear ent val  flag: flag + 1]
+            ][
+                if not empty? val [repend this-number [word copy val] flag: flag + 1]
+            ]
+            if flag = 1 [flag: 2  updat/text: form now]
+        ]
+        if not zero? flag [save-file]
+    ]
+]
+
+update-entry: does [
+    foreach word fields [
+        insert clear get in get word 'text any [select this-number word ""]
+    ]
+    show rslt
+]
+
+clear-entry: does [
+    clear-fields bx1
+    updat/text: form now
+    unfocus
+    show dex
+]
+
+show-numbers: does [
+    clear rslt/data
+    foreach n number-list [
+        if n/number [append rslt/data n/number]
+    ]
+    show rslt
+]
+
+scroll-list: does [
+    scroll-off: max 0 to-integer 1 + (length? number-list) - (100 / 16) * sl/data
+    show rslt
+]
+
+do resize-drag: does [sl/redrag 100 / max 1 (16 * length? number-list)]
+
+center-face dex
+new-number
+focus srch
+show-numbers
+view/new/title dex reform [system/script/header/title system/script/header/version]
+insert-event-func [
+    either all [event/type = 'close event/face = dex][
+        store-entry
+        quit
+    ][event]
+]
+do-events

@@ -1,0 +1,336 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>``GNU Privacy Guard'' (GnuPG) Mini Como: GnuPG + PGP</TITLE>
+ <LINK HREF="GPG-Mini-Como-6.html" REL=next>
+ <LINK HREF="GPG-Mini-Como-4.html" REL=previous>
+ <LINK HREF="GPG-Mini-Como.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="GPG-Mini-Como-6.html">Página siguiente</A>
+<A HREF="GPG-Mini-Como-4.html">Página anterior</A>
+<A HREF="GPG-Mini-Como.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="s5">5. GnuPG + PGP</A></H2>
+
+<P>
+<P>Al ser <CODE>PGP</CODE> un programa m&aacute;s antiguo que <CODE>GnuPG</CODE>, es normal que un 
+nuevo usuario de <CODE>GnuPG</CODE> tenga ya instalado alguna versi&oacute;n de <CODE>PGP</CODE> en 
+su sistema, y que desee mantener sus viejas claves despu&eacute;s de actualizarse a 
+<CODE>GnuPG</CODE>.  Pues bien, no s&oacute;lo es posible importar el contenido de los anillos
+de claves sino que, alternativamente, es posible que <CODE>GnuPG</CODE> gestione los 
+anillos de claves de <CODE>PGP 2.6.3</CODE> y <CODE>PGP 5.0</CODE>.
+<P>Hay otros «problemas» de compatibilidad sobre los que tambi&eacute;n trataremos en
+este cap&iacute;tulo, como son las firmas de tipo <B>V4</B> generadas por <CODE>GnuPG</CODE>, o
+el uso por parte de <CODE>PGP</CODE> de los algoritmos propietarios <CODE>RSA</CODE>
+o<CODE>IDEA</CODE>.  Empezaremos por esto &uacute;ltimo.
+<P>
+<H2><A NAME="ss5.1">5.1 Uso de algoritmos <I>no libres</I></A>
+</H2>
+
+<P>
+<P>El uso de algoritmos con patentes restrictivas por parte de <CODE>PGP</CODE> representa
+un problema por cuanto la filosof&iacute;a que inspira a <CODE>GnuPG</CODE> de implementar un
+sistema criptogr&aacute;fico libre.  As&iacute; pues, las patentes sobre estos algoritmos
+imposibilitan una implementaci&oacute;n total.  Pero <CODE>GnuPG</CODE> tambi&eacute;n pretende
+cumplir con las reglas de los «est&aacute;ndares» de <I>OpenPGP</I> 
+<A HREF="http://www.d.shuttle.de/isil/gnupg/rfc2440.html">http://www.d.shuttle.de/isil/gnupg/rfc2440.html</A>.
+<P>Existen extensiones para <I>RSA</I>, 
+<A HREF="http://www.rsa.com">http://www.rsa.com</A> e <I>IDEA</I>, 
+<A HREF="http://www.ascom.ch">http://www.ascom.ch</A> que pueden ser instaladas y que permiten cierto uso
+de estos algoritmos.  Las claves generadas por <CODE>PGP 2.6.x</CODE> son del tipo
+<I>RSA</I>, y el algoritmo de cifrado que usa es <I>IDEA</I> (tambi&eacute;n puede ser
+usado por <CODE>PGP 5.x</CODE>).  Es posible conseguir el c&oacute;digo fuente de estos
+algoritmos en los ficheros 
+<A HREF="ftp://ftp.guug.de/pub/gcrypt/contrib/rsa.c.Z">ftp://ftp.guug.de/pub/gcrypt/contrib/rsa.c.Z</A> e 
+<A HREF="ftp://ftp.guug.de/pub/gcrypt/contrib/idea.c.Z">ftp://ftp.guug.de/pub/gcrypt/contrib/idea.c.Z</A>.
+<P>Tambi&eacute;n existen los binarios instalables de estas extensiones para algunas
+distribuciones de 
+<A HREF="http://www.linux.org">Linux</A>, como
+<A HREF="http://www.debian.org">Debian</A> (comprobar para otras 
+distribuciones).
+<P>
+<H2><A NAME="firmas"></A> <A NAME="ss5.2">5.2 Firma digital con GnuPG</A>
+</H2>
+
+<P>
+<P><CODE>GnuPG</CODE> es el &uacute;nico sistema capaz de implementar firmas digitales <B>V4</B>
+(de acuerdo con <EM>OpenPGP</EM>) y esta es la opci&oacute;n por defecto, pero en este
+caso <CODE>PGP</CODE> no es capaz de verificarlas.  Es posible obligar a <CODE>GnuPG</CODE> a
+usar <B>V3</B>, de dos modos:
+<P>
+<UL>
+<LI>Indic&aacute;ndolo en el fichero de configuraci&oacute;n
+<CODE>$HOME/.gnupg/options</CODE> a&ntilde;adiendo la l&iacute;nea:</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+force-v3-sigs
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<UL>
+<LI>Incluyendo esta opci&oacute;n cada vez que se desee firmar un mensaje en <B>V3</B>:</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg [opci&oacute;n] --force-v3-sigs [fichero]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.3">5.3 Importaci&oacute;n de anillos de claves PGP a GnuPG</A>
+</H2>
+
+<P>
+<P>Intentaremos explicar c&oacute;mo exportar las claves p&uacute;blicas y privadas desde
+nuestros anillos de claves <CODE>PGP</CODE> a los anillos de claves <CODE>GnuPG</CODE>.
+<P><B>NOTA: este m&eacute;todo se ha extra&iacute;do del <I>PGP2GnuPG Howto</I>, 
+<A HREF="http://technocage.com/~caskey/gpg/pgp2gnupgp.html">http://technocage.com/~caskey/gpg/pgp2gnupgp.html</A> de Caskey L.
+Dickson y no lo he probado personalmente.  La &uacute;ltima actualizaci&oacute;n del 
+mismo data de Diciembre de 1998.  Por ello, y para poder integrar <CODE>PGP</CODE> con
+<CODE>GnuPG</CODE>, recomiendo el uso del m&eacute;todo que se explica en la 
+<A HREF="#anillos">siguiente secci&oacute;n</A> por ser m&aacute;s sencillo y fiable.</B>
+<P>Suponiendo que tengamos instaladas las dos versiones de <CODE>PGP</CODE> para
+<CODE>Unix/Linux</CODE>, tenemos pues sus respectivos anillos de claves p&uacute;blicas
+y privadas en <CODE>$HOME/.pgp/</CODE>:
+<P>
+<UL>
+<LI>pubring.pgp -> fichero de claves p&uacute;blicas de <CODE>PGP 2.6.x</CODE></LI>
+<LI>secring.pgp -> fichero de claves privadas de <CODE>PGP 2.6.x</CODE></LI>
+<LI>pubring.pkr -> fichero de claves p&uacute;blicas de <CODE>PGP  5.x</CODE></LI>
+<LI>secring.skr -> fichero de claves privadas de <CODE>PGP  5.x</CODE></LI>
+</UL>
+<P>A continuaci&oacute;n usar&iacute;amos las &oacute;rdenes que correspondan a cada versi&oacute;n para 
+extraer la(s) clave(s) que deseemos.
+<P>As&iacute;, para extraer una clave de <CODE>PGP 2.6.x</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pgp -kx UID fichero anillo
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>vg.:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pgp -kx Pepe clavepepe2 ~/.pgp/pubring.pgp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esta operaci&oacute;n generar&iacute;a el fichero <CODE>clavepepe2.pgp</CODE>.  Para extraer nuestra 
+clave privada, no tendr&iacute;amos m&aacute;s que indicar nuestro UID y el fichero de las 
+claves secretas <CODE>~/.pgp/secring.pgp</CODE>.  No nos consta que haya modo 
+alguno de indicar m&aacute;s de un UID con <CODE>PGP 2.6.3</CODE>, si saben de alguno, por 
+favor env&iacute;enmelo a 
+<A HREF="mailto:homega@ciberia.es">homega@ciberia.es</A>.
+<P>Una vez extra&iacute;da la clave s&oacute;lo queda importarla al fichero de <CODE>GnuPG</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg --import clavepepe2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para extraer una clave de <CODE>PGP 5.0</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pgpk -x UID -o fichero
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>vg.:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pgpk -x Pepe -o clavepepe5
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En este caso, el fichero por defecto es el de las claves p&uacute;blicas, y 
+obtendr&iacute;amos el fichero <CODE>clavepepe5</CODE> como hemos indicado.
+<P>Una vez m&aacute;s, s&oacute;lo queda importar la clave:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg --import clavepepe5
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ya que <CODE>PGP 5.0</CODE> no nos permite indicarle el fichero sobre el que queremos
+operar, la extracci&oacute;n de la clave secreta se complica un poco.  La soluci&oacute;n
+viene dada por un sistema superior como GnuPG:
+<P>Este procedimiento pone en riesgo la clave secreta durante un breve periodo de
+tiempo, as&iacute; que no deber&iacute;a ser usado en un sistema multiusuario o p&uacute;blico.  Los
+pasos a seguir son:
+<P>
+<UL>
+<LI>Extraer la clave p&uacute;blica correspondiente a la clave privada que queremos
+exportar, e importarla a <CODE>GnuPG</CODE>.</LI>
+<LI>¡Borrar la contrase&ntilde;a de la clave secreta! (se recomienda hacer una copia
+de seguridad del fichero <CODE>secring.skr</CODE>):</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pgpk -e UID
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>vg.:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ pgpk -e 0x614DB9FA
+
+sec  1024 0x614DB9FA 1998-03-22 ---------- DSS        Sign &amp; Encrypt
+
+sub  1024 0x2B9E0571 1998-03-22 ---------- Diffie-Hellman
+
+uid  Horacio &lt;homega@vlc.servicom.es>
+
+uid  Horacio &lt;homega@correo.com>
+
+
+1024 bits, Key ID 0x614DB9FA, created 1998-03-22
+
+"Horacio &lt;homega@vlc.servicom.es>
+
+"Horacio &lt;homega@correo.com>"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Do you want to unset this key as axiomatic [y/N]? N
+
+Do you want to unset this key as axiomatic [y/N]? N
+
+Do you want to add a new user ID [y/N]? N
+
+Do you want to change your pass phrase (y/N)? Y
+Need old passphrase. Enter pass phrase: &lt;introducir contrase&ntilde;a>
+Need new passphrase. Enter pass phrase: &lt;dejar vac&iacute;o>
+Enter it a second time. Enter pass phrase: &lt;dejar vac&iacute;o>
+Changing master key passphrase...
+
+Changing subkey passphrase...
+
+Do want to set this as your default key [y/N]? N
+
+Keyrings updated.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<UL>
+<LI>El paso siguiente ser&aacute; exportar la clave privada.  Como ya hemos podido 
+ver, <CODE>PGP 5.0</CODE> es incapaz de hacerlo, as&iacute; que usaremos <CODE>GnuPG</CODE>:</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg --export-secret-keys --secret-key-ring ~/.pgp/secring.skr 0x614DB9FA > miclave
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Todo esto en una una sola l&iacute;nea; se crear&aacute; el fichero <CODE>miclave</CODE>.
+<P>
+<UL>
+<LI>Ahora ya podemos importar la clave secreta a GnuPG:</LI>
+</UL>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg --import &lt; miclave
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Acto seguido volveremos a introducir una contrase&ntilde;a a la clave desde 
+<CODE>GnuPG</CODE>.
+<P>
+<H2><A NAME="anillos"></A> <A NAME="ss5.4">5.4 Uso de anillos de claves PGP con GnuPG</A>
+</H2>
+
+<P>
+<P>Es posible evitar todo lo anterior, manteniendo instaladas las diferentes
+versiones de <CODE>PGP</CODE> al mismo tiempo que la de <CODE>GnuPG</CODE>.  Siendo <CODE>GnuPG</CODE>
+un sistema superior y m&aacute;s reciente, puede reconocer los anillos de claves de
+<CODE>PGP</CODE> como propios.
+<P>En el caso de <CODE>PGP 5.0</CODE>, basta con a&ntilde;adir el camino completo a los
+ficheros de claves de <CODE>PGP 5.0</CODE>, precedido por <CODE>keyring</CODE> o 
+<CODE>secret-keyring</CODE>, al final del fichero 
+<CODE>~/.gnupg/options</CODE> seg&uacute;n corresponda:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+keyring ~/.pgp/pubring.pkr
+secret-keyring ~/.pgp/secring.skr
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los ficheros de claves de <CODE>PGP 2.6.3</CODE> son reconocidos por <CODE>GnuPG</CODE> por
+defecto.  Si no fuera as&iacute;, bastar&iacute;a con repetir la misma operaci&oacute;n
+anterior adapt&aacute;ndola a las circunstancias:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+keyring ~/.pgp/pubring.pgp
+secret-keyring ~/.pgp/secring.pgp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si a continuaci&oacute;n hacemos un listado de las claves p&uacute;blicas con <CODE>GnuPG</CODE>,
+observaremos que lee los tres ficheros, <CODE>~/.gnupg/pubring.gpg</CODE>,
+<CODE>~/.pgp/pubring.pkr</CODE>, y <CODE>~/pubring.pgp</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg --list-keys
+
+     /home/usuario/.gnupg/pubring.gpg
+     --------------------------------
+     pub 1024D/57548DCD 1998-07-07 Werner Koch (gnupg sig)
+     &lt;dd9jn@gnu.org>
+     pub 1024D/A95AF46C 1998-11-29 Brenno J.S.A.A.F. de Winter
+     &lt;brenno@dewinter.com>
+     sub 3072g/A3CA62A0 1998-11-29
+
+   (... y dem&aacute;s claves p&uacute;blicas DSA/ElGamal...)
+
+     /home/usuario/.pgp/pubring.pkr
+     ------------------------------
+     pub 1024D/FAEBD5FC 1997-04-07 Philip R. Zimmermann &lt;prz@pgp.com>
+     sub 2048g/42F0A0A0 1997-04-07
+
+   (... etc DSS/Diffie-Helman...)
+
+     /home/usuario/.pgp/pubring.pgp
+     ------------------------------
+     pub 1024R/88A17FF5 1995-09-11 IRIS-CERT, Spain
+
+   (... etc RSA...)
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Lo mismo suceder&iacute;a con las claves privadas:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ gpg --list-secret-keys
+
+     /home/horacio/.gnupg/secring.gpg
+     --------------------------------
+     sec 1024D/42337AE6 1999-03-14 Horacio (comentario)
+     &lt;homega@vlc.servicom.es>
+     ssb 2048g/1F177864 1999-03-14
+
+     /home/horacio/.pgp/secring.skr
+     ------------------------------
+     sec 1024D/7992AB40 1998-05-04 Horacio &lt;homega@vlc.servicom.es>
+     uid Horacio &lt;homega@correo.com>
+     ssb 2048g/917366AE 1998-05-04
+
+     /home/horacio/.pgp/secring.pgp
+     ------------------------------
+     sec 1024R/32D4A925 1997-09-23 Horacio &lt;homega@vlc.servicom.es>
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="GPG-Mini-Como-6.html">Página siguiente</A>
+<A HREF="GPG-Mini-Como-4.html">Página anterior</A>
+<A HREF="GPG-Mini-Como.html#toc5">Índice general</A>
+</BODY>
+</HTML>

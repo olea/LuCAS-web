@@ -1,0 +1,261 @@
+<HTML>
+<HEAD>
+<TITLE>Linux XFree86 COMO: Introducci&oacute;n de informaci&oacute;n sobre la tarjeta de v&iacute;deo.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="XFree86-Como-4.html">Anterior</A>
+<A HREF="XFree86-Como-6.html">Siguiente</A>
+<A HREF="XFree86-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Introducci&oacute;n de informaci&oacute;n sobre la tarjeta de v&iacute;deo.</A></H2>
+
+
+<P>Ahora su archivo <CODE>XF86Config</CODE> est&aacute; listo para funcionar, con la
+excepci&oacute;n de la informaci&oacute;n completa sobre la tarjeta de v&iacute;deo. Lo que
+vamos a hacer es emplear el servidor X para comprobar el resto de la
+informaci&oacute;n, introduci&eacute;ndola posteriormente en <CODE>XF86Config</CODE>. </P>
+<P>En lugar de tantear esta informaci&oacute;n usando el servidor X, los valores
+<CODE>XF86Config</CODE> para muchas tarjetas est&aacute;n listados en los ficheros
+<CODE>modeDB.txt</CODE>, <CODE>AccelCards</CODE>, and <CODE>Devices</CODE>. Estos
+archivos se encuentran todos en <CODE>/usr/X11R6/lib/X11/doc</CODE>. Adem&aacute;s,
+hay varios archivos <CODE>README</CODE>
+<SL>N. del T. L&eacute;ame.</SL>
+
+para determinados chipsets. Se debe buscar en esos ficheros informaci&oacute;n
+sobre su tarjeta de v&iacute;deo, y emplearla (los valores de frecuencias de
+reloj, tipo de chipset, y las posibles opciones) en el archivo
+<CODE>XF86Config</CODE>. Si no hay ning&uacute;n tipo de informaci&oacute;n, se puede
+tantear como se describe aqu&iacute;. </P>
+<P>En estos ejemplos mostraremos la configuraci&oacute;n para una tarjeta de v&iacute;deo
+#9 GXE 64, que emplea el chipset <CODE>XF86_S3</CODE>.  Se da la
+circunstancia de que esta tarjeta es la que emplea el autor, pero lo
+discutido aqu&iacute; es aplicable a cualquier tarjeta. </P>
+<P>Lo primero a hacer es determinar el tipo de chipset de v&iacute;deo empleado en
+la tarjeta. Si ejecuta <CODE>SuperProbe</CODE> (que reside en
+<CODE>/usr/X11R6/bin</CODE>)  le informar&aacute; acerca de esto, pero se necesita
+conocer el nombre del chipset de v&iacute;deo como lo conoce el servidor X. </P>
+<P>Para hacer esto, ejecute el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+X -showconfig
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto le proporcionar&aacute; los nombres de chipset conocidos por su servidor X.
+(Las p&aacute;ginas <CODE>man</CODE> los enumeran tambi&eacute;n). Por ejemplo, para el servidor
+acelerador <CODE>XF86_S3</CODE>, obtenemos: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+XFree86 Version 3.1 / X Window System
+(protocol Version 11, revision 0, vendor release 6000)
+Operating System: Linux 
+Configured drivers:
+  S3: accelerated server for S3 graphics adaptors (Patchlevel 0)
+      mmio_928, s3_generic
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Los nombres v&aacute;lidos de chipset para este servidor son <CODE>mmio_928</CODE> y
+<CODE>s3_generic</CODE>. La p&aacute;gina <CODE>man</CODE> del servidor <CODE>XF86_S3</CODE>
+describe estos chipsets y qu&eacute; tarjetas los emplean. En el caso de la
+tarjeta de v&iacute;deo #9 GXE 64, el apropiado es <CODE>mmio_928</CODE>. </P>
+<P>Si no se sabe qu&eacute; chipset usar, el servidor X puede comprobarlo por t&iacute;. 
+Para hacer esto, ejecutar el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+X -probeonly &gt; /tmp/x.out 2&gt;&1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>si se emplea <CODE>bash</CODE> como int&eacute;rprete de comandos. Si se emplea
+<CODE>csh</CODE>, probar: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+X -probeonly &&gt; /tmp/x.out 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Este comando debe ser ejecutado cuando el sistema no est&eacute; bajo carga, es
+decir, mientras no tenga lugar ninguna otra actividad en el sistema. Este
+comando intentar&aacute; calcular las frecuencias de reloj de su tarjeta (como
+vimos antes), y la carga del sistema puede estropear los c&aacute;lculos. </P>
+<P>El resultado de lo anterior (en <CODE>/tmp/x.out</CODE>) debe contener l&iacute;neas
+como las que siguen: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+XFree86 Version 3.1 / X Window System 
+(protocol Version 11, revision 0, vendor release 6000) 
+Operating System: Linux  
+Configured drivers: 
+  S3: accelerated server for S3 graphics adaptors (Patchlevel 0) 
+      mmio_928, s3_generic 
+   ... 
+(--) S3: card type: 386/486 localbus 
+(--) S3: chipset:   864 rev. 0 
+(--) S3: chipset driver: mmio_928 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aqu&iacute; observamos que los dos chipsets v&aacute;lidos para este servidor (en este
+caso, <CODE>XF86_S3</CODE>) son <CODE>mmio_928</CODE> y <CODE>s3_generic</CODE>. El
+servidor tras tantear encontr&oacute; una tarjeta de v&iacute;deo empleando el chipset
+<CODE>mmio_928</CODE>. </P>
+
+<P>A&ntilde;adir en la secci&oacute;n <CODE>Device</CODE> del archivo <CODE>XF86Config</CODE> una
+l&iacute;nea <CODE>Chipset</CODE>, que contenga el nombre del chipset determinado
+anteriormente. Por ejemplo,</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Section &quot;Device&quot; 
+        # Aqui ya teniamos definido el identificador...
+        Identifier &quot;#9 GXE 64&quot;  
+        # adicion de esta linea:
+        Chipset &quot;mmio_928&quot;
+EndSection
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora necesitamos determinar las frecuencias de funcionamiento de reloj
+empleadas por la tarjeta de v&iacute;deo. La frecuencia de funcionamiento de
+reloj, o <EM>dot clock</EM> es simplemente la velocidad a la que la tarjeta de
+v&iacute;deo puede enviar puntos de imagen o <EM>pixels</EM> al monitor. Como hemos
+visto, cada resoluci&oacute;n de monitor tiene un <EM>dot clock</EM> asociado a &eacute;l.
+Ahora necesitamos determinar c&uacute;ales frecuencias de reloj son utilizables
+por la tarjeta de v&iacute;deo. </P>
+<P>Primero debe de mirar en los archivos (<CODE>modeDB.txt</CODE>, y dem&aacute;s) 
+mencionados anteriormente, y ver si las frecuencias de reloj de su tarjeta
+se enumeran all&iacute;. </P>
+<P>Los <EM>dot clocks</EM> ser&aacute;n normalmente listados de 8 &oacute; 16 valores, todos
+los cuales est&aacute;n en MHz. Por ejemplo, si miramos en <CODE>modeDB.txt</CODE>
+podemos observar una entrada para la tarjeta de v&iacute;deo Cardinal ET4000, que
+tiene este aspecto: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# chip    ram   virtual   clocks                           default-mode  flags
+ ET4000   1024  1024 768   25  28  38  36  40  45  32   0  &quot;1024x768&quot;    
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Como podemos observar, las frecuencias de barrido para esta tarjeta son
+25, 28, 38, 36, 40, 45, 32, y 0 MHz. </P>
+<P>En la secci&oacute;n <CODE>Devices</CODE> del fichero <CODE>XF86Config</CODE>, se debe
+a&ntilde;adir una l&iacute;nea <CODE>Clocks</CODE> que contenga el listado de <EM>dot
+clocks</EM> para su tarjeta. </P>
+<P>Por ejemplo, para los <EM>clocks</EM> anteriores, a&ntilde;adir&iacute;amos la l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        Clocks 25 28 38 36 40 45 32 0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>A la secci&oacute;n <CODE>Devices</CODE> del fichero, tras <CODE>Chipset</CODE>. 
+¡T&eacute;ngase en cuenta que el orden de los valores es importante! no desordene
+el listado o borre los duplicados. </P>
+<P>Si no se pueden encontrar las frecuencias de barrido asociadas a su
+tarjeta, el servidor X puede tambi&eacute;n tantearlas. Empleando el comando
+<CODE>X -probeonly</CODE> descrito anteriormente, el resultado contendr&iacute;a
+l&iacute;neas con el siguiente aspecto: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(--) S3: clocks:  25.18  28.32  38.02  36.15  40.33  45.32  32.00  00.00
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Podemos entonces a&ntilde;adir una l&iacute;nea <CODE>Clocks</CODE> que contenga todos esos
+valores, tal y como los obtenemos. Se puede usar m&aacute;s de una l&iacute;nea
+<CODE>Clocks</CODE> en <CODE>XF86Config</CODE> en el caso de que todos los valores
+no cupiesen en una.  Nuevamente, es preciso asegurarse de que se
+introducen en el mismo orden en que son proporcionados. </P>
+<P>Aseg&uacute;rese de que no hay una l&iacute;nea <CODE>Clocks</CODE> (o de que est&eacute;
+descomentada)  en la secci&oacute;n <CODE>Devices</CODE> del fichero al usar <CODE>X
+-probeonly</CODE> para tantear las frecuencias. Si hubiese una l&iacute;nea
+<CODE>Clocks</CODE> presente, el servidor <EM>no</EM> tantear&iacute;a esos valores,
+emplear&iacute;a los valores presentes en <CODE>XF86Config</CODE>. </P>
+<P>T&eacute;ngase en cuenta que algunas tarjetas aceleradoras emplean chips de
+frecuencias programables. (ver la p&aacute;gina <CODE>man</CODE> de <CODE>XF86_Accel</CODE>
+para m&aacute;s detalles;  esto generalmente es aplicable a tarjetas S3, AGX y
+XGA-2.)  Este chip permite, esencialmente, al servidor X, comunicar a la
+tarjeta qu&eacute; <EM>dot clocks</EM> usar. Si este es el caso, puede que no se
+pueda encontrar el listado de los <EM>dot clocks</EM> para la tarjeta en
+ninguno de los ficheros anteriores. O la lista de las frecuencias de reloj
+obtenida al usar <CODE>X -probeonly</CODE> puede s&oacute;lo contener uno o dos
+valores concretos, siendo el resto duplicados o cero. </P>
+<P>Para tarjetas que empleen un chip programable, se debe emplear un l&iacute;nea
+<CODE>ClockChip</CODE>, en lugar de <CODE>Clocks</CODE> en el fichero
+<CODE>XF86Config</CODE>.  <CODE>ClockChip</CODE> proporciona el nombre del chip
+que emplea la tarjeta de v&iacute;deo; las p&aacute;ginas <CODE>man</CODE> de cada servidor
+describen cu&aacute;les son. Por ejemplo, en el fichero <CODE>README.S3</CODE>,
+podemos ver que varias tarjetas S3-864 emplean un chip ``ICD2061A'', y que
+debemos emplear la l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   ClockChip &quot;icd2061a&quot; 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en lugar de <CODE>Clocks</CODE> en el archivo <CODE>XF86Config</CODE>. Como con
+<CODE>Clocks</CODE>, esta l&iacute;nea deber&aacute; estar en la secci&oacute;n <CODE>Devices</CODE>,
+tras <CODE>Chipset</CODE>. </P>
+<P>An&aacute;logamente, algunas tarjetas aceleradoras precisan que se especifique el
+tipo de chip RAMDAC en el fichero <CODE>XF86Config</CODE>, empleando una l&iacute;nea
+<CODE>Ramdac</CODE>.  La p&aacute;gina <CODE>man</CODE> de <CODE>XF86_Accel</CODE> describe esta
+opci&oacute;n. Normalmente, el servidor X averiguar&aacute; correctamente el RAMDAC. </P>
+<P>Algunas tarjetas de v&iacute;deo requieren que se especifiquen ciertas opciones
+en la secci&oacute;n <CODE>Devices</CODE> de <CODE>XF86Config</CODE>. Estas opciones
+ser&aacute;n descritas en la p&aacute;gina <CODE>man</CODE> de su servidor, as&iacute; como en otros
+ficheros (como <CODE>README.cirrus</CODE> o <CODE>README.S3</CODE>. Estas opciones
+son activadas empleando la l&iacute;nea <CODE>Option</CODE>. Por ejemplo, la tarjeta
+#9 GXE 64 necesita dos opciones: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        Option &quot;number_nine&quot; 
+        Option &quot;dac_8_bit&quot; 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Generalmente, el servidor X funcionar&aacute; sin estas opciones, pero son
+necesarias para conseguir prestaciones &oacute;ptimas. Hay demasiadas opciones
+para describirlas aqu&iacute;, y cada una depende de la tarjeta de v&iacute;deo empleada
+en particular. Si debe usar alguna de estas opciones, ---me temo que no---
+las p&aacute;ginas <CODE>man</CODE> del servidor X y algunos ficheros en
+<CODE>/usr/X11R6/lib/X11/doc</CODE> especificar&aacute;n cu&aacute;les son. </P>
+<P>As&iacute; que cuando se haya terminado, se acabar&aacute; con una secci&oacute;n
+<CODE>Devices</CODE> que tendr&aacute; este aspecto: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Section &quot;Device&quot;  
+        # Esta seccion device es para esta #9 GXE 64 solo! 
+        Identifier &quot;#9 GXE 64&quot; 
+        Chipset &quot;mmio_928&quot; 
+        ClockChip &quot;icd2061a&quot; 
+        Option &quot;number_nine&quot; 
+        Option &quot;dac_8_bit&quot; 
+EndSection 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La mayor&iacute;a de las tarjetas de v&iacute;deo precisar&aacute;n una l&iacute;nea <CODE>Clocks</CODE>,
+en lugar de <CODE>ClockChip</CODE>, como se describi&oacute; anteriormente. La
+anterior secci&oacute;n <CODE>Device</CODE> es &uacute;nicamente v&aacute;lida para una tarjeta de
+v&iacute;deo en particular, la #9 GXE 64. </P>
+<P>Hay otras opciones que pueden ser incluidas en la secci&oacute;n
+<CODE>Devices</CODE>.  Comprobar las p&aacute;ginas <CODE>man</CODE> del servidor para los
+detalles m&aacute;s escurridizos, aunque lo anterior debe de bastar para la
+mayor&iacute;a de los sistemas. </P>
+
+<HR>
+<A HREF="XFree86-Como-4.html">Anterior</A>
+<A HREF="XFree86-Como-6.html">Siguiente</A>
+<A HREF="XFree86-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

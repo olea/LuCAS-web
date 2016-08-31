@@ -1,0 +1,270 @@
+<HTML>
+<HEAD>
+<TITLE>Serie COMO de Linux: ¿C&oacute;mo puedo llamar y recibir llamadas con mi m&oacute;dem usando getty_ps?</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Serie-Como-5.html">Anterior</A>
+<A HREF="Serie-Como-7.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="s6">6. ¿C&oacute;mo puedo llamar y recibir llamadas con mi m&oacute;dem usando <CODE>getty_ps</CODE>?</A></H2>
+
+
+<P>Consiga que su m&oacute;dem llame correctamente. Si no ha le&iacute;do la secci&oacute;n 
+<A HREF="Serie-Como-5.html#dialout">¿C&oacute;mo puedo llamar con mi m&oacute;dem?</A>, <EM>¡l&eacute;ala ahora!</EM>.
+Contiene informaci&oacute;n de configuraci&oacute;n <EM>muy</EM> importante. No necesita
+leer esta secci&oacute;n si lo &uacute;nico que quiere hacer es llamar con el m&oacute;dem. </P>
+
+<H2><A NAME="ss6.1">6.1 Configuraci&oacute;n del m&oacute;dem para llamar y recibir llamadas</A></H2>
+
+
+<P>Para llamar y recibir llamadas, <EM>tiene</EM> que configurar el m&oacute;dem de un
+cierto modo (de nuevo, usando los comandos <CODE>AT</CODE> del m&oacute;dem): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+E1      activa el eco de comandos
+Q0      devuelve los codigos resultantes
+V1      habilita el codigo de resultados largos (texto)
+S0=0    nunca contesta (uugetty hace esto con la opcion WAITFOR)
+</PRE>
+</CODE></BLOCKQUOTE>
+›</P>
+<P>Si no configura esto correctamente, la cadena <CODE>INIT</CODE> de su fichero de
+configuraci&oacute;n puede fallar, echando a perder el proceso completo.  Pero,
+m&aacute;s sobre ficheros de configuraci&oacute;n despu&eacute;s ... </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&C1     DCD se activa solamente despues de conectar
+&S0     DSR siempre esta activo
+DTR activa/desactiva el reinicio del modem (depende del fabricante - RTFM)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto afecta a lo que hace su m&oacute;dem cuando inicia o finaliza una llamada. </P>
+<P>Si su m&oacute;dem no puede almacenar el perfil, puede usar la cadena <CODE>INIT</CODE>
+de su fichero de configuraci&oacute;n. V&eacute;alo m&aacute;s adelante.  Algunos m&oacute;dems tienen
+interruptores DIP que afectan a la configuraci&oacute;n de los registros.
+Aseg&uacute;rese de que est&eacute;n configurados correctamente. </P>
+<P>He iniciado una colecci&oacute;n de configuraciones para diferentes tipos de
+m&oacute;dems. Hasta ahora s&oacute;lo tengo unos pocos, si desea enviarme una
+configuraci&oacute;n que funcione, por favor, ¡h&aacute;galo!.  Puede conseguirla en
+<CODE>
+<A HREF="ftp://ftp.cc.gatech.edu/pub/people/gregh/modem-configs">ftp://ftp.cc.gatech.edu/pub/people/gregh/modem-configs</A></CODE>. </P>
+<P>Nota: para conseguir que mi m&oacute;dem USR Courier V.34 se reinicie
+correctamente cuando se desactiva el DTR, he tenido que activar
+<CODE>&amp;D2</CODE> y <CODE>S13=1</CODE> (esto activa el bit 0 del registro S13).  Se ha
+confirmado que esto funciona igualmente en m&oacute;dems USR Sportster V.34. </P>
+<P>Nota: algunos m&oacute;dems Supra tratan el DCD de modo diferente a otros m&oacute;dems.
+Si est&aacute; usando un Supra, pruebe a poner <CODE>&amp;C0</CODE> y <EM>no</EM>
+<CODE>&amp;C1</CODE>. Tambi&eacute;n debe poner <CODE>&amp;D2</CODE> para manejar el DTR
+correctamente. </P>
+
+
+<H2><A NAME="ss6.2">6.2 Instalaci&oacute;n de <CODE>getty_ps</CODE></A></H2>
+
+
+<P>Consiga la &uacute;ltima versi&oacute;n en <CODE>
+<A HREF="ftp://sunsite.unc.edu:/pub/Linux/system/Serial">sunsite.unc.edu:/pub/Linux/system/Serial</A></CODE>.  Por defecto,
+<CODE>getty_ps</CODE> se configura para usar la norma FSSTND (<B>F</B>ile<B>S</B>ystem
+<B>ST</B>a<B>ND</B>ard) de Linux, lo cual significa que los binarios estar&aacute;n
+en <CODE>/sbin</CODE>, y los ficheros de configuraci&oacute;n se llamar&aacute;n
+<CODE>/etc/conf.{uu}getty.ttyS</CODE><EM>N</EM>.  ¡Esto no est&aacute; claro en la
+documentaci&oacute;n!. Tambi&eacute;n se espera que los ficheros de bloqueo est&eacute;n en
+<CODE>/var/lock</CODE>. Aseg&uacute;rese de que existe el directorio
+<CODE>/var/lock</CODE>. </P>
+<P>Si no quiere usar la norma FSSTND, los binarios pueden ir en
+<CODE>/etc</CODE>, los ficheros de configuraci&oacute;n pueden ir en
+<CODE>/etc/default/{uu}getty.ttyS</CODE><EM>N</EM>, y los ficheros de bloqueo
+pueden ir en <CODE>/usr/spool/uucp</CODE>. Recomiendo hacer las cosas de esto
+modo si est&aacute; usando UUCP, porque UUCP puede tener problemas si mueve los
+ficheros de bloqueo a donde no los busca. </P>
+<P><CODE>getty_ps</CODE> tambi&eacute;n puede usar <CODE>syslogd</CODE> para guardar los mensajes.
+Vea las p&aacute;ginas man de <CODE>syslogd(1)</CODE> y <CODE>syslog.conf(5)</CODE> para
+configurar <CODE>syslogd</CODE>, si no lo tiene funcionando todav&iacute;a. Los mensajes
+se guardan con prioridad LOG_AUTH, los errores usan LOG_ERR, y la
+depuraci&oacute;n usa LOG_DEBUG. Si no quiere usar <CODE>syslogd</CODE> puede editar
+<CODE>tune.h</CODE> en los ficheros fuente de <CODE>getty_ps</CODE> para usar otro fichero
+de almacenamiento en su lugar, llamado <CODE>/var/adm/getty.log</CODE> por
+defecto. </P>
+<P>Decida si quiere usar la norma FSSTND y la capacidad syslog. Tambi&eacute;n puede
+elegir una combinaci&oacute;n de ambos. Edite los ficheros <CODE>Makefile</CODE>,
+<CODE>tune.h</CODE> y <CODE>config.h</CODE> para reflejar sus decisiones. Despu&eacute;s compile
+e instale siguiendo las instrucciones incluidas en el paquete. </P>
+<P>A partir de este punto, todas las referencias a <CODE>getty_ps</CODE> se referir&aacute;n
+a <CODE>getty_ps</CODE>. Las referencias a <CODE>uugetty</CODE> se referir&aacute;n a
+<CODE>uugetty</CODE> que viene con el paquete <CODE>getty_ps</CODE>.  Estas instrucciones
+no funcionar&aacute;n en <CODE>mgetty</CODE> o <CODE>agetty</CODE>. </P>
+
+
+<H2><A NAME="ss6.3">6.3 Configurando <CODE>uugetty</CODE></A></H2>
+
+
+<P>Para recibir llamadas y llamar con su m&oacute;dem, vamos a usar <CODE>uugetty</CODE>.
+<CODE>uugetty</CODE> hace importantes comprobaciones de los ficheros de bloqueo.
+Actualice <CODE>/etc/gettydefs</CODE> para incluir las entradas de los m&oacute;dems
+si todav&iacute;a no est&aacute;n all&iacute; (n&oacute;tese que cada entrada apunta a otra, esto no
+es para velocidades fijas - las l&iacute;neas en blanco son necesarias entre cada
+entrada): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Entradas del modem
+38400# B38400 CS8 # B38400 SANE -ISTRIP HUPCL #@S @L @B login: #19200
+
+19200# B19200 CS8 # B19200 SANE -ISTRIP HUPCL #@S @L @B login: #9600
+
+9600# B9600 CS8 # B9600 SANE -ISTRIP HUPCL #@S @L @B login: #2400
+
+2400# B2400 CS8 # B2400 SANE -ISTRIP HUPCL #@S @L @B login: #1200
+
+1200# B1200 CS8 # B1200 SANE -ISTRIP HUPCL #@S @L @B login: #300
+
+300# B300 CS8 # B300 SANE -ISTRIP HUPCL #@S @L @B login: #38400
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si tiene un m&oacute;dem de 9600 bps o m&aacute;s r&aacute;pido con compresi&oacute;n de datos, puede
+bloquear la velocidad del puerto serie y permitir que el m&oacute;dem controle
+las transiciones a otras velocidades. Entonces, en vez de la serie
+descendente de l&iacute;neas listadas antes, <CODE>/etc/gettydefs</CODE> s&oacute;lo
+necesita contener una l&iacute;nea para el m&oacute;dem: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# velocidad fijada a 38400
+F38400# B38400 CS8 # B38400 SANE -ISTRIP HUPCL #@S @L @B login: #F38400
+
+# velocidad fijada a 19200
+F19200# B19200 CS8 # B19200 SANE -ISTRIP HUPCL #@S @L @B login: #F19200
+
+# velocidad fijada a 9600
+F9600# B9600 CS8 # B9600 SANE -ISTRIP HUPCL #@S @L @B login: #F9600
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si tiene configurado su modem con control de flujo por hardware RTS/CTS,
+puede a&ntilde;adir <CODE>CRTSCTS</CODE> a las entradas: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# velocidad fijada a 38400 con control de flujo por hardware
+F38400# B38400 CS8 CRTSCTS # B38400 SANE -ISTRIP HUPCL CRTSCTS #@S @L @B login: #F38400
+
+# velocidad fijada a 19200 con control de flujo por hardware
+F19200# B19200 CS8 CRTSCTS # B19200 SANE -ISTRIP HUPCL CRTSCTS #@S @L @B login: #F19200
+
+F9600# B9600 CS8 CRTSCTS # B9600 SANE -ISTRIP HUPCL CRTSCTS #@S @L @B login: #F9600
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si quiere, puede hacer que <CODE>uugetty</CODE> escriba cosas interesantes en el
+mensaje de login. En los ejemplos, tenemos el nombre del sistema, la l&iacute;nea
+serie, y la velocidad actual en bps. Puede a&ntilde;adir otras cosas: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       @B    Velocidad actual en bps (calculada en el momento que se lee @B).
+       @D    Fecha actual, en MM/DD/AA.
+       @L    Linea serie a la cual est&aacute; conectado getty.
+       @S    Nombre del sistema.
+       @T    Hora actual, en HH:MM:SS (24 horas).
+       @U    Numero de usuarios actualmente conectados. Esto es, el numero
+             de entradas en el fichero /etc/utmp que tienen un campo ut_name
+             no nulo.
+       @V    Valor de VERSION, dado en el fichero de opciones por defecto.
+       Para que se vea el car&aacute;cter '@', use '\@' o '@@'.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Despu&eacute;s, aseg&uacute;rese de que tiene un dispositivo de entrada y otro de salida
+para el puerto serie en que est&eacute; el m&oacute;dem. Si tiene el m&oacute;dem en
+<CODE>ttyS3</CODE>, necesitar&aacute; los dispositivos <CODE>/dev/cua3</CODE> y
+<CODE>/dev/ttyS3</CODE>. Si no tiene los dispositivos adecuados, vea la
+secci&oacute;n 
+<A HREF="Serie-Como-3.html#dev">Creaci&oacute;n De Dispositivos En <TT>/dev</TT></A>
+para saber como crearlos. </P>
+
+
+<H2><A NAME="ss6.4">6.4 <CODE>uugety</CODE> a medida</A></H2>
+
+
+<P>Existen un mont&oacute;n de par&aacute;metros que puede configurar para cada puerto.
+Est&aacute;n implementados en distintos ficheros de configuraci&oacute;n para cada
+puerto. El fichero <CODE>/etc/conf.uugetty</CODE> ser&aacute; usado por <EM>cada</EM>
+ejecuci&oacute;n de <CODE>uugetty</CODE>, y <CODE>/etc/conf.uugetty.ttyS</CODE><EM>N</EM> ser&aacute;
+usado solamente para ese puerto. Se pueden encontrar ejemplos de ficheros
+de configuraci&oacute;n por defecto en los ficheros fuentes de <CODE>getty</CODE>, que
+viene con la mayor&iacute;a de las distribuciones de Linux. Debido a lo que
+ocupan, no lo vamos a listar aqu&iacute;. N&oacute;tese que si est&aacute; usando una versi&oacute;n
+antigua de <CODE>getty</CODE> (anterior a la 2.0.7e), o no est&aacute; usando FSSTND,
+entonces el fichero por defecto debe ser
+<CODE>/etc/default/uugetty.ttyS</CODE><EM>N</EM>. Mi fichero
+<CODE>/etc/conf.uugetty.ttyS3</CODE> es como sigue: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ejemplo de fichero de configuracion de uugetty para un modem compatible 
+# Hayes para permitir las conexiones a traves de m&oacute;dem 
+# 
+# fichero de bloqueo alternativo a comprobar ... si este fichero de bloqueo
+# existe, entonces uugetty se ejecuta de nuevo y el modem se reinicia
+ALTLOCK=cua3
+ALTLINE=cua3
+# l&iacute;nea a inicializar
+INITLINE=cua3
+# tiempo para desconectar si est&aacute; inactivo ...
+TIMEOUT=60
+# cadena de inicializacion del modem ...
+# formato: &lt;esperado&gt; &lt;enviado&gt; ... (secuencia de chat)
+INIT=&quot;&quot; AT\r OK\r\n
+WAITFOR=RING
+CONNECT=&quot;&quot; ATA\r CONNECT\s\A
+# esta linea configura el tiempo de espera antes de enviar el mensaje de login
+DELAY=1
+#DEBUG=010
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>A&ntilde;ada la siguiente l&iacute;nea a <CODE>/etc/inittab</CODE>, as&iacute; <CODE>uugetty</CODE> se
+ejecutar&aacute; en el puerto serie (sustituy&eacute;ndolo por la informaci&oacute;n correcta
+para su entorno - localizaci&oacute;n del fichero de configuraci&oacute;n, puerto,
+velocidad, y tipo de terminal por defecto): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+S3:456:respawn:/sbin/uugetty -d /etc/default/uugetty.ttyS3 ttyS3 F38400 vt100
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Vuelva a ejecutar <CODE>init</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+linux# init q 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En el par&aacute;metro de velocidad de <CODE>/etc/inittab</CODE>, debe poner la
+velocidad en bps m&aacute;s alta que soporte su m&oacute;dem. Ya que <CODE>uugetty</CODE> no
+soporta velocidades de 57600 &oacute; 115200 bps, debe usar el programa
+<CODE>setserial</CODE> para configurar el puerto serie a una velocidad
+superior. Vea la secci&oacute;n 
+<A HREF="Serie-Como-9.html#spdhi">¿C&oacute;mo puedo configurar el puerto serie para velocidades altas?</A> para saber c&oacute;mo hacer esto.
+Entonces, ponga 38400 bps en <CODE>/etc/inittab</CODE>. </P>
+<P>Ahora Linux vigilar&aacute; el puerto serie por posibles conexiones.  Llame desde
+otro sitio y con&eacute;ctese a su sistema Linux. </P>
+
+
+<P><CODE>uugetty</CODE> tiene muchas opciones, vea la p&aacute;gina man de <CODE>getty(1m)</CODE>
+para una descripci&oacute;n completa. Adem&aacute;s de otras cosas hay una
+caracter&iacute;stica de planificaci&oacute;n y otra de rellamada. </P>
+
+
+<HR>
+<A HREF="Serie-Como-5.html">Anterior</A>
+<A HREF="Serie-Como-7.html">Siguiente</A>
+<A HREF="Serie-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,387 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Guía Informal al Bloqueo</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="NEXT"
+TITLE="Introducción"
+HREF="intro.html"></HEAD
+><BODY
+CLASS="book"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="BOOK"
+><A
+NAME="LKLockingGuide"><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="title"
+><A
+NAME="AEN2">Guía Informal al Bloqueo</H1
+><H3
+CLASS="author"
+><A
+NAME="AEN5">Paul Rusty Russell</H3
+><DIV
+CLASS="affiliation"
+><DIV
+CLASS="address"
+><P
+CLASS="address"
+><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rusty@rustcorp.com.au<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</P
+></DIV
+></DIV
+><P
+CLASS="copyright"
+>Copyright &copy; 2000 por Paul Russell</P
+><DIV
+CLASS="legalnotice"
+><A
+NAME="AEN15"><P
+></P
+><P
+>&#13;     Esta documentación es software libre; puedes redistrubuirla
+     y/o modificarla bajo los términos de la GNU General Public
+     License tal como ha sido publicada por la Free Software
+     Foundation; por la versión 2 de la licencia, o (a tu elección)
+     por cualquier versión posterior.
+   </P
+><P
+>&#13;    Este programa es distribuido con la esperanza de que sea útil,
+    pero SIN NINGUNA GARANTIA; sin incluso la garantía implicada
+    de COMERCIABILIDAD o ADECUACCION PARA UN PROPOSITO PARTICULAR.
+    Para más detalles refiérase a la GNU General Public License.
+   </P
+><P
+>&#13;     Debería de haber recibido una copia de la GNU General Public
+     License con este programa; si no es así, escriba a la Free
+     Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+     MA 02111-1307 USA
+   </P
+><P
+>&#13;     Para más detalles véase el archivo COPYING en la
+     distribución fuente de Linux.
+   </P
+><P
+></P
+></DIV
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>1. <A
+HREF="intro.html"
+>Introducción</A
+></DT
+><DD
+><DL
+><DT
+>1.1. <A
+HREF="intro.html#races"
+>El Problema con la Concurrencia</A
+></DT
+></DL
+></DD
+><DT
+>2. <A
+HREF="locks.html"
+>Dos Tipos Principales de Bloqueos del Núcleo: Spinlocks y Semáforos</A
+></DT
+><DD
+><DL
+><DT
+>2.1. <A
+HREF="locks.html#uniprocessor"
+>Bloqueos y Núcleos Monoprocesador</A
+></DT
+><DT
+>2.2. <A
+HREF="rwlocks.html"
+>Variantes de Bloqueo Lectura/Escritura</A
+></DT
+><DT
+>2.3. <A
+HREF="usercontextlocking.html"
+>Bloqueando Sólo en el Contexto de Usuario</A
+></DT
+><DT
+>2.4. <A
+HREF="lock-user-bh.html"
+>Bloqueando entre Contexto de Usuario y BHs (Bottom Halves)</A
+></DT
+><DT
+>2.5. <A
+HREF="lock-user-tasklet.html"
+>Bloqueando Entre Contexto de Usuario y Tasklets/Soft IRQs</A
+></DT
+><DT
+>2.6. <A
+HREF="lock-bh.html"
+>Bloqueando Entre Bottom Halves</A
+></DT
+><DD
+><DL
+><DT
+>2.6.1. <A
+HREF="lock-bh.html#lock-bh-same"
+>El Mismo BH</A
+></DT
+><DT
+>2.6.2. <A
+HREF="lock-bh.html#lock-bh-different"
+>Diferentes BHs</A
+></DT
+></DL
+></DD
+><DT
+>2.7. <A
+HREF="lock-tasklets.html"
+>Bloqueando Entre Tasklets</A
+></DT
+><DD
+><DL
+><DT
+>2.7.1. <A
+HREF="lock-tasklets.html#lock-tasklets-same"
+>La Misma Tasklet</A
+></DT
+><DT
+>2.7.2. <A
+HREF="lock-tasklets.html#lock-tasklets-different"
+>Diferentes Tasklets</A
+></DT
+></DL
+></DD
+><DT
+>2.8. <A
+HREF="lock-softirqs.html"
+>Bloqueando entre Softirqs</A
+></DT
+><DD
+><DL
+><DT
+>2.8.1. <A
+HREF="lock-softirqs.html#lock-softirqs-same"
+>La Misma Softirq</A
+></DT
+><DT
+>2.8.2. <A
+HREF="lock-softirqs.html#lock-softirqs-different"
+>Diferentes Softirqs</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>3. <A
+HREF="hardirq-context.html"
+>Contexto de IRQ de Hardware</A
+></DT
+><DD
+><DL
+><DT
+>3.1. <A
+HREF="hardirq-context.html#hardirq-softirq"
+>Bloqueando entre IRQs Hardware y Softirqs/Tasklets/BHs</A
+></DT
+></DL
+></DD
+><DT
+>4. <A
+HREF="common-techniques.html"
+>Técnicas Comunes</A
+></DT
+><DD
+><DL
+><DT
+>4.1. <A
+HREF="common-techniques.html#techniques-no-writers"
+>En un Contexto de Interrupciones No Escritores</A
+></DT
+><DT
+>4.2. <A
+HREF="techniques-deadlocks.html"
+>Deadlock: Simple y Avanzado</A
+></DT
+><DD
+><DL
+><DT
+>4.2.1. <A
+HREF="techniques-deadlocks.html#techs-deadlock-prevent"
+>Preveniendo los Deadlocks</A
+></DT
+><DT
+>4.2.2. <A
+HREF="techniques-deadlocks.html#techs-deadlock-overprevent"
+>Sobreentusiasmo en la Prevención de Deadlocks</A
+></DT
+></DL
+></DD
+><DT
+>4.3. <A
+HREF="per-cpu.html"
+>Datos por cada CPU</A
+></DT
+><DT
+>4.4. <A
+HREF="brlock.html"
+>Bloqueos Gran Lector</A
+></DT
+><DT
+>4.5. <A
+HREF="lock-avoidance-rw.html"
+>Eliminando los bloqueos: Ordenamiento de Lecturas y Escrituras</A
+></DT
+><DT
+>4.6. <A
+HREF="lock-avoidance-atomic-ops.html"
+>Eliminando los Bloqueos: Operaciones Atómicas</A
+></DT
+><DT
+>4.7. <A
+HREF="ref-counts.html"
+>Protegiendo Una Colección de Objetos: Cuentas de Referencia</A
+></DT
+><DD
+><DL
+><DT
+>4.7.1. <A
+HREF="ref-counts.html#helpful-macros"
+>Macros Para Ayudarte</A
+></DT
+></DL
+></DD
+><DT
+>4.8. <A
+HREF="sleeping-things.html"
+>Cosas Que Duermen</A
+></DT
+><DT
+>4.9. <A
+HREF="sparc.html"
+>La Follonera Sparc</A
+></DT
+><DT
+>4.10. <A
+HREF="racing-timers.html"
+>Cronómetros de Carreras: Un Pasatiempo del Núcleo</A
+></DT
+></DL
+></DD
+><DT
+>5. <A
+HREF="references.html"
+>Lecturas Adicionales</A
+></DT
+><DT
+>6. <A
+HREF="thanks.html"
+>Gracias</A
+></DT
+><DT
+>7. <A
+HREF="traduccion.html"
+>Sobre la Traducción</A
+></DT
+><DT
+><A
+HREF="glossary.html"
+>Glosario</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="LOT"
+><DL
+CLASS="LOT"
+><DT
+><B
+>Lista de tablas</B
+></DT
+><DT
+>1-1. <A
+HREF="intro.html#AEN33"
+>Resultados Esperados</A
+></DT
+><DT
+>1-2. <A
+HREF="intro.html#AEN60"
+>Resultados Posibles</A
+></DT
+><DT
+>4-1. <A
+HREF="techniques-deadlocks.html#AEN225"
+>Consecuencias</A
+></DT
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="intro.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Introducción</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

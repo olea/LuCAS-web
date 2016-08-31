@@ -1,0 +1,652 @@
+<HTML
+><HEAD
+><TITLE
+>Configuración del enmascaramiento IP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Enmascaramiento IP yTraducción de Direcciones de Red"
+HREF="x-087-2-ipmasq.html"><LINK
+REL="PREVIOUS"
+TITLE="Configuración del Núcleopara enmascaramiento IP"
+HREF="x-087-2-masq.kernel.config.html"><LINK
+REL="NEXT"
+TITLE="Manipulación del Servicio de Nombres"
+HREF="x-087-2-masq.namelookups.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-masq.kernel.config.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 11. Enmascaramiento IP yTraducción de Direcciones de Red</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-masq.namelookups.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-MASQ.CONFIGURATION">11.3. Configuración del enmascaramiento IP</H1
+><P
+>&#13;
+
+
+
+
+Después de leer los capítulos sobre cortafuegos y auditoría IP,
+probablemente no sea sorprendente que los programas
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, <B
+CLASS="COMMAND"
+>ipchains</B
+>, e <B
+CLASS="COMMAND"
+>iptables</B
+> se utilicen para configurar también
+las reglas de enmascaramiento IP.&#13;</P
+><P
+>Las reglas de enmascaramiento son una clase especial de reglas de filtrado.
+Sólamente se puede enmascarar datagramas que se reciban por una interfaz
+y que vayan a ser encaminados por otra. Una regla de enmascaramiento se
+construye de forma parecida a una regla de encaminamiento de cortafuegos,
+pero incluyendo unas opciones especiales que le dicen al núcleo que debe
+enmascarar el datagrama IP. El programa <B
+CLASS="COMMAND"
+>ipfwadm</B
+> utiliza
+la opción <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>-m</I
+></SPAN
+>, <B
+CLASS="COMMAND"
+>ipchains</B
+>
+utiliza <TT
+CLASS="LITERAL"
+>-j MASQ</TT
+>, e <B
+CLASS="COMMAND"
+>iptables</B
+>,
+<TT
+CLASS="LITERAL"
+>-j MASQUERADE</TT
+> para indicar que los datagramas que
+cumplan las condiciones especificadas por la regla deben ser enmascarados.</P
+><P
+>Veamos un ejemplo.
+Una estudiante de informática de la Universidad Groucho Marx tiene unas
+cuantas máquinas en casa interconectadas en una pequeña red local ethernet.
+Ha decidido utilizar uno de los rangos privados de direcciones IP para
+su red. Comparte el lugar con otras estudiantes, todas las cuales tienen
+interés en usar Internet. Dado que las residentes no gozan de una
+economía especialmente boyante, no se plantean
+costearse una conexión permanente a Internet. En su lugar utilizan
+una conexión PPP telefónica. A todas ellas las gustaría
+
+
+poder compartir la conexión para chatear en el IRC, navegar por la Web
+y bajarse ficheros por FTP directamente a cada una de sus computadoras.
+El enmascaramiento IP es la respuesta.&#13;</P
+><P
+>Nuestra estudiante primeramente configura una máquina GNU/Linux para que se
+encargue del enlace telefónico y para que actúe como encaminador de la red local.
+La dirección IP que le asignan cuando se conecta telefónicamente no
+es importante. Configura el encaminador GNU/Linux para que haga enmascaramiento IP
+y usa uno de los rangos privados de direcciones IP para la red local:
+<TT
+CLASS="LITERAL"
+>192.168.1.0</TT
+>. Se asegura de que todas las computadoras
+de la red tengan como ruta por defecto una que apunte al encaminador GNU/Linux.&#13;</P
+><P
+>Todo lo que se necesita para que el enmascaramiento funcione en ese escenario
+son las siguientes invocaciones del programa <B
+CLASS="COMMAND"
+>ipfwadm</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -p deny</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -a accept -m -S 192.168.1.0/24 -D 0/0</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+
+o, utilizando <B
+CLASS="COMMAND"
+>ipchains</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -P forward -j deny</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 192.168.1.0/24 -d 0/0 -j MASQ</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+o con <B
+CLASS="COMMAND"
+>iptables</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>iptables -t nat -P POSTROUTING DROP</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE</B
+></TT
+> </PRE
+></TD
+></TR
+></TABLE
+>
+
+Ahora simpre que alguna de las máquinas de la red local trate de
+acceder a un servicio en una máquina remota, sus datagramas serán automáticamente
+enmascarados por el encaminador enmascarador GNU/Linux. La primera regla en
+cada uno de los ejemplos impide que la máquina GNU/Linux encamine cualquier
+otro datagrama y proporciona cierta seguridad.</P
+><P
+>&#13;Para listar las reglas de enmascaramiento que se hayan creado,
+se utiliza la opción <TT
+CLASS="LITERAL"
+>-l</TT
+> para el programa <B
+CLASS="COMMAND"
+>ipfwadm</B
+>,
+exactamente como se dijo ya al referirnos a los cortafuegos.&#13;</P
+><P
+>&#13;Para listar la regla que creamos previamente se utiliza:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -l -e</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+tras lo que debe aparecer algo como:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -l -e</B
+></TT
+>
+    IP firewall forward rules, default policy: accept
+     pkts bytes type  prot opt  tosa tosx ifname  ifaddress  &hellip;
+        0     0 acc/m all  ---- 0xFF 0x00 any     any        &hellip;</PRE
+></TD
+></TR
+></TABLE
+>
+
+La &ldquo;<TT
+CLASS="LITERAL"
+>/m</TT
+>&rdquo; indica que se trata de una regla
+de enmascaramiento.</P
+><P
+>Para listar las reglas de enmascaramiento con <B
+CLASS="COMMAND"
+>ipchains</B
+>,
+se utiliza la opción <B
+CLASS="COMMAND"
+>-L</B
+>. Si listamos las reglas creadas
+previamente con <B
+CLASS="COMMAND"
+>ipchains</B
+>, la salida sería algo como:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+># ipchains -L</B
+></TT
+>
+    Chain input (policy ACCEPT):
+    Chain forward (policy ACCEPT):
+    target     prot opt     source                destination           ports
+    MASQ       all  ------  192.168.1.0/24        anywhere              n/a
+    
+    Chain output (policy ACCEPT):</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Cualquier regla en la que como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>objetivo</I
+></SPAN
+> aparezca
+<TT
+CLASS="LITERAL"
+>MASQ</TT
+> es una regla de enmascaramiento.</P
+><P
+>Finalmente, para listar las reglas mediante <B
+CLASS="COMMAND"
+>iptables</B
+>
+hay que usar:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>iptables -t nat -L</B
+></TT
+>
+    Chain PREROUTING (policy ACCEPT)
+    target     prot opt source               destination         
+    
+    Chain POSTROUTING (policy DROP)
+    target     prot opt source               destination         
+    MASQUERADE  all  --  anywhere             anywhere           MASQUERADE 
+    
+    Chain OUTPUT (policy ACCEPT)
+    target     prot opt source               destination         </PRE
+></TD
+></TR
+></TABLE
+>
+
+Las reglas de enmascaramiento aparecen aquí también con
+<TT
+CLASS="LITERAL"
+>MASQUERADE</TT
+> como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>objetivo</I
+></SPAN
+>.&#13;</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-MASQ.SETTING.TIMING">11.3.1. Configuración de parámetros temporales</H2
+><P
+>&#13;Cuando se establece una nueva conexión, el software de enmascaramiento
+IP crea una asociación en memoria entre cada una de las máquinas implicadas.
+Tales asociaciones se pueden ver en cualquier momento inspeccionando
+el fichero <TT
+CLASS="FILENAME"
+>/proc/net/ip_masquerade</TT
+>.
+Las asociaciones caducan tras un período de inactividad.&#13;</P
+><P
+>&#13;Los valores de máximo tiempo de inactividad se pueden configurar
+mediante <B
+CLASS="COMMAND"
+>ipfwadm</B
+>.
+La sintaxis es:
+
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ipfwadm -M -s &lt;<TT
+CLASS="REPLACEABLE"
+><I
+>tcp</I
+></TT
+>&gt; &lt;<TT
+CLASS="REPLACEABLE"
+><I
+>tcpfin</I
+></TT
+>&gt; &lt;<TT
+CLASS="REPLACEABLE"
+><I
+>udp</I
+></TT
+>&gt;</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;con <B
+CLASS="COMMAND"
+>ipchains</B
+> sería:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ipchains -M -S &lt;<TT
+CLASS="REPLACEABLE"
+><I
+>tcp</I
+></TT
+>&gt; &lt;<TT
+CLASS="REPLACEABLE"
+><I
+>tcpfin</I
+></TT
+>&gt; &lt;<TT
+CLASS="REPLACEABLE"
+><I
+>udp</I
+></TT
+>&gt;</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;La implementación de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>iptables</I
+></SPAN
+> incluye unos
+valores por defecto mucho mayores que no permite cambiar.</P
+><P
+>&#13;Cada uno de esos valores representa un contador usado por el software de
+enmascaramiento IP y están dados en segundos. La siguiente tabla muestra
+un resumen de los contadores y sus significados:</P
+><DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN9956"><P
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Nombre</TH
+><TH
+WIDTH="343"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Descripción</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>tcp</TD
+><TD
+WIDTH="343"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>	Tiempo de caducidad de la sesión TCP. Cuánto puede estar inactiva
+        una conexión TCP antes de que la correspondiente asociación
+        sea eliminada.
+	</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>tcpfin</TD
+><TD
+WIDTH="343"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>        
+	Tiempo de caducidad de TCP tras un FIN. Cuanto permanece una
+        asociación tras la desconexión de la correspondiente conexión
+        TCP.
+	</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>udp</TD
+><TD
+WIDTH="343"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>	Caducidad de sesión UDP. Tiempo máximo de inactividad de una «conexión»
+	UDP antes de que la asociación correspondiente sea eliminada.
+	</P
+></TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-masq.kernel.config.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-masq.namelookups.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Configuración del Núcleopara enmascaramiento IP</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ipmasq.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Manipulación del Servicio de Nombres</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

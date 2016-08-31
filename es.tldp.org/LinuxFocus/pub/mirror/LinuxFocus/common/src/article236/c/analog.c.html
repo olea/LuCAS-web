@@ -1,0 +1,50 @@
+<pre>
+/* vim: set sw=8 ts=8 si : */
+/*********************************************
+* Author: Guido Socher, Copyright: GPL 
+* Clock frequency     : 4,000000 MHz
+* Copyright: GPL
+**********************************************/
+#include &lt;sig-avr.h&gt;
+#include &lt;interrupt.h&gt;
+#include &lt;io.h&gt;
+
+
+volatile static unsigned char analog_busy; 
+volatile static int analog_result; 
+
+/* the following function will be called when analog conversion is done */
+SIGNAL(SIG_ADC) {
+	unsigned char adlow,adhigh;
+	adlow=inp(ADCL); /* read low first !! */
+	adhigh=inp(ADCH); /* read low first !! */
+	analog_result=(adhigh&lt;&lt;4)|(adlow&amp;0x0F);
+	analog_busy=0;
+}
+
+/* return analog value of a given channel. You must enable interrupt with
+* sei() in the main program */
+int convertanalog(unsigned char channel) 
+{
+	analog_busy=1;
+        /* enable analog to digital conversion in single run mode
+        *  without noise canceler function. See datasheet of at90s4433 page 55 
+        * We set ADPS2 and ADPS0 to have a clock division factor of 32.
+        * This is needed to stay in the recommended range of 50-200kHz 
+        * ADEN: Analog Digital Converter Enable
+        * ADIE: ADC Interrupt Enable
+        * ADIF: ADC Interrupt Flag
+        * ADCSR: ADC Control and Status Register
+        * ADPS2..ADPS0: ADC Prescaler Select Bits
+        */
+        outp((1&lt;&lt;ADEN)|(1&lt;&lt;ADIE)|(1&lt;&lt;ADIF)|(1&lt;&lt;ADPS2)|(1&lt;&lt;ADPS2),ADCSR);
+
+	outp(channel&amp;0x08,ADMUX); /* write only the lower 3 bits */
+	/*  start conversion */
+	sbi(ADCSR,ADSC);
+	while(analog_busy); /* wait for result */
+	return(analog_result);
+}
+
+
+</pre>

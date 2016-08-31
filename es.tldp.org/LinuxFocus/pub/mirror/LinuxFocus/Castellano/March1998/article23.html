@@ -1,0 +1,230 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML lang="en">
+<HEAD><META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <TITLE> Revisión hardware: Programando en OpenGL & GLUT con la tarjeta Voodoo 3dfx </TITLE>
+ <META name="Author" CONTENT="Phil Ross">
+ <META name="Keywords" CONTENT="3dfx voodoo opengl glut hardware ">
+ <META name="Description" CONTENT="Hardware Review of 3dfx graphics card ">
+ <META name="Copyright" CONTENT="&copy; 1998 LinuxFocus">
+ <META name="Translator" CONTENT="">
+ <META name="Date" CONTENT="1998-02-91T00:00:00Z">
+
+</HEAD>
+
+<BODY bgcolor="#FFFFFF" text="#000000" link="#ff0033" vlink="#FF3333">
+
+  <MAP name="navegator">
+  <AREA shape="rect" coords="0, 0, 65, 28" alt="Hogar" href="../">
+  <AREA shape="rect" coords="66, 0, 124, 28" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="125, 0, 193, 28" alt="Busqueda" href="../search.html">
+  <AREA shape="rect" coords="194, 0, 260, 28" alt="Enlaces" href="../links.html">
+  <AREA shape="rect" coords="261, 0, 350, 28" alt="Sobre Nosotros" href="../aboutus.html">
+  </MAP>
+
+
+
+ <TABLE border="0" width="100%" cellspacing="0" cellpadding="0">
+
+ <THEAD>
+   <TR align="center">
+      <TD colspan="2"><IMG src="../../common/March1998/border-short.jpg" alt="[LinuxFocus Image]" width="407" height="88"></TD>
+   </TR>
+
+   <TR align="center">
+      <TD colspan="2" bgcolor="#660033"><IMG src="../../common/March1998/Navegator-bar.gif" ismap usemap="#navegator" border="0" width="351" height="28" alt="[Navegation Bar]"></TD>
+   </TR>
+
+   <TR align="center">
+     <TD colspan="2">     
+           <TABLE  border="0" width="75%" cellspacing="0" cellpadding="5">
+		<TR bgcolor="#000000">
+		   <TD align="center">
+
+
+		  <A href="../News/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Noticias</B></FONT></A>
+		  <A href="../Archives/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Archivos</B></FONT></A>
+		  <A href="../Companies/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Compa&ntilde;&iacute;as</B></FONT></A>
+		  <A href="../Tips/"><FONT face="Helvetica,Arial" color="#ffffff"><B>&nbsp; Consejos&nbsp;</B></FONT></A> 
+               </TD>
+            </TR>
+            
+		<TR>
+            <!--   Here goes the Title of the article, authors name and abstract -->
+		   <TD align="center">
+ 			<FONT face="Helvetica,Arial" color="#660066"><H2>Revisión hardware:<br> Programando en OpenGL & GLUT con la tarjeta Voodoo 3dfx</H2></FONT>
+ 			<FONT face="Helvetica,Arial" color="#000000"><H4>por <A href="mailto:phil@ryoko.cis.pitt.edu"><FONT color="#000000">Phil Ross</FONT></A></H4></FONT>
+                  <HR size="2" noshade>
+	         </TD>
+            </TR>
+
+           </TABLE>
+
+     </TD>
+   </TR>
+
+ </THEAD>
+
+
+
+ <TBODY>
+  
+ <TR>
+    <TD valign="top" align="center">
+    </TD>
+   
+    <TD align="center">
+       <TABLE border="0" width="80%" cellspacing="0" cellpadding="0">
+	  <TR>
+          <TD>
+
+   <p>  En  mi último   artículo escribí acerca  del   3Dfx y  el buen
+   rendimiento que se conseguía con  la biblioteca Mesa.  Mencioné las
+   ventajas e inconvenientes de utilizar Mesa + 3Dfx. En este artículo
+   me  gustaría    centrarme  en los detalle  de     algunas  de éstas
+   desventajas y en qué hacer para evitarlas.</p>
+
+   
+   <p> Para empezar, decir que el <A href="article29.html">artículo</A>
+   de Miguel explica como debemos utilizar la biblioteca GLUT para
+   dibujar (to render) dentro de subventanas en una ventana principal.
+   Cuando utilizamos subventanas, se crea un nuevo contexto
+   independiente de la ventana principal.  Desafortunadamente, el
+   controlador 3Dfx para Mesa soporta únicamente un contexto
+   simultáneo.  Si intentas utilizar subventanas con el 3Dfx
+   observarás que en lugar de dibujar la subventana dentro de la
+   ventana pricipal, ésta se situa encima de ella.  Esto produce un
+   efecto de parpadeo, ya que la ventana principal y la subventana se
+   redibujan aternativamente muy deprisa.  Obviamente éste no era el
+   efecto que nosotros queríamos, de modo que tendremos que esperar
+   una próxima explicación de Miguel sobre cómo utilizar subventanas
+   manipulando pilas de matrices.</p>
+
+    
+    <p> Segundo, me gustaría mostrar cómo es posible superar el
+    problema de mantener el foco del ratón cuando se dibuja a pantalla
+    completa con el 3Dfx.  En éste caso, el <em>rendering</em> se
+    realiza en la memoria del 3Dfx en lugar de en la memoria de
+    nuestro adaptador de vídeo 2D. El resultado es una ventana creada
+    por el programa en nuestro escritorio, pero todo el trabajo se
+    lleva a cabo por el 3Dfx sobre la pantalla completa.  En sistemas
+    con una única pantalla, el 3Dfx utiliza el monitor y no podremos
+    ver la ventana en el escritorio, pero en sistemas con pantalla
+    dual, un monitor mostrará nuestro escritorio y la ventana creada,
+    mientras que en el otro veremos el <em>renderizado</em> del
+    programa.</p>
+
+
+    <p> En sistemas de una única pantalla, suele ser complicado
+    mantener el foco del ratón dentro de la ventana del programa
+    puesto que no se puede ver la ventana.  Si la ventana del programa
+    pierde el foco, no podremos aceptar ninguna entrada.  Si el
+    programa tiene que aceptar alguna entrada para detectar que el
+    usuario quiere salir del programa, y no puede ver el escritorio
+    para localizar el botón de salida, ¡ no podrá cerrar el programa !
+    </p>
+
+    <p> Un truco que puedes utilizar para solucionar el problema es
+    utilizar las funciones <tt>glutFullScreen()</tt> y
+    <tt>glViewport()</tt>.  La función <tt>glutFullScreen()</tt>
+    maximiza la ventana del programa. Lo que puedes hacer es llamar a
+    <tt>glutFullScreen()</tt> después de crear la ventana para
+    maximizarla. Cuando la ventana está maximizada, no habrá manera de
+    que el ratón salga de la ventana, no pudiendo por tanto perder el
+    foco.</p>
+
+    <p> La función <tt>glViewport()</tt> indica como quiere que sea de
+    grande el área de dibujo del programa.  Cuando especificas un
+    tamaño de área, todo el <rm>renderizado</rm> se hace dentro de la
+    ventana.  Para el 3Dfx, donde normalmente se hace una llamada a
+    <tt>glViewport()</tt> desde la rutina de <em>callback</em> de
+    redimensionado (<em>reshape</em>) para asignar las nuevas
+    coordenadas de la ventana a coordenadas del área de dibujo, haz
+    una llamada a a <tt>glViewport()</tt> con las dimensiones de la
+    resolucion del 3Dfx. Por ejemplo, si estás trabajando con el 3Dfx
+    a una resolución de 640x480 deberías hacer
+    <tt>glViewport(0,0,640,480)</tt> y si trabajas a 800x600 deberías
+    hacer <tt>glViewport(0,0,800,600)</tt>.  Esto hará que el programa
+    dibuje en el área que has especificado para trabajar con la
+    tarjeta 3Dfx, aunque la ventana del programa esté en pantalla
+    completa. </p>
+
+
+    <p> He incluido una versión del triángulo sombreado-suavizado de
+    Miguel modificado para poder trabajar con el 3Dfx (<A
+    href="../../common/March1998/example3.c">../../common/March1998/example3.c</A>, <A
+    href="../../common/March1998/Makefile">../../common/March1998/Makefile</A>).  Simplemente he excluido la
+    subventana, he añadido la llamada a la función
+    <tt>glutFullscreen</tt> en el lugar apropiado (después de la
+    creación de la ventana), y cambiado <tt>glViewport()</tt> en la
+    función que del <em>callback</em> de redimensionado, para forzar
+    el área de dibujo a 640x480 (la resolución de mi tarjeta 3Dfx). Si
+    estas ejecutando sin el 3Dfx (no activando la variable de entorno
+    MESA_GLX_FX) observarás que la ventana del programa se maximizará
+    a las dimensiones de nuestro escritorio, pero sólo se dibujará en
+    un área de 640x480 dentro de la ventana. Si se ejecuta el programa
+    con el 3Dfx, verás que el <rm>renderizado</rm> se realiza al
+    tamaño máximo que del 3Dfx, por lo que el programa perderá el
+    foco.</p>
+
+    <p> Otra cosa a tener en cuenta, es que cuando se ejecuta el
+    programa sin el 3Dfx, el programa funciona muy lento, debido a que
+    se actualiza la ventana completa en lugar del área de dibujo
+    especificada con <tt>glViewport()</tt>. Esto produce en una
+    pérdida de prestaciones cuando <em>renderizamos</em> en el
+    escritorio, pero funciona bien a pantalla completa con el 3Dfx.
+    Por esta razón, puedes querer escribir tus programas de forma que
+    detecten cuando se está utilizando el 3Dfx (detectando y leyendo
+    la variable de entorno MESA_GLX_FX) y utilizar el truco de
+    <tt>glutFullScreen()</tt> y <tt>glViewport()</tt> sólo en este
+    caso.</p>
+
+
+
+
+
+
+          </TD>
+        </TR>
+	 </TABLE>
+
+     <HR size=2 noshade>
+	 <p align="right"><I>Traducido por <A href="mailto:juapana1@inf.upv.es">Juan José Paneque</A></I> </P>   
+	   
+    </TD>
+
+ </TR>
+
+ </TBODY>
+
+<TBODY>
+  <TR>
+    <TD colspan="2">
+    <B>Para más información</B>:<BR>
+    <UL>
+      <LI>Consulta <A href="../January1998/article18.html">Tarjeta Gr&aacute;fica 3Dfx</A>. </LI>
+     <UL><BR><BR>
+    <TD>
+  </TR>
+</TBODY>
+
+ <TR bgcolor="#660033">
+   <TD colspan="2" align="center"><FONT face="Helvetica,Arial" color="#FFFFFF"><B>
+         &copy; 1998 Phillip Ross</B></FONT><BR>
+    <FONT color="#ffffff">Páginas web mantenidas por
+    <A href="mailto:angel@mercury.chem.pitt.edu"><FONT color="#ffffff">Miguel A Sepulveda</FONT></A></FONT>.
+   </TD>
+ </TR>
+
+
+
+</TABLE>
+
+
+</BODY>
+</HTML>
+
+
+
+
+
+

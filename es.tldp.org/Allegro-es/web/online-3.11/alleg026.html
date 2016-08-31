@@ -1,0 +1,276 @@
+<html><head><title>26 Rutinas de ficheros y compresi¢n</title><body>
+<h1><a name="26 Rutinas de ficheros y compresión">26 Rutinas de ficheros y compresión</a></h1>
+<p>
+<ul><h4>
+<li><a href="#fix_filename_case">fix_filename_case</a>
+<li><a href="#fix_filename_slashes">fix_filename_slashes</a>
+<li><a href="#fix_filename_path">fix_filename_path</a>
+<li><a href="#replace_filename">replace_filename</a>
+<li><a href="#replace_extension">replace_extension</a>
+<li><a href="#append_filename">append_filename</a>
+<li><a href="#get_filename">get_filename</a>
+<li><a href="#get_extension">get_extension</a>
+<li><a href="#put_backslash">put_backslash</a>
+<li><a href="#file_exists">file_exists</a>
+<li><a href="#exists">exists</a>
+<li><a href="#file_size">file_size</a>
+<li><a href="#file_time">file_time</a>
+<li><a href="#delete_file">delete_file</a>
+<li><a href="#for_each_file">for_each_file</a>
+<li><a href="#packfile_password">packfile_password</a>
+<li><a href="#pack_fopen">pack_fopen</a>
+<li><a href="#pack_fclose">pack_fclose</a>
+<li><a href="#pack_fseek">pack_fseek</a>
+<li><a href="#pack_feof">pack_feof</a>
+<li><a href="#pack_ferror">pack_ferror</a>
+<li><a href="#pack_getc">pack_getc</a>
+<li><a href="#pack_putc">pack_putc</a>
+<li><a href="#pack_igetw">pack_igetw</a>
+<li><a href="#pack_igetl">pack_igetl</a>
+<li><a href="#pack_iputw">pack_iputw</a>
+<li><a href="#pack_iputl">pack_iputl</a>
+<li><a href="#pack_mgetw">pack_mgetw</a>
+<li><a href="#pack_mgetl">pack_mgetl</a>
+<li><a href="#pack_mputw">pack_mputw</a>
+<li><a href="#pack_mputl">pack_mputl</a>
+<li><a href="#pack_fread">pack_fread</a>
+<li><a href="#pack_fwrite">pack_fwrite</a>
+<li><a href="#pack_fgets">pack_fgets</a>
+<li><a href="#pack_fputs">pack_fputs</a>
+<li><a href="#pack_fopen_chunk">pack_fopen_chunk</a>
+<li><a href="#pack_fclose_chunk">pack_fclose_chunk</a>
+</h4></ul>
+<p><br><br>
+<p>
+Las siguientes rutinas implementan un sistema de ficheros I/O con buffer
+rápido, que soporta la lectura y escritura de ficheros comprimidos usando un
+algoritmo de buffer de anillo basado en el compresor LZSS de Haruhiko
+Okumura. Esto no consigue tan buenas compresiones como zip o lha, pero la
+descompresión es muy rápida y no requiere mucha memoria. Los ficheros
+comprimidos siempre comienzan con el valor de 32 bits F_PACK_MAGIC, y
+autodetecta ficheros con el valor F_NOPACK_MAGIC.
+<p>
+<b>char *<a name="fix_filename_case">fix_filename_case</a>(char *path);</b><br>
+   Convierte un nombre de fichero a un estado estandarizado. En platadormas
+   DOS, los nombres serán todo mayúsculas. Devuelve una copia del parámetro
+   de camino.
+<p>
+<b>char *<a name="fix_filename_slashes">fix_filename_slashes</a>(char *path);</b><br>
+   Convierte los separadores de directorios de un nombre de fichero a un
+   carácter estándar. En plataformas DOS, esto es la antibarra. Devuelve una
+   copia del parámetro de camino.
+<p>
+<b>char *<a name="fix_filename_path">fix_filename_path</a>(char *dest, char *path, int size);</b><br>
+   Convierte un nombre de fichero parcial en un camino completo, generando
+   hasta el máximo número de carácteres especificados. Devuelve una copia
+   del parámetro dest.
+<p>
+<b>char *<a name="replace_filename">replace_filename</a>(char *dest, char *path, char *filename, int size);</b><br>
+   Sustituye el camino+nombre de fichero especificados con un nuevo nombre
+   de fichero, generando hasta el máximo número de carácteres especificados.
+   Devuelve una copia del parámetro dest.
+<p>
+<b>char *<a name="replace_extension">replace_extension</a>(char *dest, char *filename, char *ext, int size);</b><br>
+   Sustituye el nombre de fichero+extensión especificados con una nueva
+   extensión, generando hasta el máximo número de carácteres especificados.
+   Devuelve una copia del parámetro dest.
+<p>
+<b>char *<a name="append_filename">append_filename</a>(char *dest, char *path, char *filename, int size);</b><br>
+   Concatena el nombre de fichero especificado al final del camino
+   especificado, generando hasta el máximo número de carácteres
+   especificados. Devuelve una copia del parámetro dest.
+<p>
+<b>char *<a name="get_filename">get_filename</a>(char *path);</b><br>
+   Cuando se le pasa el path específico de un fichero, devuelve un puntero a
+   la porción del nombre del fichero. Tanto '\' como '/' son reconocidos
+   como separadores de directorios.
+<p>
+<b>char *<a name="get_extension">get_extension</a>(char *filename);</b><br>
+   Cuando se le pasa un nombre de fichero completo (con o sin información
+   de path) devuelve un puntero a la extensión del fichero.
+<p>
+<b>void <a name="put_backslash">put_backslash</a>(char *filename);</b><br>
+   Si el último caracter de un nombre no es '\' o '/', esta rutina le
+   añadirá '\'.
+<p>
+<b>int <a name="file_exists">file_exists</a>(char *filename, int attrib, int *aret);</b><br>
+   Chequea la existencia de un fichero de nombre y atributos dados,
+   devolviendo no-cero si el fichero existe. Los atributos pueden contener
+   cualquiera de las constantes FA_* de dir.h. Si aret no es NULL, será
+   fijado a los atributos del fichero existente. Si ocurre un error, el
+   código de error de sistema será almacenado en errno.
+<p>
+<b>int <a name="exists">exists</a>(char *filename);</b><br>
+   Versión reducida de file_exists(), que chequea la existencia de ficheros
+   normales, los cuales pueden tener los bits de archivo o sólo lectura
+   activados, pero no son ocultos, directorios, ficheros de sistema, etc.
+<p>
+<b>long <a name="file_size">file_size</a>(char *filename);</b><br>
+   Devuelve el tamaño del fichero en bytes. Si el fichero no existe u ocurre
+   un error, devolverá cero y almacenará el código de error de sistema en
+   errno.
+<p>
+<b>long <a name="file_time">file_time</a>(char *filename);</b><br>
+   Devuelve el tiempo de modificación de un fichero.
+<p>
+<b>int <a name="delete_file">delete_file</a>(char *filename);</b><br>
+   Borra un fichero.
+<p>
+<b>int <a name="for_each_file">for_each_file</a>(char *name, int attrib, void (*callback)(), int param);</b><br>
+   Encuentra todos los ficheros que se ajusten al nombre (ej: *.exe) y
+   atributos especificados, y ejecuta callback() por cada uno de ellos. A
+   callback() se le pasan tres parámetros, el primero es la cadena que
+   contiene el nombre completo del fichero, el segundo los atributos del
+   fichero, y el tercer parámetro es un entero que es copia de param (puede
+   usar esto para lo que quiera). Si ocurre un error, el código de error
+   será almacenado en errno, y callback() puede abortar for_each_file al
+   activar errno. Devuelve el número de llamadas con éxito hechas a
+   callback(). Los atributos de fichero pueden contener cualquiera de los
+   biestables FA_* de dir.h.
+<p>
+<b>void <a name="packfile_password">packfile_password</a>(char *password);</b><br>
+   Activa el password de encriptación que será usado para todas las
+   operaciones de escritura/lectura de ficheros comprimidos. Los ficheros
+   escritos con un password no pueden ser leídos a no ser que se seleccione
+   el password correcto, por lo que cuidado: si olvida la clave, ¡nadie
+   podrá recuperar su datos! Pase NULL o una cadena vacía para volver al
+   modo normal, no encriptado. Si está usando esta función para evitar que
+   otros accedan a sus ficheros de datos, tenga cuidado de no salvar una copia
+   obvia de su clave en el ejecutable: si hay cadenas como "Soy la clave del
+   fichero de datos", sería muy fácil acceder a sus datos :-)
+<p>
+<b>PACKFILE *<a name="pack_fopen">pack_fopen</a>(char *filename, char *mode);</b><br>
+   Abre un fichero según el modo, que puede contener cualquiera de los
+   siguientes biestables.
+<p><ul><li>
+      'r' - abrir fichero para leer.
+<p><li>
+      'w' - abrir fichero para escribir, sobreescribiendo datos existentes.
+<p><li>
+      'p' - abrir fichero en modo comprimido. Los datos serán comprimidos a
+       medida que se escriben en el fichero, y automáticamente
+       descomprimidos durante las operaciones de lectura. Los ficheros
+       creados de este modo producirán basura si se intentan leer sin
+       activar antes este biestable.
+<p><li>
+      '!' - abrir fichero para escribir en modo normal, sin compresión, pero
+       añade el valor F_NOPACK_MAGIC al comienzo del fichero, para que luego
+       pueda ser abierto en modo comprimido y Allegro autodetectará que los
+       datos no necesitan ser descomprimidos.
+<p></ul>
+   En vez de estos biestables, una de las constantes F_READ, FWRITE,
+   F_READ_PACKED, F_WRITE_PACKED o F_WRITE_NOPACK puede ser usada como el
+   parámetro de modo. Si todo funciona, pack_fopen() devuelve un puntero a
+   una estructura de fichero, y con error, devuelve NULL y almacena el
+   código de error en errno. Un intento de leer un fichero normal en modo
+   comprimido activará errno a EDOM.
+<p>
+   Las funciones de ficheros también entienden varios nombres "mágicos" que
+   pueden ser usados por varios motivos. Estos nombres son:
+<p><ul><li>
+      "#" - lee datos que han sido añadidos al fichero ejecutable con la
+      utilidad exedat, como si fuesen de un fichero independiente.
+<p><li>
+      'nombre.dat#nombre_obj' - abre un objeto específico de un fichero de
+      datos, y lo lee como si fuese de un fichero normal. Puede crear
+      ficheros de datos anidados exáctamente como una estructura normal de
+      directorios, por ejemplo podría abrir el fichero
+      'nombre.dat#graficos/nivel1/datomapa'.
+<p><li>
+      '#nombre_obj' - combinación de lo de arriba, leer un objeto de un
+      fichero de datos que ha sido añadido al ejecutable.
+<p></ul>
+   Con estos nombres especiales, los contenidos de un objeto de un fichero
+   de datos o de un fichero añadido pueden ser leídos de modo idéntico que
+   un fichero normal, por lo que cualquiera de las funciones de acceso a
+   ficheros de Allegro (ejemplo: load_pcx() y set_config_file()) pueden ser
+   usadas para leerlos. Sin embargo, no podrá escribir en estos ficheros:
+   sólo pueden ser leídos. Además, debe tener su fichero de datos
+   descomprimido o con compresión por objetos si planea leer objetos
+   individuales (de otra manera, habrá una sobrecarga de búsqueda al ser
+   leído). Finalmente, tenga en cuenta que los tipos de objetos especiales
+   de Allegro no son los mismos que los de los ficheros que importas los
+   datos. Cuando importe datos como bitmaps o samples en el grabber, éstos
+   son convertidos en un formato específico de Allegro, pero el marcador de
+   sintaxis de ficheros '#' lee los objetos como trozos binarios raw. Esto
+   significa, que si por ejemplo, quiere usar load_pcx para leer una imagen
+   de un fichero de datos, debería importarlos como un bloque binario en vez
+   de un objeto BITMAP.
+<p>
+<b>int  <a name="pack_fclose">pack_fclose</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_fseek">pack_fseek</a>(PACKFILE *f, int offset);</b><br>
+<b>int  <a name="pack_feof">pack_feof</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_ferror">pack_ferror</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_getc">pack_getc</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_putc">pack_putc</a>(int c, PACKFILE *f);</b><br>
+<b>int  <a name="pack_igetw">pack_igetw</a>(PACKFILE *f);</b><br>
+<b>long <a name="pack_igetl">pack_igetl</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_iputw">pack_iputw</a>(int w, PACKFILE *f);</b><br>
+<b>long <a name="pack_iputl">pack_iputl</a>(long l, PACKFILE *f);</b><br>
+<b>int  <a name="pack_mgetw">pack_mgetw</a>(PACKFILE *f);</b><br>
+<b>long <a name="pack_mgetl">pack_mgetl</a>(PACKFILE *f);</b><br>
+<b>int  <a name="pack_mputw">pack_mputw</a>(int w, PACKFILE *f);</b><br>
+<b>long <a name="pack_mputl">pack_mputl</a>(long l, PACKFILE *f);</b><br>
+<b>long <a name="pack_fread">pack_fread</a>(void *p, long n, PACKFILE *f);</b><br>
+<b>long <a name="pack_fwrite">pack_fwrite</a>(void *p, long n, PACKFILE *f);</b><br>
+<b>char *<a name="pack_fgets">pack_fgets</a>(char *p, int max, PACKFILE *f);</b><br>
+<b>int  <a name="pack_fputs">pack_fputs</a>(char *p, PACKFILE *f);</b><br>
+<p>
+   Todas estas funcionan como las funciones equivalentes stdio, excepto que
+   pack_fread() y pack_fwrite() toman un sólo parámetro de tamaño en vez de
+   ese estúpido sistema de tamaño y num_elements, y sólo puede avanzar en
+   un fichero hacia delante desde la posición relativa actual. Las rutinas
+   pack_i* y pack_m leen y escriben valores de 16 y 32 bits usando los
+   sistemas de orden de Intel y Motorola respectivamente. Tome nota que la
+   búsqueda es muy lenta cuando lea ficheros comprimidos, y que debería ser
+   evitada a no ser que sepa que el fichero no está comprimido.
+<p>
+<b>PACKFILE *<a name="pack_fopen_chunk">pack_fopen_chunk</a>(PACKFILE *f, int pack);</b><br>
+   Abre sub_chunks en un fichero. Los chunks son primariamente usados por el
+   código de ficheros de datos, pero pueden serle útiles para sus propias
+   rutinas de ficheros. Un chunk provee una vista lógica de parte de un
+   fichero, que puede ser comprimido como un ente individual y será
+   automáticamente insertado y chequea los contadores de tamaño para
+   prevenir la lectura después del final del chunk. Para escribir un chunk
+   en un fichero f, use este código:
+<p><pre>
+      /* Asumo que f es un PACKFILE * que ha sido abierto en modo escritura*/
+      f = pack_fopen_chunk(f, pack);
+      escribe datos en f
+      f = pack_fclose_chunk(f);
+<p></pre>
+   Los datos escritos en el chunk serán precedidos con dos counts (32 bits,
+   big-endian). Para descomprimir chunks, éstos serán ajustados al tamaño de
+   los datos del chunk. Para chunks comprimidos (creados al ajustar el
+   biestable pack), el primer tamaño es el tamaño real del chunk, y el segundo
+   será el tamaño negativo de los datos descomprimidos.
+<p>
+   Para leer el chunk, use este código:
+<p><pre>
+      /* Asumo que f es un PACKFILE * que ha sido abierto en modo escritura*/
+      f = pack_fopen_chunk(f, FALSE);
+      lee datos de f
+      f = pack_fclose_chunk(f);
+<p></pre>
+   Esta secuencia leerá los counts de tamaño creados cuando el chunk fue
+   escrito, y automáticamente descomprimirá el contenido del chunk si fue
+   comprimido. El tamaño también evitará leer después del final del chunk
+   (Allegro devolverá EOF si intenta esto), y automáticamente ignora los
+   chunks no leídos cuando llamas pack_fclose_chunk().
+<p>
+   Los chunks pueden ser anidados unos dentro de otros al hacer llamadas
+   repetidas a pack_fopen_chunk(). Al escribir un fichero, el estado de
+   compresión es heredado del fichero padre, por lo que sólo tiene que
+   activar el biestable pack si el fichero padre no fue comprimido pero
+   quiere comprimir los datos del chunk. Si el fichero padre ya está
+   abierto en modo comprimido, activar el biestable pack hará que los datos
+   sean comprimidos dos veces: una cuando los datos son escritos en el
+   chunk, y otra cuando el chunk es escrito en el fichero padre.
+<p>
+<b>PACKFILE *<a name="pack_fclose_chunk">pack_fclose_chunk</a>(PACKFILE *f);</b><br>
+   Cierra un sub-chunk de un fichero, que previamente ha sido obtenido al
+   llamar pack_fopen_chunk().
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

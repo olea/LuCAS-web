@@ -1,0 +1,155 @@
+<HTML>
+<HEAD>
+<TITLE>RPM COMO : Construcci&oacute;n multi-arquitectura de paquetes RPM </TITLE>
+</HEAD>
+<BODY>
+<A HREF="RPM-Como-6.html">Anterior</A>
+<A HREF="RPM-Como-8.html">Siguiente</A>
+<A HREF="RPM-Como.html#toc7">Indice</A>
+<HR>
+<H2><A NAME="s7">7. Construcci&oacute;n multi-arquitectura de paquetes RPM </A></H2>
+
+
+<P>Ahora puede usarse RPM para construir paquetes para Intel i386, Digital
+Alpha ejecutando Linux y Sparc. Tambi&eacute;n se ha informado de su
+funcionamiento en estaciones de trabajo SGI y HP. Hay varias
+caracter&iacute;sticas que hacen que la construcci&oacute;n de paquetes para todas las
+plataformas sea f&aacute;cil.
+La primera de &eacute;stas es la directiva ``<CODE>optflags</CODE>'' del fichero
+<CODE>/etc/rpmrc</CODE>.  Puede usarse para asignar las opciones usadas durante
+la construcci&oacute;n del software con valores espec&iacute;ficos de cada arquitectura.
+Otras son las macros ``<CODE>arch</CODE>'' en el fichero spec. Pueden usarse para
+diferentes cosas, en funci&oacute;n de la arquitectura para la que se est&aacute;
+construyendo. Otra m&aacute;s, es la directiva ``<CODE>Exclude</CODE>'' de la cabecera.</P>
+
+<H2><A NAME="ss7.1">7.1 Ejemplo de fichero spec </A></H2>
+
+
+<P>El siguiente es parte del fichero spec para el paquete ``<CODE>fileutils</CODE>''. 
+Est&aacute; configurado para compilar en Alpha e Intel.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Summary: GNU File Utilities
+Name: fileutils
+Version: 3.16
+Release: 1
+Copyright: GPL
+Group: Utilities/File
+Source0: prep.ai.mit.edu:/pub/gnu/fileutils-3.16.tar.gz
+Source1: DIR_COLORS
+Patch: fileutils-3.16-mktime.patch
+
+%description
+These are the GNU file management utilities.  It includes programs
+to copy, move, list, etc, files.
+
+The ls program in this package now incorporates color ls!
+
+%prep
+%setup
+
+%ifarch alpha
+%patch -p1
+autoconf
+%endif
+%build
+configure --prefix=/usr --exec-prefix=/
+make CFLAGS=&quot;$RPM_OPT_FLAGS&quot; LDFLAGS=-s
+
+%install
+rm -f /usr/info/fileutils*
+make install
+gzip -9nf /usr/info/fileutils*
+
+.
+.
+.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss7.2">7.2 <CODE>Optflags</CODE></A></H2>
+
+
+<P>En este ejemplo puede ver c&oacute;mo se usa la directiva ``<CODE>optflags</CODE>'' desde
+el fichero <CODE>/etc/rpmrc</CODE>. En funci&oacute;n de la arquitectura para la que
+est&aacute; construyendo, el valor adecuado lo proporciona <CODE>RPM_OPT_FLAGS</CODE>.
+Debe parchear el fichero <CODE>Makefile</CODE> de su paquete para usar esta
+variable en lugar de las directivas normales que puede usar (como
+<CODE>-m486</CODE> y <CODE>-O2</CODE>).  Tendr&aacute; una mejor perspectiva de lo que necesita
+hacer instalando este paquete de fuentes, desempaquetando el fichero tar
+con los fuentes y examinando el fichero <CODE>Makefile</CODE>. Examine el parche
+para el <CODE>Makefile</CODE> y compruebe qu&eacute; cambios son necesarios realizar. </P>
+
+
+<H2><A NAME="ss7.3">7.3 Macros</A></H2>
+
+
+<P>La macro <CODE>%ifarch</CODE> es muy importante para todo esto. La mayor&iacute;a
+de las veces necesitar&aacute; hacer un parche o dos espec&iacute;ficos para una s&oacute;la
+arquitectura. En ese caso, RPM le permitir&aacute; aplicar ese parche s&oacute;lo para
+una arquitectura. </P>
+<P>En el ejemplo anterior, <CODE>fileutils</CODE> tiene un parche para m&aacute;quinas de 64
+bits.  Obviamente, s&oacute;lo tiene aplicaci&oacute;n en Alpha, por el momento. 
+Entonces, a&ntilde;adimos una macro <CODE>%ifarch</CODE> al parche de 64 tal como:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+%ifarch axp
+%patch1 -p1
+%endif
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto asegurar&aacute; que el parche no es aplicado en cualquier arquitectura
+excepto en Alpha. </P>
+
+
+<H2><A NAME="ss7.4">7.4 Excluyendo arquitectura de los paquetes.</A></H2>
+
+
+<P>A la vez que puede tener fuentes RPM en un s&oacute;lo directorio para todas las
+plataformas, hemos implementado la posibilidad de ``excluir'' paquetes
+para que no sean construidos en ciertas arquitecturas. Debido a esto,
+puede hacer cosas como: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+rpm --rebuild /usr/src/SRPMS/*.rpm
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y conseguir construir los paquetes adecuados. Si todav&iacute;a no ha portado una
+aplicaci&oacute;n a una determinada plataforma, todo lo que tiene que hacer es
+a&ntilde;adir una l&iacute;nea como: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ExcludeArch: axp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>a la cabecera del fichero spec del paquete de fuentes. Reconstruya entonces
+el paquete sobre la plataforma para la que est&aacute; preparado. Como resultado
+tendr&aacute; disponible un paquete compilable sobre Intel pero que es
+f&aacute;cilmente omitible sobre Alpha.</P>
+
+
+<H2><A NAME="ss7.5">7.5 Acabando</A></H2>
+
+
+<P>Usar RPM para crear paquetes para m&uacute;ltiples arquitecturas es generalmente
+m&aacute;s sencillo de hacer que conseguir que el paquete compile por s&iacute; mismo 
+en todos los casos. Como siempre, la mejor ayuda disponible cuando uno se
+queda bloqueado al construir un paquete RPM es examinar un paquete de
+fuentes similar. </P>
+
+
+<HR>
+<A HREF="RPM-Como-6.html">Anterior</A>
+<A HREF="RPM-Como-8.html">Siguiente</A>
+<A HREF="RPM-Como.html#toc7">Indice</A>
+</BODY>
+</HTML>

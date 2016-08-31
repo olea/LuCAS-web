@@ -1,0 +1,948 @@
+<HTML
+><HEAD
+><TITLE
+>Programming interface</TITLE
+>
+</HEAD
+><BODY
+CLASS="SECT1"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>The Linux 2.4 Parallel Port Subsystem</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+>
+</TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 7. User-level device drivers</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+>
+</TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN621"
+>Programming interface</A
+></H1
+><P
+>    The <TT
+CLASS="LITERAL"
+>ppdev</TT
+> interface is largely the same as that
+    of other character special devices, in that it supports
+    <TT
+CLASS="FUNCTION"
+>open</TT
+>, <TT
+CLASS="FUNCTION"
+>close</TT
+>,
+    <TT
+CLASS="FUNCTION"
+>read</TT
+>, <TT
+CLASS="FUNCTION"
+>write</TT
+>, and
+    <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>.  The constants for the
+    <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> commands are in
+    <TT
+CLASS="FILENAME"
+>include/linux/ppdev.h</TT
+>.
+   </P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN632"
+>Starting and stopping: <TT
+CLASS="FUNCTION"
+>open</TT
+> and
+     <TT
+CLASS="FUNCTION"
+>close</TT
+></A
+></H2
+><P
+>     The device node <TT
+CLASS="FILENAME"
+>/dev/parport0</TT
+> represents any
+     device that is connected to <TT
+CLASS="FILENAME"
+>parport0</TT
+>, the
+     first parallel port in the system.  Each time the device node is
+     opened, it represents (to the process doing the opening) a
+     different device.  It can be opened more than once, but only one
+     instance can actually be in control of the parallel port at any
+     time.  A process that has opened
+     <TT
+CLASS="FILENAME"
+>/dev/parport0</TT
+> shares the parallel port in
+     the same way as any other device driver.  A user-land driver may
+     be sharing the parallel port with in-kernel device drivers as
+     well as other user-land drivers.
+    </P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN640"
+>Control: <TT
+CLASS="FUNCTION"
+>ioctl</TT
+></A
+></H2
+><P
+>     Most of the control is done, naturally enough, via the
+     <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> call.  Using
+     <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>, the user-land driver can control both
+     the <TT
+CLASS="LITERAL"
+>ppdev</TT
+> driver in the kernel and the
+     physical parallel port itself.  The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>
+     call takes as parameters a file descriptor (the one returned from
+     opening the device node), a command, and optionally (a pointer
+     to) some data.
+    </P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="CONSTANT"
+>PPCLAIM</TT
+></DT
+><DD
+><P
+>	Claims access to the port.  As a user-land device driver
+	writer, you will need to do this before you are able to
+	actually change the state of the parallel port in any way.
+	Note that some operations only affect the
+	<TT
+CLASS="LITERAL"
+>ppdev</TT
+> driver and not the port, such as
+	<TT
+CLASS="CONSTANT"
+>PPSETMODE</TT
+>; they can be performed while
+	access to the port is not claimed.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPEXCL</TT
+></DT
+><DD
+><P
+>	Instructs the kernel driver to forbid any sharing of the port
+	with other drivers, i.e. it requests exclusivity.  The
+	<TT
+CLASS="CONSTANT"
+>PPEXCL</TT
+> command is only valid when the
+	port is not already claimed for use, and it may mean that the
+	next <TT
+CLASS="CONSTANT"
+>PPCLAIM</TT
+> <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>
+	will fail: some other driver may already have registered
+	itself on that port.
+       </P
+><P
+>	Most device drivers don't need exclusive access to the port.
+	It's only provided in case it is really needed, for example
+	for devices where access to the port is required for extensive
+	periods of time (many seconds).
+       </P
+><P
+>	Note that the <TT
+CLASS="CONSTANT"
+>PPEXCL</TT
+>
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> doesn't actually claim the port
+	there and then---action is deferred until the
+	<TT
+CLASS="CONSTANT"
+>PPCLAIM</TT
+> <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> is
+	performed.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPRELEASE</TT
+></DT
+><DD
+><P
+>	Releases the port.  Releasing the port undoes the effect of
+	claiming the port.  It allows other device drivers to talk to
+	their devices (assuming that there are any).
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPYIELD</TT
+></DT
+><DD
+><P
+>	Yields the port to another driver.  This
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> is a kind of short-hand for
+	releasing the port and immediately reclaiming it.  It gives
+	other drivers a chance to talk to their devices, but
+	afterwards claims the port back.  An example of using this
+	would be in a user-land printer driver: once a few characters
+	have been written we could give the port to another device
+	driver for a while, but if we still have characters to send to
+	the printer we would want the port back as soon as possible.
+       </P
+><P
+>	It is important not to claim the parallel port for too long,
+	as other device drivers will have no time to service their
+	devices.  If your device does not allow for parallel port
+	sharing at all, it is better to claim the parallel port
+	exclusively (see <TT
+CLASS="CONSTANT"
+>PPEXCL</TT
+>).
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPNEGOT</TT
+></DT
+><DD
+><P
+>	Performs IEEE 1284 negotiation into a particular mode.
+	Briefly, negotiation is the method by which the host and the
+	peripheral decide on a protocol to use when transferring data.
+       </P
+><P
+>	An IEEE 1284 compliant device will start out in compatibility
+	mode, and then the host can negotiate to another mode (such as
+	ECP).
+       </P
+><P
+>	The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter should be a pointer
+	to an <SPAN
+CLASS="TYPE"
+>int</SPAN
+>; values for this are in
+	<TT
+CLASS="FILENAME"
+>incluce/linux/parport.h</TT
+> and include:
+       </P
+><P
+></P
+><UL
+COMPACT="COMPACT"
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>IEEE1284_MODE_COMPAT</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>IEEE1284_MODE_NIBBLE</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>IEEE1284_MODE_BYTE</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>IEEE1284_MODE_EPP</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>IEEE1284_MODE_ECP</TT
+></P
+></LI
+></UL
+><P
+>	The <TT
+CLASS="CONSTANT"
+>PPNEGOT</TT
+> <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>
+	actually does two things: it performs the on-the-wire
+	negotiation, and it sets the behaviour of subsequent
+	<TT
+CLASS="FUNCTION"
+>read</TT
+>/<TT
+CLASS="FUNCTION"
+>write</TT
+> calls so
+	that they use that mode (but see
+	<TT
+CLASS="CONSTANT"
+>PPSETMODE</TT
+>).
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPSETMODE</TT
+></DT
+><DD
+><P
+>	Sets which IEEE 1284 protocol to use for the
+	<TT
+CLASS="FUNCTION"
+>read</TT
+> and <TT
+CLASS="FUNCTION"
+>write</TT
+>
+	calls.
+       </P
+><P
+>	The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter should be a pointer
+	to an <SPAN
+CLASS="TYPE"
+>int</SPAN
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPGETTIME</TT
+></DT
+><DD
+><P
+>	Retrieves the time-out value.  The <TT
+CLASS="FUNCTION"
+>read</TT
+>
+	and <TT
+CLASS="FUNCTION"
+>write</TT
+> calls will time out if the
+	peripheral doesn't respond quickly enough.  The
+	<TT
+CLASS="CONSTANT"
+>PPGETTIME</TT
+> <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>
+	retrieves the length of time that the peripheral is allowed to
+	have before giving up.
+       </P
+><P
+>	The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter should be a pointer
+	to a <SPAN
+CLASS="STRUCTNAME"
+>struct timeval</SPAN
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPSETTIME</TT
+></DT
+><DD
+><P
+>	Sets the time-out.  The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter
+	should be a pointer to a <SPAN
+CLASS="STRUCTNAME"
+>struct
+	timeval</SPAN
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPWCONTROL</TT
+></DT
+><DD
+><P
+>	Sets the control lines.  The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>
+	parameter is a pointer to an <SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>, the
+	bitwise OR of the control line values in
+	<TT
+CLASS="FILENAME"
+>include/linux/parport.h</TT
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPRCONTROL</TT
+></DT
+><DD
+><P
+>	Returns the last value written to the control register, in the
+	form of an <SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>: each bit corresponds to
+	a control line (although some are unused).  The
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter should be a pointer to an
+	<SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>.
+       </P
+><P
+>	This doesn't actually touch the hardware; the last value
+	written is remembered in software.  This is because some
+	parallel port hardware does not offer read access to the
+	control register.
+       </P
+><P
+>	The control lines bits are defined in
+	<TT
+CLASS="FILENAME"
+>include/linux/parport.h</TT
+>:
+       </P
+><P
+></P
+><UL
+COMPACT="COMPACT"
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>PARPORT_CONTROL_STROBE</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>PARPORT_CONTROL_AUTOFD</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>PARPORT_CONTROL_SELECT</TT
+></P
+></LI
+><LI
+><P
+>	  <TT
+CLASS="CONSTANT"
+>PARPORT_CONTROL_INIT</TT
+></P
+></LI
+></UL
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPFCONTROL</TT
+></DT
+><DD
+><P
+>	Frobs the control lines.  Since a common operation is to
+	change one of the control signals while leaving the others
+	alone, it would be quite inefficient for the user-land driver
+	to have to use <TT
+CLASS="CONSTANT"
+>PPRCONTROL</TT
+>, make the
+	change, and then use <TT
+CLASS="CONSTANT"
+>PPWCONTROL</TT
+>.  Of
+	course, each driver could remember what state the control
+	lines are supposed to be in (they are never changed by
+	anything else), but in order to provide
+	<TT
+CLASS="CONSTANT"
+>PPRCONTROL</TT
+>, <TT
+CLASS="LITERAL"
+>ppdev</TT
+>
+	must remember the state of the control lines anyway.
+       </P
+><P
+>	The <TT
+CLASS="CONSTANT"
+>PPFCONTROL</TT
+> <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>
+	is for <SPAN
+CLASS="QUOTE"
+>"frobbing"</SPAN
+> control lines, and is like
+	<TT
+CLASS="CONSTANT"
+>PPWCONTROL</TT
+> but acts on a restricted set
+	of control lines.  The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter is
+	a pointer to a <SPAN
+CLASS="STRUCTNAME"
+>struct
+	ppdev_frob_struct</SPAN
+>:
+       </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	
+struct ppdev_frob_struct {
+        unsigned char mask;
+        unsigned char val;
+};
+	
+       </PRE
+></TD
+></TR
+></TABLE
+><P
+>	The <TT
+CLASS="STRUCTFIELD"
+><I
+>mask</I
+></TT
+> and
+	<TT
+CLASS="STRUCTFIELD"
+><I
+>val</I
+></TT
+> fields are bitwise ORs of
+	control line names (such as in
+	<TT
+CLASS="CONSTANT"
+>PPWCONTROL</TT
+>).  The operation performed by
+	<TT
+CLASS="CONSTANT"
+>PPFCONTROL</TT
+> is:
+       </P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>	
+	new_ctr = (old_ctr &#38; ~mask) | val;
+       </PRE
+></TD
+></TR
+></TABLE
+><P
+>	In other words, the signals named in
+	<TT
+CLASS="STRUCTFIELD"
+><I
+>mask</I
+></TT
+> are set to the values in
+	<TT
+CLASS="STRUCTFIELD"
+><I
+>val</I
+></TT
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPRSTATUS</TT
+></DT
+><DD
+><P
+>	Returns an <SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+> containing bits set for
+	each status line that is set (for instance,
+	<TT
+CLASS="CONSTANT"
+>PARPORT_STATUS_BUSY</TT
+>).  The
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter should be a pointer to an
+	<SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPDATADIR</TT
+></DT
+><DD
+><P
+>	Controls the data line drivers.  Normally the computer's
+	parallel port will drive the data lines, but for byte-wide
+	transfers from the peripheral to the host it is useful to turn
+	off those drivers and let the peripheral drive the
+	signals. (If the drivers on the computer's parallel port are
+	left on when this happens, the port might be damaged.)
+       </P
+><P
+>	This is only needed in conjunction with
+	<TT
+CLASS="CONSTANT"
+>PPWDATA</TT
+> or
+	<TT
+CLASS="CONSTANT"
+>PPRDATA</TT
+>.
+       </P
+><P
+>	The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter is a pointer to an
+	<SPAN
+CLASS="TYPE"
+>int</SPAN
+>.  If the <SPAN
+CLASS="TYPE"
+>int</SPAN
+> is zero, the
+	drivers are turned on (forward direction); if non-zero, the
+	drivers are turned off (reverse direction).
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPWDATA</TT
+></DT
+><DD
+><P
+>	Sets the data lines (if in forward mode).  The
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter is a pointer to an
+	<SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPRDATA</TT
+></DT
+><DD
+><P
+>	Reads the data lines (if in reverse mode).  The
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter is a pointer to an
+	<SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPCLRIRQ</TT
+></DT
+><DD
+><P
+>	Clears the interrupt count.  The <TT
+CLASS="LITERAL"
+>ppdev</TT
+>
+	driver keeps a count of interrupts as they are triggered.
+	<TT
+CLASS="CONSTANT"
+>PPCLRIRQ</TT
+> stores this count in an
+	<SPAN
+CLASS="TYPE"
+>int</SPAN
+>, a pointer to which is passed in as the
+	<TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter.
+       </P
+><P
+>	In addition, the interrupt count is reset to zero.
+       </P
+></DD
+><DT
+><TT
+CLASS="CONSTANT"
+>PPWCTLONIRQ</TT
+></DT
+><DD
+><P
+>	Set a trigger response.  Afterwards when an interrupt is
+	triggered, the interrupt handler will set the control lines as
+	requested.  The <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> parameter is a
+	pointer to an <SPAN
+CLASS="TYPE"
+>unsigned char</SPAN
+>, which is interpreted
+	in the same way as for <TT
+CLASS="CONSTANT"
+>PPWCONTROL</TT
+>.
+       </P
+><P
+>	The reason for this <TT
+CLASS="FUNCTION"
+>ioctl</TT
+> is simply
+	speed.  Without this <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>, responding to
+	an interrupt would start in the interrupt handler, switch
+	context to the user-land driver via <TT
+CLASS="FUNCTION"
+>poll</TT
+>
+	or <TT
+CLASS="FUNCTION"
+>select</TT
+>, and then switch context back
+	to the kernel in order to handle
+	<TT
+CLASS="CONSTANT"
+>PPWCONTROL</TT
+>.  Doing the whole lot in the
+	interrupt handler is a lot faster.
+       </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN861"
+>Transferring data: <TT
+CLASS="FUNCTION"
+>read</TT
+> and
+     <TT
+CLASS="FUNCTION"
+>write</TT
+></A
+></H2
+><P
+>     Transferring data using <TT
+CLASS="FUNCTION"
+>read</TT
+> and
+     <TT
+CLASS="FUNCTION"
+>write</TT
+> is straightforward.  The data is
+     transferring using the current IEEE 1284 mode (see the
+     <TT
+CLASS="CONSTANT"
+>PPSETMODE</TT
+> <TT
+CLASS="FUNCTION"
+>ioctl</TT
+>).  For
+     modes which can only transfer data in one direction, only the
+     appropriate function will work, of course.
+    </P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN870"
+>Waiting for events: <TT
+CLASS="FUNCTION"
+>poll</TT
+> and
+     <TT
+CLASS="FUNCTION"
+>select</TT
+></A
+></H2
+><P
+>     The <TT
+CLASS="LITERAL"
+>ppdev</TT
+> driver provides user-land device
+     drivers with the ability to wait for interrupts, and this is done
+     using <TT
+CLASS="FUNCTION"
+>poll</TT
+> (and <TT
+CLASS="FUNCTION"
+>select</TT
+>,
+     which is implemented in terms of <TT
+CLASS="FUNCTION"
+>poll</TT
+>).
+    </P
+><P
+>     When a user-land device driver wants to wait for an interrupt, it
+     sleeps with <TT
+CLASS="FUNCTION"
+>poll</TT
+>.  When the interrupt
+     arrives, <TT
+CLASS="LITERAL"
+>ppdev</TT
+> wakes it up (with a
+     <SPAN
+CLASS="QUOTE"
+>"read"</SPAN
+> event, although strictly speaking there is
+     nothing to actually <TT
+CLASS="FUNCTION"
+>read</TT
+>).
+    </P
+></DIV
+></DIV
+>
+</BODY
+></HTML
+>

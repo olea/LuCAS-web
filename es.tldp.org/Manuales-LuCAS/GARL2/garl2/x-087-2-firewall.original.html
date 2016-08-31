@@ -1,0 +1,1576 @@
+<HTML
+><HEAD
+><TITLE
+>El cortafuegos original de IP (núcleos 2.0)</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="Las tres formas posibles de filtrado"
+HREF="x-087-2-firewall.filteringmethods.html"><LINK
+REL="NEXT"
+TITLE="Cortafuegos 'IP Chains' (núcleos 2.2)"
+HREF="x-087-2-firewall.fwchains.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.filteringmethods.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.fwchains.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.ORIGINAL">9.6. El cortafuegos original de IP (núcleos 2.0)</H1
+><P
+>&#13;
+
+
+
+
+La primera generación del soporte de cortafuegos de IP para GNU/Linux apareció
+en la serie de núcleos 1.1. Consistía en una implementación del
+cortafuegos ipfw de BSD por Alan Cox. El soporte de cortafuegos que
+apareció en la serie de núcleos 2.0 que constituye la segunda generación
+fue una mejora de Jos Vos, Pauline Middelink y otros.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.USINGIPFWADM">9.6.1. Uso de ipfwadm</H2
+><P
+>La orden <B
+CLASS="COMMAND"
+>ipfwadm</B
+> era la herramienta de configuración
+para la segunda generación de cortafuegos de IP de GNU/Linux.
+Quizás la forma más simple de describir el uso de la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> es con un ejemplo.
+Para empezar, se codificará el ejemplo que se presentó antes.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.SIMPLEEXAMPLE">9.6.1.1. Un ejemplo trivial</H3
+><P
+>Supóngase que se dispone de una red en nuestra organización y que se
+utiliza una máquina cortafuegos basada en GNU/Linux para conectar la
+red a Internet. Además, supóngase que se desea que los usuarios de
+la red sean capaces de acceder a servidores 'web' de Internet,
+pero que cualquier otro tipo de tráfico no sea permitido.</P
+><P
+>Se pondrá una regla de tipo 'forwarding' para permitir que los datagramas
+con dirección de origen en nuestra red y un conector de destino con
+puerto 80 sean reenviados hacia fuera, y los correspondientes datagramas
+de respuesta sean reenviados de vuelta vía el cortafuegos.</P
+><P
+>Asúmase que nuestra red tiene una máscara de 24 bits (clase C) y
+una dirección de 172.16.1.0. La reglas que se podrían utilizar serían:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -f</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -p deny</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -a accept -P tcp -S 172.16.1.0/24 -D 0/0 80</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -a accept -P tcp -S 0/0 80 -D 172.16.1.0/24</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El argumento <TT
+CLASS="OPTION"
+>-F</TT
+> de la línea de órdenes significa especifica a
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> que es una regla de tipo 'forwarding', es decir, de
+reenvío.
+La primera orden instruye a <B
+CLASS="COMMAND"
+>ipfwadm</B
+> que se "desprenda"
+de todas las reglas de tipo 'forwarding'. Esto asegura que se trabajará
+con un estado conocido antes de que se añadan reglas específicas.</P
+><P
+>La segunda regla establece nuestra política predeterminada de reenvío.
+Se le dice al núcleo que niegue o que no permita el reenvío de datagramas
+de IP. Es muy importante establecer la política por omisión, porque
+describe qué le pasará a cualquier datagrama que no esté específicamente
+controlado por cualquier otra regla. En la mayoría de las configuraciones de
+cortafuegos, usted querrá establecer la política por defecto a 'deny'
+<A
+NAME="X-087-2-FW-TFN14"
+HREF="#FTN.X-087-2-FW-TFN14"
+>[1]</A
+>,
+como se muestra en el ejemplo, para estar seguro de que sólo el tráfico que
+usted específicamente permita pasar su cortafuegos sea reenviado.</P
+><P
+>La tercera y la cuarta reglas son las que implementan el requisito.
+La tercera orden permite que nuestros datagramas salgan, y la cuarta
+permite las respuestas de vuelta.</P
+><P
+>Vamos a revisar cada unos de los argumentos:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-F</DT
+><DD
+><P
+>Esta es una regla de tipo 'forwarding'.</P
+></DD
+><DT
+>-a accept</DT
+><DD
+><P
+>Añadir esta regla con la política establecida a "aceptar", lo que quiere
+decir que se reenviará cualquier datagrama que se ajuste a esta regla</P
+></DD
+><DT
+>-P tcp</DT
+><DD
+><P
+>Esta regla se aplica a los datagramas de TCP (en lugar de UDP o ICMP).</P
+></DD
+><DT
+>-S 172.16.1.0/24</DT
+><DD
+><P
+>Los primeros 24 bits de la dirección de origen deben coincidir con
+los de la dirección de red 172.16.1.0.</P
+></DD
+><DT
+>-D 0/0 80</DT
+><DD
+><P
+>La dirección de destino debe tener cero bits coincidentes con la
+dirección 0.0.0.0.
+Esto en el fondo es una forma de decir "cualquier dirección". El 80 es
+el puerto de destino, en este caso el de WWW. También puede utilizarse
+cualquier entrada que aparezca en el fichero
+<TT
+CLASS="FILENAME"
+>/etc/services</TT
+> para describir el puerto, 
+de tal forma que <TT
+CLASS="LITERAL"
+>-D 0/0 www</TT
+> habría funcionado igual de
+bien.</P
+></DD
+></DL
+></DIV
+><P></P
+><P
+><B
+CLASS="COMMAND"
+>ipfwadm</B
+> acepta las máscaras de red en una forma
+con la que puede no esté familiarizado. La notación <TT
+CLASS="LITERAL"
+>/nn</TT
+>
+es una forma de describir cuántos bits de la dirección suministrada son
+significativos, es decir, es el tamaño de la máscara de red.
+Los bits se cuentan siempre de izquierda a derecha; algunos ejemplos
+habituales se muestran en la <A
+HREF="x-087-2-firewall.original.html#X-087-2-CHFW-NETMASKS"
+>Tabla 9-1</A
+>.</P
+><DIV
+CLASS="TABLE"
+><A
+NAME="X-087-2-CHFW-NETMASKS"><P
+><B
+>Tabla 9-1. Valores habituales de máscaras de red y bits</B
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Máscara</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Bits</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.0.0.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>8</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.0.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>16</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>24</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.128</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>25</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.192</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>26</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.224</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>27</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.240</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>28</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.248</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>29</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.252</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>30</TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><P
+>Se mencionó antes que <B
+CLASS="COMMAND"
+>ipfwadm</B
+> implementa un pequeño
+truco que permite que sea más fácil añadir estos tipos de reglas. Este
+truco consiste en el uso de la opción <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>-b</I
+></SPAN
+>, que convierte
+a la orden en una regla bidireccional.</P
+><P
+>El modificador de bidireccionalidad nos permite unir nuestras dos reglas
+en una sola como sigue:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -a accept -P tcp -S 172.16.1.0/24 -D 0/0 80 -b</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.SIMPLEEXAMPLE.REFINEMENT">9.6.1.2. Un refinamiento importante</H3
+><P
+>Eche una mirada más atenta a nuestro conjunto de reglas. ¿ Puede apreciar
+que todavía existe un método de ataque que alguien de fuera podría utilizar
+para engañar a nuestro cortafuegos ?</P
+><P
+>Nuestro conjunto de reglas permite que todos los datagramas procedentes
+de fuera de nuestra red con un puerto de origen de 80 pasen.
+¡ Esto incluiría a aquellos datagramas cuyo bit de SYN valga 1 !
+El bit SYN es lo que declara a un datagrama de TCP que sea una petición
+de conexión. Si una persona de fuera tuviera un acceso privilegiado a
+un 'host', podría realizar una conexión a través de nuestro cortafuegos
+con cualquiera de nuestros 'hosts', dado el supuesto de que utilizará 
+el puerto 80 en su extremo. Esto no es lo que se deseaba.</P
+><P
+>Afortunadamente, existe una solución a este problema. La orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> proporciona otro modificador que permite
+construir reglas que coincidan con datagramas cuyo bit de SYN valga 1.
+Cambiemos nuestro ejemplo para incluir una regla de este tipo:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -a deny -P tcp -S 0/0 80 -D 172.16.10.0/24 -y</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -a accept -P tcp -S 172.16.1.0/24 -D 0/0 80 -b</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El modificador <TT
+CLASS="OPTION"
+>-y</TT
+> hace que la regla coincida sólo si
+el bit SYN del datagrama vale 1. Así nuestra nueva regla dice:
+"Deniega cualquier datagrama destinado a nuestra regla procedente de
+cualquier sitio con un puerto de origen igual a 80 y bit SYN igual a 1",
+o "deniega cualquier petición de conexsión desde 'hosts' utilizando el puerto
+80"</P
+><P
+>¿Por qué se ha puesto esta regla especial <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>antes</I
+></SPAN
+> de
+la regla principal?  Las reglas de cortafuegos de IP operan de tal forma
+que la primera coincidencia es la regla que se utiliza.
+Ambas reglas coincidirían con los datagramas que queremos detener, por
+tanto debemos asegurarnos que se ha puesto la regla con la instrucción 
+<TT
+CLASS="LITERAL"
+>deny</TT
+> antes que la regla con la
+instrucción <TT
+CLASS="LITERAL"
+>accept</TT
+>.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.LISTING">9.6.1.3. Listado de nuestras reglas</H3
+><P
+>&#13;Después de haber introducido nuestras reglas, se puede pedir a
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> que las liste con la orden:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -l</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+Esta orden mostrará todas las reglas de reenvío configuradas. La salida
+debería parecerse a algo como esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -l</B
+></TT
+>
+    IP firewall forward rules, default policy: accept
+    type  prot source               destination          ports
+    deny  tcp  anywhere             172.16.10.0/24       www -&#62; any
+    acc   tcp  172.16.1.0/24        anywhere             any -&#62; www</PRE
+></TD
+></TR
+></TABLE
+>
+
+La orden <B
+CLASS="COMMAND"
+>ipfwadm</B
+> intentará traducir el número de
+puerto en un nombre de servicio utilizando el fichero 
+<TT
+CLASS="FILENAME"
+>/etc/services</TT
+>, si es que tiene alguna entrada correspondiente.</P
+><P
+>La salida por omisión carece de algunos detalles importantes para nosotros.
+En la salida con el listado predeterminado no se puede  ver el efecto del
+argumento
+<TT
+CLASS="LITERAL"
+>-y</TT
+>.
+La orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>
+es capaz de producir un listado más detallado si se especifica además el
+argumento
+<TT
+CLASS="LITERAL"
+>-e</TT
+> (salida extendida). 
+Aquí no se muestra la salida completa porque es demasiado ancha para la
+página, pero sí que incluye una columna para las opciones de nombre
+<TT
+CLASS="LITERAL"
+>opt</TT
+>
+que muestra la opción
+<TT
+CLASS="OPTION"
+>-y</TT
+>
+que controlla los paquetes de tipo SYN:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -F -l -e</B
+></TT
+>
+    P firewall forward rules, default policy: accept
+     pkts bytes type  prot opt  tosa tosx ifname  ifaddress   source        ...   
+        0     0 deny  tcp  --y- 0xFF 0x00 any     any         anywhere      ...       
+        0     0 acc   tcp  b--- 0xFF 0x00 any     any         172.16.1.0/24 ...</PRE
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.COMPLEXEXAMPLE">9.6.2. Un ejemplo más complejo</H2
+><P
+>El ejemplo anterior era un ejemplo simple. No todo los servicios de
+red son tan simples de configurar como el servicio de WWWW; en la
+práctica, la configuración de un cortafuegos típico resultaría ser
+mucho más compleja. Vamos a  examinar otro ejemplo común, esta vez FTP.
+Se quiere que los usuarios de la red interna puedan entrar en 
+servidores de FTP de Internet para leer y escribir ficheros. Pero
+no se desea que personas de Internet puedan entrar en nuestros servidores
+de FTP.</P
+><P
+>Es sabido que FTP utiliza dos puertos de FTP: el puerto 20 (ftp-data)
+y el puerto 21 (ftp), por tanto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -a deny -P tcp -S 0/0 20 -D 172.16.1.0/24 -y</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -a accept -P tcp -S 172.16.1.0/24 -D 0/0 20 -b</B
+></TT
+>
+    #
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -a deny -P tcp -S 0/0 21 -D 172.16.1.0/24 -y</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipfwadm -a accept -P tcp -S 172.16.1.0/24 -D 0/0 21 -b</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+¿Correcto? Bueno, no necesariamente. Los servidores de FTP pueden
+operar en dos modos diferentes: el modo pasivo y el modo activo.
+<A
+NAME="X-087-2-FW-FN03"
+HREF="#FTN.X-087-2-FW-FN03"
+>[2]</A
+>  En el modo pasivo, el servidor de FTP permanece escuchando
+en espera de una conexión desde el cliente. En el modo activo, es el
+servidor  el que realmente realiza la conexión con el cliente. El modo
+activo es el habitual por omisión. Las diferencias se ilustran en
+la <A
+HREF="x-087-2-firewall.original.html#X-087-2-FIREWALL.FTP.GRAPHIC"
+>Figura 9-3</A
+>.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.FTP.GRAPHIC"><P
+><B
+>Figura 9-3. Modos de un servidor de FTP</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0903.jpg"></P
+></DIV
+></DIV
+><P
+>Muchos servidores de FTP realizan su conexión de datos desde el puerto
+20 cuando operan en el modo activo, lo que simplifica las cosas un poco,
+pero, degraciadamente, no todos proceden así.
+<A
+NAME="X-087-2-FW-FN04"
+HREF="#FTN.X-087-2-FW-FN04"
+>[3]</A
+></P
+><P
+>Pero, ¿cómo nos afecta todo esto? Fíjese en nuestra regla del puerto
+20, el puerto de datos de FTP (FTP-data). La regla, tal como se tiene
+en este momento, asume que la conexión será realizada por nuestro cliente
+al servidor. Esto funcionará si se utiliza el modo pasivo. 
+Pero resulta muy difícil para nosotros el configurar una regla
+satisfactoria que permita el modo activo de FTP, porque no se
+puede saber de antemano qué puertos serán los utilizados.
+Si  abrimos nuestro cortafuegos para permitir conexiones entrantes
+en cualquier puerto, estaríamos exponiendo nuestra red a un ataque
+sobre todos los servicios que acepten conexiones.</P
+><P
+>El dilema se resuelve de la forma más satisfactoria insistiendo en que
+nuestros usuarios operen en el modo pasivo. La mayoría de los servidores
+de FTP y muchos clientes de FTP funcionarán de esta forma.
+El cliente popular
+<B
+CLASS="COMMAND"
+>ncftp</B
+> también soporta el modo pasivo,
+pero requiere un pequeño cambio de configuración para conseguir
+que su modo por omisión sea el pasivo.
+Muchos navegadores de 'World Wide Web' como el navegador de Netscape
+también soportan el modo pasivo de FTP, por lo que no debería ser
+muy difícil el encontrar el 'software' adecuado para utilizar.
+De forma alternativa, se puede evitar el asunto de forma completa
+utilizando un programa intermediario de FTP que acepten una conexión
+desde la red interna y establezca conexiones con las redes externas.</P
+><P
+>Cuando construya su cortafuegos, probablemente se encontrará con
+varios de estos problemas. Debería siempre pensar cuidadosamente
+cómo funciona un servico realmente para estar seguro de que ha puesto
+un conjunto de reglas adecuado a ese servicio.
+La configuración de un cortafuegos de verdad puede resultar bastante
+compleja.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.IPFWADMARGS">9.6.3. Resumen de los argumentos de ipfwadm</H2
+><P
+>&#13;La orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>
+tiene muchos argumentos diferentes que están relacionados con
+la configuración del cortafuegos de IP. La sintaxis general es:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <B
+CLASS="COMMAND"
+>ipfwadm</B
+> <TT
+CLASS="REPLACEABLE"
+><I
+>categoría</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>orden</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>parámetros</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>[opciones]</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Veamos cada cosa.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPFWADM.CATEGORIES">9.6.3.1. Categorías</H3
+><P
+>Sólo puede introducirse una de estas categorías. La categoría le dice
+al cortafuegos qué tipo de regla de cortafuegos se está configurando:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-I</DT
+><DD
+><P
+>regla de tipo 'Input' </P
+></DD
+><DT
+>-O</DT
+><DD
+><P
+>regla de tipo 'Output' </P
+></DD
+><DT
+>-F</DT
+><DD
+><P
+>regla de tipo 'Forwarding' </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPFWADM.COMMAND">9.6.3.2. Órdenes</H3
+><P
+>Al menos una de las siguientes órdenes debe ser introducida y se
+aplican sólo aquellas reglas relacionadas con la categoría introducida.
+La orden le dice al cortafuegos qué acción debe tomar.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-a [política]</DT
+><DD
+><P
+>Añade una nueva regla</P
+></DD
+><DT
+>-i [política]</DT
+><DD
+><P
+>Inserta una nueva regla</P
+></DD
+><DT
+>-d [política]</DT
+><DD
+><P
+>Borra una regla existente</P
+></DD
+><DT
+>-p política</DT
+><DD
+><P
+>Establece la política por defecto</P
+></DD
+><DT
+>-l</DT
+><DD
+><P
+>Muestra todas las reglas existentes</P
+></DD
+><DT
+>-f</DT
+><DD
+><P
+>Destruye todas las reglas existentes</P
+></DD
+></DL
+></DIV
+><P
+>Las políticas relevantes para el cortafuegos de IP y sus
+significados son:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>accept</DT
+><DD
+><P
+>Permite que los datagramas coincidentes sean recibidos, reenviados
+o transmitidos</P
+></DD
+><DT
+>deny</DT
+><DD
+><P
+>Impide que los  datagramas coincidentes sean recibidos, reenviados o
+transmitidos</P
+></DD
+><DT
+>reject</DT
+><DD
+><P
+>Impide que los  datagramas coincidentes sean recibidos, reenviados o
+transmitidos y envía al 'host' que envió el datagrama un mensaje
+de error de ICMP.</P
+></DD
+></DL
+></DIV
+><P>&#13;</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPFWADM.PARAMETERS">9.6.3.3. Parámetros</H3
+><P
+>Al menos uno de los siguientes parámetros debe ser introducido. Utilice
+los parámetros para especificar a qué datagramas se aplica esta regla:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-P protocolo</DT
+><DD
+><P
+>Puede ser TCP, UDP, ICMP o  todos. Ejemplo:</P
+><P
+><TT
+CLASS="LITERAL"
+>-P tcp</TT
+></P
+></DD
+><DT
+>-S dirección[/máscara] [puerto]</DT
+><DD
+><P
+>La dirección IP de origen que buscar coincidencias coná con esa regla.
+Se asumirá una máscara de
+&ldquo;/32&rdquo; bits
+si no se proporciona una. Opcionalmente, puede especificar a qué
+puertos se aplicará esta regla. También puede especificar el
+protocolo utilizando el argumento
+<TT
+CLASS="OPTION"
+>-P</TT
+> que se describió más arriba.
+Si no se especifica el puerto o un rango de puertos,
+se supondrá que &ldquo;todos&rdquo; los puertos buscar coincidencias conán.
+Los puertos pueden especificarse por su nombre, utilizando
+la entrada del fichero
+<TT
+CLASS="FILENAME"
+>/etc/services</TT
+> que desee.
+En el caso del protocolo de ICMP, el campo de puerto se utiliza
+para indicar el tipo de datagrama de ICMP. Pueden introducirse
+rangos de puertos; para ello utilice la sintaxis genérica:
+<TT
+CLASS="REPLACEABLE"
+><I
+>puerto inferior</I
+></TT
+>:<TT
+CLASS="REPLACEABLE"
+><I
+>puerto superior</I
+></TT
+>. Ejemplo:</P
+><P
+><TT
+CLASS="LITERAL"
+>-S 172.29.16.1/24 ftp:ftp-data</TT
+></P
+></DD
+><DT
+>-D dirección[/máscara] [puerto]</DT
+><DD
+><P
+>Especifica la dirección IP de destino que buscar coincidencias coná con la regla.
+La dirección de destino se codifica con las mismas reglas que la
+dirección de origen descrita previamente.
+Ejemplo:</P
+><P
+><TT
+CLASS="LITERAL"
+>-D 172.29.16.1/24 smtp</TT
+></P
+></DD
+><DT
+>-V dirección</DT
+><DD
+><P
+>Especifica la dirección del interfaz de red por el que el paquete
+se recibe
+(<TT
+CLASS="OPTION"
+>-I</TT
+>)
+o se envía
+(<TT
+CLASS="OPTION"
+>-O</TT
+>). Esto nos permite crear reglas que
+sólo se apliquen a ciertas interfaces de red de nuestra máquina.
+Ejemplo:</P
+><P
+><TT
+CLASS="LITERAL"
+>-V 172.29.16.1</TT
+></P
+></DD
+><DT
+>-W nombre</DT
+><DD
+><P
+>Especifica el nombre del interfaz de red. Este argumento
+funciona de la misma manera que el argumento
+<TT
+CLASS="OPTION"
+>-V</TT
+>, excepto que se proporciona el
+nombre del dispositivo en lugar de su dirección.
+Ejemplo:</P
+><P
+><TT
+CLASS="LITERAL"
+>-W ppp0</TT
+></P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPFWADM.OPTARGS">9.6.3.4. Argumentos opcionales</H3
+><P
+>Estos argumentos resultan muy útiles a veces:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-b</DT
+><DD
+><P
+>Utilizado para establecer el modo bidireccional. Este modificador
+hace que coincida el tráfico entre el origen y el destino
+especificados fluyendo en cualquier sentido.
+Esto ahorra el crear dos reglas: una para el sentido hacia delante
+de la conexión y otra para el sentido contrario.</P
+></DD
+><DT
+>-o</DT
+><DD
+><P
+>Esto habilita el apunte en el registro del núcleo de información
+sobre los datagramas coincidentes.
+Cualquier datagrama que coincida con esta regla
+será registrado en un mensaje del núcleo. Esto resulta
+útil para posibilitar la detección de accesos no autorizados.</P
+></DD
+><DT
+>-y</DT
+><DD
+><P
+>Utilizado para buscar coincidencias con datagramas de establecimiento de la conexión
+de TCP. Esta opción causa que la regla coincida sólo con los datagramas
+que intenten establecer conexiones de TCP. Únicamente los
+datagramas que tengan su bit SYN con un valor de uno, y su bit ACK con
+un valor de 0, buscar coincidencias conán. Esto resulta útil para filtrar
+los intentos de conexión de TCP y se ignora en el caso de otros
+protocolos.</P
+></DD
+><DT
+>-k</DT
+><DD
+><P
+>Utilizado para buscar coincidencias con datagramas de acuse de recibo de TCP.
+Esta opción causa que la regla coincida sólo con los datagramas
+que sean acuse de recibos de paquetes que intentan establecer
+conexiones de TCP. Únicamente los datagramas que tenga
+su bit ACK con valor igual a 1. Esto resulta útil para
+filtrar los intentos de conexión de TCP y se ignora en el caso
+de otros protocolos.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPFWADM.ICMP-TYPES">9.6.3.5. Tipos de datagrama de ICMP</H3
+><P
+>&#13;
+
+Cada una de las órdenes de configuración del cortafuegos le permite
+especificar tipos de datagrama de ICMP. Al contario que los puertos
+de TCP y de UDP, no existe un fichero de configuración conveniente
+que liste los tipos de datagramas y sus significados.
+Los tipos de datagrama de ICMP se definen en el RFC-1700,
+el RFC de los números asignados. Los tipos de datagrama de ICMP
+aparecen también listados en uno de los ficheros de cabecera
+de la biblioteca estándar de C. El fichero
+<TT
+CLASS="FILENAME"
+>/usr/include/netinet/ip_icmp.h</TT
+>,
+que pertenece al paquete con la biblioteca estándar de GNU,
+y que los programadores de C utilizan cuando escriben 
+'software' de red que utilice el protocolo de ICMP,
+también define los tipos de datagrama de ICMP.
+Para su conveniencia, se incluyen aquí en la
+<A
+HREF="x-087-2-firewall.original.html#X-087-2-CHFW-ICMPTYPES"
+>Tabla 9-2</A
+>
+          <A
+NAME="X-087-2-TFN15"
+HREF="#FTN.X-087-2-TFN15"
+>[4]</A
+>.
+La interfaz de la orden <B
+CLASS="COMMAND"
+>iptables</B
+>
+le permite especificar los tipos de ICMP por su nombre,
+por lo que también se muestran los nombre nemotécnicos que utiliza.</P
+><DIV
+CLASS="TABLE"
+><A
+NAME="X-087-2-CHFW-ICMPTYPES"><P
+><B
+>Tabla 9-2. Tipos de datagramas de ICMP</B
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Número de tipo</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Nnemónico de iptables</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Descripción del tipo
+        </TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>echo-reply</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Respuesta a eco</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>3</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>destination-unreachable</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Destino inaccesible</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>4</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>source-quench</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Disminución del tráfico desde el origen</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>5</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>redirect</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Redirección</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>8</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>echo-request</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Solicitud de eco</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>11</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>time-exceeded</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Tiempo superado</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>12</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>parameter-problem</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Problema de parámetros</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>13</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>timestamp-request</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Solicitud de marca de tiempo</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>14</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>timestamp-reply</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Respuesta de marca de tiempo</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>15</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>none</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Solicitud de información</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>16</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>none</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Respuesta de información</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>17</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>address-mask-request</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Petición de máscara de dirección</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>18</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>address-mask-reply</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Respuesta de máscara de dirección</TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN14"
+HREF="x-087-2-firewall.original.html#X-087-2-FW-TFN14"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "denegación"</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-FN03"
+HREF="x-087-2-firewall.original.html#X-087-2-FW-FN03"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>El modo activo de FTP se habilita, de forma poco intuitiva,
+con la orden
+<B
+CLASS="COMMAND"
+>PORT</B
+>. 
+El modo pasivo de FTP se habilita con la orden
+<B
+CLASS="COMMAND"
+>PASV</B
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-FN04"
+HREF="x-087-2-firewall.original.html#X-087-2-FW-FN04"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>El demonio ProFTPd constituye un buen ejemplo de un servidor de FTP que no
+procede así, al menos,en sus versiones antiguas.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-TFN15"
+HREF="x-087-2-firewall.original.html#X-087-2-TFN15"
+>[4]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>            N.del T.: se han utilizado  las descripciones
+            de la traducción
+            al español por P.J. Ponce de León, dentro del proyecto RFC-ES,
+            del RFC0792 "Protocolo de mensajes de control de internet"
+            </P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.filteringmethods.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.fwchains.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Las tres formas posibles de filtrado</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Cortafuegos 'IP Chains' (núcleos 2.2)</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

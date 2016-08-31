@@ -1,0 +1,211 @@
+<HTML>
+<HEAD>
+  <TITLE>fam_mirror</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF" TEXT="#000000">
+<PRE>
+<FONT COLOR="#228B22">#!/usr/bin/perl</FONT>
+<FONT COLOR="#228B22"># Author: Atif Ghaffar &lt;atif@developer.ch&gt;</FONT>
+<FONT COLOR="#228B22"># version 0.1</FONT>
+<FONT COLOR="#228B22"># You may find the later versions of this program at</FONT>
+<FONT COLOR="#228B22"># http://atif.developer.ch</FONT>
+
+
+
+
+<STRONG><FONT COLOR="#8B4513">use</FONT></STRONG> <STRONG><FONT COLOR="#8B4513">strict</FONT></STRONG>;
+<STRONG><FONT COLOR="#8B4513">BEGIN</FONT></STRONG> {
+	<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$usage</FONT>=<FONT COLOR="#CD5555">qq|</FONT>
+	<FONT COLOR="#CD5555">	Normal USAGE:</FONT>
+	<FONT COLOR="#CD5555">	----------------</FONT>
+	<FONT COLOR="#CD5555">	$0 directory [directory2] [directory3] ... [directoryN]</FONT>
+
+
+	<FONT COLOR="#CD5555">	To create a set of identical directories on the remote host if they dont exists</FONT>
+	<FONT COLOR="#CD5555">	-------------------------------------------------------------------------------</FONT>
+	<FONT COLOR="#CD5555">	CREATE_DIRS=1  $0 directory [directory2] [directory3] ... [directoryN]</FONT>
+
+
+	<FONT COLOR="#CD5555">	To mirror all files to the remote host. This can be done as the initial setup.</FONT>
+	<FONT COLOR="#CD5555">	------------------------------------------------------------------------------</FONT>
+	<FONT COLOR="#CD5555">	INIT_MIRROR=1 $0 directory [directory2] [directory3] ... [directoryN]</FONT>
+
+
+	<FONT COLOR="#CD5555">	To have VERBOSE messages about what this script is doing</FONT>
+	<FONT COLOR="#CD5555">	--------------------------------------------------------</FONT>
+	<FONT COLOR="#CD5555">	DEBUG=1 [INIT_MIRROR=1] [CREATE_DIRS=1]  $0 directory [directory2] [directory3] ... [directoryN]</FONT>
+	<FONT COLOR="#CD5555">	\n|</FONT>;
+	<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<FONT COLOR="#00688B">@ARGV</FONT>){
+		<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> (<FONT COLOR="#00688B">@ARGV</FONT>){
+			<STRONG><FONT COLOR="#8B4513">unless</FONT></STRONG> (<STRONG><FONT COLOR="#8B4513">-d</FONT></STRONG> <FONT COLOR="#00688B">$_</FONT> &amp;&amp; <STRONG><FONT COLOR="#8B4513">-e</FONT></STRONG> <FONT COLOR="#00688B">$_</FONT> ){ <FONT COLOR="#228B22"># check if the argument is a directory</FONT>
+				<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#CD5555">&quot;$_ is not a directory\n&quot;</FONT>; 
+				<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#00688B">$usage</FONT>;
+				<STRONG><FONT COLOR="#8B4513">exit</FONT></STRONG>;
+			}
+		}
+	} <STRONG><FONT COLOR="#8B4513">else</FONT></STRONG> {
+		<FONT COLOR="#228B22"># show the usage unless a directory is speocified</FONT>
+		<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#00688B">$usage</FONT>;
+		<STRONG><FONT COLOR="#8B4513">exit</FONT></STRONG>;
+	}
+}
+<STRONG><FONT COLOR="#8B4513">use</FONT></STRONG> vars <FONT COLOR="#CD5555">qw($directory $cmd $event $dir $file $filepath $dirname)</FONT>;
+
+
+<FONT COLOR="#228B22">#load some modules.</FONT>
+<STRONG><FONT COLOR="#8B4513">use</FONT></STRONG> File::PathConvert <FONT COLOR="#CD5555">qw(realpath)</FONT>;
+<STRONG><FONT COLOR="#8B4513">use</FONT></STRONG> File::Basename;
+<STRONG><FONT COLOR="#8B4513">use</FONT></STRONG> File::Find;
+<STRONG><FONT COLOR="#8B4513">use</FONT></STRONG> SGI::FAM;
+
+
+<FONT COLOR="#228B22">#start a fam object</FONT>
+<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$fam</FONT>=new SGI::FAM;
+<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$event</FONT>;
+
+
+<FONT COLOR="#228B22">#define the rsh command. This could be rsh, ssh or whatever</FONT>
+<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$rsh</FONT>=<FONT COLOR="#CD5555">&quot;ssh -l root &quot;</FONT>;
+<FONT COLOR="#228B22">#define the rsync command with the flags that you want</FONT>
+<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$rsync</FONT>=<FONT COLOR="#CD5555">&quot;rsync -rlopgztC --delete  -e 'ssh -l root'  &quot;</FONT>;
+
+
+<FONT COLOR="#228B22">#define replica hosts separated by space</FONT>
+<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">@replicaHosts</FONT>=<FONT COLOR="#CD5555">qw(host1 host2 host3)</FONT>;
+
+
+<FONT COLOR="#228B22">#fill up the @directories list</FONT>
+<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">@directories</FONT>;
+find(<FONT COLOR="#00688B">sub</FONT> { <STRONG><FONT COLOR="#8B4513">-d</FONT></STRONG> &amp;&amp; <STRONG><FONT COLOR="#8B4513">-e</FONT></STRONG> &amp;&amp; <STRONG><FONT COLOR="#8B4513">push</FONT></STRONG> <FONT COLOR="#00688B">@directories</FONT>, <FONT COLOR="#00688B">$File::Find::name</FONT>; }, <FONT COLOR="#00688B">@ARGV</FONT>);
+
+
+
+
+<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> (<FONT COLOR="#00688B">@directories</FONT>){
+	<FONT COLOR="#228B22">#convert symlinks to realpath</FONT>
+	<FONT COLOR="#00688B">$directory</FONT>=realpath(<FONT COLOR="#00688B">$_</FONT>);
+	<FONT COLOR="#228B22">#get some stats about this directory</FONT>
+	<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> (<FONT COLOR="#00688B">$dev</FONT>,<FONT COLOR="#00688B">$ino</FONT>,<FONT COLOR="#00688B">$mode</FONT>,<FONT COLOR="#00688B">$nlink</FONT>,<FONT COLOR="#00688B">$uid</FONT>,<FONT COLOR="#00688B">$gid</FONT>) = <STRONG><FONT COLOR="#8B4513">stat</FONT></STRONG>(<FONT COLOR="#00688B">$directory</FONT>);
+	<FONT COLOR="#00688B">$mode</FONT>=<STRONG><FONT COLOR="#8B4513">sprintf</FONT></STRONG> <FONT COLOR="#CD5555">&quot;%04o&quot;</FONT>, <FONT COLOR="#00688B">$mode</FONT> &amp; <FONT COLOR="#B452CD">07777</FONT>; 
+
+
+	<FONT COLOR="#228B22">#create identical directories on replica hosts if environment variable CREATE_DIRS is set.</FONT>
+	<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'CREATE_DIRS'</FONT>} || <FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'INIT_MIRROR'</FONT>}){
+		<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> <STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$host</FONT>(<FONT COLOR="#00688B">@replicaHosts</FONT>){
+			<FONT COLOR="#00688B">$cmd</FONT>=<FONT COLOR="#CD5555">&quot;$rsh $host 'mkdir -p $directory; chmod $mode $directory; chown $uid.$gid $directory'&quot;</FONT>;
+			<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#CD5555">&quot;$cmd\n&quot;</FONT> <STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> <FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'DEBUG'</FONT>};
+			<STRONG><FONT COLOR="#8B4513">system</FONT></STRONG> (<FONT COLOR="#CD5555">&quot;$cmd 2&gt;/dev/null&quot;</FONT>);
+		}
+	}
+
+
+	<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#CD5555">&quot;setting monitor on $directory\n&quot;</FONT>  <STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> <FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'DEBUG'</FONT>};
+	<FONT COLOR="#00688B">$fam</FONT><FONT COLOR="#00688B">-&gt;monitor</FONT>(realpath(<FONT COLOR="#00688B">$_</FONT>));
+}
+
+
+
+
+<FONT COLOR="#228B22"># if there is a request to initiate a mirror then lets do it.</FONT>
+<FONT COLOR="#228B22"># directories must already have had been created above</FONT>
+<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'INIT_MIRROR'</FONT>}){
+	<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> (<FONT COLOR="#00688B">@ARGV</FONT>){
+		<FONT COLOR="#00688B">$directory</FONT>=realpath(<FONT COLOR="#00688B">$_</FONT>);
+		<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> <STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$host</FONT>(<FONT COLOR="#00688B">@replicaHosts</FONT>){
+			<FONT COLOR="#00688B">$cmd</FONT> =<FONT COLOR="#CD5555">&quot;$rsync $directory $host:$directory&quot;</FONT>;
+			<STRONG><FONT COLOR="#8B4513">system</FONT></STRONG> (<FONT COLOR="#CD5555">&quot;$cmd 2&gt;/dev/null&quot;</FONT>);
+			<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#CD5555">&quot;$cmd\n&quot;</FONT>  <STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> <FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'DEBUG'</FONT>};
+		}
+	}
+}
+
+
+<FONT COLOR="#228B22"># now running the main loop which will recieve events from fam</FONT>
+<FONT COLOR="#228B22"># this should actually be forked into a background process.</FONT>
+<FONT COLOR="#228B22"># for the timebeing you can run it with &amp; </FONT>
+<FONT COLOR="#228B22"># perhaps I will use POE at somepoint with this</FONT>
+
+
+<STRONG><FONT COLOR="#8B4513">while</FONT></STRONG> (<FONT COLOR="#B452CD">1</FONT>) {
+	<STRONG><FONT COLOR="#8B4513">do</FONT></STRONG> {
+		<FONT COLOR="#00688B">$event</FONT>=<FONT COLOR="#00688B">$fam</FONT><FONT COLOR="#00688B">-&gt;next_event</FONT>;
+		<FONT COLOR="#00688B">$dir</FONT>=<FONT COLOR="#00688B">$fam</FONT><FONT COLOR="#00688B">-&gt;which</FONT>(<FONT COLOR="#00688B">$event</FONT>);
+		<FONT COLOR="#00688B">$file</FONT>=<FONT COLOR="#00688B">$event</FONT><FONT COLOR="#00688B">-&gt;filename</FONT>;
+		<FONT COLOR="#228B22">#dont copy swap files</FONT>
+		<STRONG><FONT COLOR="#8B4513">next</FONT></STRONG> <STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> <FONT COLOR="#00688B">$file</FONT>=~<FONT COLOR="#CD5555">/(\.swp|\~)$/</FONT>;
+		<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<FONT COLOR="#00688B">$dir</FONT> <STRONG><FONT COLOR="#8B4513">eq</FONT></STRONG> <FONT COLOR="#00688B">$file</FONT>){
+			<FONT COLOR="#00688B">$file</FONT>=<FONT COLOR="#CD5555">&quot;&quot;</FONT>;
+		}
+
+
+		<FONT COLOR="#228B22">#set correct filename. dir/file</FONT>
+		<STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$filepath</FONT>=<FONT COLOR="#CD5555">&quot;$dir/$file&quot;</FONT>;
+
+
+		<FONT COLOR="#228B22">#remove multiple / from filepath</FONT>
+		<FONT COLOR="#00688B">$filepath</FONT>=~<FONT COLOR="#CD5555">s/\/+/\//g</FONT>;
+	
+
+		<FONT COLOR="#228B22">#set dirname</FONT>
+		<FONT COLOR="#00688B">$dirname</FONT>=dirname(<FONT COLOR="#00688B">$filepath</FONT>);
+
+
+
+
+
+
+		<FONT COLOR="#228B22"># if there a change or create event then</FONT>
+		<FONT COLOR="#228B22"># rsync the file to the replica hosts</FONT>
+
+
+		<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<FONT COLOR="#00688B">$event</FONT><FONT COLOR="#00688B">-&gt;type</FONT> =~<FONT COLOR="#CD5555">/^(change|create)$/</FONT>){
+			<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> <STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$host</FONT>(<FONT COLOR="#00688B">@replicaHosts</FONT>){
+				<FONT COLOR="#00688B">$cmd</FONT>=<FONT COLOR="#CD5555">&quot;$rsync $filepath $host:$dirname/&quot;</FONT>;
+				<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#CD5555">&quot;$cmd\n&quot;</FONT>  <STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> <FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'DEBUG'</FONT>};
+				<STRONG><FONT COLOR="#8B4513">system</FONT></STRONG> (<FONT COLOR="#CD5555">&quot;$cmd 2&gt;&amp;1 &gt;/dev/null&quot;</FONT>);
+			}
+		}
+	
+
+		<FONT COLOR="#228B22"># if the file or directory is deleted</FONT>
+		<FONT COLOR="#228B22"># then delete it on the server too</FONT>
+		<FONT COLOR="#228B22"># This needs some testing</FONT>
+		<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<FONT COLOR="#00688B">$event</FONT><FONT COLOR="#00688B">-&gt;type</FONT> =~<FONT COLOR="#CD5555">/^(delete)$/</FONT>){
+			<STRONG><FONT COLOR="#8B4513">for</FONT></STRONG> <STRONG><FONT COLOR="#8B4513">my</FONT></STRONG> <FONT COLOR="#00688B">$host</FONT>(<FONT COLOR="#00688B">@replicaHosts</FONT>){
+				<STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> (<STRONG><FONT COLOR="#8B4513">-d</FONT></STRONG> <FONT COLOR="#00688B">$filepath</FONT>){
+					<FONT COLOR="#00688B">$cmd</FONT>=<FONT COLOR="#CD5555">&quot;$rsh $host 'rm -rf $filepath'&quot;</FONT>;
+				} <STRONG><FONT COLOR="#8B4513">else</FONT></STRONG> {
+					<FONT COLOR="#00688B">$cmd</FONT>=<FONT COLOR="#CD5555">&quot;$rsh $host 'rm $filepath'&quot;</FONT>;
+				}
+				<STRONG><FONT COLOR="#8B4513">print</FONT></STRONG> <FONT COLOR="#CD5555">&quot;$cmd\n&quot;</FONT>  <STRONG><FONT COLOR="#8B4513">if</FONT></STRONG> <FONT COLOR="#00688B">$ENV</FONT>{<FONT COLOR="#CD5555">'DEBUG'</FONT>}; 
+				<STRONG><FONT COLOR="#8B4513">system</FONT></STRONG> (<FONT COLOR="#CD5555">&quot;$cmd 2&gt;&amp;1 &gt;/dev/null&quot;</FONT>);
+			}
+		}
+
+
+	
+
+
+
+	} <STRONG><FONT COLOR="#8B4513">while</FONT></STRONG> <FONT COLOR="#00688B">$fam</FONT><FONT COLOR="#00688B">-&gt;pending</FONT>;
+}
+
+
+
+
+
+
+<FONT COLOR="#CD5555">__END__
+</FONT><FONT COLOR="#CD5555">
+</FONT><FONT COLOR="#CD5555">
+</FONT><FONT COLOR="#CD5555">For more info see
+</FONT><FONT COLOR="#CD5555">perldoc
+</FONT><FONT COLOR="#CD5555">	SGI::FAM
+</FONT><FONT COLOR="#CD5555">Man pages
+</FONT><FONT COLOR="#CD5555">	fam(1m)
+</FONT><FONT COLOR="#CD5555">	fam(3x)
+</FONT><FONT COLOR="#CD5555">	monitor(1)
+</FONT><FONT COLOR="#CD5555">
+</FONT></PRE>
+</BODY>
+</HTML>

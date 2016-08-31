@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT COMO: Controlar qu&eacute; cosas pasar por NAT</TITLE>
+ <LINK HREF="NAT-COMO-7.html" REL=next>
+ <LINK HREF="NAT-COMO-5.html" REL=previous>
+ <LINK HREF="NAT-COMO.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="NAT-COMO-7.html">Página siguiente</A>
+<A HREF="NAT-COMO-5.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc6">Índice general</A>
+<HR>
+<H2><A NAME="s6">6. Controlar qu&eacute; cosas pasar por NAT</A></H2>
+
+<P>Necesita crear reglas NAT que le digan al n&uacute;cleo qu&eacute; conexiones cambiar, y
+c&oacute;mo hacerlo. Para ello, usaremos la muy vers&aacute;til herramienta
+<CODE>iptables</CODE>, y le diremos que altere la tabla de NAT usando la opci&oacute;n
+«-t nat».
+<P>La tabla de reglas NAT contiene tres listas llamadas «cadenas»: cada regla
+se examina por orden hasta que una coincide. Las tres cadenas se llaman
+PREROUTING (para <EM>Destination NAT</EM>, seg&uacute;n los paquetes entran),
+POSTROUTING (para SOURCE NAT, seg&uacute;n los paquetes salen), y OUTPUT (para
+<EM>Destination NAT</EM> con los paquetes generados en la propia m&aacute;quina).
+<P>El siguiente diagrama lo ilustrar&iacute;a bastante bien si yo tuviese algo de
+talento art&iacute;stico:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+      _____                                           _____
+     /     \                                         /     \
+   PREROUTING -->[Decisi&oacute;n de   ]----------------->POSTROUTING----->
+     \D-NAT/     [Encaminamiento]                    \S-NAT/
+                     |                                  ^
+                     |                                __|__
+                     |                               /     \
+                     |                              | OUTPUT|
+                     |                               \D-NAT/
+                     |                                  ^
+                     |                                  |
+                     ----------> Proceso Local ----------
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En cada uno de los puntos anteriores, cuando un paquete pasa miramos la
+conexi&oacute;n a la que est&aacute; asociado. Si es una conexi&oacute;n nueva, comprobamos la
+cadena correspondiente en la tabla de NAT para ver qu&eacute; hacer con ella. La
+respuesta que obtenemos se aplicar&aacute; a cualquier paquete posterior de esa
+conexi&oacute;n.
+<P>
+<H2><A NAME="ss6.1">6.1 Selecci&oacute;n sencilla usando iptables</A>
+</H2>
+
+<P><CODE>iptables</CODE> toma cierto n&uacute;mero de decisiones est&aacute;ndar que se listar&aacute;n
+ahora. Todas las opciones con doble gui&oacute;n pueden ser abreviadas, siempre
+que <CODE>iptables</CODE> pueda distinguirlas de otras opciones posibles. Si el
+n&uacute;cleo tiene la implementaci&oacute;n de iptables como m&oacute;dulo, necesitar&aacute; cargar
+el m&oacute;dulo ip_tables.o antes: «insmod ip_tables».
+<P>La opci&oacute;n m&aacute;s importante aqu&iacute; es la opci&oacute;n de selecci&oacute;n de tabla, «-t».
+Para todas las operaciones de NAT, querr&aacute; usar «-t nat» para la tabla NAT.
+La segunda m&aacute;s importante es «-A» para a&ntilde;adir una nueva regla al final de
+una cadena («-A POSTROUTING»), o «-I» para insertarla al principio
+(«-I PREROUTING»).
+<P>Puede especificar el origen («-s» o «--source») y el destino («-d» o
+«--destination») de los paquetes sobre los que quiere hacer NAT. Estas
+opciones pueden ir seguidas por una IP sencilla (192.168.1.1), un nombre
+(www.kernelnotes.org), o una direcci&oacute;n de red (192.168.1.0/24 o
+192.168.1.0/255.255.255.0).
+<P>Puede especificar qu&eacute; interfaz de entrada («-i» o «--in-interface») o de
+salida («-o» o «--out-interface») mirar, pero lo que puede especificar
+depende de en qu&eacute; cadena est&eacute; poniendo la regla: en PREROUTING s&oacute;lo puede
+elegir la interfaz de entrada, y en POSTROUTING (y OUTPUT) s&oacute;lo la de
+salida. Si usa la equivocada, <CODE>iptables</CODE> le avisar&aacute; con un mensaje de
+error.
+<P>
+<H2><A NAME="ss6.2">6.2 Opciones m&aacute;s refinadas de selecci&oacute;n de paquetes a toquetear.</A>
+</H2>
+
+<P>Dije antes que se puede especificar una direcci&oacute;n de origen y destino. Si
+omite la opci&oacute;n de origen, entonces ser&aacute; cualquier direcci&oacute;n de origen. Si
+omite la de destino, ser&aacute; cualquier direcci&oacute;n de destino.
+<P>Tambi&eacute;n puede indicar un protocolo espec&iacute;fico («-p» o «--protocol»), como
+TCP o UDP; s&oacute;lo los paquetes de este protocolo coincidir&aacute;n con la regla.
+La raz&oacute;n principal para hacer esto es que especificar uno de los
+protocolos tcp o udp permite m&aacute;s opciones: espec&iacute;ficamente las opciones
+«--source-port» y «--destination-port» (abreviadas «--sport» y «--dport»).
+<P>Estas opciones le permiten especificar que s&oacute;lo los paquetes con un
+determinado origen y destino coincidir&aacute;n con la regla. Esto es &uacute;til para
+redireccionar peticiones web (puertos TCP 80 u 8080) y dejar los dem&aacute;s
+paquetes tranquilos.
+<P>Estas opciones deben seguir a la «-p» (que tiene el efecto secundario de
+cargar la biblioteca compartida de extensi&oacute;n para ese protocolo). Puede
+usar n&uacute;meros de puerto, o un nombre de fichero <CODE>/etc/services</CODE>.
+<P>Todos los diferentes par&aacute;metros por los que se puede seleccionar un
+paquete vienen enumerados con toda clase de dolorosos detalles en la
+p&aacute;gina de manual (<CODE>man iptables</CODE>).
+<P>
+<HR>
+<A HREF="NAT-COMO-7.html">Página siguiente</A>
+<A HREF="NAT-COMO-5.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc6">Índice general</A>
+</BODY>
+</HTML>

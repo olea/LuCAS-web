@@ -1,0 +1,320 @@
+<pre>
+/* vim: set sw=8 ts=8 si : */
+/*************************************************************************
+Title:    linuxfocus interactive lcd display
+Author:   guido socher &lt;guido(at)linuxfocus.org&gt;
+Copyright: GPL
+**************************************************************************/
+
+#include &lt;io.h&gt;
+#include &lt;progmem.h&gt;
+#include &lt;interrupt.h&gt;
+#include &lt;string-avr.h&gt;
+#include &lt;stdlib.h&gt;
+#include "lcd.h"	/* these are the prototypes and defines for lcd.c */
+#include "avr-util.h"
+#include "uart.h"
+#include "analog.h"
+#include "hardwarewd.h"
+
+static char uart_outbuf[UART_RX_BUFFER_SIZE+1];
+
+#define reply_ok() uart_sendstr_P("ok\n")
+#define reply_err() uart_sendstr_P("err\n")
+
+
+/* should be twice the length of the banner string */
+#define BANNERSCROLLEN 30
+/* Input Push Buttons */
+#define BUTTON0 PIND6
+#define BUTTON0DDR DDRD
+#define BUTTON0PIN PIND
+#define BUTTON1 PIND3
+#define BUTTON1DDR DDRD
+#define BUTTON1PIN PIND
+/* LED1=red */
+#define LED1 PD5
+#define LED1DDR DDRD
+#define LED1PORT PORTD
+/* LED0=green */
+#define LED0 PC5
+#define LED0DDR DDRC
+#define LED0PORT PORTC
+/* auto kick WD timeout */
+#define AWDTOUT 20
+int main(void)
+{
+	char *banner = PSTR ("linuxfocus.org");
+	unsigned char i,j,banneron,rxresult,status,buttoninfo,autokickwd;
+	int i16bit;
+	unsigned int ignorebutton;
+	char cmd;
+	char *val;
+
+
+	/* initialize watch dog/relai */
+	autokickwd=0;
+	wd_init();
+	/* no messages about button press by default */
+	buttoninfo=0;
+	ignorebutton=0;
+	/* initialize display, cursor off */
+	lcd_init(LCD_DISP_ON);
+	/* initialize LED as output */
+	sbi(LED0DDR,LED0);
+	sbi(LED1DDR,LED1);
+	/* button as digital input */
+	cbi(BUTTON0DDR,BUTTON0);
+	cbi(BUTTON1DDR,BUTTON1);
+	/* LEDs off */
+	sbi(LED0PORT,LED0);
+	sbi(LED1PORT,LED1);
+	/* initialize rs232 */
+	uart_init();
+	banneron=1;
+	sei(); /* enable interrupt */
+	lcd_clrscr();
+
+
+	while(1){
+		rxresult=uart_getrxbufnl(uart_outbuf);
+		if (banneron){
+			/* display a scroll banner until we
+			* get the first command */
+			for (i=0;i&lt;BANNERSCROLLEN;i++) {	
+				lcd_clrscr();
+				rolltext_lcd_p(banner,i);
+				ignorebutton=65000; // delay but read input
+				while(ignorebutton){
+					rxresult=uart_getrxbufnl(uart_outbuf);
+					ignorebutton--;
+					if (rxresult){
+						lcd_clrscr();
+						ignorebutton=0;
+						banneron=0;
+						i=BANNERSCROLLEN;
+					}
+				}
+			}
+		}
+		if (buttoninfo &amp;&amp; ignorebutton==0){
+			if (bit_is_clear(BUTTON0PIN,BUTTON0)){
+				uart_sendchar('#');
+				uart_sendchar('0');
+				uart_sendchar('\n');
+				ignorebutton=55000; // debounce, ignore button for a while
+			}
+			if (bit_is_clear(BUTTON1PIN,BUTTON1)){
+				uart_sendchar('#');
+				uart_sendchar('1');
+				uart_sendchar('\n');
+				ignorebutton=55000; // debounce, ignore button for a while
+			}
+		}
+		if (ignorebutton) ignorebutton--;
+		if (rxresult==0){
+			continue;
+		}
+		/* valid command are: 
+		* l=10 led 1 off
+		* l=01 led 0 on
+		* b=1 info messages for button press
+		* d=someting write someting to display
+		* D=someting clear then write someting to display
+		* a=0 get analog value of ADC0
+		* g=115 go to line 1 pos 15 on the lcd
+		* c=c command clear display
+		* c=h command home
+		* c=r one right
+		* c=l one left
+		* c=b blink cursor
+		* c=n normal cursor
+		* w=1 enable watch dog
+		* w=2 enable watch dog, any d= or D= command will kick the wd
+		* w=0 disable watch dog
+		* w=? show whether wd is on or off, or if there
+		*     was a timeout (3)
+		* w=s get current time out
+		* s=1-255 set watchdog timeout to multiple of 16sec
+		* you must set s periodically. It will decrement.
+		* */
+		/* now parse the comands and act on them */
+		if (strlen(uart_outbuf) &lt; 3) {
+			reply_err();
+			continue;
+		}
+		if (uart_outbuf[1] != '='){
+			reply_err();
+			continue;
+		}
+		val=&amp;(uart_outbuf[2]);
+		cmd=uart_outbuf[0];
+		status=0;
+		/* act on the commands */
+		if (cmd=='l'){
+			/* change LEDs */
+			i16bit=atoi(val);
+			switch (i16bit){
+				case 0:
+					sbi(LED0PORT,LED0); /* off */
+					status=1;
+					break;
+				case 10: 
+					sbi(LED1PORT,LED1); /* off */
+					status=1;
+					break;
+				case 1:
+					cbi(LED0PORT,LED0); /* on */
+					status=1;
+					break;
+				case 11:
+					cbi(LED1PORT,LED1); /* on */
+					status=1;
+					break;
+			}
+		}
+		if (cmd=='D'){
+			if (autokickwd) wd_settime(AWDTOUT);
+			lcd_clrscr();
+			/* display string */
+			lcd_puts(val);
+			status=1;
+		}
+		if (cmd=='d'){
+			if (autokickwd) wd_settime(AWDTOUT);
+			/* display string */
+			lcd_puts(val);
+			status=1;
+		}
+		if (cmd=='g'){
+			i=*val;
+			if (i &lt; '5' &amp;&amp; i &gt;= '0'){
+				i=*val - '0'; // convert to integer;
+			}
+			j=(unsigned char)atoi((val+1));
+			lcd_gotoxy(j,i);
+			status=1;
+		}
+		if (cmd=='c'){
+			switch (*val){
+				case 'h':
+					lcd_home();
+					status=1;
+					break;
+				case 'c':
+					lcd_clrscr();
+					status=1;
+					break;
+				case 'l':
+					/* one left */
+					lcd_command(LCD_MOVE_CURSOR_LEFT);
+					status=1;
+					break;
+				case 'r':
+					/* one right */
+					lcd_command(LCD_MOVE_CURSOR_RIGHT);
+					status=1;
+					break;
+				case 'n':
+					/* normal dispaly (no blink) */
+					lcd_command(LCD_DISP_ON);
+					status=1;
+					break;
+				case 'b':
+					/* blink at next entry */
+					lcd_command(LCD_DISP_ON_BLINK);
+					status=1;
+					break;
+			}
+		}
+		if (cmd=='a'){
+			/* start analog conversion for given ADC pin */
+			i=(unsigned char)atoi(val);
+			i16bit=convertanalog(i);
+			/* display the result value e.g a0:123 */
+			uart_sendchar('a');
+			uart_sendchar(*val);
+			uart_sendchar(':');
+			itoa(i16bit,uart_outbuf,10);
+			uart_sendstr(uart_outbuf);
+			uart_sendchar('\n');
+			status=2;
+		}
+		if (cmd=='s'){
+			i=(unsigned char)atoi(val);
+			wd_settime(i);
+			status=1;
+		}
+		if (cmd=='b'){
+			switch (*val){
+				case '0':
+					buttoninfo=0;
+					status=1;
+					break;
+				case '?':
+					uart_sendchar('b');
+					uart_sendchar(':');
+					i=buttoninfo + '0';
+					uart_sendchar(i);
+					uart_sendchar('\n');
+					status=2;
+					break;
+				case '1':
+					buttoninfo=1;
+					status=1;
+					break;
+			}
+		}
+		if (cmd=='w'){
+			switch (*val){
+				case '?':
+					i=wd_status();
+					if (i==2) i=3;
+				        if (i==1 &amp;&amp; autokickwd==1){
+						i=2;
+					}
+					i=i + '0';
+					uart_sendchar('w');
+					uart_sendchar(':');
+					uart_sendchar(i);
+					uart_sendchar('\n');
+					status=2;
+					break;
+				case 's':
+					wd_gettime(&amp;i);
+					uart_sendchar('s');
+					uart_sendchar(':');
+					itoa(i,uart_outbuf,10);
+					uart_sendstr(uart_outbuf);
+					uart_sendchar('\n');
+					status=2;
+					break;
+				case '1':
+					wd_start();
+					autokickwd=0;
+					status=1;
+					break;
+				case '2':
+					wd_settime(AWDTOUT);
+					wd_start();
+					autokickwd=1;
+					status=1;
+					break;
+				case '0':
+					wd_stop();
+					autokickwd=0;
+					status=1;
+					break;
+			}
+		}
+		/* command handling done. now return status */
+		if (status==1){
+			reply_ok();
+		}
+		if (status==0){
+			reply_err();
+		}
+	}
+
+}
+</pre>

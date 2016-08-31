@@ -1,0 +1,174 @@
+<HTML>
+<HEAD>
+<TITLE>EL C&Oacute;MO DEL UMSDOS: Principios b&aacute;sicos</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Umsdos-Como-4.html">Anterior</A>
+<A HREF="Umsdos-Como-6.html">Siguiente</A>
+<A HREF="Umsdos-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Principios b&aacute;sicos</A></H2>
+
+
+
+<H2><A NAME="ss5.1">5.1 Introducci&oacute;n</A></H2>
+
+
+<P><CODE>umsdos</CODE> hace corresponder los ficheros de <EM>Linux</EM> directamente
+con ficheros de <EM>Ms-DOS</EM>. La traducci&oacute;n es uno a uno (biyectiva).
+No se toca el contenido de los ficheros. <CODE>umsdos</CODE> s&oacute;lo act&uacute;a sobre
+los nombres. Con los ficheros especiales (enlaces y dispositivos, por
+ejemplo) utiliza una gesti&oacute;n especial.</P>
+<P>Por cada directorio hay un fichero llamado <CODE>--linux-.---</CODE>.</P>
+
+
+<H2><A NAME="ss5.2">5.2 <CODE>umsdos</CODE> puede reemplazar al sistema de ficheros <EM>Ms-DOS</EM>.</A></H2>
+
+
+<P>Se puede ver <CODE>umsdos</CODE> como un superconjunto de prop&oacute;sito
+general del sistema de ficheros <EM>Ms-DOS</EM> de linux.  Esta
+flexibilidad es, de hecho, la causa de gran parte de la confusi&oacute;n
+sobre <CODE>umsdos</CODE>. Aqu&iacute; est&aacute; el porqu&eacute;. Si se intenta montar un
+disquete <EM>DOS</EM> reci&eacute;n formateado con esto</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -t umsdos /dev/fd0 /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Y se hace esto,</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ls / &gt;/mnt/FICHEROCONNOMBREMUYLARGO
+ls -l /mnt
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Se obtiene lo siguiente</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-rwxr-xr-x   1 root     root  302 Apr 14 23:25 ficheroc
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>As&iacute;, que, por el momento, parece como si el sistema de ficheros
+<CODE>umsdos</CODE> no hiciera mucho m&aacute;s (la verdad es que nada m&aacute;s)
+que el sistema de ficheros <EM>Ms-DOS</EM> normal de <EM>Linux</EM>.</P>
+<P><EM>???</EM></P>
+
+
+<H2><A NAME="ss5.3">5.3 Promoci&oacute;n de directorios</A></H2>
+
+
+<P>No es muy impresionante por el momento. Ahora viene la gracia.
+A menos que se promueva, un directorio <EM>DOS</EM> ser&aacute; manejado
+igual por <CODE>umsdos</CODE> que como lo ser&iacute;a por el sistema de
+ficheros <EM>DOS</EM>.  <CODE>umsdos</CODE> utiliza un fichero especial
+en cada subdirectorio para hacer la traducci&oacute;n entre las
+capacidades extendidas de <CODE>umsdos</CODE> y las limitaciones del
+sistema de ficheros <EM>DOS</EM>.  Este fichero es invisible para los
+usuarios de <CODE>umsdos</CODE>, pero es visible cuando se arranca en
+<EM>DOS</EM>. Para evitar llenar la partici&oacute;n <EM>DOS</EM> in&uacute;tilmente
+con esos ficheros (<CODE>--linux-.---</CODE>), el fichero es ahora
+opcional. Si no existe, <CODE>umsdos</CODE> se comporta como <EM>Ms-DOS</EM>.</P>
+<P>Cuando se promueve un directorio, cualquier operaci&oacute;n posterior
+ser&aacute; hecha con la sem&aacute;ntica completa de la que normalmente disfrutan
+los usuarios de <EM>Unix</EM> y <EM>Linux</EM>. Y cualquier subdirectorio
+creado desde entonces (en un directorio ya promovido) ser&aacute; 
+promovido silenciosamente.</P>
+<P>Esta caracter&iacute;stica permite organizar la partici&oacute;n <EM>DOS</EM> en
+material del <EM>DOS</EM> y material del <EM>Linux</EM>. Es importante
+entender que el fichero <CODE>--linux-.---</CODE> ocupa algo de espacio
+(generalmente 2k por directorio). El <EM>DOS</EM> habitualmente utiliza
+bloques grandes (de hasta 16k para una partici&oacute;n de 500M), as&iacute;
+que evitar que haya ficheros <CODE>--linux-.---</CODE> en todas partes
+puede resultar beneficioso.</P>
+
+
+<H2><A NAME="ss5.4">5.4 C&oacute;mo promover: <CODE>/sbin/umssync</CODE></A></H2>
+
+
+<P>Se puede promover un directorio en cualquier momento usando
+<CODE>/sbin/umssync</CODE>. Se puede usar en cualquier momento.
+Al promover un directorio ocurre lo siguiente</P>
+<P>
+<UL>
+<LI>Se crea un <CODE>--linux-.---</CODE>.</LI>
+<LI>Se establece una relaci&oacute;n uno a uno (biyectiva) entre el
+contenido del fichero <CODE>--linux-.---</CODE> y lo que en ese
+momento sea el contenido del directorio.</LI>
+</UL>
+</P>
+<P><CODE>/sbin/ummsync</CODE> conserva un fichero <CODE>--linux-.---</CODE>
+ya existente. No lo crea de la nada todas las veces. Simplemente
+le a&ntilde;ade las entradas que le falten (Ficheros creados durante una
+sesi&oacute;n <EM>DOS</EM>) y le quita las entradas que se refieran a ficheros
+que ya no existen en el directorio <EM>DOS</EM>. De ah&iacute; le viene
+el nombre. <CODE>umssync</CODE> pone <EM>--linux-.---</EM> en sincronismo
+con el directorio <EM>DOS</EM> que hay debajo.</P>
+
+
+<H2><A NAME="ss5.5">5.5 Uso de <CODE>/sbin/umssync</CODE> durante el arranque</A></H2>
+
+<P>Es una buena idea poner, si no existiera, una llamada a
+<CODE>/sbin/umssyc</CODE> al final del fichero <CODE>/etc/rc.d/rc.S</CODE>. La
+l&iacute;nea siguiente es adecuada para la mayor parte de los sistemas:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/sbin/umssync -r99 -c -i+ /
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La opci&oacute;n <CODE>-c</CODE> evita que <CODE>umssync</CODE> promueva directorios.
+Solamente actualizar&aacute; los ficheros <CODE>--linux-.---</CODE> donde
+ya existan.</P>
+<P>Esa l&iacute;nea tiene utilidad si se accede al directorio <EM>Linux</EM> durante
+las sesiones <EM>DOS</EM>. No existe en <EM>Linux</EM> una manera eficiente
+de decir que un directorio ha sido modificado por el <EM>DOS</EM> as&iacute;
+que <CODE>umsdos</CODE> no puede hacer un <EM>umssync</EM> seg&uacute;n se necesite.</P>
+
+
+<H2><A NAME="ss5.6">5.6 C&oacute;mo DESpromover</A></H2>
+
+
+<P>Simplemente hay que eliminar el fichero <CODE>--linux-.---</CODE> usando
+el <EM>DOS</EM>. Aunque quien lo haga acabar&aacute; arrepinti&eacute;ndose.</P>
+
+
+<H2><A NAME="ss5.7">5.7 ¿Qu&eacute; pasa con los ficheros creados durante una sesi&oacute;n <EM>DOS</EM>?</A></H2>
+
+
+<P>A menos que se use <CODE>umssync</CODE> en un directorio donde el <EM>DOS</EM>
+haya a&ntilde;adido o borrado ficheros, se advertir&aacute;n algunas dificultades:</P>
+<P>
+<UL>
+<LI>No hace que se caiga el sistema ni causa grandes problemas,
+s&oacute;lo incomodidad :-)</LI>
+<LI>Los ficheros creados por el <EM>DOS</EM>:
+<UL>
+<LI>Ser&aacute;n invisibles desde <EM>Linux</EM>.</LI>
+<LI>Cuando se intente crear un fichero con el mismo nombre,
+dar&aacute; un mensaje de error diciendo que el fichero
+ya existe.</LI>
+<LI>Esto, m&aacute;s que un verdadero problema, crea confusi&oacute;n.
+No da&ntilde;a el sistema de ficheros.</LI>
+</UL>
+</LI>
+<LI>Los ficheros borrados por el <EM>DOS</EM> no causan problemas.
+<CODE>umsdos</CODE> advertir&aacute; su ausencia en el primer acceso.
+Se mostrar&aacute; (y generalmente se escribir&aacute; en 
+<CODE>/var/adm/syslog</CODE>) un mensaje al respecto.</LI>
+</UL>
+</P>
+
+
+<HR>
+<A HREF="Umsdos-Como-4.html">Anterior</A>
+<A HREF="Umsdos-Como-6.html">Siguiente</A>
+<A HREF="Umsdos-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

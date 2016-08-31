@@ -1,0 +1,242 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.7.4">
+ <TITLE>Linux netfilter Hacking COMO: La bater&iacute;a de pruebas</TITLE>
+ <LINK HREF="netfilter-hacking-COMO-7.html" REL=next>
+ <LINK HREF="netfilter-hacking-COMO-5.html" REL=previous>
+ <LINK HREF="netfilter-hacking-COMO.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="netfilter-hacking-COMO-7.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-5.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc6">Índice general</A>
+<HR>
+<H2><A NAME="s6">6.</A> <A HREF="netfilter-hacking-COMO.html#toc6">La bater&iacute;a de pruebas</A></H2>
+
+<P>Dentro del repositorio CVS reside una bater&iacute;a de pruebas: cuando m&aacute;s 
+cubra la bater&iacute;a, m&aacute;s confianza se puede tener en que los cambios en el
+c&oacute;digo no han roto algo silenciosamente. Las pruebas triviales son como 
+poco tan importantes como las pruebas concienzudas: son las pruebas 
+triviales las que simplifican las pruebas complejas (ya sabe que las 
+bases tienen que funcionar bien antes de que se realicen las pruebas 
+complejas).</P>
+
+<P>Las pruebas son sencillas: tan s&oacute;lo son <I>shell scripts</I> dentro 
+del subdirectorio testsuite/. Se espera de ellos que se ejecuten sin 
+dar error. Los scripts se ejecutan en orden alfab&eacute;tico, por lo que 
+`01test' se ejecuta antes que `02test2'. Actualmente existen 5 
+directorios:</P>
+<P>
+<DL>
+<DT><B>00netfilter/</B><DD><P>Pruebas generales del sistema netfilter.</P>
+<DT><B>01iptables/</B><DD><P>Pruebas de iptables.</P>
+<DT><B>02conntrack/</B><DD><P>Pruebas del seguimiento de conexiones.</P>
+<DT><B>03NAT/</B><DD><P>Pruebas del NAT.</P>
+<DT><B>04ipchains-compat/</B><DD><P>Pruebas de compatibilidad ipchains/ipfwadm.</P>
+</DL>
+</P>
+<P>Dentro del directorio testsuite/ hay un script llamado `test.sh'. 
+Configura dos interfaces falsas (tap0 y tap1), activa el 
+redireccionamiento, y elimina todos los m&oacute;dulos de netfilter. Luego entra 
+en todos los directorios de arriba y ejecuta uno a uno los scripts 
+test.sh hasta que uno falla. Este script recibe dos argumentos 
+opcionales: `-v', que imprime los tests al ejecutarse, y el nombre de un 
+script (si se especifica uno, se omitir&aacute;n todos los scripts hasta que se 
+encuentre &eacute;ste).</P>
+
+<H2><A NAME="ss6.1">6.1 Escribiendo una prueba</A>
+</H2>
+
+<P>Cree un fichero nuevo en el directorio apropiado: intente numerar su 
+script de manera que se ejecute en el momento adecuado. Por ejemplo, para 
+probar el seguimiento de las respuestas ICMP (02conntrack/02reply.sh), 
+primero necesitamos comprobar que los paquetes ICMP de salida tienen un 
+seguimiento correcto (02conntrack/01simple.sh).</P>
+
+<P>Normalmente es mejor crear muchos ficheros peque&ntilde;os, cada uno 
+cubriendo un &aacute;rea, porque as&iacute; el que ejecute la bater&iacute;a de pruebas puede 
+aislar el problema inmediatamente.</P>
+
+<P>Si algo va mal en la prueba, haga simplemente un `exit 1', que causa 
+error; si es algo que usted espera que vaya a fallar, deber&iacute;a imprimir un 
+mensaje. Si todo va bien, la prueba debe acabar con un `exit 0'. Debe 
+comprobar que <B>todos</B> los comandos se ejecutan con &eacute;xito, bien 
+poniendo `set -e' al principio del script, o a&ntilde;adiendo `|| exit 1' al 
+final de cada comando.</P>
+
+<P>Se pueden utilizar las funciones de ayuda `load_module' y 
+`remove_module' para cargar m&oacute;dulos: nunca debe fiarse de la auto carga 
+en la bater&iacute;a de pruebas, a menos que sea eso lo que est&aacute; probando.</P>
+
+<H2><A NAME="ss6.2">6.2 Variables y entorno</A>
+</H2>
+
+<P>Dispone de dos interfaces con las que jugar: tap0 y tap1. Sus 
+direcciones de interfaz est&aacute;n en las variables <CODE>$TAP0</CODE> y 
+<CODE>$TAP1</CODE> respectivamente. Ambas tienen m&aacute;scaras de red 
+255.255.255.0; sus redes est&aacute;n en $TAP0NET y $TAP1NET respectivamente.</P>
+
+<P>Existe un archivo temporal vac&iacute;o en $TMPFILE. Es borrado al final de 
+la prueba.</P>
+
+<P>Su script se ejecutar&aacute; desde el directorio testsuite/, est&eacute; donde 
+est&eacute;. Por tanto debe acceder a las herramientas (como iptables) 
+utilizando una ruta que empiece por `../userspace'.</P>
+
+<P>Su script puede imprimir m&aacute;s informaci&oacute;n si $VERBOSE est&aacute; activado (lo 
+que significa que el usuario especific&oacute; `-v' en la l&iacute;nea de comandos).</P>
+
+<H2><A NAME="ss6.3">6.3 Herramientas &uacute;tiles</A>
+</H2>
+
+<P>Hay varias herramientas &uacute;tiles para la bater&iacute;a de pruebas en el 
+subdirectorio "tools": todas acaban con un status de salida distinto de 
+cero si hubo alg&uacute;n problema.</P>
+
+<H3>gen_ip</H3>
+
+<P>Puede generar paquetes IP utilizando `gen_ip', que imprime un paquete 
+IP en la salida est&aacute;ndar. Puede alimentar a las interfaces tap0 y tap1 
+redireccionando la salida est&aacute;ndar a /dev/tap0 y /dev/tap1 (si no 
+existen, se crean la primera vez que se ejecuta la bater&iacute;a de pruebas si).</P>
+
+<P>gen_ip es un programa simplista que actualmente es muy quisquilloso 
+con el orden de los argumentos. Primero est&aacute;n los argumentos opcionales:</P>
+<P>
+<DL>
+
+<DT><B>FRAG=offset,longitud</B><DD><P>Genera el paquete y luego lo convierte en 
+un fragmento con el offset y la longutud especificados.</P>
+
+<DT><B>MF</B><DD><P>Activa el bit `More Fragments' del paquete.</P>
+
+<DT><B>MAC=xx:xx:xx:xx:xx:xx</B><DD><P>Especifica la direcci&oacute;n MAC de origen
+del paquete.</P>
+
+<DT><B>TOS=tos</B><DD><P>Especifica el campo TOS del paquete (de 0 a 255).</P>
+
+</DL>
+</P>
+<P>Ahora vienen los argumentos obligatorios:</P>
+<P>
+<DL>
+<DT><B>source ip</B><DD><P>La direcci&oacute;n IP de origen del paquete.</P>
+
+<DT><B>dest ip</B><DD><P>La direcci&oacute;n IP de destino del paquete.</P>
+
+<DT><B>length</B><DD><P>Longitud total del paquete, incluyendo las cabeceras.</P>
+
+<DT><B>protocol</B><DD><P>N&uacute;mero de protocolo del paquete, p.ej. 17 = UDP.</P>
+
+</DL>
+</P>
+<P>Adem&aacute;s, los argumentos dependen del protocolo: para UDP (17), est&aacute;n los 
+puertos de origen y destino. Para ICMP (1), est&aacute;n el tipo y c&oacute;digo del 
+mensaje ICMP: si el tipo es 0 u 8 (ping-reply o ping), se requieren dos 
+argumentos adicionales (los campos ID y secuencia). Para TCP, se 
+requieren los puertos de origen y destino, y los flags ("SYN", "SYN/ACK", 
+"ACK", "RST" o "FIN"). Hay tres argumentos opcionales: "OPT=" seguido de 
+una lista de opciones separadas por comas, "SYN=" seguido de un n&uacute;mero de 
+secuencia, y "ACK=" seguido de un n&uacute;mero de secuencia. Finalmente, el 
+argumento opcional "DATA" indica que el cuerpo del paquete TCP tiene que 
+llenarse con los contenidos de la entrada est&aacute;ndar.</P>
+
+<H3>rcv_ip</H3>
+
+<P>Puede ver los paquetes IP utilizando `rcv_ip', que imprime la l&iacute;nea de 
+comandos lo m&aacute;s parecidamente posible al valor original que se le pas&oacute; a 
+gen_ip (los fragmentos son una excepci&oacute;n).</P>
+
+<P>Esto es extremadamente &uacute;til para analizar paquetes. Recibe dos 
+argumentos obligatorios:</P>
+<P>
+<DL>
+<DT><B>wait time</B><DD><P>El tiempo m&aacute;ximo en segundos que se esperar&aacute; a un
+paquete por la entrada est&aacute;ndar.</P>
+
+<DT><B>iterations</B><DD><P>El n&uacute;mero de paquetes a recibir.</P>
+</DL>
+</P>
+<P>Hay un argumento especial, "DATA", que hace que el cuerpo de un paquete 
+TCP se imprima en la salida est&aacute;ndar despu&eacute;s de la cabecera.</P>
+
+<P>La manera est&aacute;ndar de usar `rcv_ip' en un script es como sigue:</P>
+<P>
+<PRE>
+# Activa el control de trabajos para poder utilizar &amp; en los scripts.
+set -m
+
+# Espera un paquete desde tap0 durante dos segundos
+../tools/rcv_ip 2 1 &lt; /dev/tap0 > $TMPFILE &amp;
+
+# Se asegura de que rcv_ip ha comenzado a ejecutarse.
+sleep 1
+
+# Env&iacute;a un paquete ping
+../tools/gen_ip $TAP1NET.2 $TAP0NET.2 100 1 8 0 55 57 > /dev/tap1 || exit 
+1
+
+# Espera a rcv_ip,
+if wait %../tools/rcv_ip; then :
+else
+    echo rcv_ip failed:
+    cat $TMPFILE
+    exit 1
+fi
+</PRE>
+</P>
+
+<H3>gen_err</H3>
+
+<P>Este programa toma un paquete (generado con gen_ip, por ejemplo) de la 
+entrada est&aacute;ndar, y lo convierte en un error ICMP.</P>
+
+<P>Recibe tres argumentos: una direcci&oacute;n IP de origen, un tipo y un 
+c&oacute;digo. La direcci&oacute;n IP de destino ser&aacute; la IP de origen del paquete 
+recibido desde la entrada est&aacute;ndar.</P>
+
+<H3>local_ip</H3>
+
+<P>&Eacute;ste toma un paquete de la entrada est&aacute;ndar y lo inyecta dentro del 
+sistema mediante un socket <I>raw</I>. Esto da la apariencia de un 
+paquete generado localmente (a diferencia de alimentar un paquete 
+mediante uno de los dispositivos ethertap, que aparentan ser paquetes 
+generados remotamente).</P>
+
+<H2><A NAME="ss6.4">6.4 Random Advice</A>
+</H2>
+
+<P>Todas las herramientas asumen que pueden hacerlo todo en una sola 
+lectura o escritura: esto es cierto para los dispositivos ethertap, pero 
+podr&iacute;a no serlo si est&aacute; haciendo cosas delicadas con tuber&iacute;as.</P>
+
+<P>Puede utilizar dd para cortar paquetes: dd tiene una opci&oacute;n obs 
+(output block size, o tama&ntilde;o del bloque de salida) que puede usarse para 
+que produzca el paquete en una sola lectura.</P>
+
+<P>Compruebe primero el funcionamiento correcto: p.ej. al probar que los 
+paquetes se bloquean con &eacute;xito. Primero pruebe que los paquetes pasan 
+normalmente, y <B>luego</B> pruebe que algunos paquetes quedan 
+bloqueados. De otra manera, cualquier otro fallo podr&iacute;a estar parando los 
+paquetes...</P>
+
+<P>Trate de escribir pruebas precisas, no pruebas de `enviar cosas al 
+azar y ver lo que pasa'. Si una prueba precisa falla, es &uacute;til saberlo. Si 
+una prueba aleatoria falla una vez, no ayuda demasiado.</P>
+
+<P>Si una prueba falla sin dejar un mensaje, puede a&ntilde;adir `-x' en la 
+primera l&iacute;nea del script (es decir, `#! /bin/sh -x') para ver qu&eacute; 
+comandos est&aacute; ejecutando.</P>
+
+<P>Si una prueba falla aleatoriamente, compruebe si hay tr&aacute;fico de red 
+aleatorio interfiriendo (pruebe desactivando todas sus interfaces 
+externas). Un ejemplo: como comparto la misma red con Andrew Tridgell, 
+suelo recibir plagas de broadcasts de Windows.</P>
+
+<HR>
+<A HREF="netfilter-hacking-COMO-7.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-5.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc6">Índice general</A>
+</BODY>
+</HTML>

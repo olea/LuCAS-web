@@ -1,0 +1,638 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_0.6">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="UNIX Basics">
+ <TITLE>UNIX Basics : Ejemplos con awk: Una breve introducci&oacute;n</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 CELLSPACING=0 CELLPADDING=5 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/Javi-Palacios.gif" ALT="[Foto del Autor]" HEIGHT=147 WIDTH=122>
+<BR>por  <A HREF="mailto:javier.pb@linuxfocus.org">Javier Palacios Bermejo</A>
+<BR><BR><I>Sobre el Author:</I><BR><P>
+
+Est&aacute; realizando su tesis doctoral en Astronom&iacute;a en una universidad
+espa&ntilde;ola, donde est&aacute; encargado de la administraci&oacute;n
+del 
+<IT>
+cluster
+</IT>
+. El trabajo diario se lleva a cabo con m&aacute;quinas
+unix y, tras unos primeros intentos infructuosos, se
+consigui&oacute; instalar linux-slackware. Varias actualizaciones despu&eacute;s sigue
+funcionando, mejor que algunos otros de los unix propietarios que se corren
+en las m&aacute;quinas del cluster.
+
+</P><P><FONT COLOR="#336633">Contenidos</FONT>:
+<OL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n al awk</A></LI>
+  <LI><A HREF="#lfindex1">Un problema</A></LI>
+  <LI><A HREF="#lfindex2">(y una soluci&oacute;n)</A></LI>
+  <LI><A HREF="#lfindex3">Profundizando en el awk</A></LI>
+  <LI><A HREF="#lfindex4">Trabajando sobre lineas matcheadas</A></LI>
+  <LI><A HREF="#lfindex5">awk como lenguaje de programaci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex6">Incluyendo librer&iacute;as</A></LI>
+  <LI><A HREF="#lfindex7">Conclusiones</A></LI>
+  <LI><A HREF="#lfindex8">Informaci&oacute;n adicional</A></LI>
+</OL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Ejemplos con awk: Una breve introducci&oacute;n</H2>
+ <IMG SRC="../../common/images/illustration103.gif" ALT="[Ilustration]" HSPACE=10 HEIGHT=100 WIDTH=100><P><FONT COLOR="#336633">Resumen</FONT>:
+<P>
+
+Este art&iacute;culo pretende ser una breve introducci&oacute;n al viejo comando/programa
+de unix <CODE>awk</CODE>. Aunque no tan popular como el <IT>shell</IT> o
+muchos otros lenguajes de <IT>scripting</IT>, es una herramienta muy potente
+cuando hay que tratar con informaci&oacute;n agrupada en tablas. No est&aacute; enfocado
+como un tutorial, sino que se desarrollan algunos ejemplos de uso reales,
+para mostrar con cierto detalle sus capacidades.
+</P><HR size="2" noshade><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<P>
+La idea de escribir este texto surgi&oacute; por la lectura de un par de
+art&iacute;culos aparecidos en Linux<font color="red">Focus</font> y escritos por Guido Socher.
+Uno de ellos versaba sobre
+<A HREF="../September1998/article64.html">find y comandos
+relacionados</a> y 
+me hizo ver que al parecer no era el &uacute;nico que usaba todav&iacute;a
+la l&iacute;nea de comandos, en lugar de bonitos GUI que consiguen que no sepas
+como se hacen las cosas (que es el camino por el que tir&oacute; Windows hace
+mucho). El otro de los art&iacute;culos trataba sobre
+<A HREF="../July1998/article53.html">expresiones regulares</a>
+que, aunque apenas mencionadas en este art&iacute;culo, resulta muy conveniente
+conocer para sacar el mayor partido posible a <CODE>awk</CODE> y alg&uacute;n otro de los
+comandos sobre los que pensaba hablar inicialmente en este art&iacute;culo
+(<CODE>sed</CODE> y <CODE>grep</CODE> principalmente).
+algunos otros comandos.
+</P>
+
+<P>
+La pregunta clave es si es realmente &uacute;til este comando, y la respuesta
+es que s&iacute;. Le puede resultar &uacute;til a un usuario para procesar ficheros
+de texto, reformatearlos, etc... Para un administrador, awk es, simplemente,
+una utilidad casi imprescindible.
+Basta con pasear por <CODE>/var/yp/Makefile</CODE>, para darse cuenta
+de ello.
+</P>
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n al <CODE>awk</CODE></H2>
+
+
+<P>
+Supe de su existencia hace tanto que no lo recuerdo bien. Fue cuando un
+compa&ntilde;ero ten&iacute;a que trabajar con unos output impresionantes en un peque&ntilde;o
+Cray y estuvo investigando muchas posibilidades de clasificaci&oacute;n. La p&aacute;gina
+man del <CODE>awk</CODE> en el Cray era de lo m&aacute;s exigua, pero el
+dec&iacute;a que parec&iacute;a
+muy bueno para esa tarea aunque no hab&iacute;a forma de hincarle el diente.
+<BR>
+Mucho tiempo despu&eacute;s, se volvi&oacute; a cruzar en mi vida, mediante una
+especie de comentario casual (otro sitio, otro compa&ntilde;ero), que lo usaba
+para extraer la primera columna de una tabla:
+<BR>
+<CENTER><TABLE BORDER=0 WIDTH="70%" BGCOLOR="#FFD700">
+<TR><TD align=center>
+<CODE>awk '{print $1}' fichero</CODE>
+</TD></TR>
+</TABLE></CENTER>
+<BR>
+F&aacute;cil, verdad ? Esta tarea tan simple requerir&iacute;a una cierta dosis
+de programaci&oacute;n en C o cualquier otro lenguaje compilado o interpretado.
+</P>
+
+<P>
+Una vez aprendida la lecci&oacute;n <I>extrayendo una columna</I> ya podemos
+hacer algunas cosillas como a&ntilde;adir una extensi&oacute;n a una serie de ficheros
+con secuencias como
+<BR>
+<CENTER><TABLE BORDER=0 WIDTH="70%" BGCOLOR="#FFD700">
+<TR><TD align=center>
+<CODE>ls -1 <I>pattern</I> | awk '{print "mv "$1" "$1".nuevo"}' | sh</CODE>
+</TD></TR>
+</TABLE></CENTER>
+</P>
+
+<P>
+Y m&aacute;s a&uacute;n ...
+<OL>
+
+<P>
+<LI>renombrando el interior del nombre
+<BR>
+<CODE>ls -1 *viejo* | awk '{print "mv "$1" "$1}' | sed s/viejo/nuevo/2 | sh</CODE>
+<BR>
+(aunque en algunos casos fallar&aacute;, como con fichero_viejo_y_viejo)
+
+<LI>
+borrar solo ficheros (puede hacerse con rm nada m&aacute;s, pero qu&eacute; pasa con
+alias como 'rm -r')
+<BR>
+<CODE>ls -l * | grep -v drwx | awk '{print "rm "$9}' | sh</CODE>
+<BR>Cuidado al probar esto en un directorio. ¡ Borramos ficheros !
+
+<LI>borrar solo directorios
+<BR>
+<CODE>ls -l | grep '^d' | awk '{print "rm -r "$9}' | sh</CODE>
+<br>o<br>
+<CODE>ls -p | grep /$ | awk '{print "rm -r "$1}' | sh</CODE>
+</OL>
+</P>
+
+<p>
+<TABLE BGCOLOR="#AAAA00"><TR><TD>
+<B>Feedback de los lectores:</B>
+Como <a href="mailto:danield@bitstream.net">Dan Debertin</a> me hizo notar, algunos
+de los ejemplos anteriores se pueden realizar sin usar el comando
+<TT>grep</TT>, solo con las capacidades de <I>matcheo</I>del <TT>awk</TT>
+que se mencionan unas l&iacute;neas m&aacute;s abajo.
+<PRE>
+ls -l *|grep -v drwx|awk '{print "rm "$9}'|sh
+
+ser&iacute;a mas ilustrativo de la potencia de AWK en la forma:
+ls -l|awk '$1!~/^drwx/{print $9}'|xargs rm
+
+tambi&eacute;n, 
+ls -l|grep '^d'|awk '{print "rm -r "$9}'|sh
+
+podr&iacute;a escribirse como
+ls -l|awk '$1~/^d.*x/{print $9}'|xargs rm -r
+
+Uso constantemente la siguiente l&iacute;nea para matar procesos:
+(digamos que el proceso se llama 'sleep')
+ps -ef|awk '$1~/'$LOGNAME'/&&$8~/sleep/&&$8!~/awk/{print $2}'|xargs kill -9
+
+(hay que ajustarlo para la forma que adopte el comando ps en el sistema en
+que trabajes. En algunas ocasiones ser&aacute; ps -aux, el n&uacute;mero de campos
+variar&aacute;, etc.) B&aacute;sicamente es "Si el due&ntilde;o del proceso ($1) soy yo, y si
+se llama ($8) "sleep", y no se llama "awk" (en ese caso el comando awk se 
+matar&iacute;a a s&iacute; mismo), enviar el PID correspondiente ($2) al comando kill -9.".
+¡Y sin usar grep!
+</PRE>
+</TD></TR></TABLE>
+</P>
+
+<P>
+Cuando, por ejemplo, se repiten los mismos c&aacute;lculos una y otra vez,
+estas herramientas resultan una gran ayuda. Y, adem&aacute;s, es mucho m&aacute;s
+divertido escribir un programa de <code>awk</code> que repetir manualmente
+lo mismo veinte veces.
+</P>
+
+<P>
+Aunque nos referimos a &eacute;l con ese nombre, el <CODE>awk</CODE> no es en
+realidad un comando, de igual forma que el gcc tampoco lo es. Awk es en
+realidad un lenguaje de programaci&oacute;n, con una sintaxis con aspectos
+similares al C, y cuyo int&eacute;rprete se invocacon la instrucci&oacute;n
+<CODE>awk</CODE>.
+</P>
+
+<p>
+En cuanto a la sintaxis del comando, casi todo est&aacute; dicho ya:
+<pre>
+# gawk --help
+Usage: gawk [POSIX or GNU style options] -f progfile [--] file ...
+        gawk [POSIX or GNU style options] [--] 'program' file ...
+POSIX options:          GNU long options:
+        -f progfile             --file=progfile
+        -F fs                   --field-separator=fs
+        -v var=val              --assign=var=val
+        -m[fr] val
+        -W compat               --compat
+        -W copyleft             --copyleft
+        -W copyright            --copyright
+        -W help                 --help
+        -W lint                 --lint
+        -W lint-old             --lint-old
+        -W posix                --posix
+        -W re-interval          --re-interval
+        -W source=program-text  --source=program-text
+        -W traditional          --traditional
+        -W usage                --usage
+        -W version              --version
+
+Report bugs to bug-gnu-utils@prep.ai.mit.edu,
+with a Cc: to arnold@gnu.ai.mit.edu
+</pre>
+Baste destacar que, adem&aacute;s de incluir los programas entre comillas
+sencillas (') en la l&iacute;nea de comandos, se pueden escribir en un fichero
+que invocamos con la opci&oacute;n <CODE>-f</CODE>, y que definiendo variables en la
+l&iacute;nea de comandos <CODE>-v var=</CODE><it>val</it>, podemos dotar de cierta
+versatilidad a los programas que escribamos.
+</P>
+
+<P>Awk es, b&aacute;sicamente, un lenguaje orientado al manejo de tablas, en
+el sentido de informaci&oacute;n susceptible de clasificarse en forma de campos
+y registros, al estilo de las bases de datos m&aacute;s tradicionales. Con la
+ventaja de que la definici&oacute;n del registro (e incluso del campo) es sumamente
+flexible.
+</P>
+
+<P>
+Pero <CODE>awk</CODE> es mucho m&aacute;s potente. Est&aacute; pensado para trabajar con registros
+de una l&iacute;nea, pero esa necesidad se puede relajar. Para profundizar un
+poco en algunos aspectos, vamos a echar un vistazo a algunos ejemplos ilustrativos
+(y reales).
+</P>
+
+<UL>
+
+<P>
+<LI>Imprimir tablas un poco m&aacute;s bonitas
+<BR>
+Es posible que alguna vez hayamos tenido que imprimir alguna tabla
+ASCII obtenida de alguna parte como, por ejemplo, las asociaciones de n&uacute;meros
+ethernet, IP y nombres de hosts. Cuando las tablas son realmente grandes,
+su lectura se hace realmente dif&iacute;cil, y empezamos a echar de menos lo
+bien que se lee una tabla impresa con LaTeX o, al menos, formateada algo
+mejor. Si la tabla es sencilla (y/o sabemos usar bien el <CODE>awk</CODE>), no resulta
+demasiado dif&iacute;cil, aunque puede hacerse un poco tedioso:
+<BR>
+<TABLE BGCOLOR="#FFD700" NOSAVE ALIGN=CENTER>
+<TR><TD>
+<PRE>BEGIN {
+    printf "preambulo LaTeX"
+    printf "\\begin{tabular}"
+    printf "{|c|c|...|c|}"
+    }</PRE>
+</TD></TR>
+
+<TR><TD>
+<PRE>{
+    printf $1" &amp; "
+    printf $2" &amp; "
+    .
+    .
+    .
+    printf $n" \\\\ "
+    printf "\\hline"
+    }</PRE>
+</TD></TR>
+
+<TR><TD>
+<PRE>END {
+    print "\\end{document}"
+    }</PRE>
+</TD>
+</TR>
+</TABLE>
+<BR>
+Ciertamente no es un programa lo que se dice <EM>gen&eacute;rico</EM>, pero estamos
+empezando ...
+<BR>
+<FONT SIZE=-1>(los \ dobles son necesarios por tratarse del car&aacute;cter de
+escape del <it>shell</it>)</FONT>
+</P>
+
+<P>
+<LI>Troceando ficheros de output
+<BR>
+SIMBAD es una base de datos de objetos astron&oacute;micos que, entre otras
+cosas, incluye las posiciones en el cielo de los mismos. En cierta ocasi&oacute;n,
+necesit&eacute; hacer b&uacute;squedas para construir mapas alrededor de algunos objetos.
+Como el interface de dicha base de datos permite guardar los resultados
+en ficheros de texto, pod&iacute;a hacer dos cosas: generar un fichero para cada
+objeto o darle como input la lista completa, obteniendo un &uacute;nico y enorme
+<I>log</I> con la consulta. Como decid&iacute; hacer lo segundo, use <CODE>awk</CODE> para
+trocearlo. Obviamente, para ello tuve que aprovechar ciertas caracter&iacute;sticas
+del output.
+<BR>
+<TABLE BORDER BGCOLOR="#FFD700" NOSAVE >
+<TR>
+<TD>
+<OL>
+<LI>
+cada solicitud generaba una l&iacute;nea de cabecera, con un formato del tipo
+<BR>
+<CODE>====> nombre : nlines &lt;====</CODE>
+<BR>El primer campo me permitia saber cuando empezaba un objeto nuevo y
+el cuarto cuantas entradas correspond&iacute;an al mismo (aunque ese dato no
+es imprescindible)
+</LI>
+<LI>
+el caracter que separaba las columnas dentro de las listas de output era
+'|'. Eso requer&iacute;a dos l&iacute;neas de c&oacute;digo adicional para poder enviar al
+output s&oacute;lo los campos de mi inter&eacute;s.</LI>
+</OL>
+</TD>
+
+<TD VALIGN=BOTTOM>
+<PRE>( $1 == "====>" ) {
+  NomObj = $2
+  TotObj = $4
+  if ( TotObj > 0 ) {
+    FS = "|"
+    for ( cont=0 ; cont&lt;TotObj ; cont++ ) {
+        getline
+        print $2 $4 $5 $3  >> NomObj
+        }
+    FS = " "
+    }
+  }</PRE>
+</TD>
+</TR>
+
+<TR NOSAVE>
+<TD COLSPAN="2" BGCOLOR="#FFFD70" NOSAVE><B>NOTA</B>: Como en realidad
+no daba el nombre del objeto, era un poco m&aacute;s complicado, pero pretende
+ser un ejemplo ilustrativo.</TD>
+</TR>
+</TABLE>
+</P>
+
+<P>
+<LI>Jugeteando con el spool del mail
+<BR>
+<TABLE BORDER WIDTH="90%" BGCOLOR="#FFD700" NOSAVE >
+<TR NOSAVE>
+<TD ROWSPAN="2">
+<PRE>BEGIN {
+  BEGIN_MSG  = "From"
+  BEGIN_BDY  = "Precedence:"
+  MAIN_KEY   = "Subject:"
+  VALIDATION = "[RESUMEN MENSUAL]"
+ 
+  HEAD = "NO"; BODY = "NO"; PRINT="NO"
+  OUT_FILE = "Resumenes_Mensuales"
+  }
+ 
+  {
+ 
+  if ( $1 == BEGIN_MSG ) {
+    HEAD = "YES"; BODY = "NO"; PRINT="NO"
+    }
+ 
+  if ( $1 == MAIN_KEY ) {
+    if ( $2 == VALIDATION ) {
+      PRINT = "YES"
+      $1 = ""; $2 = ""
+      print "\n\n"$0"\n" > OUT_FILE
+      }
+    }
+ 
+  if ( $1 == BEGIN_BDY ) {
+    getline
+    if ( $0 == "" ) {
+      HEAD = "NO"; BODY = "YES"
+    } else {
+      HEAD = "NO"; BODY = "NO"; PRINT="NO"
+      }
+    }
+ 
+  if ( BODY == "YES" &amp;&amp; PRINT == "YES" ) {
+    print $0 >> OUT_FILE
+    }
+  }</PRE>
+</TD>
+
+<TD VALIGN=TOP NOSAVE>Tal vez administramos una lista de correo. Tal vez,
+de vez en cuando, se env&iacute;an a la lista mensajes especiales (p.e. res&uacute;menes
+mensuales) con alg&uacute;n formato determinado (p.e. un subject tipo '[RESUMEN
+MENSUAL] mes , dept'). Y de repente, se nos ocurre a fin de a&ntilde;o recopilar
+todos los res&uacute;menes, separ&aacute;ndolos de los dem&aacute;s mensajes.
+<BR>Esto podemos hacerlo usando el <CODE>awk</CODE> con el spool del mail y el programa
+que tenemos a la izquierda
+<P>Hacer que cada resumen vaya a un fichero requiere tres l&iacute;neas adicionales,
+y hacer tambi&eacute;n que, por ejemplo, cada departamento vaya a un fichero
+diferente supone unos pocos caracteres m&aacute;s.</TD>
+</TR>
+
+<TR>
+<TD VALIGN=BOTTOM><B>NOTA</B>: Todo este ejemplo est&aacute; basado en c&oacute;mo
+creo yo que estan estructurados los mails en el spool. Realmente no se
+como lo hacen, aunque me funciona (de nuevo, en algunos casos fallar&aacute;,
+como siempre).</TD>
+</TR>
+</TABLE>
+</P>
+</UL>
+
+<P>
+Programas como &eacute;stos s&oacute;lo necesitan 5 minutos pensando y 5 escribiendo
+(o m&aacute;s de 20 minutos sin pensar, mediante ensayo y error que es como resulta
+m&aacute;s divertido).
+<BR>
+Si hay alguna forma de hacerlo en menos tiempo, quiero saberla.
+</P>
+
+<P>
+He usado el <CODE>awk</CODE> para muchas otras cosas (como generaci&oacute;n autom&aacute;tica
+de p&aacute;ginas web con informaci&oacute;n obtenida de una base de datos) y se lo
+suficiente de programaci&oacute;n como para estar seguro de que se pueden hacer
+con &eacute;l cosas que ni siquiera se me han ocurrido.
+<BR>S&oacute;lo hay que dejar volar la imaginaci&oacute;n.
+</P>
+
+<P>
+<TABLE BGCOLOR="#FFD700" NOSAVE>
+<TR><TD>
+<A NAME="lfindex1">&nbsp;</A>
+<H3>Un problema</H3>
+
+
+El &uacute;nico problema del <CODE>awk</CODE> es que necesita informaci&oacute;n
+tabular perfecta,
+sin huecos: no puede trabajar con columnas de anchura fija, que son de
+lo mas com&uacute;n. Si el input del <CODE>awk</CODE> lo generamos nosotros
+mismos, no es
+muy problem&aacute;tico: elegimos algo realmente raro para separar los campos,
+lo fijamos luego con la variable <CODE>FS</CODE> y ya est&aacute;. Pero si solo
+tenemos el input, esto puede ser m&aacute;s problem&aacute;tico.
+Por ejemplo, una tabla tipo
+<PRE>1234  HD 13324  22:40:54 ....
+1235  HD12223   22:43:12 ....</PRE>
+no se podria tratar con el <CODE>awk</CODE>. Entradas como esta a veces
+son necesarias, aparte de ser bastante comunes. A&uacute;n as&iacute;, rizando el rizo,
+si s&oacute;lo tenemos una columna
+con esas caracter&iacute;sticas no todo est&aacute; perdido (si alguien sabe manejarse
+con m&aacute;s de una en un caso general, soy todo o&iacute;dos).
+<br>
+En una ocasi&oacute;n tuve
+que enfrentarme a una de esas tablas, similar a la descrita m&aacute;s arriba.
+La segunda columna era un nombre e inclu&iacute;a un n&uacute;mero variable de espacios.
+Como suele pasar yo necesitaba ordenarla por una columna posterior a ella.
+Hice varios intentos con el <CODE>sort +/-n.m</CODE> que ten&iacute;a el mismo
+problema de los espacios embebidos.
+</TD></TR>
+
+<TR><TD>
+<A NAME="lfindex2">&nbsp;</A>
+<H3>(y una soluci&oacute;n)</H3>
+
+
+Y me di cuenta de que la columna que yo quer&iacute;a ordenar era la &uacute;ltima. Y de
+que <CODE>awk</CODE> sabe cuantos campos hay en el registro actual, por lo
+que bastaba ser capaz de acceder al &uacute;ltimo (unas veces <CODE>$9</CODE>, otras
+<CODE>$11</CODE>, pero siempre el <CODE>NF</CODE>). Total, que un par de
+pruebas, arrojaron el resultado deseado:
+<PRE>{
+    printf $NF
+    $NF = ""
+    printf " "$0"\n"
+}</PRE>
+Y obtengo un output igual al input, pero con la &uacute;ltima columna movida
+a la primera posici&oacute;n, y <I>sorteo</I> sin problemas. Obviamente, el m&eacute;todo
+es facilmente ampliable al tercer campo empezando por el final, o al que
+va despues de un campo de control que siempre tiene el mismo valor, porque
+es el que usamos al extraer nuestra subtabla de la base de datos original
+...
+<BR>S&oacute;lo deja volar tu imaginaci&oacute;n de nuevo.
+</TD></TR>
+</TABLE>
+<P>
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Profundizando en el <CODE>awk</CODE></H2>
+
+
+<A NAME="lfindex4">&nbsp;</A>
+<H3>Trabajando sobre lineas <it>matcheadas</it></H3>
+
+
+<P>
+Hasta ahora, casi todos los ejemplos expuestos procesan todas las lineas
+del fichero
+de entrada. Pero, como claramente explica la p&aacute;gina de manual, es posible hacer
+que un cierto grupo de comandos procese tan s&oacute;lo unas ciertas l&iacute;neas por el
+simple m&eacute;todo de incluir la condici&oacute;n antes de los comandos, al modo del
+segundo de los ejemplos anteriores. La condici&oacute;n que debe satisfacer la l&iacute;nea
+puede llegar a ser bastante flexible, desde una expresi&oacute;n regular,
+hasta un test
+sobre los contenidos de alguno de los campos, pudiendo agruparse condiciones en
+base a operadores l&oacute;gicos.
+</P>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H3><code>awk</code> como lenguaje de programaci&oacute;n</H3>
+
+
+<P>
+Como todo lenguaje de programaci&oacute;n, <code>awk</code> implementa todas las
+estructuras de control necesarias, as&iacute; como un conjunto de operadores y
+funciones predefinidas, para manejar n&uacute;meros y cadenas. Su sintaxis es en
+general muy parecida a la del C, aunque difiere de &eacute;l en algunos aspectos.
+</P>
+
+<P>
+Y, por supuesto, tambi&eacute;n es posible incluir funciones definidas por el
+usuario, usando la palabra <b>function</b>, y escribiendo los comandos como
+si se tratara de procesar una l&iacute;nea normal del fichero de entrada. E,
+igualmente, aparte de las variables escalares habituales, tamb&iacute;en es
+capaz de manejar <it>arrays</it> de variables.
+</P>
+
+<A NAME="lfindex6">&nbsp;</A>
+<H3>Incluyendo librer&iacute;as</H3>
+
+
+<P>
+Como suele pasar con todos los lenguajes, hay una cierta serie de funciones
+que son bastante comunes, y llega un momento en que cortar y pegar no es
+la mejor forma de hacer las cosas. Para eso se inventaron las librer&iacute;as.
+Y, al menos con la versi&oacute;n GNU de <CODE>awk</CODE>, es posible incluirlas
+dentro del programa <CODE>awk</CODE>. Pero eso es usar <CODE>awk</CODE>
+como una herramienta de trabajo mucho m&aacute;s seria de lo que se pretende mostrar
+en este art&iacute;culo, aunque deja claro el nivel de complejidad que puede llegar
+a alcanzar el <CODE>awk</CODE>.
+</P>
+
+<A NAME="lfindex7">&nbsp;</A>
+<H2>Conclusiones</H2>
+
+
+<P>
+Ciertamente, puede no ser tan potente como numerosas herramientas que se
+pueden usar con la misma finalidad. Pero tiene la enorme ventaja de que,
+en un tiempo realmente corto, permite escribir programas que, aunque tal
+vez sean de un solo uso, est&aacute;n totalmente adaptados a nuestras necesidades,
+que en muchas ocasiones son sumamente sencillas.
+</P>
+
+<P>
+<code>awk</code> es ideal para los prop&oacute;sitos con los que se dise&ntilde;o: leer
+ficheros l&iacute;nea por l&iacute;nea y procesar en base a los <it>patterns</it> y
+cadenas que encuentre en ellas.
+</P>
+
+<P>
+Ficheros del sistema como el <CODE>/etc/password</CODE> y muchos otros,
+resultan sumamente f&aacute;ciles de tratar mediante el <CODE>awk</CODE>,
+sin recurrir a nada m&aacute;s.
+</P>
+
+<P>
+Y desde luego que <CODE>awk</CODE> no es el mejor. Hay varios
+lenguajes de <EM>scripting</EM> con capacidades mucho mayores.
+Pero <CODE>awk</CODE> sigue teniendo la ventaja
+de ser siempre accesible en cualquier instalaci&oacute;n, por m&iacute;nima que esta
+sea.
+</P>
+
+<A NAME="lfindex8">&nbsp;</A>
+<H2>Informaci&oacute;n adicional</H2>
+
+
+<P>
+Este tipo de comandos tan b&aacute;sicos no suelen estar excesivamente
+documentados, pero siempre se puede encontrar algo buscando por ah&iacute;.
+
+<UL>
+<LI>la sintaxis del <CODE>awk</CODE> no es igual en todos los *nix, pero siempre hay una
+forma de saber exactamente qu&eacute; podemos hacer con el del nuestro particular:
+<CODE>man awk</CODE>;
+
+<LI> Como no pod&iacute;a ser de otra forma, O'Reilly tiene un libro sobre el tema:
+<EM>Sed &amp; Awk (Nutshell handbook)</EM> de Dale Dougherty.
+
+<LI> Una b&uacute;squeda en Amazon, nos proporciona algunos otros t&iacute;tulos como
+<EM>Effective Awk Programming: A User's Guide</EM>, bastante orientado al
+<CODE>gawk</CODE>, y media docena m&aacute;s.
+
+</UL>
+</P>
+
+<P>
+En general, todos los libros y manuales de unix mencionan estos
+comandos. Pero s&oacute;lo algunos de ellos profundizan un poco y dan informaci&oacute;n
+&uacute;til. Lo mejor, hojear todos aquellos que pasen por nuestras manos, pues
+nunca se sabe donde podemos encontrar informaci&oacute;n valiosa.
+</P>
+
+
+
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#777777">
+<A HREF="../../common/lfteam.html"><FONT COLOR="#FFFFFF">Contactar con el equipo de LinuFocus</FONT></A>
+<BR><FONT COLOR="#FFFFFF">&copy; Javier Palacios Bermejo <BR>LinuxFocus 1999</FONT></TD>
+<!-- OLD FORMAT, NO TRANSLATION INFO -->
+</TR></TABLE></CENTER>
+<p><font size=1>1999-06-05, generated by lfparser version 0.6</font></p></BODY></HTML>

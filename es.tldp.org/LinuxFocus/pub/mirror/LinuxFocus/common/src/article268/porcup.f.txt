@@ -1,0 +1,286 @@
+	PROGRAM PORCUPINE
+
+	COMMON /BLOCK/ A(200),K
+	
+	REAL X(500), B(200), Y(200), XN(500)
+     	REAL T(200,200), S(500)
+	REAL  SUM, RUNIT, DY, DX,dis, TEGRAL, REZ, HN
+	REAL,EXTERNAL::Y_OF_X
+      	INTEGER PGBEG, PGBAND, Z
+      	INTEGER JUNK, MODE
+      	CHARACTER*1  CH
+      	REAL  PX, PY, PINAR, TUM, DEGER, SU
+	
+!=======OPENING GRAPHICS DEVICE=====================
+      	IF (PGBEG(0,'?',1,1) .NE. 1) STOP
+	
+!==========SETTING THE WINDOW PROPERTIES=============
+      	CALL PGPAGE
+      	CALL PGSVP(0.0,1.0,0.0,1.0)
+      	CALL PGSWIN(0.0,1.0,0.0,1.0)
+      	CALL PGBOX('bcts',0.1,5,'bcts',0.1,5)
+	
+!=======COLLECTION OF DATA BY CURSOR================
+      	PX = 0.5
+      	PY = 0.5
+      	MODE = 0
+	N=0
+ 10   	CONTINUE
+        JUNK = PGBAND(MODE, 1, PX, PY, PX,PY,CH)
+        WRITE (*, '(2F8.3,I4)') PX,PY,ICHAR(CH)
+
+        IF (CH.EQ.'/') GOTO 20
+
+        CALL PGPT1(PX, PY,4)
+      	N = N + 1
+	X(N) = PX
+	Y(N) = PY
+	GOTO 10
+  
+!=======OBTAINING THE MAX. AND MIN. VALUES OF X===
+20	CONTINUE
+!=======The Maximum===============================
+	KB =  1
+     	DO
+	  IF (KB == N ) EXIT						   
+	  DO  I = 1,KB						    
+	    IF ( X(I) > X(I+1) ) THEN				   
+	      SU = X(I)
+	      X(I) = X(I+1)							   
+	      X(I+1) = SU							   
+	    ENDIF								   
+	  ENDDO
+      	  KB = KB + 1							   
+      	ENDDO		
+     	AMAX = X(N)
+
+!=======The Minimum===============================
+	KA = N - 1
+      	DO
+	  IF (KA == 0) EXIT						   
+	  DO  I = 1,KA							    
+	    IF ( X(I) > X(I+1) ) THEN				   
+	      SU = X(I)
+	      X(I) = X(I+1)							   
+	      X(I+1) = SU							   
+	    ENDIF								   
+	  ENDDO
+      	  KA = KA - 1							   
+      	ENDDO		
+     	AMIN = X(1)  
+!=======OBTAINING THE COEFFICIENT MATRIX==========
+      	PRINT *,'ENTER THE ORDER'
+      	READ *,K
+	DO I = 1,K					 
+	  DO J = 1,K					 
+            SUM = 0					 		   
+	    DO L = 1,N				   
+	     SUM = SUM + (X(L)**(J+I-2)) 				 
+	    ENDDO					 
+	    T(I,J) = SUM					 
+	   ENDDO						 
+	ENDDO						 
+  
+!=======OBTAINING THE R.H.S MATRIX=================
+	DO I = 1 , K						 
+	   SUM = 0						 		 
+           DO L = 1 , N					 		   
+	     SUM = SUM + Y(L)*(X(L)**(I-1))	     
+	   ENDDO						 				  
+	   B(I) = SUM						 
+	ENDDO							 
+	
+!==========CALCULATION OF A1,A2,...,AK==============
+     	CALL GAUSS (T, B, A, K)
+      
+!=======DRAWING THE K.th ORDER APPROXIMATION========
+	CALL PGSCI (2)
+100	CALL PGFUNX (Y_OF_X , 1000 , AMIN, AMAX, 1)
+      	CALL PGSCI (7)
+	PRINT *,'ENTER THE PORCUPINE NUMBER'
+	READ *, Z
+      	PRINT *,'ENTER RUNIT'
+      	READ *, RUNIT
+							       	
+!=======( K = ORDER )==============================
+!=======( Z = PORCUPINE NUMBER )===================					
+  	
+!=======ARRANGING POINTS TO PLACE PORCUPINES ON====
+	TUM = TRAPEZ (AMAX) 
+	EKSIK = TRAPEZ (AMIN)
+	TUM = TUM - EKSIK
+	dis = TUM / (Z+1)
+      	DO IC = 1,Z
+     	  S(IC) =  IC * dis
+	ENDDO
+   
+	PRINT *,'Z 1. DEGER :',Z
+
+	DO IB = 1 , Z
+  	  XN(IB) = AMIN
+		
+300    	  XN ( IB  ) = XN ( IB) + 0.001
+	  AL = XN ( IB )
+	
+	  DEGER = TRAPEZ ( AL ) - TRAPEZ( AMIN )
+
+	  REZ = S( IB ) - DEGER
+	  PINAR = ( REZ / S(IB) ) * 100
+
+       	  IF ( PINAR > 1.0 ) THEN
+	    GOTO 300
+	  ENDIF	
+
+	  IF ( REZ < 0 ) THEN
+		XN ( IB  )= AL	  
+	  ENDIF
+	
+	ENDDO
+  
+	PRINT *,'Z 2. DEGER :',Z
+
+!=======DRAWING PORCUPINES========================
+	DO L = 1,Z 
+
+	   DY = ABS( ( ( Y_DER_TWO ( XN(L) ) * (RUNIT**2) )/
+     :	   ( 1.0 + Y_DER_ONE (XN(L) )**2)**2) )
+         
+	   DX = ABS( Y_DER_ONE ( XN(L) ) * DY) 
+	   
+
+	   IF ( Y_DER_TWO ( XN(L) ) > 0 ) THEN
+	     YENX = XN ( L ) + SIGN ( DX , Y_DER_ONE ( XN ( L ) ) )
+	     YENY = Y_OF_X ( XN ( L ) ) - DY
+     	   ELSE
+	   IF ( Y_DER_TWO ( XN ( L ) ) < 0 ) THEN
+     	     YENX = XN(L) - SIGN ( DX, Y_DER_ONE ( XN(L) ) )
+	     YENY = Y_OF_X ( XN(L) ) + DY
+	   ELSE 
+	   ENDIF
+	   ENDIF
+	   
+	   OBEZ = Y_OF_X ( XN ( L ) )
+	   CALL PGMOVE ( XN ( L ) , OBEZ ) 
+	   CALL PGDRAW ( YENX , YENY ) 
+
+	PRINT *,'Z L. DEGER :',L
+	
+	ENDDO
+
+	PRINT *,'Z 3. DEGER :',Z
+
+	PRINT *,'====WANT A NEW PORCUPINE CONFIGURATION?===='
+	PRINT *,' ----PRESS 1 FOR YES ,2 FOR NO ,PLEASE---- '
+	READ *,NUM
+	IF (NUM == 1)THEN 
+	  CALL PGERAS
+      	  GOTO  100
+      	ELSE 
+	  IF (NUM == 2) THEN
+	    GOTO 200
+      	  ENDIF
+	ENDIF
+200   	CALL PGEND
+	
+	CONTAINS
+	
+!=======FUNCTION FOR THE FIRST DERIVATIVE OF THE K.th ORDER POLYNOMIAL=====
+      	FUNCTION Y_DER_ONE (P)			  
+     	REAL Y_DER_ONE,P,SUM			  
+     	SUM = 0							  		  
+	DO I = 2,K						  		 
+	  SUM = SUM + (I-1) * A(I) * (P**(I-2))	  
+     	ENDDO							  		 
+	Y_DER_ONE = SUM					  		  
+      	END FUNCTION Y_DER_ONE			  
+	
+	FUNCTION FACT(X) 
+     	REAL FACT
+	INTEGER  X,Z
+      	FACT = 1
+	DO Z = 2,X
+	  FACT = FACT * Z
+	ENDDO
+	END FUNCTION FACT
+      
+  
+!=======OBTAINING THE LENGTH OF THE CURVE==================	
+	FUNCTION TRAPEZ(B)
+	REAL  A,B,HN,XNO,TEGRAL,TRAPEZ
+	A = 0.0
+	HN = (B-A)/250
+	TEGRAL = 0
+	DO IL = 1,249
+	  XNO = A + ( IL * HN )
+	  TEGRAL = TEGRAL+FONK(XNO)
+	ENDDO
+	TEGRAL = 0.5 *( FONK (A) + FONK (B) ) + TEGRAL
+	TRAPEZ = TEGRAL * HN
+	END FUNCTION TRAPEZ
+	
+      	FUNCTION FONK(X)
+	REAL  FONK
+	REAL,INTENT(IN)::X
+	SUM = 0
+      	DO I = 2 , K
+	  SUM = SUM + (I-1) * A(I) * (X**(I-2))
+	ENDDO
+      	FONK = SQRT ( (SUM**2) + 1 )
+	END FUNCTION FONK
+	
+!=======FUNCTION FOR THE SECOND DERIVATIVE OF THE K.th ORDER POLYNOMIAL====
+      	FUNCTION Y_DER_TWO ( P )					 
+	REAL Y_DER_TWO, P, SUM				     						      
+      	SUM = 0									 		 
+	DO I = 3,K								
+	  SUM = SUM + FACT(I-1) * A(I) * (P**(I-3))	 		 
+      	ENDDO									 		 
+	Y_DER_TWO = SUM							 
+	END FUNCTION Y_DER_TWO					 
+      			
+!=======GAUSS SUBROUTINE=========================
+	SUBROUTINE GAUSS (a,b,r,n)
+      	REAL a(200,200),f(200,200),b(200),r(200)
+	REAL s
+	INTEGER  x,z  
+      	DO i = 1,n
+	  f(i,i) = 1.0
+	  DO j = i+1,n
+	    f(i,j) = 0.0  
+      	  ENDDO
+	ENDDO
+ 
+      	DO 50 z = 1 , n - 1
+	  DO  x = z + 1 , n
+	    f(x,z) = a(x,z)/a(z,z)
+          ENDDO
+	
+	  DO  50 i = z+1 , n
+      	    DO  j = z,n               
+      	      a(i,j) = a(i,j)-(f(i,z)*a(z,j))	 
+	    ENDDO
+	    b(i) = b(i)-f(i,z)*b(z)
+50	CONTINUE
+
+      	r(n) = b(n)/a(n,n)
+	DO i = n-1,1,-1
+	   s = 0.0
+	     DO j = i+1,n
+	       s = s + a(i,j) * r(j)
+ 	     ENDDO
+	   r(i) = 1/a(i,i) * (b(i)-s)
+     	ENDDO  
+     	END SUBROUTINE GAUSS
+      	
+	END PROGRAM PORCUPINE
+      
+	FUNCTION Y_OF_X ( X )
+	COMMON /BLOCK/ A(200),K
+	REAL  Y_OF_X
+	REAL,INTENT(IN)::X
+	SUM = 0
+      	DO I = 1,K
+	  SUM = SUM + ( A(I) *( X**(I-1) ) )
+	ENDDO
+	Y_OF_X = SUM
+	END FUNCTION Y_OF_X

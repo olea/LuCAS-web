@@ -1,0 +1,424 @@
+<HTML
+><HEAD
+><TITLE
+>Seguridad en el Servidor NIS</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Sistema de Información de Red (NIS)"
+HREF="x-087-2-nis.html"><LINK
+REL="PREVIOUS"
+TITLE="Ejecutando un Servidor NIS"
+HREF="x-087-2-nis.server.html"><LINK
+REL="NEXT"
+TITLE="Configurando un Cliente NIS con la libc de GNU"
+HREF="x-087-2-nis.yp.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.server.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 13. El Sistema de Información de Red (NIS)</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.yp.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NIS.SECURENETS">13.5. Seguridad en el Servidor NIS</H1
+><P
+>&#13;
+NIS solía tener un defecto grave de seguridad: dejaba su fichero de contraseñas
+legible por prácticamente cualquier persona en toda Internet, lo que suponía un
+gran número de posibles intrusos. Si un intruso sabía su (de usted) dominio NIS
+y la dirección de su servidor, simplemente tenía que enviar una consulta al mapa
+<TT
+CLASS="FILENAME"
+>passwd.byname</TT
+> y recibir al instante todas las contraseñas
+encriptadas del sistema. Con un programa rápido para
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>crackear</I
+></SPAN
+> contraseñas como el <B
+CLASS="COMMAND"
+>crack</B
+>, y un
+buen diccionario, averiguar unas cuantas contraseñas de usuario no es problema.</P
+><P
+>&#13;
+De todo esto trata la opción <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>securenets</I
+></SPAN
+>. Esta opción
+simplemente restringe el acceso a su servidor NIS a ciertos nodos, basándose en
+su dirección IP o números de red. La última versión de <B
+CLASS="COMMAND"
+>ypserv</B
+>
+implementa esta característica de dos maneras. La primera consta de un fichero
+de configuración especial llamado <TT
+CLASS="FILENAME"
+>/etc/ypserv.securenets</TT
+> y
+la segunda utiliza convenientemente los ficheros
+<TT
+CLASS="FILENAME"
+>/etc/hosts.allow</TT
+> y <TT
+CLASS="FILENAME"
+>/etc/hosts.deny</TT
+> que
+ya nos encontramos en
+<A
+HREF="x-087-2-appl.html"
+>Capítulo 12</A
+>.<A
+NAME="X-087-2-FNNI06"
+HREF="#FTN.X-087-2-FNNI06"
+>[1]</A
+>
+Así, para restringir el acceso a los nodos de dentro de la Cervecera, su
+administrador de red añadiría esta línea al <TT
+CLASS="FILENAME"
+>hosts.allow</TT
+>:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ypserv: 172.16.2.</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto permitiría a todos los nodos de la red <SPAN
+CLASS="SYSTEMITEM"
+>172.16.2.0</SPAN
+> acceder al servidor NIS. Para denegar el
+acceso al resto de nodos, la correspondiente línea en el
+<TT
+CLASS="FILENAME"
+>hosts.deny</TT
+> sería:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ypserv: ALL</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Las direcciones IP no son la única manera de especificar nodos y redes en
+<TT
+CLASS="FILENAME"
+>hosts.allow</TT
+> y <TT
+CLASS="FILENAME"
+>hosts.deny</TT
+>. Por favor,
+consulte la página del manual <TT
+CLASS="FILENAME"
+>hosts_access(5)</TT
+> de su sistema
+para más detalles. Sin embargo, advierta que <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>no puede</I
+></SPAN
+>
+utilizar nombres de nodo o de dominio en la entrada
+<SPAN
+CLASS="SYSTEMITEM"
+>ypserv</SPAN
+>. Si especifica un nombre de nodo,
+el servidor tratará de resolver este nombre de nodo&mdash;pero el resolvedor a
+su vez llamará a <B
+CLASS="COMMAND"
+>ypserv</B
+>, y caerá en un bucle infinito.</P
+><P
+> 
+Para configurar la seguridad <SPAN
+CLASS="SYSTEMITEM"
+>securenets</SPAN
+>
+utilizando el método <TT
+CLASS="FILENAME"
+>/etc/ypserv.securenets</TT
+>, necesita crear
+el fichero de configuración, <TT
+CLASS="FILENAME"
+>/etc/ypserv.securenets</TT
+>. Este
+fichero de configuración es simple en su estructura. Cada línea describe un nodo
+o red de nodos que tendrán permiso de acceso al servidor. Cualquier dirección no
+descrita con una entrada en este fichero tendrá denegado el acceso. Una línea
+que comience por # será tratada como comentario. El ejemplo 13-1 muestra cómo
+sería un sencillo fichero <TT
+CLASS="FILENAME"
+>/etc/ypserv.securenets</TT
+>:</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-NIS.SECURENETS.FILE"><P
+><B
+>Ejemplo 13-1. Fichero ypserv.securenets de Ejemplo</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # permitir conexiones desde el nodo local -- necesario
+    host 127.0.0.1
+    # lo mismo para 255.255.255.255 127.0.0.1
+    #
+    # permitir conexiones desde cualquier nodo de la red de la Cervecera Virtual
+    255.255.255.0   172.16.1.0
+    #</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>La primera entrada de cada línea es la máscara de red a utilizar, siendo
+<SPAN
+CLASS="SYSTEMITEM"
+>host</SPAN
+> una palabra clave especial que
+significa &ldquo;máscara de red 255.255.255.255&rdquo;. La segunda entrada de
+cada línea es la dirección IP a la que aplicar la máscara de red.</P
+><P
+>Una tercera opción es utilizar el mapeador de puertos (portmapper) seguro en
+lugar de la opción <TT
+CLASS="OPTION"
+>securenets</TT
+> de <B
+CLASS="COMMAND"
+>ypserv</B
+>. El
+mapeador de puertos seguro (<TT
+CLASS="FILENAME"
+>portmap-5.0</TT
+>) utiliza también
+el esquema de <TT
+CLASS="FILENAME"
+>hosts.allow</TT
+>, pero ofrece esto a todos los
+servidores RPC, no sólo a <B
+CLASS="COMMAND"
+>ypserv</B
+>.
+<A
+NAME="X-087-2-FNNI07"
+HREF="#FTN.X-087-2-FNNI07"
+>[2]</A
+>
+Sin embargo, no se debe utilizar la opción <TT
+CLASS="OPTION"
+>securenets</TT
+> y el
+mapeador de puertos seguro al mismo tiempo, por la sobrecarga que esto
+supondría.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNI06"
+HREF="x-087-2-nis.securenets.html#X-087-2-FNNI06"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> Para
+habilitar el uso del método <TT
+CLASS="FILENAME"
+>/etc/hosts.allow</TT
+>, puede que
+tenga que recompilar el servidor. Por favor, lea las instrucciones del fichero
+<TT
+CLASS="FILENAME"
+>README</TT
+> incluido en la distribución.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNI07"
+HREF="x-087-2-nis.securenets.html#X-087-2-FNNI07"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>El mapeador de puertos seguro está disponible vía FTP anónimo en
+<SPAN
+CLASS="SYSTEMITEM"
+>ftp.win.tue.nl</SPAN
+> en el directorio
+<TT
+CLASS="FILENAME"
+>/pub/security/</TT
+>.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.server.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.yp.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Ejecutando un Servidor NIS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Configurando un Cliente NIS con la libc de GNU</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,342 @@
+<HTML
+><HEAD
+><TITLE
+>Opciones de Control de Enlace</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Protocolo Punto-a-Punto"
+HREF="x-087-2-ppp.html"><LINK
+REL="PREVIOUS"
+TITLE="Opciones de Configuración IP"
+HREF="x-087-2-ipconfig.options.html"><LINK
+REL="NEXT"
+TITLE="Consideraciones de Seguridad General"
+HREF="x7120.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ipconfig.options.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 8. El Protocolo Punto-a-Punto</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x7120.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN7053">8.6. Opciones de Control de Enlace</H1
+><P
+>&#13;Anteriormente, ya hemos tratado sobre  LCP, el protocolo de control de enlace
+(Link Control Protocol), que se utiliza para negociar las características de
+la conexión y comprobarla. </P
+><P
+> 
+Las dos opciones más importantes que pueden ser negociadas por el LCP
+son la <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>unidad máxima de recepción</I
+></SPAN
+> (MRU) y el
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>mapa de caracteres de control asíncronos</I
+></SPAN
+>. También hay
+varias opciones más de configuración LCP, pero son demasiado específicas como
+para comentarlas aquí. Eche un vistazo a la RFC 1548 para ver una descripción de éstas.</P
+><P
+>&#13;
+
+
+
+El mapa de caracteres de control asíncronos, también conocido como el
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>mapa asíncrono</I
+></SPAN
+>, se usa en enlaces asíncronos, como las
+líneas telefónicas, para identificar los caracteres de control que deben de ser
+reemplazados por una secuencia específica de dos caracteres, para evitar que sean
+interpretados por el equipamiento utilizado para establecer el enlace. Por ejemplo, puede
+que quiera evitar los caracteres XON y XOFF utilizados con el control de flujo
+hardware activado, pues algún módem mal configurado puede parar hasta que reciba
+un XOFF. Otro candidato puede ser Ctrl-] (el carácter de escape del
+<B
+CLASS="COMMAND"
+>telnet</B
+>). PPP le permite obviar/rehuir de cualquiera de los caracteres
+con códigos ASCII comprendidos entre 0 y 31 especificándolos en el mapa asíncrono.</P
+><P
+> 
+El mapa asíncrono (async map) es un mapa de bits de 32 bits de ancho, y cuyo
+bit menos significativo corresponde al carácter ASCII NUL, y cuyo bit mas
+significativo corresponde al ASCII 31. Estos 32 caracteres ASCII son los
+caracteres de control. Si un bit se pone a 1, indica que el carácter
+correspondiente debe de ser "escapado" antes de ser enviado a través de la
+conexión.</P
+><P
+> 
+Para decir al otro ordenador que no tiene que rehuir de todos los caracteres
+de control sino sólo de algunos, puede establecer un nuevo mapa asíncrono
+al <B
+CLASS="COMMAND"
+>pppd</B
+> utilizando la opción <B
+CLASS="COMMAND"
+>asyncmap</B
+>.
+Por ejemplo, si sólo <TT
+CLASS="LITERAL"
+>^S</TT
+> y <TT
+CLASS="LITERAL"
+>^Q</TT
+> (los códigos
+ASCII 17 y 19, normalmente utilizados para XON y XOFF) deben de ser "escapados",
+utilice la siguiente opción:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    asyncmap 0x000A0000</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Mientras sepa convertir binario a hexadecimal la conversión es simple.
+Coloque 32 bits enfrente de usted. El bit más a la derecha corresponde al
+ASCII 00(NULL), y el de más a la izquierda al ASCII 32 decimal.
+Establezca los bits que corresponden a los caracteres que quiera "escapar" a uno,
+y el resto a 0. Para convertir eso al número en hexadecimal que el
+<B
+CLASS="COMMAND"
+>pppd</B
+> espera, simplemente coja cada grupo de 4 bits y conviértalos
+en hexadecimal. Debería terminar con ocho figuras en hexadecimal. Póngalos
+todos juntos en cadena y antepóngale &ldquo;0x&rdquo; para mostrar que es un número hexadecimal,
+y habrá terminado.</P
+><P
+> 
+Inicialmente, el mapa asíncrono se establece como <TT
+CLASS="LITERAL"
+>0xffffffff</TT
+>&mdash;
+lo que significa que todos los caracteres de control serán "escapados".
+De partida esto es seguro, pero normalmente es más de lo que necesita. Cada carácter
+que aparece en el mapa asíncrono produce dos caracteres que son transmitidos a través
+del enlace, así al introducir estos caracteres de escape se produce un incremento de la
+utilización del enlace y la correspondiente reducción del rendimiento.</P
+><P
+> 
+En la mayoria de las circunstancias, un mapa asíncrono de <TT
+CLASS="LITERAL"
+>0x0</TT
+>
+funcionará correctamente. No se producen caracteres de escape.</P
+><P
+>&#13;
+ 
+La unidad máxima de recepción, o MRU, señaliza al otro extremo el tamaño
+máximo de las tramas HDLC que queremos recibir. Aunque esto puede que le
+recuerde al valor de la MTU (unidad máxima de transferencia), tienen poco
+en común. El MTU es un parámetro del dispositivo de red del núcleo, y
+describe el tamaño máximo de la trama que el interfaz es capaz de soportar.
+El MRU es más bien un consejo al ordenador remoto para que no genere ninguna
+trama más grande que la MRU; no obstante, el interfaz ha de ser capaz de
+recibir tramas de hasta 1500 bytes.</P
+><P
+>&#13;Por lo tanto, elegir un MRU no es tanto una cuestión de que es capaz
+de transmitir la conexión, sino de cómo conseguir el mejor rendimiento.
+Si va a usar la conexión para aplicaciones interactivas, el poner en el
+MRU valores tan bajos como 296 es una buena idea, de forma que un paquete
+ocasional mayor (digamos, de una sesión de FTP) no haga a su cursor
+&ldquo;saltar.&rdquo;. Para decir al <B
+CLASS="COMMAND"
+>pppd</B
+> que pida un
+MRU de 296, pondría la opción <TT
+CLASS="LITERAL"
+>mru 296</TT
+>. Las MRUs pequeñas,
+de todas maneras, sólo tienen sentido si no tiene la compresión de cabecera
+VJ desactivada (esta activada por omisión), de otra manera desaprovechará
+una gran cantidad de su ancho de banda sólo transportando la cavecera IP de
+cada datagrama.</P
+><P
+> 
+El <B
+CLASS="COMMAND"
+>pppd</B
+> también entiende un par de opciones LCP que configuran
+el comportamiento general del proceso de negociación, como es el máximo número de
+peticiones de configuración que pueden ser intercambiadas antes de que se corte
+la conexión. A menos que sepa exactamente lo que esta haciendo, deberá dejar este
+valor fijo.</P
+><P
+>&#13;
+Finalmente, hay dos opciones que se aplican a los mensajes de eco del LCP.
+El PPP define dos mensajes,<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Petición de Eco</I
+></SPAN
+>  y
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Respuesta de Eco</I
+></SPAN
+>. El <B
+CLASS="COMMAND"
+>pppd</B
+> usa esta
+característica para comprobar si la conexión esta aún operativa. Puede
+habilitarla utilizando la opción <TT
+CLASS="OPTION"
+>lcp-echo-interval</TT
+> junto con
+el tiempo en segundos. Si no se reciben tramas del ordenador remoto en este
+intervalo, el <B
+CLASS="COMMAND"
+>pppd</B
+>  genera una Petición de Eco, y espera a
+que el compañero devuelva una Respuesta de Eco. Si el compañero no produce una
+respuesta, la conexión es cortada después de que se hayan enviado un cierto
+número de peticiones. Este número puede ser establecido utilizando la opción
+<TT
+CLASS="OPTION"
+>lcp-echo-failure</TT
+>. predeterminado, esta característica también
+esta desactivada.&#13;</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-ipconfig.options.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x7120.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Opciones de Configuración IP</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Consideraciones de Seguridad General</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

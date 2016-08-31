@@ -1,0 +1,240 @@
+<HTML>
+<HEAD>
+<TITLE>Linux UUCP COMO: Preguntas de Uso Frecuente (PUFs) sobre el UUCP de Linux</TITLE>
+</HEAD>
+<BODY>
+<A HREF="UUCP-Como-4.html">Anterior</A>
+<A HREF="UUCP-Como-6.html">Siguiente</A>
+<A HREF="UUCP-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Preguntas de Uso Frecuente (<I>PUF</I>s) sobre el <CODE>UUCP</CODE> de Linux</A></H2>
+
+
+
+<H2><A NAME="ss5.1">5.1 ¿Por qu&eacute; est&aacute; mi binario de <CODE>uucp</CODE> configurado en formato</A><CODE>HDB</CODE> en lugar de ``Taylor''?</H2>
+
+
+<P>(Modo religioso on - Conozco gente que es tan creyente en ``facilidad de
+uso''  como yo en ``ser est&aacute;ndar''. Es por esto que hacen c&oacute;digo fuente desde
+el que puede construir usted mismo :-)) </P>
+<P>Porque es <I>IMHO</I> la implementaci&oacute;n est&aacute;ndar de facto en este momento. Hay
+miles de sistemas con administradores experimentados y hay muchos lugares
+donde puede encontrar informaci&oacute;n incre&iacute;blemente buena concerniente a la
+preparaci&oacute;n de <CODE>HDB</CODE>.</P>
+<P>El <CODE>uucp-1.04</CODE> que est&aacute; en <I>SLS 1.02</I> y posteriores acepta los tres
+formatos de ficheros de configuraci&oacute;n. Mientras no pueda probarlos, yo
+hice <I>RTFM</I> e Ian Taylor me dijo que deber&iacute;an funcionar.</P>
+<P>El orden de b&uacute;squeda de los ficheros de configuraci&oacute;n es Taylor, despu&eacute;s
+V2 (<CODE>L.sys</CODE>) y finalmente <CODE>HDB</CODE>. Utilice la utilidad <CODE>uuconv</CODE>
+en <CODE>/usr/lib/uucp</CODE> para convertir los ficheros de configuraci&oacute;n de
+un formato a otro.</P>
+<P>Si no puede esperar, grabe los fuentes para uucp y especifique
+<CODE>HAVE_BNU_CONFIG</CODE>, <CODE>HAVE_V2_CONFIG</CODE> <B>y</B>
+<CODE>HAVE_TAYLOR_CONFIG</CODE> en el fichero <CODE>policy.h</CODE> y escriba
+``<CODE>make</CODE>''.</P>
+<P>Los siguientes pasos son extra&ntilde;os, pero funcionan, si quiere ejecutar
+configuraciones Taylor de ficheros binarios que no la aceptan. </P>
+<P>
+<UL>
+<LI> <CODE>De 
+<A HREF="mailto:mbravo@tctube.spb.su">mbravo@tctube.spb.su</A></CODE> (Michael E. Bravo)
+
+- a&ntilde;adir ``<CODE>-I /usr/local/lib/uucp/config</CODE>'' a <EM>todas</EM> las
+invocaciones de cualquier programa perteneciente al paquete <CODE>uucp</CODE></LI>
+</UL>
+</P>
+<P>Adem&aacute;s, la <I>Slackware</I> actual tiene un bonito <CODE>setup</CODE> donde han
+separado los ficheros de configuraci&oacute;n para varias configuraciones en
+directorios distintos.  Por ejemplo, los ficheros de configuraci&oacute;n de
+<CODE>HDB</CODE> ir&iacute;an en <CODE>/usr/lib/uucp/hdb_config</CODE>. Mientras 'estaba
+dando vueltas' a esto, he probado el <CODE>UUCP</CODE> sacado de la <I>Slackware</I> en
+formato <CODE>HDB</CODE> sin problemas de momento.</P>
+
+
+<H2><A NAME="ss5.2">5.2 ¿Por qu&eacute; me contesta ``<CODE>timeout</CODE>'' en las conexiones cuando</A>actualic&eacute; a <CODE>uucp-1.04</CODE>? </H2>
+
+
+<P>
+<UL>
+<LI> de Ed Carp - <CODE>
+<A HREF="mailto:erc@apple.com">erc@apple.com</A></CODE>
+
+Si utiliza un dispositivo ``<CODE>Direct</CODE>'' en el fichero <CODE>Devices</CODE>, hay
+ahora 10 segundos de tiempo l&iacute;mite compilado. Cambie de nombre del
+dispositivo a otro que no sea ``<CODE>Direct</CODE>''. Si modifica sobre los
+ficheros de ejemplo de <CODE>/usr/lib/uucp</CODE> proporcionados con <I>SLS</I>, no
+habr&aacute; problemas con esto.
+</LI>
+<LI> de Greg Naber - <CODE>
+<A HREF="mailto:greg@squaly.halcyon.com">greg@squaly.halcyon.com</A></CODE>
+
+Si se tienen timeouts del script <CODE>chat</CODE>, puede modificar los fuentes
+editando la l&iacute;nea 323 en <CODE>uuconf/syssub.c</CODE> y cambiar los timeouts
+por defecto de 10 segundos a algo m&aacute;s largo.
+</LI>
+<LI> de Ed Rodda - <CODE>
+<A HREF="mailto:ed@orca.wimsey.bc.ca">ed@orca.wimsey.bc.ca</A></CODE>
+
+Si tiene los timeouts del script de <CODE>chat</CODE>, t&iacute;picamente conectando con
+otros sistemas Taylor, una pausa despu&eacute;s del login puede corregir esto. 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+feed Any ACU,ag 38400 5551212 ogin: \c\d &quot;&quot; yourname word: passwd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI> de Dr. Eberhard W. Lisse - <CODE>
+<A HREF="mailto:el@lisse.NA">el@lisse.NA</A></CODE>
+
+Algunos kernels hacen que el m&oacute;dem cuelgue despu&eacute;s de un par de segundos.
+El siguiente parche enviado por Ian Taylor puede ayudar. 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+*** conn.c.orig Mon Feb 22 20:25:24 1993
+--- conn.c      Mon Feb 22 20:33:10 1993
+***************
+*** 204,209 ****
+--- 204,212 ----
+
+     /* Make sure any signal reporting has been done before we set
+       fLog_sighup back to TRUE.  */
++   /* SMR: it seems to me if we don't care about SIGHUPS, we should clear
++      the flag before we return  */
++   afSignal[INDEXSIG_SIGHUP] = FALSE;
+    ulog (LOG_ERROR, (const char *) NULL);
+    fLog_sighup = TRUE;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+</P>
+
+
+<H2><A NAME="ss5.3">5.3 ¿Por qu&eacute; el <CODE>uucp HDB</CODE> an&oacute;nimo parece no funcionar?</A></H2>
+
+
+<P>El <CODE>uucp</CODE> an&oacute;nimo de <I>SLS</I> s&oacute;lo funciona en el formato Taylor porque
+est&aacute; compilado con <CODE>HAVE_TAYLOR_CONFIG</CODE>. Si quiere hacer <CODE>uucp</CODE>
+an&oacute;nimo en formato <CODE>HDB</CODE>, deber&aacute; recompilar los fuentes definiendo
+<CODE>HDB</CODE>. Ian Taylor est&aacute; considerando qu&eacute; m&eacute;todo adoptar para tratar esta
+``prestaci&oacute;n''. </P>
+<P>Adem&aacute;s, Taylor en formato <CODE>HDB</CODE> parece distinguir espacios y l&iacute;neas en
+blanco. Para estar seguro, aseg&uacute;rese de que no hay l&iacute;neas en blanco o
+espacios de m&aacute;s en el fichero <CODE>Permissions</CODE>.</P>
+<P>Por &uacute;ltimo, compruebe que tiene un fichero llamado
+<CODE>remote.unknown</CODE> en <CODE>/usr/lib/uucp</CODE> y que <B>NO</B> es
+ejecutable. Mire el libro de <I>O'Reilly &amp; Associates</I> <I>``Managing
+UUCP and USENET''</I> para m&aacute;s detalles sobre este fichero. </P>
+
+
+<H2><A NAME="ss5.4">5.4 ¿Qu&eacute; quiere decir ``<CODE>no matching ports found</CODE>''?</A></H2>
+
+
+<P>Con toda probabilidad, est&aacute; intentando utilizar un dispositivo
+(<CODE>/usr/lib/uucp/Devices</CODE>) que no existe, o el dispositivo que
+especifica en el fichero <CODE>/usr/lib/uucp/Systems</CODE> no coincide con
+los dispositivos v&aacute;lidos en el fichero <CODE>Devices</CODE>.</P>
+<P>Lo siguiente son versiones <I>saneadas</I> de mis ficheros de configuraci&oacute;n
+de Taylor <CODE>1.05 HDB</CODE> que actualmente me funcionan.</P>
+<P>¿Ve el ``<CODE>ACU</CODE>'' en <CODE>Systems</CODE>? Esto le dice qu&eacute; ``puerto'' utilizar en
+<CODE>Devices</CODE></P>
+<P>¿Ve la palabra ``<CODE>scout</CODE>'' en <CODE>Systems</CODE>? Esto le dice qu&eacute; <I>dialer</I>
+utilizar en <CODE>Dialers</CODE>.</P>
+<P>Si ten&iacute;a un puerto <CODE>ACU</CODE>, pero ninguno que coincidiera con el
+<I>dialer</I> especificado en la misma l&iacute;nea en <CODE>Systems</CODE>, obtendr&aacute; este
+mensaje.</P>
+
+
+<H2><A NAME="ss5.5">5.5 ¿Qu&eacute; ficheros de configuraci&oacute;n son buenos para el formato <CODE>HDB</CODE>? </A></H2>
+
+
+<P>Lo que siguen son ficheros de configuraci&oacute;n ``buenos'' para Taylor <CODE>1.05</CODE> 
+bajo
+Linux en formato <I>HoneyDanBer</I>. Funcionan en kernels <CODE>0.99-8</CODE> o
+posteriores.  Todos los ficheros deben estar en <CODE>/usr/lib/uucp</CODE> a
+no ser que haya modificado los fuentes para poner la librer&iacute;a de <CODE>uucp</CODE>
+en otro lugar.</P>
+<P>Si *TIENE* puestas cosas en directorios no est&aacute;ndar, d&eacute; por seguro que
+cosas como el <CODE>sendmail</CODE> se confundir&aacute;n. Necesita asegurar que todos
+los programas de comunicaci&oacute;n est&eacute;n de acuerdo con su idea de caminos
+``est&aacute;ndar''.</P>
+<P>Si est&aacute; ejecutando un kernel <CODE>0.99-7</CODE> o anterior, cambie ``<CODE>cua1</CODE>''
+por ``<CODE>ttyS1</CODE>''. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#------------- Devices -------------
+# asegurese de que el dispositivo (cua1 aqui) concuerda con su sistema
+# cua1 = COM2
+#
+# aqui ``scout'' es el modem Digicom Scout Plus 19.2 que uso.
+# tbfast etc. es para las distintas velocidades de un modem Telebit Trailblazer
+# Plus
+#
+ACU cua1 - 19200 scout
+ACU cua1 - 9600 tbfast
+ACU cua1 - 1200 tbslow
+ACU cua1 - 2400 tbmed
+
+#------------- dialers --------------
+# notese la configuracion de los registros del Trailblazer ``al vuelo''
+# ``scout'' es un modem Digicom Scout Plus (Hayes-compatible) que uso aqui
+scout   =W-,    &quot;&quot; ATM0DT\T CONNECT
+tbfast  =W-,    &quot;&quot; A\pA\pA\pT OK ATS50=255DT\T CONNECT\sFAST
+tbslow  =W-,    &quot;&quot; A\pA\pA\pT OK ATS50=2DT\T CONNECT\s1200
+tbmed   =W-,    &quot;&quot; A\pA\pA\pT OK ATS50=3DT\T CONNECT\s2400
+
+#-------------- Systems -------------
+# esta es una entrada muy generica que funcionara en la mayoria de los sistemas
+#
+# Any;1 significa que puede llamar una vez por minuto con el uso de -f (forzar)
+# ACU,g significa forzar el protocolo ``g'' en lugar del que usa Taylor por 
+# defecto, ``i''.
+#
+fredsys Any;1 ACU,g 19200 scout5555555 &quot;&quot; \r ogin:--ogin: uanon word: uanon
+
+#-------------------------------- Permissions -------------------------
+
+# El Taylor UUCP en modo HDB parece ser sensible a lineas en blanco.
+# Asegurese de que todos las lineas de permisos son reales, o estan comentadas
+#
+# esta es una entrada anonima
+#
+LOGNAME=nuucp MACHINE=OTHER \
+READ=/usr/spool/uucp/nuucp \
+WRITE=/usr/spool/uucp/nuucp \
+SENDFILES=yes REQUEST=yes \
+COMMANDS=/bin/rmail
+#
+# Esta es la configuracion normal para un sistema remoto que ``habla'' 
+# con nosotros. Notese el path absoluto a rnews, ya que este sistema
+# coloca las cosas en lugares que no son ``estandard''.
+#
+LOGNAME=fredsys MACHINE=fredsys \
+READ=/usr/spool/uucp/fredsys:/usr/spool/uucp/uucppublic:/files \
+WRITE=/usr/spool/uucp/fredsys:/usr/spool/uucppublic \
+SENDFILES=yes REQUEST=yes \
+COMMANDS=/bin/rmail:/usr/local/lib/news/bin/rnews
+#----------------------------------------------------------------------
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss5.6">5.6 Utilizar <CODE>uucico</CODE> para llamar a n&uacute;meros alternativos</A></H2>
+
+
+<P>La nueva versi&oacute;n <CODE>v1.05</CODE> ha a&ntilde;adido el switch '<CODE>-z</CODE>' a <CODE>uucico</CODE>
+para intentar n&uacute;meros alternativos como sistema remoto.</P>
+
+
+<HR>
+<A HREF="UUCP-Como-4.html">Anterior</A>
+<A HREF="UUCP-Como-6.html">Siguiente</A>
+<A HREF="UUCP-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

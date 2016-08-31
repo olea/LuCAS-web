@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 25 Rutinas de flujo de sonido
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="25 Rutinas de flujo de sonido">25 Rutinas de flujo de sonido</a></h1>
+
+<ul>
+<li><a href="#free_audio_stream_buffer">free_audio_stream_buffer</a>
+<li><a href="#get_audio_stream_buffer">get_audio_stream_buffer</a>
+<li><a href="#play_audio_stream">play_audio_stream</a>
+<li><a href="#stop_audio_stream">stop_audio_stream</a>
+</ul>
+
+<p>
+Las rutinas de flujo de sonido son para reproducir sonidos digitales que son
+demasiado grandes para caber en la estructura SAMPLE, bien porque son
+ficheros enormes que quiere cargar en trozos según necesita los datos, o
+porque está haciendo algo inteligente como generar la onde del sonido en
+tiempo real.
+
+<p><br>
+<b>AUDIOSTREAM *<a name="play_audio_stream">play_audio_stream</a>(int len, bits, stereo, freq, vol, pan);</b><br>
+   Esta función crea un nuevo flujo de audio y empieza a reproducirlo. El
+   parámetro len es el tamaño de cada búffer de transferencia (en samples),
+   que normalmente debería ser una potencia de 2 y cercana a 1k: búffers
+   más grandes son más eficientes y requieren menos actualizaciones, pero
+   hay un desfase mayor entre los datos que usted porporciona y los que se
+   están reproduciendo actualmente. El parametro bits debe ser 8 o 16, freq
+   es la frecuencia de muestreo de los datos, y los valores vol y pan usan
+   el el mismo rango 0-255, como las funciones normales de reproducción de
+   samples. Si quiere ajustar la frecuencia, el volumen o la panoramización
+   del flujo una vez se esté reproduciendo, puede usar las funciones normales
+   voice_*() con stream-&gt;;voice como un parámetro. Los datos del sample estan
+   siempre en formato sin signo, con formas de onda en estéreo que consisten
+   en samples alternativos izquierda/derecha.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg022.html#install_sound">install_sound</a>,
+<a class="xref" href="#get_audio_stream_buffer">get_audio_stream_buffer</a>,
+<a class="xref" href="#stop_audio_stream">stop_audio_stream</a>.</font></blockquote>
+<b>void <a name="stop_audio_stream">stop_audio_stream</a>(AUDIOSTREAM *stream);</b><br>
+   Destruye un flujo de audio cuando no lo necesite más.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#play_audio_stream">play_audio_stream</a>.</font></blockquote>
+<b>void *<a name="get_audio_stream_buffer">get_audio_stream_buffer</a>(AUDIOSTREAM *stream);</b><br>
+   Debe llamar este función a intervalos regulares mientras el flujo de
+   audio está siendo reproducido, para proveer el siguiente buffer de datos
+   del sample (cuanto más pequeño sea el tamaño del buffer del flujo, más
+   frecuentemente debe llamar esta función). Si devuelve NULL, el flujo
+   todavía está reproduciendo los datos y no debe hacer nada. Si devuelve un
+   valor, esa es la localización del próximo buffer a tocar, y debería
+   cargar el número apropiado de samples (tantos como especificó al crear
+   el flujo) a esa dirección, por ejemplo usando un fread() de un fichero.
+   Después de llenar el buffer con datos, llame free_audio_stream_buffer()
+   para indicar que los datos nuevos ahora son válidos. Fíjese que esta
+   función no debería ser llamada desde una función de temporizador.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#play_audio_stream">play_audio_stream</a>,
+<a class="xref" href="#free_audio_stream_buffer">free_audio_stream_buffer</a>.</font></blockquote>
+<b>void <a name="free_audio_stream_buffer">free_audio_stream_buffer</a>(AUDIOSTREAM *stream);</b><br>
+   Llame esta función después de que get_audio_stream_buffer() devuelva una
+   dirección que no sea NULL, para indicar que ya ha cargado un nuevo bloque
+   de samples en esa dirección y que los datos están listos para ser
+   reproducidos.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_audio_stream_buffer">get_audio_stream_buffer</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

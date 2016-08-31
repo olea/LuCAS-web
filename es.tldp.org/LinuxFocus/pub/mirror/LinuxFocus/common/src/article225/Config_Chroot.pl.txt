@@ -1,0 +1,316 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $Home = "/chroot";
+system "mkdir -p $Home/Config/Backup";
+
+#-------------------------------------------------------
+# Don't change any variables below here.
+
+my $Command = $ARGV[0];
+my $Service = $ARGV[1];
+my $Yes = $ARGV[2];
+
+my @Commands = ('install','config','start','stop','restart','list', 'view');
+
+#--------------------------------------------------------
+if (grep($Command eq $_, @Commands)) {}
+else
+  {
+  print "Your command was '$Command'.\n";
+  print "Command not understood, please use one of the following options.\n";
+  print "\t\t@Commands\n";
+  }
+
+if ($Command eq "list")
+  {
+  my @Files = <$Home/Config/*.config>;
+    ## Strip out directory path.
+  @Files = grep($_ =~ s/$Home\/Config\///g, @Files);
+    ## Get rid of .config at ending
+  grep($_ =~ s/\.config//, @Files);
+    # Add a new line to separate services.
+  grep($_ = $_ . "\n", @Files);
+    # Print them out. 
+  print "Your services with config files are.\n@Files\n";
+  exit;
+  }
+if ($Command eq "view")
+  {
+  my $Config = "$Home/Config/$Service\.config";
+  if (!(-e $Config)) 
+    {print "The service '$Service' was not found, aborting.\n"; exit;}
+  else 
+    {
+    open(FILE,$Config);
+    while (my $Line = <FILE>) {print $Line;}
+    print "\n";
+    close FILE;
+    }
+  }
+elsif ($Command eq "restart")
+  {
+  print "Haven't installed the restart option yet, aborting.\n";
+  exit;
+  }
+
+#### If we have gotten this far, we are installing, configuring, 
+####    starting or stopping. Do configuring first.
+
+if ($Command eq "config")
+  {
+  print "Please enter the name of the service that will be running.\n";
+  print "This should be one word, the actual program executed.\n";
+  my $Name = <STDIN>; chomp $Name;
+    ### Get rid of anything non-alphanumeric.
+  $Name =~ s/[^a-z0-9]//gi;
+  if ($Name ne "") 
+    {
+    print "Creating directory '$Home/$Name'\n";
+    system "mkdir -p $Home/$Name";
+    }
+  else {print "No name given, aborting.\n"; exit;}
+
+  my $Config = "$Home/Config/$Name\.config";
+    ## if config file exists, back it up. 
+  if (-e $Config) 
+    {
+    my $no = 1;
+    my $Backup = "$Home/Config/Backup/$Name\.config_1";
+    while (-e $Backup) 
+      {$no++; $Backup = "$Home/Config/Backup/$Name\.config_$no";}
+    print "Backing up $Config to $Backup\n";
+    system "mv $Config $Backup";
+    }
+  open(FILE,">$Config");
+  print FILE "SERVICE_NAME=$Name\n";
+
+  print "Do you want syslogd to run under the chrooted envrionment?\n";
+  my $Syslogd = <STDIN>;
+  if ($Syslogd =~ /y/i) {print FILE "SYSLOGD=y\n";}  
+
+  print "Enter the command to start the service relative to chroot.\n";
+  my $Start = <STDIN>; chomp $Start;
+  if ($Start eq "") {print "Nothing entered, aborting"; exit;}
+  print FILE "START=$Start\n";
+
+  print "Enter location of pid file relative to $Home/$Name,\n"; 
+  print "  otherwise it will be:\n";
+  print "\t$Home/$Name/var/run/$Name\.pid\n";
+  my $Pid = <STDIN>; chomp $Pid; $Pid =~ s/ //g;
+    ## Reformat it so we make up for mistakes of entering the location.
+  if ($Pid =~ /[a-z]/i) 
+    {
+    $Pid =~ s/^$Home\/$Name[\/]+//; 
+    $Pid =~ s/^[\/]+//;
+    $Pid = "$Home/$Name/$Pid";
+    }
+  else {$Pid = "$Home/$Name/var/run/$Name\.pid";}
+  print FILE "PID_FILE=$Pid\n";
+
+  print "Enter the custom commands to install this service.\n";
+  print "You will first be changed to the directory $Home/$Name\n";
+  print "  when these commands are executed, keep that in mind.\n";
+  print "Press Ctrl-D to stop inputting data.\n";
+  my @Custom = <STDIN>;
+  print FILE "CUSTOM\n@Custom\n";
+
+  close FILE;
+
+  print "Done configuring the service $Name\n";
+  }
+
+#### Now, we can install, start, or stop. 
+#### If config had the third option of "y", we should install and start.
+
+### Load the configuration file.
+
+my $Config_File = "$Home/Config/$Service\.config";
+open (FILE,$Config_File); my @File = <FILE>; close FILE;
+
+my $Options = {};
+$Options->{'custom'} = "";
+$Options->{'start'} = "";
+$Options->{'syslogd'} = "no";
+$Options->{'service_name'} = "";
+$Options->{'pid_file'} = "";
+
+my $Custom = 0; 
+foreach my $Line (@File)  
+  {
+    ### $Option and $Value are thrown away if custom is grabbing lines.
+  my ($Option,$Value) = split(/\=/,$Line,2);
+  chomp $Value; $Value =~ s/^ +//; $Value =~ s/ +$//;
+    ### If $Custom is set to 1, all other options are ignored.
+  if ($Custom == 1) {$Options->{'custom'} .= $Line;}
+  elsif ($Line =~ /^CUSTOM/) {$Custom = 1;}
+  elsif ($Line =~ /^START/) {$Options->{'start'} = $Value;}
+  elsif ($Line =~ /^SYSLOGD/) {$Options->{'syslogd'} = $Value;}
+  elsif ($Line =~ /^SERVICE_NAME/) {$Options->{'service_name'} = $Value;}
+  elsif ($Line =~ /^PID_FILE/) {$Options->{'pid_file'} = $Value;}
+  }
+
+  ### Abort if certain values are missing.
+if ($Options->{'pid_file'} eq "") 
+  {print "Aborting, pid file not defined.\n"; exit;}
+if ($Options->{'service_name'} eq "") 
+   {print "Aborting, service name not defined.\n"; exit;}
+if ($Options->{'start'} eq "") 
+  {print "Aborting, start command not defined.\n"; exit;}
+
+#### Now we have loading the variables, start, stop, install, or restart.
+
+if ($Command eq "install") 
+  {
+  my $Template = "$Home/Config/Generic_template";
+  open(FILE,$Template); my @Template = <FILE>; close FILE;
+
+  my $Syslogd_Commands = qq(
+   ### Syslogd stuff.
+rsync -a /sbin/syslogd sbin/
+mkdir -p usr/include/
+rsync -a /usr/include/syslog.h usr/include/
+rsync -a /etc/syslog.conf etc/
+rsync -a /etc/initlog.conf etc/
+mkdir -p etc/sysconfig
+rsync -a /etc/sysconfig/init etc/sysconfig/
+rsync -a /etc/services etc/
+  );
+
+  my $Syslog_Option = "";
+  if (($Options->{'syslogd'} > 0) || ($Options->{'syslogd'} =~ /y/i))
+    {
+    $Syslog_Option = "syslogd -m 0";
+    $Options->{'custom'} .= $Syslogd_Commands;
+    }
+
+  grep($_ =~ s/_PID_FILE_/$Options->{'pid_file'}/g, @Template);
+  grep($_ =~ s/SERVICE/$Options->{'service_name'}/g, @Template);
+  grep($_ =~ s/_START_COMMAND_/$Options->{'start'}/g, @Template);
+  grep($_ =~ s/_CUSTOM_COMMANDS_/$Options->{'custom'}/g, @Template);
+  grep($_ =~ s/_SYSLOGD_COMMAND_/$Syslog_Option/g, @Template);
+
+  my $Temp = "$Home/Config/$Service\_install.bat";
+  if (-e $Temp)
+    {
+    my $no = 1;
+    my $Backup = "$Home/Config/Backup/$Service\_install.bat_1";
+    while (-e $Backup)
+      {$no++; $Backup = "$Home/Config/Backup/$Service\_install.bat_$no";}
+    print "Backing up $Temp to $Backup\n";
+    system "mv $Temp $Backup";
+    }
+
+  open(FILE,">$Temp");
+  foreach my $Line (@Template) {print FILE $Line;}
+  close FILE;
+
+  system "chmod 755 $Home/Config/$Service\_install.bat";
+
+
+  print "executing 'cd $Home; ./Config/$Service\_install.bat'\n";
+  system "cd $Home; ./Config/$Service\_install.bat";
+  }
+
+my $Error = 0;
+
+if (($Command eq "stop") || ($Command eq "restart"))
+  {
+  my $Pid = "";
+  $Error = 1;
+  if (!(-e "$Options->{'pid_file'}"))
+    {print "The pid file $Options->{'pid_file'} file does not exist.\n This is bad. I don't know the pid of the service, so I wont' stop anything.\n Manually kill it yourself. Also, we don't read this file for the pid.\n We just verifies that it exist. The pid file we read is at\n $Home/Config/$Service\.pid for security reasons.\n";}
+  elsif (!(-e "$Home/Config/$Service\.pid")) 
+    {
+    print "The pid file $Options->{'pid_file'} exists,\n but the file we read from $Home/Config/$Service\.pid does not exist.\nFor security, we don't rely on the pid file $Options->{'pid_file'}.\n I don't know what the pid is, so I don't know what to kill.\n";
+    }
+  else 
+    {
+    open(FILE, "$Home/Config/$Service\.pid");
+    my $Line = <FILE>; chomp $Line, close FILE; 
+    my $No = $Line;
+    if ($No < 2) 
+      {print "Pid for '$Service' is '$No', which doesn't make sense.\n";} 
+    else 
+      {
+      my $Stop = "kill -TERM $No";
+      print "\nExecuting '$Stop' for the service '$Service'.\n";
+      system "$Stop";
+      sleep 1;
+      if (-e "/proc/$No")
+        {print "Something bad has happened. I still see the directory\n'/proc/$No' which should not exist if we killed the service.\n Check in a few seconds to see if '/proc/$No' still exists. Some services\n require a few seconds to shut down.\n";}
+      elsif ($Options->{'pid_file'}=~ /pid$/)
+        {
+        system "rm $Options->{'pid_file'}";
+        system "rm $Home/Config/$Service\.pid";
+        }
+      else {print "'$Options->{'pid_file'}' may not be a pid file.\nI will not delete it.";}
+      $Error = 0;
+
+      if (($Options->{'syslogd'} > 0) || ($Options->{'syslogd'} =~ /y/i))
+        {
+        print "\nAttempting to shutdown syslogd for service '$Service'\n";
+        my $Temp = "$Home/Config/$Service\_syslogd.pid";
+        open(FILE, $Temp);
+        my $Line = <FILE>; chomp $Line, close FILE;
+        my $No = $Line;
+        if ($No < 2)
+          {
+          print "Pid for the syslgod of the service '$Service' is '$No',\n";
+          print "  which doesn't make sense.\n";
+          }
+        else 
+          {
+	  my $Stop = "kill -TERM $No";
+	  print "Executing '$Stop' for syslogd of the service '$Service'.\n";
+	  system "$Stop";
+	  sleep 1;
+         if (-e "/proc/$No")
+           {print "Something bad has happened. I still see the directory\n'/proc/$No' which should not exist if we killed the service.\n";}
+	  else 
+            {
+            system "rm $Home/Config/$Service\_syslogd.pid"; 
+#            system "rm $Home/$Service/var/run/syslogd.pid";
+            $Error = 0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+if (($Command eq "start") || ($Command eq "restart"))
+  {
+  if ($Error > 0) 
+   {
+   print "Error = $Error\nPerhaps we couldn't stop the service.";
+   print "We are going to try and start it anyways in case it was never running.\n";
+   }
+
+  if (-e $Options->{'pid_file'})
+    {print "You are being naughty. The pid file $Options->{'pid_file'} file exists, which probably means a service is running. Stop the service and delete the file before starting it again.\n"; exit;}
+
+    my $Start = "/usr/sbin/chroot $Home/$Service ./$Service\.bat";
+    print "Executing '$Start'\n";
+    system "$Start";
+    sleep 1;
+    if (!(-e $Options->{'pid_file'}))
+      {print "Opps, pid file '$Options->{'pid_file'}' does not exist. That is bad.\nService might not be running.";}
+    else 
+      {
+        ## Copy over the pid of this service.
+      system "cp $Options->{'pid_file'} $Home/Config/";
+         ## Now copy over the syslogd pid for this service.
+      my $Temp = "$Home/$Service/var/run/syslogd.pid";
+      if (-e $Temp) {system "cp $Temp $Home/Config/$Service\_syslogd.pid";}
+      print "No errors detected. Service started.\n";
+      }
+  }
+
+
+
+
+
+
+

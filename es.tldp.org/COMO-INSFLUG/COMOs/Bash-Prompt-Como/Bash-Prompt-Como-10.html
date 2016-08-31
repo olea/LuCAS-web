@@ -1,0 +1,411 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt COMO: Prompt de ejemplo</TITLE>
+ <LINK HREF="Bash-Prompt-Como-11.html" REL=next>
+ <LINK HREF="Bash-Prompt-Como-9.html" REL=previous>
+ <LINK HREF="Bash-Prompt-Como.html#toc10" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bash-Prompt-Como-11.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-9.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc10">Índice general</A>
+<HR>
+<H2><A NAME="s10">10. Prompt de ejemplo</A></H2>
+
+<H2><A NAME="ss10.1">10.1 Un prompt «ligero»</A>
+</H2>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  function proml {
+  local BLUE="\[\033[0;34m\]"
+  local RED="\[\033[0;31m\]"
+  local LIGHT_RED="\[\033[1;31m\]"
+  local WHITE="\[\033[1;37m\]"
+  local NO_COLOUR="\[\033[0m\]"
+  case $TERM in
+      xterm*)
+          TITLEBAR='\[\033]0;\u@\h:\w\007\]'
+          ;;
+      *)
+          TITLEBAR=""
+          ;;
+  esac
+
+  PS1="${TITLEBAR}\
+  $BLUE[$RED\$(date +%H%M)$BLUE]\
+  $BLUE[$LIGHT_RED\u@\h:\w$BLUE]\
+  $WHITE\$$NO_COLOUR "
+  PS2='> '
+  PS4='+ '
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss10.2">10.2 Tema elite de <CODE>Bashprompt</CODE></A>
+</H2>
+
+<P>
+<P>Es necesaria una fuente VGA
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  # Created by KrON from windowmaker on IRC
+  # Changed by Spidey 08/06
+  function elite {
+  PS1="\[\033[31m\]\332\304\[\033[34m\](\[\033[31m\]\u\[\033[34m\]@\[\033[31m\]\h\
+  \[\033[34m\])\[\033[31m\]-\[\033[34m\](\[\033[31m\]\$(date +%I:%M%P)\
+  \[\033[34m\]-:-\[\033[31m\]\$(date +%m)\[\033[34m\033[31m\]/\$(date +%d)\
+  \[\033[34m\])\[\033[31m\]\304-\[\033[34m]\\371\[\033[31m\]-\371\371\
+  \[\033[34m\]\372\n\[\033[31m\]\300\304\[\033[34m\](\[\033[31m\]\W\[\033[34m\])\
+  \[\033[31m\]\304\371\[\033[34m\]\372\[\033[00m\]"
+  PS2="> "
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss10.3">10.3 Prompt de usuario avanzado</A>
+</H2>
+
+<P>
+<P>Este es el prompt que yo uso, pero se nota un cierto retraso en la
+aparici&oacute;n del prompt en un PII-400 monousuario, as&iacute; que no lo recomendar&iacute;a
+para un P-100 multiusuario... T&oacute;melo como una idea, m&aacute;s que como un prompt
+pr&aacute;ctico.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+  #----------------------------------------------------------------------
+  #       POWER USER PROMPT "pprom2"
+  #----------------------------------------------------------------------
+  #
+  #   Created August 98, Last Modified 9 November 98 by Giles
+  #
+  #  Problema: cuando la carga baja, dice "1.35down-.08". Hay que deshacerse
+  #  del negativo
+
+  function prompt_command
+  {
+  #   Crea la variable TotalMeg: la suma de los tamagnos de los ficheros
+  #   visibles del directorio actual
+  local TotalBytes=0
+  for Bytes in $(ls -l | grep "^-" | cut -c30-41)
+  do
+      let TotalBytes=$TotalBytes+$Bytes
+  done
+  TotalMeg=$(echo -e "scale=3 \nx=$TotalBytes/1048576\n if (x&lt;1) 
+        {print \"0\"} \n print x \nquit" | bc)
+
+  #      Esto se usa para calcular el diferencial en los valores 
+  #      de carga proporcionados por el comando "uptime". "uptime"
+  #      proporciona medias de carga en 1, 5, y 15 minutos.
+  #
+  local one=$(uptime | sed -e "s/.*load average: \(.*\...\), \(.*\...\), \(.*\...\)/\1/" -e "s/ //g")
+  local five=$(uptime | sed -e "s/.*load average: \(.*\...\), \(.*\...\), \(.*\...\).*/\2/" -e "s/ //g")
+  local diff1_5=$(echo -e "scale = scale ($one) \nx=$one - $five\n if (x>0) 
+        {print \"up\"} else {print \"down\"}\n print x \nquit \n" | bc)
+  loaddiff="$(echo -n "${one}${diff1_5}")"
+
+  #   Cuenta los ficheros visibles:
+  let files=$(ls -l | grep "^-" | wc -l | tr -d " ")
+  let hiddenfiles=$(ls -l -d .* | grep "^-" | wc -l | tr -d " ")
+  let executables=$(ls -l | grep ^-..x | wc -l | tr -d " ")
+  let directories=$(ls -l | grep "^d" | wc -l | tr -d " ")
+  let hiddendirectories=$(ls -l -d .* | grep "^d" | wc -l | tr -d " ")-2
+  let linktemp=$(ls -l | grep "^l" | wc -l | tr -d " ")
+  if [ "$linktemp" -eq "0" ]
+  then
+      links=""
+  else
+      links=" ${linktemp}l"
+  fi
+  unset linktemp
+  let devicetemp=$(ls -l | grep "^[bc]" | wc -l | tr -d " ")
+  if [ "$devicetemp" -eq "0" ]
+  then
+      devices=""
+  else
+      devices=" ${devicetemp}bc"
+  fi
+  unset devicetemp
+
+  }
+
+  PROMPT_COMMAND=prompt_command
+
+  function pprom2 {
+
+  local        BLUE="\[\033[0;34m\]"
+  local  LIGHT_GRAY="\[\033[0;37m\]"
+  local LIGHT_GREEN="\[\033[1;32m\]"
+  local  LIGHT_BLUE="\[\033[1;34m\]"
+  local  LIGHT_CYAN="\[\033[1;36m\]"
+  local      YELLOW="\[\033[1;33m\]"
+  local       WHITE="\[\033[1;37m\]"
+  local         RED="\[\033[0;31m\]"
+  local   NO_COLOUR="\[\033[0m\]"
+
+  case $TERM in
+      xterm*)
+          TITLEBAR='\[\033]0;\u@\h:\w\007\]'
+          ;;
+      *)
+          TITLEBAR=""
+          ;;
+  esac
+
+  PS1="$TITLEBAR\
+  $BLUE[$RED\$(date +%H%M)$BLUE]\
+  $BLUE[$RED\u@\h$BLUE]\
+  $BLUE[\
+  $LIGHT_GRAY\${files}.\${hiddenfiles}-\
+  $LIGHT_GREEN\${executables}x \
+  $LIGHT_GRAY(\${TotalMeg}Mb) \
+  $LIGHT_BLUE\${directories}.\
+  \${hiddendirectories}d\
+  $LIGHT_CYAN\${links}\
+  $YELLOW\${devices}\
+  $BLUE]\
+  $BLUE[${WHITE}\${loaddiff}$BLUE]\
+  $BLUE[\
+  $WHITE\$(ps ax | wc -l | sed -e \"s: ::g\")proc\
+  $BLUE]\
+  \n\
+  $BLUE[$RED\$PWD$BLUE]\
+  $WHITE\$\
+  \
+  $NO_COLOUR "
+  PS2='> '
+  PS4='+ '
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss10.4">10.4 Un prompt con la anchura del terminal</A>
+</H2>
+
+<P>
+<P>Un amigo se quej&oacute; de que no le gustaba tener un prompt que cambiara su
+tama&ntilde;o debido a que ten&iacute;a un <CODE>$PWD</CODE>, as&iacute; que escrib&iacute; este prompt
+que ajusta su tama&ntilde;o a la anchura exacta del terminal, con el directorio
+de trabajo en la l&iacute;nea superior. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+
+  #   termwide prompt
+  #      by Giles - created 2 November 98
+  #
+  #  La idea aqui es tener la linea superior de un prompt de 2 lineas
+  #  siempre de la misma anchura que el terminal. Esto se consigue
+  #  calculando la anchura de los elementos de texto, y rellenando
+  #  o truncando $PWD
+  #
+
+  function prompt_command {
+
+  TERMWIDTH=${COLUMNS}
+
+  #   Calcula la anchura del prompt:
+
+  hostnam=$(echo -n $HOSTNAME | sed -e "s/[\.].*//")
+  #   "whoami" y "pwd" incluyen un caracter de nueva l&iacute;nea al final
+  usernam=$(whoami)
+  let usersize=$(echo -n $usernam | wc -c | tr -d " ")
+  newPWD="${PWD}"
+  let pwdsize=$(echo -n ${newPWD} | wc -c | tr -d " ")
+  #   Agnadir los accesorios debajo...
+  let promptsize=$(echo -n "--(${usernam}@${hostnam})---(${PWD})--" \
+                   | wc -c | tr -d " ")
+  let fillsize=${TERMWIDTH}-${promptsize}
+  fill=""
+  while [ "$fillsize" -gt "0" ]
+  do
+     fill="${fill}-"
+     let fillsize=${fillsize}-1
+  done
+
+  if [ "$fillsize" -lt "0" ]
+  then
+     let cut=3-${fillsize}
+     sedvar=""
+     while [ "$cut" -gt "0" ]
+     do
+        sedvar="${sedvar}."
+        let cut=${cut}-1
+     done
+     newPWD="...$(echo -n $PWD | sed -e "s/\(^${sedvar}\)\(.*\)/\2/")"
+  fi
+  }
+
+  PROMPT_COMMAND=prompt_command
+
+  function termwide {
+
+  local GRAY="\[\033[1;30m\]"
+  local LIGHT_GRAY="\[\033[0;37m\]"
+  local WHITE="\[\033[1;37m\]"
+  local NO_COLOUR="\[\033[0m\]"
+
+  local LIGHT_BLUE="\[\033[1;34m\]"
+  local YELLOW="\[\033[1;33m\]"
+
+  case $TERM in
+      xterm*)
+          TITLEBAR='\[\033]0;\u@\h:\w\007\]'
+          ;;
+      *)
+          TITLEBAR=""
+          ;;
+  esac
+
+  PS1="$TITLEBAR\
+  $YELLOW-$LIGHT_BLUE-(\
+  $YELLOW\${usernam}$LIGHT_BLUE@$YELLOW\${hostnam}\
+  ${LIGHT_BLUE})-${YELLOW}-\${fill}${LIGHT_BLUE}-(\
+  $YELLOW\${newPWD}\
+  $LIGHT_BLUE)-$YELLOW-\
+  \n\
+  $YELLOW-$LIGHT_BLUE-(\
+  $YELLOW\$(date +%H%M)$LIGHT_BLUE:$YELLOW\$(date \"+%a,%d %b %y\")\
+  $LIGHT_BLUE:$WHITE\$$LIGHT_BLUE)-\
+  $YELLOW-\
+  $NO_COLOUR "
+
+  PS2="$LIGHT_BLUE-$YELLOW-$YELLOW-$NO_COLOUR "
+
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="Prompt con Reloj Elegante e In&uacute;til"></A> <A NAME="ss10.5">10.5 Prompt con Reloj elegante e in&uacute;til</A>
+</H2>
+
+<P>
+<P>Este es posiblemente el prompt m&aacute;s atractivo (e in&uacute;til) que he creado. 
+Debido a que muchos emuladores de terminal X no implementan las funciones
+de salvar y restaurar la posici&oacute;n del cursor, la alternativa cuando se
+sit&uacute;a un reloj en la esquina superior derecha es anclar el cursor a la
+parte baja del terminal. Esto se basa en la idea del prompt de la anchura
+del terminal anterior, con el dibujo de una l&iacute;nea desde el prompt hasta el
+reloj. Es necesaria una fuente VGA. 
+<P>Nota: hay una sustituci&oacute;n en este c&oacute;digo, que puede que no se muestre bien
+al pasar de SGML a otros formatos: he tenido que sustituir el car&aacute;cter de
+pantalla pro el c&oacute;digo <CODE>\304</CODE>; normalmente habr&iacute;a incluido la secuencia
+<CODE>\304</CODE>, pero ha sido necesaria la sustituci&oacute;n en este caso: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+
+  #   Este prompt requiere una fuente VGA. El prompt se ancla a la parte
+  #   baja del terminal, rellena la anchura del terminal, y dibuja una linea
+  #   hacia arriba en la parte derecha del terminal hasta unirse a un reloj
+  #   en la esquina superior derecha del terminal
+
+  function prompt_command {
+  #   Calcula la anchura del prompt:
+  hostnam=$(echo -n $HOSTNAME | sed -e "s/[\.].*//")
+  #   "whoami" y "pwd" incluyen un caracter de nueva l&iacute;nea al final
+  usernam=$(whoami)
+  newPWD="${PWD}"
+  #   Se agnaden todos los accesorios
+  let promptsize=$(echo -n "--(${usernam}@${hostnam})---(${PWD})-----" \
+                   | wc -c | tr -d " ")
+  #   Adivina cuanto agnadir entre user@host y PWD (o cuanto quitar a PWD)
+  let fillsize=${COLUMNS}-${promptsize}
+  fill=""
+  #   si el prompt no es tan ancho como el terminal, lo relleno
+  while [ "$fillsize" -gt "0" ]
+  do
+     fill="${fill}&Auml;"
+     # La A con umlaut (aparecera como un gui&oacute;n largo si se utiliza
+     # una fuente VGA) es \304, pero la cort&eacute; y pegu&eacute; aqu&iacute; porque
+     # Bash s&oacute;lo hace una sustituci&oacute;n, que en este caso es hacer que
+     # $fill aparezca en el prompt.             
+     let fillsize=${fillsize}-1
+  done
+  #   Trunco $PWD por la derecha si el prompt es mas ancho que el terminal:
+  if [ "$fillsize" -lt "0" ]
+  then
+     let cutt=3-${fillsize}
+     sedvar=""
+     while [ "$cutt" -gt "0" ]
+     do
+        sedvar="${sedvar}."
+        let cutt=${cutt}-1
+     done
+     newPWD="...$(echo -n $PWD | sed -e "s/\(^${sedvar}\)\(.*\)/\2/")"
+  fi
+  #
+  #   Creo el reloj y la barra que sube hasta el
+  #
+  local LIGHT_BLUE="\033[1;34m"
+  local     YELLOW="\033[1;33m"
+  #   Posicion del cursor para dibujar el reloj:
+  echo -en "\033[2;$((${COLUMNS}-9))H"
+  echo -en "$LIGHT_BLUE($YELLOW$(date +%H%M)$LIGHT_BLUE)\304$YELLOW\304\304\277"
+  local i=${LINES}
+  echo -en "\033[2;${COLUMNS}H"
+  #   Dibujo barras verticales:
+  while [ $i -ge 4 ]
+  do
+     echo -en "\033[$(($i-1));${COLUMNS}H\263"
+     let i=$i-1
+  done
+
+  let prompt_line=${LINES}-1
+  #   Esto es necesario porque hacer \${LINES} dentro de una funci&oacute;n
+  #   matematica de Bash (es decir $(()) ) no parece funcionar.
+  }
+
+  PROMPT_COMMAND=prompt_command
+
+  function clock3 {
+  local LIGHT_BLUE="\[\033[1;34m\]"
+  local     YELLOW="\[\033[1;33m\]"
+  local      WHITE="\[\033[1;37m\]"
+  local LIGHT_GRAY="\[\033[0;37m\]"
+  local  NO_COLOUR="\[\033[0m\]"
+
+  case $TERM in
+      xterm*)
+          TITLEBAR='\[\033]0;\u@\h:\w\007\]'
+          ;;
+      *)
+          TITLEBAR=""
+          ;;
+  esac
+
+  PS1="$TITLEBAR\
+  \[\033[\${prompt_line};0H\]
+  $YELLOW\332$LIGHT_BLUE\304(\
+  $YELLOW\${usernam}$LIGHT_BLUE@$YELLOW\${hostnam}\
+  ${LIGHT_BLUE})\304${YELLOW}\304\${fill}${LIGHT_BLUE}\304(\
+  $YELLOW\${newPWD}\
+  $LIGHT_BLUE)\304$YELLOW\304\304\304\331\
+  \n\
+  $YELLOW\300$LIGHT_BLUE\304(\
+  $YELLOW\$(date \"+%a,%d %b %y\")\
+  $LIGHT_BLUE:$WHITE\$$LIGHT_BLUE)\304\
+  $YELLOW\304\
+  $LIGHT_GRAY "
+
+  PS2="$LIGHT_BLUE\304$YELLOW\304$YELLOW\304$NO_COLOUR "
+
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="Bash-Prompt-Como-11.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-9.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc10">Índice general</A>
+</BODY>
+</HTML>

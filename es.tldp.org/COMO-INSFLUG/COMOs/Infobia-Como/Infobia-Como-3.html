@@ -1,0 +1,358 @@
+<HTML>
+<HEAD>
+<TITLE>``Infobia''- Como. : Conexiones a trav&eacute;s de Infov&iacute;a.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Infobia-Como-2.html">Anterior</A>
+<A HREF="Infobia-Como-4.html">Siguiente</A>
+<A HREF="Infobia-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="ConexionesInfobia"></A> <A NAME="s3">3. Conexiones a trav&eacute;s de Infov&iacute;a.</A></H2>
+
+
+
+<H2><A NAME="metodoA"></A> <A NAME="ss3.1">3.1 M&eacute;todo ``A''</A></H2>
+
+
+<P>
+<OL>
+<LI>Fichero <CODE>/etc/resolv.conf</CODE>. <BR> En el caso cada vez m&aacute;s
+corriente, en que obtengamos nuestra direcci&oacute;n por asignaci&oacute;n din&aacute;mica, se
+ha de conocer la direcci&oacute;n en notaci&oacute;n decimal del servidor de nombres o
+<EM>nameserver</EM> del ISP que nos proporciona acceso.  Esta informaci&oacute;n se
+la ha de proporcionar su ISP, y <I>generalmente</I> ser&aacute; de la forma 
+<CODE>194.xxx.yyy.zzz</CODE>. (En la posici&oacute;n <CODE>zzz</CODE> generalmente suele emplearse
+el <CODE>2</CODE>)
+
+El dato restante es el nombre de dominio de su servidor, que ser&aacute; el mismo
+que aparezca en su direcci&oacute;n de correo <EM>email</EM>, es decir, todo lo que
+se encuentra tras la arroba. En mi caso, <CODE>pacopepe@insflug.org</CODE> ser&iacute;a por
+tanto <CODE>insflug.org</CODE>.
+
+Una vez conocemos estos datos, editamos (con <CODE>vi</CODE>, por ejemplo) el fichero
+<CODE>/etc/resolv.conf</CODE>, de modo que a&ntilde;adimos: <BR>
+<CODE>/etc/resolv.conf</CODE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+domain insflug.org 
+nameserver 194.xxx.yyy.zzz
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Elaboramos el fichero <CODE>/etc/ppp/options</CODE> (S&oacute;lo con versiones de
+<CODE>pppd</CODE> iguales o inferiores a la <CODE>2.2.x</CODE>)
+
+<BLOCKQUOTE><CODE>
+<PRE>
+connect /etc/ppp/infovia   
+crtscts
+modem
+passive
++ua /etc/ppp/infoviappp   # Ojo en pppd version 2.3.x, opcion no valida
+noipdefault
+debug
+defaultroute
+asyncmap a0000
+/dev/modem # (Este fichero es un enlace a /dev/ttySX)
+38400 # (Siempre que su modem soporte esa velocidad)
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<B>Nota:</B> Si nuestro <CODE>pppd</CODE> es de version <CODE>2.2.3</CODE> o superior, 
+deberemos modificar el fichero <CODE>/etc/ppp/options</CODE>, suprimiendo la
+l&iacute;nea <CODE>+ua /etc/ppp/infoviappp</CODE> y a&ntilde;adiendo:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+...
++pap
+user id@dominio
+...
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+As&iacute;, utilizar&aacute; en su lugar el fichero <CODE>/etc/ppp/pap-secrets</CODE> para
+la autentificaci&oacute;n:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+infovia         *       infovia
+id@dominio      dominio clave
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Para m&aacute;s informaci&oacute;n sobre <CODE>pap-secrets</CODE> ver apartado 
+correspondiente de la secci&oacute;n 
+<A HREF="#metodoB">metodoB</A>.
+
+<CODE>/dev/ttySX</CODE> es el fichero de dispositivo correspondiente al puerto
+donde tengamos el m&oacute;dem, generalmente, el COM2 si lo vemos desde msdos, o
+<CODE>/dev/ttyS1</CODE> en LiNUX. En caso de que en su sistema no exista
+<CODE>/dev/modem</CODE>, puede crear un enlace o <EM>symlink</EM> al puerto donde
+se encuentra el m&oacute;dem, con la orden:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ln -s /dev/ttyS1 /dev/modem
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Siempre que el COM2 sea el que est&eacute; usando el m&oacute;dem. Puede por supuesto
+incluir directamente <CODE>/dev/ttyS1</CODE> en lugar de <CODE>/dev/modem</CODE>
+en el anterior script si lo prefiere.
+
+Para los usuarios de <I>Intercom</I> o <I>bankinter</I>, los ficheros
+<CODE>options</CODE> ser&iacute;an:
+
+<UL>
+<LI>Intercom
+<BLOCKQUOTE><CODE>
+<PRE>
+connect /etc/ppp/infovia
+crtscts
+modem
+passive
+noipdefault
+ipcp-accept-local
+ipcp-accept-remote
+debug
+defaultroute
+lock
+asyncmap a0000
+/dev/modem
+38400
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Bankinter
+<BLOCKQUOTE><CODE>
+<PRE>
+connect /etc/ppp/infovia
+crtscts
+modem
+defaultroute
+lock
+/dev/modem
+38400
+</PRE>
+</CODE></BLOCKQUOTE>
+ </LI>
+</UL>
+
+
+Los permisos del anterior script pueden ser 640 en forma octal o 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+-rw-r-----   1 root     root
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+lo cual podemos conseguir con la orden:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod 640 /etc/ppp/options
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Fichero <CODE>/etc/ppp/infovia</CODE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+/usr/sbin/chat -v  &quot;&quot; atdt055 CONNECT &quot;&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Este fichero debe de hacerse ejecutable, con la orden por ejemplo:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod 744 /etc/ppp/infovia
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Fichero <CODE>/etc/ppp/infoviappp</CODE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+su_login  
+su_password 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<CODE>su_login</CODE> quiere decir <CODE>nombre@proveedor</CODE>, en mi caso
+<CODE>pacopepe@insflug</CODE>.  Este fichero es especialmente delicado, ya que
+contiene la contrase&ntilde;a o password de acceso al ISP, por lo que conviene
+tener cuidado con sus permisos;  yo no soy un gur&uacute; en eso, si alguien con
+m&aacute;s experiencia me recomienda otro tipo de permisos, se lo agradecer&eacute;, yo
+por ahora lo tengo como 640, por lo que con la orden
+
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod 640 /etc/ppp/infoviappp
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+quedar&iacute;an establecidos los permisos.
+</LI>
+<LI>Ejecutar, como <CODE>root</CODE>, <CODE>pppd</CODE>. Al momento se escuchar&aacute; marcar
+al m&oacute;dem, y una vez establecida la conexi&oacute;n, se escuchar&aacute; actividad por
+parte del disco duro; tambi&eacute;n, en el caso de poseer un m&oacute;dem externo, se
+observar&aacute; las luces de cd, sd y tr encendidas o parpadeando; en caso de
+ser interno, podemos constatar que la conexi&oacute;n est&aacute; establecida
+correctamente, y que por tanto, el dispositivo ppp0 ha sido creado, con
+una orden como ``<CODE>top</CODE>'' o ``<CODE>ps</CODE>'' en la que se observar&aacute; como
+proceso activo. 
+
+Tambi&eacute;n podemos observar el proceso de conexi&oacute;n conmutando a otra VC, y 
+tecleando la orden
+
+<BLOCKQUOTE><CODE>
+<PRE>
+tail -f /var/log/messages
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+lo cual nos mostrar&aacute;, en caso de problemas, los fallos que est&aacute;n
+ocurriendo. Un proceso de conexi&oacute;n normal aparecer&iacute;a como:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+May 23 01:51:00 beastie pppd[4485]: pppd 2.1.2 started by root, uid 0
+May 23 01:51:00 beastie pppd[4488]: Connecting with /etc/ppp/infovia
+May 23 01:51:02 beastie chat[4490]: send (atdt055^M)
+May 23 01:51:02 beastie chat[4490]: expect (CONNECT)
+May 23 01:51:23 beastie chat[4490]: atdt055^M^M
+May 23 01:51:23 beastie chat[4490]: CONNECT -- got it
+May 23 01:51:23 beastie chat[4490]: send (^M)
+May 23 01:51:23 beastie pppd[4488]: Connected...
+May 23 01:51:24 beastie kernel: ppp: channel ppp0 mtu = 1500, mru = 1500
+May 23 01:51:24 beastie kernel: ppp: channel ppp0 open
+May 23 01:51:24 beastie pppd[4488]: set kernel debugging level to 0
+May 23 01:51:24 beastie pppd[4488]: Using interface ppp0
+May 23 01:51:24 beastie pppd[4488]: Connect: ppp0 &lt;--&gt; /dev/modem
+[...]
+May 23 01:51:25 beastie pppd[4488]: ipcp: received ADDR
+May 23 01:51:25 beastie pppd[4488]: (172.16.1.1)
+May 23 01:51:25 beastie pppd[4488]:  (ACK)
+May 23 01:51:25 beastie pppd[4488]: ipcp: returning Configure-ACK
+May 23 01:51:25 beastie pppd[4488]: fsm_sdata(IPCP): Sent code 2, id 1.
+May 23 01:51:25 beastie pppd[4488]: fsm_rconfnakrej(IPCP): Rcvd id 1.
+May 23 01:51:25 beastie pppd[4488]: local IP address 194.179.123.229
+May 23 01:51:25 beastie pppd[4488]: fsm_sdata(IPCP): Sent code 1, id 2.
+May 23 01:51:25 beastie pppd[4488]: IPCP: sending Configure-Request, id 2
+May 23 01:51:25 beastie pppd[4488]: fsm_rconfack(IPCP): Rcvd id 2.
+May 23 01:51:25 beastie pppd[4488]: ipcp: up
+May 23 01:51:25 beastie pppd[4488]: local  IP address 194.179.123.229
+May 23 01:51:25 beastie pppd[4488]: remote IP address 172.16.1.1
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+</LI>
+<LI>Para finalizar la conexi&oacute;n podemos emplear el script que suele
+acompa&ntilde;ar al paquete pppd, <CODE>ppp-off</CODE>, o bien ``matar'' directamente el
+proceso una vez identificado su PID con <CODE>ps</CODE>; para ello, si una vez
+ejecutado <CODE>ps</CODE> observamos la respuesta: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+PID   TTY   STAT  TIME  COMMAND
+58    v01   S     0:01  -bash
+[...]
+353   v03  R      1:12  pppd
+[...]
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+
+la orden
+
+<BLOCKQUOTE><CODE>
+<PRE>
+kill -9 353
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+matar&aacute; el proceso. No obstante, algunas personas han experimentado
+``cuelgues'' de sus servidores si no finalizan la conexi&oacute;n con m&eacute;todos
+``civilizados'' como el script <CODE>ppp-off</CODE>. 
+
+Uno puede hacerse un <CODE>ppp-off</CODE> rudimentario mediante el comando: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+killall pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+Si se quiere saber m&aacute;s sobre los comandos de este script, consulte el
+comando <CODE>chat</CODE> y la documentaci&oacute;n sobre <CODE>pppd</CODE>.
+</LI>
+</OL>
+</P>
+
+
+<H2><A NAME="metodoB"></A> <A NAME="ss3.2">3.2 M&eacute;todo ``B''</A></H2>
+
+
+<P>El mismo que el empleado para conectar sin mediar Infov&iacute;a, descrito en la
+secci&oacute;n 
+<A HREF="Infobia-Como-4.html#sininfovia">Conexiones sin mediar Infov&iacute;a.</A> a
+excepci&oacute;n de: </P>
+<P>
+<OL>
+<LI>Fichero <CODE>/etc/ppp/pap-secrets</CODE>, que quedar&iacute;a as&iacute;:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+infovia               *                  infovia
+id@dominio            *                  su_password
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+donde <CODE>id@dominio</CODE> ser&iacute;a, en mi caso, <CODE>pacopepe@insflug</CODE>, es decir, su
+direcci&oacute;n <EM>email</EM> sin el <CODE>.es</CODE> del dominio perteneciente a Espa&ntilde;a. 
+
+
+Este fichero es especialmente sensible por contener el password, por lo
+que se aplica lo dicho anteriormente para el fichero 
+<CODE>/etc/ppp/infoviappp</CODE> en la secci&oacute;n 
+<A HREF="#metodoB">M&eacute;todo ``B''</A>, punto n&uacute;mero 4. 
+
+
+Como se puede observar, lo &uacute;nico que var&iacute;a es que se a&ntilde;ade la l&iacute;nea
+referente a Infov&iacute;a. 
+
+</LI>
+<LI>Cambiar la variable <CODE>NUMERO</CODE> del script
+<CODE>/usr/local/bin/infovia</CODE> por <CODE>055</CODE>, como corresponde a Infov&iacute;a. 
+</LI>
+</OL>
+</P>
+
+
+<HR>
+<A HREF="Infobia-Como-2.html">Anterior</A>
+<A HREF="Infobia-Como-4.html">Siguiente</A>
+<A HREF="Infobia-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

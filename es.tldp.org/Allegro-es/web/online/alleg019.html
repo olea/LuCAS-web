@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 19 Conversiones de formatos de color
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="19 Conversiones de formatos de color">19 Conversiones de formatos de color</a></h1>
+
+<ul>
+<li><a href="#bestfit_color">bestfit_color</a>
+<li><a href="#create_rgb_table">create_rgb_table</a>
+<li><a href="#hsv_to_rgb">hsv_to_rgb</a>
+<li><a href="#rgb_map">rgb_map</a>
+<li><a href="#rgb_to_hsv">rgb_to_hsv</a>
+</ul>
+
+<p>
+En general, Allegro está diseñada para usarse sólo con una profundidad de
+color a la vez, así que sólo llamará una vez a set_color_depth() y entonces
+almacenará todos sus bitmaps en el mismo formato. Si quiere mezclar
+diferentes formatos de píxel, puede usar create_bitmap_ex() en vez de
+create_bitmap(), y llamar a bitmap_color_depth() para pedir el formato de la
+imagen en cuestión. La mayoría de las rútinas gráficas requieren que todos
+sus parámetros de entrada estén en el mismo formato (p.ej. no puede expandir
+un bitmap origen de 15 bits en un destino de 24 bits), pero hay cuatro
+excepciones: blit() y las rutinas de rotación puede copiar entren bitmaps de
+cualquier formato, convirtiendo los datos cuando se requiera, draw_sprite()
+puede dibujar imágenes origen de 256 colores en destion de cualquier formato,
+draw_character() _siempre_ usa un bitmap origen de 256 colores, sea cual sea
+el formato de destino, las funciones draw_trans_sprite() y
+draw_trans_rle_sprite() son capaces de dibujar imágenes de 32 bits RGBA en un
+destino hicolor o truecolor, siempre y cuando llame antes a
+set_alpha_blender(), y la función draw_trans_sprite() es capaz de dibujar una
+imagen con 8 bits de canal alfa encima de una imagen ya existente de 32 bits,
+siempre y cuando llame antes a set_write_alpha_blender().
+
+<p>
+Expandir un bitmap origen de 256 colores en un bitmap destino truecolor es
+muy rápido (¡obviamente deberá ajustar la paleta de colores correcta antes
+de la conversión!). Convertir entre diferentes formatos truecolor es algo
+más lento, y reducir imágenes truecolor a 256 puede ser muy lento (puede
+acelerarse si crea una tabla global rgb_map antes de realizar la
+conversión).
+
+<p><br>
+<b>int <a name="bestfit_color">bestfit_color</a>(const PALLETE pal, int r, int g, int b);</b><br>
+   Busca en la paleta el valor más parecido al color requerido, que es
+   especificado en el formato hardware de la VGA 0-63. Normalmente debería
+   llamar makecol8() en vez de esto, pero esta función de bajo nivel puede
+   ser útil si necesita usar una paleta de colores diferente a la
+   seleccionada, o si no quiere usar la tabla precalculada rgb_map a
+   propósito.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg011.html#makecol8">makecol8</a>.</font></blockquote>
+<b>extern RGB_MAP *<a name="rgb_map">rgb_map</a>;</b><br>
+   Para acelerar la reducción de valores RGB a 8 bits, Allegro usa una
+   tabla precalculada de 32k (5 bits por cada componente de color). Debe
+   crear esta tabla antes de usar las rutinas de sombreado gouraud, y si
+   está presente, la tabla acelerará vastamente la función makecol8(). Las
+   tablas RGB pueden ser precalculadas con la utilidad rgbmap, o generadas
+   en tiempo real. La estructura RGB_MAP está definida como:
+<blockquote class="code"><pre>
+   typedef struct {
+      unsigned char data[32][32][32];
+   } RGB_MAP;
+</pre></blockquote>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_rgb_table">create_rgb_table</a>,
+<a class="xref" href="alleg011.html#makecol8">makecol8</a>.</font></blockquote>
+<b>void <a name="create_rgb_table">create_rgb_table</a>(RGB_MAP *table, const PALETTE pal,</b>
+<b>        void (*callback)(int pos));</b><br>
+   Llena la tabla RGB especificada con datos precalculados de la paleta
+   elegida. Si la función callback no es NULL, será llamada 256 veces
+   durante el cálculo, permitiéndole enseñar un indicador de progreso.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#rgb_map">rgb_map</a>.</font></blockquote>
+<b>void <a name="hsv_to_rgb">hsv_to_rgb</a>(float h, float s, float v, int *r, int *g, int *b);</b><br>
+<b>void <a name="rgb_to_hsv">rgb_to_hsv</a>(int r, int g, int b, float *h, float *s, float *v);</b><br>
+   Convierte valores de color entre los modos HSV y RGB. Los valores RGB van
+   de 0 a 255, hue va de 0 a 360, y la saturación y el valor van de 0 a 1.
+
+
+
+<p><br>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

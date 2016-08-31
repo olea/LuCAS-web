@@ -1,0 +1,871 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>CODA COMO: Instalaci&oacute;n y configuraci&oacute;n</TITLE>
+ <LINK HREF="Coda-COMO-6.html" REL=next>
+ <LINK HREF="Coda-COMO-4.html" REL=previous>
+ <LINK HREF="Coda-COMO.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Coda-COMO-6.html">Página siguiente</A>
+<A HREF="Coda-COMO-4.html">Página anterior</A>
+<A HREF="Coda-COMO.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="s5">5. Instalaci&oacute;n y configuraci&oacute;n</A></H2>
+
+<P>
+<P>
+<H2><A NAME="ss5.1">5.1 D&oacute;nde obtener los binarios de Coda</A>
+</H2>
+
+<P>
+<P>Todos los servidores deben tener la misma versi&oacute;n Coda para evitar
+problemas. La versi&oacute;n de los clientes puede ser anterior a la de los
+servidores pero mayor que una dada (dependiendo de la versi&oacute;n del
+servidor, aunque es conveniente que todas las versiones coincidan).
+<P>Tambi&eacute;n es aconsejable instalar Coda a partir de los paquetes binarios
+para evitar compilar el c&oacute;digo fuente. Existen binarios para las dos
+distribuciones Linux m&aacute;s utilizadas, Debian <CODE>
+<A HREF="http://www.debian.org">http://www.debian.org</A></CODE> y Red Hat
+<CODE>
+<A HREF="http://www.redhat.com">http://www.redhat.com</A></CODE>. El c&oacute;digo fuente se puede obtener
+junto a los binarios de Red Hat en <CODE>
+<A HREF="ftp://ftp.coda.cs.cmu.edu/pub/coda">ftp://ftp.coda.cs.cmu.edu/pub/coda</A></CODE>, y los binarios de Debian
+de <CODE>
+<A HREF="ftp://ftp.debian.org/debian/project/experimental">ftp://ftp.debian.org/debian/project/experimental</A></CODE>. Estos
+paquetes binarios tienen unas dependencias o requisitos y deben ser 
+compatibles con la versi&oacute;n de Linux en la que queremos
+instalar Coda. Por ejemplo en Debian se puede conocer las
+dependencias de un paquete binario con 
+<BLOCKQUOTE><CODE>
+<PRE>
+dpkg --info nombrePaquete.deb
+</PRE>
+</CODE></BLOCKQUOTE>
+,
+y si nuestro sistema Linux lo cumple lo podremos instalar sin problemas. 
+<P>En este informe se ha utilizado la versi&oacute;n 5.2.0-1 de Coda bajo Debian 2.1
+<I>slink</I>. Existe en binario la versi&oacute;n 5.3.1-1 para Debian 2.2, pero
+hemos optado por la primera para evitar actualizar Linux. A&uacute;n as&iacute;
+suponemos que entre ambas versiones no existen cambios importantes en la
+instalaci&oacute;n y administraci&oacute;n. 
+<P>Tambi&eacute;n hemos trabajado con la versi&oacute;n Coda de Red Hat, aunque
+recomendamos la de Debian por ser m&aacute;s f&aacute;cil su instalaci&oacute;n y
+administraci&oacute;n. Por ejemplo, en Debian el programa de instalaci&oacute;n pasa
+autom&aacute;ticamente a su configuraci&oacute;n y el servidor Coda se lanza con el
+script <CODE>/etc/init.d/coda-server</CODE>, mientras que en Red Hat son
+varios los scripts.
+<P>
+<H2><A NAME="ss5.2">5.2 Sincronizaci&oacute;n de los servidores</A>
+</H2>
+
+<P>Los servidores deben estar sincronizados en fecha y hora. Para lograrlo
+hemos optado por <CODE>XNTP</CODE>, basado en sincronizaci&oacute;n externa <CODE>UTC</CODE>
+(Tiempo Universal Coordinado). En el caso de dos servidores Coda hay que
+a&ntilde;adir las siguientes l&iacute;neas en sus ficheros de configuraci&oacute;n
+<CODE>ntp.conf</CODE> del programa <CODE>xntp</CODE> (en Debian este fichero se
+encuentra en el directorio <CODE>/etc/</CODE>):
+<P>
+<DL>
+<DT><B>Servidor Coda 1:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+server m&aacute;quinaServidorXntp1              
+server m&aacute;quinaServidorXntp2              
+peer  servidorCoda2                     
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<DT><B>Servidor Coda 2:</B><DD><P>
+<BLOCKQUOTE><CODE>
+<PRE>
+server m&aacute;quinaServidorXntp1
+server m&aacute;quinaServidorXntp2
+peer servidorCoda1
+</PRE>
+</CODE></BLOCKQUOTE>
+</DL>
+<P>Las dos primeras l&iacute;neas de cada configuraci&oacute;n especifican con qu&eacute; servidor
+o servidores xntp se sincronizan. Si por redundancia se sincronizan con
+m&aacute;s de un servidor xntp como en el ejemplo, estos servidores deben tener
+el mismo nivel xntp garantizando la sincronizaci&oacute;n entre s&iacute;. La tercera
+l&iacute;nea 
+<BLOCKQUOTE><CODE>
+<PRE>
+peer servidorCodax
+</PRE>
+</CODE></BLOCKQUOTE>
+ asegura la
+sincronizaci&oacute;n entre los dos servidores Coda en el caso de que se pierda
+la comunicaci&oacute;n con los servidores xntp (es importante mantener bien
+sincronizados los relojes locales del sistema distribuido). 
+<P>
+<H2><A NAME="ss5.3">5.3 Instalaci&oacute;n de los Servidores</A>
+</H2>
+
+<P>
+<P>De todos los servidores Coda s&oacute;lo uno puede ser el servidor 
+<B><CODE>SCM</CODE></B>, desde donde se administra el sistema de vol&uacute;menes y las
+cuentas de usuario. 
+<P>Se explicar&aacute;n los procesos de instalaci&oacute;n y configuraci&oacute;n de las versiones
+5.2.0-1 para Red Hat y Debian. N&oacute;tese que para la instalaci&oacute;n y
+configuraci&oacute;n de los servidores es necesario ser el superusuario del
+sistema Linux.
+<P>
+<H3>Servidor SCM en Red Hat</H3>
+
+<P>
+<P>Se proceder&aacute; a instalar el paquete, para lo que introduciremos por la
+l&iacute;nea de &oacute;rdenes:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# rpm -i coda-debug-server-5.2.0-1.i386.rpm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Una vez instalado el servidor, iniciaremos su configuraci&oacute;n, la cual
+difiere entre el servidor maestro SCM y el resto de servidores.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# vice-setup
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A continuaci&oacute;n se detalla el proceso de configuraci&oacute;n con
+<CODE>vice-setup</CODE>. Introducimos una cadena de 8 caracteres (debe ser
+exactamente de 8 caracteres para evitar problemas causados por un posible
+<I>bug</I> de Coda). Un ejemplo puede ser <CODE>elephant</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Setting up config files (under /vice).
+Directories under /vice are set up.
+
+Setting up tokens for authentication.
+The following tokens must be identical on all servers.
+Enter a random token for auth2 authentication : elephant
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Introducimos, al igual que antes, una cadena de exactamente 8 caracteres. 
+Debe ser distinta a la anterior (otro bug), por ejemplo,
+<CODE>elephann</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+The following tokens must be identical on all servers.
+Enter a random token for volutil authentication : elephann
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A partir de aqu&iacute; empiezan las diferencias entre la configuraci&oacute;n del
+servidor maestro y del resto de servidores. Contestar «y» si se trata del
+maestro y «n» en el caso de un servidor normal. Continuaremos como si
+hubi&eacute;ramos contestado «y» a esta pregunta , y posteriormente comentaremos
+las diferencias que habr&iacute;a si se tratase de un servidor no SCM:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+tokens done!
+
+Setting up the file list for update
+filelist for update ready.
+
+Populating /vice/vol...
+lockfiles created.
+/etc/services ready for Coda
+Is this the master server, aka the SCM machine? (y/n) y
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Introduciremos un identificador para el servidor, por ejemplo el '1'. Esta
+pregunta se har&aacute; solamente al configurar el SCM, por lo que el resto
+de servidores habr&aacute; que a&ntilde;adirlos directamente en el fichero
+<CODE>/vice/db/servers</CODE> del SCM:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Now installing files specific to the SCM...
+
+Setting up servers file.
+Enter an id for this server (a number > 0 &lt; 255) : 1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Aqu&iacute; se establece el VSG (<I>Volume Storage Group</I>) del servidor
+que se est&aacute; configurando, asign&aacute;ndosele un identificador (el valor por
+defecto es el <CODE>E0000100</CODE>). Toda la informaci&oacute;n correspondiente a
+los grupos de servidores se guarda en el fichero <CODE>/vice/db/VSGDB</CODE>.
+Si se quiere a&ntilde;adir un nuevo servidor a un grupo de servidores, o se
+quiere incluir un nuevo grupo, habr&aacute; que hacerlo editando directamente
+este archivo del SCM:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+done!
+Initializing the VSGDB to contain the SCM as E0000100
+/vice/db/VSGDB set up
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Se pide el nombre del <I>rootvolume</I>, que es el volumen que se
+montar&aacute; como ra&iacute;z en los clientes. Un posible valor es
+<CODE>coda:root</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Setting up ROOTVOLUME file
+Enter the name of the rootvolume (&lt; 32 chars) : coda:root
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En este paso se debe introducir un identificador de usuario que ser&aacute; el
+administrador del sistema. Este identificador deber&aacute; ser obligatoriamente
+<CODE>500</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Setting up users and groups for Coda
+
+You need to give me a uid (not 0) and username (not root)
+for a Coda System:Administrator member on this server,
+(sort of a Coda super user)
+
+Enter the uid of this user:500
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ahora hay que darle un nombre a la cuenta del administrador Coda (el
+nombre con que trabajaremos ser&aacute; <CODE>admin</CODE>). 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Enter the username of this user: admin
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Se ha creado el nuevo usuario (nombre de usuario <CODE>admin</CODE> e 
+identificador <CODE>500</CODE>), que tendr&aacute; su contrase&ntilde;a inicializada a
+<CODE>changeme</CODE>. Si se quiere cambiar habr&aacute; que utilizar o bien
+<CODE>cpasswd</CODE> o la utilidad de administraci&oacute;n de usuarios
+<CODE>au</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+An initial administrative user admin (id 500)
+with Coda password changeme now exists.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Aqu&iacute; se pregunta si se quieren configurar las particiones RVM del
+servidor. Durante la instalaci&oacute;n de cada servidor Coda es aconsejable
+dedicar 2 particiones tipo ext2 por razones de eficiencia (en otro caso se
+tratar&aacute; como ficheros). Ambos ficheros forman la RVM usada para lograr una
+persistencia de la memoria virtual del host en caso de una ca&iacute;da:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+You need a small log disk partition, preferrably on a disk by itself.
+You need a metadata partition of approx 4% of you filespace.
+
+For trial purposes you may give oridnary files instead of raw
+partitions. Keep all size small if you do this.
+Production servers will want partitions for speed.
+
+-------------------------------------------------------
+WARNING: you are going to play with your partitions now.
+verify all answers you give.
+-------------------------------------------------------
+
+WARNING: these choices are not easy to change once you are up and
+running.
+Are you ready to set up RVM? [yes/no] yes
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Hay que indicar cual es la partici&oacute;n o fichero que se va a utilizar como
+<I>log</I> (por ejemplo <CODE>/dev/hda4</CODE> para una partici&oacute;n o
+<CODE>/codap/logpartition</CODE> en el caso de un fichero):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+What is your log partition? /dev/hda4
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En la partici&oacute;n de <I>log</I> (<I>log partition</I>) se registran las
+transacciones de vol&uacute;menes coda que quiz&aacute;s no hayan sido a&uacute;n actualizadas
+en la partici&oacute;n de datos coda. No debe sobrepasar los 30MB (el sistema
+coda no ha sido puesto a prueba con tama&ntilde;os mayores a &eacute;ste) y es
+aconsejable tener una partici&oacute;n de 2MB (lo merjo es ce&ntilde;irse a lo que se
+indica en la instalaci&oacute;n). Nunca se debe tener una partici&oacute;n menor que el
+tama&ntilde;o indicado en la instalaci&oacute;n (por ejemplo si la partici&oacute;n es de
+11.6MB y en la instalaci&oacute;n se indica que tiene 12MB, puede fallar la
+instalaci&oacute;n): 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+The log size must be smaller than you log partition. 
+We recommend not more than 30M log size, and 2M is a good choice.
+What is your log size? (enter as e.g. '12M') 2M
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Elecci&oacute;n de la partici&oacute;n de datos RVM (<I>data partition</I>). Indicar una
+partici&oacute;n (<CODE>/dev/hdxx</CODE>) o el nombre de un archivo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+What is your data partition (or file)? /dev/hda5
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Se indicar&aacute; el tama&ntilde;o de la partici&oacute;n de datos. Recomendamos
+encarecidamente que se utilice uno de los valores dados por el
+<I>script</I>, ya que &uacute;nicamente as&iacute; se har&aacute; una configuraci&oacute;n v&aacute;lida de las
+particiones (si se opta por poner otro tama&ntilde;o de partici&oacute;n se deber&aacute;
+inicializar la partici&oacute;n de datos mediante el programa <CODE>rdsinit</CODE>.
+Este programa es dif&iacute;cil de manejar, siendo aconsejable poner el tama&ntilde;o
+de la partici&oacute;n que viene por defecto en la instalaci&oacute;n). Si se pone una
+partici&oacute;n menor que 22MB puede fallar la instalaci&oacute;n. El script es muy
+sensible a las may&uacute;sculas y min&uacute;sculas, por lo que es importante poner
+<CODE>22M</CODE> y no <CODE>22m</CODE> al indicar el tama&ntilde;o de la partici&oacute;n:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+The data size must be approx 4% of you server file space.
+We have templates for servers of approx: 500M, 1G, 2.2G, 3.3G,8G
+(you can store less, but not more on such servers).
+The corresponding data sizes are  22M, 44M, 90M, 130M, 315M.
+(use 330M only on very fast machines)
+Pick one of the defaults, otherwise I will bail out
+
+What is the size of you data partition (or file) [22M,44M, 90M,130M, 315M]: 
+22M
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Aqu&iacute; se pide confirmaci&oacute;n para inicializar las particiones. Si se ha
+configurado bien saldr&aacute; lo siguiente:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+--------------------------------------------------------
+WARNING: DATA and LOG partitions are about to be wiped.
+--------------------------------------------------------
+
+  --- log area: /dev/hda4, size 2M.
+  --- data area: /dev/hda5, size 22M.
+
+Proceed, and wipe out old data? [y/n]  y
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Se pregunta por el nombre del directorio en el que se guardar&aacute;n los datos
+de los vol&uacute;menes coda. Pulse «intro» para que el directorio por defecto
+sea <CODE>/vicepa</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+LOG file has been initialized!
+
+Rdsinit will initialize data and log.
+This takes a while.
+
+Your server directories will hold the files (not directories).
+You can currently only have one directory per disk partition.
+
+Where shall we store your data [/vicepa]? 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Pregunta por el n&uacute;mero aproximado de entradas de fichero que se van a
+tener:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Shall I set up a vicetab entry for approx 256000 files for y (y/n)  y
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Una vez termine la ejecuci&oacute;n de <CODE>vice-setup</CODE> habr&aacute; que levantar
+los servicios Coda ejecutando los correspondientes demonios: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Read vicetab(5) and makeftree(8) for set up info.
+Server directory is set up!
+
+Congratulations: your configuration is ready...and now
+to get going do the following:
+ - start the auth2 server as: auth2
+ - start rpc2portmap as: rpc2portmap
+ - start updateclnt as:  updateclnt -h ha0 -q coda_udpsrv
+ - start updatesrv as: updatesrv -p /vice/db
+ - start the fileserver: startserver &amp;
+ - wait until the server is up: tail -f /vice/srv/SrvLog
+ - create your root volume: createvol_rep coda:root E0000100 /vicepa
+ - setup a client: venus-setup ha0 20000
+ - start venus: venus
+ - enjoy Coda.
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los demonios est&aacute;n disponibles en el directorio
+<CODE>/etc/rc.d/init.d/</CODE>, y son los siguientes:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+update.init
+auth2.init,
+codasrv.init 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para lanzarlos bastar&aacute; con pasarles como par&aacute;metro la cl&aacute;usula «start»: 
+<P>
+<UL>
+<LI><CODE>/etc/rc.d/init.d/update.init start</CODE>, ejecuta
+<CODE>rpc2portmap</CODE>, <CODE>updateclnt</CODE> y <CODE>updatesrv</CODE>. Este script no ejecuta
+bien el demonio <CODE>updatesrv</CODE>, hay que hacer una peque&ntilde;a modificaci&oacute;n
+a&ntilde;adiendo &quot;> /dev/null&quot; al final de la 
+l&iacute;nea en la que se le ejecuta. </LI>
+<LI><CODE>/etc/rc.d/init.d/auth2.init start</CODE>, ejecuta <CODE>auth2</CODE>.  </LI>
+<LI><CODE>/etc/rc.d/init.d/codasrv.init start</CODE>, ejecuta
+<CODE>startserver</CODE>, quien a su vez ejecuta el <CODE>codasrv</CODE>.</LI>
+</UL>
+<P>Se puede comprobar que el servidor ha empezado a funcionar mirando el
+siguiente <I>log</I>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ tail -f /vice/srv/SrvLog &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El siguiente paso es instalar el resto de los servidores no-SCM y
+configurarlos.
+<P>
+<H3>Servidor no SCM en Red Hat</H3>
+
+<P>
+<P>La configuraci&oacute;n de un servidor no SCM es pr&aacute;cticamente id&eacute;ntica a la
+del servidor maestro, aunque se omiten una serie de pasos (los de la
+creaci&oacute;n de usuarios y especificaci&oacute;n del volumen root).
+<P>Es importante indicar que por razones de seguridad todos los servidores de
+un mismo VSG deber&aacute;n tener los mismos tokens de autentificaci&oacute;n.
+<P>En esta ocasi&oacute;n no se pedir&aacute; un n&uacute;mero de identificaci&oacute;n del servidor
+(tenemos que introducirlo antes o despu&eacute;s en <CODE>/vice/db/servers</CODE> de
+la m&aacute;quina SCM), pero s&iacute; se nos preguntar&aacute; la ruta a la m&aacute;quina
+maestra (direcci&oacute;n IP &oacute; nombre de la m&aacute;quina).
+<P>Tenemos que configurar, de igual manera, los RVM's (particiones log y de
+datos). Tras terminar con la configuraci&oacute;n lanzaremos los demonios del 
+servidor no-SCM:
+<P>
+<UL>
+<LI><CODE>/etc/rc.d/init.d/update.init</CODE></LI>
+<LI><CODE>/etc/rc.d/init.d/auth2.init</CODE> </LI>
+<LI><CODE>/etc/rc.d/init.d/codasrv.init</CODE></LI>
+</UL>
+<P>
+<H3>Debian</H3>
+
+<P>
+<P>La instalaci&oacute;n en Debian es bastante similar a la de Red Hat, por lo que
+solamente contaremos las diferencias entre una y otra. Comenzaremos por
+instalar el paquete binario, para ello teclearemos:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# dpkg -i coda-server_5.2.0-1.i386.deb
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La propia instalaci&oacute;n del paquete lanza el programa de configuraci&oacute;n
+<CODE>vice-setup</CODE>, que es id&eacute;ntico al de la distribuci&oacute;n Red Hat
+(la &uacute;nica diferencia es que &eacute;ste lanza los demonios directamente).
+<P>Una vez hecha la configuraci&oacute;n (siguiendo los mismos pasos que hemos
+descrito en el apartado anterior para Red Hat) estar&aacute;n lanzados todos los
+demonios a excepci&oacute;n de <CODE>startserver</CODE> y <CODE>codasrv</CODE> (los
+cuales habr&aacute; que lanzar a mano con <CODE> startserver &amp;</CODE>).
+<P>Para que estos dos demonios se ejecuten autom&aacute;ticamente tenemos que crear el
+siguiente fichero <CODE>/vice/srv/STARTFROMBOOT</CODE>. Una forma de hacerlo
+es con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# echo >/vice/srv/STARTFROMBOOT
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>o
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# touch /vice/srv/STARTFROMBOOT
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En Debian existe un &uacute;nico script encargado de lanzar o matar todos los
+demonios de un servidor Coda (n&oacute;tese que la ruta del script cambia con
+respecto a la ruta de Red Hat):
+<P>
+<DL>
+<DT><B><CODE>/etc/init.d/coda-server stop</CODE></B><DD><P>para parar el servidor Coda.
+<DT><B><CODE>/etc/init.d/coda-server start</CODE></B><DD><P>para iniciarlo.
+</DL>
+<P>Tras todo esto ya s&oacute;lo nos queda configurar los servidores desde el
+SCM para que Coda empiece a funcionar correctamente. 
+<P>
+<H2><A NAME="ss5.4">5.4 Configuraci&oacute;n de los servidores Coda</A>
+</H2>
+
+<P>
+<P>Los vol&uacute;menes son unidades de informaci&oacute;n que permiten gestionar
+conjuntamente los datos que contienen. Es posible que un volumen
+pertenezca s&oacute;lo a un servidor (<B>volumen no replicado</B>) y que s&oacute;lo 
+unos pocos usuarios puedan leer y escribir sobre &eacute;l. Tambi&eacute;n es posible
+que un volumen pertenezca a m&aacute;s de un servidor (<B>volumen replicado</B>)
+y que todos los usuarios coda puedan leer y escribir sobre &eacute;l.
+<P>
+<H3>Creaci&oacute;n de vol&uacute;menes</H3>
+
+<P>
+<P>El primer paso para configurar los servidores es crear el volumen
+<I>root</I> desde el SCM (el &uacute;nico que puede crear y borrar vol&uacute;menes)
+con una de las siguientes &oacute;rdenes:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# createvol_rep coda:root E0000100 /vicepa
+
+# createvol coda:root sipt30 /vicepa
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>En ambos casos el volumen <I>root</I> se llama <CODE>coda:root</CODE>, pero con
+la diferencia que en el primero creamos el volumen replicado y en el
+segundo no (donde <CODE>sipt30</CODE> es el servidor Coda que contiene el
+volumen <I>root</I>).
+<P>En el ejemplo del volumen root replicado <CODE>E0000100</CODE> es el
+identificador del VSG al que pertenece el servidor SCM (por defecto el
+SCM pertenece a este VSG) y el resto de servidores Coda donde queremos
+replicar el volumen. Para a&ntilde;adir nuevos servidores a este VSG (al que
+inicialmente s&oacute;lo pertenece el SCM) el administrador debe modificar
+los siguientes ficheros del SCM:
+<P>
+<UL>
+<LI><CODE>/vice/db/VSGDB</CODE>, para indicar a qu&eacute; servidores 
+corresponde el identificador de grupo E0000100. Por ejemplo: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+E0000100 sipt30 sipt31
+  
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI><CODE>/vice/db/servers</CODE>, para indicar cu&aacute;les son los 
+identificadores de cada servidor (el del SCM ya ha sido escogido durante 
+el proceso de instalaci&oacute;n). En el siguiente ejemplo el identificador del 
+servidor coda y SCM <CODE>sipt30</CODE> es <CODE>1</CODE> y el del servidor 
+<CODE>sipt31</CODE> es <CODE>2</CODE> 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+sipt30  1
+sipt31  2
+  
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+ 
+<P>Dichos ficheros habr&aacute; que modificarlos en el SCM cada vez que se
+quiera a&ntilde;adir o eliminar un nodo del grupo de servidores.
+<P>Cuando se conecten los servidores No-SCM, se actualizar&aacute;n por la red
+sus ficheros del directorio <CODE>/vice</CODE> (los ficheros de configuraci&oacute;n
+del servidor) incluyendo los dos anteriores.
+<P>Al igual que el <I>root volume</I>, el servidor SCM puede crear
+otros vol&uacute;menes necesarios con <CODE>createvol_rep</CODE> (vol&uacute;menes
+replicados) o con <CODE>createvol</CODE> (vol&uacute;menes locales al servidor sin
+replicar). De este modo podemos encontrarnos con la siguiente
+configuraci&oacute;n del fichero <CODE>/vice/db/VSGDB</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+E0000100 ha0 ha1 
+E0000200 ha1
+  
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>donde los servidores <CODE>ha0</CODE> y <CODE>ha1</CODE> pertenecen al grupo 
+<CODE>E0000100</CODE> y s&oacute;lo <CODE>ha1</CODE> pertenece al grupo <CODE>E0000200</CODE>
+(aunque el identificador pertenezca a un volumen replicado).
+<P>
+<H3>Eliminaci&oacute;n de vol&uacute;menes</H3>
+
+<P>
+<P>Para eliminar un volumen se utiliza la orden <CODE>purgevol</CODE> (para
+vol&uacute;menes no replicados) o <CODE>purgevol_rep</CODE> (para volumenes replicados),
+que s&oacute;lo puede ser ejecutada desde el servidor SCM: 
+<P><CODE># purgevol_rep NombreVolumen</CODE>
+<P>
+<H3>Ficheros de configuraci&oacute;n del servidor</H3>
+
+<P>
+<P>La informaci&oacute;n almacenada en los servidores Coda est&aacute; organizada en varios
+directorios, que est&aacute;n descritos a continuaci&oacute;n: 
+<P>
+<UL>
+<LI><CODE>/vice/auth2</CODE> Este directorio contiene informaci&oacute;n
+relacionada con el proceso de autenticaci&oacute;n, incluyendo sus ficheros
+<I>log</I>.  </LI>
+<LI><CODE>/vice/bin</CODE> Contiene los binarios del sistema de ficheros
+Coda para los servidores y el SCM. </LI>
+<LI><CODE>/vice/db</CODE> Contiene las bases de datos con informaci&oacute;n
+importante para los servidores y los ficheros <I>log</I> de las
+actualizaciones. </LI>
+<LI>/vice/srv Contiene informaci&oacute;n relacionada con los demonios del
+servidor, incluyendo sus ficheros <I>log</I>.  </LI>
+<LI><CODE>/vice/vol</CODE> Contiene informaci&oacute;n de los vol&uacute;menes Coda. </LI>
+<LI><CODE>/vice/vol/remote</CODE> Existe s&oacute;lo en el SCM y contiene
+informaci&oacute;n de todos los servidores remotos.  </LI>
+<LI>En <CODE>/vicepa</CODE> (si no se ha cambiado por otro directorio
+durante la instalaci&oacute;n) se guardan los datos de los vol&uacute;menes Coda que
+tiene el servidor. La informaci&oacute;n se guarda en forma de ficheros que se
+distribuyen a lo largo de un &aacute;rbol de directorios codificado
+num&eacute;ricamente. Consideramos interesante rese&ntilde;ar que en nuestro caso los
+ficheros comenzaban a guardarse ordenadamente en el directorio
+<CODE>/vicepa/0/0/</CODE>, aunque desconocemos el sistema de codificaci&oacute;n.</LI>
+</UL>
+<P>
+<H2><A NAME="ss5.5">5.5 Instalaci&oacute;n de los clientes Coda</A>
+</H2>
+
+<P>
+<P>El cliente debe instalar dos cosas: un m&oacute;dulo del n&uacute;cleo para reconocer el
+sistema de ficheros Coda, y el propio programa cliente Coda. Se recuerda
+que un cliente y un servidor Coda no funcionan bajo una misma m&aacute;quina, por
+lo que debemos evitar que ocurra. 
+<P>
+<H3>M&oacute;dulo del n&uacute;cleo Coda</H3>
+
+<P>
+<P>Para que el cliente tenga acceso al sistema de ficheros distribuido Coda
+es necesario que el N&uacute;cleo lo reconozca. Esto se puede conseguir de varias
+formas:
+<P>
+<OL>
+<LI>
+<A NAME="modulo-1"></A> Compilando uno de los <I>n&uacute;cleo</I>s 2.2.x que ya
+disponen de soporte Coda y habilit&aacute;ndolo dentro del N&uacute;cleo (parte del
+proceso de compilaci&oacute;n de un <I>n&uacute;cleo</I> en Linux). 
+</LI>
+<LI>
+<A NAME="modulo-2"></A> Compilando uno de los <I>n&uacute;cleos</I> 2.2.x para
+que soporte Coda, pero esta vez obteniendo un m&oacute;dulo <CODE>coda.o</CODE> que
+podremos cargar y descargar del <I>N&uacute;cleo</I> cuando queramos.
+</LI>
+<LI>Si nuestro <I>N&uacute;cleo</I> tiene una versi&oacute;n anterior al 2.2.x, podemos
+obtener el m&oacute;dulo <CODE>coda.o</CODE> mencionado antes compilando el c&oacute;digo fuente
+de Coda (normalmente se encuentra en el fichero
+<CODE>linux-coda-(versi&oacute;n).tgz</CODE>)  </LI>
+</OL>
+<P>Si nos hemos decidido por trabajar con el m&oacute;dulo coda (opciones 
+<A HREF="#modulo-1">1</A> y 
+<A HREF="#modulo-2">2</A>), dicho m&oacute;dulo no
+se cargar&aacute; en memoria una vez arrancado Linux. Para cargarlo en memoria
+existen varios m&eacute;todos, por ejemplo:
+<P>
+<UL>
+<LI>Mediante la l&iacute;nea de &oacute;rdenes del <I>root</I> con:
+                
+<BLOCKQUOTE><CODE>
+<PRE>
+# insmod coda
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Cargando obligatoriamente el m&oacute;dulo cuando se arranque Linux
+(introduciendo en el fichero <CODE>/etc/modules</CODE> la l&iacute;nea
+<CODE>coda</CODE>).
+</LI>
+<LI>Cargando autom&aacute;ticamente el m&oacute;dulo s&oacute;lo cuando sea necesario
+(introduciendo en el fichero <CODE>/etc/modules</CODE> la l&iacute;nea
+<CODE>auto</CODE>).</LI>
+</UL>
+<P><B>Nota</B>: el m&oacute;dulo <CODE>coda.o</CODE> debe encontrarse en
+<CODE>/lib/modules/versionN&uacute;cleo/fs</CODE>, donde «versionN&uacute;cleo» es la
+versi&oacute;n del <I>n&uacute;cleo</I> de Linux (para consultar la versi&oacute;n del
+<I>n&uacute;cleo</I> desde la l&iacute;nea de &oacute;rdenes probar con <CODE>uname -r</CODE>).
+<P>
+<H3>Instalaci&oacute;n de los binarios</H3>
+
+<P>
+<P>La instalaci&oacute;n del cliente a partir de un paquete binario Linux se realiza
+de distinta forma dependiendo de la distribuci&oacute;n a la que pertenece:
+<P>
+<H3>Red Hat</H3>
+
+<P>
+<P>El primer paso es instalar el paquete binario: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# rpm -i coda-debug-client-5.2.0-1.i386.rpm
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Venus es el gestor de la cach&eacute; del cliente. Para configurarlo tenemos el
+<I>script</I> <CODE>venus-setup</CODE>: 
+<P>
+<BLOCKQUOTE><CODE>
+# /usr/bin/venus-setup &lt;lista_de_hosts_separados_por_comas&gt; 
+&lt;tama&ntilde;o_de_cach&eacute;_en_kb&gt;
+</CODE></BLOCKQUOTE>
+<P>con lo que decimos a Venus cu&aacute;l es su lista de servidores Coda a los
+que debe conectarse. Tambi&eacute;n inicializa un directorio para utilizarlo como
+cach&eacute; de disco del cliente Coda, con el tama&ntilde;o indicado en el <I>script</I>
+<CODE>venus-setup</CODE> (para empezar se recomienda un a peque&ntilde;a cach&eacute; de 20 MB,
+aunque funciona bien hasta 300 MB). Asimismo <CODE>venus-setup</CODE> crear&aacute; el
+dispositivo <CODE>/dev/cfs0</CODE> para comunicarse con el <I>N&uacute;cleo</I> y
+dejar&aacute; todos los ficheros del cliente Coda en el directorio
+<CODE>/usr/coda</CODE>.
+<P>Tambi&eacute;n ser&iacute;a recomendable probar nuestro cliente Coda con el servidor
+Coda <CODE>
+<A HREF="http://testserver.coda.cs.cmu.edu">testserver.coda.cs.cmu.edu</A></CODE>, aunque deber&aacute; asegurarse que no
+tiene ning&uacute;n <I>firewall</I> que le impida comunicarse con &eacute;l. Una cach&eacute; de
+20000 es aconsejable para probar este servidor.
+<P>Tras la instalaci&oacute;n del paquete binario se puede lanzar Venus en
+<I>background</I> con la orden: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# venus &amp;
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>y se puede parar con 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# kill -9 venus
+</PRE>
+</CODE></BLOCKQUOTE>
+ o con
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+vutil shutdown
+umount /coda
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Aunque una manera m&aacute;s limpia de lanzar y parar Venus es desde su
+<I>script</I> de inicio <CODE>/etc/rc.d/init.d/venus</CODE>.
+<P><B>Nota</B>: Antes de volver a lanzar Venus el directorio <CODE>/coda</CODE>
+debe ser desmontado. Si esto diera problemas aseg&uacute;rese de matar todos los
+procesos que cuelgan de Coda, por ejemplo cuando tenemos ficheros de Coda
+abiertos por una aplicaci&oacute;n o porque estamos dentro del directorio
+<CODE>/coda</CODE>. Las utilidades <CODE>lsof</CODE> y <CODE>fuser</CODE> pueden
+ayudarnos para solucionar estas cosas.
+<P>
+<H3>Debian</H3>
+
+<P>
+<P>Instalamos el binario del cliente Coda: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# dpkg -i coda-client_5.2.0-1_i386.deb
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>El proceso es similar al de Red Hat, aunque en Debian
+<CODE>venus-setup</CODE> se ejecuta en la propia instalaci&oacute;n. A&uacute;n as&iacute; siempre
+se puede utilizar <CODE>venus-setup</CODE> y <CODE>venus &amp;</CODE> para una posterior 
+configuraci&oacute;n.
+<P><CODE>/etc/init.d/coda-client</CODE> es el script que lanza y para el demonio
+<CODE>Venus</CODE>.
+<P>
+<H3>Desinstalaci&oacute;n</H3>
+
+<P>
+<P>A continuaci&oacute;n se describe el proceso de desinstalaci&oacute;n de un servidor
+Coda, &uacute;til cuando nos hemos equivocado en el proceso de instalaci&oacute;n o
+configuraci&oacute;n y queremos volver a empezar.
+<P>
+<H3>Servidor Red Hat</H3>
+
+<P>
+<P>Comenzaremos por parar a todos los demonios utilizando los lanzadores de
+los que disponemos en <CODE>etc/rc.d/init.d/</CODE>:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/rc.d/init.d/auth2.init stop
+# /etc/rc.d/init.d/update.init stop
+# /etc/rc.d/init.d/codasrv.init stop
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Tras esto verificaremos que ninguno de los siguientes procesos est&eacute;
+cargado en memoria con <CODE>ps uax | less</CODE>: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ auth2
+ rpc2portmap
+ update
+ updateclnt
+ updatesrv
+ startserver
+ codasrv
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si alguno de estos procesos est&aacute; en ejecuci&oacute;n lo podemos parar con:
+<BLOCKQUOTE><CODE>
+<PRE>
+kill -9 pid
+</PRE>
+</CODE></BLOCKQUOTE>
+
+donde <CODE>pid</CODE> es el identificador del proceso que aparece indicado al 
+ejecutar <CODE>ps</CODE>.
+<P>Ahora ya nos hemos asegurado de que no hay ning&uacute;n proceso del servidor
+coda en funcionamiento, por lo que podemos proceder a la desinstalaci&oacute;n
+del paquete.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# rpm -e coda-debug-server-5.2.0-1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Por &uacute;ltimo, s&oacute;lo nos queda borrar los directorios de Coda: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# rm -rf /vicepa
+# rm -rf /vice
+# rm -f /var/lock/subsys/auth2.init
+# rm -f /var/lock/subsys/update.init
+# rm -f /var/lock/subsys/codasrv.init
+</PRE>
+</CODE></BLOCKQUOTE>
+
+<B>Nota</B>: Se pueden producir fallos en la configuraci&oacute;n de Coda si se 
+intenta
+instalar de nuevo sin borrar antes los directorios <CODE>/vicepa</CODE> y
+<CODE>/vice</CODE>.
+<P>
+<H3>Servidor Debian</H3>
+
+<P>
+<P>Comenzaremos por dar de baja a todos los demonios: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# /etc/init.d/coda-server stop
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El resto del proceso es id&eacute;ntico al de Red Hat, salvo que el paquete
+binario de Coda de desinstala con:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# dpkg -r coda-debut-server_5.2.0-1
+</PRE>
+</CODE></BLOCKQUOTE>
+ 
+<P>o con la herramienta <CODE>dselect</CODE> de Debian. 
+<P>
+<H3>Cliente (Red Hat y Debian)</H3>
+
+<P>
+<P>El cliente es mucho m&aacute;s sencillo y es suficiente con desinstalar el
+paquete binario de la distribuci&oacute;n (orden <CODE>rpm</CODE> en Red Hat y
+<CODE>dpkg</CODE> en Debian). Asimismo la desinstalaci&oacute;n del m&oacute;dulo Coda del
+<I>n&uacute;cleo</I> depender&aacute; del proceso escogido para su instalaci&oacute;n. 
+<P>
+<HR>
+<A HREF="Coda-COMO-6.html">Página siguiente</A>
+<A HREF="Coda-COMO-4.html">Página anterior</A>
+<A HREF="Coda-COMO.html#toc5">Índice general</A>
+</BODY>
+</HTML>

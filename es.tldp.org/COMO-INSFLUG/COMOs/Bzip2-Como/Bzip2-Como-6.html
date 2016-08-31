@@ -1,0 +1,138 @@
+<HTML>
+<HEAD>
+<TITLE>Bzip2 COMO: Utilizaci&oacute;n de bzip2 con emacs</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Bzip2-Como-5.html">Anterior</A>
+<A HREF="Bzip2-Como-7.html">Siguiente</A>
+<A HREF="Bzip2-Como.html#toc6">Indice</A>
+<HR>
+<H2><A NAME="s6">6. Utilizaci&oacute;n de bzip2 con emacs</A></H2>
+
+
+
+<H2><A NAME="ss6.1">6.1 Cambio de emacs para todos:</A></H2>
+
+
+<P>He escrito el siguiente parche para <CODE>jka-compr.el</CODE> que a&ntilde;ade <CODE>bzip2</CODE>
+al <I>auto-compression-mode</I>.</P>
+<P><B>Renuncia:</B> S&oacute;lo lo he comprobado con emacs-20.2, pero no tengo
+ninguna raz&oacute;n para creer que un parche parecido no pueda funcionar con
+otras versiones. </P>
+<P>Para utilizarlo,</P>
+<P>
+<OL>
+<LI>Vaya al directorio <CODE>emacs-20.2/lisp</CODE> (o donde lo haya
+desempaquetado)
+</LI>
+<LI>Ponga el parche en un fichero llamado <CODE>jka-compr.el.diff</CODE> (en
+este fichero s&oacute;lo debe estar el parche ;)
+</LI>
+<LI>Haga
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ patch &lt; jka-compr.el.diff
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Ejecute emacs, y haga
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ M-x byte-compile-file jka-compr.el
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Salga de emacs.
+</LI>
+<LI>Cambie su fichero jka-compr.elc original a un lugar seguro para
+evitar fallos.
+</LI>
+<LI>C&aacute;mbielo con el nuevo <CODE>jka-compr.elc</CODE>.
+</LI>
+<LI>¡Divi&eacute;rtase!</LI>
+</OL>
+</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+--- jka-compr.el        Sat Jul 26 17:02:39 1997
++++ jka-compr.el.new    Thu Feb  5 17:44:35 1998
+@@ -44,7 +44,7 @@
+ ;; The variable, jka-compr-compression-info-list can be used to
+ ;; customize jka-compr to work with other compression programs.
+ ;; The default value of this variable allows jka-compr to work with
+-;; Unix compress and gzip.
++;; Unix compress and gzip.  David Fetter added bzip2 support :)
+ ;;
+ ;; If you are concerned about the stderr output of gzip and other
+ ;; compression/decompression programs showing up in your buffers, you
+@@ -121,7 +121,9 @@
+ 
+ 
+ ;;; I have this defined so that .Z files are assumed to be in unix
+-;;; compress format; and .gz files, in gzip format.
++;;; compress format; and .gz files, in gzip format, and .bz2 files,
++;;; in the snappy new bzip2 format from http://www.muraroa.demon.co.uk.
++;;; Keep up the good work, people!
+ (defcustom jka-compr-compression-info-list
+   ;;[regexp
+   ;; compr-message  compr-prog  compr-args
+@@ -131,6 +133,10 @@
+      &quot;compressing&quot;    &quot;compress&quot;     (&quot;-c&quot;)
+      &quot;uncompressing&quot;  &quot;uncompress&quot;   (&quot;-c&quot;)
+      nil t]
++    [&quot;\\.bz2\\'&quot;
++     &quot;bzip2ing&quot;        &quot;bzip2&quot;         (&quot;&quot;)
++     &quot;bunzip2ing&quot;      &quot;bzip2&quot;         (&quot;-d&quot;)
++     nil t]
+     [&quot;\\.tgz\\'&quot;
+      &quot;zipping&quot;        &quot;gzip&quot;         (&quot;-c&quot; &quot;-q&quot;)
+      &quot;unzipping&quot;      &quot;gzip&quot;         (&quot;-c&quot; &quot;-q&quot; &quot;-d&quot;)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss6.2">6.2 Cambiar emacs para uno mismo:</A></H2>
+
+
+<P>Este truco se lo tengo que agradecer a Ulrick Dickow, <CODE>
+<A HREF="mailto:ukd@kampsax.dk">ukd@kampsax.dk</A></CODE>, programador de
+sistemas en <I>Kampsax Technology</I>: </P>
+<P>Para hacer que se pueda utilizar <CODE>bzip2</CODE> autom&aacute;ticamente cuando no es el
+administrador del sistema, s&oacute;lo tiene que a&ntilde;adir lo siguiente al
+fichero <CODE>.emacs</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+;; Automatic (un)compression on loading/saving files (gzip(1) and similar)
+;; We start it in the off state, so that bzip2(1) support can be added.
+;; Code thrown together by Ulrik Dickow for ~/.emacs with Emacs 19.34.
+;; Should work with many older and newer Emacsen too.  No warranty though.
+;;
+(if (fboundp 'auto-compression-mode) ; Emacs 19.30+
+    (auto-compression-mode 0)
+  (require 'jka-compr)
+  (toggle-auto-compression 0))
+;; Now add bzip2 support and turn auto compression back on.
+(add-to-list 'jka-compr-compression-info-list
+             [&quot;\\.bz2\\(~\\|\\.~[0-9]+~\\)?\\'&quot;
+              &quot;zipping&quot;        &quot;bzip2&quot;         ()
+              &quot;unzipping&quot;      &quot;bzip2&quot;         (&quot;-d&quot;)
+              nil t])
+(toggle-auto-compression 1 t)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Bzip2-Como-5.html">Anterior</A>
+<A HREF="Bzip2-Como-7.html">Siguiente</A>
+<A HREF="Bzip2-Como.html#toc6">Indice</A>
+</BODY>
+</HTML>

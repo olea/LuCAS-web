@@ -1,0 +1,372 @@
+<HTML>
+<HEAD>
+<TITLE>Grabadoras de CD - Como: Preguntas de Uso Frecuente</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Grabadoras-Como-7.html">Anterior</A>
+<A HREF="Grabadoras-Como-9.html">Siguiente</A>
+<A HREF="Grabadoras-Como.html#toc8">Indice</A>
+<HR>
+<H2><A NAME="PUF"></A> <A NAME="s8">8. Preguntas de Uso Frecuente</A></H2>
+
+
+
+<H2><A NAME="ss8.1">8.1 Cuando grabo con <CODE>cdrdao</CODE>, muestra una capacidad de casi 750</A>megas para un CD 74 minutos. ¿Esto a que se debe?</H2>
+
+
+<P>Una curiosidad que se observa mientras se est&aacute; grabando un CD con el programa
+es que en lugar de decirnos el tama&ntilde;o de cada pista que se est&aacute; grabando nos
+muestra una capacidad abismal del borde de los 750 megas para un CD 74 minutos
+completo.</P>
+<P>Esto se debe a que la grabaci&oacute;n que ofrece este programa no es en megas reales
+de ordenador sino en megas de CD, que en lugar de ser de 8/16/32 bits es de
+12'5 bits, de ah&iacute; el tama&ntilde;o.  No tiene porque asustarse, es completamente       normal. Otra de las ventajas que he podido apreciar es que ofrece mucha
+informaci&oacute;n sobre el CD antes de realizar el proceso de grabaci&oacute;n. </P>
+
+
+<H2><A NAME="fallos"></A> <A NAME="ss8.2">8.2 Me sale un mensaje muy parecido al siguiente despu&eacute;s de que el</A>disco duro deje de funcionar durante unos segundos. </H2>
+
+
+<P>Me sale este mensaje despu&eacute;s de que el disco duro deje de funcionar
+durante unos segundos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+hda: irq timeout: status=0x58 { DriveReady SeekComplete DataRequest}
+hda: disabled DMA
+ide0: reset: success
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tiene que recompilar el kernel y desactivar el soporte para el chip Intel
+Trit&oacute;n (I/II) DMA, ya que su disco duro no soporta extracci&oacute;n por DMA. </P>
+<P>Esto puede ocasionar problemas a la hora de estar grabando un CD, puesto
+que el disco duro se puede parar durante 6 a 9 segundos, hasta que el
+kernel se da cuenta, resetea el IDE y desactiva la extracci&oacute;n DMA para ese
+disco, (con las unidades de CD-ROM que no lo soporten tambi&eacute;n) tiempo
+suficiente para que el CD pueda salir da&ntilde;ado al no llegarle constantemente
+los datos. </P>
+<P>En el caso de estar emulando dispositivos SCSI es rotundamente necesario
+desactivar dicha opci&oacute;n en el kernel ya que en el momento en que pase, el
+bus se quedar&aacute; colgado al hacer interferencia el controlador IDE y la
+emulaci&oacute;n SCSI, haciendo que no pueda leer de las unidades al estar
+literalmente bloqueadas, por lo que el &uacute;nico remedio suele ser apagar el
+ordenador. </P>
+
+
+<H2><A NAME="ss8.3">8.3 ¿Hay alguna forma de hacer una imagen exacta de un CD al disco duro que no sea copiar los ficheros del CD al disco y luego sacar la imagen?</A></H2>
+
+
+<P>S&iacute;. Hay una forma de transferir una copia binaria de un CD directamente a
+disco duro, haciendo simplemente un <CODE>cat</CODE> o <CODE>dd</CODE> del dispositivo
+donde tenga la unidad lectora de CD (normalmente el enlace
+<CODE>/dev/cdrom</CODE>) y redireccionando a un archivo o partici&oacute;n libre en
+el disco duro; de esta forma podremos hacer una imagen exacta del CD si no
+tenemos una unidad secundaria desde donde copiarlo, o si queremos
+comprobar la legibilidad del CD.</P>
+<P>Un ejemplo de c&oacute;mo se hace es </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cat /dev/cdrom &gt; imagenCD.iso
+</PRE>
+</CODE></BLOCKQUOTE>
+    </P>
+<P>o</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dd if=/dev/cdrom of=imagenCD.iso
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>una vez hecho esto s&oacute;lo tenemos que usar esa imagen para grabar y
+obtendremos una copia exacta del CD original. Si el CD lleva pistas de
+audio tendr&aacute; que extraer las pistas de audio primero a disco con un
+extractor digital como <CODE>cdda2wav</CODE>, o <CODE>readcdda</CODE>, suponiendo que su
+lector lo soporte, sino puede hacerlo desde la grabadora (ver secci&oacute;n 
+<A HREF="#mtbf">¿Se puede usar la grabadora para leer o extraer?</A>). </P>
+
+
+<H2><A NAME="ss8.4">8.4 ¿Se puede copiar de CD a CD (s&oacute;lo de datos) directamente sin ning&uacute;n problema? </A></H2>
+
+
+<P>Efectivamente se puede copiar de CD a CD s&oacute;lo de datos sin ning&uacute;n
+problema, pero eso s&iacute;, (el t&iacute;pico pero) no es nada recomendable hacer la
+copia desde un CD IDE y sobre todo si la unidad lectora se para o hace
+cosas raras. Para las grabadoras IDE no recomiendo (como ya dije
+anteriormente) que ponga la unidad lectora en el mismo puerto IDE que la
+grabadora. Si lo hace as&iacute;, h&aacute;gale muchas pruebas antes de proceder.</P>
+<P>Para grabar directamente de CD a CD basta con indicarle al programa
+grabador que la imagen la obtenga del dispositivo lector, es decir
+<CODE>/dev/scdX</CODE>.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdrecord -v dev=0,0,0 speed=2 fs=8M -isosize -eject /dev/sr1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En este ejemplo podemos ver c&oacute;mo se hace una copia directa desde la unidad
+lectora a la grabadora (IDE en este caso), y si se da cuenta, el par&aacute;metro
+<CODE>-isosize</CODE> es para forzar al programa grabador a que determine primero
+el tama&ntilde;o del CD imagen ya que por s&iacute; solo no lo hace, e intenta leer los
+dos ultimos bloques, pudiendo resultar un CD defectuoso. </P>
+
+
+<H2><A NAME="DAO"></A> <A NAME="ss8.5">8.5 ¿Puedo duplicar directamente un CD mixto o de audio? </A></H2>
+
+
+<P>Actualmente, solo un programas para grabaci&oacute;n de CDs bajo Linux permite
+duplicar directamente un CD mixto (1 o varias pistas de datos y una o varias de
+audio) sin extraer al menos las de audio a disco duro gracias a que soporta
+duplicaci&oacute;n de tipo <I>DAO</I> (<I>Disk At Once</I>) y <I>OTH</I> (<I>On The Fly</I>).
+Por supuesto, la unidad grabadora ha de soportarlo, adem&aacute;s del programa;
+adem&aacute;s, el lector de CDRom ha de estar soportado por el programa para poder
+extraer las pistas. </P>
+<P>Ver secci&oacute;n 
+<A HREF="Grabadoras-Como-7.html#cdrdao">cdrdao</A>.</P>
+
+
+<H2><A NAME="ss8.6">8.6 ¿Puedo duplicar CDs en formato xa2? (Por ejemplo, de PlayStation)</A></H2>
+
+
+<P>La respuesta a si se puede duplicar un CD en mode xa2 es <B>s&iacute;</B>.</P>
+<P>SI. ¿C&oacute;mo? ¿Ahora s&iacute;? Pues s&iacute;, gracias al <I>cdrdao</I> ahora es posible duplicar
+CDs de PlayStation.  </P>
+<P>El problema de los CD-ROM de PlayStation es que incorporan un sistema de
+grabaci&oacute;n basado en la pista 0. Esta pista est&aacute; grabada como de datos y es
+err&oacute;nea desde el punto de vista del est&aacute;ndar <I>ISO9660</I>. No obstante,
+con las extensiones de nuestros sistemas somos capaces de leerlas. Al
+copiar con <CODE>cdrecord</CODE> la pista 0 pasa a ser pista 1; la PlayStation no
+coge el CD, ya que el busca la pista 0 sin encontrarla.  Esa es la raz&oacute;n
+de usar un programa tipo <I>DAO</I>/<I>OTH</I> para hacer este tipo de
+copias. </P>
+<P>software/grabadora/lector que soportase duplicaci&oacute;n DAO, como ahora lo hay.
+Ver secci&oacute;n 
+<A HREF="#DAO">¿Puedo duplicar un CD mixto o de audio?</A>. </P>
+
+
+<H2><A NAME="ss8.7">8.7 ¿Hay alguna FAQ gen&eacute;rica sobre CD-R o CD-RW?</A></H2>
+
+
+<P>S&iacute;. En ella puede consultar desde qu&eacute; tipo de CD-R v&iacute;rgenes son mejor para
+qu&eacute; cosa hasta qu&eacute; grabadora es la m&aacute;s recomendable, o cu&aacute;les son en
+realidad productos OEM basados en marcas conocidas.</P>
+<P>Su autor es Andy McFadden, puede consultarla en <CODE>
+<A HREF="http://www.fadden.com/cdrfaq/">http://www.fadden.com/cdrfaq/</A></CODE></P>
+<P>Eso s&iacute;, est&aacute; en ingl&eacute;s, aunque puede aprovechar el traductor de Altavista: 
+<CODE>
+<A HREF="http://babelfish.altavista.digital.com/cgi-bin/translate">http://babelfish.altavista.digital.com/cgi-bin/translate</A></CODE>. </P>
+<P>La traducci&oacute;n es un poco burda, pero menos da una piedra... <CODE>:)</CODE>.</P>
+
+
+<H2><A NAME="ss8.8">8.8 He grabado un CD de Audio, pero al escucharlo s&oacute;lo se oye un</A>zumbido horripilante... </H2>
+
+
+<P>Consulte la secci&oacute;n 
+<A HREF="Grabadoras-Como-6.html#audio">Software de extracci&oacute;n de audio</A>, Ha utilizado el orden de palabra binaria <I>endian</I> equivocado
+para grabar ficheros de audio. </P>
+
+
+<H2><A NAME="ss8.9">8.9 Problemas con m&aacute;s de un dispositivo en controladoras SCSI NCR</A></H2>
+
+
+<P>Poseo una controladora Ultra-SCSI NCR 53c810a a la cual tenia conectada la
+grabadora, y en las opciones de configuraci&oacute;n del kernel me aparecen una
+serie de parametros opcionales que no recomiendan ellos mismos que se
+activen, a no ser que los dispositivos den problemas o cuelguen el
+sistema. </P>
+<P>Pues bien, cuando ten&iacute;a s&oacute;lo la grabadora y estos tres par&aacute;metros
+activados efectivamente el sistema se colgaba.  Posteriormente adquir&iacute; una
+unidad lectora SCSI para poder realizar duplicaciones directas, pero en
+las duplicaciones aparec&iacute;an errores por todos sitios. </P>
+<P>Me di cuenta de que la unidad lectora no funcionaba a todo su rendimiento,
+asi que activ&eacute; todas las opciones del kernel para mi controladora,
+solucionando el problema y comprobando que mi sistema no se ca&iacute;a.</P>
+<P>Pero los problemas no acabaron ah&iacute;, cuando intentaba extraer audio la
+controladora se me colgaba, teniendo que resetear, as&iacute; que me puse a
+recompilar el kernel de nuevo y cu&aacute;l fue mi sorpresa al ver que no s&oacute;lo
+hab&iacute;a ese controlador para las tarjetas NCR de la serie 53c8xx. </P>
+<P>El problema no era de la controladora sino del controlador que estaba
+usando. Por lo tanto cambi&eacute; de controlador al m&aacute;s novedoso y recomendable,
+el <CODE>ncr53c8xx</CODE>, solucionando el problema y dejando de tener todos los
+inconvenientes anteriormente citados, funcionando todo a la primera. </P>
+<P>De aqu&iacute; deduzco que hay que fijarse mucho en todos los controladores
+disponibles, ya que por ejemplo para las controladoras NCR hay m&aacute;s de uno; 
+familiar&iacute;cese con su controladora.</P>
+<P>Esto es un ejemplo de lo que puede pasar si el controlador de su
+dispositivo SCSI no corresponde lo mas recientemente con su controladora
+SCSI.</P>
+
+
+<H2><A NAME="ss8.10">8.10 ¿Como se crea un CD Mixto?</A></H2>
+
+
+<P>Para crear un CD en modo mixto, es decir, con una primera pista de datos y
+las siguientes de audio hemos de crear una imagen de datos con el
+<CODE>mkisofs</CODE> y tener las pistas de audio listas en alg&uacute;n directorio,
+procediendo con <CODE>cdrecord</CODE> de la siguiente manera:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdrecord -v dev=4,0 speed=2 fs=16m -eject image.raw -audio /wavs/*.wav
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y si lo que queremos es copiar una CD de este tipo, lo primero es extraer
+las pistas de audio al disco duro con, por ejemplo, el <CODE>cdda2wav</CODE> y
+luego usar el <CODE>cdrecord</CODE> de esta forma: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdda2wav -D 0,2,0 -B -t 2+9
+cdrecord -v dev=1,0 speed=4 fs=16m -nopad defpregap=0 pregap=0 -isosize \
+/dev/cdrom -audio *.wav
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Las opciones que he incluido <CODE>-nopad defpregap=0 pregap=0</CODE> nos
+sirven para que el CD ocupe un poco menos al ser grabado y no grabar
+espacios entre las im&aacute;genes. Recomiendo usarlas en las copias de CD mixtos
+y CD Plus.</P>
+
+
+<H2><A NAME="cdmix"></A> <A NAME="ss8.11">8.11 ¿Como se graba un CD multisesi&oacute;n?</A></H2>
+
+
+<P>ATENCION: No es posible crear CDs Multisesion con formato Joliet.</P>
+<P>El asunto de un CD multisesi&oacute;n es complicadillo. Si comenzamos con que
+hemos grabado una imagen digamos de 200 MB y tambi&eacute;n queremos grabar otra
+de otros 200 MB a continuaci&oacute;n no podremos, es decir, primero tendremos
+que grabar una, y despu&eacute;s crear la segunda imagen con unas opciones que
+tenemos que sacar de <CODE>cdrecord</CODE>, pas&aacute;ndoselas a <CODE>mkisofs</CODE> como
+muestra el ejemplo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdrecord dev=4,0 -msinfo
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para obtener el n&uacute;mero que hace falta, es decir, la informaci&oacute;n
+multisesi&oacute;n del CD. S&oacute;lo funciona con CDs que hayan sido grabados con la
+opci&oacute;n <CODE>-multi</CODE>. Entonces le pasamos a <CODE>mkisofs</CODE> el n&uacute;mero que
+puede ser: <CODE>0,131456</CODE> de la siguiente forma:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkisofs -v -a -C 0,131456 -r -R -T -V &quot;CDROM&quot; -N /imagen1.iso -o /imagen2.iso /files/.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Como se puede observar, tambi&eacute;n se ha incluido el par&aacute;metro <CODE>-N</CODE>
+con el nombre de la imagen anteriormente copiada al CD, aunque si la hemos
+copiado podemos indicarle el nombre del dispositivo en el que se
+encuentra, si bien no he comprobado esto &uacute;ltimo.</P>
+<P>Luego procedemos a copiar la imagen con el <CODE>cdrecord</CODE> de forma normal
+con el par&aacute;metro <CODE>-multi</CODE> para que sea multisesi&oacute;n.</P>
+
+
+<H2><A NAME="ss8.12">8.12 ¿Como se crea un CD Plus?</A></H2>
+
+
+<P>¿Pero qu&eacute; es un CD Plus? Un CD Plus contiene primero pistas de audio y al
+final una pista de datos. ¿Qu&eacute; raro no? ¿Y para qu&eacute; sirve?  Se usa de
+forma com&uacute;n para usar este tipo de CDs con lectores de CD-Audio normales,
+¿Ha probado a escuchar un CD de datos en un lector de CD-Audio normal?
+Para crear este tipo de CDs lo primero es crear una imagen sin archivos en
+ella, es decir, hacer una imagen b&aacute;sica desde un directorio en el que no
+hayan archivos. Grabamos las pistas de audio y la imagen b&aacute;sica que hemos
+creado con la siguiente sentencia:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cdrecord -v dev=4,0 speed=4 fs=16m -multi -audio *.wav -data imagen.iso
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>una vez grabada, obtenemos la informaci&oacute;n de multisesi&oacute;n del CD y hacemos
+la imagen y la grabamos de la misma forma que est&aacute; explicada en la secci&oacute;n
+<A HREF="#cdmix">¿Como se crea un CD Multisesi&oacute;n?</A>.</P>
+
+
+<H2><A NAME="mtbf"></A> <A NAME="ss8.13">8.13 ¿Se puede usar la grabadora para leer o extraer?</A></H2>
+
+
+<P>S&iacute;, pero es algo altamente <B>desancosejable</B>. Las razones: </P>
+<P>
+<UL>
+<LI><I>MTBF</I> de una grabadora (su tiempo de vida &uacute;til) suele ser muy
+bajo (unas 30000 horas)  comparado con el de un lector de CD (unas
+150000).
+</LI>
+<LI>El precio de un lector de CD IDE decente es aproximadamente de un
+15% a un 20% respecto al de una grabadora, y entre un
+20% y un 25% si es SCSI. 
+</LI>
+<LI>Las velocidades de lectura de los lectores suelen ser de 40x o
+incluso 50x. Las de las grabadoras, no pasan de 10x. </LI>
+</UL>
+</P>
+<P>De lo cual se deduce que no es nada rentable, por no decir efectivo,
+malgastar la vida &uacute;til de una grabadora en emplearla como lector. </P>
+
+
+<H2><A NAME="ss8.14">8.14 Tengo una grabadora HP-7500, y <CODE>cdrecord</CODE> me hace cosas raras...</A></H2>
+
+
+<P>Como por ejemplo, en un <CODE>-scanbus</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+bus, target: 0, ,0,0      0  'PIONEER ' 'CD-ROM DR-A02S  ' '1.08' Removable CD-ROM
+
+bus, target: 0, ,1,0      1  'HP      ' 'CD-Writer+ 7500 ' '1.0a' Removable CD-ROM
+0,,1,0    1,0 ('HP      ' 'CD-Writer+ 7500 ' '1.0a' Removable CD-ROM) == 0,,1,0
+1,0 ('HP      ' 'CD-Writer+ 7500 ' '1.0a' Removable CD-ROM)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>O fallos continuos...</P>
+<P>Necesita aplicar un parche a <CODE>cdrecord</CODE>, y recompilarlo para que soporte
+adecuadamente su grabadora.</P>
+<P>En <CODE>
+<A HREF="http://www.guug.de:8080/cgi-bin/winni/lsc.pl">http://www.guug.de:8080/cgi-bin/winni/lsc.pl</A></CODE> puede obtenerlo.  </P>
+
+
+<H2><A NAME="ss8.15">8.15 CDRDAO no detecta bien mi unidad</A></H2>
+
+
+<P>La &uacute;nica soluci&oacute;n es leer bien el archivo <CODE>README</CODE> que acompa&ntilde;a al programa
+y comprobar si su unidad est&aacute; realmente soportada en la lista que acompa&ntilde;a.  Si
+realmente no est&aacute; tiene la posibilidad de enviar un mail al autor para que
+a&ntilde;ada soporte para ella. Pero antes de hacer eso, pruebe con todos los
+controladores de unidades que soporta el programa, a lo mejor alguno de ellos
+funciona. </P>
+
+
+<H2><A NAME="ss8.16">8.16 Sugerencias y peticiones</A></H2>
+
+
+<P>NOTA: Dejo este apartado tal y como est&aacute; para que se siga aportado ayuda a
+otros programas que lo necesiten. Si bien el que mas promete en este aspecto es
+<CODE>cdrdao</CODE> pido que el que pueda ayudar en su desarrollo no deje de lado tal
+programa que nos ayudar&aacute; mucho si lo aprendemos a utilizar. Referirse al
+apartado del programa 
+<A HREF="Grabadoras-Como-7.html#cdrdao">CDRDAO</A> </P>
+<P>Desde este documento pido la ayuda, dedicaci&oacute;n que cada uno pueda aportar
+a la creaci&oacute;n/desarrollo de alg&uacute;n programa DAO (Disk-At-Once) para la
+duplicaci&oacute;n de CD-ROMs, ya que es muy costoso y trabajoso la creaci&oacute;n o
+duplicaci&oacute;n de CD Mixtos y de Audio, para que linux est&eacute; a la altura de
+hacer las cosas como lo hacen programas de este tipo para otras
+plataformas, como los conocidos <I>DAO</I>/<I>CDRWIN</I> de MS-DOS/Windows
+respectivamente de la empresa Golden Hawk y Adaptec Easy CD/Pro. </P>
+
+
+<HR>
+<A HREF="Grabadoras-Como-7.html">Anterior</A>
+<A HREF="Grabadoras-Como-9.html">Siguiente</A>
+<A HREF="Grabadoras-Como.html#toc8">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Parámetros constantes en Allegro
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<center><h1><b>
+<p>
+Parametros constantes en Allegro
+</b></h1></center>
+<hr>
+<i>
+<p><br>
+Esto es un breve documento que le introducirá al uso de parámetros
+constantes con Allegro. Detalla los cambios que ha sufrido el código
+interno de la librería, los cambios de la API (principalmente transparentes)
+y lo que tendrá que hacer para adaptar su código para que compile sin
+warnings del compilador (de nuevo, casi nada).
+</i>
+
+
+<p><br>
+<h1><a name="Contenido">Contenido</a></h1>
+
+<p>
+<ul>
+<li><a href="#Cambios en la librería">Cambios en la librería</a>
+<li><a href="#El define de preprocesador AL_CONST">El define de preprocesador AL_CONST</a>
+<li><a href="#Cambios en la API de Allegro">Cambios en la API de Allegro</a>
+<li><a href="#Funciones callback y punteros a punteros">Funciones callback y punteros a punteros</a>
+<li><a href="#Objetos BITMAP">Objetos BITMAP</a>
+<li><a href="#Finalmente...">Finalmente...</a>
+</ul>
+
+
+
+<p><br>
+<h1><a name="Cambios en la librería">Cambios en la librería</a></h1>
+
+<p>
+Hay muy pocos cambios en el código de la propia librería; sólo algunas
+declaraciones y definiciones han sido alteradas para incluír ALCONST. Lea
+debajo una descripción del define de preprocesador AL_CONST. En algunos
+casos, alguna cadena era modificada cuando no debía serlo - en estos
+casos, la cadena simplemente es duplicada y ésta copia es eliminada al
+salir de la función.
+
+<p>
+Después de todo, ha habido pocos cambios al código de la librería.
+
+
+
+<p><br>
+<h1><a name="El define de preprocesador AL_CONST">El define de preprocesador AL_CONST</a></h1>
+
+<p>
+Para poder soportar compiladores que no conocen la palabra clave `const',
+o quizás usan una palabra clave diferente, el símbolo de preprocesador
+AL_CONST es usado en lugar de `const'. Note que en la documentación se
+usa `const' para que sea más legible.
+
+
+
+<p><br>
+<h1><a name="Cambios en la API de Allegro">Cambios en la API de Allegro</a></h1>
+
+<p>
+Estos son, generalmente, totalmente transparentes al usuario. No he cambiado
+el comportamiento de ninguna función; únicamente los tipos de los parámetros.
+Básicamente, si puede pasar a una función <code>type* ptr</code>, entonces
+puede pasar <code>const type* ptr</code> sin ningún problema adicional.
+Note que algunos cambios pueden haber eliminado warnings producidos por
+su programa debido a que las cadenas estáticas, etc, ahora son tratadas como
+`const' por las funciones Allegro.
+
+<p>
+Hay algunos lugares, descritos a continuación, donde habrá un efecto en el
+código existente.
+
+<p>
+La corrección del uso de `const' es realmente importante por dos razones. En
+primer lugar, puede incrementar la legibilidad y comprensión de las funciones
+de Allegro (por ejemplo, puede ver qué parámetros son alterados y cuales no).
+Segundo, le asegura que el código de Allegro no está cambiando datos que no
+debería tocar, y que las funciones del cliente no están corrompiendo Allegro
+modificando datos que no deberían tocar.
+
+
+
+<p><br>
+<h1><a name="Funciones callback y punteros a punteros">Funciones callback y punteros a punteros</a></h1>
+
+<p>
+Algunas funciones callback tienen ahora un tipo diferente - usan punteros
+`const' en lugar de punteros no constantes. Por lo que se, un compilador
+puede mostrar mensajes de aviso sobre tipos de punteros incompatibles.
+Debería actualizar sus funciones callback al nuevo formato (que será
+documentado en el manual de Allegro).
+
+<p>
+Además, cuando pase un puntero a un puntero de una función de Allegro que
+está declarada como recibiendo un <code>AL_CONST type** ptr</code>,  deberá
+convertir su puntero a `const' si no lo es ya. Por ejemplo:
+<blockquote class="code"><pre>
+   int alguna_funcion_de_allegro(AL_CONST char** p);
+   
+   void mi_funcion(char** x)
+   {
+       alguna_funcion_de_allegro((AL_CONST char**) x);
+   }
+</pre></blockquote>
+Me doy cuenta de que esto es un cambio a la API de Allegro, y que
+supuestamente hay que evitar éstos a toda costa, pero esencialmente
+corrige un fallo en Allegro y a la vez modifica el comportamiento.
+También asegura que la función callback proporcionada por el cliente
+está funcionando correctamente, y no altera datos que no debería tocar.
+Las funciones callback que no tratan los parámetros relevantes como
+constantes, son ligeramente erróneas (pero potencialmente significantes).
+
+<p>
+Por favor note que para la función Unicode ugetx(), he proporcionado una
+versión alternativa ugetxc(), que toma un parámetro `const char**' a
+diferencia del parámetro `char**'. Esto es porque es válido pasar tanto
+un `char**' como un `const char**', pero desafortunadamente no hay forma
+de decirle al compilador cuál queremos.
+
+
+
+<p><br>
+<h1><a name="Objetos BITMAP">Objetos BITMAP</a></h1>
+
+<p>
+Allegro representa tanto la pantalla como un bitmap con un mismo objeto:
+un BITMAP. Desafortunadamente, estas dos cosas pueden ser muy diferentes.
+Por ejemplo, leer un pixel de un bitmap aparentemente no lo modifica,
+pero si estamos leyendo de una pantalla, entonces es posible que deba ser
+alterado algún parámetro de la tarjeta de vídeo para seleccionar la
+línea correcta, etc.
+
+<p>
+Por consiguiente, un parámetro const BITMAP no tiene sentido, y no se
+usa en ningún punto de la librería. Esto es desafortunado, pero no veo
+ningún modo de solucionarlo.
+
+
+
+<p><br>
+<h1><a name="Finalmente...">Finalmente...</a></h1>
+
+<p>
+Sólo he probado esto con DJGPP 2.95.2, por lo que si tiene experiencias en
+las que esto no funciona (he intentado que los ports Linux y BeOS funcionen
+correctamente, pero no puedo garantizarlo...) mándame por email el
+mensaje de error *exacto* y lo arreglaré. También puede contactar la
+lista de correo de desarrolladores de Allegro; lea la sección
+"Ayuda" del manual de Allegro.
+
+<p>
+Email: <a href="mailto:lwithers@lwithers.demon.co.uk">lwithers@lwithers.demon.co.uk</a>.
+
+<p>
+Gracias por escuchar :-)
+
+
+
+</body>
+</html>

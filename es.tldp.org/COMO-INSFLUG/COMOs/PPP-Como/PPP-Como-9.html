@@ -1,0 +1,330 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PPP C&oacute;mo: Configurar su m&oacute;dem y puerto serie</TITLE>
+ <LINK HREF="PPP-Como-10.html" REL=next>
+ <LINK HREF="PPP-Como-8.html" REL=previous>
+ <LINK HREF="PPP-Como.html#toc9" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PPP-Como-10.html">Página siguiente</A>
+<A HREF="PPP-Como-8.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc9">Índice general</A>
+<HR>
+<H2><A NAME="Modem"></A> <A NAME="s9">9. Configurar su m&oacute;dem y puerto serie</A></H2>
+
+<P>Deber&iacute;a asegurarse de que su m&oacute;dem est&aacute; correctamente instalado y de que
+sabe a qu&eacute; puerto serie est&aacute; conectado.
+<P>
+<P><B>Recuerde</B>:-
+<UL>
+<LI>DOS com1: = Linux /dev/ttyS0</LI>
+<LI>DOS com2: = Linux /dev/ttyS1<BR>
+etc&eacute;tera.</LI>
+</UL>
+<P>
+<P>Es tambi&eacute;n importante recordar que is usted tiene 4 puertos serie, la
+configuraci&oacute;n est&aacute;ndar de un PC es que com1 y com3 compartan la IRQ4 y que
+com2 y com4 compartan la IRQ3.
+<P>
+<P>Si tiene dispositivos en los puertos serie est&aacute;ndar que comparten IRQ con su
+m&oacute;dem va a tener problemas. Necesita asegurarse de que su m&oacute;dem de puerto
+serie tiene su propia y &uacute;nica IRQ. Muchas tarjetas modernas de puerto serie
+(y controladoras de puertos integradas en placas base de calidad) permiten
+mover las IRQs de los puertos.
+<P>
+<P>Si est&aacute; ejecutando el un n&uacute;cleo Linux versi&oacute;n 2, puede comprobar el uso de
+IRQs utilizando
+<CODE>cat /proc/interrupts</CODE>, lo que producir&aacute; una salida como
+<HR>
+<PRE>
+ 0:    6766283   timer
+ 1:      91545   keyboard
+ 2:          0   cascade
+ 4:     156944 + serial
+ 7:     101764   WD8013
+10:     134365 + BusLogic BT-958
+13:          1   math error
+15:    3671702 + serial
+</PRE>
+<HR>
+<P>
+<P>Esto muestra un puerto serie en IRQ4 (un rat&oacute;n) y un puerto serie en IRQ15
+(el m&oacute;dem permanente en el cual se basa la conexi&oacute;n PPP a Internet. (Hay
+tambi&eacute;n un puerto serie en com2, IRQ3 y com4 est&aacute;n en IRQ14, pero como no
+est&aacute;n en uso, no se muestran).
+<P>
+<P>Atenci&oacute;n - usted necesita saber qu&eacute; es lo que est&aacute; haciendo si va a jugar
+con sus IRQs. No solo tendr&aacute; que abrir su ordenador, sacar las tarjetas 
+y cambiar los puentes, pero sigue necesitando saber qu&eacute; hay en cada IRQ.
+En mi caso, mi PC est&aacute; completamente basado en SCSI, por lo que puedo
+desactivar las interfaces IDE de la placa base que normalmente utilizan
+IRQ14 y 15.
+<P>
+<P>Debe tambi&eacute;n recordar que si su PC arranca otro sistema operativo, mover la
+IRQs puede provocar que otro sistema operativo no arranque bien - ¡o no
+arranque en absoluto!
+<P>
+<P>Si mueve sus puertos serie a IRQs no est&aacute;ndar, necesitar&aacute; decirle a Linux
+qu&eacute; IRQ utiliza cada puerto. Esto se hace utilizando <CODE>setserial</CODE> y es
+mejor hacerlo como parte del proceso de arranque en <CODE>rc.local</CODE> o
+<CODE>rc.serial</CODE> que es llamado por <CODE>rc.local</CODE> como parte de la
+inicializaci&oacute;n de SysV. Para el ejemplo ilustrado anteriormente, las
+&oacute;rdenes a utilizar ser&iacute;an
+<HR>
+<PRE>
+/bin/setserial -b /dev/ttyS2 IRQ 11
+/bin/setserial -b /dev/ttyS3 IRQ 15
+</PRE>
+<HR>
+<P>
+<P>Sin embargo, si utiliza m&oacute;dulos serie din&aacute;micament cargados cada vez que se
+necesiten cada vez que hagan falta por el proceso <CODE>kerneld</CODE>, no puede
+establecer y olvidar el IRQ etc establecido una vez durante el arranque.
+Esto es porque si se descarga el m&oacute;dulo de serie, Linux olvida los ajustes
+especiales.
+<P>
+<P>Por lo que, si carga un m&oacute;dulo serial bajo petici&oacute;n, necesitar&aacute; reconfigurar
+las iRQs cada vez que el m&oacute;dulo se cargue.
+<P>
+<H2><A NAME="ss9.1">9.1 A note about serial ports and speed capabilities</A>
+</H2>
+
+<P>Si utiliza un m&oacute;dem externo de alta velocidad (14.400 baudios o superior),
+su puerto serie necesita ser capaz de manejar la salida que dicho m&oacute;dem es
+capaz de producir, particularmente cuando los m&oacute;dems comprimen datos.
+<P>
+<P>Esto requiere que su puerto serie use un chip UART moderno, como el
+16550(A). Si est&aacute; utilizando una m&aacute;quina algo antigua, es posible que su
+puerto serie tenga s&oacute;lo un UART 8250, lo que causar&aacute; considerables
+problemas a la hora de usarlo con un m&oacute;dem de alta velocidad.
+<P>
+<P>Use la orden
+<BLOCKQUOTE><CODE>
+<PRE>
+setserial -a /dev/ttySx
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>para que Linux le informe del tipo de UART que posee. Si no tiene un UART de
+tipo 16550A, adquiera una nueva tarjeta controladora de puertos serie
+(disponible por menos de 50 euros). Cuando adquiera su nueva tarjeta,
+aseg&uacute;rese de que puede cambiar las IRQ que vengan por defecto.
+<P>
+<P>Nota: las primeras versiones del chip UART 16550 ten&iacute;an un error. Esto fue
+descubierto r&aacute;pidamente y se lanz&oacute; una revisi&oacute;n del chip: el UART 16550A. 
+Sin embargo, un n&uacute;mero relativamente peque&ntilde;o de chips defectuosos salieron a
+la circulaci&oacute;n. No es probable que usted se encuentre uno de ellos, pero
+siempre debe buscar una respuesta que diga 16550A, particularmente en
+tarjetas series de prestigio reconocido.
+<P>
+<H2><A NAME="ss9.2">9.2 Nombres de puertos serie</A>
+</H2>
+
+<P>Como tradici&oacute;n, Linux utilizaba los dispositivos <CODE>cuaX</CODE> para salida de
+datos y <CODE>ttySx</CODE> para entrada.
+<P>
+<P>El c&oacute;digo del n&uacute;cleo que requer&iacute;a esto fue eliminado en las versiones 2.x.x
+del n&uacute;cleo. Ahora se deber&iacute;an utilizar <CODE>ttySx</CODE> tanto para salida como
+para entradas. Supongo que los dispositivos <CODE>cuaX</CODE> desaparecer&aacute;n en
+versiones futuras del n&uacute;cleo.
+<P>
+<H2><A NAME="ss9.3">9.3 Configurar su m&oacute;dem</A>
+</H2>
+
+<P>Es necesario que configure su m&oacute;dem correctamente para PPP - para hacer
+esto, LEA EL MANUAL QUE ACOMPA&Ntilde;A A SU MODEM. La mayor parte de los m&oacute;dems
+vienen de f&aacute;brica con una <B>configuraci&oacute;n por defecto</B> que selecciona las
+opciones requeridas para PPP. La configuraci&oacute;n m&iacute;nima especifica:-
+<UL>
+<LI>Control de flujo hardware (RTS/CTS) (<CODE>&amp;</CODE>K3 en muchos
+m&oacute;dems tipo Hayes)</LI>
+</UL>
+<P>Otras configuraciones (entre los comandos est&aacute;ndar Hayes) que deber&iacute;a
+investigar son:-
+<UL>
+<LI>E1 Command/usr/src/linux-2.0.27/include/linux/serial.h Echo ON
+(necesario para que chat funcione)</LI>
+<LI>Q0 Informe de los c&oacute;digos de resultado (necesario para que chat
+funcione)</LI>
+<LI>S0=0 Auto respuesta APAGADA (a menos que quiera que su m&oacute;dem
+descuelgue y responda al tel&eacute;fono)</LI>
+<LI><CODE>&amp;</CODE>C1 Detecci&oacute;n de l&iacute;nea CONECTADA s&oacute;lo tras conectar</LI>
+<LI><CODE>&amp;</CODE>S0 Data Set Ready (DSR) siempre CONECTADA</LI>
+<LI>(seg&uacute;n)   Terminal de datos lista</LI>
+</UL>
+<P>
+<P>Hay una Web que ofrece configuraciones de m&oacute;dem para una enorme variedad de
+marcas y modelos: <EM>Modem setup information</EM>
+<CODE>
+<A HREF="http://www.in.net/info/modems/index.html">http://www.in.net/info/modems/index.html</A></CODE>.
+Puede ayudarle en esto.
+<P>
+<P>Tambi&eacute;n es valioso investigar c&oacute;mo funciona la conexi&oacute;n serie entre el
+ordenador y el m&oacute;dem. La mayor parte de los m&oacute;dems modernos funcionan
+con el puerto serie a una velocidad FIJA, y sin embargo permiten que la
+conexi&oacute;n telef&oacute;nica cambie su velocidad a la m&aacute;s alta que puedan manejar
+tanto &eacute;l como el m&oacute;dem remoto.
+<P>
+<P>Esto es conocido como funcionamiento a velocidad partida. Si su m&oacute;dem da
+soporte para ello, bloquee la conexi&oacute;n del puerto serie del m&oacute;dem a la
+velocidad m&aacute;s alta que est&eacute; disponible (normalmente 115.200 baudios, pero
+38.400 baudios pueden funcionar para m&oacute;dems de 14.400 baudios).
+<P>
+<P>Utilice su software de comunicaciones (como minicom o seyon) para averiguar
+la configuraci&oacute;n de su m&oacute;dem y ajustarla a los valores requeridos por PPP.
+Muchos m&oacute;dems muestran su configuraci&oacute;n actual tras el comando
+AT<CODE>&amp;</CODE>V, pero deber&iacute;a consultar el manual de su m&oacute;dem.
+<P>
+<P>Si se hace un l&iacute;o con los ajustes, puede volver a la tranquilidad
+(normalmente) tecleando AT<CODE>&amp;</CODE>F para poner la configuraci&oacute;n de
+f&aacute;brica. (Para la mayor parte de los m&oacute;dems que he encontrado, la
+configuraci&oacute;n de f&aacute;brica incluye todo lo que necesita para PPP, pero debe
+asegurarse de ello).
+<P>
+<P>Una vez que ha conseguido la cadena adecuada de configuraci&oacute;n del m&oacute;dem,
+an&oacute;tela. Debe tomar una decisi&oacute;n: guardar esa configuraci&oacute;n en la memoria no
+vol&aacute;til del m&oacute;dem para que pueda ser recuperada enviando un comando AT
+adecuado a su m&oacute;dem, o pasar la configuraci&oacute;n correcta a su m&oacute;dem como parte
+del proceso de marcado PPP.
+<P>
+<P>Si s&oacute;lo utiliza su m&oacute;dem desde Linux para conectarse con su ISP o servidor
+corporativo, lo m&aacute;s simple ser&aacute; guardar la configuraci&oacute;n de su m&oacute;dem en la
+memoria RAM no vol&aacute;til.
+<P>
+<P>Pero si utiliza su m&oacute;dem para otras aplicaciones y sistemas operativos, es
+m&aacute;s seguro pasar la informaci&oacute;n al m&oacute;dem siempre que se realice una llamada
+para que se garantice que el m&oacute;dem est&eacute; en el estado correcto para la
+llamada. (Esto es siempre mejor que guardar la cadena de configuraci&oacute;n en 
+un m&oacute;dem que pierde los contenidos de la RAM no vol&aacute;til). 
+<P>
+<H2><A NAME="ss9.4">9.4 Nota acerca del Control de Flujo Serie</A>
+</H2>
+
+<P>Cuando los datos viajan por las l&iacute;neas de comunicaci&oacute;n, puede suceder que
+los datos lleguen m&aacute;s r&aacute;pido que lo que el ordenador pueda manejar (el
+ordenador puede estar ocupado haciendo alguna otra cosa - recuerde: Linux es
+un sistema operativo multiusuario y multitarea). Para asegurarse de que los
+datos no se pierdan (los datos no sobrepasen el buffer de entrada y se
+pierdan), es necesario establecer alg&uacute;n m&eacute;todo de control del flujo de
+datos.
+<P>
+<P>Hay dos maneras de hacer esto en puertos serie:-
+<UL>
+<LI>Utilizar se&ntilde;ales hardware (Clear To Send/Request to Send - CTS/RTS)</LI>
+<LI>Using se&ntilde;ales software (control S y control Q, tambi&eacute;n conocidas como
+XON/XOFF).</LI>
+</UL>
+<P>
+<P>Mientras que las &uacute;ltimas pueden ir bien en una conexi&oacute;n de terminal de
+texto, los datos en un enlace PPP utilizan los 8 bits - y es bastante
+probable que en alg&uacute;n lugar de los datos habr&aacute; un byte que se traduzca como
+control S y control Q. Entonces, si un m&oacute;dem est&aacute; configurado para utilizar
+el control de flujo por software, ¡todo puede irse r&aacute;pidamente al garete!
+<P>
+<P>Para enlaces de alta velocidad que utilicen PPP (que usa los 8 bits de
+datos) el control de flujo por hardware es vital y es por esta raz&oacute;n por la
+que usted debe utilizar el control de flujo por hardware.
+<P>
+<H2><A NAME="ss9.5">9.5 Probar que su m&oacute;dem puede marcar</A>
+</H2>
+
+<P>Ahora que se ha conseguido una configuraci&oacute;n correcta para el puerto serie 
+y el m&oacute;dem, es una buena idea asegurarse de que esa configuraci&oacute;n funciona
+para marcar el n&uacute;mero de su ISP y ver si puede conectarse.
+<P>
+<P>Utilice el paquete de comunicaciones por terminal (como minicom), configure
+la inicializaci&oacute;n que su m&oacute;dem requiera para PPP y marque el n&uacute;mero del
+servidor PPP con el que desee conectar en una sesi&oacute;n PPP.
+<P>
+<P>(Nota: en esta fase <B>NO</B> estamos intentando hacer una conexi&oacute;n PPP, sino
+simplemente establecer que tenemos el n&uacute;mero de tel&eacute;fono correcto y tambi&eacute;n
+averiguar qu&eacute; es <B>exactamente</B> lo que el servidor nos env&iacute;a para
+conseguir conectarnos y arrancar PPP).
+<P>
+<P>Durante este proceso, capture (guarde en un fichero) el proceso completo o
+anote cuidadosamente (<EM>muy cuidadosamente</EM>) y <B>exactamente</B> en texto
+con el que el servidor le da a entender que es el momento de introducir su
+nombre de usuario y contrase&ntilde;a (y cualquier otra orden necesaria para
+establecer la conexi&oacute;n PPP).
+<P>
+<P>Si su servidor utiliza PAP, no deber&iacute;a ver una pregunta de conexi&oacute;n, pero
+deber&iacute;a ver, en su lugar, y esparcida por la pantalla, la representaci&oacute;n 
+en modo texto del protocolo de control de conexi&oacute;n (que son caracteres
+extra&ntilde;os sin sentido aparente).
+<P>
+<P>Unas pocas advertencias:-
+<P>
+<UL>
+<LI>algunos servidores son bastante inteligentes: puede conectarse
+utilizando la secuencia nombre/contrase&ntilde;a en modo texto O utilizando PAP.
+Por lo que si su ISP o m&aacute;quina corporativa utiliza PAP pero no ve aparecer
+inmediatamente en la pantalla los caracteres sin sentido, usted no tiene por
+qu&eacute; haber hecho nada mal.</LI>
+<LI>algunos servidores necesitan que usted introduzca inicialmente texto y
+<EM>despu&eacute;s</EM> comienzan a enviar la secuencia PAP est&aacute;ndar.</LI>
+<LI>algunos servidores PPP son pasivos - esto es: simplemente se sientan
+sin enviar nada hasta que el cliente que se est&aacute; conectando les env&iacute;a un
+paquete v&aacute;lido de lcp. Si el servidor ppp con el que est&aacute; conectando
+funciona en modo pasivo, ¡usted nunca podr&aacute; ver los caracteres sin sentido!</LI>
+<LI>Algunos servidores no arrancar&aacute;n PPP hasta que pulse ENTER - por lo
+que es valioso intentar esto si usted se conecta correctamente y no ve los
+caracteres sin sentido.</LI>
+</UL>
+<P>
+<P>Es valioso conectarse al menos dos veces: algunos servidores cambian sus
+preguntas (por ejemplo, con la hora) cada vez que usted se conecta. Las dos
+preguntas cr&iacute;ticas que su m&aacute;quina Linux necesita identificar cada vez que se
+conecta son:-
+in are:-
+<UL>
+<LI>la pregunta que le pide que introduzca su nombre de usuario;</LI>
+<LI>la pregunta que le pide que introduzca su contrase&ntilde;a;</LI>
+</UL>
+<P>
+<P>Si tiene que ejecutar una orden para arrancar PPP en el servidor, tambi&eacute;n
+deber&aacute; averiguar la l&iacute;nea de &oacute;rdenes que el servidor le da una vez se ha
+conectado para comunicar a Linux que en ese momento puede introducir la
+orden para arrancar ppp.
+<P>
+<P>Si su servidor arranca PPP autom&aacute;gicamente, una vez que se ha conectado,
+empezar&aacute; a ver basura en su pantalla - &eacute;sta es el servidor PPP que env&iacute;a la
+informaci&oacute;n de su m&aacute;quina para comenzar y configurar la conexi&oacute;n PPP.
+<P>
+<P>Eso deber&iacute;a ser algo como esto :-
+<P>
+<HR>
+<PRE>
+~y}#.!}!}!} }8}!}$}%U}"}&amp;} } } } }%}&amp; ...}'}"}(}"} .~~y}
+</PRE>
+<HR>
+<P>
+<P>(¡y no dejar&aacute; de salir por pantalla!)
+<P>
+<P>En algunos sistemas PPP debe ser expl&iacute;citamente arrancado en el servidor.
+Esto ocurre normalmente porque el servidor ha sido configurado para permitir
+accesos PPP y accesos de l&iacute;nea de &oacute;rdenes utilizando el mismo par
+nombre/contrase&ntilde;a. Si este es el caso, ejecute esta orden una vez se ha
+conectado. De nuevo, ver&aacute; la basura en pantalla cuando la parte PPP del
+servidor comience a funcionar.
+<P>
+<P>Si usted no ve esto inmediatamente despu&eacute;s de conectarse (y, si es
+necesario, haber introducido nombre/contrase&ntilde;a y haber arrancado el servidor 
+PPP), pulse <B>Intro</B> para ver si as&iacute; comienza el servidor PPP...
+<P>
+<P>En este punto, usted puede colgar su m&oacute;dem (normalmente, teclee <CODE>+++</CODE>
+r&aacute;pidamente y despu&eacute;s ejecute el comando ATHO una vez que su m&oacute;dem responda
+con OK).
+<P>
+<P>Si no consigue hacer funcionar su m&oacute;dem, lea el manual del m&oacute;dem, las
+p&aacute;ginas de manual de su software de comunicaciones y el COMO sobre Puertos
+Serie. Una vez que lo ha conseguido, contin&uacute;e haciendo paso por paso lo ya
+comentado.
+<P>
+<HR>
+<A HREF="PPP-Como-10.html">Página siguiente</A>
+<A HREF="PPP-Como-8.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc9">Índice general</A>
+</BODY>
+</HTML>

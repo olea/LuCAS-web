@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP-Linux-Como: Ejecuci&oacute;n del servidor LDAP </TITLE>
+ <LINK HREF="LDAP-Linux-Como-5.html" REL=next>
+ <LINK HREF="LDAP-Linux-Como-3.html" REL=previous>
+ <LINK HREF="LDAP-Linux-Como.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="LDAP-Linux-Como-5.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-3.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="4"></A> <A NAME="s4">4. Ejecuci&oacute;n del servidor LDAP </A></H2>
+
+<P><EM>Slapd</EM> puede ejecutarse de dos maneras diferentes, como demonio o
+servicio permanente, o bien desde <CODE>inetd(8)</CODE>. Se recomienda la
+ejecuci&oacute;n como demonio permanente, sobre todo si usa el <EM>backend</EM>
+de LDBM. Ello permitir&aacute; al <CODE>backend</CODE> beneficiarse del uso de
+memoria de almacenamiento intermedio (<EM>cach&eacute;</EM>) y evita problemas de
+acceso compartido a los ficheros de &iacute;ndices de LDBM. Si &uacute;nicamente
+ejecuta un <EM>backend</EM> de tipo SHELL o PASSWD, entonces s&iacute; puede
+considerar la opci&oacute;n de ejecutar <EM>slapd</EM> desde <CODE>inetd</CODE>. 
+<P>
+<H2><A NAME="4.1"></A> <A NAME="ss4.1">4.1 Opciones desde la l&iacute;nea de &oacute;rdenes</A>
+</H2>
+
+<P><EM>Slapd</EM> soporta las siguientes opciones de l&iacute;nea de &oacute;rdenes: 
+<DL>
+<DT><B>-d &lt;nivel&gt; | ? </B><DD><P>Esta opci&oacute;n fija el nivel de depuraci&oacute;n de <EM>slapd</EM> en
+<CODE>&lt;nivel&gt;</CODE>. Cuando el nivel es un car&aacute;cter  <CODE>`?</CODE>', se
+muestran los distintos niveles de depuraci&oacute;n y <EM>slapd</EM> termina, con
+independencia de cualquier otra opci&oacute;n que se introduzca. Los niveles
+de depuraci&oacute;n existentes son: 
+<P>
+<UL>
+<LI>1 trazado de llamadas a funci&oacute;n</LI>
+<LI>2 manejo de paquetes de depurado</LI>
+<LI>4 depurado de trazado intensivo <EM>heavy trace</EM></LI>
+<LI>8 gesti&oacute;n de conexiones</LI>
+<LI>16 mostrar los paquetes enviados y recibidos</LI>
+<LI>32 procesado del filtro de b&uacute;squeda</LI>
+<LI>64 procesado de ficheros de configuraci&oacute;n</LI>
+<LI>128 procesado de listas de control de acceso</LI>
+<LI>256 estad&iacute;sticas de registro de conexiones/operaciones/resultados</LI>
+<LI>512 enviar las entradas de registro de estad&iacute;sticas</LI>
+<LI>1024 imprimir los <EM>backends</EM> de comunicaci&oacute;n con el
+int&eacute;rprete de &oacute;rdenes</LI>
+<LI>2048 imprimir el an&aacute;lisis completo de depuraci&oacute;n</LI>
+<LI>65535 activar depuraci&oacute;n completa</LI>
+</UL>
+<P>Los niveles de depuraci&oacute;n son acumulativos. Si desea trazar llamadas a
+funciones y observar qu&eacute; fichero de configuraci&oacute;n se est&aacute; procesando,
+fije el nivel de depuraci&oacute;n al resultado de la suma de estos dos
+niveles ( en este caso, 65). Consulte el fichero <CODE>&lt;ldap.h&gt;</CODE>
+para m&aacute;s detalles. 
+<P>Observe que <EM>slapd</EM> se tendr&aacute; que haber compilado con la opci&oacute;n
+<CODE>-DLDAP_DEBUG</CODE> definida, si se desea un nivel de depuraci&oacute;n
+superior a los dos niveles de estad&iacute;sticas disponibles.
+<P>
+<DT><B>-f &lt;nombrefichero&gt; </B><DD><P>Esta opci&oacute;n especifica un fichero de configuraci&oacute;n alternativo para
+<EM>slapd</EM> 
+<P>
+<DT><B>-i </B><DD><P>Esta opci&oacute;n le especifica a <EM>slapd</EM> que se ejecute desde <CODE>inetd</CODE>
+en vez de hacerlo como un demonio o servicio independiente. En la
+pr&oacute;xima secci&oacute;n encontrar&aacute; m&aacute;s detalles sobre la ejecuci&oacute;n de
+<EM>slapd</EM> desde <CODE>inetd</CODE>.
+<P>
+<DT><B>-p &lt;puerto&gt; </B><DD><P>Esta opci&oacute;n especifica un puerto TCP alternativo en el que <EM>slapd</EM>
+se mantendr&aacute; a la escucha para las conexiones. El puerto por defecto
+es el 389.
+</DL>
+<P>
+<H2><A NAME="42"></A> <A NAME="ss4.2">4.2 Ejecuci&oacute;n de <EM>slapd</EM> como demonio o servicio independiente</A>
+</H2>
+
+<P>Como norma general, <EM>slapd</EM> se ejecuta de la siguiente manera:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# $(ETCDIR)/slapd [&lt;opci&oacute;n&gt;]* 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>donde ETCDIR tiene el valor que le haya asignado en el fichero
+<CODE>Make-common</CODE> o en el gui&oacute;n <CODE>./configure</CODE> durante la
+configuraci&oacute;n previa a la compilaci&oacute;n, y <CODE>&lt;opci&oacute;n&gt;</CODE> es una de
+las opciones descritas m&aacute;s arriba.
+A menos que haya especificado un nivel de depuraci&oacute;n, <EM>slapd</EM> se
+desvincular&aacute; autom&aacute;ticamente del terminal desde el que lo lanz&oacute;, y se
+ejecutar&aacute; en segundo plano, en modo demonio o servicio. Cualquiera de
+las opciones de m&aacute;s arriba pueden darse en la l&iacute;nea de &oacute;rdenes para
+hacer que <EM>slapd</EM> cargue un fichero de configuraci&oacute;n diferente, o
+que escuche en otro puerto, etc&eacute;tera.
+<P>
+<P>V&eacute;ase el siguiente ejemplo de comienzo de <EM>slapd</EM>: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$(ETCDIR)/slapd -f /home/malere/mi_slapd.conf -d 255 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.3">4.3 Ejecuci&oacute;n de slapd desde inetd</A>
+</H2>
+
+<P>En primer lugar, aseg&uacute;rese de que sea una buena idea ejecutar
+<EM>slapd</EM> desde <CODE>inetd</CODE>. Si est&aacute; usando el <EM>backend</EM> LDBM,
+entonces no es buena idea. Si est&aacute; en un entorno de mucho servicio,
+entonces la sobrecarga que supone ejecutarlo desde <CODE>inetd</CODE> tambi&eacute;n
+lo convierte en una mala idea. Si no es su caso puede seguir adelante
+con los dos pasos necesarios.
+<P>El primer paso es a&ntilde;adir a <CODE>/etc/services/</CODE> una l&iacute;nea como la
+siguiente: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldap 389 # ldap directory service 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El segundo paso es a&ntilde;adir una l&iacute;nea como la siguiente a su fichero
+<CODE>/etc/inetd.conf</CODE>: 
+<BLOCKQUOTE><CODE>
+<PRE>
+ldap stream tcp nowait nobody $(ETCDIR)/slapd slapd -i 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>donde ETCDIR tiene el valor que le haya asignado en el fichero
+<CODE>Make-common</CODE> o en el gui&oacute;n <CODE>./configure</CODE> durante la
+configuraci&oacute;n previa a la compilaci&oacute;n. 
+Finalmente env&iacute;ele a <CODE>inetd</CODE> una se&ntilde;al <CODE>-HUP</CODE> y ya tendr&aacute; su
+configuraci&oacute;n. (<B>N. del T.:</B> pruebe con <CODE>killall -HUP inetd</CODE> o mejor
+todav&iacute;a <CODE>kill -HUP $(pidof inetd)</CODE> o 
+<CODE>kill -TERM `cat $(ETCDIR)/inetd.pid`</CODE>)
+<P>
+<HR>
+<A HREF="LDAP-Linux-Como-5.html">Página siguiente</A>
+<A HREF="LDAP-Linux-Como-3.html">Página anterior</A>
+<A HREF="LDAP-Linux-Como.html#toc4">Índice general</A>
+</BODY>
+</HTML>

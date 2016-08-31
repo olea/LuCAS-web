@@ -1,0 +1,543 @@
+<HTML
+><HEAD
+><TITLE
+>El Fichero exports</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Sistema de Ficherosde Red"
+HREF="x-087-2-nfs.html"><LINK
+REL="PREVIOUS"
+TITLE="Los Demonios NFS "
+HREF="x-087-2-nfs.daemons.html"><LINK
+REL="NEXT"
+TITLE="Soporte para NFSv2 Basado en Núcleo"
+HREF="x-087-2-nfs.kernelv2.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nfs.daemons.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 14. El Sistema de Ficherosde Red</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nfs.kernelv2.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NFS.EXPORTS">14.4. El Fichero exports</H1
+><P
+>  
+  
+  
+  
+  
+  
+   
+Ahora veremos cómo configurar el servidor NFS. Específicamente, veremos cómo 
+decirle al servidor NFS qué sistemas de ficheros deben ponerse disponibles 
+para el montaje y  varios parámetros que controlan el acceso que tienen los 
+clientes al sistema de ficheros. El servidor determina el tipo de 
+acceso que se permite a los ficheros del servidor. El fichero 
+<TT
+CLASS="FILENAME"
+>/etc/exports</TT
+> lista los sistemas de ficheros que el servidor 
+permitirá a los clientes montar y usar.  </P
+><P
+>  
+Por omisión, <B
+CLASS="COMMAND"
+>rpc.mountd </B
+> desaprueba el montaje de todos los directorios,  
+lo cual es una actitud bastante sensata. Si  desea permitir a uno o más anfitriones
+montar un directorio de NFS,  debe <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>exportarlo</I
+></SPAN
+> es decir,  
+especificarlo en el fichero <TT
+CLASS="FILENAME"
+>exports</TT
+>. Un ejemplo del fichero puede parecer como éste:  
+  
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>      
+    # exports file for vlager  
+    /home             vale(rw) vstout(rw) vlight(rw)  
+    /usr/X11R6        vale(ro) vstout(ro) vlight(ro)  
+    /usr/TeX          vale(ro) vstout(ro) vlight(ro)  
+    /                 vale(rw,no_root_squash)  
+    /home/ftp         (ro)  </PRE
+></TD
+></TR
+></TABLE
+>  </P
+><P
+>  
+Cada línea define un directorio y los anfitriones a los que se les permite montarlo.  Un nombre de 
+anfitrión es usualmente un nombre de dominio completamente cualificado pero puede 
+contener adicionalmente los comodines <SPAN
+CLASS="SYSTEMITEM"
+>*</SPAN
+> 
+y <SPAN
+CLASS="SYSTEMITEM"
+>?</SPAN
+>los cuales funcionan igual que en intérprete de órdenes
+Bourne. 
+Por ejemplo, <TT
+CLASS="LITERAL"
+>lab*.foo.com</TT
+> coincide con 
+<SPAN
+CLASS="SYSTEMITEM"
+>lab01.foo.com</SPAN
+> así como 
+<SPAN
+CLASS="SYSTEMITEM"
+>laboratory.foo.com</SPAN
+>. El anfitrión puede ser especificado  
+también usando un rango de direcciones IP en la forma 
+<TT
+CLASS="REPLACEABLE"
+><I
+>dirección</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>máscara de redk</I
+></TT
+>. Si no se 
+da un nombre de anfitrión, como con el directorio <TT
+CLASS="FILENAME"
+>/home/ftp</TT
+> en el 
+ejemplo previo, cualquier anfitrión coincide y se le permite montar el directorio.</P
+><P
+>  
+Cuando se verifica a un anfitrión cliente contra el fichero <TT
+CLASS="FILENAME"
+>exports</TT
+>,  
+<B
+CLASS="COMMAND"
+>rpx.mountd </B
+> busca el nombre del anfitrión cliente usando la llamada 
+<TT
+CLASS="FUNCTION"
+>gethostbyaddr</TT
+>. Con DNS, esta llamada devuelve el nombre canónico 
+del anfitrión cliente, así  debe asegurarse de no usar alias en <TT
+CLASS="FILENAME"
+>exports</TT
+>. 
+En un entorno NIS el nombre devuelto es la primera coincidencia de la base de datos 
+de anfitriones, y sin DNS o NIS, el nombre devuelto es el primer nombre de anfitrión encontrado 
+en el fichero <TT
+CLASS="FILENAME"
+>hosts</TT
+> que coincida con la dirección del cliente.</P
+><P
+>  
+El nombre del anfitrión es seguido por una lista opcional de señales separadas 
+por comas, encerradas entre paréntesis. Algunos de los valores que éstas 
+señales pueden tomar son:  
+  
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>secure</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta señal insiste en requerir que se haga desde un puerto origen
+reservado, por ejemplo, uno que sea menor que 1.024. Esta señal está puesta por omisión.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>insecure</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta señal revierte el efecto de la señal <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>secure</I
+></SPAN
+>.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ro</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta señal provoca que el montaje de NFS sea para sólo lectura. Esta señal 
+está activada por omisión.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>rw</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta opción monta la jerarquía de ficheros en lectura-escritura.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>root_squash</I
+></SPAN
+></DT
+><DD
+><P
+>  
+  
+Este característica de seguridad deniega a los superusuarios en los hosts especificados 
+cualquier derecho de acceso especial mapeando las peticiones 
+desde el uid 0 en el cliente al uid 65534 (es decir, -2) en el servidor. 
+Este uid debe ser asociado con el usuario <SPAN
+CLASS="SYSTEMITEM"
+>nobody</SPAN
+>.  &#13;</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>no_root_squash</I
+></SPAN
+></DT
+><DD
+><P
+>  
+No mapea las peticiones desde uid 0. Esta opción está habilitada por omisión, así 
+los superusuarios tienen acceso de supervisor a los directorios exportados de su sistema.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>link_relative</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta opción convierte los enlaces simbólicos absolutos (donde el contenido del enlace 
+comienza con un slash) en enlaces relativos. Esta opción sólo tiene sentido cuando está montado
+el sistema de ficheros entero de un anfitrión; por otra parte, algunos de los 
+enlaces podrían apuntar a ninguna parte, o peor aún, a ficheros que nunca debieran 
+apuntar. Esta opción está habilitada de forma predeterminada.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>link_absolute</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta opción deja todos los enlaces simbólicos como son (la conducta normal  
+para los servidores de NFS suministrados por Sun).  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>map_identity</I
+></SPAN
+></DT
+><DD
+><P
+>  
+  
+Esta opción le indica al servidor asumir que el cliente usa el mismo  
+uid y gid que el servidor. Esta opción está habilitada por omisión.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>map_daemon</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta opción indica al servidor de NFS asumir que el cliente y el servidor no 
+comparten el mismo espacio uid/gid.  <B
+CLASS="COMMAND"
+>rpc.nfsd</B
+> entonces construye 
+una lista que mapea los IDs entre cliente y servidor preguntando al demonio 
+<B
+CLASS="COMMAND"
+>rpc.ugidd</B
+> del cliente.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>map_static</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta opción le permite especificar el nombre de un fichero que contiene un mapa 
+estático de uids. Por ejemplo, <TT
+CLASS="LITERAL"
+>map_static=/etc/nfs/vlight.map</TT
+> 
+especificaría el fichero <TT
+CLASS="FILENAME"
+>/etc/nfs/vlight.map</TT
+> como un mapa 
+de uid/gid. La sintaxis del mapa del fichero se describe en la página 5 del 
+manual <TT
+CLASS="FILENAME"
+>exports(5)</TT
+>.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>map_nis</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Esta opción causa que el servidor de NIS haga un mapeado de uid y gid.  </P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>anonuid</I
+></SPAN
+> y <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>anongid</I
+></SPAN
+></DT
+><DD
+><P
+>  
+Estas opciones le permiten especificar el uid y el gid de la cuenta anónima.  
+Esto es útil si tiene un volumen exportado para montajes públicos.  </P
+></DD
+></DL
+></DIV
+><P>  </P
+><P
+>  
+
+Cualquier error que ocurra al procesar el fichero <TT
+CLASS="FILENAME"
+>exports</TT
+>
+se informa al <SPAN
+CLASS="SYSTEMITEM"
+>demonio</SPAN
+>
+<B
+CLASS="COMMAND"
+>syslogd</B
+> con el nivel <SPAN
+CLASS="SYSTEMITEM"
+>notice</SPAN
+>
+en cualquier momento en que <B
+CLASS="COMMAND"
+>rpc.nfsd</B
+> o <B
+CLASS="COMMAND"
+>rpc.mountd</B
+>
+se inicien.</P
+><P
+>Se ha de tener en cuenta que los nombres del anfitrión se obtienen
+a partir de la dirección IP del cliente a través de resolución
+inversa, por lo cual la resolución de nombres tendrá que
+estar configurada adecuadamente.
+Si usa BIND y le preocupa la seguridad, deberá activar las
+comprobaciones de spoofing en su fichero <TT
+CLASS="FILENAME"
+>host.conf</TT
+>.
+Se hablará más profusamente sobre este tema en 
+<A
+HREF="x-087-2-resolv.html"
+>Capítulo 6</A
+>.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nfs.daemons.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nfs.kernelv2.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Los Demonios NFS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nfs.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Soporte para NFSv2 Basado en Núcleo</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

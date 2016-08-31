@@ -1,0 +1,288 @@
+<HTML>
+<HEAD>
+<TITLE>Linux COMO Servidor de Intranets: Aumentando las prestaciones de la Intranet.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Servidor-Intranet-Como-4.html">Anterior</A>
+<A HREF="Servidor-Intranet-Como-6.html">Siguiente</A>
+<A HREF="Servidor-Intranet-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Aumentando las prestaciones de la Intranet.</A></H2>
+
+
+<P>Una Intranet no puede estar completa sin compartir recursos entre
+diferentes plataformas. Ser&aacute; necesario soportar otros sistemas de
+archivos, y tener la informaci&oacute;n disponible en ellos.  Este documento
+provee instrucciones para conectar Linux con los siguientes sistemas de
+archivos populares:</P>
+<P>
+<UL>
+<LI>Sistema de archivos NCP para Netware.</LI>
+<LI>Sistema de archivos SMB para Windows</LI>
+<LI>Sistema de Archivos NFS para Unix</LI>
+</UL>
+</P>
+<P>Estos sistemas de archivos pueden ser compilados dentro del kernel de
+Linux o ser a&ntilde;adidos como m&oacute;dulos, dependiendo de la versi&oacute;n de Linux.  Si
+no est&aacute; familiarizado con la compilaci&oacute;n del kernel puede referirse al
+Kernel-Como, <CODE>
+<A HREF="http://sunsite.unc.edu/pub/Linux/docs/HOWTO/translations/es/">http://sunsite.unc.edu/pub/Linux/docs/HOWTO/Translations/es/Kernel-Como</A></CODE>
+y el Module-HOWTO, <CODE>
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/Module-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/Module-HOWTO.html</A></CODE> para
+compilar el kernel con los m&oacute;dulos.</P>
+
+<H2><A NAME="ss5.1">5.1 NCPFS</A></H2>
+
+<P> </P>
+<P>Para compartir archivos con un Servidor Netware necesita soporte NCP
+(<CODE>ncpfs</CODE>). NCPFS funciona con los kernels 1.2.x y 1.3.71 en adelante. 
+No funciona con cualquier kernel menor al 1.3.x. No puede acceder a la
+base de datos NDS (Servicios de Directorio) de Netware 4.x, pero podr&aacute;
+hacer uso del <I>bindery</I>. Si est&aacute; usando Netware 4.x, puede
+habilitar el soporte de bindery para contenedores espec&iacute;ficos usando el
+comando <I>Set Bindery Context</I> desde la consola: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+set Bindery Context = CORP.MIDOMINIO;WEBUSER.MIDOMINIO
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En este ejemplo dos contenedores tienen el soporte bindery habilitado. </P>
+<P>Puede que necesite descargar las utilidades para el Sistema de archivos
+NCP de <CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/filesystems/ncpfs/ncpfs.tgz">ftp://sunsite.unc.edu/pub/Linux/system/filesystems/ncpfs/ncpfs.tgz</A></CODE>
+(actualmente <CODE>ncpfs-2.0.10</CODE>) de Sunsite.</P>
+
+<H3>Instalaci&oacute;n</H3>
+
+
+<P>Para instalar las utilidades <CODE>ncpfs</CODE>, teclee:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+zcat ncpfs.tgz | tar xvf -
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>para descomprimir los archivos en su propio directorio. En este caso
+obtendr&aacute; el directorio <CODE>ncpfs-2.0.10</CODE>. Cambie a este directorio antes
+de proceder con la instalaci&oacute;n. Lea el fichero <CODE>README</CODE> y edite el
+archivo <CODE>Makefile</CODE> si es necesario.</P>
+<P>La instalaci&oacute;n de <CODE>ncpfs</CODE> depende de la versi&oacute;n de kernel que est&eacute;
+usando.  Para el kernel 1.2, debe teclear &uacute;nicamente <CODE>make</CODE>. 
+Tecleando <CODE>make install</CODE> instalar&aacute; los ejecutables y las p&aacute;ginas
+man.</P>
+<P>Si usa el kernel 1.3.71 o posterior, tendr&aacute; que recompilar el kernel. Con
+&eacute;stos, la parte del kernel de <CODE>ncpfs</CODE> est&aacute; incluida en el &aacute;rbol
+de fuentes principal. Para comprobar si el kernel necesita ser recompilado
+escriba:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cat /proc/filesystems
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto deber&iacute;a mostrar alguna l&iacute;nea en la que aparezca <CODE>ncpfs</CODE>.</P>
+<P>Si ncpfs no est&aacute; ah&iacute;, puede escoger entre recompilar el kernel o
+a&ntilde;adir <CODE>ncpfs</CODE> como m&oacute;dulo. Para recompilar el kernel, vaya a
+<CODE>/usr/src/linux</CODE> y teclee <CODE>make config</CODE>. Una de las preguntas
+ser&aacute;:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+The IPX protocol (CONFIG_IPX) [N/y/?]
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Conteste <CODE>y</CODE> (s&iacute;). Probablemente no lo necesitara para acceder al total
+de su red interna hasta este momento. Una vez que el kernel est&eacute;
+correctamente instalado, reinicie, compruebe <CODE>/proc/filesystems</CODE>, y
+si todo es correcto proceda con la instalaci&oacute;n de las utilidades
+<CODE>ncpfs</CODE>. Cambie al directorio donde se encuentren los archivos ncpfs
+que descarg&oacute;, y teclee <CODE>make</CODE>. Despu&eacute;s de la compilaci&oacute;n, escriba
+<CODE>make install</CODE> para instalar las diversas utilidades y las p&aacute;ginas man.</P>
+
+<H3>Montaje de sistemas de archivos NCPFS</H3>
+
+
+<P>Compruebe la instalaci&oacute;n:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ipx_configure --auto_interface=on --auto_primary=on
+slist
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Deber&aacute; ser capaz de ver una lista de los servidores Netware. Ya estamos
+listos para compartir archivos desde el servidor Netware. </P>
+<P>Suponiendo que necesit&aacute;semos acceder a archivos HTML desde el directorio
+<CODE>\home\htmldocs</CODE> en el volumen <CODE>VOL1:</CODE> del
+servidor <CODE> MIDOM_NW</CODE>, lo recomendable ser&iacute;a que crease un usuario
+nuevo, como por ejemplo <CODE>EXPORT</CODE> con la clave de acceso
+<CODE>EXP123</CODE> en este servidor y concederle los derechos de acceso
+apropiados en este directorio usando <CODE>SYSCON</CODE> o <CODE>NWADMIN</CODE>. </P>
+<P>En la m&aacute;quina Linux crea un directorio nuevo, <CODE>/mnt/MIDOM_NW</CODE>. </P>
+<P>Teclee:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ncpmount -S MIDOM_NW -U EXPORT -P EXP123 /mnt/MIDOM_NW
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>para montar el sistema de archivos de netware. Escriba el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ls /mnt/MIDOM_NW/vol1/home/htmldocs
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Le mostrar&aacute; una lista de todos los archivos en
+<CODE>MIDOM_NW/VOL1:\HOME\HTMLDOCS</CODE> (usando la notaci&oacute;n de archivos de
+Netware).  Si tiene alg&uacute;n problemas, lea el IPX-HOWTO, disponible en
+<CODE>
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/IPX-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/IPX-HOWTO.html</A></CODE> para mayor
+informaci&oacute;n sobre el sistema IPX.</P>
+
+
+<H2><A NAME="ss5.2">5.2 SMBFS</A></H2>
+
+
+<P>Para compartir archivos con un servidor Windows necesitar&aacute; soporte para
+SMB (<CODE>smbfs</CODE>).  </P>
+<P>Necesitar&aacute; descargar las utilidades del sistema de archivos SMB de
+<CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/Linux/system/filesystems/smbfs/smbfs.tgz">ftp://sunsite.unc.edu/pub/Linux/system/filesystems/smbfs/smbfs.tgz</A></CODE>
+(actualmente <CODE>smbfs-2.0.1</CODE>) en Sunsite. </P>
+
+<H3>Instalaci&oacute;n</H3>
+
+
+<P>Para instalar las utilidades <CODE>smbfs</CODE>, escriba</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        zcat smbfs.tgz | tar xvf -
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>para descomprimir los archivos dentro de su propio directorio. En este
+caso obtendr&iacute;a el directorio <CODE>smbfs-2.0.1</CODE>. Cambie a este directorio
+antes de proceder con la instalaci&oacute;n. Lea el fichero <CODE>README</CODE> y edite
+el archivo <CODE>Makefile</CODE> si es necesario.</P>
+<P>La instalaci&oacute;n de <CODE>smbfs</CODE> depende de la versi&oacute;n de kernel que est&eacute;
+usando. Para el kernel 1.2, basta con teclear <CODE>make</CODE>.  Teclee
+<CODE>make install</CODE> posteriormente para instalar los ejecutables y las
+p&aacute;ginas man. </P>
+<P>Si usa el kernel 2.0 o posterior, debe recompilar el kernel. Con estas
+versiones, el soporte <CODE>smbfs</CODE> est&aacute; ya incluido en el &aacute;rbol de fuentes
+principal del kernel. Para comprobar si el kernel necesita ser
+recompilado, escriba: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cat /proc/filesystems
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Deber&aacute; aparecer alguna l&iacute;nea en la que aparezca el t&eacute;rmino
+<CODE>smbfs</CODE>
+<SL>Nota del Revisor <BR> Tenga en cuenta aunque no
+aparezca, es posible que tenga el soporte compilado como m&oacute;dulo; por
+ejemplo, para una versi&oacute;n de kernel <CODE>2.0.33</CODE>, compruebe el contenido
+del directorio <CODE>/lib/modules/2.0.33/fs/</CODE></SL>
+.</P>
+<P>Si no tiene soporte <CODE>smbfs</CODE>, puede escoger entre recompilar el kernel o
+a&ntilde;adir <CODE>smbfs</CODE> como m&oacute;dulo. Para recompilar el kernel, cambie al
+directorio <CODE>/usr/src/linux</CODE> y escriba <CODE>make config</CODE>
+respondiendo <I>Y</I> (yes) a la pregunta para a&ntilde;adir soporte para sistema
+de archivos SMB (<I>SMB filesystem support</I>). </P>
+<P>Una vez que el kernel est&eacute; correctamente instalado, reinicie, compruebe
+<CODE>/proc/filesystems</CODE> y si todo es correcto proceda con la
+instalaci&oacute;n de las utilidades <CODE>smbfs</CODE>. Cambie al directorio donde se
+encuentre los archivos de las utilidades <CODE>smbfs</CODE> que descarg&oacute;, y
+escriba <CODE>make</CODE>. </P>
+<P>Despu&eacute;s de la compilaci&oacute;n, teclee <CODE>make install</CODE> para instalar las
+varias utilidades y las p&aacute;ginas man. </P>
+
+<H3>Montaje de sistemas de ficheros SMBFS</H3>
+
+
+<P>En nuestro ejemplo asumimos que el servidor WinNT fue llamado
+<CODE>MIDOM_NT</CODE> y que est&aacute; compartiendo el directorio
+<CODE>C:\PUB\HTMLDOCS</CODE> con el nombre de recurso compartido
+<CODE>HTMLDOCS</CODE> sin clave de acceso. Cree el directorio
+<CODE>/mnt/MIDOM_NT</CODE> en la m&aacute;quina Linux. Tecleando el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+smbmount //MIDOM_NT/HTMLDOCS /mnt/MIDOM_NT -n
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<P>montar&aacute; el sistema de archivos SMB. Si esto no funciona pruebe</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+smbmount //MIDOM_NT/COMMON /mnt/MIDOM_NT -n -I 172.16.0.3
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Escribiendo el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ls /mnt/MIDOM_NT
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>aparecer&aacute; una lista de todos los archivos en
+<CODE>\\MIDOM_NT\PUB\HTMLDOCS</CODE> (usando la notaci&oacute;n
+de archivos de windows).</P>
+
+
+<H2><A NAME="ss5.3">5.3 NFS</A></H2>
+
+
+<P>Primero necesitar&aacute; que el kernel soporte el sistema de archivos NFS, bien
+compilado, o disponible como m&oacute;dulo. </P>
+
+<P>Suponga que tiene una m&aacute;quina Unix corriendo NFS con el nombre
+<CODE>MIDOM_UNIX</CODE> con la direcci&oacute;n IP <CODE>172.16.0.4</CODE>. Puede comprobar
+qu&eacute; directorios est&aacute;n siendo exportados (compartidos) tecleando el comando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+showmount -e 172.16.0.4
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Una vez conozcamos los directorios exportados podr&aacute; montarlos mediante el
+comando apropiado de montaje. Recomiendo que cree un subdirectorio bajo
+<CODE>/mnt</CODE> como por ejemplo <CODE>MIDOM_UNIX</CODE> y use &eacute;ste como punto de
+montaje.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -o rsize=1024,wsize=1024 172.16.0.4:/pub/htmldocs /mnt/MIDOM_UNIX
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>rsize</CODE> y <CODE>wisize</CODE> pueden recibir distintos valores dependiendo de
+su entorno.</P>
+<P>Si tiene alg&uacute;n problema, lea el NFS-HOWTO, disponible en <CODE>
+<A HREF="http://sunsite.unc.edu/mdw/HOWTO/NFS-HOWTO.html">http://sunsite.unc.edu/mdw/HOWTO/NFS-HOWTO.html</A></CODE> para mayor
+informaci&oacute;n sobre el sistema NFS.</P>
+
+
+<HR>
+<A HREF="Servidor-Intranet-Como-4.html">Anterior</A>
+<A HREF="Servidor-Intranet-Como-6.html">Siguiente</A>
+<A HREF="Servidor-Intranet-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

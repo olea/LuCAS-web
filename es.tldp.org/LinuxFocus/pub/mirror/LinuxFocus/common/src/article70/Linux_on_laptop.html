@@ -1,0 +1,262 @@
+<html>
+<head>
+<title>Linux on LapNote150</title>
+</head>
+<body bgcolor=#ffffff text=#000000>
+<h3 align=center>See also <a href=http://www.cs.utexas.edu/users/kharker/linux-laptop/>The Linux Laptop Page</a> (actually, you should see it first :)</h3>
+
+<h2>Installing Linux on LapNote150 Notebook PC</h2>
+
+<dd>I bought a LapNote P150 laptop in June 1997. This is the store brand of Lap-Top Superstore (www.lap-top.com). It has a Pentium 150MHz, 256KB cache, 40MB RAM, 2GB hard disk, SystemSoft BIOS, built-in 10X CDROM, built-in floppy drive, 800x600 active matrix screen, Trident Cyber9385 SVGA controller with 2MB RAM, built-in touch pad mouse, stereo 16-bit sound with external audio and MIDI ports, and a PCMCIA 33.6K modem. The computer came with the so-called operating system with "windows" version 95 patchlevel B (although the store claimed it was the original, patchlevel 0).
+
+<dd>Installing Linux on the laptop was not very difficult, although some issues cause problems. Overall I'd say that the hardware is of mediocre quality (don't buy it! :) - I had repeated RAM errors within 6 months of purchase and now I'm also having video failures and the thing won't even start booting half of the time). But it is fairly well supported by standard Linux distributions.
+
+<dd>Overall status: Video works in 16 bit color (and with latest XFree86 even maybe in truecolor but I haven't tried it because the computer needs repair again), pcmcia works, cdrom works, external PPA or SCSI ZIP drive works. One the downside, power management tends to crash linux, Sound/MIDI works only in most basic ways, didn't try suspend to disk for fear of trashing the filesystem.
+
+<h3>Determining the hardware parameters using the so-called operating system with "windows", version 95</h3>
+
+<h5>Get a recent version of Matt Welsh's <i>Linux Installation and Getting Started</i> at <a href="http://metalab.unc.edu/LDP/">/metalab.unc.edu/LDP</a></h5> 
+
+<dd>Go to Control Panel, System, Device Manager. Select "Print..." and select "All devices and system summary", then select the printer and print or print to file. The list would contain all devices and also all interrupts, DMA addresses, port addresses, etc. that the devices use.
+
+<dd>Go to Control Panel, Display, Settings and write down the refresh rates and resolutions.
+
+<dd>The results (converted from Postscript to plain text) are <a href="my_hardware.txt"> here</a>. Highlights: PCMCIA controller Cirrus PD6729 PCI on IRQ11; parallel port on 0x278; PS/2 mouse on IRQ12; MPU401 MIDI at 0x300. Don't trust the video chip information: it's most probably incorrect. The computer comes with Trident TGUI9660 drivers but the chip is actually Cyber9385 or similar. The exact model of the chip is written on the motherboard and you in principle have to bring the computer to the factory so that they open it and find out what's written on it! I called tech support and <b>they didn't know what chip was in there!</b> What losers.
+
+<h3>Linux setup</h3>
+
+<dd>I used CheapBytes RedHat 4.2 (Biltmore). The installation routine went smoothly, except it couldn't detect the ZIP drive (because the parallel port wasn't on 0x378, see below) and also it couldn't configure X (see below).
+
+<h3>File system (/etc/fstab)</h3>
+
+<dd>I configured one big ext2 partition for Linux and one swap partition. The disk already had one suspend-to-disk partition and one FAT16 partition, and this pushed me to the limit of 4 primary partitions (I didn't want to create extended ones). Note that I didn't have the "FAT32" filesystem; if I did, I won't be able to repartition the disk. Incidentally, neither  would I be able to run DOS or Windows 3.1, nor Windows 95 Patchlevel 0 or Patchlevel A (aka "OSR1"), nor Windows NT! Only Windows 95 Patchlevel B, aka "OSR2" (and probably Windows 98 but I have no experience with that particular brand of home entertainment device), can run in FAT32, but it is a release which I don't want to use. Although recent versions of <tt>fips</tt> (version 1.5c) as well as Linux's DOS filesystem drivers claim to do FAT32 partitions, I haven't tried it. If you are stuck with FAT32, use <tt>Partition Magic</tt> (version 3.04 or higher.)
+
+<dd>When I ran the RedHat installation, <tt>fdisk</tt> couldn't create new partitions, saying "warning: partition has empty type". Maybe I did something wrong but I couldn't figure out what. I had to use DOS-based utilities to create empty partitions for ext2 and swap and then RedHat was able to format them.
+
+<dd>RedHat didn't configure the DOS filesystem correctly. Useful file system options for dos/vfat filesystem are:
+
+<pre>
+/dev/hda2	/dosc	vfat	nonumtail,noexec,user	0 0
+/dev/fd0	/floppy	vfat	noauto,user,nonumtail,noexec	0 0
+/dev/hdc	/cdrom	iso9660	noauto,ro,user	0 0
+/dev/sda4	/zip	vfat	noauto,user,nonumtail,noexec	0 0
+</pre>
+
+<dd>The default settings are nouser and exec which isn't very good for mounting DOS floppies or anything DOS. The option "nonumtail" is the alternative method of generating long file names in DOS filesystems. For example, the short name for a file "Unix software.txt" will become "UNIXSOFT.TXT" with this option, instead of a more cryptic "UNIXSO~1.TXT" with the default option.
+
+<h5>It is possible to enable this option also in the so-called operating system with "windows":
+
+<pre>
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\FileSystem]
+"NameNumericTail"=hex:00
+</pre>
+
+ But its implementation is quirky in the following aspects: 1) it likes to spontaneously revert to the original scheme, 2) some installation programs automatically assume that you have the original scheme enabled and will look for directories like "progra~1" no matter what, 3) a bug in file opening routine shows up if you create a file with a long name, say "thisfile_1.txt" (creating the short name "thisfile.txt") and then try to copy a file called "thisfile.txt" to the same directory; the result is that the system asks you to over-write the first file.
+</h5>
+
+<h3>Video and Monitor</h3>
+
+<dd>Setup of X was painful as expected. My monitor is 800x600 active matrix. I wasn't able to get any specs on it from the manufacturer. When it gets out of sync, you have to reboot the computer because the text consoles and the graphics consoles become totally unusable.
+
+My video adapter is Trident cyber9385 controller directly on the motherboard, with 2MB of RAM. The standard VGA mode worked in 16 colors right away. Since the refresh rate of my monitor is 60Hz, I tried to use 800x600x60Hz modeline from XFree86, setting it to Trident TGUI9660. (This is what Superprobe detected. Also, under Windows 95 the video drivers are the same for TGUI9660/9680/9385 chips.) The latest (3.3) version worked with that in up to 16 bit color (I selected the Trident TGUI9660 chip with 2MB). 640x480x60Hz worked but the image was offset and not always stable; I had to replace the last number in the modeline by 1000 and everything was dandy. Also, 1024x768 worked, although of course I could only see the upper left part of the image.
+24-bit color is probably wrong for this card, and 32-bit color was unusable (the picture is very low quality and only a quarter of the screen is visible).
+
+
+Modelines in /usr/X11R6/lib/X11/XF86Config:
+
+<pre>
+Section "Monitor"
+
+    Identifier  "My Monitor"
+    VendorName  "Unknown"
+    ModelName   "Unknown"
+#these frequency ranges are bogus, I just need them to be able to try all the modes below
+    HorizSync  25-70
+    VertRefresh  40-90
+
+# 640x480 @ 60 Hz, 31.5 kHz hsync - upper left portion of the screen
+Modeline "6A"   25.175  640  664  760  1000   480  491  493  525 +hsync +vsync
+
+#note that we don't say 28.322, this breaks the server!
+Modeline "6C"   28.32  640  664  760  1000   480  491  493  525 -hsync -vsync
+
+Modeline "6B"   36      640  664  760  1000   480  491  493  525 +hsync +vsync
+
+# 640x480 @ 35.40 kHz hsync - left portion of the screen
+Modeline "6D"  36 640  664  760  1000   480  491  493  525 -hsync -vsync
+
+# 800x600 @ 75 Hz, 37.8 kHz hsync - full screen
+Modeline "8A"   40      800  840  968 1056   600  601  605  628 -hsync -vsync
+Modeline "8B"   49.5    800  840  968 1056   600  601  605  628 -hsync -vsync
+#bad sync
+Modeline "8C"   56.0    800  840  968 1056   600  601  605  628 -hsync -vsync
+#not 44.9! ok, although can see only part of the image
+Modeline "10A" 45.0     1024 1032 1176 1344 768 771 777 806 -hsync -vsync
+#bad sync
+Modeline "10B" 56.0     1024 1032 1176 1344 768 771 777 806 +hsync +vsync
+
+EndSection
+
+Section "Device"
+    Identifier  "Trident TGUI9660 (generic)"
+    VendorName  "Unknown"
+    BoardName   "Unknown"
+    Chipset     "cyber938x"
+#need to remove acceleration if trying the truecolor mode
+#    Option      "noaccel"
+    Ramdac      "normal"
+    # do not insert Clocks lines here!
+EndSection
+
+
+# The Colour SVGA server: put all modes in line, except bad ones (prepend '-' to prevent X from finding them)
+
+Section "Screen"
+    Driver      "svga"
+    Device      "Trident TGUI9660 (generic)"
+    Monitor     "My Monitor"
+    DefaultColorDepth   16
+    Subsection "Display"
+        Depth       16
+        Modes       "8A" "-6A" "-6B" "-6C" "6D" "-8A" "-8B" "-8C" "-10A" "-10B"
+        ViewPort    0 0
+        Virtual    800 600
+    EndSubsection
+    Subsection "Display"
+        Depth       8
+        Modes       "8A" "6A" "6B" "6C" "6D" "8A" "8B" "8C" "10A" "10B"
+        ViewPort    0 0
+        Virtual    800 600
+    EndSubsection
+    Subsection "Display"
+        Depth       32
+#need depth 32, not 24!
+        Modes       "6A" "6B" "6C" "6D" "8A" "8B" "8C" "10A" "10B"
+        ViewPort    0 0
+    EndSubsection
+EndSection
+
+</pre>
+
+
+<dd>The problem with automatic configuration of X was that the XF86Setup file contained way too many modelines. The X server is supposed to automatically select the "best" mode that fits the monitor specification, but I didn't have any idea about what that specification should be, and when the Xconfigurator asked me about that, I typed in something that must have been wrong. So the X server ended up selecting the wrong modelines. The problem was corrected by going from the other end: type the correct modelines into the configuration file, run `<tt>X -probeonly >& /tmp/x.out</tt>`, look at error messages and see why it deleted the modes (usually because the horizontal or the vertical refresh frequencies were out of the monitor range), adjust the monitor range and try again.
+
+<dd>General comment: it would be better to arrange the configuration of X differently and avoid this problem.  The user doesn't normally need to keep unused modelines in the config file. The automatic choice of mode would be useful if the user had several monitors and frequently changed them. This would require editting of the config file anyway. Moreover, most users seem to select one video mode and run it all the time. So one could put only the most compatible (low-frequency) modes to the config file and add the higher-frequency modes as switchable modes. As it is done now, all modes are named after their resolution, so the X server chooses them, rather than the user. So the recipe for configuring X is to run xfree86config, go to the config file, <b>rename all modes</b> to unique names (e.g. 800x600a, 800x600b etc.) and add them all to the available modes list. Hopefully, the user will then be able to Ctrl-Alt-+ through all the modes and find the ones that work.
+
+<dd>I also read the long document describing how to calculate the modeline yourself, and I went through with the calculation but the modeline I got never worked - probably because I didn't have the correct monitor info/refresh rates/clock rates. The one that worked turned out to be one of the standard modelines. This makes me think that the standard modelines is the only thing people really need in their X config file. After all, the hardware these days is made for the so-called operating system with "windows" which has only a few fixed modelines built-in. These are 640x480, 800x600, 1024x768 and so on and they should work for all monitors at lowest clock settings, which is how they configure computers in all computer stores. <b>Lowest clock settings with standard resolutions should work for all monitors!</b> So users of Linux should not be put in a quandary when there is such a simple solution at hand. The XFree86Config file should contain these lowest common denominator settings, and some higher-quality settings in addition, so that the user can at least get some picture on the screen and then press Ctrl-Alt-+ to try other modelines.
+
+<h3>Parallel port Zip drive</h3>
+
+<dd>When I started RedHat installation, it asked whether I wanted to have parallel port ZIP; I said yes but it couldn't find it, so I said no and proceeded. After the installation, I read the "zip drive-howto". After inserting ppa.o, mounted the zip to /dev/sda4 as suggested by the howto. This didn't work at first -- I had to figure out that my parallel port wasn't on 0x378 (the default compiled into the driver ppa.o) but on 0x278. That's why RedHat couldn't find it. I said
+
+<pre>
+insmod ppa.o ppa_base=0x278 #and perhaps some other options, don't remember now
+</pre>
+
+after which it worked but the transfer speed was unbearably slow (24KB/sec reading from a DOS filesystem). I downloaded a more advanced driver ("Curtin 1.21 beta") which autodetected the zip drive and also works much faster with my EPP/ECP parallel port. The parallel port address as well as the EPP/ECP setting is BIOS-controllable.
+
+<dd>The drive is mounted by
+
+<pre>
+mount -t vfat -o ro /dev/sda4 /zip
+</pre>
+
+<dd>Note that the DOS-formatted ZIP disks use partition 4 (hence "sda4").
+
+<dd>Additional notices: to make kerneld automatically insert the ppa.o module, add
+
+<pre>
+alias scsi_hostadapter ppa
+</pre>
+
+to /etc/conf.modules and `<tt>killall -HUP kerneld</tt>`. This however makes linux check for scsi adapters every once in a while, which is a pain because when I unmount the zip drive it generates "scsi: 0 hosts" messages directly to the console, which breaks the screen in various curses-based things like mc or minicom. Solution: maybe not mount /zip automatically in /etc/fstab? Temporarily, I commented the "alias" line above (#alias ...). There may be a better solution with a general removable media driver, which I didn't investigate (supermount, jazip, ...?).
+
+<h3>SCSI Zip drive</h3>
+
+<dd>My scsi adapter card is Adaptec 1460 SlimSCSI. Had to recompile pcmcia_cs because for some reason the module aha152x_cs.o needed for my scsi card was not compiled. Also, found that modprobe can't detect its dependencies. kerneld failed to insmod this driver until I read the man page for Adaptec 1460 SlimSCSI card (comes with pcmcia_cs package) and found that if I configure scsi as module I have to add the following two lines to /etc/pcmcia/config:
+
+<pre>
+device "aha152x_cs"
+   class "scsi" module "scsi/scsi_mod", "scsi/sd_mod", "aha152x_cs"
+</pre>
+
+<dd>After I added those two lines (doesn't matter where in the file) and rebooted, everything was dandy and zip drive was even automounted.
+
+<dd>I also read pcmcia and scsi howtos and found that if I configure scsi as module I need to say which scsi drives should be mounted and where. This goes into /etc/pcmcia/scsi.opts and is rather complicated, see example in the howtos and my file.
+
+<h3>Sound card</h3>
+
+<dd>I have a sound controller based on OPTi930 chip. I tried to compile the sound module (generic Opti, generic SB, ...) using my IRQs and ports from the listing above, but it never worked. I downloaded an evaluation version of OSS/Linux and fiddled with the settings until I figured out that my card is compatible with "Generic MAD16". I tested 16-bit sound and internal and external MIDI, and it worked. (However, I tried again after recompiling the kernel and it doesn't work any more, it works only with "generic Windows Sound System compatible" and FM MIDI totally sucks there.) I still hope to compile the standard sound module into the kernel correctly some day. The OSS/Linux soft MIDI synthesizer worked horribly, its MIDI implementation is very basic (e.g. no sustain pedal) and it didn't play anything unless I selected the "80486" mode, with its terrible sound quality. (Although I have a Pentium 150 with 60 BogoMIPS, the OSS/Linux software synth didn't work in "Pentium" mode.)
+
+<h3>PCMCIA</h3>
+
+<dd>The pcmcia drivers didn't work until I read some HOWTOs and added the option "wakeup=1" to /etc/sysconfig/pcmcia (may be elsewhere for Slackware based installs but the options should be the same). This file now looks like this:
+
+<pre>
+PCMCIA=yes
+PCIC=i82365
+PCIC_OPTS="wakeup=1 fast_pci"
+CORE_OPTS=
+</pre>
+
+<dd>From the Windows information, I knew that I had the Cirrus PCMCIA controller, so I put <tt>i82365</tt> above (not the other option, "<tt>tcic</tt>").
+
+<h3>Modem</h3>
+
+<dd>The modem worked once I got pcmcia working. Minicom was able to dial with /dev/modem just fine. From Windows, I know that the modem is on com3, so I should be able to configure most anything to use it. (com3 is /dev/cua2)
+
+<h3>Mice</h3>
+
+<dd>I have a built-in touchpad mouse on PS/2 protocol, and also I connected a Logitech serial mouse on com1 (/dev/cua0). Only the PS/2 one worked until I configured gpm to use both mice (as described by some howto). I added these lines to /etc/rc.d/rc.local :
+
+<pre>
+gpm -k	#to kill gpm if already running
+gpm -t ps2 -m /dev/psaux -g 3 -B132 -M -t ms -m /dev/cua0 -3 -R	#wowzers
+</pre>
+
+<dd>However, I seem to need to press the left button on the Logitech while gpm loads, and even that doesn't make it work half of the time. (The internal mouse works always.) I have to unplug the Logitech mouse and plug it back. After that everything works fine. Under X I configured one mouse on /dev/mouse, using "MouseSystems" mode (as described in the howto).
+
+<h3>Networking</h3>
+
+<dd>Problems: don't know how to configure my computer to recognize itself as localhost. Wabi complains and can't run with font server enabled. Haven't tried PPP with Slirp yet. /etc/sysconfig/network is supposed to contain the host name but I'm not sure how exactly it works, because it didn't work for me.
+
+<h3>RedHat madness, or Why it may still be better to use Slackware</h3>
+
+<dd>Disclaimer: the following applies to RedHat 4.2 and they may have changed everything since.
+
+<dd>1. A complicated script runs at init time and selects the machine name. /etc/HOSTNAME doesn't affect the name of the machine. Have to use their GUI network config tools or who knows what. Also, I couldn't figure out the various rc.d files that do all initialization. For instance, `<tt>shutdown now</tt>` gives a login prompt and then goes single-user, but doesn't shut down. It would be easier to have just one master init script that runs once, like in Slackware, rather than a set of files.
+
+<dd>2. X windows are configured with a horrible mess of a script ("TheNextLevel") which prepares settings for the window manager (fvwm95). Editting its config file didn't configure anything. TheNextLevel seems useless -- the user isn't going to change the desktop resolution, application configuration, etc. frequently enough to warrant run-time configuration of the tools. It's just to make thinks look like the so-called operating system with "windows". And the idea of course doesn't quite work either, there were applications in the menus which I didn't have installed, and vice versa, and since it's an interpreted script rather than a bunch of settings, the user has no idea how to deal with it.
+
+<dd>3. fvwm95-2 is buggy, hangs the UI sometimes. Try fvwm2, icewm, ... instead? I found that RedHat puts all X initialization into the file .Xclients, so one has to get rid of that file and edit .Xinit or something.
+
+<dd>4. Revision 5 of redhat introduced some changes in rpm which make it difficult to upgrade. It may be related to glibc but the bottom line is that you are out of luck trying to use the new .rpm's from /contrib directory. E.g. get error messages such as "package /bin/sh required" - what package "bin/sh", it should be in binutils and already installed anyway... Having thoughts of abandoning redhat and going to Slackware, just to save time. I can always do `<tt>gzip -d | tar tvf - > listing_file</tt>` to find out what I installed. I can install this rpm crap separately anyway.
+
+<dd>Slackware 3.3 didn't have such a convenient installation as Redhat 4.2. For example, under redhat I first select all packages I want to install (the packages are categorized so it's easy to understand what you want), and then all of it gets installed. While under Slackware it asks you whether you want to install a package X and then installs it immediately, and the packages are not ordered or categorized. Also, nowadays redhat is using glibc2 while Slackware (latest version 3.5) is holding on to libc5 (which looks like a sensible decision, given the number of problems Redhat users have had with glibc2 glitches). This means that if I want to use any of the modern rpms, I'd need to have glibc2 installed as well as libc5 (which may be a must anyway).
+
+<dd>However, Slackware probably is still a good DIY linux installation. If you want to understand how your configuration of linux works (and I certainly do), it's easier with Slackware than with RedHat's convoluted designs. Ease of configuration is not the same as ease of first installation or ease of use. Hell, I don't understand how the so-called operating system with "windows" manages its device drivers in the "iosubsys" directory, for all the time I tinkered with it.
+
+<h3>Miscellaneous</h3>
+
+<dd>Speed tests. My CDROM was claimed to be 10X. I tested the I/O by 
+
+<pre>
+dd if=/dev/cdrom of=/dev/null bs=1k count=15000
+</pre>
+
+which read 15000 blocks of 1K in 16 seconds. This gives about 1MB/sec, more like 8X.
+
+<dd>ZIP drive (parallel) gave roughly 600KB/sec on raw read/write while giving only about 140KB/sec for the DOS VFAT filesystem (while the speed on ext2 filesystem was still about 600KB/sec!). Unless I need to exchange zip disks with DOS machines, I'd format them to ext2 for speed. Only the Macintosh filesystem is still slower than FAT.
+
+<dd>Create a 40MB swap file: 
+
+<pre>
+dd if=/dev/zero of=/var/swapfile bs=1k count=40960
+</pre>
+
+<p>A good idea would be to use the suspend-to-disk partition (about 47MB, type 84) and make it linux swap space. This could be ok if I could run fdisk or something to restore it to the correct partition type (BIOS may not like it when I try suspending to disk without the partition in place).
+
+</body>
+</html>

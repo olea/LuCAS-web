@@ -1,0 +1,491 @@
+<HTML
+><HEAD
+><TITLE
+>Comprobación de una
+configuración del cortafuegos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="Manipulación de los bits de TOS"
+HREF="x-087-2-firewall.tos.manipulation.html"><LINK
+REL="NEXT"
+TITLE="Un ejemplo de configuración del cortafuegos"
+HREF="x-087-2-firewall.example.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.tos.manipulation.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.example.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.CHECKINGCONF">9.10. Comprobación de una
+configuración del cortafuegos</H1
+><P
+>&#13;Después de haber diseñado una configuración de cortafuegos adecuada,
+es importante comprobar que efectivamente se obtiene lo que
+se deseaba. Una forma de hacerlo consiste en utilizar un 'host'
+de prueba fuera de nuestra red para que intente atravesar su
+cortafuegos: esto puede llegar a resultar farragoso y lento,
+y se estaría limitado a la comprobación únicamente de aquellas
+direcciones que realmente puedan usarse.</P
+><P
+>Un método más rápido y sencillo está disponible con
+la implementación del cortafuegos de GNU/Linux.
+Permite generar pruebas y ejecutarlas contra el cortafuegos
+como si se estuviera haciendo la prueba con datagramas reales.
+Todas las variedades de software del cortafuegos del núcleo
+de GNU/Linux,
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, <B
+CLASS="COMMAND"
+>ipchains</B
+>, e
+<B
+CLASS="COMMAND"
+>iptables</B
+>, 
+dan soporte a este tipo de comprobaciones.
+La implementación involucra el uso de la orden
+de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>comprobación</I
+></SPAN
+> relevante.</P
+><P
+>El procedimiento general de comprobación es como sigue:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>Diseñe y configure su cortafuegos utilizando 
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>,
+<B
+CLASS="COMMAND"
+>ipchains</B
+>, o <B
+CLASS="COMMAND"
+>iptables</B
+>.</P
+></LI
+><LI
+><P
+>Diseñe una serie de comprobaciones que determinen si su cortafuegos
+está realmente funcionando como deseaba. Puede utilizar
+cualquier dirección de origen o destino para realizar estas
+comprobaciones, por lo que escoja algunas combinaciones
+de direcciones que deberían ser aceptadas y otras que
+deberían ser rechazadas. Si se va a permitir o prohibir
+a un cierto rango de direcciones, es una buena idea comprobar
+las direcciones situadas justo en los límites del
+rango&mdash;una dirección justo dentro del rango y otra justo
+fuera del rango. Esto le ayudará a asegurarse de
+que configuró correctamente los rangos, pues a veces
+resulta muy fácil especificar de forma incorrecta las
+máscaras de su configuración.
+Si se filtra por número de protocolo y puerto, sus comprobaciones
+también deberían comprobar todas las combinaciones importantes
+de estos parámetros.
+Por ejemplo, si se desea aceptar TCP sólo en ciertas circunstancias,
+compruebe que se rechazan los datagramas de tipo UDP.</P
+></LI
+><LI
+><P
+>Desarrolle reglas de 
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, <B
+CLASS="COMMAND"
+>ipchains</B
+>, o
+<B
+CLASS="COMMAND"
+>iptables</B
+> para implementar cada comprobación.
+Probablemente merezca la pena escribir todas estas reglas
+en un guión de tal forma que pueda hacer y rehacer
+la comprobación fácilmente a la vez que va corrigiendo los errores
+o cambiando el diseño.
+Las comprobaciones utilizan casi la misma sintaxis que las
+especificaciones de reglas, pero los argumentos tiene significados
+ligeramente diferentes. Por ejemplo, el argumento de dirección
+de origen de una especificación de una regla especifica
+la dirección de origen que deberían tener los datagramas coincidentes
+con esta regla. En cambio, el argumento de dirección de origen en
+la sintaxis de comprobación específica la dirección de origen
+del datagrama de prueba que se generará. En el caso de
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, 
+debe utilizarse la opción
+<TT
+CLASS="OPTION"
+>&ndash;c</TT
+>
+para especificar que la orden es una comprobación, mientras que
+en el caso de 
+<B
+CLASS="COMMAND"
+>ipchains</B
+> e <B
+CLASS="COMMAND"
+>iptables</B
+>, 
+se debe utilizar la opción
+<TT
+CLASS="OPTION"
+>&ndash;C</TT
+>. En todos los casos
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>siempre</I
+></SPAN
+> se deben especificar
+la dirección de origen, la dirección de destino, el protocolo y
+la interfaz que se utilizará como prueba.
+El resto de argumentos, como los números de puertos y los valores
+de los bits de TOS, son opcionales.</P
+></LI
+><LI
+><P
+>Ejecute cada orden de comprobación y anote el resultado. El resultado
+de cata comprobación consistirá en una única palabra que
+indicará el blanco final del datagrama después de haber
+cruzado la configuración del cortafuegos; es decir,
+dónde terminará el proceso.
+Para el caso de
+<B
+CLASS="COMMAND"
+>ipchains</B
+> e <B
+CLASS="COMMAND"
+>iptables</B
+>, 
+pueden comprobarse las cadenas de usuario
+además de las predefinidas.</P
+></LI
+><LI
+><P
+>Compare la salida de cada comprobación contra el resultado
+deseado. Si encuentra alguna discrepancia, necesitará analizar
+su conjunto de reglas para determinar dónde cometió el error.
+Si escribió sus órdenes de pruebas en un fichero de guión, entonces
+podrá reejecutar la comprobación de forma fácil después de haber
+corregido cualquier error de la configuración del cortafuegos.
+Se considera buena práctica borrar por completo sus conjuntos
+de reglas y reconstruirlas desde cero, en vez de estar realizando
+cambios dinámicamente. Esto le ayudará a asegurarse
+de que la configuración activa que está comprobando refleja
+el conjunto de órdenes de su guión de configuración.</P
+></LI
+></OL
+><P
+>Veamos lo que podría ser la transcripción de una comprobación manual de
+nuestro ejemplo simple con
+<B
+CLASS="COMMAND"
+>ipchains</B
+>. 
+Recuerde que la red local del ejemplo era
+172.16.1.0 con una máscara de red de 
+255.255.255.0, y que se permitían las conexiones de TCP
+hacia servidores web de fuera de la red.
+La cadena de reenvío 'forward' no permitía pasar nada más.
+Empiece con una transmisión que sabemos debería funcionar,
+una conexión desde el 'host' local a un servidor web de fuera:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -C forward -p tcp -s 172.16.1.0 1025 -d 44.136.8.2 80 -i eth0</B
+></TT
+>
+    accepted<A
+NAME="X-087-2-FW-TFN25"
+HREF="#FTN.X-087-2-FW-TFN25"
+>[1]</A
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Fíjese en los argumentos que se han proporcionado y en la forma en que
+se utilizan para describir el datagrama. La salida de la orden
+indica que se aceptó el datagrama para su reenvío, que es lo que
+se esperaba.</P
+><P
+>Ahora hagamos otra prueba, esta vez con una dirección de origen
+que no pertenece a nuestra red, y, que por tanto, debería ser rechazada.
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -C forward -p tcp -s 172.16.2.0 1025 -d 44.136.8.2 80 -i eth0</B
+></TT
+>
+    denied<A
+NAME="X-087-2-FW-TFN26"
+HREF="#FTN.X-087-2-FW-TFN26"
+>[2]</A
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Realice algunas comprobaciones más, con el mismo nivel de detalle que
+la primera comprobación pero con diferentes protocolos. También deberían
+ser rechazados:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -C forward -p udp -s 172.16.1.0 1025 -d 44.136.8.2 80 -i eth0</B
+></TT
+>
+    denied
+    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -C forward -p icmp -s 172.16.1.0 1025 -d 44.136.8.2 80 -i eth0</B
+></TT
+>
+    denied</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Pruebe con otro puerto de destino, de nuevo esperando que sea rechazado:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipchains -C forward -p tcp -s 172.16.1.0 1025 -d 44.136.8.2 23 -i eth0</B
+></TT
+>
+    denied</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Tendrá que recorrer un largo camino para estar tranquilo pues
+tendrá que diseñar una serie de comprobaciones muy exhaustiva.
+Aunque a veces esto resulta tan complicado como el diseño
+de la propia configuración del cortafuegos, también
+es la mejor forma de saber si su diseño proporciona
+la seguridad que esperaba.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN25"
+HREF="x-087-2-firewall.checkingconf.html#X-087-2-FW-TFN25"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "aceptado" </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN26"
+HREF="x-087-2-firewall.checkingconf.html#X-087-2-FW-TFN26"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "rechazado" </P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.tos.manipulation.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.example.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Manipulación de los bits de TOS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Un ejemplo de configuración del cortafuegos</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PPP C&oacute;mo: Depurando</TITLE>
+ <LINK HREF="PPP-Como-19.html" REL=next>
+ <LINK HREF="PPP-Como-17.html" REL=previous>
+ <LINK HREF="PPP-Como.html#toc18" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PPP-Como-19.html">Página siguiente</A>
+<A HREF="PPP-Como-17.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc18">Índice general</A>
+<HR>
+<H2><A NAME="problems"></A> <A NAME="s18">18. Depurando</A></H2>
+
+<P>Hay un buen n&uacute;mero de razones por la que su conexi&oacute;n puede no funcionar -
+chat no ha conseguido completarse correctamente, usted tiene una l&iacute;nea con
+mucho ruido, etc. Compruebe su registro de sistema para m&aacute;s indicaciones.
+<P>
+<H2><A NAME="ss18.1">18.1 He compilado el soporte PPP en el n&uacute;cleo, pero...</A>
+</H2>
+
+<P>Un problema muy com&uacute;n es que la gente compila el soporte PPP en el n&uacute;cleo y
+despu&eacute;s, cuando intentan ejecutar pppd, el n&uacute;cleo se queja diciendo que no
+soporta ppp. Hay unas cuantas razones por la que esto puede ocurrir.
+<P>
+<H3>¿Est&aacute; arrancando el n&uacute;cleo correcto?Aunque usted <B>haya</B> recompilado el n&uacute;cleo para que de soporte a ppp,usted puede no estar arrancando el nuevo n&uacute;cleo. Esto puede suceder si noactualiza <CODE>/etc/lilo.conf</CODE> y vuelve a ejecutar lilo.</H3>
+
+<P>Una buena manera de comprobar el n&uacute;cleo es ejecutando la orden <CODE>uname
+-a</CODE>, que deber&iacute;a producir una l&iacute;nea como
+<P>
+<HR>
+<PRE>
+Linux archenland 2.0.28 #2 Thu Feb 13 12:31:37 EST 1997 i586
+</PRE>
+<HR>
+<P>
+<P>Esto da la versi&oacute;n del n&uacute;cleo y la fecha en la que el n&uacute;cleo se compil&oacute; -
+lo cual deber&iacute;a dar una idea clara de qu&eacute; es lo que sucede.
+<P>
+<H3>¿Compil&oacute; el soporte ppp del n&uacute;cleo como m&oacute;dulo?</H3>
+
+<P>Si compil&oacute; el soporte ppp como m&oacute;dulo, pero no rehizo e instal&oacute; los m&oacute;dulos,
+puede conseguir este error. Compruebe el N&uacute;cleo-COMO y el fichero README en
+<CODE>/usr/src/linux</CODE>.
+<P>
+<P>Otra posibilidad en este caso es que usted puede esperar que los m&oacute;dulos
+requeridos se carguen autom&aacute;ticamente, pero puede no estar ejecutando el
+demonio <CODE>kerneld</CODE> (que carga y descarga autom&aacute;ticamente m&oacute;dulos en tiempo
+real). Lea el kerneld mini-HOWTO para m&aacute;s informaci&oacute;n acerca de la
+configuraci&oacute;n de kerneld.
+<P>
+<H3>¿Est&aacute; usted utilizando la versi&oacute;n correcta de PPP para su n&uacute;cleo?</H3>
+
+<P>Usted <B>debe</B> utilizar ppp-2.2 o superior con las versiones de n&uacute;cleo
+2.x.x. Puede utilizar ppp-2.2 con la versi&oacute;n de n&uacute;cleo 1.2.x (si parchea el
+n&uacute;cleo). Si no, utilice ppp-2.1.2.
+<P>
+<H3>¿Est&aacute; ejecutando pppd como root?</H3>
+
+<P>Si no ejecuta pppd como usuario root (y ppd no es su id root) puede recibir
+este mensaje.
+<P>
+<H2><A NAME="ss18.2">18.2 Mi m&oacute;dem se conecta pero ppp no se inicia.</A>
+</H2>
+
+<P>Hay infinitas variaciones sobre esto (eche un vistazo a comp.os.linux...).
+<P>
+<P>Un fallo <B>MUY</B> com&uacute;n es que haya errado al transcribir algo en sus
+scripts. Lo &uacute;nico que debe hacer aqu&iacute; es asegurarse de que registra la
+conversaci&oacute;n chat entre su PC Linux y el servidor en el registro de sistema
+(/var/log/messages) y entonces ir <EM>l&iacute;nea por l&iacute;nea</EM> examin&aacute;ndolo.
+Puede que necesite conectarse al servidor ppp manualmente para comprobarlo
+todo de nuevo.
+<P>
+<P>Debe comprobar el registro de las l&iacute;neas de &oacute;rdenes muy cuidadosamente - y
+tenga en cuenta de que los humanos tenemos la tendencia de leer lo que
+CREEMOS que hemos escrito - ¡no lo que hemos escrito de veras!
+<P>
+<H2><A NAME="ss18.3">18.3 El registro de sistema dice ``<CODE>serial line is not 8 bit clean</CODE>...''</A>
+</H2>
+
+<P>Tambi&eacute;n hay variaciones sobre esto - como <CODE>serial line looped back</CODE>,
+etc., y la causa puede ser varias cosas.
+<P>
+<P>Para entender qu&eacute; es lo que pasa es necesario profundizar un poco en qu&eacute; es
+lo que sucede tras el proceso de pppd.
+<P>
+<P>Cuando pppd arranca, env&iacute;a paquetes LCP (protocolo de control de conexi&oacute;n) a
+la m&aacute;quina remota. Si recibe una respuesta v&aacute;lida entonces pasa a la
+siguiente fase (utilizar IPCP - paquetes de protocolo de control de IP) y
+s&oacute;lo cuando esa negociaci&oacute;n finaliza se inicializa la capa IP de manera que
+pueda utilizar su conexi&oacute;n PPP.
+<P>
+<P>Si no hay un servidor ppp funcionando al otro lado de la l&iacute;nea cuando su PC
+env&iacute;a paquetes lcp, &eacute;stos son reflejados por el proceso de entrada en el
+sistema de la m&aacute;quina remota. Como estos paquetes utilizan 8 bits, el
+reflejo corta el octavo bit (recuerde que ASCII es un c&oacute;digo de 7 bits). PPP
+ve esto y se queja de acuerdo con ello.
+<P>
+<P>Hay bastantes razones por las que este reflejo puede ocurrir.
+<P>
+<H3>No ha entrado en el servidor de manera adecuada</H3>
+
+<P>Cuando su script chat finaliza, pppd arranca en su PC. Sin embargo, si no ha
+completado el proceso de entrada en el sistema (incluyendo el env&iacute;o de
+cualquier orden necesaria para arrancar PPP en el servidor), PPP no se
+iniciar&aacute;.
+<P>
+<P>Por lo tanto, los paquetes lcp se reflejar&aacute;n y recibir&aacute; este error.
+<P>
+<P>Necesita comprobar cuidadosamente y corregir (si es necesario) su script
+chat (ver m&aacute;s arriba).
+<P>
+<H3>No est&aacute; ejecutando PPP en el servidor</H3>
+
+<P>Algunos servidores requieren que introduzca una orden o un retorno de
+carro tras completar el proceso de entrada en el sistema antes de arrancar
+ppp.
+<P>
+<P>Compruebe su script chat (ver m&aacute;s arriba).
+<P>
+<P>Si entra en el sistema manualmente y se encuentra con que necesita enviar un
+retorno de carro para que arranque PPP, simplemente a&ntilde;ada un par
+esperado/enviado en blanco al final de su script chat (una cadena de env&iacute;o
+vac&iacute;a env&iacute;a realmente un retorno de carro).
+<P>
+<H3>El proceso PPP remoto es lento al arrancarse</H3>
+
+<P>Este es algo m&aacute;s raro.
+<P>
+<P>Por defecto, pppd est&aacute; compilado para enviar un m&aacute;ximo de 10 peticiones de
+configuraci&oacute;n lcp. Si el servidor es un poco lento al arrancar, las 10
+peticiones puede ser enviadas antes de que el PPP remoto este listo para
+recibirlas.
+<P>
+<P>En su m&aacute;quina, pppd ve las 10 peticiones reflejadas (con el octavo bit
+eliminado) y finaliza.
+<P>
+<P>Hay dos maneras de evitar esto:-
+<P>
+<P>A&ntilde;ada <CODE>lcp-max-configure 30</CODE> a su fichero de opciones ppp. Esto
+incrementa el m&aacute;ximo n&uacute;mero de paquetes de configuraci&oacute;n lcp que pppd env&iacute;a
+antes de dejarlo. Para un servidor realmente lento, puede que necesite
+incluso m&aacute;s que esto.
+<P>
+<P>De manera alternativa, puede trabajar la soluci&oacute;n algo m&aacute;s. Se habr&aacute; dado
+cuenta de que cuando se conect&oacute; a mano al servidor PPP y PPP arranc&oacute;, el
+ppp era siempre el car&aacute;cter del gurru&ntilde;o (~).
+<P>
+<P>Utilizando este conocimiento podemos a&ntilde;adir un nuevo par
+<CODE>esperado/enviado</CODE> al final de nuestro script chat que espere una
+tilde y no env&iacute;e nada. Esto ser&iacute;a algo como:-
+<P>
+<HR>
+<PRE>
+\~   ''
+</PRE>
+<HR>
+<P>
+<P>Nota: como el car&aacute;cter tilde tiene un significado especial en el shell, debe
+ser mostrado con un car&aacute;cter de escape (por eso la barra inversa inicial).
+<P>
+<H2><A NAME="ss18.4">18.4 Camino por defecto no establecido</A>
+</H2>
+
+<P>Si pppd rehusa a establecer un camino por defecto, esto es porque (bastante
+correctamente) deniega la eliminaci&oacute;n/reemplazo del camino por defecto
+existente.
+<P>
+<P>La raz&oacute;n m&aacute;s normal de este error es que algunas distribuciones configurar
+una camino por defecto v&iacute;a tarjeta Ethernet que es contraria a establecer
+una ruta espec&iacute;fica de red.
+<P>
+<P>Vea el Manual GARL y los COMOs Net2/3 para m&aacute;s informaci&oacute;n acerca de c&oacute;mo
+configurar su tarjeta Ethernet y las rutas asociadas.
+<P>
+<P>Una alternativa a esto es que su red local utilice una pasarela/encaminador
+y que la tabla de encaminamientos de su PC haya sido configurada para
+apuntar como camino por defecto a la pasarela.
+<P>
+<P>Solucionar esta &uacute;ltima situaci&oacute;n requiere algo m&aacute;s de conocimientos IP y
+queda fuera de los objetivos de este COMO. Le sugiero que obtenga un consejo
+de alguien m&aacute;s experto (v&iacute;a foros de noticias o de alguien a quien pueda
+preguntar).
+<P>
+<H2><A NAME="ss18.5">18.5 Otros Problemas</A>
+</H2>
+
+<P>Hay otras muchas razones aparte de estas por las que ppp no puede conectar
+y/o funcionar bien.
+<P>
+<P>Lea el PUF PPP (que son realmente una serie de preguntas y respuestas). Es
+un documento mucho m&aacute;s intuitivo y las respuestas ESTAN all&iacute;. Desde mi
+triste experiencia, si la respuesta a sus problemas no est&aacute; all&iacute;, el
+problema no es fallo de ppp. En mi caso yo estaba utilizando un n&uacute;cleo ELF
+para el que no hab&iacute;a actualizado los m&oacute;dulos de n&uacute;cleo apropiados.
+Desperdici&eacute; s&oacute;lo 2 d&iacute;as y una casi toda una noche modificando lo que hab&iacute;a
+sido un perfecto servidor PPP antes del ligero error.
+<P>
+<HR>
+<A HREF="PPP-Como-19.html">Página siguiente</A>
+<A HREF="PPP-Como-17.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc18">Índice general</A>
+</BODY>
+</HTML>

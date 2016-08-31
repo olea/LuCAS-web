@@ -1,0 +1,381 @@
+<HTML
+><HEAD
+><TITLE
+>El Protocolo Punto-a-Punto</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="Funcionamiento en modo Servidor"
+HREF="x-087-2-slip.server.html"><LINK
+REL="NEXT"
+TITLE="PPP en Linux"
+HREF="x6610.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-slip.server.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x6610.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="X-087-2-PPP">Capítulo 8. El Protocolo Punto-a-Punto</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>8.1. <A
+HREF="x6610.html"
+>PPP en Linux</A
+></DT
+><DT
+>8.2. <A
+HREF="x6661.html"
+>Ejecutando pppd</A
+></DT
+><DT
+>8.3. <A
+HREF="x-087-2-ppp.options.html"
+>Usando los Ficheros de Opciones</A
+></DT
+><DT
+>8.4. <A
+HREF="x6765.html"
+>Realización de la Llamada con chat</A
+></DT
+><DT
+>8.5. <A
+HREF="x-087-2-ipconfig.options.html"
+>Opciones de Configuración IP</A
+></DT
+><DT
+>8.6. <A
+HREF="x7053.html"
+>Opciones de Control de Enlace</A
+></DT
+><DT
+>8.7. <A
+HREF="x7120.html"
+>Consideraciones de Seguridad General</A
+></DT
+><DT
+>8.8. <A
+HREF="x-087-2-ppp.authentication.html"
+>Autentificación con PPP</A
+></DT
+><DT
+>8.9. <A
+HREF="x7338.html"
+>Depurando su configuración de PPP</A
+></DT
+><DT
+>8.10. <A
+HREF="x7373.html"
+>Configuraciones avanzadas de PPP</A
+></DT
+></DL
+></DIV
+><P
+>&#13;
+
+
+
+
+
+Como SLIP, PPP es un protocolo usado para mandar datagramas a través
+de una conexión serie; sin embargo, resuelve varias de las deficiencias
+de SLIP. Primero, puede transportar un alto número de protocolos y no
+está limitado al protocolo IP. Proporciona detección de
+errores en el mismo enlace, mientras que SLIP acepta y reenvía
+datagramas corruptos mientras que la corrupción no se produzca en la cabecera.
+Igualmente importante, permite a los extremos comunicantes negociar opciones, 
+como la dirección IP y el tamaño máximo del datagrama, y provee 
+autentificación del cliente. Esta negociación interna, permite una automatización
+fiable del establecimiento de la conexión. Mientras la autentificación elimina
+la necesidad de cuentas de usuario que requiere SLIP. Para cada una
+de estas capacidades, PPP tiene un protocolo específico. En este
+capítulo cubrimos brevemente estos elementos básicos que forman PPP.
+Esta discusión de PPP está lejos de ser completa; si quiere aprender más sobre
+PPP, le instamos a que lea el RFC de su especificación y la alrededor de
+docena de RFCs que lo complementan.<A
+NAME="X-087-2-FNPP01"
+HREF="#FTN.X-087-2-FNPP01"
+>[1]</A
+>
+Además hay un extenso libro de O'Reilly sobre el tema
+ <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Using &#38; Managing PPP</I
+></SPAN
+>, por Andrew Sun.</P
+><P
+>&#13;
+En la parte más baja de PPP está el protocolo de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Control de Conexión de Datos
+de Alto-Nivel</I
+></SPAN
+> (HDLC), que define los límites de las tramas PPP individuales,
+y proporciona un control de errores de 16 bit.<A
+NAME="X-087-2-FNPP02"
+HREF="#FTN.X-087-2-FNPP02"
+>[2]</A
+> Al contrario de lo que ocurría con
+SLIP, una trama PPP es capaz de llevar paquetes de otros protocolos
+distintos al IP, como IPX de Novell o  Appletalk. PPP
+consigue esto añadiendo a la trama básica HDLC un campo de control
+que identifica el tipo de paquete contenido en la misma.</P
+><P
+>&#13;
+El <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Protocolo de Control de Enlace</I
+></SPAN
+>, es
+utilizado en la parte más alta del HDLC para negociar las opciones
+concernientes a la conexión de datos, tales como la <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Unidad
+Máxima de Recepción</I
+></SPAN
+> (MRU), que establece el tamaño máximo
+del datagrama que cada extremo de comunicación acepta recibir.</P
+><P
+>&#13;
+
+
+
+Un paso importante en la configuración del enlace PPP corresponde
+a la autentificación del cliente. Aunque no es obligatorio, es casi
+un deber para las líneas telefónicas y así mantener fuera a los
+intrusos. Normalmente la máquina llamada (el servidor) pide al
+cliente que se identifique probando que se sabe alguna clave secreta.
+Si el llamante se equivoca con la clave, la conexión termina. Con
+PPP, las autorizaciones se producen en los dos sentidos; es decir,
+el que llama también puede pedir al servidor que se autentifique.
+Estos procedimientos de autentificación son totalmente independientes
+entre sí. Hay dos protocolos distintos, según el tipo de autentificación,
+los cuales discutiremos más adelante en este capítulo: <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>el Protocolo
+de Autentificación por Contraseña</I
+></SPAN
+> (PAP) y <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>el Protocolo
+de Autentificación por Reto</I
+></SPAN
+> (CHAP).</P
+><P
+>&#13;
+
+
+
+
+Cada protocolo de red que es encaminado a través de la conexión de datos, 
+como el IP, el Appletalk, etc; se configura dinámicamente usando el 
+correspondiente <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Protocolo de Control de Red</I
+></SPAN
+> (NCP). Por ejemplo, para enviar
+datagramas IP a través del enlace, los dos nodos tienen que negociar en 
+primer lugar qué direcciones IP van a utilizar. El protocolo de control
+utilizado para esto es el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Protocolo de Control del IP</I
+></SPAN
+> (IPCP).</P
+><P
+>&#13;
+
+
+Aparte de enviar datagramas IP estándar a través del enlace, el PPP
+también permite la compresión Van Jacobson de las cabeceras en los
+datagramas IP. Es una técnica para reducir las cabeceras de los paquetes
+TCP a un espacio de tan sólo tres bytes. También se utiliza en el
+CSLIP, y es conocida coloquialmente como compresión de cabeceras VJ.
+La utilización de la compresión puede negociarse también al comienzo
+de la conexión gracias al IPCP.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP01"
+HREF="x-087-2-ppp.html#X-087-2-FNPP01"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> Los RFCs más relevantes
+están indicados en la bibliografia al final del libro.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP02"
+HREF="x-087-2-ppp.html#X-087-2-FNPP02"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> En realidad,
+HDLC es un protocolo mucho más general publicado por la Organización Internacional
+de Estándares (ISO).</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-slip.server.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x6610.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Funcionamiento en modo Servidor</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>PPP en Linux</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

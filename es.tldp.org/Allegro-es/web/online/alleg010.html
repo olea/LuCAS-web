@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 10 Rutinas de paleta
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="10 Rutinas de paleta">10 Rutinas de paleta</a></h1>
+
+<ul>
+<li><a href="#_set_color">_set_color</a>
+<li><a href="#black_palette">black_palette</a>
+<li><a href="#default_palette">default_palette</a>
+<li><a href="#desktop_palette">desktop_palette</a>
+<li><a href="#fade_from">fade_from</a>
+<li><a href="#fade_from_range">fade_from_range</a>
+<li><a href="#fade_in">fade_in</a>
+<li><a href="#fade_in_range">fade_in_range</a>
+<li><a href="#fade_interpolate">fade_interpolate</a>
+<li><a href="#fade_out">fade_out</a>
+<li><a href="#fade_out_range">fade_out_range</a>
+<li><a href="#generate_332_palette">generate_332_palette</a>
+<li><a href="#generate_optimized_palette">generate_optimized_palette</a>
+<li><a href="#get_color">get_color</a>
+<li><a href="#get_palette">get_palette</a>
+<li><a href="#get_palette_range">get_palette_range</a>
+<li><a href="#select_palette">select_palette</a>
+<li><a href="#set_color">set_color</a>
+<li><a href="#set_palette">set_palette</a>
+<li><a href="#set_palette_range">set_palette_range</a>
+<li><a href="#unselect_palette">unselect_palette</a>
+<li><a href="#vsync">vsync</a>
+</ul>
+
+<p>
+Todas las funciones de dibujo de Allegro usan parámetros en enteros para
+representar colores. En las resoluciones truecolor estos números codifican
+el color directamente como una colección de bits rojos, verdes y azules,
+pero en el modo normal de 256 colores, los valores son tratados como índices
+de la paleta actual, que es una tabla que contiene las intensidades de rojo,
+verde y azul de cada uno de los 256 colores posibles.
+
+<p>
+La paleta se almacena con estructuras RGB, que contienen intensidades de
+rojo, verde y azul en el formato hardware de la VGA, que van de 0 a 63, y
+son definidas así:
+<blockquote class="code"><pre>
+   typedef struct RGB
+   {
+      unsigned char r, g, b;
+   } RGB;
+</pre></blockquote>
+Por ejemplo:
+<blockquote class="code"><pre>
+   RGB negro  = { 0,  0,  0  };
+   RGB blanco = { 63, 63, 63 };
+   RGB verde  = { 0,  63, 0  };
+   RGB gris   = { 32, 32, 32 };
+</pre></blockquote>
+El tipo PALETTE es definido como un array de 256 estructuras RGB.
+
+<p>
+Puede notar que gran parte del código de Allegro escribe 'palette' como
+'pallete'. Esto es porque los ficheros de cabecera de mi viejo compilador
+Mark Williams del Atari lo escribían con dos l's, y estoy acostumbrado a
+eso. Allegro aceptará sin problemas ambas escrituras, debido a algunos
+#defines en allegro/alcompat.h.
+
+<p><br>
+<b>void <a name="vsync">vsync</a>();</b><br>
+   Espera a que empiece un retrazo vertical. El retrazo ocurre cuando el
+   rayo de electrones de su monitor ha llegado a la parte inferior de la
+   pantalla y está volviendo arriba para hacer otro barrido. Durante este
+   corto periodo de tiempo la tarjeta de vídeo no manda datos al monitor,
+   por lo que puede hacer cosas que de otra forma no podría, como alterar
+   la paleta sin causar parpadeo (nieve). Sin embargo Allegro esperará
+   automáticamente el retrazo vertical antes de alterar la paleta o hacer
+   scroll por hardware, por lo que normalmente no debe preocuparse por esta
+   función.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_palette">set_palette</a>,
+<a class="xref" href="alleg007.html#scroll_screen">scroll_screen</a>,
+<a class="xref" href="alleg004.html#timer_simulate_retrace">timer_simulate_retrace</a>.</font></blockquote>
+<b>void <a name="set_color">set_color</a>(int index, const RGB *p);</b><br>
+   Cambia la entrada de la paleta especificada al triplete RGB dado. A
+   diferencia de otras funciones de paleta, esto no hace sincronización con
+   el retrazo, por lo que debería llamar vsync() antes para evitar
+   problemas de nieve.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_palette">set_palette</a>,
+<a class="xref" href="#get_color">get_color</a>,
+<a class="xref" href="#_set_color">_set_color</a>.</font></blockquote>
+<b>void <a name="_set_color">_set_color</a>(int index, const RGB *p);</b><br>
+   Esta es una versión inline de set_color(), que puede usar en la función
+   callback del simulador de retrazo vertical. Sólo debería ser usada en
+   VGA modo 13h y modo-X, porque algunos de las recientes SVGAs no son
+   compatibles con la VGA (set_color() y set_palette() usarán llamadas VESA
+   en estas tarjetas, pero _set_color() no sabrá nada de eso).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_color">set_color</a>,
+<a class="xref" href="alleg007.html#set_gfx_mode">set_gfx_mode</a>,
+<a class="xref" href="alleg004.html#timer_simulate_retrace">timer_simulate_retrace</a>.</font></blockquote>
+<b>void <a name="set_palette">set_palette</a>(const PALETTE p);</b><br>
+   Ajusta la paleta entera de 256 colores. Debe pasar un array de 256
+   estructuras RGB. A diferencia de set_color(), no hace falta llamar
+   vsync() antes de esta función.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#select_palette">select_palette</a>,
+<a class="xref" href="alleg011.html#palette_color">palette_color</a>,
+<a class="xref" href="alleg007.html#set_gfx_mode">set_gfx_mode</a>,
+<a class="xref" href="#set_palette_range">set_palette_range</a>,
+<a class="xref" href="#set_color">set_color</a>,
+<a class="xref" href="#get_palette">get_palette</a>.</font></blockquote>
+<b>void <a name="set_palette_range">set_palette_range</a>(const PALETTE p, int from, int to, int vsync);</b><br>
+   Ajusta las entradas de la paleta desde from hasta to (inclusivos: pase 0
+   y 255 para ajustar la paleta entera). Si vsync está activado, espera un
+   retrazo vertical, de otro modo cambia los colores inmediatamente.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_palette">set_palette</a>,
+<a class="xref" href="#get_palette_range">get_palette_range</a>.</font></blockquote>
+<b>void <a name="get_color">get_color</a>(int index, RGB *p);</b><br>
+   Recupera la entrada de la paleta especificada.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_palette">get_palette</a>,
+<a class="xref" href="#set_color">set_color</a>.</font></blockquote>
+<b>void <a name="get_palette">get_palette</a>(PALETTE p);</b><br>
+   Recupera la paleta entera de 256 colores. Debe proveer un array de 256
+   estructuras RGB para almacenar ahí los colores.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_palette_range">get_palette_range</a>,
+<a class="xref" href="#get_color">get_color</a>,
+<a class="xref" href="#set_palette">set_palette</a>.</font></blockquote>
+<b>void <a name="get_palette_range">get_palette_range</a>(PALETTE p, int from, int to);</b><br>
+   Recupera las entradas de la paleta desde from hasta to (inclusivos: pase
+   0 y 255 para recuperar la paleta entera).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#get_palette">get_palette</a>,
+<a class="xref" href="#set_palette_range">set_palette_range</a>.</font></blockquote>
+<b>void <a name="fade_interpolate">fade_interpolate</a>(const PALETTE source, const PALETTE dest,</b>
+<b>        PALETTE output, int pos, int from, to);</b><br>
+   Calcula una paleta temporal en un sitio entre source y dest,
+   devolviéndola en el parámetro output. La posición entre los dos extremos
+   es especificada por el valor pos: 0 devuelve una copia exacta de source,
+   64 devuelve dest, 32 devuelve una paleta a medio camino entre las dos,
+   etc. Esta rutina sólo afecta a los colores desde from hasta to
+   (inclusivos: pase 0 y 255 para interpolar la paleta entera).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_in">fade_in</a>,
+<a class="xref" href="#fade_out">fade_out</a>,
+<a class="xref" href="#fade_from">fade_from</a>.</font></blockquote>
+<b>void <a name="fade_from_range">fade_from_range</a>(const PALETTE source, const PALETTE dest,</b>
+<b>       int speed, int from, to);</b><br>
+   Funde gradualmente una parte de la paleta desde la paleta source hasta la
+   paleta dest. La velocidad va de 1 (lento) a 64 (instantáneo). Esta rutina
+   sólo afecta los colores desde from hasta to (inclusivos: pase 0 y 255
+   para fundir la paleta entera).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_from">fade_from</a>.</font></blockquote>
+<b>void <a name="fade_in_range">fade_in_range</a>(const PALETTE p, int speed, int from, to);</b><br>
+   Funde gradualmente una parte de la paleta desde una pantalla negra hasta
+   la paleta especificada. La velocidad va de 1 (lento) a 64 (instantáneo).
+   Esta rutina sólo afecta los colores desde from hasta to (inclusivos: pase
+   0 y 255 para fundir la paleta entera).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_in">fade_in</a>.</font></blockquote>
+<b>void <a name="fade_out_range">fade_out_range</a>(int speed, int from, to);</b><br>
+   Funde gradualmente una parte de la paleta desde la paleta actual hasta
+   una pantalla negra. La velocidad va de 1 (lento) a 64 (instantáneo). Esta
+   rutina sólo afecta los colores desde from hasta to (inclusivos: pase 0 y
+   255 para fundir la paleta entera).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_out">fade_out</a>.</font></blockquote>
+<b>void <a name="fade_from">fade_from</a>(const PALETTE source, const PALETTE dest, int speed);</b><br>
+   Funde gradualmente desde la paleta source hasta la paleta dest. La
+   velocidad va de 1 (lento) a 64 (instantáneo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_in">fade_in</a>,
+<a class="xref" href="#fade_out">fade_out</a>,
+<a class="xref" href="#fade_interpolate">fade_interpolate</a>,
+<a class="xref" href="#fade_from_range">fade_from_range</a>.</font></blockquote>
+<b>void <a name="fade_in">fade_in</a>(const PALETTE p, int speed);</b><br>
+   Funde gradualmente desde una pantalla negra a la paleta especificada. La
+   velocidad va de 1 (lento) a 64 (instantáneo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_out">fade_out</a>,
+<a class="xref" href="#fade_from">fade_from</a>,
+<a class="xref" href="#fade_interpolate">fade_interpolate</a>,
+<a class="xref" href="#fade_in_range">fade_in_range</a>.</font></blockquote>
+<b>void <a name="fade_out">fade_out</a>(int speed);</b><br>
+   Funde gradualmente la paleta actual hasta una pantalla negra. La
+   velocidad va de 1 (lento) a 64 (instantáneo).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#fade_in">fade_in</a>,
+<a class="xref" href="#fade_from">fade_from</a>,
+<a class="xref" href="#fade_interpolate">fade_interpolate</a>,
+<a class="xref" href="#fade_in_range">fade_in_range</a>.</font></blockquote>
+<b>void <a name="select_palette">select_palette</a>(const PALLETE p);</b><br>
+   Rutina fea que puede usar en algunas situaciones peculiares cuando
+   necesita convertir entre formatos de imagen con paleta a truecolor.
+   Ajusta la tabla de la paleta interna de la misma forma que la función
+   set_palette(), para que la conversión use la paleta especificada, pero
+   sin afectar de ningún modo al hardware de visualización. La paleta
+   antigua es almacenada en un buffer interno, y puede ser recuperada
+   llamando unselect_palette().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#set_palette">set_palette</a>,
+<a class="xref" href="#unselect_palette">unselect_palette</a>.</font></blockquote>
+<b>void <a name="unselect_palette">unselect_palette</a>();</b><br>
+   Recupera la tabla de la paleta que estaba en uso antes de la última
+   llamada a select_palette().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#select_palette">select_palette</a>.</font></blockquote>
+<b>void <a name="generate_332_palette">generate_332_palette</a>(PALETTE pal);</b><br>
+   Construye una paleta truecolor falsa, usando tres bits para el rojo y el
+   verde y dos para el azul. La función load_bitmap() devuelve esto si el
+   fichero no contiene ninguna paleta (ej. cuando lee un bitmap truecolor).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#generate_optimized_palette">generate_optimized_palette</a>,
+<a class="xref" href="alleg007.html#set_color_depth">set_color_depth</a>.</font></blockquote>
+<b>int <a name="generate_optimized_palette">generate_optimized_palette</a>(BITMAP *bmp, PALETTE pal,</b>
+<b>            const char rsvd[256]);</b><br>
+   Genera una paleta de 256 colores óptima para hacer una versión reducida,
+   en cuanto a color, de la imagen truecolor especificada. El parámetro rsvd
+   apunta a una tabla que indica qué colores se le permite modificar a la
+   función: cero para colores libres que pueden ser asignados como el
+   optimizador quiera, valores negativos para colores reservados que no
+   pueden usarse, y valores positivos para entradas fijas de la paleta que
+   no deben cambiarse, pero que se pueden usar en la optimización.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#generate_332_palette">generate_332_palette</a>,
+<a class="xref" href="alleg007.html#set_color_depth">set_color_depth</a>.</font></blockquote>
+<b>extern PALETTE <a name="default_palette">default_palette</a>;</b><br>
+   La paleta por defecto de la BIOS IBM. Se seleccionará automáticamente
+   cuando active un nuevo modo gráfico.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#black_palette">black_palette</a>,
+<a class="xref" href="#desktop_palette">desktop_palette</a>.</font></blockquote>
+<b>extern PALETTE <a name="black_palette">black_palette</a>;</b><br>
+   Una paleta que contiene colores negros sólidos, usada por las rutinas de
+   fundidos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#desktop_palette">desktop_palette</a>.</font></blockquote>
+<b>extern PALETTE <a name="desktop_palette">desktop_palette</a>;</b><br>
+   La paleta usada por el escritorio de baja resolución del Atari ST. No
+   estoy seguro por qué esto sigue aquí, excepto porque los programas
+   grabber y test la usan. Es probablemente el único código heredado del
+   Atari que queda en Allegro, y sería una pena quitarlo :-)
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#black_palette">black_palette</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

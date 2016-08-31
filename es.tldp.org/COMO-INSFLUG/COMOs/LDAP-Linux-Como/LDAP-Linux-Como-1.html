@@ -1,0 +1,287 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>LDAP-Linux-Como: Introducci&oacute;n</TITLE>
+ <LINK HREF="LDAP-Linux-Como-2.html" REL=next>
+
+ <LINK HREF="LDAP-Linux-Como.html#toc1" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="LDAP-Linux-Como-2.html">Página siguiente</A>
+Página anterior
+<A HREF="LDAP-Linux-Como.html#toc1">Índice general</A>
+<HR>
+<H2><A NAME="s1">1. Introducci&oacute;n</A></H2>
+
+<P>La finalidad principal de este documento es permitirle configurar y
+utilizar un Servidor de directorio LDAP (Protocolo Ligero de Acceso a
+Directorios) en su m&aacute;quina Linux. Aprender&aacute; c&oacute;mo instalar, configurar,
+ejecutar y mantener el servidor LDAP. Despu&eacute;s, aprender&aacute; tambi&eacute;n c&oacute;mo
+almacenar, recuperar y actualizar informaci&oacute;n en su Directorio,
+utilizando las utilidades y clientes LDAP. El demonio o programa
+servidor para el directorio LDAP se llama <EM>slapd</EM> y puede
+ejecutarse sobre muchas plataformas UNIX diferentes.
+<P>
+<P>Hay otro demonio o programa servidor que se encarga de la replicaci&oacute;n
+entre servidores. Su nombre es <CODE>slurpd</CODE> y por el momento no
+necesitar&aacute; preocuparse de &eacute;l. En este documento, ejecutaremos un
+<EM>slapd</EM> que proporciona servicio de directorio para su dominio
+local &uacute;nicamente, es decir, sin <EM>slurpd</EM>.
+<P>
+<P>He aqu&iacute; una configuraci&oacute;n sencilla del servidor, v&aacute;lida para empezar,
+pero f&aacute;cil tambi&eacute;n de actualizar a una configuraci&oacute;n distinta m&aacute;s
+adelante, si lo desea. La informaci&oacute;n que se presenta en este
+documento representa una buena forma de iniciarse en el uso del
+protocolo LDAP. Es probable que tras la lectura del documento se
+sienta con fuerzas para ampliar las capacidades de su servidor, e
+incluso con ganas de escribir sus propios clientes, usando los
+entornos de desarrollo ya existentes para C, C++ y Java.
+<P>
+<H2><A NAME="ss1.1">1.1 ¿Qu&eacute; es LDAP?</A>
+</H2>
+
+<P>LDAP (``Lightweight Directory Access Protocol'', «Protocolo Ligero de
+Acceso a Directorios») es un protocolo de tipo cliente-servidor para
+acceder a un servicio de directorio. Se us&oacute; inicialmente como un
+<EM>front-end</EM> o interfaz final para X.500, pero tambi&eacute;n puede usarse con
+servidores de directorio &uacute;nicos y con otros tipos de servidores de
+directorio.
+<P>
+<H2><A NAME="ss1.2">1.2 ¿Qu&eacute; es un servicio de directorio?</A>
+</H2>
+
+<P>Un directorio es como una base de datos, pero en general contiene
+informaci&oacute;n m&aacute;s descriptiva y m&aacute;s basada en atributos. La informaci&oacute;n
+contenida en un directorio normalmente es lee mucho m&aacute;s de lo que se
+escribe. Como consecuencia los directorios no implementan normalmente
+los complicados esquemas para transacciones o esquemas de reducci&oacute;n
+(<EM>rollback</EM>) que las bases de datos utilizan para llevar a cabo
+actualizaciones complejas de grandes vol&uacute;menes de datos. Por contra,
+las actualizaciones en un directorio son usualmente cambios sencillos
+de «todo o nada», si es que se permiten en algo.
+<P>
+<P>Los directorios est&aacute;n afinados para proporcionar una repuesta r&aacute;pida a
+operaciones de b&uacute;squeda o consulta. Pueden tener la capacidad de
+replicar informaci&oacute;n de forma amplia, con el fin de aumentar la
+disponibilidad y la fiabilidad, y a la vez reducir el tiempo de
+respuesta. Cuando se duplica (o se replica) la informaci&oacute;n del
+directorio, pueden aceptarse inconsistencias temporales entre la
+informaci&oacute;n que hay en las r&eacute;plicas, siempre que finalmente exista una
+sincronizaci&oacute;n.
+<P>
+<P>Existen muchas maneras distintas de proporcionar un servicio de
+directorio. Los diferentes m&eacute;todos permiten almacenar en el directorio
+diferentes tipos de informaci&oacute;n, establecer requisitos diferentes para
+hacer referencias a la informaci&oacute;n, consultarla y actualizarla,
+la forma en que protege al directorio de accesos no autorizados, etc.
+Algunos servicios de directorio son locales, proporcionando servicios
+a un contexto restringido (por ejemplo, el servicio de <CODE>finger</CODE> en una
+&uacute;nica m&aacute;quina). Otros servicios son globales, proporcionando servicio
+en un contexto mucho m&aacute;s amplio.
+<P>
+<H2><A NAME="ss1.3">1.3 ¿C&oacute;mo funciona LDAP?</A>
+</H2>
+
+<P>El servicio de directorio LDAP se basa en un modelo
+cliente-servidor. Uno o m&aacute;s servidores LDAP contienen los datos que
+conforman el &aacute;rbol del directorio LDAP o base de datos troncal. el
+cliente ldap se conecta con el servidor LDAP y le hace una
+consulta. El servidor contesta con la respuesta correspondiente, o
+bien con una indicaci&oacute;n de d&oacute;nde puede el cliente hallar m&aacute;s
+informaci&oacute;n (normalmente otro servidor LDAP). No importa con qu&eacute;
+servidor LDAP se conecte el cliente: siempre observar&aacute; la misma vista
+del directorio; el nombre que se le presenta a un servidor LDAP hace
+referencia a la misma entrada a la que har&iacute;a referencia en otro
+servidor LDAP. Es &eacute;sta una caracter&iacute;stica importante de un servicio de
+directorios universal como LDAP.
+<P>
+<H2><A NAME="ss1.4">1.4 Backends, objetos y atributos en LDAP </A>
+</H2>
+
+<P><EM>slapd</EM> se suministra con tres diferentes bases de datos de backend
+(dorsal, o base de datos de segundo plano) entre las que elegir. Se
+trata de LDBM, una base de datos de gran rendimiento basada en disco:
+SHELL, una interfaz de base de datos para &oacute;rdenes arbitrarias de UNIX
+o guiones (scripts) del int&eacute;rprete de &oacute;rdenes (shell); y PASSWD, una 
+sencilla base de datos de contrase&ntilde;as.
+<P>
+<P>En el desarrollo de este documento, se da por supuesto que ha elegido
+la base de datos LDBM.
+<P>
+<P>La base de datos LDBM funciona asignando un identificador compacto de
+cuatro bytes, &uacute;nico para cada entrada de la base de datos. La base de
+datos utiliza este identificador para hacer referencia a entradas en
+los &iacute;ndices. La base de datos est&aacute; compuesta de un fichero &iacute;ndice
+principal, llamado <CODE>id2entry</CODE>, que mapea el identificador &uacute;nico de una
+entrada en la representaci&oacute;n en texto de esa misma entrada. Tambi&eacute;n se
+da mantenimiento a otros ficheros &iacute;ndice.
+<P>
+<P>Para importar y exportar informaci&oacute;n de directorio entre servidores de
+directorios basados en LDAP, o para describir una serie de cambios que
+han de aplicarse al directorio, se usa en general del fichero de
+formato conocido como LDIF (siglas de <EM>"LDAP interchange format"</EM>,
+«formato de intercambio de LDAP»). Un fichero LDIF almacena
+informaci&oacute;n en jerarqu&iacute;as de entradas orientadas a objeto. El paquete
+de software LDAP que va a utilizar incluye una utilidad para convertir
+ficheros LDIF a formato LDBM.
+<P>
+<P>Un fichero LDIF corriente tiene este aspecto:
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dn: o=Insflug, c=ES
+o: Insflug
+objectclass: organization
+dn: cn=Luiz Malere, o=Insflug, c=ES
+cn: Luiz Malere
+sn: Malere
+mail: malere@yahoo.com
+objectclass: person
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Como puede comprobar, cada entrada est&aacute; identificada un&iacute;vocamente por
+un nombre distintivo (<CODE>DN</CODE>, <EM>"distinguished name"</EM>). El DN
+(nombre distintivo) est&aacute; compuesto por el nombre de la entrada en
+cuesti&oacute;n, m&aacute;s la ruta de nombres que permiten rastrear la entrada
+hacia atr&aacute;s hasta la parte superior de la jerarqu&iacute;a del directorio.
+<P>
+<P>En LDAP, una clase de objetos define la colecci&oacute;n de atributos que
+pueden usarse para definir una entrada. El est&aacute;ndar LDAP proporciona
+estos tipos b&aacute;sicos para las clases de objetos:
+<UL>
+<LI>Grupos en el directorio, entre ellos listas no ordenadas de
+objetos individuales o de grupos de objetos.</LI>
+<LI>Emplazamientos, como por ejemplo el nombre del pa&iacute;s y su
+descripci&oacute;n. </LI>
+<LI>Organizaciones que est&aacute;n en el directorio.</LI>
+<LI>Personas que est&aacute;n en el directorio.</LI>
+</UL>
+<P>
+<P>Una entrada determinada puede pertenecer a m&aacute;s de una clase de
+objetos. Por ejemplo, la entrada para personas se define mediante la
+clase de objetos <CODE>person</CODE>, pero tambi&eacute;n puede definirse mediante
+atributos en las clases de objetos <CODE>inetOrgPerson</CODE>,
+<CODE>groupOfNames</CODE> y <CODE>organization</CODE>. La estructura de clases de
+objetos del servidor (su esquema) determina la lista total de
+atributos requeridos y permitidos para una entrada concreta.
+<P>
+<P>Los datos del directorio se representan mediante pares de atributo y
+su valor. Cualquier pieza de informaci&oacute;n espec&iacute;fica se asocia con un
+atributo descriptivo.
+<P>
+<P>Por ejemplo el atributo  <CODE>commonName</CODE>, o <CODE>cn</CODE> («nombre de pila»), se
+usa para almacenar el nombre de una persona. Puede representarse en el
+directorio a una persona llamada Jon&aacute;s Saqueiro mediante
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cn: Jon&aacute;s Saqueiro
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Cada persona que se introduzca en el directorio se define mediante la
+colecci&oacute;n de atributos que hay en la clase de objetos
+<EM>person</EM>. Otros atributos que se usan para definir esta entrada
+ser&aacute;n: 
+<BLOCKQUOTE><CODE>
+<PRE>
+givenname: Jon&aacute;s
+surname: Saqueiro
+mail: jonass@midominio.com
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Los atributos requeridos son aquellos que deben estar presentes en las
+entradas que utilicen la clase de objetos. Todas las entradas precisan
+del atributo <CODE>objectClass</CODE>, que lista las clases de objeto a las que
+pertenece una entrada. 
+<P>
+<P>Los atributos permitidos son aquellos que pueden estar presentes en
+las entradas que utilicen la clase de objetos. Por ejemplo, en la
+clase de objetos <CODE>person</CODE>, se requieren los atributos <CODE>cn</CODE> y 
+<CODE>sn</CODE>. Los atributos <CODE>description</CODE> («descripci&oacute;n»),
+<CODE>telephoneNumber</CODE> («n&uacute;mero de tel&eacute;fono»), <CODE>seeAlso</CODE> («v&eacute;ase
+tambi&eacute;n»), y <CODE>userpassword</CODE> («contrase&ntilde;a del usuario») se permiten
+pero no se requieren.
+<P>
+<P>Cada atributo tiene la definici&oacute;n de sintaxis que le corresponde. La
+definici&oacute;n de sintaxis describe el tipo de informaci&oacute;n que proporciona
+ese atributo: 
+<UL>
+<LI><CODE>bin</CODE> binario</LI>
+<LI><CODE>ces</CODE> cadena con may&uacute;sculas y min&uacute;sculas exactas (las may&uacute;sculas y
+min&uacute;sculas son significativas durante las comparaciones)</LI>
+<LI><CODE>cis</CODE> cadena con may&uacute;sculas y min&uacute;sculas ignoradas (las may&uacute;sculas
+y min&uacute;sculas no son significativas durante las comparaciones)</LI>
+<LI><CODE>tel</CODE> cadena de n&uacute;mero de tel&eacute;fono (como <CODE>cis</CODE>, pero durante las
+comparaciones se ignoran los espacios en blanco y los guiones "-")</LI>
+<LI><CODE>dn</CODE> "distinguished name" («nombre distintivo»)</LI>
+</UL>
+<P>
+<P> 
+Para conocer en qu&eacute; lugar de su sistema se emplazan las definiciones
+de clases de objetos y de atributos, v&eacute;ase el primer p&aacute;rrafo de la
+<A HREF="LDAP-Linux-Como-3.html#3">secci&oacute;n 3</A>. 
+<P>
+<H2><A NAME="ss1.5">1.5 Nuevas versiones de este documento.</A>
+</H2>
+
+<P>
+<P>Este documento puede experimentar actualizaciones y correcciones en
+raz&oacute;n de la respuesta que suscite entre sus lectores. Por favor busque
+nuevas versiones del original ingl&eacute;s en:
+<P>
+<P>
+<A HREF="http://www.ddtc.dimes.tudelft.nl/~malere/LDAP-Linux-HOWTO.html">http://www.ddtc.dimes.tudelft.nl/~malere/LDAP-Linux-HOWTO.html</A><P>(y nuevas versiones de la traducci&oacute;n castellana de este <EM>C&oacute;mo</EM> en 
+<A HREF="http://www.insflug.org/">http://www.insflug.org/</A>,
+<B>N. del T.</B>)
+<P>
+<H2><A NAME="ss1.6">1.6 Opiniones y sugerencias</A>
+</H2>
+
+<P>Si tiene alguna duda sobre cualquier informaci&oacute;n disponible en este
+documento, por favor contacte con nosotros en la siguiente direcci&oacute;n
+de correo electr&oacute;nico:
+<P>
+<P>
+<A HREF="mailto:malere@yahoo.com">malere@yahoo.com</A><P>Si tiene alg&uacute;n comentario o sugerencia, no dude en comunic&aacute;rmelo.
+<P>
+<H2><A NAME="ss1.7">1.7 Agradecimientos </A>
+</H2>
+
+<P>Este <EM>C&oacute;mo</EM> es el resultado de unas pr&aacute;cticas que
+hemos realizado en la universidad de TUDelft, en Holanda. Queremos dar
+las gracias a las personas que nos animaron a escribir este documento:
+Rene van Leuken y Wim Tiwon. Much&iacute;simas gracias. Tambi&eacute;n ellos son
+entusiastas del Linux como nosotros.
+<P>
+<H2><A NAME="ss1.8">1.8 Copyright y descargo de responsabilidad.</A>
+</H2>
+
+<P>El <EM>LDAP-Linux-C&oacute;mo</EM> es Copyright 1999 de Luiz Ernesto Pinheiro
+Malere. Puede redistribuirse libremente. No puede modificarse. Si
+tiene cualquier tipo de sugerencia, por favor env&iacute;eme un correo
+electr&oacute;nico (actualizar&eacute; el documento si la sugerencia es adecuada).
+<P>
+<P>Si desea una traducci&oacute;n, por ejemplo al Portugu&eacute;s, puede enviarme
+tambi&eacute;n un correo sobre el particular.
+<P>
+<P>
+<P>No liability for the contents of this document can be accepted. I have
+no responsability about the consequences of following the Steps
+provided in this document.
+<P>
+<P>Si tiene preguntas, por favor contacte con el coordinador de Linux
+HOWTO en 
+<P>
+<P>
+<A HREF="linux-howto@metalab.unc.edu">linux-howto@metalab.unc.edu</A><P>
+<HR>
+<A HREF="LDAP-Linux-Como-2.html">Página siguiente</A>
+Página anterior
+<A HREF="LDAP-Linux-Como.html#toc1">Índice general</A>
+</BODY>
+</HTML>

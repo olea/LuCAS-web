@@ -1,0 +1,527 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PCMCIA COMO : Resoluci&oacute;n de problemas de instalaci&oacute;n y configuraci&oacute;n </TITLE>
+ <LINK HREF="PCMCIA-Como-4.html" REL=next>
+ <LINK HREF="PCMCIA-Como-2.html" REL=previous>
+ <LINK HREF="PCMCIA-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PCMCIA-Como-4.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-2.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="problemas"></A> <A NAME="s3">3. Resoluci&oacute;n de problemas de instalaci&oacute;n y configuraci&oacute;n </A></H2>
+
+<P>
+<P>Esta secci&oacute;n describe algunos de los errores m&aacute;s comunes del subsistema
+PCMCIA. Compare sus s&iacute;ntomas con los ejemplos. Esta secci&oacute;n s&oacute;lo describe
+fallos generales que no son espec&iacute;ficas de un controlador o tipo de
+tarjeta en particular.
+<P>Antes de diagnosticar un problema, debe saber d&oacute;nde se almacena el
+registro del sistema (revise la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#distribuciones">Notas acerca de distribuciones de Linux espec&iacute;ficas</A>). Debe estar
+familiarizado con las herramientas b&aacute;sicas de diagn&oacute;stico como <CODE>dmesg</CODE>
+y <CODE>lsmod</CODE>.  Preste especial atenci&oacute;n al hecho de que muchos componentes
+de los controladores (incluyendo todos los m&oacute;dulos del kernel) tienen sus
+propias p&aacute;ginas individuales en el manual. 
+<P>Intente definir su problema lo m&aacute;s ampliamente posible. Si tiene varias
+tarjetas, pruebe cada tarjeta de forma aislada, y en diferentes
+combinaciones. Intente arranques de Linux en fr&iacute;o y arranques en caliente
+de Windows. Compare el arrancar con tarjetas insertadas, o insertar las
+tarjetas despu&eacute;s de iniciar. Si normalmente usa su port&aacute;til ensamblado con
+una <I>dockstation</I>, pr&uacute;ebelo aparte. Algunas veces, dos bah&iacute;as se
+comportar&aacute;n de forma diferente.
+<P>Es casi imposible depurar problemas de un controlador cuando se intenta
+instalar Linux por medio de un dispositivo PCMCIA. En lugar de eso, si
+puede identificar el problema bas&aacute;ndose en los s&iacute;ntomas, los discos de
+instalaci&oacute;n son dif&iacute;ciles de modificar, especialmente sin tener acceso a
+un sistema Linux ya funcionando. La personalizaci&oacute;n e instalaci&oacute;n de los
+discos de instalaci&oacute;n es completamente dependiente de la distribuci&oacute;n de
+Linux que elija, y m&aacute;s all&aacute; del enfoque de este documento. En general, el
+mejor curso de acci&oacute;n es instalar Linux usando otros medios, obteniendo
+los controladores m&aacute;s recientes, y depurando el problema entonces, si es
+que persiste.
+<P>
+<H2><A NAME="modbase"></A> <A NAME="ss3.1">3.1 No se cargan los m&oacute;dulos b&aacute;sicos de PCMCIA.</A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Aparecen errores acerca de que la versi&oacute;n del kernel difiere cuando
+se ejecuta el script de inicio de PCMCIA.
+</LI>
+<LI>Despu&eacute;s de iniciar, <CODE>lsmod</CODE> no muestra alg&uacute;n m&oacute;dulo PCMCIA.
+</LI>
+<LI><CODE>cardmgr</CODE> informa <CODE>no pcmcia driver in /proc/devices</CODE>
+en el registro del sistema.
+</LI>
+</UL>
+<P>Los m&oacute;dulos del kernel contienen informaci&oacute;n de la versi&oacute;n, la cual se
+comprueba con el kernel actual cuando se carga un m&oacute;dulo. El tipo de
+chequeo depende de la opci&oacute;n del kernel <CODE>CONFIG_MODVERSIONS</CODE>. Si es
+falso, entonces el n&uacute;mero de versi&oacute;n del kernel se compila dentro de cada
+m&oacute;dulo y el programa <CODE>insmod</CODE> comprueba esto para compararlo con el
+kernel actual. Si <CODE>CONFIG_MODVERSIONS</CODE> es verdadero, entonces cada
+s&iacute;mbolo exportado por el kernel tiene un «checksum». Esos c&oacute;digos se
+comparan con los c&oacute;digos correspondientes compilados dentro de un m&oacute;dulo. 
+<P>La idea de esto fue crear m&oacute;dulos menos dependientes de la versi&oacute;n, porque
+los checksums s&oacute;lo pueden cambiar si la interface del kernel cambia, y
+podr&iacute;a generalmente permanecer a lo largo de actualizaciones menores del
+kernel. En esencia, los «checksums» se han desactivado para ser mas
+restrictivos, porque muchas interfaces del kernel dependen de las opciones
+pasadas al momento de compilarse. Tambi&eacute;n, los checksums han resultado ser
+jueces excesivamente pesimistas respecto a compatibilidad.
+<P>El enfoque pr&aacute;ctico de esto es que los m&oacute;dulos del kernel est&aacute;n muy atados
+a tanto la versi&oacute;n del kernel, como a muchas opciones de configuraci&oacute;n del
+mismo. Generalmente, un grupo de m&oacute;dulos compilados para un kernel
+<CODE>2.0.31</CODE> no cargar&aacute; con otros kernels <CODE>2.0.31</CODE> a menos que se tome
+un cuidado especial asegur&aacute;ndose que los dos fueron compilados con
+configuraciones similares. Esto resulta ser un asunto dif&iacute;cil para la
+distribuci&oacute;n de m&oacute;dulos precompilados del kernel.
+<P>Tiene Vd. varias opciones:
+<P>
+<UL>
+<LI>Si obtuvo controladores precompilados como parte de una distribuci&oacute;n
+de Linux, verifique que est&eacute; usando el mismo kernel que ven&iacute;a con su
+distribuci&oacute;n, sin modificaciones. Si pretende usar los m&oacute;dulos
+precompilados que ven&iacute;an con su distribuci&oacute;n, deber&aacute; permanecer con el
+mismo kernel que trajera &eacute;sta. 
+</LI>
+<LI>Si ha reconfigurado o actualizado su kernel, probablemente
+necesitar&aacute; compilar e instalar el paquete PCMCIA desde cero. Esto se hace
+f&aacute;cilmente si ya tiene instalada la estructura fuente del kernel. Revise
+la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#compilacion">Compilaci&oacute;n e instalaci&oacute;n</A> para
+instrucciones m&aacute;s detalladas. 
+</LI>
+<LI>En algunos casos, las incompatibilidades en otros componentes del
+sistema pueden prevenir la carga correcta de los m&oacute;dulos del kernel. Si ha
+actualizado su propio kernel, ponga atenci&oacute;n a la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#requisitos">Requisitos</A> acerca de utilidades para m&oacute;dulos y
+<CODE>binutils</CODE> que se listan en el archivo <CODE>Documentation/Changes</CODE>
+del &aacute;rbol de directorios de los fuentes del kernel. 
+</LI>
+</UL>
+<P>
+<H2><A NAME="nocargan"></A> <A NAME="ss3.2">3.2 Algunos m&oacute;dulos controladores no cargan </A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Los m&oacute;dulos base (<CODE>pcmcia_core</CODE>, <CODE>ds</CODE>, <CODE>i82365</CODE>) cargan
+correctamente. 
+</LI>
+<LI>Al insertar una tarjeta, emite un pitido agudo + un pitido grave.
+</LI>
+<LI><CODE>cardmgr</CODE> informa de errores de versiones diferentes en el
+registro del sistema. 
+</LI>
+</UL>
+<P>Algunos de los m&oacute;dulos controladores requieren servicios del kernel que
+pueden o no estar presentes, dependiendo de la configuraci&oacute;n del kernel. 
+Por ejemplo, los controladores de tarjetas SCSI requieren que el kernel
+sea compilado con soporte SCSI, y los controladores de red requieren un
+kernel de red. Si a un kernel le falta una caracter&iacute;stica necesaria,
+<CODE>insmod</CODE> puede avisar acerca de s&iacute;mbolos indefinidos y rechazar la
+carga de un m&oacute;dulo en particular. Note que los mensajes de error de
+<CODE>insmod</CODE> no distinguen entre errores por diferencias de versiones y
+errores por falta de s&iacute;mbolos. 
+<P>Espec&iacute;ficamente:
+<P>
+<UL>
+<LI>El controlador serie <CODE>serial_cs</CODE> requiere que el soporte en el
+kernel est&eacute; activado con <CODE>CONFIG_SERIAL</CODE>. Este controlador se debe
+compilar como m&oacute;dulo. 
+</LI>
+<LI>El soporte para tarjetas serie multipuerto o tarjetas multifunci&oacute;n
+que incluyen dispositivos serie o m&oacute;dems, requieren que se active
+<CODE>CONFIG_SERIAL_SHARE_IRQ</CODE>. 
+</LI>
+<LI>Los clientes SCSI requieren que <CODE>CONFIG_SCSI</CODE> est&eacute; activada,
+junto con las opciones apropiadas para los controladores de alto nivel
+(<CODE>CONFIG_BLK_DEV_SD, CONFIG_BLK_DEV_SR</CODE> etc. para kernels <CODE>2.1</CODE>) 
+que pueden ser compilados como m&oacute;dulos. 
+</LI>
+<LI>Los controladores de red requieren que se habilite <CODE>CONFIG_INET</CODE>
+El soporte para red del kernel no se puede compilar como m&oacute;dulo. 
+</LI>
+<LI>El cliente token-ring requiere que el kernel se compile con la
+opci&oacute;n <CODE>CONFIG_TR</CODE> activada.
+</LI>
+</UL>
+<P>Hay dos formas de proceder:
+<P>
+<UL>
+<LI>Recompile el kernel con las caracter&iacute;sticas necesarias activadas.
+</LI>
+<LI>Si las caracter&iacute;sticas han sido compiladas como m&oacute;dulos, entonces
+modifique <CODE>/etc/pcmcia/config</CODE> para precargar esos m&oacute;dulos. 
+</LI>
+</UL>
+<P>El archivo <CODE>/etc/pcmcia/config</CODE> puede especificar qu&eacute; m&oacute;dulos
+adicionales necesitan cargarse para un cliente en particular. Por ejemplo,
+para el controlador serial, uno puede ser:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       device "serial_cs"
+         class "serial" module "misc/serial", "serial_cs"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Las rutas hacia los m&oacute;dulos se especifican relativas al nivel m&aacute;s alto del
+directorio de m&oacute;dulos para la versi&oacute;n actual del kernel; si no se
+especifica la ruta relativa, entonces la ruta por omisi&oacute;n ser&aacute; hacia el
+subdirectorio <CODE>pcmcia</CODE>. 
+<P>
+<H2><A NAME="irqscan"></A> <A NAME="ss3.3">3.3 fallos en la b&uacute;squeda de interrupciones</A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>El sistema se congela cuando se cargan los controladores PCMCIA,
+incluso cuando no hay tarjetas presentes. 
+</LI>
+<LI>El registro del sistema muestra que el sondeo tuvo &eacute;xito, justo
+antes de que se congele, pero no muestra resultados de las pruebas de
+interrupciones. 
+</LI>
+</UL>
+<P> 
+                                    
+<P>Despu&eacute;s de identificar el tipo de controlador, el controlador del socket
+sondea las interrupciones libres. Este «sondeo» o «tanteo» consiste en
+programar el controlador para cada interrupci&oacute;n aparentemente libre,
+generando una interrupci&oacute;n <I>soft</I> (suave), para ver si la interrupci&oacute;n
+puede ser detectada correctamente. En algunos casos, el sondear una
+interrupci&oacute;n en particular puede interferir con otro dispositivo del
+sistema.
+<P>La raz&oacute;n de este «tanteo» es identificar interrupciones que parezcan estar
+libres (es decir, aquellas que no est&aacute;n reservadas por otro controlador de
+dispositivo), ya sea porque no est&eacute; conectado f&iacute;sicamente a la
+controladora, o que est&eacute; conectado a otro dispositivo que no tiene un
+controlador. 
+<P>En el registro del sistema, un sondeo realizado con &eacute;xito tiene este
+aspecto: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       Intel PCIC probe:
+         TI 1130 CardBus at mem 0x10211000, 2 sockets
+         ...
+         ISA irqs (scanned) = 5,7,9,10 status change on irq 10
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Hay dos formas de proceder:
+<P>
+<UL>
+<LI>El sondeo de interrupciones puede estar restringida a una lista de
+interrupciones utilizando el par&aacute;metro <CODE>irq_list</CODE> para los
+controladores. Por ejemplo, <CODE>irq_list=5,9,10</CODE> limitar&aacute; la b&uacute;squeda a
+tres interrupciones. Todos los dispositivos PCMCIA estar&aacute;n restringidos a
+usar esas interrupciones (asumiendo que pasen el tanteo). Puede ser que
+necesite determinar qu&eacute; interrupciones son tanteables de forma segura a
+base de ensayo y error. 
+</LI>
+<LI>El sondeo de interrupciones puede desactivarse completamente al
+cargar el controlador del socket con la opci&oacute;n <CODE>do_scan=0</CODE>. En este
+caso, se usar&aacute; una interrupci&oacute;n por omisi&oacute;n, la cual evita interrupciones
+ya utilizadas por otros dispositivos.
+</LI>
+</UL>
+<P>En cualquier caso, las opciones de tanteo pueden especificarse en el
+script de inicio de PCMCIA utilizando la definici&oacute;n <CODE>PCIC_OPTS</CODE>, por
+ejemplo:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        PCIC_OPTS="irq_list=5,9,10"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Como podr&aacute; notar, <CODE>/proc/interrupts</CODE> es absolutamente in&uacute;til cuando
+se van a diagnosticar problemas en el sondeo de interrupciones. El tanteo
+es lo suficientemente sensible como para nunca intentar usar una
+interrupci&oacute;n que ya est&aacute; en uso por otro controlador de Linux. Los
+controladores PCMCIA est&aacute;n ya teniendo en cuenta toda la informaci&oacute;n de
+<CODE>/proc/interrupts</CODE>. Dependiendo del dise&ntilde;o del sistema, un
+dispositivo inactivo puede todav&iacute;a ocupar una interrupci&oacute;n y causar
+problemas si es probado por PCMCIA.
+<P>
+<H2><A NAME="ioscan"></A> <A NAME="ss3.4">3.4 Fallos en la b&uacute;squeda de puertos de E/S</A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>El sistema se congela cuando <CODE>cardmgr</CODE> se inicia por primera vez,
+incluso cuando no hay tarjetas presentes.
+</LI>
+<LI>El registro del sistema muestra un tanteo positivo del controlador
+del host, incluyendo resultados de sondeos de interrupci&oacute;n, pero no
+muestra resultados de sondeos de E/S.
+</LI>
+<LI>En algunos casos, el tanteo de E/S ser&aacute; positivo, pero avisa de un
+gran n&uacute;mero de de exclusiones aleatorias. 
+</LI>
+</UL>
+<P>Cuando <CODE>cardmgr</CODE> procesa los rangos de puertos de E/S listados en
+<CODE>/etc/pcmcia/config.opts</CODE>, el kernel tantea esos rangos para
+detectar los dispositivos latentes que ocupan espacio de E/S pero que no
+est&aacute;n asociados con un controlador de Linux. El tanteo es de s&oacute;lo lectura,
+pero en algunos casos extra&ntilde;os, leer desde un dispositivo puede interferir
+con una funci&oacute;n importante del sistema, resultando en «congelamiento».
+<P>La gu&iacute;a de usuario de su sistema debe traer un mapa de los dispositivos
+del sistema, mostrando sus rangos de E/S y de memoria. Esos pueden ser
+excluidos expl&iacute;citamente en <CODE>config.opts</CODE>. 
+<P>Por otra parte, si el sondeo no resulta fiable en su sistema, puede ser
+desactivado estableciendo <CODE>CORE_OPTS</CODE> a <CODE>probe_io=0</CODE>. En este caso,
+deber&aacute; ser muy cuidadoso al especificar solamente rangos de puertos
+genuinamente disponibles en <CODE>config.opts</CODE>, en lugar de usar las
+configuraciones por omisi&oacute;n.
+<P>
+<H2><A NAME="memscan"></A> <A NAME="ss3.5">3.5 Fallos durante la comprobaci&oacute;n de la memoria </A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Los controladores principales cargan correctamente cuando no hay
+tarjetas presentes, sin errores en el registro del sistema.
+</LI>
+<LI>El sistema se congela y/o reinicia tan pronto como se inserte una
+tarjeta antes de que se escuche alg&uacute;n pitido.
+</LI>
+</UL>
+<P>O alternativamente:
+<P>
+<UL>
+<LI>Todas las inserciones de tarjetas generan un pitido agudo seguido de
+un pitido grave.
+</LI>
+<LI>Todas las tarjetas son identificadas como <I>anonymous memory
+cards</I>
+</LI>
+<LI>El registro del sistema avisa que varios rangos de memoria han
+sido excluidos.
+</LI>
+</UL>
+<P>Los m&oacute;dulos principales realizan un chequeo de los primeros 16 bits de
+memoria en el momento en que se inserta la tarjeta. Esta exploraci&oacute;n puede
+interferir potencialmente con otros dispositivos de memoria mapeados. As&iacute;
+mismo, los paquetes de controladores pre-3.0.0 realizan una exploraci&oacute;n
+m&aacute;s agresiva que los controladores m&aacute;s recientes. La ventana de memoria se
+define en <CODE>/etc/pcmcia/config.opts</CODE>. La ventana por omisi&oacute;n es
+grande, as&iacute; que puede ayudar a restringir la exploraci&oacute;n a un rango m&aacute;s
+reducido. Los rangos razonables para incluir son: <CODE>0xd0000-0xdffff</CODE>,
+<CODE>0xc0000-0xcffff</CODE>, <CODE>0xc8000-0xcffff</CODE>, o <CODE>0xd8000-0xdffff</CODE>.
+<P>Si tiene controladores PCMCIA DOS o Windows, puede deducir que regi&oacute;n de
+memoria usan esos controladores. Tenga en cuenta que las direcciones de
+memoria de DOS se especifican normalmente en forma de «segmentos», los
+cuales dejan el &uacute;ltimo d&iacute;gito hexadecimal (as&iacute; una direcci&oacute;n absoluta de
+<CODE>0xd0000</CODE> puede darse como <CODE>0xd000</CODE>). Aseg&uacute;rese de a&ntilde;adir el d&iacute;gito
+extra de cuando haga los cambios a <CODE>config.opts</CODE>. 
+<P>En casos no muy usuales, un fallo en el sondeo de memoria puede indicar un
+problema de configuraci&oacute;n en la sincronizaci&oacute;n con el controlador.  Revise
+la secci&oacute;n 
+<A HREF="PCMCIA-Como-2.html#inicio">Opciones de inicio</A> para m&aacute;s
+informaci&oacute;n acerca de c&oacute;mo combatir los problemas comunes de
+sincronizaci&oacute;n. 
+<P>
+<UL>
+<LI><CODE>cs: warning: no high memory space available!</CODE>
+</LI>
+</UL>
+<P>Los puentes <I>CardBus</I> pueden reservar ventanas de memoria fuera del
+«agujero de memoria» de 640KB-1MB en la arquitectura de bus ISA. 
+Generalmente es buena idea el configurar puentes <I>CardBus</I> para usar
+ventanas de memoria alta, porque es muy dif&iacute;cil que existan conflictos con
+otros dispositivos.  Tambi&eacute;n, las tarjetas <I>CardBus</I> pueden requerir
+grandes ventanas de memoria, las cuales puede ser dif&iacute;cil o imposible que
+coincidan en memoria baja.  Los servicios de tarjetas preferentemente
+localizar&aacute;n las ventanas en memoria alta para puentes <I>CardBus</I>, si
+ambas ventanas de memoria (alta y baja) se definen en <CODE>config.opts</CODE>. El
+archivo <CODE>config.opts</CODE> por omisi&oacute;n ahora incluye una ventana de memoria
+alta de <CODE>0xa0000000-0xa0ffffff</CODE>. Si tiene un puente <I>CardBus</I> y ha
+actualizado de una versi&oacute;n de PCMCIA anterior, a&ntilde;ada esta ventana de
+memoria si no est&aacute; ya definido. 
+<P>En algunos casos, la ventana de memoria alta por omisi&oacute;n no se utiliza.
+<P>En algunos modelos <I>IBM Thinkpad</I>, una ventana de
+<CODE>0x60000000-0x60ffffff</CODE> funcionar&aacute; en lugar de la ventana por omisi&oacute;n.
+<P>
+<H2><A NAME="ss3.6">3.6 Fallo al detectar cuando se inserta o se extrae la tarjeta</A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Las tarjetas se detectan y configuran apropiadamente si est&aacute;n
+presentes al momento de iniciar. 
+</LI>
+<LI>Los controladores no responden a los eventos de inserci&oacute;n y
+extracci&oacute;n, ya sea registrando los eventos en el registro del sistema, o
+emitiendo pitidos. 
+</LI>
+</UL>
+<P>En muchos casos, el controlador del socket (<CODE>i82365</CODE> o <CODE>tcic</CODE>) 
+probar&aacute; autom&aacute;ticamente y seleccionar&aacute; la interrupci&oacute;n apropiada para
+se&ntilde;alar cambios en el estado de la tarjeta. El tanteo autom&aacute;tico de
+interrupciones no funciona con algunos controladores compatibles con
+Intel, incluyendo los chips Cirrus y los chips usados en IBM Thinkpads. Si
+un dispositivo est&aacute; inactivo en el momento del sondeo, su interrupci&oacute;n
+puede parecer estar disponible. En esos casos, el controlador del socket
+puede usar una interrupci&oacute;n que es usada por otro dispositivo.
+<P>
+<P>Con los controladores <CODE>i82365</CODE> y <CODE>tcic</CODE> la opci&oacute;n <CODE>list_irq</CODE>
+puede usarse para limitar las interrupciones que ser&aacute;n tanteadas. Esta
+lista limita el conjunto de interrupciones que pueden ser utilizadas por
+las tarjetas PCMCIA as&iacute; como para monitorizar los cambios en el estado de
+la tarjeta. La opci&oacute;n <CODE>cs_irq</CODE> puede usarse tambi&eacute;n para establecer
+expl&iacute;citamente la interrupci&oacute;n que ser&aacute; utilizada para monitorizar dichos
+cambios. 
+<P>Si no puede encontrar un n&uacute;mero de interrupci&oacute;n que funcione, hay tambi&eacute;n
+un estado en modo de b&uacute;squeda: ambos, <CODE>i82365</CODE> y <CODE>tcic</CODE> aceptar&aacute;n
+una opci&oacute;n <CODE>poll_interval=100</CODE>, para buscar cambios en el estado de la
+tarjeta una vez por segundo. Esta opci&oacute;n puede usarse tambi&eacute;n si su
+sistema tiene un rango corto de interrupciones disponibles para utilizarse
+con tarjetas PCMCIA. Especialmente para sistemas con m&aacute;s de un controlador
+de host, hay un peque&ntilde;o punto para dedicar interrupciones para monitorizar
+cambios de estado de la tarjeta. 
+<P>Todas esas opciones deber&iacute;an establecerse en la l&iacute;nea <CODE>PCIC_OPTS=</CODE> ya
+sea en <CODE>/etc/rc.d/rc.pcmcia</CODE> o en <CODE>/etc/sysconfig/pcmcia</CODE>,
+dependiendo de la configuraci&oacute;n de su sistema. 
+<P>
+<H2><A NAME="faltan"></A> <A NAME="ss3.7">3.7 Faltan recursos del sistema </A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Cuando se inserta una tarjeta, es identificada correctamente, pero
+no puede ser configurada (secuencia de pitidos agudos/graves).
+</LI>
+<LI>Aparecen en el registro del sistema alguno de los siguientes
+mensajes:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+       RequestIO: Resource in use
+       RequestIRQ: Resource in use
+       RequestWindow: Resource in use
+       GetNextTuple: No more items
+       could not allocate nn IO ports for CardBus socket n
+       could not allocate nnK memory for CardBus socket n
+       could not allocate interrupt for CardBus socket n
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+<P>La reserva de interrupciones indica generalmente un problema con el sondeo
+de interrupciones, v&eacute;ase la secci&oacute;n 
+<A HREF="#irqscan">Fallos en la b&uacute;squeda de interrupciones</A>. 
+<P>En algunos casos, el tanteo parece funcionar, pero &uacute;nicamente aparecen una
+o dos interrupciones disponibles. Revise el registro de su sistema para
+ver si los resultados de la exploraci&oacute;n son plausibles. Desactivar el
+tanteo y seleccionar las interrupciones manualmente puede ayudar.
+<P>Si el sondeo de interrupciones no est&aacute; funcionando adecuadamente, el
+controlador del socket puede reservar una interrupci&oacute;n para monitorizar
+inserciones de tarjetas, incluso cuando las interrupciones sean demasiado
+escasas para esto, constituye una buena idea. En este caso, puede Vd. 
+cambiar el controlador a modo de b&uacute;squeda estableciendo <CODE>PCIC_OPTS</CODE> a
+<CODE>poll_interval=100</CODE>. O, si tiene un controlador <I>CardBus</I>, intente
+con <CODE>pci_csc=1</CODE>, el cual selecciona una interrupci&oacute;n PCI (si est&aacute;
+disponible) para cambios de estado en la tarjeta. 
+<P>La reserva de puertos de E/S no es muy com&uacute;n, pero algunas veces tiene
+lugar con tarjetas que requieren regiones de espacio de E/S grandes,
+contiguas y alineadas, o que s&oacute;lo reconocen pocas posiciones espec&iacute;ficas
+de puertos.  Los rangos de puertos de E/S por omisi&oacute;n en
+<CODE>/etc/pcmcia/config.opts</CODE> normalmente son suficientes, pero pueden
+ser extendidos. En casos extra&ntilde;os, la reserva puede indicar que fall&oacute; el
+sondeo de puertos de E/S; revise la secci&oacute;n 
+<A HREF="#ioscan">fallos en la b&uacute;squeda de puertos de E/S</A>. 
+<P>La reserva de memoria no es com&uacute;n tampoco con las configuraciones de la
+ventana de memoria que vienen por omisi&oacute;n en <CODE>config.opts</CODE>. Las
+tarjetas <I>CardBus</I> pueden requerir regiones de memoria m&aacute;s grandes que
+las tarjetas t&iacute;picas de 16-bits. Dado que de que las ventanas de memoria
+de las tarjetas <I>CardBus</I> pueden ser mapeadas a cualquier parte del
+espacio de la direcci&oacute;n PCI del host (en lugar de s&oacute;lo mapearlo al
+«agujero» de 640K-1MB en sistemas PC), es de utilidad especificar ventanas
+de memoria amplias en la memoria alta, tales como
+<CODE>0xa0000000-0xa0ffffff</CODE>. 
+<P>
+<H2><A NAME="conflicto"></A> <A NAME="ss3.8">3.8 Conflicto de recursos entre dos tarjetas </A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Dos tarjetas funcionan bien cuando se usan separadamente.
+</LI>
+<LI>Cuando ambas tarjetas se insertan, s&oacute;lo funciona una.
+</LI>
+</UL>
+<P>Esto usualmente indica un conflicto de recursos con un dispositivo del
+sistema que Linux no conoce. Los dispositivos PCMCIA son configurados
+din&aacute;micamente, as&iacute;, por ejemplo, las interrupciones son reservadas
+conforme se vayan necesitando, en lugar de ser asignadas espec&iacute;ficamente a
+tarjetas o sockets en particular. Dada una lista de recursos que parecen
+estar disponibles, las tarjetas son recursos asignados en el orden en que
+son configurados. En este caso, a la tarjeta configurada en &uacute;ltimo lugar
+se le est&aacute; asignando un recurso que en efecto, no est&aacute; libre.
+<P>Revise el registro del sistema para ver qu&eacute; recursos est&aacute;n usados por la
+tarjeta que no funciona. Excl&uacute;yalos de <CODE>/etc/pcmcia/config.opts</CODE>, y
+reinicie el demonio <CODE>cardmgr</CODE> para recargar la base de datos de
+recursos.
+<P>
+<H2><A NAME="noconf"></A> <A NAME="ss3.9">3.9 No se completa la configuraci&oacute;n de dispositivos </A>
+</H2>
+
+<P>
+<P>S&iacute;ntomas:
+<P>
+<UL>
+<LI>Cuando se inserta una tarjeta, se escucha un pitido agudo.
+</LI>
+<LI>Las inserciones y extracciones posteriores de tarjetas son
+ignoradas. 
+</LI>
+</UL>
+<P>Esto indica que la tarjeta fue identificada con &eacute;xito, sin embargo,
+<CODE>cardmgr</CODE> fue incapaz de completar el proceso de configuraci&oacute;n por
+alguna raz&oacute;n. La m&aacute;s com&uacute;n es que un paso en el script de configuraci&oacute;n se
+ha bloqueado. Un buen ejemplo podr&iacute;a ser el script de red bloque&aacute;ndose si
+una tarjeta de red se inserta sin tener presente una conexi&oacute;n a la red.
+<P>Para verificar el problema, puede ejecutar manualmente un script de
+configuraci&oacute;n para ver d&oacute;nde se est&aacute; bloqueando. Los scripts est&aacute;n en el
+directorio <CODE>/etc/pcmcia</CODE>. Toman dos par&aacute;metros: un nombre de
+dispositivo, y una acci&oacute;n. El demonio <CODE>cardmgr</CODE> graba los comandos de
+configuraci&oacute;n en el registro del sistema. Por ejemplo, si el registro del
+sistema muestra que el comando <CODE>./network start eth0</CODE> fue el &uacute;ltimo
+comando ejecutado por <CODE>cardmgr</CODE>, el siguiente comando puede rastrear el
+script: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       sh -x /etc/pcmcia/network start eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>
+<HR>
+<A HREF="PCMCIA-Como-4.html">Página siguiente</A>
+<A HREF="PCMCIA-Como-2.html">Página anterior</A>
+<A HREF="PCMCIA-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

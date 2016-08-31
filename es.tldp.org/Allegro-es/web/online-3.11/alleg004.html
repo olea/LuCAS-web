@@ -1,0 +1,193 @@
+<html><head><title>04 Rutinas de teclado</title><body>
+<h1><a name="04 Rutinas de teclado">04 Rutinas de teclado</a></h1>
+<p>
+<ul><h4>
+<li><a href="#install_keyboard">install_keyboard</a>
+<li><a href="#remove_keyboard">remove_keyboard</a>
+<li><a href="#install_keyboard_hooks">install_keyboard_hooks</a>
+<li><a href="#key">key</a>
+<li><a href="#key_shifts">key_shifts</a>
+<li><a href="#keypressed">keypressed</a>
+<li><a href="#readkey">readkey</a>
+<li><a href="#simulate_keypress">simulate_keypress</a>
+<li><a href="#keyboard_callback">keyboard_callback</a>
+<li><a href="#keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>
+<li><a href="#set_leds">set_leds</a>
+<li><a href="#clear_keybuf">clear_keybuf</a>
+<li><a href="#three_finger_flag">three_finger_flag</a>
+<li><a href="#key_led_flag">key_led_flag</a>
+<li><a href="#switch_standard_kb_key">switch_standard_kb_key</a>
+<li><a href="#switch_standard_kb_flags">switch_standard_kb_flags</a>
+<li><a href="#switch_custom_kb_key">switch_custom_kb_key</a>
+<li><a href="#switch_custom_kb_flags">switch_custom_kb_flags</a>
+<li><a href="#set_standard_keyboard">set_standard_keyboard</a>
+<li><a href="#set_custom_keyboard">set_custom_keyboard</a>
+</h4></ul>
+<p><br><br>
+<p>
+Si quiere detectar múltiples presiones de teclas a la vez, las rutinas de
+teclado de la BIOS son inútiles. Allegro puede reemplazarlas con su propio
+controlador de teclado, que incluye un sistema de entrada con buffer y un
+conjunto de biestables que almacenan el estado de cada tecla. Tenga en cuenta
+que no es posible detectar correctamente cualquier combinación de teclas
+debido al diseño del teclado del PC. Hasta dos o tres teclas a la vez
+funcionarán bien, pero si pulsa más de esas, las extras probablemente serán
+ignoradas (la combinación exacta de teclas pulsadas varía de un teclado a
+otro).
+<p>
+<b>int <a name="install_keyboard">install_keyboard</a>();</b><br>
+   Instala el controlador de interrupciones del teclado de Allegro. Debe
+   llamar esto antes de cualquier otra función de teclado. Una vez instalado
+   el controlador de Allegro, no podrá usar las llamadas del DOS/BIOS o de
+   la biblioteca C para acceder al teclado.
+<p>
+<b>void <a name="remove_keyboard">remove_keyboard</a>();</b><br>
+   Desinstala el controlador de teclado devolviendo el control a la BIOS.
+   Normalmente no necesita llamar esta función, porque allegro_exit() lo
+   hará por usted.
+<p>
+<b>void <a name="install_keyboard_hooks">install_keyboard_hooks</a>(int (*keypressed)(), int (*readkey)());</b><br>
+   Sólo debería usar esta función si *no* va a usar el resto del controlador
+   de teclado. Debe ser llamada en vez de install_keyboard(), y le deja usar
+   rutinas callback para detectar y leer pulsaciones de teclado, que pueden
+   ser usadas por las funciones principales keypressed() y readkey(). Esto
+   puede ser útil si quiere usar el código GUI de Allegro junto con un
+   controlador de teclado propio, ya que permite al GUI acceder a la entrada
+   de teclado desde su código. Si quiere usar las rutinas de teclado de la
+   BIOS, la función _bios_keybrd(_KEYBRD_READ) devuelve pulsaciones de
+   teclado en el formato correcto.
+<p>
+<b>extern volatile char <a name="key">key</a>[128];</b><br>
+   Array de biestables indicando el estado de cada tecla, ordenadas por
+   scancodes. Los scancodes están definidos en allegro.h como una serie de
+   constantes KEY_*. Por ejemplo podrías escribir:
+<p><pre>
+      if (key[KEY_SPACE])
+         printf("La barra espaciadora está siendo pulsada\n");
+<p></pre>
+   Cada uno de estos valores es realmente un campo de bits conteniendo uno o
+   ambos biestables KB_NORMAL y KB_EXTENDED, permitiéndole determinar qué
+   tecla está siento pulsada incluso cuando hay dos con el mismo scancode.
+   Por ejemplo podría escribir:
+<p><pre>
+      if (key[KEY_ENTER] & KB_NORMAL)
+         printf("Enter (al lado del shift) está siendo pulsado\n");
+<p>
+      if (key[KEY_ENTER] & KB_EXTENDED)
+         printf("Enter (del teclado numérico) está siendo pulsado\n");
+<p></pre>
+<b>extern volatile int <a name="key_shifts">key_shifts</a>;</b><br>
+   Campo de bits conteniendo el estado actual de shift/ctrl/alt, las teclas
+   especiales de Windows, y los caracteres de escape de los acentos. Puede
+   contener cualquiera de los siguientes biestables:
+<p>
+      KB_SHIFT_FLAG<br>
+      KB_CTRL_FLAG<br>
+      KB_ALT_FLAG<br>
+      KB_LWIN_FLAG<br>
+      KB_RWIN_FLAG<br>
+      KB_MENU_FLAG<br>
+      KB_SCROLOCK_FLAG<br>
+      KB_NUMLOCK_FLAG<br>
+      KB_CAPSLOCK_FLAG<br>
+      KB_INALTSEQ_FLAG<br>
+      KB_ACCENT1_FLAG<br>
+      KB_ACCENT1_S_FLAG<br>
+      KB_ACCENT2_FLAG<br>
+      KB_ACCENT2_S_FLAG
+<p>
+<b>int <a name="keypressed">keypressed</a>();</b><br>
+   Devuelve TRUE si hay teclas esperando en el buffer de entrada. Esto es
+   equivalente a la función kbhit() de la biblioteca libc.
+<p>
+<b>int <a name="readkey">readkey</a>();</b><br>
+   Devuelve el siguiente caracter del buffer del teclado. Si el buffer está
+   vacío, espera hasta que una tecla sea pulsada. El byte bajo del valor
+   devuelto contiene el código ASCII de la tecla, y el byte alto el
+   scancode. El scancode sigue siendo el mismo a pesar del estado de las
+   teclas shift, ctrl y alt. El código ASCII es afectado por shift y ctrl de
+   la forma usual (shift hace mayúsculas, ctrl+letra da la posición de la
+   letra en el alfabeto, ej: ctrl+A = 1, ctrl+B = 2, etc). Pulsando
+   alt+tecla devuelve sólo el scancode, con el código ASCII cero en el byte
+   bajo. Ejemplo:
+<p><pre>
+      if ((readkey() & 0xff) == 'd')         // por código ASCII
+         printf("Has pulsado 'd'\n");
+<p>
+      if ((readkey() &gt;&gt; 8) == KEY_SPACE)     // por código scancode
+         printf("Has pulsado Espacio\n");
+<p>
+      if ((readkey() & 0xff) == 3)           // ctrl+letter
+         printf("Has pulsado Control+C\n");
+<p>
+      if (readkey() == (KEY_X &lt;&lt; 8))         // alt+letter
+         printf("Has pulsado Alt+X\n");
+<p></pre>
+<b>void <a name="simulate_keypress">simulate_keypress</a>(int key);</b><br>
+   Introduce una tecla en el buffer del teclado, como si el usuario la
+   hubiese pulsado. El parámetro va en el mismo formato que el devuelto por
+   readkey().
+<p>
+<b>extern int (*<a name="keyboard_callback">keyboard_callback</a>)(int key);</b><br>
+   Si se activa, esta función es será llamada por el controlador del teclado
+   en respuesta a cualquier tecla. Se le pasará una copia del valor que se
+   va a añadir al buffer de entrada, y la función puede devolver este valor
+   sin modificar, devolver cero, lo que hace que la tecla sea ignorada, o
+   devolver un valor modificado que cambiará lo que readkey() va a devolver
+   después. Esta rutina se ejecuta en contexto de interrupción, por lo que
+   debe ser fijada (locked) en memoria.
+<p>
+<b>extern void (*<a name="keyboard_lowlevel_callback">keyboard_lowlevel_callback</a>)(int key);</b><br>
+   Si se activa, esta función es será llamada por el controlador del teclado
+   en respuesta a cualquier evento del teclado, tanto al pulsar como al
+   soltar una tecla. Se le pasará un byte de scancode puro, con el bit alto
+   activado si la tecla ha sido pulsada o desactivado si ha sido soltada.
+   Esta rutina se ejecuta en contexto de interrupción, por lo que debe ser
+   fijada (locked) en memoria.
+<p>
+<b>void <a name="set_leds">set_leds</a>(int leds);</b><br>
+   Modifica el estado de los indicadores LED del teclado. El parámetro es
+   una máscara de bits conteniendo cualquiera de los valores
+   KB_SCROLOCK_FLAG, KB_NUMLOCK_FLAG, y KB_CAPSLOCK_FLAG, o -1 para
+   recuperar el comportamiento normal.
+<p>
+<b>void <a name="clear_keybuf">clear_keybuf</a>();</b><br>
+   Vacía el buffer del teclado.
+<p>
+<b>extern int <a name="three_finger_flag">three_finger_flag</a>;</b><br>
+   El controlador de teclado de Allegro tiene una secuencia de 'salida de
+   emergencia' que puede usar para salir de su programa. Si está corriendo
+   bajo DOS, será la combinación de tres dedos ctr+alt+del. La mayoría de
+   sistemas operativos multitarea capturarán esta combinación antes de que
+   llegue al controlador de teclado, en cuyo caso puede usar la combinación
+   alternativa ctrl+alt+fin. Si quiere desactivar este comportamiento en su
+   programa, ajuste este biestable a FALSE.
+<p>
+<b>extern int <a name="key_led_flag">key_led_flag</a>;</b><br>
+   Por defecto las teclas BloqMayús, BloqNum, BloqDesp activan los LEDS del
+   teclado cuando son presionadas. Si las quiere usar con su juego (ej.
+   BloqMayús para disparar) este comportamiento no es deseable, por lo que
+   puede limpiar este biestable para evitar que los LEDS sean actualizados.
+<p>
+<b>extern int <a name="switch_standard_kb_key">switch_standard_kb_key</a>;</b><br>
+<b>extern int <a name="switch_standard_kb_flags">switch_standard_kb_flags</a>;</b><br>
+<b>extern int <a name="switch_custom_kb_key">switch_custom_kb_key</a>;</b><br>
+<b>extern int <a name="switch_custom_kb_flags">switch_custom_kb_flags</a>;</b><br>
+   Combinación de scancode y biestable shift usado para cambiar el mapa de
+   teclado personalizado por el estándar. Por defecto, pulsando ctrl+alt+F1
+   seleccionará el mapa de teclado americano, mientras que ctrl+alt+F2
+   selecciona el mapa de teclado personalizado. Estos valores permiten
+   alterar la combinación de teclas para realizar el cambio, o puede
+   ajustarlos a cero para evitarlo.
+<p>
+<b>void <a name="set_standard_keyboard">set_standard_keyboard</a>();</b><br>
+   Fuerza a Allegro a usar el mapa de teclado estándar americano, ignorando
+   el mapa de teclado personalizado que está actualmente en uso.
+<p>
+<b>void <a name="set_custom_keyboard">set_custom_keyboard</a>();</b><br>
+   Fuerza a Allegro a usar el mapa de teclado personalizado, invirtiéndo el
+   efecto de las llamadas previas a set_standard_keyboard().
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

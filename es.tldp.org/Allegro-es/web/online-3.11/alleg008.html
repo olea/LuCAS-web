@@ -1,0 +1,117 @@
+<html><head><title>08 Cargando im genes</title><body>
+<h1><a name="08 Cargando imágenes">08 Cargando imágenes</a></h1>
+<p>
+<ul><h4>
+<li><a href="#load_bitmap">load_bitmap</a>
+<li><a href="#load_bmp">load_bmp</a>
+<li><a href="#load_lbm">load_lbm</a>
+<li><a href="#load_pcx">load_pcx</a>
+<li><a href="#load_tga">load_tga</a>
+<li><a href="#save_bitmap">save_bitmap</a>
+<li><a href="#save_bmp">save_bmp</a>
+<li><a href="#save_pcx">save_pcx</a>
+<li><a href="#save_tga">save_tga</a>
+<li><a href="#register_bitmap_file_type">register_bitmap_file_type</a>
+<li><a href="#set_color_conversion">set_color_conversion</a>
+</h4></ul>
+<p><br><br>
+<p>
+Aviso: cuando use imágenes truecolor, siempre debe ajustar el modo gráfico
+antes de cargar cualquier dato. De otro modo el formato de pixel (RGB o BGR)
+será desconocido, y el fichero podría ser convertido erróneamente.
+<p>
+<b>BITMAP *<a name="load_bitmap">load_bitmap</a>(char *filename, RGB *pal);</b><br>
+   Carga un bitmap desde un fichero, devolviendo un puntero al bitmap y
+   almacenando los datos de la paleta en el lugar especificado, que debería
+   ser un array de 256 estructuras RGB. Es responsable de destruir el bitmap
+   cuando ya no lo necesite. Devuelve NULL si hubo errores. Por ahora esta
+   función soporta ficheros BMP, LBM, PCX y TGA, determinando el tipo por la
+   extensión del fichero. Si el fichero tiene una imagen truecolor, debe
+   ajustar el modo de vídeo o llamar set_color_conversion() antes de
+   cargarlo.
+<p>
+<b>BITMAP *<a name="load_bmp">load_bmp</a>(char *filename, RGB *pal);</b><br>
+   Carga un fichero Windows u OS/2 de 256 colores o 24 bits truecolor.
+<p>
+<b>BITMAP *<a name="load_lbm">load_lbm</a>(char *filename, RGB *pal);</b><br>
+   Carga un fichero IFF ILBM/PBM de 256 colores.
+<p>
+<b>BITMAP *<a name="load_pcx">load_pcx</a>(char *filename, RGB *pal);</b><br>
+   Carga un fichero PCX de 256 colores o 24 bits truecolor.
+<p>
+<b>BITMAP *<a name="load_tga">load_tga</a>(char *filename, RGB *pal);</b><br>
+   Carga un fichero TGA de 256 colores, 15 bits hicolor o 24 bits truecolor.
+<p>
+<b>int <a name="save_bitmap">save_bitmap</a>(char *filename, BITMAP *bmp, RGB *pal);</b><br>
+   Escribe un bitmap en un fichero, usando la paleta especificada, que
+   debería ser un array de 256 estructuras RGB. Devuelve no-cero si hubo
+   errores. El formato de salida es determinado por la extensión del
+   fichero: actualmente esta función soporta ficheros BMP, PCX o TGA. Una de
+   las cosas con las que tener cuidado: si usa esto para volcar la pantalla
+   en un fichero, puede acabar con una imagen más grande de lo esperado, ya
+   que Allegro suele crear pantallas virtuales más grandes que la pantalla
+   visible. Puede solucionar esto usando un sub-bitmap que especifica que
+   parte de la pantalla quiere salvar, ejemplo:
+<p><pre>
+      BITMAP *bmp;
+      PALETTE pal;
+<p>
+      get_palette(pal);
+      bmp = create_sub_bitmap(screen, 0, 0, SCREEN_W, SCREEN_H);
+      save_bitmap("pantalla.pcx", bmp, pal);
+      destroy_bitmap(bmp);
+<p></pre>
+<b>int <a name="save_bmp">save_bmp</a>(char *filename, BITMAP *bmp, RGB *pal);</b><br>
+   Escribe un bitmap en un fichero BMP de 256 colores o 24 bits truecolor.
+<p>
+<b>int <a name="save_pcx">save_pcx</a>(char *filename, BITMAP *bmp, RGB *pal);</b><br>
+   Escribe un bitmap en un fichero PCX de 256 colores o 24 bits truecolor.
+<p>
+<b>int <a name="save_tga">save_tga</a>(char *filename, BITMAP *bmp, RGB *pal);</b><br>
+   Escribe un bitmap en un fichero TGA de 256 colores, 15 bits hicolor o 24
+   bits truecolor.
+<p>
+<b>void <a name="register_bitmap_file_type">register_bitmap_file_type</a>(char *ext,</b>
+<b>                    BITMAP *(*load)(char *filename, RGB *pal),</b>
+<b>                    int (*save)(char *filename, BITMAP *bmp, RGB *pal));</b><br>
+   Informa a las funciones load_bitmap() y save_bitmap() de un nuevo tipo de
+   fichero, dando rutinas para leer o escribir imágenes en este formato
+   (cualquier función puede ser NULL).
+<p>
+<b>void <a name="set_color_conversion">set_color_conversion</a>(int mode);</b><br>
+   Indica cómo convertir imágenes entre varias profundidades de color cuando
+   lea un gráfico de un fichero bitmap externo o fichero de datos. El modo
+   es una máscara de bits que especifica qué tipos de conversión son
+   permitidos. Si el bit apropiado está activado, los datos serán
+   convertidos al formato de pixel actual (seleccionado con la función
+   set_color_depth()), de otro modo se quedarán en el formato en el que
+   fueron cargados, dejándole a usted la tarea de convertirlos manualmente
+   antes de visualizarlos. El modo por defecto es la conversión total, para
+   que todas las imágenes que sean cargadas puedan verse con el modo de
+   vídeo actual. Los biestables de bit válidos son:
+<p><pre>
+      COLORCONV_EXPAND_256          // expande 256 colores en truecolor
+      COLORCONV_REDUCE_TO_256       // reduce truecolor a 256 colores
+      COLORCONV_EXPAND_15_TO_16     // expande 15 bit hicolor a 16 bits
+      COLORCONV_REDUCE_16_TO_15     // reduce 16 bit hicolor a 15 bits
+      COLORCONV_EXPAND_HI_TO_TRUE   // expande 15/16 bits a 24/32 bits
+      COLORCONV_REDUCE_TRUE_TO_HI   // reduce 24/32 bits a 15/16 bits
+      COLORCONV_24_EQUALS_32        // convierte entre 24 y 32 bits
+      COLORCONV_DITHER              // difumina al reducir a hicolor
+<p></pre>
+   Por conveniencia, las siguientes macros pueden ser usadas para
+   seleccionar una combinación común de estos biestables:
+<p><pre>
+      COLORCONV_NONE       // desactiva todas las conversiones de formato
+      COLORCONV_TOTAL      // convierte todo al formato actual
+      COLORCONV_PARTIAL    // convierte 15 &lt;-&gt; 16 y 24 &lt;-&gt; 32 bits
+      COLORCONV_MOST       // todas excepto truecolor &lt;-&gt; 256
+<p></pre>
+   Si activa el biestable COLORCONV_DITHER, se realizará un difuminado cuando
+   gráficos truecolor sean convertidos a formato hicolor, incluyendo la
+   función blit(). Esto puede producir resultados más agradables a la vista,
+   pero es obviamente más lento que una conversión directa.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

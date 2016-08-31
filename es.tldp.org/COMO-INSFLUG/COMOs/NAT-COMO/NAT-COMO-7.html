@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT COMO: C&oacute;mo modificar los paquetes</TITLE>
+ <LINK HREF="NAT-COMO-8.html" REL=next>
+ <LINK HREF="NAT-COMO-6.html" REL=previous>
+ <LINK HREF="NAT-COMO.html#toc7" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="NAT-COMO-8.html">Página siguiente</A>
+<A HREF="NAT-COMO-6.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc7">Índice general</A>
+<HR>
+<H2><A NAME="s7">7. C&oacute;mo modificar los paquetes</A></H2>
+
+<P>De manera que ahora sabemos c&oacute;mo elegir los paquetes que queremos
+modificar. Para completar nuestra regla, necesitamos decirle al n&uacute;cleo
+exactamente qu&eacute; queremos que haga con los paquetes.
+<P>
+<H2><A NAME="ss7.1">7.1 Source NAT (Cambio de Origen)</A>
+</H2>
+
+<P>Quiere hacer <EM>Source NAT</EM>; cambiar la direcci&oacute;n de origen de las
+conexiones a algo diferente. Esto se hace en la cadena POSTROUTING, justo
+antes de que sea enviado. Este es un detalle importante, ya que significa
+que cualquier otro servicio de la m&aacute;quina Linux (encaminamiento, filtrado
+de paquetes) ver&aacute; el paquete sin cambiar. Tambi&eacute;n significa que se puede
+utilizar la opci&oacute;n «-o» (interfaz de salida).
+<P>El <EM>Source NAT</EM> se especifica indicando «-j SNAT», y la opci&oacute;n
+«--to-source» especifica una direcci&oacute;n IP, un rango de direcciones IP, y
+un puerto o rango de puertos opcionales (s&oacute;lo con los protocolos UDP y
+TCP).
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Cambiar la direcci&oacute;n de origen por 1.2.3.4
+# iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to 1.2.3.4
+
+## Cambiar la direcci&oacute;n de origen a 1.2.3.4, 1.2.3.5 o 1.2.3.6
+# iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to 1.2.3.4-1.2.3.6
+
+## Cambiar la direcci&oacute;n de origen por 1.2.3.4, puertos 1-1023
+# iptables -t nat -A POSTROUTING -p tcp -o eth0 -j SNAT --to 1.2.3.4:1-1023
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Enmascaramiento</H3>
+
+<P>Hay un caso especializado de <EM>Source NAT</EM> denominado «enmascaramiento»
+(masquerading): s&oacute;lo deber&iacute;a ser usado para direcciones IP asignadas de
+forma din&aacute;mica, tales como las de conexiones por llamada est&aacute;ndar (para
+direcciones IP est&aacute;ticas, utilize el SNAT descrito anteriormente).
+<P>No es necesario escribir la direcci&oacute;n de origen de forma expl&iacute;cita con el
+enmascaramiento: utilizar&aacute; la direcci&oacute;n de origen de la interfaz por la
+que el paquete est&aacute; saliendo. Pero m&aacute;s importante a&uacute;n, si el enlace cae,
+las conexiones (que se iban a perder de todas maneras) se olvidan, lo que
+significa que habr&aacute; menos foll&oacute;n cuando la conexi&oacute;n vuelva a la normalidad
+con una IP diferente.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Enmascarar todo lo que salga por ppp0.
+# iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss7.2">7.2 Destination NAT (Cambio de destino)</A>
+</H2>
+
+<P>Esto se hace en la cadena PREROUTING, seg&uacute;n entra el paquete; esto
+significa que cualquier otro servicio de la m&aacute;quina con Linux
+(encaminamiento, filtrado de paquetes) ver&aacute; el paquete yendo a su destino
+«real» (el definitivo). Esto significa que se puede utilizar la opci&oacute;n
+«-i» (interfaz de entrada).
+<P>Para alterar el destino de un paquete generado de forma local (en la
+m&aacute;quina que hace el NAT), se debe usar la cadena OUTPUT, pero esto es m&aacute;s
+inusual.
+<P><EM>Destination NAT</EM> se especifica utilizando «-j DNAT», y la opci&oacute;n
+«--to-destination» especifica una direcci&oacute;n IP, un rango de direcciones
+IP, y un puerto o rango de puertos opcionales (s&oacute;lo para los protocolos
+UDP y TCP).
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Cambia la direcci&oacute;n de destino por 5.6.7.8
+# iptables -t nat -A PREROUTING -i eth1 -j DNAT --to 5.6.7.8
+
+## Cambia la direcci&oacute;n de destino por 5.6.7.8, 5.6.7.9 o 5.6.7.10.
+# iptables -t nat -A PREROUTING -i eth1 -j DNAT --to 5.6.7.8-5.6.7.10
+
+## Cambia la direcci&oacute;n de destino del tr&aacute;fico web por 5.6.7.8,
+## puerto 8080.
+# iptables -t nat -A PREROUTING -p tcp --dport 80 -i eth1 \
+        -j DNAT --to 5.6.7.8:8080
+
+## Redirige los paquetes locales que van a 1.2.3.4 hacia el dispositivo
+## loopback.
+# iptables -t nat -A OUTPUT -d 1.2.3.4 -j DNAT --to 127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Redirecci&oacute;n</H3>
+
+<P>Hay un caso especializado de <EM>Destination NAT</EM> llamado redirecci&oacute;n: es
+una simple conveniencia que es exactamente lo mismo que hacer DNAT, pero
+con la direcci&oacute;n de la interfaz de entrada.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## Env&iacute;a el tr&aacute;fico que entra dirigido al puerto 80 (web) a nuestro
+## proxy squid (transparente)
+# iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 80 \
+        -j REDIRECT --to-port 3128
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss7.3">7.3 Correspondencias (mappings) en profundidad</A>
+</H2>
+
+<P>Hay algunas sutilezas de NAT con las que la mayor&iacute;a de la gente no tendr&aacute;
+que enfrentarse nunca. Las he documentado aqu&iacute; para los m&aacute;s curiosos.
+<P>
+<H3>Selecci&oacute;n de m&uacute;ltiples direcciones de un rango dado</H3>
+
+<P>Si se da un rango de direcciones IP, la direcci&oacute;n a usar se elegir&aacute;
+bas&aacute;ndose en la menos utilizada para las conexiones de las que sabe
+nuestra m&aacute;quina. Esto nos permite hacer un balanceo de carga primitivo.
+<P>
+<H3>Crear correspondencias NAT nulas</H3>
+
+<P>Puede utilizar el objetivo «-j ACCEPT» para dejar que una conexi&oacute;n pase
+sin que se produzca ninguna conversi&oacute;n NAT.
+<P>
+<H3>Comportamiento NAT est&aacute;ndar</H3>
+
+<P>El comportamiento est&aacute;ndar es alterar la conexi&oacute;n lo menos posible, dentro
+de los l&iacute;mites de la regla dada por el usuario. Esto significa que no
+cambiaremos el puerto a menos que nos veamos obligados.
+<P>
+<H3>Correspondencia impl&iacute;cita del puerto de origen</H3>
+
+<P>Incluso cuando no se pide NAT para una conexi&oacute;n, puede ser que haya un
+cambio de puerto de forma impl&iacute;cita, si otra conexi&oacute;n lo est&aacute; usando ya.
+Consideremos el caso del enmascaramiento, que es lo m&aacute;s com&uacute;n:
+<P>
+<OL>
+<LI>Se establece una conexi&oacute;n web entre la m&aacute;quina 192.1.1.1, puerto
+1024 y www.netscape.com, puerto 80.
+</LI>
+<LI>Esta conexi&oacute;n es enmascarada por otra m&aacute;quina para que utilice su
+direcci&oacute;n como origen (1.2.3.4).
+</LI>
+<LI>La m&aacute;quina enmascaradora intenta hacer la conexi&oacute;n web con
+www.netscape.com puerto 80, desde 1.2.3.4 (la direcci&oacute;n de su interfaz
+interna), puerto 1024.
+</LI>
+<LI>El c&oacute;digo de NAT alterar&aacute; la direcci&oacute;n de origen de una segunda
+conexi&oacute;n al puerto 1025, de manera que no pueda haber solapado.</LI>
+</OL>
+<P>Cuando se produce este cambio impl&iacute;cito de origen, los puertos se dividen
+en tres clases:
+<UL>
+<LI>Puertos por debajo del 512.</LI>
+<LI>Puertos entre el 512 y el 1023 (inclusive).</LI>
+<LI>Puertos 1024 y superiores.</LI>
+</UL>
+<P>Nunca se har&aacute; corresponder un puerto con otro de clase diferente.
+<P>
+<H3>Qu&eacute; sucede cuando NAT falla</H3>
+
+<P>Si no hay manera de hacer corresponder una conexi&oacute;n de forma &uacute;nica tal
+como ha pedido el usuario, ser&aacute; descartada. Esto se aplica tambi&eacute;n a los
+paquetes que no pueden ser clasificados como parte de una conexi&oacute;n, porque
+est&aacute;n malformados, o nos hemos quedado sin memoria, etc.
+<P>
+<H3>M&uacute;ltiples correspondencias (mappings), solapado y colisiones</H3>
+
+<P>Podemos tener reglas NAT que asignen paquetes dentro del mismo rango. El
+c&oacute;digo NAT es suficientemente inteligente para evitar colisiones. Por
+tanto, tener dos reglas que hagan corresponder las direcciones de origen
+192.168.1.1 y 192.168.1.2 respectivamente con 1.2.3.4 es correcto.
+<P>A&uacute;n m&aacute;s, se pueden hacer correspondencias sobre direcciones reales y en
+uso, siempre y cu&aacute;ndo estas direcciones pasen tambi&eacute;n a trav&eacute;s de nuestra
+m&aacute;quina. De manera que si tenemos una red asignada (1.2.3.0/24), pero
+tenemos una red interna que est&aacute; usando esas direcciones y otra con
+Direcciones Privadas de Internet 192.168.1.0./24, podemos hacer NAT con
+las direcciones de origen 192.168.1.0/24 dentro del rango de la red
+1.2.3.0, sin temor a colisiones:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth1 \
+        -j SNAT --to 1.2.3.0/24
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>La misma l&oacute;gica se aplica a las direcciones que usa la propia caja que
+hace NAT: &eacute;sta es la manera en que funciona el enmascaramiento
+(compartiendo las direcciones de la interfaz entre los paquetes
+enmascarados y los paquetes «reales» que vienen de la propia m&aacute;quina).
+<P>A&uacute;n m&aacute;s, podemos direccionar los mismos paquetes a varios objetivos
+diferentes, y ser&aacute;n compartidos. Por ejemplo, si no queremos direccionar
+nada usando 1.2.3.5, podr&iacute;amos hacer:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# iptables -t nat -A POSTROUTING -s 192.168.1.0/24 -o eth1 \
+        -j SNAT --to 1.2.3.0-1.2.3.4 --to 1.2.3.6-1.2.3.254
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Alterar el destino de conexiones generadas de forma local</H3>
+
+<P>Si se cambia el destino de un paquete generado de forma local (esto es,
+usando la cadena OUTPUT), y eso hace que el paquete salte a una interfaz
+diferente, entonces se cambia tambi&eacute;n la direcci&oacute;n de origen a la de esa
+interfaz. Por ejemplo, cambiar el destino de un paquete de loopback para
+que salga por eth0 tendr&aacute; como resultado que tambi&eacute;n se cambie la
+direcci&oacute;n de origen, 127.0.0.1, por la de eth0. Al contrario que con el
+resto de cambios, esto se hace de forma inmediata. Naturalmente, ambos
+cambios son invertidos cuando llega la respuesta del paquete.
+<P>
+<HR>
+<A HREF="NAT-COMO-8.html">Página siguiente</A>
+<A HREF="NAT-COMO-6.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc7">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Networking-concepts HOWTO: Qu&eacute; aspecto tienen los paquetes</TITLE>
+ <LINK HREF="conceptos-de-redes-COMO-9.html" REL=next>
+ <LINK HREF="conceptos-de-redes-COMO-7.html" REL=previous>
+ <LINK HREF="conceptos-de-redes-COMO.html#toc8" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="conceptos-de-redes-COMO-9.html">Página siguiente</A>
+<A HREF="conceptos-de-redes-COMO-7.html">Página anterior</A>
+<A HREF="conceptos-de-redes-COMO.html#toc8">Índice general</A>
+<HR>
+<H2><A NAME="s8">8. Qu&eacute; aspecto tienen los paquetes</A></H2>
+
+<P>
+<A NAME="definition-packet-sniffer"></A> 
+Para el excepcionalmente curioso (y el curiosamente excepcional), aqu&iacute;
+tenemos una descripci&oacute;n del aspecto real de un paquete. Hay varias
+herramientas que miran qu&eacute; paquetes est&aacute;n entrando y saliendo de su
+m&aacute;quina Linux: el m&aacute;s com&uacute;n es «tcpdump» (que comprende m&aacute;s que TCP
+actualmente). Estos programas se llaman «husmeadores de paquetes» (packet
+sniffers).
+<P>
+<A NAME="definition-packet-header"></A> 
+<A NAME="definition-packet-body"></A> 
+El principio de cada paquete dice a d&oacute;nde va, de d&oacute;nde viene, el tipo de
+paquete, y otros detalles administrativos. Esta parte se denomina «cabecera
+del paquete». El resto del paquete contiene los datos por transmitir
+propiamente dichos, y normalmente se denomina «cuerpo del paquete».
+<P>
+<A NAME="definition-IP-header"></A> 
+Por lo tanto, cualquier paquete IP comienza con la «cabecera IP»: de al
+menos 20 bytes de largo. Tiene un aspecto parecido al siguiente: (este
+diagrama ha sido sustra&iacute;do  sin ning&uacute;n remordimiento de conciencia del RFC
+790): 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Versi&oacute;n|  IHL  |Tipo de Servic.|          Tama&ntilde;o Total         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |         Identificaci&oacute;n        |Flags|  Desplaz. del Fragmento |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Tiempo de Vida |   Protocolo   |    Checksum de la cabecera    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                     Direcci&oacute;n de Origen                       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                     Direcci&oacute;n de Destino                      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los campos importantes son el Protocolo, que indica si es un paquete TCP
+(n&uacute;mero 6), UDP (n&uacute;mero 17) u otra cosa, la Direcci&oacute;n IP de Origen y la
+Direcci&oacute;n IP de Destino.
+<P>
+<A NAME="definition-TCP-header"></A> 
+Ahora, si el campo de protocolo dice que es un paquete TCP, entonces
+a esta cabecera IP le sigue inmediatamente una cabecera TCP: la cabecera
+TCP tambi&eacute;n tiene al menos 20 bytes de longitud:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        Puerto de Origen       |       Puerto de Destino       |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                      N&uacute;mero de Secuencia                      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                    N&uacute;mero de Confirmaci&oacute;n                     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |Deplz. |           |U|A|P|R|S|F|                               |
+   |de los | Reservado |R|C|S|S|Y|I|            Ventana            |
+   | Datos |           |G|K|H|T|N|N|                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |           Checksum            |      Puntero de Urgencia      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los campos m&aacute;s importantes son el puerto de origen y el de destino, que
+dicen a qu&eacute; servicio est&aacute; destinado el paquete (o de cual viene, en el
+caso de que sea un paquete de respuesta). Los n&uacute;meros de secuencia y
+confirmaci&oacute;n (acknowledgement) se utilizan para mantener el orden de los
+paquetes, y decirle al otro extremos cu&aacute;ntos paquetes se han recibido. Los
+indicadores (flags) ACK, SYN, RST y FIN (escritos de mayor a menor) son
+simples bits que se utilizan en la negociaci&oacute;n de apertura (SYN) y cierra
+(RST o FIN) de las conexiones.
+<P>Siguiendo a esta cabecera viene el verdadero mensaje que la aplicaci&oacute;n
+envi&oacute; (el cuerpo del paquete). Un paquete normal puede tener hasta 1500
+bytes: esto significa que el mayor espacio que pueden ocupar los datos es
+de 1460 bytes (20 bytes para la cabecera IP y 20 para la cabecera TCP):
+alrededor del 97%.
+<P>
+<HR>
+<A HREF="conceptos-de-redes-COMO-9.html">Página siguiente</A>
+<A HREF="conceptos-de-redes-COMO-7.html">Página anterior</A>
+<A HREF="conceptos-de-redes-COMO.html#toc8">Índice general</A>
+</BODY>
+</HTML>

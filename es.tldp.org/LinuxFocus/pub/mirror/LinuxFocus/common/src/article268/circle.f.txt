@@ -1,0 +1,82 @@
+      	PROGRAM CIRCLE
+
+      	INTEGER PGBEG, PGBAND
+      	INTEGER JUNK, MODE
+      	CHARACTER*1 CH
+      	REAL X,Y,xp(3),yp(3)
+	REAL xcenter,ycenter,r
+	REAL a1,a2,a3,a4
+	REAL b1,b2,b3,b4
+
+C 	Open device for graphics.
+
+      	IF (PGBEG(0,'?',1,1) .NE. 1) STOP
+
+ 
+C-------Define the background and line color----------
+	
+1	call PGSCR(0,1.0,1.0,1.0)
+	call PGSCR(1,0.0,0.0,0.0)	
+	call pgenv(-50.0,50.0,-50.0,50.0,1,1)
+c	call PGSCR(1,0.0,0.0,0.0)	
+c	CALL PGBOX('x',5.0,0,'y',5.0,1)
+	call pgsci(1)
+	call PGSFS(2)
+
+C	Loop to read and display cursor position. Initial position for cursor
+C 	is center of viewport. 
+C
+      	X = 0.0
+      	Y = 0.0
+      	MODE = 0
+	ic=0
+
+10	DO 11 i=1,3
+	
+		JUNK = PGBAND(MODE, 1, X, Y, X,Y,CH)
+          	WRITE (*, '(2F8.3,I4)') X,Y,ICHAR(CH)
+C         Check for exit
+          	IF (CH.EQ.'/' ) GOTO 20
+C         Check for switch of cursor type.
+          	IF (CH.EQ.'+') THEN
+             	   MODE = MOD(MODE+1,8)
+             	   WRITE (*,*) 'Cursor mode:', MODE
+             	   GOTO 10
+          	END IF
+c          	CALL PGPT1(X, Y, ICHAR(CH))
+           	CALL PGPT1(X, Y, 3)
+		ic=ic+1    
+		xp(i)=x
+		yp(i)=y
+		if (ic .eq. 3) goto 19
+11	continue
+
+C ------Calculate the coordinates of the center
+
+19	a1=(yp(1)-yp(2))/(xp(1)-xp(2))
+	a2=(yp(1)-yp(3))/(xp(1)-xp(3))
+	a3=(yp(1)**2-yp(2)**2+xp(1)**2-xp(2)**2)/(2*(xp(1)-xp(2)))
+	a4=(yp(1)**2-yp(3)**2+xp(1)**2-xp(3)**2)/(2*(xp(1)-xp(3)))
+
+	b1=(xp(1)-xp(2))/(yp(1)-yp(2))
+	b2=(xp(1)-xp(3))/(yp(1)-yp(3))
+	b3=(yp(1)**2-yp(2)**2+xp(1)**2-xp(2)**2)/(2*(yp(1)-yp(2)))
+	b4=(yp(1)**2-yp(3)**2+xp(1)**2-xp(3)**2)/(2*(yp(1)-yp(3)))
+	
+	xcenter=(b3-b4)/(b1-b2)
+	ycenter=(a3-a4)/(a1-a2)
+
+c ------Mark the center----------------
+	CALL PGPT1(xcenter, ycenter, 3)
+
+c ------Find the radius----------------
+	r=(xcenter-xp(1))**2+(ycenter-yp(1))**2
+	r=r**0.5
+
+c ------Draw the circle-------------------
+	call PGCIRC(xcenter,ycenter,r)
+	goto 1
+
+C 	Close the device and exit
+20    	CALL PGEND
+      	END

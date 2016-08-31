@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+#
+error()
+{
+	echo "$1"
+	exit 2
+}
+#
+help()
+{
+  cat <<HELP
+mktgz -- make a tar.gz package from a number of file
+
+USAGE: mktgz packagename directory [directory2 ...]
+
+mktgz opens a dialog box where you can select the file
+from the directory which should be included in the tar.gz file
+The directory should be a relative path.
+
+mktgz, copyright gpl, http://linuxfocus.org/English/November2002
+HELP
+  exit 0
+}
+
+# parse command line:
+while [ -n "$1" ]; do
+case $1 in
+    -h) help;shift 1;; # function help is called
+    --) shift;break;; # end of options
+    -*) echo "error: no such option $1. -h for help";exit 1;;
+    *)  break;;
+esac
+done
+[ -z "$2" ]&& help
+pack="$1"
+shift
+dirs="$*"
+
+if echo " $dirs" | fgrep " .." > /dev/null; then
+	error "You should not include directories which are lower in the tree than the current working directory"
+fi
+
+tempfile=/tmp/mktgz.$$
+trap "rm -f $tempfile" 1 2 5 15
+
+Xdialog --title "$pack.tar.gz"  --separate-output --checklist "tick the files which should be included into the package $pack.tar.gz"  0 0 12 `find $dirs  -maxdepth 1 -type f -printf "%p size=%kK OFF \n"`  2> $tempfile
+rval="$?"
+#
+if [ "$rval" = "0" ]; then
+	echo "running tar -zcvf $pack.tar.gz ..."
+	tar -zcvf "$pack.tar.gz" `cat $tempfile`
+else
+	echo "Cancel..."	
+fi
+rm -f $tempfile
+# end of mktgz

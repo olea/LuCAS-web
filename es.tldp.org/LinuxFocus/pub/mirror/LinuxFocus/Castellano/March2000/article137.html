@@ -1,0 +1,658 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_0.6">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="Hardware">
+ <TITLE>Hardware : Receptor de mando a distancia con RT-Linux</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Home" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Map" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Index" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Search" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="News" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Archives" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Links" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="About LF" href="../aboutus.html">
+</MAP>
+<CENTER>
+  <IMG src="../../common/images/Topbar-en.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-en.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 CELLSPACING=0 CELLPADDING=5 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/Ismael-R.gif" ALT="[Foto del Autor]" HEIGHT=147 WIDTH=122>
+<BR>by  <A href="mailto:iripoll@disca.upv.es,eacosta@disca.upv.es">Ismael Ripoll &amp; Elisa Acosta</A>
+<BR><BR><I>About the author:</I><BR><p>
+
+Elisa Acosta es Ingeniera en Informática por la
+Politécnica de Valencia. Actualmente trabaja en
+Indrá, en la problemática del año 1900 :-).
+<BR>
+
+Este artículo está basado en su proyecto fin de
+carrera.
+
+</p><P><FONT COLOR="#336633">Content</FONT>:
+<OL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex1">Descripci&oacute;n global</A></LI>
+  <LI><A HREF="#lfindex2">El receptor de infrarrojos</A></LI>
+  <LI><A HREF="#lfindex3">El puerto paralelo</A></LI>
+  <LI><A HREF="#lfindex4">Conexi&oacute;n con el ordenador</A></LI>
+  <LI><A HREF="#lfindex5">La tarea de Tiempo-Real</A></LI>
+  <LI><A HREF="#lfindex6">Referencias</A></LI>
+</OL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Receptor de mando a distancia con RT-Linux</H2>
+ <IMG SRC="../../common/images/illustration33.gif" ALT="[Ilustracion]" HSPACE=10 HEIGHT=100 WIDTH=100><P><FONT COLOR="#336633">Abstract</FONT>:
+<P>
+
+Utilizando un sencillo circuito el&eacute;ctrico podemos
+hacer que RT-Linux reciba los comandos de un mando a
+distancia por infrarrojos.
+
+</P><HR size="2" noshade><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+      <A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n</H2>
+
+
+      <P>El  proyecto que  vamos  a  abordar tiene  aunque tiene   una
+      peque&ntilde;a   componente     hardware, no     se    necesitan
+      conocimientos electr&oacute;nica.</P>
+
+      <P>Existe un proyecto llamado &quot;<B>lirc</B>&quot; (Linux
+      Infra-red Remote Control) iniciado por Ralph J. K. Metzler (<A
+      HREF="http://www-wjp.CS.Uni-SB.DE/~columbus/lirc/">http://www-wjp.CS.Uni-SB.DE/~columbus/lirc/)</A>
+      en el que se ha desarrollado un driver receptor de infrarrojos
+      utilizando los servicios &quot;normales&quot; de Linux. Por
+      &quot;normales&quot; me refiero a que no ha utilizado las
+      extensiones de tiempo real RT-Linux. En este art&iacute;culo
+      abordamos la misma problem&aacute;tica, pero bas&aacute;ndonos
+      en RT-Linux.</P>
+
+      <A NAME="lfindex1">&nbsp;</A>
+<H2>Descripci&oacute;n global</H2>
+</a>
+
+      <P>El proyecto que vamos a realizar tiene una primera parte de
+      desarrollo hardware relacionado con la conexi&oacute;n del
+      receptor de infrarrojos al ordenador, y una segunda parte donde
+      de desarrollo del sistema de Tiempo-Real que accede a este
+      dispositivo. El hardware que vamos a necesitar es m&iacute;nimo:
+      un receptor de infrarrojos del fabricante Sharp (IS1U60) y unos
+      pocos cables y conectores.</P> 
+
+      <P>El receptor de infrarrojos IS1U60 es una maravilla de la
+      electr&oacute;nica, en un encapsulado de solo tres patillas (dos
+      de las cuales son las de alimentaci&oacute;n y masa) es capaz de
+      llevar a cabo casi todo el trabajo de recepci&oacute;n y
+      conversi&oacute;n, entregando en la tercera patilla una
+      se&ntilde;al TTL serie.</P>
+<center>
+	<table align=right>
+	  <tr>
+	    <td>
+	      <IMG SRC="../../common/images/article57/figura1.gif" NAME="Graphic2" align=center  WIDTH=541
+		HEIGHT=434 BORDER=0>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td align=center>
+	      <i>Visión global del systema y conexionado eléctrico.</i>
+	    </td></tr>
+	</table>
+      </center>
+      <p>El PC dispone de multitud de conectores para conectar todo
+	tipo de perif&eacute;ricos digitales (modems, impresoras,
+	SCSI, teclado, monitores, etc...), pero no est&aacute;
+	preparado para conectarse a elementos electr&oacute;nicos
+	simples. En otras palabras, un PC normal no dispone de una
+	tarjeta de adquisici&oacute;n de datos que pueda leer la
+	tensi&oacute;n (voltaje) de una determinada l&iacute;nea.</P>
+
+	<P>Por suerte para todos, el puerto paralelo (y tambi&eacute;n
+	el puerto serie) se puede utilizar como un puerto de
+	entrada/salida gen&eacute;rico. Muchos perif&eacute;ricos
+	utilizan esta caracter&iacute;stica para comunicarse con el
+	PC, como por ejemplo una unidad Iomega ZIP(R).</P>
+
+	<P>Nosotros utilizaremos el puerto paralelo para recibir datos
+	del receptor de infrarrojos. S&oacute;lo necesitaremos una
+	patilla del puerto paralelo, pues el receptor de infrarrojos
+	s&oacute;lo tiene una patilla de datos.</P>
+
+      <A NAME="lfindex2">&nbsp;</A>
+<H2>El receptor de infrarrojos</H2>
+</a>
+
+      <P>Como ya he comentado, el IS1U60 es un receptor de infrarrojos
+	dise&ntilde;ado especialmente para construir receptores de
+      aparatos dom&eacute;sticos.</P>
+
+      <P>La se&ntilde;al emitida por un mando a distancia es realmente
+      compleja, pues en ella se unen varios tipos de
+      codificaci&oacute;n y modulaci&oacute;n. Veamos detenidamente
+      c&oacute;mo es esta se&ntilde;al.</P>
+
+      <P>El medio f&iacute;sico que transporta la se&ntilde;al del
+      mando a distancia es una onda luminosa en el rango de los
+	infrarrojos. Este tipo de luz no es en absoluto peligrosa para
+      la salud, a diferencia de la luz ultravioleta. La luz infrarroja
+      es invisible al ojo humano, pero no a los dispositivos
+      semiconductores. Fuentes de luz infrarroja son: el sol,
+      cualquier bombilla de incandescencia, diodos LED's, etc.  Un LED
+      es lo que utilizan los mandos a distancia para emitir la
+      se&ntilde;al.
+     </P>
+<br clear="all">
+      <TABLE  BORDER="0" cellpadding=0 CELLSPACING=0 align=center>
+	      
+	<TR >
+	  <TD width="45%" align="center"> 
+	    Luz infrarroja 
+	  </TD>
+	  <TD WIDTH="30" align="left"> Visible </TD>
+	  <TD width="35" align="center">
+	    Luz ultravioleta
+	  </TD>
+	</TR>
+	<TR>
+	  <td COLSPAN="3" >
+	    <IMG SRC="../../common/images/article57/figura2.jpg" width="600" height="28"><br>	
+	  </td>
+	</TR>
+	
+      </TABLE>
+      
+
+      <p>Todos los dispositivos semiconductores son sensibles a la luz
+      (a todo tipo de luz), de hecho este es el principal factor que
+      determina el encapsulado de los chips: un pl&aacute;stico
+      completamente opaco, normalmente negro. Un sensor de infrarrojos
+      est&aacute; construido b&aacute;sicamente por una uni&oacute;n
+      semiconductora recubierta por un cristal que s&oacute;lo deja
+      pasar la luz infrarroja.</P>
+
+      <p>Un sensor de infrarrojos construido de esa forma ser&aacute;
+      capaz de detectar la presencia de cualquier luz infrarroja,
+      independientemente de la fuente que la genere. Los
+      dise&ntilde;adores de mandos a distancia tuvieron que
+      a&ntilde;adir una caracter&iacute;stica diferenciadora a la luz
+      emitida desde un mando a distancia para hacerla distinguible del
+      resto de fuentes luminosas. La se&ntilde;al emitida por un mando
+      est&aacute; modulada a una frecuencia entre 32 y 40 Khz,
+      dependiendo del fabricante y modelo del mando a distancia. En
+      adelante supondremos que la frecuencia del mando a distancia es
+      de 38 Khz, pues suele ser el valor m&aacute;s com&uacute;n. Mas
+      del 90% de todos los mandos estudiados utilizan esta frecuencia
+      o una muy pr&oacute;xima.</P>
+
+	<table align=right>
+	  <tr>
+	    <td>
+	     <IMG SRC="../../common/images/article57/figura3.jpg" NAME="Graphic3" ALIGN=right WIDTH=203
+      HEIGHT=175 BORDER=0>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td align=center>
+	      <i>El receptor de infrarrojos.</i>
+	    </td></tr>
+	</table>
+
+
+<p>
+	  No tenemos que perder de vista que todo lo que se haga para
+	  emitir la se&ntilde;al, luego durante la recepci&oacute;n se
+	  tendr&aacute; que deshacer. Si se emite luz infrarroja,
+	  luego se tendr&aacute; que recibir; si esta se&ntilde;al se
+	  modula con una portadora de 38Khz luego se tendr&aacute; que
+	  eliminar (filtrar) esa portadora. La demodulaci&oacute;n se
+	  realiza anal&oacute;gicamente con un sencillo filtro paso
+	  banda (eliminar todas las frecuencias que no sean
+	  pr&oacute;ximas a la frecuencia de emisi&oacute;n) junto con
+	  un rectificador/integrador.</P>
+
+      <p>Luz infrarroja modulada a una frecuencia de 38 Khz, es el
+      medio de comunicaci&oacute;n entre el emisor (mando a distancia)
+      y el receptor (TV, v&iacute;deo, etc.). Ahora queda por
+      determinar c&oacute;mo se transmite la informaci&oacute;n, esto
+      es, los bits que identifican la tecla del mando a distancia que
+      se ha pulsado.</P>
+
+      <P> La forma de codificar la informaci&oacute;n depende de cada
+      fabricante, pero por suerte, en este proyecto no necesitamos
+      conocerlas, s&oacute;lo necesitaremos compararlas.</P>
+
+      <P> Es evidente, dada la forma de modular la se&ntilde;al, que
+      la informaci&oacute;n se transmite en serie, esto es, un bit
+      detr&aacute;s de otro, y por tanto s&oacute;lo necesitamos una
+      l&iacute;nea (de datos) para recibirla.</P>
+
+      <P>La siguiente figura est&aacute; obtenida directamente de las
+      hojas de especificaciones del receptor IS1U60 (<A
+      HREF="http://ns14.sharp.co.jp/ecg/unit/is1u60/is1u60-fea.html">http://ns14.sharp.co.jp/ecg/unit/is1u60/is1u60-fea.html</A>
+      ), y muestra la estructura interna. La dos flechas de la
+      izquierda representa la luz infrarroja, que es convertida en una
+      se&ntilde;al el&eacute;ctrica por el led. La se&ntilde;al se
+      amplifica, se le elimina la componente continua, se filtra para
+      dejar pasar solo frecuencias pr&oacute;ximas a 38Khz, luego se
+      rectifica (demodulador + integrador), y finalmente se convierte
+      en una se&ntilde;al compatible TTL.</P>
+<center>
+<IMG SRC="../../common/images/article57/figura4.gif" NAME="Esquema interno is1u60" ALIGN="center" WIDTH=544
+	HEIGHT=206 BORDER=0>
+</center>
+
+   <A NAME="lfindex3">&nbsp;</A>
+<H2>El puerto paralelo</H2>
+</a>
+
+
+      <p>
+	El puerto paralelo est&aacute; pensado y dise&ntilde;ado para
+	comunicarse con impresoras, pero con el paso del tiempo, y a
+	falta de otra cosa mejor, el puerto paralelo se ha ido
+	utilizando para conectar todo tipo de perif&eacute;ricos.
+      </P>
+
+      <p>Actualmente existen al menos dos variantes (ECP, EPP)
+      dise&ntilde;adas para transformar el puerto paralelo en un
+      verdadero puerto de comunicaciones de uso general. Nuestro
+      proyecto es bastante modesto en cuanto a las prestaciones que
+      necesitamos del puerto paralelo, por lo que cualquier
+      versi&oacute;n de &eacute;ste nos servir&aacute;. De hecho
+      necesitaremos una solo l&iacute;nea de entrada.</P>
+
+	<table align=left>
+	  <tr>
+	    <td>
+	     <IMG SRC="../../common/images/article57/figura5.gif" ALT="Regsitro de estado"
+      ALIGN="left" width="324" height="167">
+	    </td>
+	  </tr>
+	  <tr>
+	    <td align=center>
+	      <i>Detalle del registro de estado</i>
+	    </td></tr>
+	</table>
+
+
+      <p> El puerto paralelo
+      est&aacute; controlado desde el PC por tres registros de 8
+      bits. Hay un registro de datos (0x378) , uno de estado (0x379)y
+      otro de control (0x37A). Los valores entre par&eacute;ntesis
+      representan las direcciones usuales de los registros del primer
+      puerto paralelo.</P>
+
+      <p>Escribiendo en el registro de control se puede programar el
+      funcionamiento del puerto. De los 8 bits del registro,
+      s&oacute;lo nos interesa el bit 4. Escribiendo un &quot;1&quot;
+      en este bit, el hardware del puerto paralelo generar&aacute; una
+      interrupci&oacute;n (normalmente la n&uacute;mero 7) cuando
+      detecte que la l&iacute;nea de estado ACK pasa de nivel alto (5
+      voltios) a nivel bajo (0 voltios).</P>
+
+      <P>El registro de datos es una puerta directa a las patillas del
+      conector. Cualquier dato que escribamos en ese puerto,
+      aparecer&aacute; en las patillas 2 a 9 del conector
+      paralelo. Este puerto es s&oacute;lo de salida, por lo que no
+      podemos saber el valor (&quot;0&quot; o &quot;1&quot;) de las
+      patillas del conector leyendo el puerto. Puesto nosotros tenemos
+      que leer los valores que el receptor de infrarrojos entregue,
+      este puerto no nos sirve.</P>
+
+      <p>El puerto de estado refleja el estado de las l&iacute;neas de
+      control con la impresora. Mediante estas l&iacute;neas la
+      impresora es capaz de informar al ordenador sobre el estado en
+      el que se encuentra. Son l&iacute;neas que gestiona la impresora
+      (o dispositivo externo) y que lee el ordenador, por tanto son
+      l&iacute;neas de entrada. Aunque el registro es de 8 bits, solo
+      los 5 bits de mayor peso est&aacute;n conectados a las
+      l&iacute;neas, los otros tres bits est&aacute;n siempre a cero.
+      Los nombres de las l&iacute;neas tienen su origen en la
+      funci&oacute;n que desempe&ntilde;an cuando se utilizan para
+      comunicarse con una impresora, pero realmente estas
+      l&iacute;neas son unas entradas digitales gen&eacute;ricas que
+      se pueden utilizar para casi cualquier cosa.
+      </P>
+
+      <p>De estas 5 l&iacute;neas la m&aacute;s interesante es la
+      patilla 10 (bit 6 del registro), pues adem&aacute;s de servir
+      como l&iacute;nea de entrada digital, tambi&eacute;n se pueden
+      producir interrupciones cuando la l&iacute;nea cambia de estado
+      (de 5 a 0), tal como antes comentaba.</P>
+
+
+    <A NAME="lfindex4">&nbsp;</A>
+<H2>Conexi&oacute;n con el ordenador</H2>
+</a>
+
+      	<table align=right>
+	  <tr>
+	    <td>
+	 	<IMG SRC="../../common/images/article57/figura6.gif" NAME="Patillaje del receptor"
+	  ALIGN=right WIDTH=316 HEIGHT=309 BORDER=0>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td align=center>
+	      <i>Descripción física del encapsulado y patillaje</i>
+	    </td></tr>
+	</table>
+
+      <P ALIGN=LEFT>
+ El receptor de
+	  infrarrojos necesita una tensi&oacute;n de
+	  alimentaci&oacute;n entre 4.7 y 5.3 Voltios. Si la
+	  tensi&oacute;n baja de 4.7 el receptor deja de
+	  funcionar. Esta tensi&oacute;n se puede conseguir de varias
+	  formas:</P>
+
+      <OL>
+	<LI><P ALIGN=LEFT>Utilizando pilas. En este caso es recomendable
+	    utilizar una pila de 4V5 en serie con una de 1V5. La tensi&oacute;n
+	    real entregada no ser&aacute; de 6V sino de 5.5.</P>
+	  <LI><P ALIGN=LEFT>Utilizando una fuente de alimentaci&oacute;n
+	      (aparato que convierte tensi&oacute;n alterna en tensi&oacute;n
+	      continua de bajo voltaje). Aunque su construcci&oacute;n es muy
+	      sencilla, se sale de &aacute;mbito de este art&iacute;culo.</P>
+	    <LI><P ALIGN=LEFT>Sacar los 5Voltios del propio ordenador. Dentro de
+		un ordenador hay b&aacute;sicamente dos tipos de cables: cables
+		planos (que llevan datos) y cables m&aacute;s gruesos de colores
+		rojo, negro y amarillo que son los de alimentaci&oacute;n. El cable
+		rojo es el +5V y el cable negro es la masa o 0V.</P>
+      </OL>
+
+      <P>Para alimentar al receptor, conectaremos el cable negro con
+      la patilla 2 del receptor y el cable rojo (5V) con la patilla
+      3.</P>
+
+      <P>La conexi&oacute;n es algo tan sencillo como conectar la
+      patilla n&uacute;mero uno del receptor de infrarrojos a la
+      patilla 10 del puerto paralelo y la patilla 2 del receptor de
+      infrarrojos a patilla 18 del puerto paralelo. Observa que la
+      patilla GND (Ground, masa) ha de estar conectada a dos lugares:
+      Masa de la alimentaci&oacute;n y masa del puerto paralelo.</P>
+
+      <P>Para hacer todas estas conexiones puedes utilizar cualquier
+      tipo de cable.</P>
+
+  <A NAME="lfindex5">&nbsp;</A>
+<H2>La tarea de Tiempo-Real</H2>
+</a>
+
+	<table bgcolor="#f8fcc0" align="left"  border="2" >
+	  <tr>
+	    <th bgcolor="#5898c0">
+	      Módulo de TIEMPO-REAL
+	    </th>
+	  </tr>
+	  <tr>
+	    <td>  
+	      	      
+	      <font size="-1">
+		<pre>
+#define PERIOD 100
+#define SIZE 8192
+#define FIFO_ZERO 0
+#define LP0 0x378 /*Address /dev/lp0*/
+#define STS LP0+1
+
+RT_TASK task;
+
+//---------- Tarea de tiempo real
+void Real_Time_Task(){	
+  unsigned short data1, data2=0;
+  unsigned long  cont = 0L;
+  
+  while(1){
+    // Leer el valor del puerto
+    data1=inb(STS) & 0x40;
+    	
+    // Si no ha habido cambio.. 
+    if ( data2 == data1) {
+      // Incrementar el contador.
+      cont++;
+    } else {
+      
+      // Enviar el valor del contador.
+      rtf_put(FIFO_ZERO, 
+              (char *) &cont, 
+	    sizeof(cont));
+      cont = 0L;
+      data2 = data1;
+	
+    }
+    rt_task_wait();
+  }   
+}   
+
+//------------- Programa principal
+int init_module(){
+  RTIME now = rt_get_time();
+
+  // Crear la FIFO de comunicación con Linux.
+  rtf_create(FIFO_ZERO,SIZE);
+
+  // Crear la tarea de tiempo real.
+  rt_task_init(&task,Real_Time_Task,1,3000,4);
+
+  // Hacerla periodica.
+  rt_task_make_periodic(&task,now+3000,PERIOD);
+
+  return 0;  // Todo ha ido bien.
+} 
+
+//------------- Para descargar el módulo
+void cleanup_module(){
+  rt_task_delete(&task);
+  rtf_destroy(FIFO_ZERO);
+}  </pre>
+	      </font>
+	    </td>
+	  </tr>
+	</table> 
+
+      <p>
+	La foma m&aacute;s sencilla de medir el estado de la patilla
+	ACK del puerto paralelo es crear una tarea peri&oacute;dica
+	que se encargue de leer el estado del bit (patilla). Si
+	detecta un cambio, mientras que la patilla no cambie de
+	estado, se incrementa un contador que representa el tiempo que
+	el bit ha estado a ese nivel.  Cuando se detecta que el valor
+	ha cambiado, se env&iacute;a el valor del contador a una tarea
+	de Linux normal a trav&eacute;s de una FIFO.  Un proceso Linux
+	tiene que estar esperado a leer de esa FIFO. Los valores que
+	lee son alternativamente la duraci&oacute;n del pulso a nivel
+	bajo y luego a nivel alto de la se&ntilde;al enviada por el
+	mando a distancia y recogida por el receptor de
+	infrarrojos.</P>
+
+      <P ALIGN=LEFT>Realizar una buena medida de la se&ntilde;al
+      entregada por el receptor de infrarrojos es fundamental, de
+      hecho, este es el &uacute;nico motivo que justifica el uso de
+      tiempo real.  Interpretar la secuencia de valores que entrega la
+      tarea de tiempo real, para identificar a qu&eacute; tecla
+      concreta correspondiente no tiene ninguna restricci&oacute;n
+      temporal y se puede llevar a cabo en un proceso normal de
+      Linux.</P> 
+
+      <P ALIGN=LEFT>Otra forma de medir los cambios en la patilla ACK
+      es instalando un manejador de interrupciones en la
+      interrupci&oacute;n 7. Esta otra soluci&oacute;n no necesitaria
+      de un planificador ni de una tarea peri&oacute;dica.</P> 
+
+      <P ALIGN=LEFT>La funcion <tt>init_module</tt> se ocupa de poner en
+      marcha la tarea. S&oacute;lo hay que crear la FIFO por la que se
+      comunicar&aacute; la tarea, luego crear la tarea y finalmente
+      convertirla en peri&oacute;dica.  El valor del periodo (100
+      RT-Ticks lo que es m&aacute;s o menos 90 micro-segundos) se ha
+      obtenido por prueba y error. Cuanto menor es el periodo mayor es
+      la resoluci&oacute;n de la medida, pero por contra m&aacute;s
+      sobrecarga produce la tarea.</P>
+      
+
+
+
+
+<p>El siguiente programa de usuario imprime por la salida est&aacute;ndar
+lo que lee del dispositivo /dev/rtf0. Con este simple programa
+podemos &quot;ver&quot; la forma que tiene cada una de las tramas que
+el emisor de infrarrojos env&iacute;a cuando se pulsa una tecla.</P>
+	<table bgcolor="#f8fcc0" align="right"  border="2" >
+	  <tr>
+
+	    <th bgcolor="#5898c0">
+	      Programa de usuario
+	    </th>
+	  </tr>
+	<tr>
+	    <td>  
+	      	      
+	      <font size="-1">
+		<pre>
+#include <stdio.h>
+#include <sys/types.h>
+#include <fcntl.h>			
+#include <unistd.h>
+#include <linux/rtf.h>
+int main(){
+  int fd;
+  unsigned long cont;
+  fd=open("/dev/rtf0",O_RDONLY);
+  while(1) {
+      read(fd,&cont,sizeof(cont));
+      if ( cont > 700) printf("\n");
+      printf("%d ",cont);
+      fflush(stdout);
+    }
+  return 0;
+}   </pre>
+	      </font>
+	    </td>
+	  </tr>
+	</table> 
+
+
+<p>El valor 700 que aparece en el programa es un valor estimado y
+representa el tiempo m&iacute;nimo entre dos tramas consecutivas. 
+</P>
+
+<p>Aunque la mayor&iacute;a de mandos a distancia utilizan una se&ntilde;al
+infrarroja similar, la forma de codificar las teclas puede ser
+bastante distinta. Reconocer la tecla pulsada es un problema de
+&quot;reconocimiento de formas&quot; y no de &quot;tiempo real&quot;.
+La mejor forma de construir un programa que reconozca un mando
+concreto es mirando la salida de este programa para hacerse una idea
+de c&oacute;mo exactamente nuestro mando concreto emite los datos.</P>
+
+<p>Simplific&aacute;ndolo mucho, podemos decir que cuando se pulsa
+una tecla del mando a distancia &eacute;ste env&iacute;a una
+secuencia de pulsos que nosotros veremos en pantalla como una
+secuencia de n&uacute;meros. Mientras mantengamos la tecla pulsada,
+el mando enviar&aacute; la misma secuencia de forma peri&oacute;dica
+(los mandos Sony suelen ser una excepci&oacute;n).</P>
+
+<p>Veamos una ejecuci&oacute;n (hay que acordarse de instalar los
+m&oacute;dulos de tiempo real que necesitamos: las fifo y el
+planificador) :</P>
+
+<font size="-1">
+<pre>
+
+  # modprobe rt_fifo_new
+  # modprobe rt_prio_sched
+  # insmod ir
+  # ir_get
+  0
+  126509 13 6 23 7 13 7 12 7 12 7 12 7 12 8 11 8 11 8 11 8 11 8 11 19 11
+  1081 13 6 23 7 12 7 12 8 11 8 11 8 11 8 12 7 12 8 11 8 11 8 11 19 11
+  1080 14 6 23 7 12 7 12 7 12 7 12 8 11 8 11 8 11 9 11 7 12 8 11 19 11
+  1080 13 6 24 6 13 7 12 7 12 7 12 7 12 7 12 8 11 8 11 8 11 8 11 19 11
+</pre></font>
+
+
+      <P >Como se puede observar, este
+      mando repite la misma secuencia mientras se mantenga pulsada la
+      tecla. Otra cosa que se puede apreciar es el error de
+      medida. Los n&uacute;meros de distintas tramas s&oacute;lo
+      tienen una variaci&oacute;n de 1, que representa el error de
+      cuantificaci&oacute;n.</P> 
+
+      <P >Para construir un reconocedor
+      s&oacute;lo tenemos que guardar en un array cada una de las
+      tramas que env&iacute;a nuestro mando, y luego cada vez que nos
+      llega una trama buscamos (permitiendo un error de m&aacute;s
+      menos uno) con todas las que tenemos en el array de tramas. Este
+      programa se deja como ejercicio para el lector.
+</P>
+
+      <P>Algunos mandos emiten una trama distinta cada
+      vez que se pulsa una tecla, aunque estemos pulsando siempre la
+      misma tecla. Lo que hacen es lo siguiente: Cuando se pulsa una
+      tecla env&iacute;an una trama que llamaremos &quot;TramaA&quot;,
+      luego si soltamos y volvemos a pulsar emiten &quot;TramaB&quot;
+      luego la siguiente vez que pulsemos vuelven a emitir
+      &quot;TramaA&quot; y as&iacute; sucesivamente. Si se mantiene la
+      tecla pulsada se emiten varias veces la misma trama. De esta
+      forma, el receptor puede distinguir si es una pulsaci&oacute;n
+      larga o dos pulsaciones seguidas. &iquest;C&oacute;mo crees que
+      se pon&iacute;a el canal 11 en los mandos m&aacute;s nuevos?</P>
+
+   <A NAME="lfindex6">&nbsp;</A>
+<H2>Referencias</H2>
+</a>
+
+	<ul>
+	  <li>La casa de RT-Linux <A HREF="http://www.rtlinux.org/">http://www.rtlinux.org</A></li>
+	   <li>
+	    Otros artículos sobre RT-Linux aparecidos en LinuxFocus:
+	    <ul>
+	      <li><a href="../May1998/article44.html">Real-Time Linux I</a></li>
+	      <li><a href="../July1998/article56.html">Real-Time Linux II</a></li>
+	    </ul>
+    
+	  <li>Información sobre el puerto paralelo <A HREF="http://www.lvr.com/">http://www.lvr.com</A>  </li>
+	  
+	  <li> Especifícaciones técnicas del receptor de infrarrojos
+	    utilizado <A
+	      HREF="http://ns14.sharp.co.jp/ecg/unit/is1u60/is1u60-fea.html">http://ns14.sharp.co.jp/ecg/unit/is1u60/is1u60-fea.html</A>
+	  </li>
+	    
+	  <li> Página con todos los enlaces a los desarrollos LIRC
+	    <A   HREF="http://www-wjp.CS.Uni-SB.DE/~columbus/lirc/">http://www-wjp.CS.Uni-SB.DE/~columbus/lirc/)</A>
+
+	</ul>
+
+    <p align="right"><i>Artículo original en castellano</a></i></p>
+
+  
+
+
+
+
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#777777">
+<A HREF="../../common/lfteam.html"><FONT COLOR="#FFFFFF">Webpages maintained by the LinuxFocus Editor team</FONT></A>
+<BR><FONT COLOR="#FFFFFF">&copy; Ismael Ripoll &amp; Elisa Acosta <BR>LinuxFocus 1999</FONT></TD>
+<!-- OLD FORMAT, NO TRANSLATION INFO -->
+</TR></TABLE></CENTER>
+<p><font size=1>1999-12-30, generated by lfparser version 0.6</font></p></BODY></HTML>

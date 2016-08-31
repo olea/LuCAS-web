@@ -1,0 +1,571 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf179, System Administration: Sistemas de alta disponibilidad bajo Linux</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<img src="../../common/images/Atif-Ghaffar.jpg" alt="[Photo of the Author]" height="115" width="124">
+<BR>por  <a href="mailto:atif@developer.ch">Atif Ghaffar</a>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<p>
+Atif es un camale&oacute;n. Cambia su papel de administrador de sistemas a
+programador, a formador, a jefe de proyecto, o a lo que haga falta
+para hacer el trabajo.<br>
+En algunas ocasiones, puedes encontrarle programando o escribiendo
+documentaci&oacute;n en su portatil, mientras se encuentra sentado en el
+aseo.<br>
+Atif considera que debe mucho a Linux, y a los proyectos y comunidad
+de fuente abierta por haber sido sus maestros.<br>
+Puedes averiguar m&aacute;s sobre &eacute;l en su
+<a href="http://www.developer.ch/~aghaffar">homepage</a></p>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">&iquest;Por qu&eacute; Alta Disponibilidad?</A></LI>
+  <LI><A HREF="#lfindex1">&iquest;Qu&eacute; es Alta Disponibilidad?</A></LI>
+  <LI><A HREF="#lfindex2">Ejemplos de implementaci&oacute;n de Alta Disponibilidad</A></LI>
+  <LI><A HREF="#lfindex3">Como funciona &eacute;sto</A></LI>
+  <LI><A HREF="#lfindex4">&iquest;C&oacute;mo hablan los clusters?</A></LI>
+  <LI><A HREF="#lfindex5">Preparando los nodos del cluster</A></LI>
+  <LI><A HREF="#lfindex6">Instalando heartbeat</A></LI>
+  <LI><A HREF="#lfindex7">Configurando el cluster</A></LI>
+  <LI><A HREF="#lfindex8">Respecto a la integridad de los datos</A></LI>
+  <LI><A HREF="#lfindex9">Y sobre clusters activo/activo</A></LI>
+  <LI><A HREF="#lfindex10">Recursos</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=179&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Sistemas de alta disponibilidad bajo Linux</H2>
+ <img src="../../common/images/illustration179.gif" alt="High Availability systems under Linux -- Image borrowed from http://lwn.net/Gallery/i/suits.gif" hspace="10" height="227" width="180">
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+<p>
+A la hora de dise&ntilde;ar sistemas para misiones cr&iacute;ticas, ya sea durante el
+desarrollo o mientras se construyen f&iacute;sicamente con procesadores, cables,
+etc., uno debe hacerse las siguientes preguntas:
+<ul><li>&iquest;C&oacute;mo de importante es el servicio que van a proporcionar esas m&aacute;quinas?
+<li>&iquest;Cuantos otros servicioes son dependientes del servicio que va a dar
+esa m&aacute;quina (pensemos en servidores NIS/NFS/DB/LDAP)?
+<li>&iquest;Qu&eacute; ocurrir&iacute;a si una parte del sistema falla (potencia el&eacute;ctrica,
+cables de red, discos duros, etc)?
+<li>&iquest;Qu&eacute; ocurrir&iacute;a si la m&aacute;quina falla completamente?
+</ul>
+Cuando me hago estas preguntas, la mayor parte de las veces obtengo la misma
+respuesta.
+<br><b>Ser&eacute; despedido :)</b></p><p>
+Por otra parte, cuando me pregunto "&iquest;Fallar&aacute; el Sistema Operativo?" obtengo
+siempre esta respuesta: <b>No</b>. No estamos ejecutando <b>extensiones de
+32 bits</b> para un sistema <b>parcheado para 16 bits</b> de un <b>sistema
+operativo de 8 bits</b> originalmente dise&ntilde;ado para un <b>microprocesador de
+4 bits</b>, que no aguantar&iacute;a una <b>competici&oacute;n de 1 bit</b>.<br><small>(obtuve esto del .sig de un correo)</small><br>
+Ahora abordaremos una discusi&oacute;n en profundidad.
+</p></P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>&iquest;Por qu&eacute; Alta Disponibilidad?</H2>
+
+
+<p>
+Aunque conf&iacute;o en Linux ciegamente, no conf&iacute;o tanto en las empresas
+que hacen las m&aacute;quinas, las fuentes de alimentaci&oacute;n, las tarjetas de
+red, las placas base, etc., y siempre me preocupa porque, si alguno
+de ellos falla, mi sistema no ser&aacute; usable y, por tanto, sus servicios
+no estar&aacute;n disponibles. M&aacute;s a&uacute;n, habr&eacute; arrastrado todos los servicios
+de la compa&ntilde;&iacute;a, aunque ellos no dependan directamente de m&iacute;. Por ejemplo
+<ul>
+<li>Algunos servicios cuya existencia ni siquiera conozco, que pueden
+empezar a comportarse err&aacute;ticamente porque no es capaz de resolver
+billingSys106.company.com. Hmmmm, &iquest;c&uacute;al puede ser el motivo? &iexcl;Oh!, yo
+era el responsable del DNS y decid&iacute;, en contra de la normativa de la
+empresa correrlo bajo Linux. :)
+</li>
+<li>O alguien que no puede usar el sistema SAP, porque mi servidor LDAP
+est&aacute; ca&iacute;do. &iexcl;Un momento! &iquest;Acaso no me cost&oacute; tres meses mover la
+autentificaci&oacute;n SAP a LDAP?
+</li>
+<li>O nadie puede entrar en sus estaciones Windows. S&oacute;lo tenemos ca&iacute;da una
+caja Unix, &iquest;porqu&eacute; el arranque de NT queda perjudicado por &eacute;so?
+&iexcl;Oh!. Hace poco, cuando no miraba nadie, traslad&eacute; el controlador de
+dominio NT a Linux+Samba con autentificaci&oacute;n por LDAP.
+</li>
+</ul>
+Por supuesto que podr&iacute;a suceder lo mismo en un servidor Windows, pero
+entonces no habr&aacute; mucha conmoci&oacute;n porque los <em>dummies</em> est&aacute;n
+acostumbrados a ello. Pero puedo asegurar que, si esto pasa en una
+caja Linux, habr&aacute; m&uacute;ltiples "no se puede confiar en Linux", etc. por
+parte de la direcci&oacute;n.
+</p>
+
+<p>
+En una de las compa&ntilde;&iacute;as para las que trabaj&eacute;, el servidor NFS proporcionaba
+datos a un servidor web corporativo, al servidor de intranet, al servidor
+de bases de datos, y a muchos otros servicios que har&iacute;an pararse la compa&ntilde;&iacute;a.
+In one of the companies I worked for, the NFS server was
+feeding data to a corporate web server, Intranet server, database
+server, and many other services that will bring the company to a
+halt. Cierto que NFS era una mala elecci&oacute;n, pero olvidemos eso para simplificar
+el ejemplo. Este servidor proporcionaba alta disponibilidad usando la soluci&oacute;n
+para clusters de Sun, que te costar&iacute;a ambos brazos y piernas. Y otro de los
+servicios de mayor importancia era la intranet, usada por m&aacute;s de 1500 personas.
+<br>
+Discutamos en concepto con una cierta profundidad.
+</p>
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>&iquest;Qu&eacute; es Alta Disponibilidad?</H2>
+
+
+<p>
+Alta Disponibilidad es aquello que t&uacute; digas que es. Algunas cosas que
+precisan alta disponibilidad son algunos servicios que hacen que tu empresa
+pueda funcionar:
+<ul>
+<li>el sitio de intranet</li>
+<li>el servidor de ficheros</li>
+<li>los servicios de correo</li>
+<li>el servicio DNS</li>
+</ul>
+</p>
+
+<p>
+Estos servicios pueden fallar por dos motivos
+<ul>
+<li>Mal comportamiento de software</li>
+<li>Mal comportamiento de hardware</li>
+</ul>
+Para prevenir los fallos de hardware, la direcci&oacute;n toma m&uacute;ltiples precauciones
+al comprarlo, como disponer de fuentes de alimentaci&oacute;n redundantes, RAID 5, etc.
+Lo que se suele pasar por alto son los malos comportamientos de software. Se puede
+creer o no, pero he visto colgarse cajas linux por un problema repentino con la
+tarjeta de red, sobrecalentamiento de la CPU, etc.
+<br>
+El gran jefe no est&aacute; realmente interesado en si fall&oacute; la corriente o si el sistema
+par&oacute; por una tarjeta de red defectuosa. Lo &uacute;nico que le preocupa a tus jefes, a
+los empleados y a los clientes es que el "<b>servicio</b>" debe estar disponible.
+Observamos que es recalcado el palabra servicio. Obviamente, el servicio lo
+proporciona una maquina, y redirigir el servicio y su actividad a una m&aacute;quina
+en perfecto estado es el reino de la Alta Disponibilidad.
+</p>
+
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Ejemplos de implementaci&oacute;n de Alta Disponibilidad</H2>
+
+
+<p>
+En este ejemplo vamos a construir un cluster Activo/Pasivo en
+el que corre un apache, que sirve la intranet. Para ello, usaremos
+una m&aacute;quina potente, con montones de RAM y muchas CPU, y otra tan
+s&oacute;lo con lo necesario para proporcionar el servicio en cuesti&oacute;n.
+La primera m&aacute;quina ser&aacute; el nodo maestro, mientras que la segunda
+ser&aacute; el nodo de respaldo. El trabajo del nodo de respaldo es hacerse
+cargo de los servicios del nodo maestro si cree que dicha m&aacute;quina no
+est&aacute; respondiendo.
+</p>
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Como funciona &eacute;sto</H2>
+
+
+<p>
+Pensemos como los usuarios acceden a la intranet. Escriben http://intranet/ en
+su navegador web, y el servidor DNS los redirije hacia 10.0.0.100 (por ejemplo).
+<br>
+Podemos colocar dos servidores corriendo el servicio de intranet con diferentes
+direcciones IP, y simplemente hacer que el servidor DNS redirija hacia el respaldo
+si el nodo maestro se va abajo. Ciertamente esa es una posibilidad, pero hay
+algunos detalles como los caches de los clilentes, los ficheros /etc, y que tal
+vez quieras corres el mismo servidor DNS en alta disponibilidad.
+<br>
+Otra posibilidad es que, si el nodo maestro falla, el respaldo asuma su direcci&oacute;n
+IP y pase a ser &eacute;l quien atienda las peticiones. Este m&eacute;todo se conoce como
+<em>IP takeover</em>, y es el que usaremos en los ejemplos. De esa forma los
+navegadores seguir&aacute;n accediendo a http://intranet/, que ser&aacute; traducido a
+10.0.0.100 si el nodo maestro falla, sin necesidad de hacer cambios en el DNS
+</p>
+
+
+<h1>Hasta aqu&iacute; hemos llegado</h1>
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>&iquest;C&oacute;mo hablan los clusters?</H2>
+
+
+<p>
+&iquest;C&oacute;mo pueden un nodo saber que su compa&ntilde;ero ha fallado?
+<br>
+Cada uno de ellos habla con el otro a trav&eacute;s de un cable serie y
+mediante un cable ethernet (por redundancia, los cables pueden fallar)
+y se comprueban mutuamente los latidos. Como los que tenemos todos)
+Si el latido para, probablemente est&aacute;s muerto. El programa que
+monitoriza los latidos se llama, adivinemos ..., hearthbeat (latido en
+ingl&eacute;s), y est&aacute; accesible en <a href="http://www.linux-ha.org/download/">http://www.linux-ha.org/download/</a>
+El programa que realiza la suplantaci&oacute;n de IP (el <em>IP takeover</em>)
+se llama <tt>fake</tt>, y est&aacute; integrado dentro de hearthbeat.
+<br>
+Si no dispones de una tarjeta de red extra para colocar en ambas m&aacute;quinas,
+puedes ejecutar heartbeat &uacute;nicamente sobre un cable serie (modem nulo).
+Aunque las tarjetas de red son baratas, por lo que conviene instalarlas
+para obtener redundancia.
+</p>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Preparando los nodos del cluster</H2>
+
+
+<p>
+Como dijimos m&aacute;s arriba, usaremos una m&aacute;quina potente, y otra no tanto.
+Ambas m&aacute;quinas est&aacute;n equipadas con dos tarjetas de red cada una, y al menos
+un puerto serie. Necesitaremos un enlace cruzado RJ45 (ethernet) de categor&iacute;a 5
+y un cable modem nulo (cable serie para enlace cruzado).
+Usaremos la primera tarjeta de red en cada m&aacute;quina para sus direcciones IP
+(eth0), y la segunda para la red privada que se encargar&aacute; del latido (eth1),
+y daremos a cada m&aacute;quina sus nombres y direcciones IP. Por ejemplo, eth0
+ser&aacute; en cada nodo
+<br>
+clustnode1 con direccion IP 10.0.0.1<br>
+clustnode2 con direccion IP 10.0.0.2
+</p>
+
+<p>
+Ahora reservaremos una direcci&oacute;n IP para uso flotante, que ser&aacute; la IP del servicio
+del que habl&aacute;bamos antes, y ser&aacute; 10.0.0.100 (con nombre intranet). De momento no
+la asignaremos a ninguna m&aacute;quina.
+<br>
+A continuaci&oacute;n configuramos la tarjeta de red secundaria en ambas m&aacute;quinas,
+otorg&aacute;ndoles direcciones IP en un rango fuera de uso. Por ejemplo, usaremos como
+m&aacute;scara 255.255.255.0, y daremos a cada una de las tarjetas las direcciones
+<br>
+clustnode1 direcci&oacute;n IP 192.168.1.1<br>
+clustnode2 direcci&oacute;n IP 192.168.1.2
+</p>
+
+<p>
+Continuamos conectando el cable serie a los puertos serie de las m&aacute;quinas, y
+asegur&aacute;ndonos de que se ven mutuamente. Si nos aseguramos de que lo conectamos
+al mismo puerto en ambas m&aacute;quinas todo ser&aacute; mucho m&aacute;s f&aacute;cil.
+Podemos consultar <a href="http://www.linux-ha.org/download/GettingStarted.html">
+http://www.linux-ha.org/download/GettingStarted.html</a><br>
+</p>
+
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Instalando heartbeat</H2>
+
+
+<p>
+Instalar el software es bastante directo. heartbeat est&aacute; disponible como
+paquete rpm y en formato tar.gz, tanto en forma binaria como en fuentes.
+Si experimentas problemas durante la instalaci&oacute;n, entonces probablemente no
+debas asumira la responsabilidad de instalar un sistema de Alta Disponibilidad.
+Hay una excelente gu&iacute;a
+<a href="http://www.linux-ha.org/download/GettingStarted.html">Primeros
+pasos con Linux-HA</a> de modo que no voy a repetir aqu&iacute; esa misma informaci&oacute;n.
+</p>
+
+<A NAME="lfindex7">&nbsp;</A>
+<H2>Configurando el cluster</H2>
+
+
+<p>
+Configurando el latido<br>
+<br>
+Si tenemos los ficheros de configuraci&oacute;n de heartbeat en /etc/ha.d, editamos
+el fichero /etc/ha.d/authkeys con nuestro editor favorito
+<pre>
+#/etc/ha.d/authkeys
+auth 1
+1 crc
+#end /etc/ha.d/authkeys
+</pre>
+<br>
+M&aacute;s adelante podremos cambiarlo a md5 o sha si nos sentimos m&aacute;s comodos, pero
+para los tests iniciales dejaremos en 1 el mecanismo de autentificaci&oacute;n.
+En el fichero /etc/ha.d/ha.cf
+<pre>
+debugfile /var/log/ha-debug
+logfile /var/log/ha-log
+logfacility     local0
+deadtime 10
+serial  /dev/ttyS3  #change this to appropriate port and remove this comment
+udp     eth1      #remove this line if you are not using a second network card.
+node    clustnode1
+node    clustnode2
+</pre>
+Y en /etc/ha.d/haresources
+<pre>
+#masternode ip-address service-name
+clustnode1 10.0.0.100 httpd
+</pre>
+Esto define a clustnode1 como nodo maestro, de forma que si clustnode1 se va
+abajo clustnode2 tomar&aacute; el servicio a su cargo, pero que cuando vuelva a estar
+disponible asumir&aacute; de nuevo el servicio. Este es el motivo por el cual usamos
+una m&aacute;quina potente y otra de menor entidad (clustnode1 es la mejor). El segundo
+elemento define la direcci&oacute;n IP que se debe asumir para el servicio, y el
+tercero el nombre del servicio en cuesti&oacute;n. Cuando una m&aacute;quina asume el servicio,
+intenta ejecutar
+<pre>
+/etc/ha.d/httpd start
+</pre>
+y si no es posible intenta
+<pre>
+/etc/rc.d/init.d/httpd start
+</pre>
+Si clustnode2 est&aacute; dando el servicio, ejecutar&aacute;
+<pre>
+/etc/ha.d/httpd stop
+</pre>
+o bien
+<pre>
+/etc/rc.d/init.d/httpd stop
+</pre>
+Cuando acabamos la configuraci&oacute;n de clustnode1 podemos copiar los ficheros
+al nodo de respaldo. En el directorio /etc/ha.d/rc.d encontraremos un script
+llamado ip-request, que har&aacute; el trabajo de asignar las direcciones IP y otras
+tareas. Ahora podemos arrancar /etc/rc.d/init.d/heartbeat en ambas m&aacute;quinas.
+</p>
+
+<p>
+Instalaremos una p&aacute;gina de &iacute;ndice diferente en cada una de las m&aacute;quinas que
+har&aacute;n de servidor http. Por ejemplo, en clustnode1
+<br>
+echo hello world from clustnode1 &gt;/yourWwwDocRoot/index.html
+<br>
+y enclustnode2
+<br>
+echo hello world from clustnode2 &gt;/yourWwwDocRoot/index.html
+<br>
+Debemos asegurarnos que en ninguno de los nodos se inicia el servidor http
+al arrancar la m&aacute;quina, eliminando los enlaces en los directorios rcN o,
+mejor a&uacute;n, moviendo los scripts de arranque "httpd" o "apache" de
+/etc/rc.d/init.d/ a /etc/ha.d/rc.d/ en ambas m&aacute;quinas.
+<br>
+Si todo se prepar&oacute; correctamente y hearbeat est&aacute; corriendo de forma correcta,
+clustnode1 tendr&aacute; la direcci&oacute;n IP 10.0.0.100 y ser&aacute; el que responda a las
+peticiones http. Podemos hacer un par de intentos para asegurarnos que
+efectivamente lo hace. Si todo parece correcto, paramos clustnode1 y, en 10
+segundos, clustnode2 asumir&aacute; el servicio y la direcci&oacute;n IP.
+<br>
+Es decir, el tiempo m&aacute;ximo fuera de servicio ser&aacute; 10 segundos.
+</p>
+
+
+<A NAME="lfindex8">&nbsp;</A>
+<H2>Respecto a la integridad de los datos</H2>
+
+
+<p>
+Cuando el servicio httpd se mueve de un nodo a otro, no ve los mismos datos.
+Pierdo todos los ficheros que estaba creando con los CGI's del httpd.
+<br>
+Hay dos respuestas para eso
+<ol>
+<LI>No escribir nunca en ficheros desde un CGI, usando una base de datos en
+red. MySQL es bastante buena.
+<LI>Puedes enganchar ambos nodos a una caja de almacenamiento SCSI externa,
+asegur&aacute;ndote de que la utiliza un s&oacute;lo nodo en cada momento, y tambi&eacute;n cambiando
+el ID SCSI de una de las m&aacute;quinas a 6, y dejando el otro en 7. Lo he intentado
+con tarjetas SCSI 2940 SCSI, y he podido hacerlo sin problemas. La mayor parte
+de las tarjetas baratas no te permitir&aacute;n hacer eso.
+<br>
+Algunos controladores RAID se venden como capaces de trabajar en cluster, pero
+conviene asegurarse de que podr&aacute;s cambiar el ID del host de control de la tarjeta
+sin necesidad de comprar el kit para clusters de Microsoft. Yo dispongo de
+adaptadores NetRaid de HP y definitivamente no soportan Linux. Tuve que romperlos
+para poder sentir que habia empleado el dinero en algo.
+</ol>
+Un paso posterior seria comprar tajetas de Fibrechannel, un hub Fibrechannel y un
+dispositivo de almacenaje Fibrechannel para crear una peque&ntilde;a SAN. Es claramente
+m&aacute;s costoso que usar SCSI compartido, pero es una buena inversi&oacute;n. O puedes usar
+GFS (Global File System, m&aacute;s abajo en los recursos) sobre Fibrechannel, lo que
+permite acceso transparente al almacenamiento desde todas las m&aacute;quinas como si
+se tratara de un almacenamiento local. Actualmente uso GFS en un entorno de
+producci&oacute;n formado por 8 m&aacute;quinas, dos de las cuales se encuentran en una
+configuraci&oacute;n de Alta Disponibilidad similar a la descrita aqu&iacute;.
+</p>
+
+<A NAME="lfindex9">&nbsp;</A>
+<H2>Y sobre clusters activo/activo</H2>
+
+
+<p>Si dispones de un buen sistema de almacenamiento que permita acceso concurrente,
+resulta muy f&aacute;cil construir un servidor activo/activo. Ejemplos son GFS y
+Fibrechannel. Si te bastan filesystems de red como NFS puedes usarlos,
+aunque yo no recomendar&iacute;a hacerlo. En cualquier caso, siempre puedes eviar
+el servicio A a clustnode1 y el servicio B a clustnode2, como hace el
+fichero haresource
+<pre>
+clustnode2 172.23.2.13 mysql
+clustnode1 172.23.2.14 ldap
+clustnode2 172.23.2.15 cyrus
+</pre>
+En mi caso, usando GFS para almacenamiento, no existe problema con el acceso
+concurrente, y se pueden correr tantos servicios como sean capaces de manejar
+las m&aacute;quinas. En la configuraci&oacute;n anterior, clustnode2 es el master para mysql
+y cyrus, mientras que clustnode1 es el master para LDAP. Si clustnode2 cae,
+clustnode1 asume la direcci&oacute;n IP y los servicios.
+</p>
+
+<A NAME="lfindex10">&nbsp;</A>
+<H2>Recursos</H2>
+
+
+<p>
+<dl>
+<dt><a href="http://www.linux-ha.org/">Linux-HA.org</a></dt>
+<dd>La p&aacute;gina de Alta Disponibilidad bajo Linux</dd>
+
+<dt><a href="http://oss.missioncriticallinux.com/kimberlite">kimberlite clustering technology</a></dt>
+<dd>Un cluster Kimberlite soporta dos nodos conectados a un SCSI compartido o a un
+almacenamiento Fibre Channel, en un entorno activo/activo tolerante a fallos. El
+software proporciona la capacidad para detectar cuando cualquiera de los nodos
+abandona el cluster, y dispara autom&aacute;ticamente scripts de recuperaci&oacute;n que
+realizan las tareas necesarias para restaurar las aplicaciones en el nodo restante.
+Cuando el nodo vuelve a unirse al cluster, las aplicaciones pueden moverse de
+vuelta a &eacute;l, de forma manual o autom&aacute;tica, si as&iacute; se requiere. Se proporcionan
+ejemplos de scripts de recuperaci&oacute;n. Kimberlite est&aacute; dise&ntilde;ado para los m&aacute;s
+altos requerimientos de integridad de datos, y es extremadamente robusto. Es
+adecuado para su despliege en cualquier entorno que requiera alta disponibilidad
+para aplicaciones Linux sin modificar.
+</dd>
+
+<dt><a href="http://ultramonkey.sourceforge.net/">ultra monkey</a></dt>
+<dd>Ultra Monkey es un proyecto que pretende crear sistemas de alta
+disponibilidad con balanceo de carga en redes locales usando componentes
+de fuente abierta sobre el sistema operativo Linux. En el momento actual,
+el objetivo es producir una granja web escalable con alta disponibilidad,
+aunque la tecnolog&iacute;a es f&aacute;cilimente ampliable hacia otros servicios
+como el email y el FTP.</dd>
+
+<dt><a href="http://www.linuxvirtualserver.org/">Linux Virtual Server</a></dt>
+<dd>El Linux Virtual Server es un servidor de alta disponibilidad y altamente
+escalable constru&iacute;do en base a un cluster de servidores reales, con el balanceador
+de carga corriendo bajo Linux. La arquitectura del cluster es transparente a los
+usuarios finales, que s&oacute;lo ven un &uacute;nico servidor virtual.
+</dd>
+
+<dt><a href="http://www.4unet.net/products/Cluster/">4U cluster</a> / <a href="http://www.4unet.net/products/SAN/">4U SAN</a> (Shameful plug)</dt>
+<dd>4U cluster y 4U SAN son el cluster de alta disponibilidad y la implementaci&oacute;n
+SAN de nuestra compa&ntilde;ia 4Unet. Si eres un ISP o una compa&ntilde;ia de telecomunicaci&oacute;n y precisas alta disponibilidad,
+4Unet es el sitio correcto para preguntar.
+<br>
+NOTA: 4Unet es un integrador, no vende clusters ni SANs, sino que los implemente
+para sus clientes. Todas las tecnolog&iacute;as usadas en estos cluster/SAN son de fuente
+abierta.
+<br>
+Los clientes de 4Unet son &uacute;nicamente ISPs y compa&ntilde;&iacute;as de telecomunicaciones.
+</dd>
+
+<dt><a href="http://www.globalfilesystem.org">Global File System</a></dt>
+<dd>El Global File System (GFS) es un sistema de ficheros de clusters de
+discos compartidos para Linux. GFS soporta journaling y recuperaci&oacute;n de
+fallos en los clientes. los nodos del cluster GFS comparten f&iacute;sicamente el
+mismo almacenamiento mediante FibreChannel o dispositivos SCSI compartidos.
+El filesystem aparece como local en cada uno de los nodos, y GFS sincroniza el
+acceso a ficheros a lo largo del cluster. GFS es totalmente sim&eacute;trico, lo que
+quiere decir que todos los nodos son equivalentes, y no existen ning&uacute;n servidor
+en el que se pueda producir un cuello de botella ni elementos con fallos
+cr&iacute;ticos. GFS usa cach&eacute; de lectura y escritura a la vez que mantiene la
+sem&aacute;ntica completa del sistema de ficheros UNIX.
+</dd>
+</dl>
+
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=179&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Atif Ghaffar, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article179.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:atif@developer.ch"><FONT COLOR="#FFFFFF">Atif Ghaffar</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:javier.pb@linuxfocus.org"><FONT COLOR="#FFFFFF">Javier Palacios</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-07-02, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

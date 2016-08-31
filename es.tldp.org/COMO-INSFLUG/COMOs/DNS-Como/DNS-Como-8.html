@@ -1,0 +1,130 @@
+<HTML>
+<HEAD>
+<TITLE>DNS COMO: PUFs Preguntas de Uso Frecuente (FAQ)</TITLE>
+</HEAD>
+<BODY>
+<A HREF="DNS-Como-7.html">Anterior</A>
+<A HREF="DNS-Como-9.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc8">Indice</A>
+<HR>
+<H2><A NAME="PUF"></A> <A NAME="s8">8. PUFs <I>Preguntas de Uso Frecuente (FAQ)</I></A></H2>
+
+
+<P>En esta secci&oacute;n incluyo algunas de las preguntas m&aacute;s frecuentes realizadas
+relativas a DNS y este COMO. Y las respuestas <CODE>:-)</CODE> Por favor, lea esta
+secci&oacute;n antes de enviarme correo electr&oacute;nico. </P>
+
+<H2><A NAME="ss8.1">8.1 ¿C&oacute;mo uso DNS desde dentro de un cortafuegos (<I>firewall</I>)?</A></H2>
+
+
+<P>Unas cuantas pistas:  `<CODE>forwarders</CODE>', `<CODE>slave</CODE>', y echar un vistazo
+a la literatura que hay al final de este COMO.</P>
+
+
+<H2><A NAME="ss8.2">8.2 ¿C&oacute;mo hago que DNS rote entre las direcciones disponibles para un</A>servicio, por ejemplo para <CODE>www.siempre.ocupado</CODE> para obtenerbalanceo de carga o similar?</H2>
+
+
+<P>Haga varios registros <CODE>A</CODE> para <CODE>www.siempre.ocupado</CODE> y use <CODE>bind
+4.9.3</CODE> o posterior. <CODE>bind</CODE> har&aacute; una rotaci&oacute;n tipo <I>round-robin</I> de
+las respuestas. Esto no funcionar&aacute; con versiones anteriores de <CODE>bind</CODE>.</P>
+
+
+<H2><A NAME="ss8.3">8.3 Quiero configurar DNS en una intranet (cerrada) ¿qu&eacute; hago? </A></H2>
+
+
+<P>Elimine el archivo de cach&eacute; y haga los archivos de zona. Eso tambi&eacute;n
+significa que nunca tendr&aacute; que actualizar el archivo de cach&eacute;. </P>
+
+
+<H2><A NAME="ss8.4">8.4 Mi sistema no tiene el programa <CODE>ndc</CODE>. ¿Qu&eacute; hago? </A></H2>
+
+
+<P>El <I>bind</I> instalado en su sistema es viejo y de alguna forma obsoleto. 
+Si la seguridad es importante para Vd.: actualice <I>bind</I>
+inmediatamente. Si no, de todas formas podr&aacute; vivir con ello. En lugar de
+ejecutar <CODE>ndc start</CODE> ejecute <CODE>named</CODE>; <CODE>ndc reload</CODE> ser&aacute;
+<CODE>named.reload</CODE> y <CODE>ndc restart</CODE> ser&aacute; <CODE>named.restart</CODE>. Esos
+programas probablemente estar&aacute;n en <CODE>/usr/sbin</CODE>.</P>
+
+
+<H2><A NAME="ss8.5">8.5 ¿C&oacute;mo configuro un servidor de nombres secundario? </A></H2>
+
+
+<P>Si el servidor primario tiene la direcci&oacute;n <CODE>127.0.0.1</CODE>, ponga la
+siguiente l&iacute;nea en el archivo <CODE>named.boot</CODE> de su secundario: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+      secondary     linux.bogus             127.0.0.1       sz/linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss8.6">8.6 Quiero que <I>bind</I> se ejecute cuando me desconecto de la red. </A></H2>
+
+
+<P>He recibido este mail de Ian Clark, <CODE>
+<A HREF="mailto:ic@deakin.edu.au">ic@deakin.edu.au</A></CODE> donde explica
+la forma de hacer esto: </P>
+<P>``Ejecuto named en la m&aacute;quina que hace <I>masquerading</I> aqu&iacute;. Tengo dos
+archivos <CODE>root.cache</CODE>, uno llamado <CODE>root.cache.real</CODE> que contiene el
+servidor de nombres ra&iacute;z real y el otro llamado <CODE>root.cache.falso</CODE>
+que contiene... </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+          ; root.cache.falso
+          ; este archivo no contiene informacion
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Cuando dejo de estar conectado copio el archivo <CODE>root.cache.falso</CODE> en
+<CODE>root.cache</CODE> y reinicio <CODE>named</CODE>.</P>
+<P>Cuando me conecto copio <CODE>root.cache.real</CODE> en <CODE>root.cache</CODE> y
+reinicio <CODE>named</CODE>. </P>
+<P>Esto se hace desde <CODE>ip-down</CODE> &amp; <CODE>ip-up</CODE> respectivamente. </P>
+<P>La primera vez que efect&uacute;o una consulta <I>off line</I> sobre un nombre de
+dominio del cual <CODE>named</CODE> no tiene detalles, &eacute;ste pone una entrada como
+esta en <CODE>messages</CODE>...</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+          Jan 28 20:10:11 hazchem named[10147]: No root nameserver for class IN
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>con la cual puedo convivir sin problemas.</P>
+<P>Esto ciertamente parece funcionarme. Puedo usar el servidor de nombres
+para m&aacute;quinas locales mientras no estoy conectado sin el retraso con
+nombres de dominio externos, y cuando s&iacute; estoy conectado, funciona de
+forma normal con dominios externos.''</P>
+
+
+<H2><A NAME="ss8.7">8.7 ¿D&oacute;nde almacena su cach&eacute; el servidor de nombres? ¿Hay alguna</A>forma de controlar el tama&ntilde;o del cach&eacute;? </H2>
+
+
+<P>El cach&eacute; se almacena en memoria completamente.  No se escribe en disco en
+ning&uacute;n momento. Cada vez que mata a <CODE>named</CODE> se pierde el cach&eacute;. El
+cach&eacute; no es controlable de ninguna forma, <CODE>named</CODE> lo maneja de acuerdo
+con unas reglas simples. No puede controlar ni el cach&eacute; ni su tama&ntilde;o de
+ninguna forma ni por ning&uacute;n motivo. Si quiere, puede cambiar esto tocando
+los fuentes de <CODE>named</CODE>, lo cual no es recomendable.</P>
+
+
+<H2><A NAME="ss8.8">8.8 ¿Salva <CODE>named</CODE> el cach&eacute; entre reinicios? ¿Puedo guardarlo?</A></H2>
+
+
+<P>No, <CODE>named</CODE> no salva el cach&eacute; cuando muere. Esto significa que el cach&eacute;
+se debe reconstruir de nuevo cada vez que mate y reinicie <CODE>named</CODE>. No
+hay forma de hacer que <CODE>named</CODE> salve el cach&eacute; en un archivo. Si quiere,
+puede cambiar esto tocando los fuentes de <CODE>named</CODE>, lo cual no es
+recomendable. </P>
+
+
+<HR>
+<A HREF="DNS-Como-7.html">Anterior</A>
+<A HREF="DNS-Como-9.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc8">Indice</A>
+</BODY>
+</HTML>

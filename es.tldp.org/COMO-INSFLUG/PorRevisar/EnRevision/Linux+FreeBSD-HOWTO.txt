@@ -1,0 +1,629 @@
+Linux+FreeBSD Como
+Niels Kristian Bech Jensen, nkbj@image.dk   
+Traductor : Marc Aparicio, aparicio@info-sciences.univ-orleans.fr   
+v1.0, 20 MAR 1999    
+
+Este documento describe como usar Linux y FreeBSD en el mismo sistema.   
+Introduce FreeBSD y muestra como los dos sistemas operativos pueden cooperar,
+por ejemplo compartiendo una partición swap. Antes de leer este documento  
+deberías tener un poco de experiencia con Linux o FreeBSD, así como,en como   
+particionar el disco duro. Todo lo que se muestra en este documento esta   
+testeado en FreeBSD 2.2.2, aunque tendrían que ser validas también en   
+versiones posteriores. No dudes a enviarme un mail si tienes comentarios, 
+preguntas   o sugestiones sobre este documento. También me gustaría saber de 
+gente que tenga   experiencia usando Linux juntamente con NetBSD o OpenBSD.   
+______________________________________________________________ ________    
+
+      Índice General:     
+      
+         1. Que es FreeBSD?    
+	
+	 2. La forma en que FreeBSD etiqueta los discos duros       
+	    2.1 FreeBSD ``porciones'' y ``particiones''     
+	    2.2 Disco y etiquetas de las particiones en Linux y FreeBSD    
+	
+	 3. Compartir espacio swap entre Linux y FreeBSD       
+	    3.1 Instalar y preparar Linux      
+	    3.2 Instalar FreeBSD      
+	    3.3 Definir la partición swap de FreeBSD en Linux    
+	
+	 4. Arrancar FreeBSD usando LILO    
+	
+	 5. Montar sistemas de ficheros       
+	    5.1 Montar el sistema de ficheros UFS desde Linux      
+	    5.2 Montar el sistema de ficheros ext2fs desde FreeBSD    
+	
+	 6. Ejecucion de binarios ajenos        
+	    6.1 Ejecutar binarios FreeBSD en Linux      
+	    6.2 Ejecutar binarios Linux en FreeBSD    
+	
+	 7. Referencias y otros documentos de interés    
+	
+	 8. Reconocimientos y Copyright       
+	    8.1 Disclaimer      
+	    8.2 Copyright     
+	    
+	 9. Del traductor    
+	 
+	 10. Anexo: Grupos LiNUXeros en España
+______________________________________________________________ ________    
+
+1.  Que es FreeBSD?  
+ 
+FreeBSD es un sistema operativo tipo Unix gratuito como puede serlo Linux. La 
+principal diferencia es que,mientras que el núcleo de Linux ha sido escrito de 
+la nada, FreeBSD esta basado en las partes libremente distribuibles de 4.4BSD 
+(Berkeley Software Distribution) conocido como 4.4BSD-lite. Este echo puede 
+incitar a que cierta gente sugiera que FreeBSD es mas cercano a ser un 
+"verdadero" UNIX(TM) que Linux. FreeBSD corre solamente en plataformas Intel PC
+(i386 y superior); actualmente se esta trabajando en las versiones para 
+plataformas DEC Alpha y Sun Sparc. Los requisitos Hardware son parecidos a los 
+de Linux. 
+
+
+El desarrollo de FreeBSD esta dirigido de una forma distinta a la de 
+Linux. Un equipo de desarrolladores sirve de arbitro y se encarga del liderazgo
+del proyecto. Grandes cambios son discutidos por avanzado en las listas de 
+correo. El proyecto FreeBSD tiene dos ramas de desarrollo(como en Linux): 
+``-CURRENT'' y   ``-STABLE''. En la rama ``-CURRENT'' es donde se desarrollan 
+los nuevos componentes.   La rama ``-STABLE'' esta restringida a arreglar 
+fallos y a anadir nuevos componentes ya testeados.
+
+FreeBSD puede ser usado y distribuido gratuitamente como Linux. La mayor parte 
+del sistema esta realizado bajo el copyright BSD; el resto esta bajo la GNU GPL o 
+la GNU LGPL.
+
+
+Puedes encontrar mas información a cerca de FreeBSD (y bajarte el sistema entero)
+en la página del proyecto FreeBSD <http://www.freebsd.org/>. El codigo de la 
+ultima version ``-STABLE'' y ``-CURRENT'' es vendido en CDROMs por Walnut Creek
+CDROM   <http://www.cdrom.com/> (su web y servidores ftp corren bajo FreeBSD.)
+
+
+ 2.  La forma en que FreeBSD etiqueta los discos duros  
+ 
+ Linux y FreeBSD etiquetan los discos duros según dos esquemas distintos.   
+ Esta sección explica las principales diferencias entre los dos esquemas.   
+ De echo el esquema de etiquetar de FreeBSD es una adaptación del estilo 
+ tradicional BSD. Por ello es muy similar a otros Unix basados en BSD como 
+ NetBSD, OpenBSD, Ultrix, Digital Unix, SunOS, y Solaris.
+ 
+ 
+ 
+ 2.1.  FreeBSD "porciones" y "particiones"    
+ 
+ FreeBSD necesita una de las cuatro entradas de la tabla de partición de tu disco
+ duro. Esta partición primaria se llama "porción" ("slice") en la terminología  
+ FreeBSD. Esta entonces utiliza el programa para etiquetar el disco para crear 
+ hasta ocho particiones en esta partición primaria. Estas particiones lógicas se
+ denominan "particiones" ("partitions") en la terminología FreeBSD. Este concepto
+ es similar a la forma que Linux (y DOS) contiene particiones lógicas en una 
+ partición extendida. No puedes instalar FreeBSD en una partición extendida echa 
+ por Linux (o DOS).
+ Notad que el fdisk de Linux no puede mostrar las particiones BSD en una porción 
+ FreeBSD desde el menú principal, pero si es posible que muestre la información
+ de las etiquetas con el comando `b'.   
+ La salida es algo similar a esto (/dev/hda4 es la porcion FreeBSD):  
+                      
+ 
+ 
+ 
+ 
+ 
+ bash# fdisk /dev/hda    
+ 
+ Command (m for help): p    
+ 
+ Disk /dev/hda: 64 heads, 63 sectors, 621 cylinders   
+ Units = cylinders of 4032 * 512 bytes       
+ 
+    Device Boot   Begin    Start      End   Blocks   Id  System   
+ /dev/hda1   *        1        1       27    54400+  83  Linux native   
+ /dev/hda2           28       28       55    56448   83  Linux native   
+ /dev/hda3           56       56      403   701568   83  Linux native   
+ /dev/hda4          404      404      621   439488   a5  BSD/386    
+ 
+ Command (m for help): b   
+ Reading disklabel of /dev/hda4 at sector 1624897.    
+ 
+ BSD disklabel command (m for help): p    
+ 
+ 8 partitions:   
+ #        size   offset    fstype   [fsize bsize   cpg]     
+   a:    64512  1624896    4.2BSD        0     0     0   # (Cyl.  404 - 419)
+   b:   104832  1689408      swap                        # (Cyl.  420 - 445)   
+   c:   878976  1624896    unused        0     0         # (Cyl.  404 - 621)    
+   e:    64512  1794240    4.2BSD        0     0     0   # (Cyl.  446 - 461) 
+   f:   645120  1858752    4.2BSD        0     0     0   # (Cyl.  462 - 621)    
+ 
+ BSD disklabel command (m for help): q   
+ bash#      
+ 
+ 
+ 
+ Las letras `a'...`f' de la primera columna son las mismas etiquetas como se 
+ muestra en el ejemplo para una porción FreeBSD. Hay tres particiones especiales
+ en BSD. La letra `a' designa la partición raiz, `b' designa la partición swap,
+ mientras que `c' designa la porción entera. Ver la documentación FreeBSD para
+ mas información en la manera de asignar  estas letras a otro tipo de 
+ particiones.     
+ 
+ 
+ 2.2.  Disco y etiquetas de las particiones en Linux y FreeBSD    
+ 
+ Los discos duros están etiquetados de la siguiente manera en Linux y FreeBSD:  
+                       
+		        Linux           FreeBSD  
+			  
+ First IDE drive       /dev/hda        /dev/wd0   
+ Second IDE drive      /dev/hdb        /dev/wd1   
+ First SCSI drive      /dev/sda        /dev/sd0   
+ Second SCSI drive     /dev/sdb        /dev/sd1      
+ 
+ 
+ 
+ 
+ Las particiones (porciones FreeBSD) en un disco IDE son etiquetadas de la 
+ siguiente manera (se utiliza /dev/hda como ejemplo):
+ 
+                                  Linux           FreeBSD   
+ First primary partition         /dev/hda1       /dev/wd0s1   
+ Second primary partition        /dev/hda2       /dev/wd0s2   
+ Third primary partition         /dev/hda3       /dev/wd0s3   
+ Fourth primary partition        /dev/hda4       /dev/wd0s4      
+ 
+ 
+ 
+ Las particiones en mi porción FreeBSD son etiquetadas de la siguiente manera.
+ Es como se etiquetan por defecto. Es posible cambiar la etiqueta si 
+ personalizas la instalación de FreeBSD (/dev/hda4 es la porción FreeBSD en el 
+ ejemplo):    
+ 
+ Linux label     FreeBSD label   FreeBSD mount point   
+ /dev/hda5       /dev/wd0s4a     /   
+ /dev/hda6       /dev/wd0s4b     swap   
+ /dev/hda7       /dev/wd0s4e     /var   
+ /dev/hda8       /dev/wd0s4f     /usr     
+ 
+ 
+ 
+ Si ejecutas dmesg en Linux podrás ver esto (El núcleo de linux debe tener 
+ soporte para el sistema de ficheros UFS para que funcione. Ver sección 
+ "Instalar y preparar Linux"):       
+ 
+ Partition check:    
+  hda: hda1 hda2 hda3 hda4 < hda5 hda6 hda7 hda8 >      
+  
+ 
+ Si tienes FreeBSD instalado en la porción /dev/sd1s3 (/dev/sdb3 a modo Linux),
+ y /dev/sdb2 es una partición extendida Linux que contiene dos particiones 
+ lógicas (/dev/sdb5 y /dev/sdb6), el ejemplo anterior seria asi :       
+ 
+ 
+ Linux label     FreeBSD label   FreeBSD mount point   
+ /dev/sdb7       /dev/sd1s3a     /   
+ /dev/sdb8       /dev/sd1s3b     swap   
+ /dev/sdb9       /dev/sd1s3e     /var   
+ /dev/sdb10      /dev/sd1s3f     /usr      
+ 
+ 
+ 
+ Esto se mostraría así    
+ 
+ 
+ Partition check:    
+  sdb: sdb1 sdb2 < sdb5 sdb6 > sdb3 < sdb7 sdb8 sdb9 sdb10 >     
+ 
+ 
+ como salida del dmesg.    
+ 
+ Si tienes una partición extendida Linux después de tu porción FreeBSD tienes
+ un problema, porque la mayor parte de disquetes de instalación del núcleo de 
+ Linux están construidos sin soporte UFS, con lo que no reconocerá las 
+ particiones FreeBSD dentro de la porción. Lo que se tendría que ver como esto 
+ (/dev/hda3 es la porción FreeBSD y /dev/hda4 es la partición extendida Linux) 
+ 
+ Partition check:    
+  hda: hda1 hda2 hda3 < hda5 hda6 hda7 hda8 > hda4 < hda9 hda10 >     
+  
+ 
+ se vería como:    
+ 
+ Partition check:    
+  hda: hda1 hda2 hda3 hda4 < hda5 hda6 >     
+  
+ Esto puede darte una mal asignación de dispositivos y causar la perdida de 
+ datos. Mi consejo es de poner siempre tu porción FreeBSD después de cualquier
+ partición extendida Linux, y no cambiar ninguna partición lógica en tus 
+ particiones extendidas Linux después de instalar FreeBSD!      
+ 
+ 
+ 
+ 3.  Compartir espacio swap entre Linux y FreeBSD    
+ 
+ Esta sección describe como conseguí que Linux y FreeBSD compartieran una 
+ partición swap. Puede haber distintas maneras de obtener el mismo resultado. 
+ Si quieres, puedes instalar FreeBSD antes que Linux, pero pon atención en el 
+ orden de las particiones en la porción FreeBSD.     
+ 
+ 
+ 3.1.  Instalar y preparar Linux    
+ 
+ El primer paso es instalar Linux como de costumbre. Tienes que dejar espacio  
+ para una porción FreeBSD en tu disco duro. No tienes porque hacer una partición
+ swap para Linux,pero si quieres una dale todo el espacio que quieres reservar 
+ para FreeBSD. Así podrás borrar la partición swap de Linux, y usar el espacio 
+ para FreeBSD. 
+ 
+ Cuando hayas instalado Linux tendrás que recompilar el núcleo. Lee el 
+ Kernel-COMO, si esto es nuevo para ti. Tienes que dar soporte al sistema de 
+ ficheros UFS (solo lectura) y al sistema de etiquetas de disco de BSD (tabla 
+ de partición FreeBSD) :    
+ 
+ UFS filesystem support (read only) (CONFIG_UFS_FS) [N/y/m/?] y   
+ BSD disklabel (FreeBSD partition tables) support (CONFIG_BSD_DISKLABEL) 
+ [N/y/?]   (NEW) y      
+ 
+ 
+ 
+ Instala el nuevo núcleo y reinicia. Borra todas las líneas que tengan la 
+ palabra swap del fichero /etc/fstab si habías echo una partición swap para 
+ Linux. Asegúrate que tengas un disco de arranque con el nuevo núcleo. Ahora 
+ estas preparado para instalar FreeBSD.     
+ 
+ 
+ 3.2.  Instalar FreeBSD    
+ 
+ Instala FreeBSD tal como se describe en la documentación de FreeBSD. Elimina 
+ la partición swap de Linux si habías hecho una (puedes utilizar el fdisk de 
+ FreeBSD.)   
+ Presta atención al orden de las particiones en la porción FreeBSD. La segunda 
+ partición debe ser la partición swap. Completa la instalación de FreeBSD y 
+ reinicia Linux usando el disco de arranque de Linux.     
+ 
+ 3.3.  Definir la particion swap de FreeBSD en Linux    
+ 
+ Ejecuta dmesg Cuando hayas arrancado desde Linux. Como salida deberías tener 
+ algo   como esto :    
+ 
+ 
+ Partition check:    
+  hda: hda1 hda2 hda3 hda4 < hda5 hda6 hda7 hda8 >      
+  
+ 
+ Esto significa que /dev/hda4 es tu porción FreeBSD, mientras que /dev/hda5,   
+ /dev/hda6, /dev/hda7 y /dev/hda8 son tus particiones FreeBSD. Si tu partición 
+ swap es la segunda partición de la porción , será /dev/hda6. Tienes que añadir
+ la siguiente línea en el fichero  /etc/fstab de tu Linux para activar la 
+ partición swap:     
+ 
+ /dev/hda6       none            swap            sw              0       0     
+   
+   
+   
+ Mientras que FreeBSD puede usar cualquier tipo de partición como espacio swap, 
+ Linux necesita un signatura especial en la partición swap. Esta signatura esta 
+ hecha por mkswap.  FreeBSD destruye esta signatura cuando comparte la partición
+ swap, por lo que tendrás que ejecutar mkswap cada vez que arranques con Linux. 
+ Para hacer esto automagicamente tendrás que encontrar el script que ejecuta 
+ swapon en el arranque.  En Red Hat es en el fichero /etc/rc.d/rc.sysinit. Pon 
+ la siguiente  línea en este fichero justo antes de swapon -a:    
+ 
+ awk -- '/swap/ && ($1 !~ /#/) { system("mkswap "$1"") }' /etc/fstab      
+ 
+ 
+ 
+ Esto ejecutara mkswap en cualquier pqrticion swap de  /etc/fstab cada vez que 
+ arranquemos excepto si estan comentadas (si el primer carácter de la línea es 
+ ``#''.)      
+ 
+ Ejecuta free para comprovar que el tamano del espacio swap es el correcto una 
+ vez reiniciado Linux. Deberia reiniciar tambien con FreeBSD para asegurar que 
+ todo funciona correctamente. Si no lo hace, seguramente es que has usado una 
+ partición errónea como partición swap. La única solución para este problema es
+ reinstalar FreeBSD y probar de nuevo. La experiencia es un buen maestro. :-) 
+ 
+ 
+ 4.  Arrancar FreeBSD usando LILO    
+ 
+ Puedes arrancar fácilmente FreeBSD con LILO. No instales el selector de 
+ arranque   de FreeBSD (Booteasy) si quieres usar LILO. Añade las siguientes 
+ líneas en tu fichero /etc/lilo.conf y ejecuta lilo (asumiendo que la porción 
+ FreeBSD es /dev/hda4):    
+ 
+ other=/dev/hda4           
+         table=/dev/hda           
+	 label=FreeBSD      
+	 
+	 
+ 
+ Si tienes instalado FreeBSD en el segundo disco SCSI, usa algo como esto 
+ (siendo la  porción FreeBSD /dev/sdb2):    
+ 
+ 
+ other=/dev/sdb2           
+         table=/dev/sdb           
+	 loader=/boot/chain.b           
+	 label=FreeBSD       
+	 
+
+ 
+ 5.  Montar sistemas de ficheros    
+ 
+ 5.1.  Montar el sistema de ficheros UFS desde Linux    
+ 
+ Desafortunadamente el driver UFS en los núcleos de Linux 2.0.xx no incluye 
+ soporte   para FreeBSD. Cuando intentas montar un partición FreeBSD, te 
+ aparecen una serie de mensajes de error (la partición se monta pero no puedes 
+ leer nada de ella.)    
+ Este problema ha sido solucionado en Linux 2.1.87 y superior.    
+ 
+ Hay otra versión del driver UFS para los núcleos Linux 2.0.xx (xx <= 30) en 
+ SunSite <ftp://sunsite.unc.edu/pub/Linux/ALPHA/ufs/>. Se llama U2FS y la 
+ versión actual es u2fs-0.4.3.tar.gz. Una versión de U2FS (ufs-0.4.4.tar.gz) 
+ para Linux 2.0.31 y superior (2.0.xx; not 2.1.xx) puede ser encontrada en 
+ <http://www.mathi.uni-heidelberg.de/~flight/projects/u2fs/> juntamente con mas
+ información sobre U2FS (y UFS.)    
+ 
+ Ahora puedes recompilar el núcleo dando soporte para el sistema de ficheros 
+ U2FS y para las etiquetas de discos BSD. Ver sección ``Instalar y preparar 
+ Linux'' para mas información. Si usas U2FS no tienes que dar soporte a UFS, 
+ si no quieres.    
+ 
+ Cuando hayas instalado el nuevo núcleo, podrás montar sistemas de ficheros UFS
+ (todas las particiones de tu porción FreeBSD exceptuando la swap) con el 
+ siguiente comando:    
+ 
+ mount -t u2fs /dev/hda8 /mnt      
+ 
+ 
+ 
+ o como el que sigue :    
+ 
+ mount -t ufs /dev/hda8 /mnt     
+ 
+ 
+ si usas un núcleo de Linux versión 2.1.87 o posterior.    
+ 
+ Los drivers UFS (y U2FS) son solo de lectura. Esto es; puedes leer el sistema 
+ de ficheros UFS pero no puedes escribir. Actualmente se esta trabajando en una
+ versión para lectura/escritura.     
+ 
+ 
+ 5.2.  Montar el sistema de ficheros ext2fs desde FreeBSD    
+ 
+ Para montar el sistema de ficheros ext2fs bajo FreeBSD, primero tienes que 
+ construir un nuevo núcleo con soporte a ext2fs. Lee el handbook de FreeBSD    
+ <http://www.freebsd.org/handbook/> para aprender como hacerlo. Pon la línea    
+ 
+ options         "EXT2FS"     
+ 
+ 
+ en el fichero de configuración del nuevo núcleo.    
+ 
+ Cuando arranques con el nuevo nucleo, podras montar particiones ext2fs con la 
+ commanda que sigue :      
+ 
+ 
+ mount -t ext2fs /dev/wd0s3 /mnt     
+ 
+ 
+ 
+ No puedes montar particiones ext2fs en particiones extendidas a partir FreeBSD.
+ 
+ Debido a un bug en FreeBSD 2.2.5 y anteriores tendras que desmontar todas las  
+ particiones ext2fs antes de apagar FreeBSD si usas una de estas versiones.   
+ Si apagas FreeBSD con alguna partición ext2fs montada, FreeBSD no podrá 
+ sincronizar las particiones UFS. Como resultado es que fsck será ejecutado la 
+ proxima vez que   arranques con FreeBSD.     
+ 
+ 
+ 6.  Ejecucion de binarios ajenos     
+ 
+ 6.1.  Ejecutar binarios FreeBSD en Linux    
+ 
+ El paquete iBCS tiene soporte para ejecutar binarios FreeBSD bajo Linux; pero 
+ es viejo y esta sin mantener. No he conseguido que funcione. Por favor haz me 
+ saber si lo   consigues.        
+ 
+ 6.2.  Ejecutar binarios Linux en FreeBSD    
+ 
+ FreeBSD tiene la posibilidad de ejecutar binarios Linux, tanto en formato 
+ a.out como en ELF. Para hacer esto posible hay que seguir estos tres pasos :  
+    
+ 1. Tienes que activar la compatibilidad Linux. Para hacer esto (en FreeBSD    
+    2.2.2 --- algunos detalles puedes variar en otras versiones) tienes que 
+    editar el fichero /etc/rc.conf y cambiar       
+    
+    linux_enable="NO"     
+  
+  
+  a    
+  
+    linux_enable="YES"   
+  
+  
+  y reiniciar. Otra manera de cargar el soporte de binarios Linux es ejecutar 
+  el comando /usr/bin/linux. De esta manera no hace falta reiniciar, y no 
+  tienes siempre cargado el soporte para binarios Linux con lo que ahorras 
+  memoria. 
+  Recuerda a añadir esta línea   
+  
+  options         COMPAT_LINUX     
+  
+  
+  a la configuración del núcleo FreeBSD, si recompilas el núcleo de FreeBSD. 
+  
+  
+  2. Tienes que instalar las librerías compartidas de Linux, si tus binarios 
+     Linux estan lincados dinamicamente. Las librerías están incluidas en 
+     FreeBSD 2.2.{2,5,6} como el paquetelinux_lib-2.4.tgz. Ejecuta el siguiente
+     comando para instalar el paquete :       
+     
+     pkg_add <path_to_package>/linux_lib-2.4.tgz     
+   
+  
+   <path_to_package> es el directorio donde esta el paquete. También cargarlo 
+   vía Internet   de la forma siguiente:    
+  
+   pkg_add ftp://ftp.freebsd.org/pub/FreeBSD/packages-stable/All/linux_li b-2.4.tgz     
+  
+   o ejecutando /stand/sysinstall. Entra en ``Configure'', ``Packages''   
+   y usa el menú. Si los binarios son lincados estáticamente puedes ejecutarlos 
+   con   el siguiente comando :    
+  
+   brandelf -t Linux <nombre_del_binario_estaticamente_lincado>      
+  
+   
+   3. Instalar el/los programa/s Linux que quieras ejecutar. El/los programa/s 
+   pueden ser instalados sea en sistemas de ficheros UFS como ext2fs. Ver sección
+   ``Montar el sistema de ficheros ext2fs desde FreeBSD'' para mas información 
+   sobre usar ext2fs en FreeBSD.
+   
+   He ejecutado sin problemas la versión para Linux de Applixware 4.3 y 
+   Netscape 3.01 (ambas en formato ELF) desde FreeBSD 2.2.2 usando este método 
+   (si, se que hay una    Versión nativa de Netscape 4 para FreeBSD.) Las 
+   versiones de Linux de acroread y StarOffice también funcionan bajo FreeBSD. 
+   Lee la documentación de  FreeBSD para mas  información sobre este tema.    
+   
+   
+  
+  
+   7.  Referencias y otros documentos de interés    
+   
+   La ultima versión de este mini-COMO esta disponible en mi página web   
+   <http://www.image.dk/~nkbj/> en varios formatos (incluidos SGML y PostScript.)
+   El documento ha sido traducido al japonés por Mr. Teruyoshi Fujiwara como 
+   parte del proyecto JF <ftp://jf.linux.or.jp/pub/JF/other-formats/>.    
+   
+   Gregor Hoffleit mantiene una página web 
+   <http://www.mathi.uni-heidelberg.de/~flight/projects/u2fs/> con información 
+   acerca del desarrollo de U2FS y UFS.    
+   
+   La página web del proyecto FreeBSD <http://www.freebsd.org/> tiene mucha 
+   informacion a cerca FreeBSD (incluyendo todo el sistema operativo listo para 
+   ser bajado.)    
+   
+   El Kernel-COMO esta realizado como parte de la documentación del proyecto 
+   Linux en <http://sunsite.unc.edu/LDP/>.     
+   
+   
+   
+   8.  Reconocimientos y Copyright    
+   
+   Gracias a los miembros del grupo de usuarios  *BSD en Dinamarca   
+   <http://hotel.prosa.dk/bsd-dk/> por responder las preguntas de un novato en 
+   FreeBSD, a Mr. Takeshi Okazaki por darme a saber de la existencia de U2FS, y 
+   a Mr. David O'Brien por valiosas sugestiones.     
+   
+   
+   8.1.  Disclaimer    
+   
+   Aunque la información dada aqui es supuestamente correcta,los autores no se  
+   responsabilizan del daño que este documento pueda crear. Los ejemplos y 
+   consejos que  aquí se dan corren a tu propio riego.     
+   
+   
+   8.2.  Copyright    Copyright © 1997, 1998 por Niels Kristian Bech Jensen. 
+   Este documento puede ser disribuido solamente bajo los terminos y condiciones
+   establecidos en la licencia LDP 
+   <http://sunsite.unc.edu/LDP/LDP-COPYRIGHT.html>.
+   
+   
+   
+   9. Del traductor
+
+  Si tienes comentarios sobre la traducción, no dudes en hacérmelos
+  llegar.
+
+  Marc Aparicio. aparicio@info-sciences.univ-orleans.fr
+
+  Barcelona
+
+
+  10. Anexo: Grupos LiNUXeros en España
+
+  Francisco José Montilla, pacopepe@nova.es, FidoNet 2:345/402.22 es
+  coordinador del INSFLUG: (Impatient & Novatous Spanish Fidonet LiNUX
+  Users Group) uno de los varios grupos de usuarios existentes en
+  España, y más concretamente en la mejor ;-) área de FidoNet: R34.LINUX
+  junto con LuCas (LinUx en CAStellano).
+
+  El INSFLUG se orienta preferentemente a la traducción de documentos
+  breves, como los Howtos y PUFs (-- Preguntas de Uso Frecuente, las
+  FAQs. :)--) , etc.
+
+  LuCas Coordina y realiza las traducciones de las guides, es decir,
+  documentos más extensos.
+
+  Por supuesto, la orientación de cada grupo no tiene carácter
+  excluyente;  si quieres colaborar en las dos, ¡mejor! ;-).
+
+  Actualmente están siendo traducidos varios COMOs y FAQs, además de las
+  ``guides''.
+
+  Otra fuente de información obligada para el recién incorporado son las
+  FAQ elaboradas a partir del correo circulante por R34.LINUX por Pablo
+  Gómez, pgomez@arrakis.es, 2:341/43.40, disponibles próximamente en los
+  formatos habituales de documentación (ps, dvi, html, sgml, etc) en los
+  servidores de Internet especificados más adelante, así como en el
+  mismo área.
+
+  ¡Necesitamos tu colaboración para futuras traducciones! si quieres
+  unirte a nosotros ponte en contacto con:
+
+  INSFLUG:
+
+  Francisco José Montilla, pacopepe@nova.es, FidoNet 2:345/402.22
+
+  LuCas:
+
+  1. Juan José Amor, jjamor@infor.es, FidoNet 2:341/12.19
+
+  2. Alfonso Belloso, alfon@bipv02.bi.ehu.es, FidoNet 2:344/17.2
+
+  Puedes obtener traducciones de:
+
+  FidoNet:
+
+  ·  Elektra (95) 4164934/4161749 33k6/14k4
+
+  ·  La Voix (95) 4275081/4275321 28k8/14k4
+
+  Si se da el caso de que carezcas de acceso a Internet, y no encuentras
+  los COMOs en alguna de estas dos direcciones, no dudes en ponerte en
+  contacto conmigo, y me encargaré de subirlas a alguna de las dos.
+
+  Por último, recordarte que un inmejorable lugar para estar informado,
+  así como consultar y discutir todo lo relacionado con LiNUX lo tienes
+  en FidoNet, en R34.LINUX.
+
+  Actualmente, ambos grupos poseen las siguientes listas de correo:
+
+  ·  LuCas: lucas@bipv02.bi.ehu.es
+
+  ·  INSFLUG: insflug@nova.es
+
+  Ambas son listas tipo majordomo; para suscribirte, por ejemplo a la
+  del INSFLUG, envía un email a majordomo@nova.es, con "subscribe
+  insflug" en el cuerpo del mensaje.
+
+  Dispones de todos los ``COMOs'' traducidos hasta ahora, así como
+  información puntual sobre el INSFLUG y temas relacionados en:
+
+  http://www.insflug.nova.es en sus versiones html, y listas para bajar,
+  en http://ftp.insflug.nova.es
+
+  Otro buen punto de búsqueda, consulta, y obtención de la documentación
+  traducida, en formato HTML, con links a los demás formatos, así como
+  las traducciones de las guías traducidas por LuCAS es:
+
+  http://www.infor.es/LuCAS/
+
+  junto con su ftp:
+
+  ftp://ftp.infor.es/pub/LuCAS/
+
+  Tanto el INSFLUG, como LuCAS, y todos los traductores implicados,
+  esperamos que esta traducción te haya sido de utilidad.
+

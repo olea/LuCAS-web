@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="Software Development">
+ <TITLE>lf182, Software Development: Evitando los agujeros de seguridad durante el desarrollo de aplicaciones - Parte 1 </TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<img src="../../common/images/FredCrisBCrisG.jpg" alt="[image of the authors]" width=200 height=150>
+<BR>por  <A HREF="mailto:pappy@users.sourceforge.net,ccb@club-internet.fr,grenier@nef.esiea.fr">Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>Christophe Blaess es un ingeniero en aeron&aacute;utica independiente. &Eacute;l es un entusiasta de Linux y realiza la mayor&iacute;a de sus trabajos en este sistema. &Eacute;l est&aacute; a cargo de la coordinaci&oacute;n en la traducci&oacute;n de las 'man pages' publicada por el Proyecto de la documentaci&oacute;n Linux(LDP). </P><P>Christophe Grenier es estudiante del quinto a&ntilde;o en el ESIEA, donde &eacute;l tambi&eacute;n se desempe&ntilde;a como Administrador de sistemas. Es un apasionado por la seguridad computacional. </P><P>Fr&eacute;d&eacute;ric Raynal usa Linux, certificado sin (software u otro) patentes. Aparte de eso, usted debe ver Dancer in the Dark: adem&aacute;s de que Bj&ouml;rk es grande, esta pel&iacute;cula no puede dejarlo indiferente (yo no puedo decir m&aacute;s sin quitar el velo del final, tr&aacute;gico y espl&eacute;ndido). </P>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n </A></LI>
+  <LI><A HREF="#lfindex1">Privilegios </A></LI>
+  <LI><A HREF="#lfindex2">Tipo de ataques y los blancos potenciales </A></LI>
+  <LI><A HREF="#lfindex3">Cambiando los niveles de privilegios </A></LI>
+  <LI><A HREF="#lfindex4">Ejecutando comandos externos </A></LI>
+  <LI><A HREF="#lfindex5">Peligros de la funci&oacute;n system ()</A></LI>
+  <LI><A HREF="#lfindex6">Soluciones </A></LI>
+  <LI><A HREF="#lfindex7">Comandos de ejecuci&oacute;n indirecta </A></LI>
+  <LI><A HREF="#lfindex8">Conclusi&oacute;n </A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=182&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Evitando los agujeros de seguridad durante el desarrollo de aplicaciones - Parte 1 </H2>
+ <img src="../../common/images/illustration182.gif" hspace="10" alt="[article illustartion]" width=100 height=100>
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+<P>Este art&iacute;culo es el primero de una serie sobre los principales agujeros de seguridad que, normalmente pueden aparecer dentro de un aplicaci&oacute;n. A lo largo de estos art&iacute;culos, nosotros mostraremos las maneras de evitarlos cambiando un poco el desarrollo de los h&aacute;bitos. </P></P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n </H2>
+
+<P>No toma m&aacute;s de dos semanas antes que una aplicaci&oacute;n mayor, parte de la mayor&iacute;a de las distribuciones de Linux, nos presente un agujero de seguridad, permitiendo, por ejemplo, a un usuario local para alcanzar privilegios de <I>root</I>. A pesar de la gran calidad de la mayor&iacute;a de estos programas, es un trabajo duro asegurar la fiabilidad del mismo: no se le debe permitir a un tipo con malas intenciones, beneficiarse ilegalmente de los recursos del sistema. La disponibilidad en la aplicaci&oacute;n del c&oacute;digo fuente es bueno, muy apreciado por los programadores, pero un peque&ntilde;o defecto en el programa se hace visible a todos. Adem&aacute;s, el descubrimiento de los tales defectos son aleatorios y las personas que hacen esta clase de cosas no siempre act&uacute;an con buenas intenciones.</P>
+<P> Del lado del administrador de sistemas, el trabajo diario consiste en la lectura de las listas relacionadas con los problemas de seguridad e inmediatamente poner al d&iacute;a los paquetes afectados. Para un programador puede ser una buena lecci&oacute;n, poner a prueba los problemas de seguridad. Es preferible evitar desde un principio los agujeros de seguridad. Intentaremos definir algunas conductas peligrosas "cl&aacute;sicas" </P>
+<P>y proporcionar soluciones para reducir los riesgos. Nosotros no hablaremos sobre los problemas de seguridad en redes, ya que ellos se presentan a menudo por errores de la configuraci&oacute;n ( los peligrosos scripts cgi-bin,...) o de los errores del sistema que permiten los ataques del tipo DoS<I> (Denegaci&oacute;n de Servicio</I>) para impedir a una m&aacute;quina escuchar a sus propios clientes. </P>
+<P>Estos problemas involucran a los Administradores de sistemas o desarrolladores del kernel, pero tambi&eacute;n al programador de la aplicaci&oacute;n, en tanto tenga en cuenta los datos externos. Por ejemplo, <TT>pine, acroread, netscape, access</TT>,... en algunas versiones y bajo ciertas condiciones, permiten el acceso o fugas de informaci&oacute;n. De hecho la programaci&oacute;n <I>segura</I> nos concierne a todos.</P>
+<P>Este grupo de art&iacute;culos muestran los m&eacute;todos que pueden usarse para da&ntilde;ar un sistema Unix. Nosotros s&oacute;lo hemos mencionado algunos o dicho algunas palabras sobre ellos, pero preferimos explicaciones abiertas para hacer entender a las personas de tales riesgos. As&iacute;, cuando ponemos a punto un programa o desarrollamos uno propio, usted podr&aacute; evitar o corregir &eacute;stos errores. Para cada uno de los agujeros que se traten, efectuaremos el mismo an&aacute;lisis. Empezaremos detallando la manera de funcionamiento. Luego, mostraremos c&oacute;mo evitarlo. Para cada ejemplo, usaremos los agujeros de seguridad que se presentan frecuentemente en un amplio expectro de programas. </P>
+<P>Este primer art&iacute;culo habla sobre el fundamentos necesarios para la comprensi&oacute;n de los agujeros de seguridad, que son la noci&oacute;n de privilegio y el bit de <I>Set-UID o Set-GID.</I> Luego, analizaremos los agujeros basados en la funci&oacute;n <TT>system ()</TT><T>, ya que son m&aacute;s f&aacute;ciles de entender. </P>
+<P>A menudo usaremos peque&ntilde;os programas en C, para ilustrar sobre lo que nosotros hablaremos. Sin embargo, los acercamientos mencionados en estos art&iacute;culos son aplicables a otros lenguajes de programaci&oacute;n: perl, java, shell scripts... Algunos agujeros de seguridad dependen de un lenguaje, pero esto no es completamente cierto para todos ellos, cuando nosotros lo veamos con system (). </P>
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Privilegios </H2>
+
+<P>En un sistema Unix, los usuarios no son iguales y las aplicaciones tampoco. El acceso a los nodos del sistema de archivos y -de acuerdo con los perif&eacute;ricos de la m&aacute;quina - conf&iacute;amos en un control de identidad estricto. Algunos usuarios se permiten realizar operaciones sensibles para mantener el sistema en buenas condiciones. Un n&uacute;mero llamado UID (<I>User Identifier</I>) permite la identificaci&oacute;n. Para hacer las cosas m&aacute;s f&aacute;cil, un nombre del usuario corresponde a este n&uacute;mero, la asociaci&oacute;n se hace en el archivo de </T><T>/etc/passwd</T>. </P>
+<P>El usuario <I>root</I>, con UID predefinido de 0, puede acceder a todo el sistema. &Eacute;l puede crear, modificar, quitar
+cada nodo del sistema, pero tambi&eacute;n puede manejar la configuraci&oacute;n f&iacute;sica de la m&aacute;quina y puede montar particiones, activar interfaces de red y cambiar su configuraci&oacute;n (direcci&oacute;n IP ), o usando llamadas del sistema como es <TT>mlock ()</TT> para actuar en la memoria f&iacute;sica, o <TT>sched_setscheduler ()</TT> para cambiar el mecanismo del ordenaci&oacute;n. En un art&iacute;culo futuro, estudiaremos los Posix.1e ,caracter&iacute;sticas que permiten limitar un bit de los privilegios de una aplicaci&oacute;n ejecutados como <I>root</I>, pero por ahora, asumamos que el superusuario puede hacer de todo en una m&aacute;quina. </P>
+<P>Los ataques que nosotros mencionaremos son internos, es decir, que es un usuario autorizado en una m&aacute;quina que intenta conseguir privilegios que no tiene. Por otro lado, los ataques de la red son externos y vienen de las personas que intentan conectarse a una m&aacute;quina donde no les est&aacute; permitido. Para conseguir los privilegios de otros usuarios, lo piensan hacer bajo el nombre, el UID de ese usuario, y no bajo el nombre de usuario propio. Por supuesto, un cracker intenta conseguir el ID del superusuario, pero tambi&eacute;n hay muchas otras cuentas de usuarios que son de inter&eacute;s, porque cualquiera de ellas dan acceso a la informaci&oacute;n del sistema (<I>news, mail, lp</I>...) o porque ellas permiten leer datos privados (correo, archivos personales, etc) o ellas pueden usarse para ocultar actividades ilegales como ataques hacia otros sitios. </P>
+<P>Para usar privilegios reservados de otro usuario, sin poder notar su verdadera identidad, uno debe por lo menos tener la oportunidad de comunicarse con una aplicaci&oacute;n que corre bajo el UID de la v&iacute;ctima. Cuando una aplicaci&oacute;n - un proceso - corre bajo Linux, tiene una identidad bien definida. Primero, el programa tiene un atributo llamado RUID (<I>Real UID</I>) correspondiendo al usuario ID que lo lanz&oacute;. Este dato es manejado por el kernel y normalmente no puede cambiarse. Un segundo atributo completa esta informaci&oacute;n: el campo EUID (<I>Effective UID</I>) correspondiendo a la identidad del kernel, que tiene en cuenta cuando maneja los derechos de acceso (abriendo archivos, llamados al sistema reservados). </P>
+<P>Para ejecutar una aplicaci&oacute;n con un EUID (sus privilegios) diferente del RUID (el usuario que lo lanz&oacute;), el archivo ejecutable debe tener un bit espec&iacute;fico llamado Set-UID. Este bit se encuentra en el atributo de permisos del archivo (como usuario puede ejecutar, leer, escribir bits, miembros de grupo u otros) y tiene el valor octal de 4000. El bit del Set-UID se representa con un s al desplegarse los derechos con el comando ls:
+<PRE>
+&gt;&gt; ls -l /bin/su
+-rwsr-xr-x 1 root root 14124 Aug 18 1999 /bin/su
+&gt;&gt;
+</PRE>
+<P>El comando "<TT>find / -tipo f -perm +4000</TT>" despliega una lista de las aplicaciones del sistema que tienen su bit de Set-UID fijandolo en 1. Cuando el kernel ejecuta una aplicaci&oacute;n con el bit Set-UID puesto en 1, usa la identidad de propietario como EUID de los procesos. Por otro lado, el RUID no cambia y corresponde al usuario que lanz&oacute; el programa. Hablando por ejemplo sobre <TT>/bin/su</TT>, cada usuario puede tener acceso a este comando, pero corre bajo su identidad de propietario (<I>root</I>), de acuerdo a cada uno de los privilegios que tiene en el sistema. No basta decir, que se debe ser muy cuidadoso al escribir un programa con este atributo. </P>
+<P>Cada proceso tambi&eacute;n tiene un ID de grupo Efectivo, EGID, y un identificador real RGID. El bit del Set-GID (2000 en octal) en los derechos de acceso de un archivo ejecutable, le pide al kernel tomar el grupo de propietarios del archivo como EGID y no de uno del de grupo que haya lanzado el programa. A veces aparece una combinaci&oacute;n curiosa, con el Set-GID fijado en 1, pero sin el bit de ejecuci&oacute;n de grupo. De hecho, es una convenci&oacute;n que no tiene nada que hacer con privilegios relacionados con las aplicaciones, pero indicando el archivo que puede bloquearse con la funci&oacute;n <TT>fcntl(fd, F_SETLK, lock</TT>). Normalmente una aplicaci&oacute;n no usa el bit Set-GID, pero a veces pasa, en algunos juegos, por ejemplo, lo usan para guardar los mejores resultados en un directorio del sistema. </P>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Tipo de ataques y los blancos potenciales </H2>
+
+<P>Hay varios tipos de ataques contra un sistema. Hoy nosotros estudiamos los mecanismos para ejecutar un comando externo desde dentro y la aplicaci&oacute;n. &Eacute;ste normalmente es la shell que corre bajo la identidad del due&ntilde;o de la aplicaci&oacute;n. Un segundo tipo de ataque conf&iacute;a en la inundaci&oacute;n de la memoria temporal(<I>buffer overflow</I>), dandole al atacante la posibilidad de acuerdo a instrucciones del c&oacute;digo personales. Por &uacute;ltimo, el tercer tipo principal de ataque es basado en la condici&oacute;n de competencia(<I>race condition</I>), lapso de tiempo entre dos instrucciones en las que un componente del sistema se cambia (normalmente un archivo) mientras la aplicaci&oacute;n lo considera inmutable. </P>
+<P>Los dos primeros tipos de ataques, intentan a menudo ejecutar un shell con los privilegios del propietario de la aplicaci&oacute;n, mientras el tercero tiene como objetivo conseguir acceso de escritura a los archivos del sistema protegido. A veces el acceso de lectura es considerado como una debilidad de la seguridad del sistema (archivos personales, emails, el archivo de la contrase&ntilde;a <TT>/etc/shadow</TT>, y los archivos de configuraci&oacute;n del pseudo-kernel en <TT>/proc</TT>. </P>
+<P>Los blancos de ataques de seguridad son principalmente los programas que tienen el bit de Set-UID (o Set-GID) habilitado. Sin embargo, esto tambi&eacute;n concierne a cada aplicaci&oacute;n que corre bajo un ID diferente a uno de los del usuario. Los demonios del sistema representan una parte importante de estos programas. Un demonio normalmente es una aplicaci&oacute;n que empieza al momento de la inicializaci&oacute;n(boot) y corre en segundo plano sin ning&uacute;n terminal de control, y efectuando tareas con privilegios para cualquier usuario. Por ejemplo, el demonio </TT>lpd</TT> permite a cualquier usuario enviar documentos a la impresora, el </TT>sendmail</TT> recibe y env&iacute;a correo electr&oacute;nico, o el </TT>apmd</TT> le pide el estado de la bater&iacute;a a la BIOS de un port&aacute;til. Algunos demonios est&aacute;n a cargo de la comunicaci&oacute;n con usuarios externos a trav&eacute;s de la red (los servicios Ftp, Http, Telnet...). Un servidor llama al </TT>inetd</TT> para manejar la conexi&oacute;n. </P>
+<P>Entonces nosotros podemos concluir que un programa puede atacarse en cuanto se comunique - muy brevemente - a un usuario diferente del que lo empez&oacute;. Si el dise&ntilde;o de una aplicaci&oacute;n suya posee semejante rasgo, usted debe tener cuidado mientras la desarrolla y tener presente los riesgos que se presentan con las funciones que hemos estudiado. </P>
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Cambiando los niveles de privilegios </H2>
+
+<P>Cuando una aplicaci&oacute;n corre con un EUID diferente de su RUID, es proporcionarle privilegios a ese usuario que no deber&iacute;a tener (acceso al archivo, llamados al sistema reservado...). Sin embargo, esto s&oacute;lo se necesita puntualmente, por ejemplo cuando abrimos un archivo; por otra parte la aplicaci&oacute;n puede cubrirse con los privilegios de su usuario. Es posible temporalmente cambiar una aplicaci&oacute;n EUID con la llamada al sistema:</P>
+</TT><P>seteuid del int (uid del uid_t);</P>
+</TT><P>Un proceso siempre puede cambiar sus valores EUID d&aacute;ndole uno de su RUID. En ese caso, el UID viejo se retiene en un campo de guardado llamado SUID (<I>Saved UID</I>) diferente del SID (<I>Session ID</I>) usado por el administrador del terminal de control. Siempre es posible volver de los SUID para usarlos como EUID. Por supuesto, un programa que tiene un null EUID (<I>root</I>) puede cambiar su EUID y RUID a voluntad (es la manera como trabaja </TT>/bin/su</TT>). </P>
+<P>Para reducir los riesgos de ataques, se sugiere tambi&eacute;n cambiar el EUID y usar el RUID de los usuarios. Cuando una porci&oacute;n de c&oacute;digo necesitan privilegios que corresponden a aqu&eacute;llos propietarios del archivo, es posible poner el Saved UID en EUID. Aqu&iacute; hay un ejemplo: </P>
+
+<PRE>
+uid_t e_uid_initial;
+uid_t r_uid;
+
+int main (int argc, char * argv [])
+{
+  /* Se guardan las diferentes UIDs */
+  e_uid_initial = geteuid ();</P>
+  r_uid = getuid ();</P>
+
+  /* limita los derechos de acceso a uno de los
+   * programas usados en el lanzamiento */
+  seteuid (r_uid);
+  ...
+  privileged_function ();
+  ...
+}
+
+void
+privileged_function (void)
+{
+  /* Le devuelve los privilegios iniciales */
+  seteuid (e_uid_initial);
+  ...
+  /* Porci&oacute;n que necesita los privilegios */
+  ...
+  /* Devuelve los derechos del programa ejecutante */
+  seteuid (r_uid);
+}
+</PRE>
+
+<P>Esta manera de trabajar es mucho m&aacute;s segura que el opuesto, demasiado a menudo vista y consiste en utilizar la EUID inicial y entonces reducir temporalmente los privilegios s&oacute;lo antes de hacer una operaci&oacute;n "arriesgada". Sin embargo esta reducci&oacute;n del privilegio es in&uacute;til contra los ataques de desbordamiento de memoria temporal. Cuando nosotros veamos en un pr&oacute;ximo art&iacute;culo, estos ataques intentan interrogar a la aplicaci&oacute;n para la ejecuci&oacute;n de instrucciones personales y pueda contener las llamadas al sistema (system-calls) necesarias para obtener el nivel de privilegios m&aacute;s alto. No obstante, este acercamiento nos protege de las comandos externos y de la mayor&iacute;a de las condiciones de competencia. </P>
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Ejecutando comandos externos </H2>
+
+<P>Una aplicaci&oacute;n necesita a menudo llamar a un servicio del sistema externo. Un ejemplo bien conocido, involucra a <TT>mail</TT> que ordena como manejar un correo electr&oacute;nico (informe corriente, alarmas, estad&iacute;sticas, etc.) sin requerir un complejo di&aacute;logo con el sistema de correo. La soluci&oacute;n m&aacute;s f&aacute;cil es usar la funci&oacute;n de la biblioteca:
+<PRE>
+int system (const char * command)
+</PRE>
+</P>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Peligros de la funci&oacute;n system ()</H2>
+
+
+<P>Esta funci&oacute;n es bastante peligrosa: llama a la shell para ejecutar el comando envi&aacute;ndolo como un argumento. La conducta de la shell depende de la opci&oacute;n del usuario. Un ejemplo t&iacute;pico viene de la variable de ambiente <TT>PATH</TT>. Supongamos una aplicaci&oacute;n que llama a la funci&oacute;n del <TT>mail</TT>. Por ejemplo, el programa siguiente env&iacute;a su c&oacute;digo fuente al usuario que lo lanz&oacute;: </P>
+
+<PRE>/ * system1.c * /
+#include &lt; stdio.h &gt;
+#include &lt; stdlib.h &gt;
+int
+main (void)
+{
+  if (sistema ("el correo $USER &lt; system1.c") != 0)
+    perror ("sistema");
+  return (0);
+}
+</PRE>
+<P>Digamos que este programa es el Set-UID del <I>superusuario</I>: </P>
+
+<PRE>&gt;&gt; cc system1.c -o system1
+&gt;&gt; su
+Password:
+[root] el chown root.root system1
+[root] el chmod +s system1
+[root] exit
+&gt;&gt; ls -l system1
+-rwsrwsr-x 1  root root  11831  Oct 16  17:25 system1
+&gt;&gt;
+</PRE>
+
+<P>Para ejecutar este programa, el sistema ejecuta un shell (con <TT>/bin/sh</TT>) y con la opci&oacute;n <TT>-c</TT>, le dice la instrucci&oacute;n para invocar. Entonces la shell pasa por la jerarqu&iacute;a del directorio, seg&uacute;n la variable de ambiente del PATH que encuentra un ejecutable llamado <TT>mail</TT>. Entonces, el usuario s&oacute;lo tiene que cambiar esta variable contenida antes de correr la aplicaci&oacute;n principal. Por ejemplo: </P>
+
+<PRE>&gt;&gt; export PATH=.
+&gt;&gt;. /system1</PRE>
+
+<P>intenta encontrar el comando <TT>mail</TT> dentro del directorio actual. Bastan entonces, para crear all&iacute; un archivo ejecutable (para este caso, un script que ejecute una nueva shell) y llamar al <TT>mail</TT> y el programa se ejecuta entonces con el EUID de due&ntilde;o de la aplicaci&oacute;n principal. Aqu&iacute;, nuestro script ejecuta <TT>/bin/sh</TT>. Sin embargo, desde que se ejecuta con una entrada est&aacute;ndar redireccionada (como la del <TT>mail</TT> inicial), nosotros debemos volver al terminal. Entonces nosotros creamos el script: </P>
+
+
+<PRE>
+#! /bin/sh
+# "mail" script que corre bajo el shell
+# lo devuelve a su entrada normal.
+/bin/sh &lt; /dev/tty
+</PRE>
+Aqu&iacute; est&aacute; el resultado:
+<PRE>
+&gt;&gt; export PATH="."
+&gt;&gt; . /system1
+bash# /usr/bin/whoami
+root
+bash#
+</PRE>
+
+<P>Por supuesto, la primera soluci&oacute;n consiste en dar la ruta completa del programa, por ejemplo <TT>/bin/mail</TT>. Entonces aparece un nuevo problema: la aplicaci&oacute;n conf&iacute;a en la instalaci&oacute;n del sistema. Si <TT>/bin/mail</TT> est&aacute; normalmente disponible en cada sistema, &iquest;d&oacute;nde est&aacute; por ejemplo, GhostScript? (est&aacute; en <TT>/usr/bin, /usr/share/bin, /usr/local/bin</TT>). Por otro lado, otro tipo de ataque es posible con shell antiguas: el uso de la variable de ambiente <TT>IFS</TT>. La shell lo usa para analizar sint&aacute;cticamente las palabras en la l&iacute;nea de comandos. Esta variable contiene los separadores. Los valores por defecto son el espacio, el tabulador y el retorno. Si el usuario agrega la barra inclinada /, el comando " <TT>/bin/mail</TT>" se entiende por la shell como "<TT>bin mail</TT>" Un archivo ejecutable llamado <TT>bin </TT>en el directorio actual, puede ser ejecutado simplemente poniendo el <TT>PATH</TT>, como hemos visto antes, y permitirnos ejecutar este programa con la aplicaci&oacute;n EUID. </P>
+<P>Bajo Linux, la variable de ambiente <TT>IFS</TT> no es ya un problema desde que el bash lo completa con los car&aacute;cteres por defecto en la partida (tambi&eacute;n hecho con pdksh). Pero, con la portabilidad de la aplicaci&oacute;n en mente, usted debe estar consciente de que algunos sistemas pueden quedar inseguros vi&eacute;ndolos con esta variable. </P>
+<P>Algunas otras variables de ambiente pueden causar problemas inesperados. Por ejemplo, la aplicaci&oacute;n de mail le permite al usuario ejecutar un comando mientras compone un mensaje usando una sucesi&oacute;n de escape" <TT>~! </TT>". Si el usuario escribe el string" <TT>~ ! command</TT>" al principio de la l&iacute;nea, el comando se ejecuta. El programa <TT>/usr/bin/suidperl</TT> usado para hacer los scripts en perl Set-UID, al descubrir un problema, llama a <TT>/bin/mail</TT> para enviar un mensaje al <TT>superusuario</TT> La aplicaci&oacute;n que es del Set-UID <TT>superusuario</TT> , invoca a <TT>/bin/mail</TT> que lo hace bajo esta identidad. En el mensaje enviado al <TT>superusuario</TT> , el nombre del archivo defectuoso est&aacute; presente. Un usuario puede crear un archivo entonces donde el nombre del archivo contiene un retorno del carro seguido por un secuencia <TT>~!command</TT> y otro retorno de carro. Si el script en perl llamado <TT>suidperl</TT> falla en un problema de bajo nivel relacionado a este archivo, un mensaje se env&iacute;a bajo la identidad del <TT>superusuario</TT> conteniendo la secuencia de escape desde la aplicaci&oacute;n del <TT>mail</TT>. </P>
+<P>Este problema no deber&iacute;a existir si es que el programa <TT>mail</TT>, suponemos que no acepta secuencias de escape cuando corre autom&aacute;ticamente (no de un terminal). Desgraciadamente, un caracter&iacute;stica indocumentada de esta aplicaci&oacute;n (probablemente dejada desde la depuraci&oacute;n), permite que las secuencias de escape interact&uacute;e como tambi&eacute;n cuando se fij&oacute; la variable de ambiente . &iquest;El resultado? Un agujero de seguridad f&aacute;cilmente explotable (y ampliamente utilizado) en una aplicaci&oacute;n que se supone mejora la seguridad del sistema. El error es compartido. Primero, <TT>/bin/mail</TT> tiene una opci&oacute;n indocumentada muy peligrosa, ya que permite la ejecuci&oacute;n del c&oacute;digo que s&oacute;lo verifica los datos enviados, lo que debe ser <I>a priori</I> sospechoso para una utilidad de <TT>mail</TT>. Segundo, a&uacute;n cuando el desarrollo de <TT>/usr/bin/suidperl</TT> no ponen cuidado de la variable <TT>interactive</TT>, ellos no deben dejar pasar por alto el ambiente de la ejecuci&oacute;n cuando se hace una llamada con un comando externo, sobre todo cuando escribimos este programa con el Set-UID de <I>superusuario</I>. </P>
+<P>De hecho, Linux ignora el bit del Set-UID y del Set-GID al ejecutar los scripts (l&eacute;ase <TT>/usr/src/linux/fs/binfmt_script.c</TT> y <TT>/usr/src/linux/fs/exec.c</TT>). Algunos trucos permiten saltarse esta regla, como Perl que hay que tener en cuenta, lo hace con sus propios scripts que usan este bit en <TT>/usr/bin/suidperl</TT> . </P>
+
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Soluciones </H2>
+
+<P>No  es tan f&aacute;cil  encontrar siempre un reemplazo para la funci&oacute;n <TT>system ()</TT> . La primera variante es usar las llamadas al sistema como <TT>execl ()</TT> o <TT>execle ()</TT>. Sin embargo, ser&aacute; bastante diferente desde que el programa externo ya no se llama como un subrutina, pero el comando invocado reemplaza el proceso actual. Usted debe agregar una duplicaci&oacute;n del proceso y analizar sint&aacute;cticamente los argumentos de la l&iacute;nea de comandos. As&iacute; el programa: </P>
+
+<PRE>
+if (system ("/bin/lpr -Plisting stats.txt") != 0) {
+  perror ("Imprimiendo");
+  retorno (-1);
+}
+</PRE>
+se vuelve:
+<PRE>
+pid_t pid; int   status;
+ if ((pid = fork ()) &lt; 0) {   perror ("fork");   return (-1);
+}
+if (pid == 0) {
+  /* el proceso hijo */
+  execl (" /bin/lpr", "lpr"," -Plisting", "stats.txt", NULL);
+  perror ("execl");
+  exit (-1);
+}
+/* el proceso del padre */
+waitpid (pid, &amp; status, 0);
+if ((! WIFEXITED (status)) || (WEXITSTATUS (status) != 0)) {
+  perror ("Imprimiendo");
+  retorno (-1);
+}
+</PRE>
+
+<P>&iexcl;Obviamente, el c&oacute;digo se pone m&aacute;s pesado! En algunas situaciones, se pone bastante complejo, por ejemplo, cuando usted debe redirigir la aplicaci&oacute;n a la entrada est&aacute;ndar como en:
+<PRE>system ("mail root &lt; stat.txt"); </PRE>
+
+<P>Es decir, el redireccionamiento definido por <TT>&lt;</TT> se hace desde la shell. Usted puede hacer el mismo, usando un trabajo complejo con sucesiones <TT>como fork (), open (), dup2 (), execl ()</TT>, etc. En ese caso, una soluci&oacute;n aceptable ser&iacute;a usando la funci&oacute;n <TT>system (),</TT> pero configurando completamente el ambiente. </P>
+<P>Bajo Linux, las variables de ambiente se guardan en la forma de un puntero  en la tabla de car&aacute;cteres: <TT>char ** environ</TT>. Esta tabla termina con <TT>NULL</TT>. Los strings son de la forma "<TT>NAME=value</TT>" </P>
+<P>Nosotros empezamos quitando el ambiente que usa en la extensi&oacute;n Gnu:
+<PRE>
+clearenv del int (void);
+</PRE>
+o forzando al puntero
+<PRE>
+extern char ** environ;
+</PRE>
+
+<P>para tomar el valor <TT>NULL</TT>. Luego las variables de ambiente importantes se inicializan  usando valores controlados, con las funciones: </P>
+
+<PRE>
+int setenv (const char * name, const char * value int remove)
+int putenv(const char *string)
+</PRE>
+
+<P>antes de llamar  a la funci&oacute;n <TT>system ()</TT> . Por ejemplo:r
+<PRE>
+clearenv ();
+setenv ("PATH"," /bin:/usr/bin:/usr/local/bin", 1);
+setenv ("IFS"," \t\n", 1);
+system  ("mail root &lt; /tmp/msg.txt");
+</PRE>
+
+<P>Si es necesario, usted puede devolver el contenido de algunas variables &uacute;tiles antes de quitar el ambiente (<TT>HOME, LANG, TERM, TZ</TT>,etc.). El contenido, la forma,  el tama&ntilde;o de estas variables debe verificarse concienzudamente. Es importante que usted quite de todo el ambiente, antes de redefinir las variables que necesitar&aacute;. El  agujero de seguridad de <TT>suidperl</TT> no habr&iacute;a aparecido si el ambiente hubiese sido previamente removido. </P>
+<P>En forma similar, protegiendo primero una m&aacute;quina  en una red implica denegar cada conexi&oacute;n. Luego,  se activan los servicios requiridos o  &uacute;tiles. De la misma manera, al programar la aplicaci&oacute;n de un Set-UID , el ambiente debe aclararse y entonces debe llenarse con las  variables requeridas. </P>
+<P>Verificando si el formato del par&aacute;metro es aceptable compar&aacute;ndolo con el valor esperado de los formatos permitidos. Si la comparaci&oacute;n tiene &eacute;xito,  el par&aacute;metro se valida. De otra manera, se rechaza. Si usted ejecuta la prueba usando una lista de expresiones inv&aacute;lidas del formato, aumenta el riesgo de dejar valores err&oacute;neos y puede ser un desastre para el sistema. </P>
+<P>Nosotros debemos entender lo peligroso que es con <TT>system ()</TT> , como tambi&eacute;n, es m&aacute;s peligroso para algunos funciones derivadas  como <TT>popen ()</TT>, o con llamadas al sistema como <TT>execlp ()</TT> o <TT>execvp ()</TT> teniendo en cuenta la variable <TT>PATH</TT>.</P>
+
+<A NAME="lfindex7">&nbsp;</A>
+<H2>Comandos de ejecuci&oacute;n indirecta </H2>
+
+<P>Para mejorar el dise&ntilde;o de los programas, es f&aacute;cil de dejarle conducir al usuario la habilidad de poder configurar la mayor&iacute;a del software , usando macros por ejemplo. Manejar variables o los modelos gen&eacute;ricos como lo hace la shell; hay una poderosa funci&oacute;n  llamada <TT>wordexp ()</TT>.</P>
+<P> Usted debe tener mucho cuidado con ella, desde enviar una cadena como <TT>$(commande)</TT> , que permite ejecutar el mencionado comando externo.</P>
+<P>Basta con darle la cadena " <TT>$(/bin/sh)"</TT> para conseguir la shell del Set-UID. Para evitar semejante cosa, <TT>wordexp ()</TT> tiene un atributo llamado <TT>WRDE_NOCMD </TT>dejando fuera de funcionamiento la interpretaci&oacute;n de las secuencias <TT>$()</TT>. </P>
+<P>Cuando invocamos comandos externos usted debe ser cuidadoso con no llamar una utilidad que proporcione un mecanismo de escape  hacia la shell (como por ejemplo, la secuencia  vi <TT>:!<I>command</I></TT> ). Es dif&iacute;cil de listarlos todos, algunas aplicaciones son obvias (editores del texto, administradores de archivos...), otros son m&aacute;s dif&iacute;ciles de descubrir (como  hemos visto con <TT>/bin/mail</TT>) o tienen modos de  depuraci&oacute;n peligrosos. </P>
+
+<A NAME="lfindex8">&nbsp;</A>
+<H2>Conclusi&oacute;n </H2>
+
+<P>Este art&iacute;culo ilustra varios aspectos: </P>
+
+<UL>
+<LI>&iexcl;Todo programa externo al Set-UID del <I>superusuario</I> debe validarse! Esto involucra a las variables de ambiente como tambi&eacute;n a los par&aacute;metros dados al programa (l&iacute;nea de comandos, archivo de configuraci&oacute;n...);
+<LI>Los privilegios tienen que ser reducidos en cuanto el programa empiece y s&oacute;lo deben aumentarse muy brevemente cuando no hay ning&uacute;n otro medio;
+<LI>La " <I>profundidad de la seguridad</I>" es esencial: cada decisi&oacute;n de protecci&oacute;n    reduce el n&uacute;mero de personas que la puedan  romper. El pr&oacute;ximo art&iacute;culo hablaremos sobre la memoria, su organizaci&oacute;n, la llamadas de funciones... antes de alcanzar al <I>desbordamiento de memoria temporal</I>. Nosotros tambi&eacute;n veremos como se construye un <I>shellcode</I>.</TT><F FACE="Verdana" SIZE=2>
+</UL>
+
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=182&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article182.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:pappy@users.sourceforge.net,ccb@club-internet.fr,grenier@nef.esiea.fr"><FONT COLOR="#FFFFFF">Fr&eacute;d&eacute;ric Raynal, Christophe Blaess, Christophe Grenier</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:georges.t@linuxfocus.org"><FONT COLOR="#FFFFFF">Georges Tarbouriech</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:iv_nr@hotmail.com"><FONT COLOR="#FFFFFF">Iv&aacute;n Rojas</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-04-16, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

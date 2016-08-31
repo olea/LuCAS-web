@@ -1,0 +1,368 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf151, System Administration: Configurando IP-Masquerading</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<IMG SRC="../../common/images/Guido-S.gif" ALT="[Photo of the Author]" HEIGHT=164 WIDTH=173>
+<BR>por  <A HREF="mailto:guido.socher@linuxfocus.org">Guido Socher</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>
+Guido es un fan veterano de Linux.
+Su pagina Linux se puede encontrar en
+<a href="http://www.oche.de/~bearix/g/">www.oche.de/~bearix/g/</a>.
+</P>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">General</A></LI>
+  <LI><A HREF="#lfindex1">Fundamentos del IP-Masquerading</A></LI>
+  <LI><A HREF="#lfindex2">Configurando el Kernel</A></LI>
+  <LI><A HREF="#lfindex3">Configurar IP-Masquerading</A></LI>
+  <LI><A HREF="#lfindex4">Conclusi&oacute;n</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=151&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Configurando IP-Masquerading</H2>
+ <IMG SRC="../../common/images/illustration151.gif" ALT="[Illustration]" HSPACE=10 HEIGHT=100 WIDTH=100>
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+
+IP-Masquerading posibilita la conexi&oacute;n de varios ordenadores
+a internet usando una m&aacute;quina Linux con solo una IP p&uacute;blica.
+Esto quiere decir que puedes conectar una red privada a internet y tu
+proveedor de internet creer&aacute; que solo tienes un ordenador conectado.
+Este art&iacute;culo explica como configurar IP-Masquerading con un Kernel 2.2.x.
+No se explica como construir una red. Para tener una idea general sobre redes
+recomiendo leer el art&iacute;culo sobre redes caseras
+(<a href="../January2000/article134.html">Enero de 2000</a>).
+
+</P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>General</H2>
+
+
+Para usar IP-Masquerading tal cual se explica en este art&iacute;culo
+necesitas al menos una m&aacute;quina Linux con un Kernel 2.2.x. Esta
+m&aacute;quina es la que establecera la conexi&oacute;n a internet.
+Que usemos Linux como sistema para compartir la conexi&oacute;n no significa
+que todos los ordenadores de tu red tengan que correr Linux. De hecho,
+Linux funciona bien con Windows, Mac, y otras variantes de Unix.
+<br>
+Este sistema para compartir la conexi&oacute;n es el tema del que nos vamos
+a ocupar en este art&iacute;culo. La m&aacute;quina Linux conecta una parte a internet y
+la otra a tu red privada, por lo cual, al menos, tiene que tener dos
+interfaces con sus respectivas IP's. Una de las direcciones IP es p&uacute;blica,
+lo que significa que es enrutable (puede viajar a traves de internet) y
+normalmente asignada por tu proveedor de internet en el momento que se
+establece la conexi&oacute;n con el m&oacute;dem (o lo que sea que utilices).
+La ota direcci&oacute;n IP es privada (no enrutable) y la puedes asignar
+de uno de estos rangos :<br>
+<ul>
+<li>10.0.0.0        -   10.255.255.255
+<li>172.16.0.0      -   172.31.255.255
+<li>192.168.0.0     -   192.168.255.255 (usaremos este rango en el art&iacute;culo)
+</ul>
+<br>
+Este art&iacute;culo tampoco explica como configurar tu red privada. Doy por hecho
+que ya tienes tu red en funcionamiento.
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Fundamentos del IP-Masquerading</H2>
+
+<P>B&aacute;sicamente, IP-Masquerading traduce direcciones IP internas en
+direcciones IP externas. Este proceso se llama Traduccion de Direcciones
+de Red (NAT) y Linux hace esto mediante los llamados n&uacute;meros de puerto.
+Desde el exterior, todas las conexi&oacute;nes parecen haberse originado desde
+tu m&aacute;quina Linux. Puedes encontrar un explicaci&oacute;n detallada en la
+<a href="../January2000/article134.html">edici&oacute;n de Enero</a>.
+
+<p>
+Existen ciertas aplicaciones que generan paquetes IP de tipo especial,
+en estos caso IP-Masquerading podr&iacute;a no funcionar aunque la mayor&iacute;a de
+las veces funciona.
+Hay m&oacute;dulos expec&iacute;ficos que, insertados en el Kernel, permiten a estas
+aplicaciones funcionar con IP-Masquerading, este es el caso de ICQ, ftp
+y Quake. En general, los que solo usen HTTP (navegadores web), telnet,
+ssh o smtp (email) no tendr&aacute;n ning&uacute;n problema.
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Configurando el Kernel</H2>
+
+La gente que use algunas de las principales distribuciones de Linux (Redhat,
+Mandrake, Debian, Suse ...) pueden saltarse este cap&iacute;tulo ya que su Kernel
+viene preparado para usar IP-Masquerading.
+<p>Normalmente suelo hacer backup de /usr/src/linux/.config despues de haber
+compilado y probado un Kernel. La proxima vez que necesite compilar un Kernel
+simplemente cargo esta configuracion y ya tengo la configuracion de mi Kernel
+anterior. Luego es relativamente sencillo configurar peque&ntilde;os cambios, como los
+necesarios para IP-Masquerade.<p>
+Para usar IP-Massquerade responde S&iacute; a lo siguiente cuando configures el
+Kernel.
+Estos son solo los componentes que necesitas para IP-Masquerade, seelecciona
+cualquier otra opci&oacute;n que necesites para tu configuraci&oacute;n especifica.
+<p>
+<ul>
+<li> Preguntar por c&oacute;digo/drivers en desarrollo o/y incompleto.<br>
+      CONFIG_EXPERIMENTAL<br>
+      (Esto te permitir&aacute; seleccionar c&oacute;digo experimental de IP-Masquerade
+        compilado en el Kernel)<br>
+
+<li> Habilitar soporte de m&oacute;dulos cargables<br>
+      CONFIG_MODULES<br>
+
+<li> Soprte de Red<br>
+      CONFIG_NET<br>
+
+<li> Firewalls de Red<br>
+      CONFIG_FIREWALL<br>
+
+<li> Red TCP/IP<br>
+      CONFIG_INET<br>
+
+<li> IP: forwarding/gatewaying<br>
+      CONFIG_IP_FORWARD<br>
+
+<li> IP: firewalling<br>
+      CONFIG_IP_FIREWALL<br>
+
+<li> IP: masquerading<br>
+      CONFIG_IP_MASQUERADE<br>
+
+<li> IP: ipportfw masq support<br>
+      CONFIG_IP_MASQUERADE_IPPORTFW<br>
+
+<li> IP: ipautofw masquerade support<br>
+      CONFIG_IP_MASQUERADE_IPAUTOFW<br>
+
+<li> IP: ICMP masquerading<br>
+      CONFIG_IP_MASQUERADE_ICMP<br>
+
+<li> IP: desfragmentar siempre
+      CONFIG_IP_ALWAYS_DEFRAG
+
+<li> Soporte del driver de red Dummy<br>
+      CONFIG_DUMMY<br>
+
+<li> IP: soporte IP fwmark masq-forwarding<br>
+      CONFIG_IP_MASQUERADE_MFW<br>
+
+</ul>
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Configurar IP-Masquerading</H2>
+
+<P>Vamos a escribir un peque&ntilde;o script para automatizar la configuraci&oacute;n de
+IP-Masquerading.
+Debes poner <a href="../../common/src/article151script.txt">el siguiente script</a> en
+/etc/rc.d/init.d/ y llamarlo ipmasq. Cambia los permisos
+con <tt>chmod 755 ipmasq</tt> para hacerlo ejecutable.
+El script de abajo asume que has usado la direcci&oacute;n IP est&aacute;tica 192.168.0.1
+en el interface que conecta a tu red interna (ifconfig eth0 192.168.0.1 netmask 255.255.255.0).
+Si has usado una direcci&oacute;n diferente modifica el script.
+Esta imagen muestra el plano de la red que estamos usando.<br>
+<img src="../../common/images/fig151.gif" width=256 height=256 alt="networkplan"><br>
+<pre>
+#!/bin/sh
+echo "Configurando IP masquerading ..."
+# La gente que todavia utilice windows para navegar tiene que
+# convertir esto a un fichero de texto UNIX antes de utilizarlo.
+#
+# Soporte de masquerading para FTP.
+/sbin/modprobe ip_masq_ftp
+#
+#--------------
+# Nota: los modulos que siguen estan comentados de forma que no se cargaran.
+# Quita el signo de comentario si quieres usar la aplicacion correpondiente
+# desde tu red interna.
+#
+# Soporte de masquerading para RealAudio sobre UDP.
+#/sbin/modprobe ip_masq_raudio
+#
+# Soporte de masquerading para transferencia de ficheros IRC DCC
+#/sbin/modprobe ip_masq_irc
+#
+# Soporte de masquerading para Quake y QuakeWorld
+# Quake I / QuakeWorld (ports 26000 and 27000)
+#/sbin/modprobe ip_masq_quake
+#
+# Quake I/II/III / QuakeWorld (ports 26000, 27000, 27910, 27960)
+#/sbin/modprobe ip_masq_quake ports=26000,27000,27910,27960
+#
+# Soporte de masquerading para software de video conferencia CuSeeme
+#/sbin/modprobe ip_masq_cuseeme
+#
+# Soporte de masquerading para software de video conferencia VDO-live
+#/sbin/modprobe ip_masq_vdolive
+#--------------
+# Importante: Habilita IP forwarding. Esta deshabilitado por defecto
+# en los Kernels 2.2.x
+echo "1" > /proc/sys/net/ipv4/ip_forward
+#
+# NOTA: Esto es un ejemplo para la direccion de red interna
+# 192.168.0.x La mascara de subred es 255.255.255.0 o "24" bit
+# Modifica esto si utilizas una direccion interna diferente.
+#
+/sbin/ipchains -P forward DENY
+/sbin/ipchains -A forward -s 192.168.0.0/24 -j MASQ
+#
+#--- fin del fichero
+</pre>
+Antes de probarlo aseg&uacute;rate de configurar todos los ordenadores en red
+privada de forma que su puerta de enalace (gateway) apunte a la direccion
+192.168.0.1 (la m&aacute;quina Linux con IP-Masquerading).
+
+Luego ejecuta el script como root en la m&aacute;quina Linux con IP-Masquerading.
+Despues haz un ping desde una de las m&aacute;quinas de tu red interna a una m&aacute;quina
+de internet (p.e. ping 195.53.25.18)
+<br> Si esto funciona entonces IP-Masquerading est&aacute; funcionando. Prueba tambien
+<tt>ping www.linuxfocus.org</tt>. Esto deber&iacute;a dar el mismo resultado
+que el ping anterior. Si no funciona comprueba el fichero
+/etc/resolv.conf en tus clientes. Debe existir en todos los ordenadores de tu red
+interna y tiene que contener los servidores DNS de tu proveedor de internet.
+Una vez que el ping funcione todo lo dem&aacute;s tambien funcionar&aacute;
+(p.e. navegaci&oacute;n web).
+
+<p>
+Ahora es el momento de cambiar tu configuraci&oacute;n de forma que tu script
+/etc/rc.d/init.d/ipmasq se ejecute autom&aacute;ticamente cada vez que arranques
+la m&aacute;quina Linux con IP-Masquerading. La mejor forma de hacer esto
+en mi opini&oacute;n es editar el fichero /etc/rc.d/init.d/network
+(este fichero deber&iacute;a existir) y ejecutar /etc/rc.d/init.d/ipmasq
+AL FINAL de la secci&oacute;n start en el fichero init.d/network.
+Busca una expresi&oacute;n case y luego busca &quot;start)&quot;.
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Conclusi&oacute;n</H2>
+
+<p>
+Como has visto no es dif&iacute;cil configurar IP-Masquerading. B&aacute;sicamente se
+reduce a habilitar IP forwarding y a un par de comandos ipchains.
+IP-Masquerading es una aplicaci&oacute;n muy potente para peque&ntilde;as redes caseras,
+colegios, empresas peque&ntilde;as etc...
+</p>
+
+<p>
+Para una informaci&oacute;n completa y detallada recomiendo la lectura de
+<em><a href="http://www.linuxdoc.org/HOWTO/IP-Masquerade-HOWTO.html">IP-Masquerading
+mini howto</a></em> y el
+<em><a href="http://www.linuxdoc.org/HOWTO/IPCHAINS-HOWTO.html">IPCHAINS-HOWTO</a></em>.
+</p>
+
+<p>
+Para usar IP-Masqueradig necesitas, claro est&aacute;, una red perfectamente configurada.
+Esto no esta cubierto en este art&iacute;culo.
+El art&iacute;culo
+<em><a href="../January2000/article134.html">Redes caseras</A></EM>
+te proporcionar&aacute; algo de vocabulario y tanto el
+<em><a href="http://www.linuxdoc.org/HOWTO/NET3-4-HOWTO.html">Net 3 howto</a></em>,
+como el
+<em><a href="http://www.linuxdoc.org/LDP/nag/nag.html">The Network Administrator Guide</a></em>
+explican en detalle como
+construir una red. Tengo planeado escribir a finales de a&ntilde;o un art&iacute;culo sobre redes
+pero no creo que quieras esperar tanto tiempo :-).
+</p>
+
+
+
+
+<!-- vim: set sw=2 ts=2 et: -->
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=151&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Guido Socher, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article151.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:guido.socher@linuxfocus.org"><FONT COLOR="#FFFFFF">Guido Socher</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:pvega@clientes.euskaltel.es"><FONT COLOR="#FFFFFF">Pedro Vega</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-03-30, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

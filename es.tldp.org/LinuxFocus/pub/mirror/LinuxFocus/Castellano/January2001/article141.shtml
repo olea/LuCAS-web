@@ -1,0 +1,424 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf141, System Administration: automount y autofs</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://www.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://www.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<img src="../../common/images/Frederic_Raynal.png" width="106"
+height="148" alt="[picture of Frederic]">
+<BR>por  <a href= "mailto:pappy@users.sourceforge.net">Fr&eacute;d&eacute;ric Raynal</a>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<a href="mailto:frederic.raynal@inria.fr">Fr&eacute;d&eacute;ric
+Raynal</a> esta realizando su tesis en Ciencias de las Computadoras en  <a href=
+"http://www.inria.fr">INRIA</a>. Le encanta leer (desde Tolkien hasta
+Balzac) y escuchar m&uacute;sica (desde Mozart pasando por Philip Glass ,
+Led Zeppelin , Massive Attack o Bj&ouml;rk y Boris
+Vian, por el contrario evita el rap, techno y alg&uacute;n otro ruido ;-)
+
+
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex1">Descripci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex2">autofs</A></LI>
+  <LI><A HREF="#lfindex3">automount</A></LI>
+  <LI><A HREF="#lfindex4">Configuraci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex5">El fichero /etc/auto.master</A></LI>
+  <LI><A HREF="#lfindex6">Mapas Automount</A></LI>
+  <LI><A HREF="#lfindex7">Ultimos detalles</A></LI>
+  <LI><A HREF="#lfindex8">Conclusiones</A></LI>
+  <LI><A HREF="http://www.linuxfocus.org/cgi-bin/lftalkback?anum=141&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>automount y autofs</H2>
+ <img src="../../common/images/white.gif" width="10" height="10"
+alt="-">
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+
+
+automount y autofs son unas herramientas potentes que permiten manejar
+facilmente el sistema de ficheros . Estos programas permiten a todos los
+usuarios montar en la misma m&aacute;quina y de manera autom&aacute;tica diferentes
+sistemas de ficheros en el momento que sea necesario.
+
+</P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n</H2>
+
+
+<p> Dependiendo del soporte f&iacute;sico (dicos duros,floppies, cdrom,
+...) y/o del sistema operativo, el proceso de escritura de los datos
+(no su contenido) es diferente : Esto es lo que nosotros llamamos
+sistemas de ficheros ( Espero que los expertos y los puristas me diculpen
+;-)
+El fichero /etc/fstab mantiene los puntos de montaje del <i>hard</i> para
+ser instalados al arrancar. Cada punto corresponde a un lugar y a un
+fichero del sistema (por ejemplo, una de las particiones del disco duro).
+Si m&aacute;s tarde se desea accecer a otros puntos, &uacute;nicamente el root puede usar
+el comando mount ( a menos que sea un usuario "especial" con las opciones
+activadas en /etc/fstab)
+Como root, debes especificar el punto de montaje, que es lo que quieres montar,
+posibilidades, el sistema de ficheros y algunas opciones. Un usuario normal
+no tiene ,(afortunadamente ;-) los mismos privilegios para acceder ha todos
+los datos.</p>
+
+<p>Si quieres una descripci&oacute;n m&aacute;s precisa de los comandos Mount y fstab, utiliza
+las p&aacute;ginas  man.</p>
+
+<p>Ambos (automount, autofs) permiten a los administradores configurar todos
+los ficheros del sistema a los que una m&aacute;quina pude acceder. El usuario usa
+el sistema de una manera transparente, sin preocuparse de como el kernel
+gestiona estos accesos.</p>
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Descripci&oacute;n</H2>
+
+
+<p>El conjunto (automount, autofs) se pueden ver como un modelo cliente/servidor.
+El servidor espera una petici&oacute;n. Cuando esta llega, el servidor se autoduplica
+una parte se encarga de reponder la petici&oacute;n y la otra espera una nueva petici&oacute;n.</p>
+
+<p> Aqu&iacute; es donde autofs se comporta como servidor y automonta uno de los
+"servidores duplicados". Las peticiones se guardan en ficheros de
+configuraci&oacute;n.</p>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>autofs</H2>
+
+
+<p>Normalmete, autofs se activa al arrancar y se cierra al apagar o rebotar
+la m&aacute;quina. De todas maneras el administrador puede activar/desactivar el programa
+de manera manual.</p>
+
+<p>autofs tiene 4 opciones :</p>
+
+<ol>
+<li><i>start</i>&nbsp;:</li>
+
+<li style="list-style: none">&nbsp;Tal como su nombre indica inicia el proceso.
+Cuando empieza, autofs busca "maps" (se entiende como maps unos puntos espec&iacute;fico
+de montaje) en el fichero de configuraci&oacute;n /etc/auto.master. Entonces monta de
+manera autom&aacute;tica cada punto. A continuaci&oacute;n, autofs busca los mapas NIS
+(No queremos decir nada en este art&iacute;culo sobre las p&aacute;ginas amarillas):</li>
+
+<li><i>stop</i>&nbsp;:&nbsp; Para autofs y todos los procesos automount&nbsp;;</li>
+
+<li><i>status</i>&nbsp;:&nbsp; visualiza la configuraci&oacute;n actual y todos los
+procesos automount en funcionamiento.</li>
+
+<li><i>reload</i>&nbsp;:&nbsp; vuelve a leer toda la tabla auto.master y elimina
+todos procesos  automount  que no aparecen y inicializa los nuevos. Todos
+los cambios que se realizen en el mapa se tendr&aacute;n encuenta en la siguiente
+inicializaci&oacute;n. Por otro lado, los cambios hechos en auto.master implica que
+ autofs se inicialice de nuevo.</li>
+</ol>
+
+<br>
+<br>
+ En conclusi&oacute;n, autofs se encarga de consultar auto.master antes de realizar
+los automounts asociados a cada punto de la lista de montaje.
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>automount</H2>
+
+
+<p>automount trabaja desde un punto inicial de montaje ( el mismo que encuentra
+autofs al iniciar automount) y desde una nueva lista que describe las caracter&iacute;sticas
+del punto inicial de montaje. La lista asociada a automount se mantiene para
+todos los requerimientos de informaci&oacute;n para montar el sistema automatico
+de ficheros (de aqu&iacute; el nombre ;-). Este sistema de montaje automatico
+se realizar&aacute; tan pronto como alguien intente acceder a algo en el &aacute;rbol de
+directorios desde el punto de montaje.</p>
+
+<p>A continuaci&oacute;n, los sistemas de ficheros se desmontan autom&aacute;ticamente despu&eacute;s
+de un periodo de inactividad (Por defecto son 5 minutos).</p>
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Configuraci&oacute;n</H2>
+
+
+La configuraci&oacute;n se realiza con la ayuda de dos ficheros. El auto.master,
+que mantiene los puntos de montaje y un fichero de punto de montaje que
+suministra las opciones del sistema para este punto de monaje especifico.
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>El fichero /etc/auto.master</H2>
+
+
+<p>Se describir&aacute; el mapa utilizando el formato Sun. Cualquier otro formato
+puede no compartir la misma sintaxi.</p>
+
+<p>/etc/auto.master es el principal fichero de autofs. Cada linea de este fichero
+decribe un punto de montaje y hace referencia al fichero que contiene las
+descripciones del sistema de ficheros que deben ser montados desde ese punto.
+El &uacute;ltimo campo permite pasar las opciones a mount para empezar.
+
+<p>La linea de sintaxis es &nbsp;:<br>
+mount-point map-for-the-associated-automount [
+-mount-options-separated-by-comma ]</p>
+
+<p>Ejemplo :<br>
+</p>
+
+<table cols="3" width="45%" summary="auto.master">
+<tr>
+<td>/home</td>
+<td>/etc/auto.home</td>
+</tr>
+
+<tr>
+<td>/misc</td>
+<td>/etc/auto.misc</td>
+<td>--timeout 60</td>
+</tr>
+
+<tr>
+<td>/mnt</td>
+<td>yp:mnt.map</td>
+<td>-intr,nosuid,nodev</td>
+</tr>
+</table>
+
+<br>
+<br>
+
+
+<p>Esto cofigura 3 puntos de montaje, /home, /misc y /mnt. Para poder
+ acceder  a los ficheros contenidos en /misc, automount leer&aacute; el fichero
+ /etc/auto.misc para encontrar las opciones de montaje y las claves
+asociadas al sistema de ficheros.<br>
+Las &uacute;ltimas 2 lineas mantienen las opciones. Puedes consultar su descripci&oacute;n
+en  "man mount" por que son un standard. Tal como se muestra en la &uacute;ltima
+linea del ejemplo, autofs and automount son totalmente compatibles con
+p&aacute;ginas amarillas (NIS y otros).</p>
+
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Mapas Automount</H2>
+
+
+<p>La sintaxis de este fichero es parecida a la de auto.master
+(es normal porque tambi&eacute;n es una lista ;-) :<br>
+key [ -mount-options-separated-by-comma ] place</p>
+
+key representa un identificador para el sistema de ficheros bajo el punto
+de montaje. Este lugar es la localizaci&oacute; fisica <i>verdadera</i>.
+
+<p>Revisemos el ejemplo previo con un fichero&nbsp; /etc/auto.misc :</p>
+
+<table cols="3" width="50%" summary="/etc/auto.misc">
+<tr>
+<td>kernel</td>
+<td>-ro,soft,intr</td>
+<td>ftp.kernel.org:/pub/linux</td>
+</tr>
+
+<tr>
+<td>cdrom</td>
+<td>-fstype=iso9660,ro</td>
+<td>:/dev/cdrom</td>
+</tr>
+
+<tr>
+<td>floppy</td>
+<td>-fstype=auto</td>
+<td>:/dev/fd0</td>
+</tr>
+
+<tr>
+<td>windoz</td>
+<td>-fstype=vfat</td>
+<td>:/dev/hda1</td>
+</tr>
+</table>
+
+<p>El camino al fichero es &nbsp;:<br>
+/mount-point/key/path/file</p>
+
+<p>Para leer el config.sys, ejecuto "cat /misc/windoz/config.sys"
+ y accede al dispositivo /dev/hda1 .</p>
+
+<p>Debos notar  que la primera linea del fichero se refiere a un
+directorio del tipo NFS exportado ( esto demuestra la flexibilidad
+de automount y autofs ;-)</p>
+
+<A NAME="lfindex7">&nbsp;</A>
+<H2>Ultimos detalles</H2>
+
+
+<p>Primero , cuando se busca uno de los mapas en un fichero, la obtenci&oacute;n
+del camino no se realiza de manera norma. Para evitar teclear la totalidad
+del camino utilizamos la tecla TAB p&agrave;ra completarlo de manera autom&aacute;tica.
+Si el mapa no se carga por completo, la llave no trabaja. Volviendo al
+primer ejemplo, si quiero acceder al mismo config.sys y lo hago&nbsp;:<br>
+%1 &gt; cat /misc/ &lt;TAB &gt;<br>
+Lo que conseguir&eacute; es que el ordenador emita el "beep" de queja  por
+que no puede completar la tarea ( apretar simultaneamente &lt;CTRL+D&gt;
+y mirar todos lo procesos terminados, si hay alguno).</p>
+
+<p>En realidad, este aviso es normal. Se verifica el contenido de los directorios, indicado por s&iacute;mbolos de
+validaci&oacute;n.En este caso, el directorio /misc esta vacio tras montar el fichero de
+sistema &uacute;nicamente cuando se accede a &eacute;l. Por otro lado no se puede
+usar completamente hasta que el punto de montaje se cancela autom&aacute;ticamente.
+(por ejemplo cuando ya no se requieren m&aacute;s recursos del sistema de fichero
+se termina el tiempo de espera).</p>
+
+Vamos a ver el resultado de un montaje antes y despu&eacute;s de acceder al mapa,
+consideremos previamente /etc/auto.master, con un montaje simple&nbsp;: <br>
+<br>
+/dev/hda6 on / type ext2 (rw)<br>
+none on /proc type proc (rw)<br>
+/dev/hda9 on /home type ext2 (rw)<br>
+none on /dev/pts type devpts (rw,gid=5,mode=620)<br>
+automount(pid362) on /home type autofs
+(rw,fd=5,pgrp=362,minproto=2,maxproto=3)<br>
+automount(pid364) on /misc type autofs
+(rw,fd=5,pgrp=364,minproto=2,maxproto=3)<br>
+automount(pid366) on /mnt type autofs
+(rw,fd=5,pgrp=366,minproto=2,maxproto=3)<br>
+<br>
+Se debe constar que hay un daemon (deamon - basicamente es un proceso del sistema)
+ para cada punto de montaje. Ademas, cada "type" esta asociado a
+"autofs". despu&eacute;s de hechar un vistazo a /misc/windoz/config.sys, aqu&iacute;
+tenemos el resultado del monaje&nbsp;: <br>
+<br>
+/dev/hda6 on / type ext2 (rw)<br>
+none on /proc type proc (rw)<br>
+/dev/hda9 on /home type ext2 (rw)<br>
+none on /dev/pts type devpts (rw,gid=5,mode=620)<br>
+automount(pid362) on /home type autofs
+(rw,fd=5,pgrp=362,minproto=2,maxproto=3)<br>
+automount(pid364) on /misc type autofs
+(rw,fd=5,pgrp=364,minproto=2,maxproto=3)<br>
+automount(pid366) on /mnt type autofs
+(rw,fd=5,pgrp=366,minproto=2,maxproto=3)<br>
+/dev/hda1 on /misc/windoz type vfat (rw)<br>
+<br>
+La &uacute;ltima linea contiene lo que esperabamos :) si estamos 60 segundos
+sin acceder a este punto de montaje, desaparecera en el siguiente montaje.
+
+<A NAME="lfindex8">&nbsp;</A>
+<H2>Conclusiones</H2>
+
+
+<pUtilizando Linux y Windows en un PC,automount y autofs son in&uacute;tiles, excepto
+para evitar logins como root (que visto de otra manera no es tan malo).
+Es suficiente con definir un mapa para las particiones FAT y FAT32 para
+acceder a los datos.
+
+<p> En el caso de una red, se gana una mallor flexibilidad si se combina con las
+p&aacute;gina amarillas (se estudiar&aacute;n en otra serie de art&iacute;culos) y NFS entre otros.
+Se puede acceder a cualquier sitio sin preocuparnos de donde estamos f&iacute;sicamente.</p>
+
+<p>La gran ventaja del uso de automount es que si falla el servidor, solo
+afectara a los clientes que lo est&eacute;n utilizando. Esto reducir&aacute;
+significativamenteel teimpo de parada en las grandes compa&ntilde;ias
+( con 10 o m&aacute;s servidores NFS.</p>
+
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://www.linuxfocus.org/cgi-bin/lftalkback?anum=141&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Fr&eacute;d&eacute;ric Raynal, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://www.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article141.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:pappy@users.sourceforge.net"><FONT COLOR="#FFFFFF">Fr&eacute;d&eacute;ric Raynal</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:philippe.trbich@free.fr,manu.b2@wanadoo.fr"><FONT COLOR="#FFFFFF">Philippe Trbichand Emmanuel Bonnel</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:apardoyo@yahoo.es"><FONT COLOR="#FFFFFF">Alberto Pardo</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-09-10, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

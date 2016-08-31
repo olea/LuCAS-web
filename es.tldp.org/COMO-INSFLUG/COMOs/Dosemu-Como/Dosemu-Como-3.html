@@ -1,0 +1,182 @@
+<HTML>
+<HEAD>
+<TITLE>Dosemu COMO: Configuraci&oacute;n del Disco Duro</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Dosemu-Como-2.html">Anterior</A>
+<A HREF="Dosemu-Como-4.html">Siguiente</A>
+<A HREF="Dosemu-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Configuraci&oacute;n del Disco Duro</A></H2>
+
+
+
+<H2><A NAME="ss3.1">3.1 ¿C&oacute;mo utilizo mi disco duro con dosemu?</A></H2>
+
+
+<P>Lo primero, monte sus particiones del dos como subdirectorios de Linux. 
+Por ejemplo, deber&iacute;a crear un directorio en Linux tal como <CODE>/dos</CODE></P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir -m 755 /dos
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y a&ntilde;adir una l&iacute;nea como la siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   /dev/hda1       /dos     msdos   umask=022
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en su <CODE>/etc/fstab</CODE>. (En este ejemplo, el disco duro est&aacute; montado
+s&oacute;lo lectura. Puede montarlo como lectura/escritura reemplazando
+"<CODE>002</CODE>" por "<CODE>000</CODE>" y utilizando la opci&oacute;n <CODE>-m 777</CODE> con
+<CODE>mkdir</CODE>). Ahora haga un <CODE>mount /dos</CODE>.  De forma que pueda
+a&ntilde;adir una l&iacute;nea como la siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  lredir d: linux\fs/dos
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en el archivo <CODE>AUTOEXEC.BAT</CODE> en su <CODE>hdimage</CODE> (l&eacute;ase los comentarios
+respecto a <CODE>LREDIR</CODE> m&aacute;s adelante). En un sistema multiusuario, puede
+utilizar:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  lredir d: linux\fs\${home}
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>donde "<CODE>home</CODE>" es el nombre de una variable de entorno que contiene la
+localizaci&oacute;n del directorio del dos (<CODE>/dos</CODE> en nuestro ejemplo). </P>
+<P>Tim Bird (<CODE>
+<A HREF="mailto:Tim_R_Bird@Novell.COM">Tim_R_Bird@Novell.COM</A></CODE>) expone que los usuarios
+de <CODE>LREDIR</CODE> deber&iacute;an tener cuidado cuando utilizan <CODE>LREDIR</CODE> en el
+<CODE>autoexec.bat</CODE>, dado que el <CODE>command.com</CODE> est&aacute; continuamente
+analizando el <CODE>autoexec.bat</CODE> desde la unidad redireccionada con el
+mismo desplazamiento en el archivo que cuando fue dejado en el
+<CODE>autoexec.bat</CODE> de la unidad f&iacute;sica.  Por este motivo, es m&aacute;s seguro que
+el archivo <CODE>autoexec.bat</CODE> de la unidad redireccionada y de la unidad
+f&iacute;sica (imagen del disco) sean el mismo. </P>
+<P>Robert D. Warren (<CODE>
+<A HREF="mailto:rw11258@xx.acs.appstate.edu">rw11258@xx.acs.appstate.edu</A></CODE>) informaba (4/28/94) de lo
+siguiente:</P>
+<P>Tengo una peque&ntilde;a imagen arrancable del disco duro (<CODE>hdimage</CODE>, que
+ocupa menos de 1MB - y es el doble de grande de lo que es necesario a fin
+de cuentas), y la &uacute;ltima l&iacute;nea en mi <CODE>config.sys</CODE> que est&aacute; en la imagen
+arrancable es: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        
+        install=c:\lredir.exe c: LINUX\FS\home/dos
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>De esta forma se ejecutar&aacute; <CODE>lredir</CODE> justo antes de que el int&eacute;rprete de
+comandos lo haga. Y he conseguido hacerlo funcionar correctamente tanto
+con el <CODE>command.com</CODE> como con el <I>4DOS</I>. Esto elimina el problema
+del desplazamiento utilizando <CODE>lredir</CODE> en el <CODE>autoexec.bat</CODE>.</P>
+<P>Uwe Bonnes (<CODE>
+<A HREF="mailto:bon@elektron.ikp.physik.th-darmstadt.de">bon@elektron.ikp.physik.th-darmstadt.de</A></CODE>) a&ntilde;ade (8/11/95) que: </P>
+<P>Resulta &uacute;til el hacer:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        
+install=C:\subst.exe g: c:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>antes de eso, de forma que todav&iacute;a pueda acceder a la imagen del disco
+duro en la unidad <CODE>g:</CODE>.  Otro truco interesante que viene al tema es el
+configurar dosemu para utilizar "<CODE>autoexec.emu</CODE>" y as&iacute; mantener el dos
+y dosemu aparte. </P>
+
+
+<H2><A NAME="ss3.2">3.2 ¿Puedo utilizar mi disco stacked/double-spaced/super-stored?</A></H2>
+
+
+<P>Por ahora, las unidades comprimidas no pueden ser accedidas a trav&eacute;s del
+redireccionador (<CODE>lredir</CODE> o <CODE>emufs</CODE>). Sin embargo, mucha gente han
+podido hacerlo simplemente descomentando la l&iacute;nea:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   disk { wholedisk &quot;/dev/hda&quot; }        # 1st partition on 1st disk
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>en el fichero de configuraci&oacute;n del dosemu. </P>
+<P>Otros lo han conseguido utilizando</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+   disk { partition &quot;/dev/hda1&quot; }
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si su partici&oacute;n del dos ya est&aacute; montada con permiso de escritura e intenta
+ejecutar dosemu con acceso a la partici&oacute;n o al todo el disco, dosemu
+imprimir&aacute; un mensaje de aviso y abortar&aacute;. De esta forma se evitan
+escrituras independientes al disco por parte del DOS y de Linux, que
+resultar&iacute;an en datos inconsistentes. </P>
+<P>Si est&aacute; instalado el LILO, lo anterior no funcionar&aacute;. Sin embargo...</P>
+<P>Thomas Mockridge (<CODE>
+<A HREF="mailto:thomas@aztec.co.za">thomas@aztec.co.za</A></CODE>) informaba (8/5/94) que</P>
+<P>He estado trabajando un poco para arrancar dosemu con el LILO y Stacker
+4.0... </P>
+<P>
+<OL>
+<LI><CODE>dd</CODE> el MBR a un archivo. (o usando las utilidades norton,
+etc., los 512 primeros bytes)
+</LI>
+<LI>Arranque el dos (no el dosemu), haga un <CODE>fdisk /mbr</CODE>, y
+active su partici&oacute;n del dos con el <CODE>fdisk</CODE> (del dos). 
+</LI>
+<LI>Copie el MBR nuevo a un archivo.
+</LI>
+<LI>Reemplace el MBR con el original.
+</LI>
+<LI>Copie el segundo MBR a <CODE>/var/lib/dosemu/partition.hda?</CODE>
+(cualquiera que sea su partici&oacute;n del dos)
+</LI>
+<LI>Ponga en el <CODE>dosemu.conf</CODE>:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+               disk {partition &quot;/dev/hda? ?&quot;}
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Lance dosemu y ¡voila!  Sin <CODE>LILO</CODE>.
+</LI>
+</OL>
+</P>
+<P>Holger Schemel (<CODE>
+<A HREF="mailto:q99492@pbhrzx.uni-paderborn.de">q99492@pbhrzx.uni-paderborn.de</A></CODE>) comentaba (2/10/94) lo
+siguiente:</P>
+<P>Se trabaja igual de bien bajo dosemu con MS-DOS 6.0. Si tiene problemas,
+entonces debe editar el archivo '<CODE>dblspace.ini</CODE>' a mano y cambiar la
+letra de la unidad por la letra de la unidad que utilice bajo dosemu. </P>
+<P>Darren J. Moffat (<CODE>
+<A HREF="mailto:moffatd@dcs.gla.ac.uk">moffatd@dcs.gla.ac.uk</A></CODE>) tambi&eacute;n comentaba (3/27/94)  lo
+siguiente:</P>
+<P>"¡¡...utilice 6.2 si lo tiene!! Tan s&oacute;lo aseg&uacute;rese de tener a mano un
+disco de arranque con el <CODE>LILO</CODE> puesto que el dos 6{.2} cambiar&aacute; el
+MBR." </P>
+
+
+<HR>
+<A HREF="Dosemu-Como-2.html">Anterior</A>
+<A HREF="Dosemu-Como-4.html">Siguiente</A>
+<A HREF="Dosemu-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

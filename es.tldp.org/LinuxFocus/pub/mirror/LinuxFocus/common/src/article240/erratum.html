@@ -1,0 +1,112 @@
+<h2>Correction for article 240</h2>
+
+<p>Here is an explanation why it is no longer recommended
+to create links from /usr/include to the kernel header files:</p>
+
+
+<pre>
+<b>Symlinks In The Kernel; Kernel/Library/etc Interface Dispute</b>
+
+27 Jul 2000 - 3 Aug 2000 (185 posts) Archive Link: "RLIM_INFINITY
+inconsistency between archs" Boszormenyi Zoltan had some trouble
+compiling the latest 'egcs' snapshots on a Linux 2.4.0 system, and
+traced the problem to the fact that "/usr/include/asm is a symlink
+to /usr/src/linux/include/asm, as in the original distribution but
+/usr/src/linux is a 2.4.0-testX tree. With a 2.2.X source tree, it does
+not produce any warning."  Linus Torvalds replied:     I've asked glibc
+maintainers to stop the symlink insanity for the last few years now,
+but it doesn't seem to happen.
+
+    Basically, that symlink should not be a symlink. It's a symlink for
+    historical reasons, none of them very good any more (and haven't
+    been for a long time), and it's a disaster unless you want to be a
+    C library developer. Which not very many people want to be.
+
+    The fact is, that the header files should match the library you link
+    against, not the kernel you run on.
+
+    Think about it a bit.. Imagine that the kernel introduces a new
+    "struct X", and maintains binary backwards compatibility by having
+    an old system call in the old place that gets passed a pointer to
+    "struct old_X". It's all compatible, because binaries compiled for
+    the old kernel will still continue to run - they'll use the same
+    old interfaces they are still used to, and they obviously do not
+    know about the new ones.
+
+    Now, if you start mixing a new kernel header file with an old binary
+    "glibc", you get into trouble. The new kernel header file will use
+    the _new_ "struct X", because it will assume that anybody compiling
+    against it is after the new-and-improved interfaces that the new
+    kernel provides.
+
+    But then you link that program (with the new "struct X") to the binary
+    library object archives that were compiled with the old header files,
+    that use the old "struct old_X" (which _used_ to be X), and that use
+    the old system call entry-points that have the compatibility stuff
+    to take "struct old_X".
+
+    Boom! Do you see the disconnect?  In short, the _only_ people
+    who should update their /usr/include/linux tree are the people who
+    actually make library releases and compile their own glibc, because if
+    they want to take advantaged of new kernel features they need those
+    new definitions. That way there is never any conflict between the
+    library and the headers, and you never get warnings like the above..
+
+He went on:     I would suggest that people who compile new kernels
+should:
+
+      + NOT do so in /usr/src. Leave whatever kernel (probably only
+      the header
+        files) that the distribution came with there, but don't touch it.
+      + compile the kernel in their own home directory, as their very own
+        selves. No need to be root to compile the kernel. You need to
+        be root to _install_ the kernel, but that's different.
+      + not have a single symbolic link in sight (except the one that the
+        kernel build itself sets up, namely the "linux/include/asm"
+        symlink that is only used for the internal kernel compile itself)
+
+    And yes, this is what I do. My /usr/src/linux still has the old
+    2.2.13 header files, even though I haven't run a 2.2.13 kernel in a
+    _loong_ time.  But those headers were what glibc was compiled against,
+    so those headers are what matches the library object files.
+
+    And this is actually what has been the suggested environment for
+    at least the last five years. I don't know why the symlink business
+    keeps on living on, like a bad zombie. Pretty much every distribution
+    still has that broken symlink, and people still remember that the
+    linux sources should go into "/ usr/src/linux" even though that
+    hasn't been true in a _loong_ time.
+
+    Is there some documentation file that I've not updated and that
+    people are slavishly following outdated information in? I don't read
+    the documentation myself, so I'd never notice ;)
+
+Mike A. Harris commended, "I very much like the idea of what you describe
+below however as it solves NUMEROUS problems indeed. This information
+should be put in the top level README file, and emphasis put on the
+'dont compile in /usr/ local' part, because it would sure save people a
+lot of headaches IMHO." Also in reply to Linus, Kai Henningsen pointed
+out that in Debian at least, "/usr/ include/asm is a directory, and its
+contents come with the libc6-dev package." In reply to Linus' question
+about misleading docs that might be floating around, several folks piped
+up. Jeff Lightfoot pointed out that a ton of files in the 'Documentation'
+directory referenced '/usr/src/linux', and James Lewis Nance and André
+Dahlqvist independently posted patchs to clean that up in the main
+README. Adam Sampson added that the 'glibc' installation instructions
+had similar problems, and Kai added that in the Linux sources, the
+problem existed in "Lots of places, actually. 'find -type f | xargs grep
+/usr/include' and shudder." Also in reply to Linus, Theodore Y. Ts'o
+suggested having /usr/src/linux be a symlink to the header files of
+whatever kernel booted by default. Since only root could actually install
+a kernel (even though any user could do the compilation themselves),
+the question of where the link should point would always be clear. He
+explained, "The problem is that unless you are trying to say that you
+want to outlaw external source packages which generate kernel modules,
+there needs to be some way for such packages to be able to find the kernel
+header files." But Linus replied that this would force kernel header files
+to maintain source-level backward compatibility forever, which would cause
+big problems. In terms of how external packages could find header files,
+Linus replied:     By hand. By the maintainer.  And _independently_
+of what random user Joe Blow has on his particular installation.
+
+</pre>

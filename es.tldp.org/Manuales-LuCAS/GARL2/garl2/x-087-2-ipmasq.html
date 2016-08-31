@@ -1,0 +1,279 @@
+<HTML
+><HEAD
+><TITLE
+>Enmascaramiento IP yTraducción de Direcciones de Red</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="Colección pasiva de datos de contabilidad"
+HREF="x-087-2-accounting.passive.collection.html"><LINK
+REL="NEXT"
+TITLE="Efectos Laterales y Beneficios Accesorios"
+HREF="x-087-2-masq.side.effects.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-accounting.passive.collection.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-masq.side.effects.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="X-087-2-IPMASQ">Capítulo 11. Enmascaramiento IP yTraducción de Direcciones de Red</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>11.1. <A
+HREF="x-087-2-masq.side.effects.html"
+>Efectos Laterales y Beneficios Accesorios</A
+></DT
+><DT
+>11.2. <A
+HREF="x-087-2-masq.kernel.config.html"
+>Configuración del Núcleopara enmascaramiento IP</A
+></DT
+><DT
+>11.3. <A
+HREF="x-087-2-masq.configuration.html"
+>Configuración del enmascaramiento IP</A
+></DT
+><DT
+>11.4. <A
+HREF="x-087-2-masq.namelookups.html"
+>Manipulación del Servicio de Nombres</A
+></DT
+><DT
+>11.5. <A
+HREF="x9986.html"
+>Más sobre la traducción de direcciones de red</A
+></DT
+></DL
+></DIV
+><P
+>&#13;No hace falta tener una memoria excelente para recordar los días en
+los que sólo las grandes compañías se podían permitir disponer de un cierto
+número de máquinas conectadas por una red local. Frente a aquello, hoy los
+precios de la tecnología de red han bajado y bajado hasta producir dos 
+consecuencias:
+La primera, que las redes locales sean algo común, presentes incluso en
+entornos domésticos. Es seguro que muchos de los lectores, usuarios de GNU/Linux,
+tendrán en su casa dos o más computadoras conectadas por algún tipo de
+ethernet. La segunda, que los recursos de red, y de forma especial las
+direcciones IP, hayan llegado a ser algo escasos y, aunque no están lejanos
+los tiempos en que eran gratuitos, sean ahora objeto de compraventa.</P
+><P
+>La mayor parte de la gente que disponga de una LAN deseará también disfrutar
+de una conexión a Internet que todas las máquinas de su red puedan utilizar
+al mismo tiempo.
+Las reglas del encaminamiento IP son muy estrictas respecto a la forma
+de manejar esta situación. Las soluciones tradicionales a este problema
+hubieran pasado por solicitar un conjunto de direcciones IP, probablemente
+un rango de clase C, dar a cada máquina de la LAN una dirección del
+rango asignado, y utilizar un entutador para conectar la LAN a Internet.&#13;</P
+><P
+>En el actual escenario de una Internet mercantilizada, esa solución saldría
+bastante cara. En primer lugar habría que pagar por el rango de direcciones
+asignado, en segundo lugar habría que pagar con toda probabilidad al
+Proveedor de Servicios de Internet (ISP) por el privilegio de disponer
+de una ruta hacia la red local en sus máquinas, de tal forma que el resto
+de Internet supiera cómo llegar a ellas. Esto puede sonar posible para
+algunas empresas, pero en una instalación doméstica los costes no estarían
+justificados.</P
+><P
+>&#13;
+Afortunadamente GNU/Linux proporciona una solución al problema, solución que
+utiliza un componente de un grupo de funcionalidades avanzadas de
+red llamadas en conjunto Traducción de Direcciones de Red (NAT).
+NAT es un conjunto de procedimientos para modificar las direcciones IP
+contenidas en las cabeceras de los datagramas IP mientras éstos viajan (al
+vuelo). Puede sonar extraño, pero mostraremos que se trata de la solución
+ideal al problema &mdash;real para muchos&mdash; que acabamos de plantear. 'IP
+masquerade' es el nombre que recibe un tipo de traducción de direcciones de
+red que permite que todas las máquinas de una red privada utilicen 
+Internet contando con una única conexión (y una única dirección IP).</P
+><P
+>&#13;
+
+El enmascaramiento IP (en inglés «IP masquerading») permite utilizar
+un rango de direcciones privadas (reservadas) en la red local y que el
+encaminador GNU/Linux se encargue de hacer al vuelo ciertas traducciones
+de direcciones IP y puertos. Cuando le llega un datagrama IP de alguna
+máquina de la red local, se fija en el protocolo de nivel superior
+encapsulado en el mismo («UDP», «TCP», «ICMP», etc...) y modifica el
+datagrama para que parezca que fue generado por el propio encaminador 
+(y recuerda qué ha sido modificado). A continuación saca el datagrama a 
+Internet donde aparece generado por la única dirección IP pública del encaminador.
+Cuando la máquina destino recibe el datagrama cree que se ha originado en la 
+máquina GNU/Linux, y responde a su dirección de Internet.
+Cuando el encaminador GNU/Linux recibe un datagrama en su interfaz de red conectada
+a Internet, busca en su tabla de conexiones enmascaradas en curso para
+ver si el datagrama pertenece a alguna máquina de la LAN y, si es así,
+deshace la traducción que hizo en el primer datagrama y reenvía este
+datagrama de respuesta a la máquina local.</P
+><P
+>En <A
+HREF="x-087-2-ipmasq.html#X-087-2-MASQUERADE.NET"
+>Figura 11-1</A
+> aparece un ejemplo sencillo.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-MASQUERADE.NET"><P
+><B
+>Figura 11-1. Un escenario de enmascaramiento IP típico</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_1101.jpg"></P
+></DIV
+></DIV
+><P
+>Tenemos una pequeña red ethernet en la que utilizamos uno de los rangos
+de direcciones reservadas. La red dispone de un encaminador con enmascaramiento,
+una máquina GNU/Linux, por supuesto, que proporciona acceso a Internet.
+Una de las máquinas de la red (192.168.1.3) desea establecer una conexión
+con el host remoto 209.1.106.178 en el puerto 8888. El equipo encamina
+su datagrama por el encaminador con enmascaramiento, que identifica la petición
+de conexión como requiriente de los servicios de enmascaramiento. El encaminador
+entonces acepta el datagrama y reserva un número de puerto (1035) para
+este menester, sustituye la dirección IP y número de puerto de la máquina
+origen del datagrama por los suyos propios, y transmite el datagrama
+al host destino. El host destino cree que ha recibido una petición de
+conexión de la máquina GNU/Linux enmascaradora, y genera un datagrama de
+respuesta. La máquina enmascaradora, al recibir ese datagrama, halla
+la asociación en su tabla de enmascaramiento y deshace la sustitución
+que llevó a cabo en el primer datagrama. Entonces transmite el datagrama
+de respuesta a la máquina origen.</P
+><P
+>&#13;La máquina local cree que se está comunicando directamente con el host remoto.
+El host remoto no sabe nada de la existencia de la máquina local y cree que
+ha establecido una conexión con la máquina GNU/Linux enmascaradora. La máquina
+GNU/Linux enmascaradora sabe que las otras dos máquinas están hablando entre
+sí y en qué puertos, y realiza las traducciones de direcciones y puertos
+necesarias para que la comunicación tenga lugar.</P
+><P
+>Todo lo anterior puede parecer un poco confuso, y puede que lo sea, pero
+funciona y es verdadermente simple de poner a punto. Así que no se preocupe
+si aún no comprende todos los detalles.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-accounting.passive.collection.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-masq.side.effects.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Colección pasiva de datos de contabilidad</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Efectos Laterales y Beneficios Accesorios</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

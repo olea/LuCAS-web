@@ -1,0 +1,180 @@
+<html><head><title>16 Renderizaci¢n de pol¡gonos</title><body>
+<h1><a name="16 Renderización de polígonos">16 Renderización de polígonos</a></h1>
+<p>
+<ul><h4>
+<li><a href="#polygon3d">polygon3d</a>
+<li><a href="#polygon3d_f">polygon3d_f</a>
+<li><a href="#triangle3d">triangle3d</a>
+<li><a href="#triangle3d_f">triangle3d_f</a>
+<li><a href="#quad3d">quad3d</a>
+<li><a href="#quad3d_f">quad3d_f</a>
+<li><a href="#clip3d_f">clip3d_f</a>
+</h4></ul>
+<p><br><br>
+<p>
+<b>void <a name="polygon3d">polygon3d</a>(BITMAP *bmp, int type, BITMAP *texture, int vc, V3D *vtx[]);</b><br>
+<b>void <a name="polygon3d_f">polygon3d_f</a>(BITMAP *bmp, int type, BITMAP *texture, int vc, V3D_f *vtx[]);</b><br>
+   Dibuja polígonos 3d en el bitmap especificado, usando el modo de render
+   especificado. A diferencia de la función polygon(), estas rutinas no
+   soportan figuras cóncavas o con intersecciones, y no pueden dibujar sobre
+   bitmaps de pantalla en modo-X ( si quiere escribir código en modo-X,
+   dibuja en un bitmap de memoria y cópialo a la pantalla). El ancho y alto
+   del bitmap de la textura debe ser un múltiplo de dos, pero puede ser
+   diferente, ejemplo: una textura 64x16 está bien, pero una de 17x3 no. El
+   parámetro que cuenta los vértices (vc) debe ser seguido por un array que
+   contiene el número apropiado de punteros a estructuras vertex:
+   polygon3d() usa la estructura de punto fijo V3D, mientras que
+   polygon3d_f() usa la estructura coma flotante V3D_f. Estas son definidas
+   así:
+<p><pre>
+   typedef struct V3D
+   {
+      fixed x, y, z;       - posición
+      fixed u, v;          - coordenadas de la textura
+      int c;               - color
+   } V3D;
+<p>
+   typedef struct V3D_f
+   {
+      float x, y, z;       - posición
+      float u, v;          - coordenadas de la textura
+      int c;               - color
+   } V3D_f;
+<p></pre>
+   El cómo se almacenan los datos de los vértices depende del modo de
+   render:
+<p>
+   Los valores x e y especifican la posición del vértice en coordenadas de
+   pantalla 2d.
+<p>
+   El valor z sólo es necesario cuando use corrección de perspectiva en las
+   texturas, y especifica la profundidad del punto usando coordenadas del
+   mundo 3d.
+<p>
+   Las coordenadas u y v sólo son necesarias cuando use texturas, y
+   especifica la posición del punto en el bitmap de la textura. Por ejemplo
+   0, 0 corresponde al vértice de la esquina superior izquierda de la
+   textura, y si la textura es de 32x32, el punto u=32 y v=16 dibuja en el
+   vértice el punto que está en la mitad a la derecha de la textura. Las
+   coordenadas u/v vuelven a cero en los bordes de la textura, por lo que en
+   una textura de 32x32, u=v=32 es lo mismo que u=v=0. Esto puede ser usado
+   para repetir la textura sobre el polígono.
+<p>
+   El valor c especifica el color del vértice, y es interpretado de forma
+   diferente por los modos de render.
+<p>
+   El parámetro type especifica el modo de render, y puede ser cualquiera de
+   los siguientes:
+<p>
+   <b>POLYTYPE_FLAT:</b><br>
+      Un simple polígono con sombreado plano, que toma el color del valor c
+      del primer vértice. Este tipo de polígono es afectado por la función
+      drawing_mode(), por lo que puede ser usado para renderizar polígonos
+      transparentes o XOR.
+<p>
+   <b>POLYTYPE_GCOL:</b><br>
+      Un polígono con un color de sombreado goraud. Los colores de cada
+      vértice son tomados del valor c, e interpolados a través del polígono.
+      Esto es muy rápido, pero sólo funcionará en modos de 256 colores si su
+      paleta tiene un suave gradiente de colores. En modos truecolor
+      interpreta el color como valor empaquetado en formato directo de
+      hardware producido por la función makecol().
+<p>
+   <b>POLYTYPE_GRGB:</b><br>
+      Un polígono con sombreado goraud que interpola tripletes RGB en vez de
+      un solo color. En modos de 256 colores usa la tabla global rgb_map
+      para convertir el resultado a color de 8 bits, por lo que sólo puede
+      ser usado después de que haya creado una tabla de mapa de colores. Los
+      colores para cada vértice son tomados del valor c, que es interpretado
+      como un triplete RGB de 24 bits (0xFF0000 es rojo, 0x00FF00 es verde y
+      0x0000FF es azul).
+<p>
+   <b>POLYTYPE_ATEX:</b><br>
+      Un polígono con textura afín. Esto dibuja la textura a través del
+      polígono con una simple interpolación 2d lineal, que es rápida pero
+      matemáticamente incorrecta. Puede estar bien si el polígono es pequeño
+      o plano hacia la cámara, pero como no cuenta con la acortación de
+      perspectiva, puede producir extraños artefactos movidos en la textura.
+      Para ver lo que quiero decir, ejecuta test.exe y mire lo que pasa con
+      el test polygon3d() cuando hace un zoom muy cerca del cubo.
+<p>
+   <b>POLYTYPE_PTEX:</b><br>
+      Un polígono texturizado con corrección de perspectiva. Esto usa el
+      valor z de la estructura del vértice así como las coordenadas u/v, por
+      lo que las texturas se ven correctamente independientemente del ángulo
+      de visualización. Ya que esto envuelve cálculos de división en al
+      bucle interior de la texturización, este modo es mucho más lento que
+      POLYTYPE_ATEX, y usa coma flotante, por lo que será muy lento en
+      cualquier cosa peor que un Pentium (incluso con una FPU, un 486 no es
+      capaz de mezclar división de coma flotante con otras operaciones de
+      enteros tal y como puede hacer un Pentium).
+<p>
+   <b>POLYTYPE_ATEX_MASK:</b><br>
+   <b>POLYTYPE_PTEX_MASK:</b><br>
+      Como POLYTYPE_ATEX and POLYTYPE_PTEX, pero los pixels a cero de la
+      textura son ignorados, permitiendo que la textura sea transparente.
+<p>
+   <b>POLYTYPE_ATEX_LIT:</b><br>
+   <b>POLYTYPE_PTEX_LIT:</b><br>
+<p>
+      Como POLYTYPE_ATEX y POLYTYPE_PTEX, pero la tabla global color_map
+      (para modos de 256 colores) o la función de fundido (para modos
+      truecolor no-MMX) es usada para fundir la textura con el nivel de luz
+      tomado del valor c en la estructura del vértice. ¡Esto sólo puede ser
+      usado después de que haya creado una tabla de mapa de color o
+      funciones de fundido!
+<p>
+   <b>POLYTYPE_ATEX_MASK_LIT:</b><br>
+   <b>POLYTYPE_PTEX_MASK_LIT:</b><br>
+      Como POLYTYPE_ATEX_LIT y POLYTYPE_PTEX_LIT, pero los pixels a cero de
+      la textura son ignorados, permitiendo que la textura sea transparente.
+<p>
+   Si la variable global cpu_mmx está activada, las rutinas GRGB y *LIT
+   truecolor serán optimizadas usando instrucciones MMX. Si la variable
+   global cpu_3dnow está activada, las rutinas truecolor PTEX*LIT tomarán
+   ventaja de la extensión de CPU 3DNow!. Por esta razón, es buena idea
+   llamar check_cpu() antes de usar las funciones de polígonos.
+<p>
+   Usar rutinas MMX para *LIT tiene un efecto secundario: normalmente (sin
+   MMX), estas rutinas usan las funciones de fundido y otras funciones de
+   luz, creadas con set_trans_blender() o set_blender_mode(). Las versiones
+   MMX sólo usan el valor RGB que se pasa a set_trans_blender() y hacen la
+   interpolación lineal internamente. Por esta razón, un nuevo conjundo de
+   funciones de fundido que se pasa a set_blender_mode() es ignorado.
+<p>
+<b>void <a name="triangle3d">triangle3d</a>(BITMAP *bmp, int type, BITMAP *tex, V3D *v1, *v2, *v3);</b><br>
+<b>void <a name="triangle3d_f">triangle3d_f</a>(BITMAP *bmp, int type, BITMAP *tex, V3D_f *v1, *v2, *v3);</b><br>
+   Dibuja triángulos en 3d, usando las estructuras de vertices de punto fijo
+   o coma flotante. Esto es equivalente a llamar
+      polygon3d(bmp, type, tex, 3, v1, v2, v3);
+   o
+      polygon3d_f(bmp, type, tex, 3, v1, v2, v3);
+<p>
+<b>void <a name="quad3d">quad3d</a>(BITMAP *bmp, int type, BITMAP *tex, V3D *v1, *v2, *v3, *v4);</b><br>
+<b>void <a name="quad3d_f">quad3d_f</a>(BITMAP *bmp, int type, BITMAP *tex, V3D_f *v1, *v2, *v3, *v4);</b><br>
+   Dibuja cuadriláteros en 3d, usando las estructuras de vértices de punto
+   fijo o coma flotante. Esto es equivalente a llamar
+      polygon3d(bmp, type, tex, 4, v1, v2, v3, v4);
+   o
+      polygon3d_f(bmp, type, tex, 4, v1, v2, v3, v4);
+<p>
+<b>int <a name="clip3d_f">clip3d_f</a>(int type, float min_z, float max_z, int vc,</b><br>
+<b>             V3D_f *vtx[], V3D_f *vout[], V3D_f *vtmp[], int out[]);</b><br>
+<p>
+   Recorta el polígono dado en vtx. vc es el número de vértices, el
+   resultado va en vout, y vtmp y out son necesarios para uso interno. Los
+   punteros en vtx, vout y vtmp deben apuntar a estructuras V3D_f válidas.
+   El tamaño de vout, vtmp y out debería ser al menos vc*2 (ya que en el
+   proceso de recorte pueden aparecer vértices adicionales). frustum
+   (volúmen visualizado) está definido por -z&lt;x&lt;z, -z&lt;y&lt;z,
+   0&lt;min_z&lt;z&lt;max_z. Si max_z&lt;=min_z, el recorte z&lt;max_z no se
+   hace. Como puede ver, el recorte se realiza en el espacio de la cámara,
+   con la perspectiva en mente, por lo que esta rutina debería ser llamada
+   despues de aplicar la matriz de cámara, pero antes de la proyección de
+   perspectiva. La rutina interpolará correctamente u, v, y c en la
+   estructura de vértices. Sin embargo, esto no está previsto para GCOL en
+   profundidades de color high/truecolor.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

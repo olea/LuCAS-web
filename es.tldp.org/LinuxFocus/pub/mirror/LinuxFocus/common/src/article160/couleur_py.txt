@@ -1,0 +1,150 @@
+#!/usr/bin/python
+# Couleur - Teo Serie
+# Copyright Hilaire Fernandes 2000
+# Release under the terms of the GPL licence
+# You can get a copy of the license at http://www.gnu.org
+#
+# Select shapes with same color
+#
+from math import cos, sin, pi
+from whrandom import randint
+from gtk import *
+from gnome.ui import *
+from GDK import *
+from libglade import *
+
+width, itemToSelect = 400, 8
+selectedItem = rootGroup = canvas = None
+# to keep trace of the canvas item
+colorShape =[];
+
+def on_about_activate(obj):
+    "display the about dialog"
+    about = GladeXML ("color.glade", "about").get_widget ("about")
+    about.show ()
+
+def on_new_activate (obj):
+    global rootGroup, colorShape
+    for item in colorShape:
+        item.destroy ()
+    del colorShape[0:]
+    buildGameArea (rootGroup)
+
+def shapeEvent (item, event):
+    global selectedItem, itemToSelect, colorShape
+    if event.type == ENTER_NOTIFY and selectedItem != item:
+        #highligh outline
+        item.set(outline_color = 'white')
+    elif event.type == LEAVE_NOTIFY and selectedItem != item:
+        #unlight outline
+        item.set(outline_color = 'black')
+    elif event.type == BUTTON_PRESS:
+        #select the item
+        if not selectedItem:
+            item.set (outline_color = 'white')
+            selectedItem = item
+        elif item['fill_color_gdk'] == selectedItem['fill_color_gdk'] \
+             and item != selectedItem:
+            #destroy both item
+            item.destroy ()
+            selectedItem.destroy ()
+            colorShape.remove (item)
+            colorShape.remove (selectedItem)
+            selectedItem, itemToSelect = None, itemToSelect - 1
+            if itemToSelect == 0:
+                buildGameArea (rootGroup)
+    return 1    
+
+def buildShape (group, number, type, color):
+    "build a shape of 'type' and 'color'"
+    global colorShape
+    w = width / 4
+    x, y, r = (number % 4) * w + w / 2, (number / 4) * w + w / 2, w / 2 - 2
+    if type == 'circle':
+        item = buildCircle (group, x, y, r, color)
+    elif type == 'squarre':
+        item = buildSquare (group, x, y, r, color)
+    elif type == 'star':
+        item = buildStar (group, x, y, r, 0.4, randint (3, 15), color)
+    elif type == 'star2':
+        item = buildStar (group, x, y, r, 0.6, randint (3, 15), color)
+    item.connect ('event', shapeEvent)
+    colorShape.append (item)
+
+def buildCircle (group, x, y, r, color):
+    item = group.add ("ellipse", x1 = x - r, y1 = y - r,
+                      x2 = x + r, y2 = y + r, fill_color = color,
+                      outline_color = "black", width_units = 2.5)
+    return item
+
+def buildSquare (group, x, y, a, color):
+    item = group.add ("rect", x1 = x - a, y1 = y - a,
+                      x2 = x + a, y2 = y + a, fill_color = color,
+                      outline_color = "black", width_units = 2.5)
+    return item
+
+def buildStar (group, x, y, r, k, n, color):
+    "k: factor to get the internal radius"
+    "n: number of branch"
+    angleCenter = 2 * pi / n
+    pts = []
+    for i in range (n):
+        #external points of the star
+        pts.append (x + r * cos (i * angleCenter))
+        pts.append (y + r * sin (i * angleCenter))
+        #internal points of the star
+        pts.append (x + r * k * cos (i * angleCenter + angleCenter / 2))
+        pts.append (y + r * k * sin (i * angleCenter + angleCenter / 2))
+    pts.append (pts[0])
+    pts.append (pts[1])
+    item = group.add ("polygon", points = pts, fill_color = color,
+                      outline_color = "black", width_units = 2.5)
+    return item
+
+def getEmptyCell (l, n):
+    "get the n-th non null element of l"
+    length, i = len (l), 0
+    while i < length:
+        if l[i] == 0:
+            n = n - 1
+        if n < 0:
+            return i
+        i = i + 1
+    return i
+
+def buildGameArea (group):
+    global itemToSelect, selectedItem
+    itemColor = ['red', 'yellow', 'green', 'brown', 'blue', 'magenta',
+                 'darkgreen', 'bisque1']
+    itemShape = ['circle', 'squarre', 'star', 'star2']
+    emptyCell = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    itemToSelect, i, selectedItem = 8, 15, None
+    for color in itemColor:
+        # two items of same color
+        n = 2
+        while n > 0:
+            cellRandom = randint (0, i)
+            cellNumber = getEmptyCell (emptyCell, cellRandom)
+            emptyCell[cellNumber] = 1
+            buildShape (group, cellNumber, itemShape[randint (0, 3)], color)
+            i, n = i - 1, n - 1
+
+def initColor ():
+    global rootGroup, canvas
+    wTree = GladeXML ("color.glade",
+                      "colorApp")
+    dic = {"on_about_activate": on_about_activate,
+           "on_exit1_activate": mainquit,
+           "on_new_activate":on_new_activate}
+    wTree.signal_autoconnect (dic)
+    canvas = wTree.get_widget ("canvas")
+    rootGroup = canvas.root ()
+    
+initColor ()    
+buildGameArea (rootGroup)
+mainloop ()
+
+
+
+
+

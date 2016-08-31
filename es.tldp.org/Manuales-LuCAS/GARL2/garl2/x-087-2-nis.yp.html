@@ -1,0 +1,392 @@
+<HTML
+><HEAD
+><TITLE
+>Configurando un Cliente NIS con la libc de GNU</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Sistema de Información de Red (NIS)"
+HREF="x-087-2-nis.html"><LINK
+REL="PREVIOUS"
+TITLE="Seguridad en el Servidor NIS"
+HREF="x-087-2-nis.securenets.html"><LINK
+REL="NEXT"
+TITLE="Escogiendo los Mapas Correctos"
+HREF="x-087-2-nis.nsswitch.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.securenets.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 13. El Sistema de Información de Red (NIS)</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.nsswitch.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NIS.YP">13.6. Configurando un Cliente NIS con la libc de GNU</H1
+><P
+>&#13;
+ 
+Ahora describiremos y discutiremos la configuración de un cliente NIS utilizando
+el soporte de la biblioteca libc de GNU.</P
+><P
+>&#13;
+
+Su primer paso debe ser decirle al cliente NIS de la libc de GNU qué servidor
+usar para el servicio NIS. Anteriormente mencionamos que el
+<B
+CLASS="COMMAND"
+>ypbind</B
+> de Linux permite configurar el servidor NIS a
+utilizar. El comportamiento predeterminado es consultar al servidor de la red
+local. Si es probable que el nodo que está configurando se vaya a mover de un
+dominio a otro, como un portátil, debería dejar el fichero
+<TT
+CLASS="FILENAME"
+>/etc/yp.conf</TT
+> vacío, y el nodo consultará en la red local
+qué servidor NIS es el que procede.</P
+><P
+>Una configuración más segura para la mayoría de nodos es especificar el nombre
+del servidor en el fichero de configuración <TT
+CLASS="FILENAME"
+>/etc/yp.conf</TT
+>.
+Un fichero muy sencillo para un nodo de la red de la Vinatera sería así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # yp.conf - configuración de YP para la biblioteca GNU libc.
+    #
+    ypserver vbardolino</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La sentencia <SPAN
+CLASS="SYSTEMITEM"
+>ypserver</SPAN
+> le dice a su nodo
+que use el nodo especificado como servidor NIS para el dominio local. En este
+ejemplo hemos especificado <SPAN
+CLASS="SYSTEMITEM"
+>vbardolino</SPAN
+>
+como servidor NIS. Por supuesto, la dirección IP correspondiente a
+<SPAN
+CLASS="SYSTEMITEM"
+>vbardolino</SPAN
+> debe especificarse en el
+fichero <TT
+CLASS="FILENAME"
+>hosts</TT
+>; alternativamente, puede usar la propia
+dirección IP con el argumento <SPAN
+CLASS="SYSTEMITEM"
+>server</SPAN
+>.</P
+><P
+>En la forma que se muestra en el ejemplo, la orden
+<B
+CLASS="COMMAND"
+>ypserver</B
+> le dice a
+<B
+CLASS="COMMAND"
+>ypbind</B
+> que use el servidor nombrado sin tener en cuenta cuál
+es el dominio NIS actual. Sin embargo, si usted quiere mover su máquina
+frecuentemente por varios dominios NIS, querrá tener la información de varios
+dominios en el fichero <TT
+CLASS="FILENAME"
+>yp.conf</TT
+>. Puede tener información de
+los servidores de varios dominios NIS en <TT
+CLASS="FILENAME"
+>yp.conf</TT
+>
+especificando la información mediante la sentencia
+<SPAN
+CLASS="SYSTEMITEM"
+>domain</SPAN
+>. Por ejemplo, puede cambiar el
+ejemplo anterior en un portátil por esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # yp.conf - configuración de YP para la biblioteca libc de GNU.
+    # 
+    domain vinatera server vbardolino 
+    domain cervecera server vstout </PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto le permite levantar el portátil en cualquiera de los dos dominios
+simplemente especificando el dominio NIS deseado en tiempo de ejecución
+utilizando la orden <B
+CLASS="COMMAND"
+>domainname</B
+>. Luego el cliente NIS
+utilizará el servidor que proceda para el dominio actual.</P
+><P
+>Hay una tercera opción que puede querer usar. Cubre el caso en el que usted no
+sabe el nombre o la dirección IP del servidor a utilizar en un dominio
+particular, pero quiere  usar servidores fijos para ciertos dominios. Imagine
+que queremos insistir en utilizar un servidor especificado cuando trabajamos
+dentro del dominio de la Vinatera, pero queremos buscar un servidor cuando
+estamos dentro del dominio de la Cervecera. Tendríamos que modificar nuestro
+fichero <TT
+CLASS="FILENAME"
+>yp.conf</TT
+> de nuevo para que quedara así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # yp.conf - configuración YP para la biblioteca libc de GNU.
+    # 
+    domain vinatera server vbardolino 
+    domain cervecera broadcast</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La palabra clave <SPAN
+CLASS="SYSTEMITEM"
+>broadcast</SPAN
+> le dice a
+<B
+CLASS="COMMAND"
+>ypbind</B
+> que use el servidor NIS que encuentre en el dominio.&#13;</P
+><P
+>&#13;Tras crear este fichero básico de configuración y asegurarse de que es legible
+por todo el mundo, debe realizar la primera comprobación para conectar con su
+servidor. Asegúrese de elegir un mapa que su servidor distribuya, como el
+<TT
+CLASS="FILENAME"
+>hosts.byname</TT
+>, e intente obtenerlo utilizando la utilidad
+<B
+CLASS="COMMAND"
+>ypcat</B
+>:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ypcat hosts.byname</B
+></TT
+>
+    172.16.2.2      vbeaujolais.vbrew.com    vbeaujolais
+    172.16.2.3      vbardolino.vbrew.com     vbardolino
+    172.16.1.1      vlager.vbrew.com         vlager
+    172.16.2.1      vlager.vbrew.com         vlager
+    172.16.1.2      vstout.vbrew.com         vstout
+    172.16.1.3      vale.vbrew.com           vale
+    172.16.2.4      vchianti.vbrew.com       vchianti</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;La salida que obtenga debe parecerse a la que se muestra arriba. Si obtiene un
+mensaje de error que diga: <TT
+CLASS="LITERAL"
+>Can't bind to server which serves
+domain</TT
+>, entonces o el dominio NIS que ha especificado no tiene un
+servidor concordante definido en <TT
+CLASS="FILENAME"
+>yp.conf</TT
+>, o el servidor
+es inaccesible por alguna razón. En el último caso, asegúrese de que un
+<B
+CLASS="COMMAND"
+>ping</B
+> al nodo arroja un resultado positivo, y de que de hecho
+está corriendo un servidor NIS. Puede verificar esto último utilizando la
+orden <B
+CLASS="COMMAND"
+>rpcinfo</B
+>, que tendría que producir la siguiente
+salida:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>rpcinfo -u</B
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>serverhost</I
+></TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ypserv</B
+></TT
+>
+    program 100004 version 1 ready and waiting
+    program 100004 version 2 ready and waiting</PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.securenets.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.nsswitch.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Seguridad en el Servidor NIS</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Escogiendo los Mapas Correctos</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

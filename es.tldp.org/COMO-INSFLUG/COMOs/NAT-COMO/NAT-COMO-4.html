@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT COMO: Puesta al d&iacute;a r&aacute;pida con respecto a los n&uacute;cleos 2.0 y 2.2</TITLE>
+ <LINK HREF="NAT-COMO-5.html" REL=next>
+ <LINK HREF="NAT-COMO-3.html" REL=previous>
+ <LINK HREF="NAT-COMO.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="NAT-COMO-5.html">Página siguiente</A>
+<A HREF="NAT-COMO-3.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="s4">4. Puesta al d&iacute;a r&aacute;pida con respecto a los n&uacute;cleos 2.0 y 2.2</A></H2>
+
+<P>Lo siento por aquellos que todav&iacute;a est&eacute;n aturdidos por la transici&oacute;n desde
+2.0 (ipfwadm) a 2.2 (ipchains). Hay buenas y malas noticias.
+<P>Primero, puede seguir usando ipchains o ipfwadm como antes. Para hacerlo,
+necesita cargar los m&oacute;dulos del n&uacute;cleo «ipchains.o» o «ipfwadm.o» que
+encontrar&aacute; en la &uacute;ltima distribuci&oacute;n de netfilter. Son mutuamente
+exclusivos (est&aacute; advertido), y no deber&iacute;an combinarse con ning&uacute;n otro
+m&oacute;dulo de netfilter.
+<P>Una vez haya instalado uno de estos m&oacute;dulos puede utilizar ipchains e
+ipfwadm con normalidad, excepto por las siguientes diferencias:
+<P>
+<UL>
+<LI>Establecer los tiempos l&iacute;mite (timeout) con ipchains -M -S o ipfwadm
+-M -s no hace nada. Como los l&iacute;mites de tiempo con la nueva infrastructura
+NAT son m&aacute;s grandes, no deber&iacute;a haber problema.</LI>
+<LI>Los campos init_seq, delta y previous_delta en la lista ampliada de
+enmascaramiento (verbose masquerade listing) siempre son 0.</LI>
+<LI>Listar los contadores y ponerlos a cero al mismo tiempo «-Z -L»
+ya no funciona: los contadores no se pondr&aacute;n a cero.</LI>
+</UL>
+<P>Los hackers tambi&eacute;n se dar&aacute;n cuenta de que:
+<P>
+<UL>
+<LI>Ahora puede asociar un programa (bind) a los puertos 61000-65095
+incluso si est&aacute; haciendo enmascaramiento. El c&oacute;digo de enmascarado
+asum&iacute;a que no hab&iacute;a nada en este rango, de manera que los programas
+no lo pod&iacute;an usar.</LI>
+<LI>El parche (no documentado) de «getsockname», que pod&iacute;an utilizar los
+programas de proxy transparente para averiguar el destino real de la
+conexi&oacute;n no funciona.</LI>
+<LI>El parche (no documentado) bind-to-foreign-address
+(asociado-a-una-direcci&oacute;n-externa) tampoco est&aacute; implementado; se usaba
+para completar la ilusi&oacute;n del proxy transparente.</LI>
+</UL>
+<P>
+<H2><A NAME="ss4.1">4.1 ¡S&oacute;lo quiero enmascarar! ¡Ayuda!</A>
+</H2>
+
+<P>Esto es lo que la mayor&iacute;a de la gente quiere. Si tengo una conexi&oacute;n PPP
+con IP din&aacute;mica (si no sabe lo que es, entonces tiene una), simplemente
+querr&eacute; decirle a mi m&aacute;quina que todos los paquetes que vengan de la red
+interna deber&iacute;an aparentar venir de la m&aacute;quina que tiene el enlace PPP.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Cargue el m&oacute;dulo NAT (esto carga tambi&eacute;n los otros).
+modprobe iptable_nat
+
+# Agrega (-A) una regla a la tabla NAT (-t nat), despu&eacute;s del
+# encaminamiento (POSTROUTING) para todos los paquetes que salgan por
+# ppp0 (-o ppp0) enmascarando la conexi&oacute;n (-j MASQUERADE).
+iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+
+# Ponga en marcha el reenv&iacute;o de IP (IP forwarding)
+echo 1 > /proc/sys/net/ipv4/ip_forward
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>F&iacute;jese que no est&aacute; haciendo filtrado de paquetes: para eso, lea el COMO
+de Filtrado de Paquetes: «Mezclando NAT con Filtrado de Paquetes».
+<P>
+<HR>
+<A HREF="NAT-COMO-5.html">Página siguiente</A>
+<A HREF="NAT-COMO-3.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc4">Índice general</A>
+</BODY>
+</HTML>

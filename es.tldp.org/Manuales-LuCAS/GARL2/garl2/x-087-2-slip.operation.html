@@ -1,0 +1,593 @@
+<HTML
+><HEAD
+><TITLE
+>Operación de SLIP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="SLIP: IP por línea serie"
+HREF="x-087-2-slip.html"><LINK
+REL="PREVIOUS"
+TITLE="Requerimientos Generales"
+HREF="x-087-2-slip.general.html"><LINK
+REL="NEXT"
+TITLE="Trabajando con direcciones de red IP privadas"
+HREF="x6095.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-slip.general.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 7. SLIP: IP por línea serie</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x6095.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-SLIP.OPERATION">7.2. Operación de SLIP</H1
+><P
+>Los servidores IP que ofrecen enlaces telefónicos vía SLIP, por lo general,
+utilizan cuentas de usuario especiales. Una vez iniciada exitosamente la 
+sesión, el servidor comienza a ejecutar un guión <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>(script)</I
+></SPAN
+> para la activación
+del manejador SLIP y las interfaces de red apropiadas. Al mismo tiempo, en su terminal debe ocurrir
+exactamente lo mismo.</P
+><P
+>En algunos sistemas operativos, el gestor SLIP es un programa de usuario.
+Bajo Linux, es parte del núcleo del sistema, cosa que lo hace mucho más rápido.
+Esta ventaja, sin embargo, requiere que la línea sea convertida a modo SLIP 
+de forma explícita. Esta conversión, es llevada a cabo mediante una disciplina 
+de terminal (tty) especial llamada SLIPDISC. Mientras que un terminal (tty) trabaja en forma 
+normal (DSIC0), los datos intercambiados entre los procesos del usuario, se realizan 
+mediante las llamadas <TT
+CLASS="FUNCTION"
+>read(2)</TT
+> y
+<TT
+CLASS="FUNCTION"
+>write(2)</TT
+> estándar, y el manejador SLIP es incapaz de leer
+o escribir en este modo. En SLIPDISC se invierten los roles: ahora ningún
+proceso de usuario podrá escribir o leer desde un terminal (tty), ya que son
+dirigidos desde el puerto serie al gestor de SLIP.</P
+><P
+>&#13;
+ El gestor SLIP entiende por sí mismo distintas
+variantes del protocolo SLIP. Además, de las variantes ordinarias, es capaz de
+interpretar una variante del protocolo llamada CSLIP, cuya particularidad es la
+de utilizar el método de compresión de cabeceras de Van Jacobson<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>(descritas en el RFC-1144)</I
+></SPAN
+> para los paquetes IP salientes. Este método
+aumenta el rendimiento de las sesiones interactivas. 
+Además, existen versiones de seis bits de cada uno de estos protocolos.</P
+><P
+>&#13;Una forma simple de convertir una línea serie al modo SLIP es usando la herramienta
+<B
+CLASS="COMMAND"
+>slattach</B
+>. Suponiendo que su módem está en 
+<TT
+CLASS="FILENAME"
+>/dev/ttyS3</TT
+> y que ha podido acceder correctamente al servidor SLIP
+de forma correcta, deberá ejecutar:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>slattach /dev/ttyS3 &amp;</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esta herramienta cambiará la disciplina de línea de  <TT
+CLASS="FILENAME"
+>ttyS3</TT
+> a
+<TT
+CLASS="LITERAL"
+>SLIPDISC</TT
+> y lo enlazará a una de las interfaces SLIP. 
+Si este es el primer enlace activo SLIP, será enlazado a  <TT
+CLASS="FILENAME"
+>sl0</TT
+>&thinsp;; 
+el segundo, será enlazado a <TT
+CLASS="FILENAME"
+>sl1</TT
+> y así, sucesivamente.
+Los núcleos actuales soportan hasta un máximo de 256 enlaces SLIP simultáneamente.</P
+><P
+>&#13;Por omisión <B
+CLASS="COMMAND"
+>slattach</B
+>usa CSLIP como método de compresión de cabeceras.
+Con el parámetro <TT
+CLASS="OPTION"
+>&ndash;p</TT
+>, usted puede seleccionar cualquier otra disciplina de línea. 
+Para utilizar SLIP de forma normal (sin compresión) se debe teclear:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>slattach -p slip /dev/ttyS3 &amp;</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Las disciplinas disponibles se muestran en la<A
+HREF="x-087-2-slip.operation.html#X-087-2-SLIP.LINE.DISCIPLINES"
+>Tabla 7-1</A
+>. Una seudo-disciplina disponible llamada <TT
+CLASS="LITERAL"
+>adaptive</TT
+>, (adaptativa) 
+deja al núcleo averiguar que tipo de encapsulado SLIP se está utilizando.</P
+><DIV
+CLASS="TABLE"
+><A
+NAME="X-087-2-SLIP.LINE.DISCIPLINES"><P
+><B
+>Tabla 7-1. Disciplinas de línea SLIP bajo Linux</B
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Disciplina</P
+></TH
+><TH
+WIDTH="384"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Descripción</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+>slip</TD
+><TD
+WIDTH="384"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Encapsulación tradicional.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+>cslip</TD
+><TD
+WIDTH="384"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Encapsulación SLIP con compresión de cabeceras Van Jacobsen.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+>slip6</TD
+><TD
+WIDTH="384"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Encapsulación SLIP con codificación a 6 bits. Este método de codificación es similar al usado por la orden
+	<B
+CLASS="COMMAND"
+>uuencode</B
+>, y causa que los datagramas SLIP sean convertidos a caracteres ASCII.
+	Esta conversión es útil cuando no se poseen enlaces en serie con el octavo bit vacío.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+>cslip6</TD
+><TD
+WIDTH="384"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Encapsulación SLIP con compresión tipo Van Jacobsen de cabeceras y
+	y codificado a 6 bits.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+>adaptive</TD
+><TD
+WIDTH="384"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>No es una disciplina de línea real, y posibilita que el núcleo intente identificar la 
+	disciplina de línea usada en la máquina remota y hacer que concuerden.</P
+></TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><P
+>Observe que debe utilizarse el mismo sistema de encapsulación que la máquina 
+remota. Por ejemplo, si <SPAN
+CLASS="SYSTEMITEM"
+>cowslip</SPAN
+> usara
+CSLIP, tendría que usarlo usted también. Si su conexión SLIP no funciona, lo primero que 
+hay que saber es si en los dos puntos de conexión, se está utilizando compresión 
+de cabeceras o no. Si no está seguro, intente configurar el gestor SLIP para que 
+trabaje de forma adaptativa y que el núcleo se tome el trabajo de averiguarlo por usted.</P
+><P
+><B
+CLASS="COMMAND"
+>slattach</B
+> no sólamente configura el protocolo, sino también PPP 
+o KISS (otro protocolo utilizado en redes tipo  ham radio). Hacer esto no es común, ya que existen
+mejores herramientas para gestionar estos protocolos.
+Para más detalles, consulte las páginas man de <TT
+CLASS="FILENAME"
+>slattach(8)</TT
+>.</P
+><P
+>Teniendo al gestor SLIP funcionando correctamente, se debe configurar la 
+interfaz de red. Nuevamente, puede utilizar las órdenes
+<B
+CLASS="COMMAND"
+>ifconfig</B
+> y <B
+CLASS="COMMAND"
+>route</B
+> para configurar
+la interfaz. Asumiendo que ya estableció una conexión telefónica con un servidor llamado
+<SPAN
+CLASS="SYSTEMITEM"
+>cowslip</SPAN
+> desde <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>. En <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>vlager</B
+></SPAN
+> se debe ejecutar:
+
+ 
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ifconfig sl0 vlager-slip pointopoint cowslip</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>route add cowslip</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>route add default gw cowslip</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La  primera orden realiza un enlace punto a punto con
+<SPAN
+CLASS="SYSTEMITEM"
+>cowslip</SPAN
+>, mientras que la  segunda y la tercera
+ orden sirven para añadir la ruta correspondiente a 
+<SPAN
+CLASS="SYSTEMITEM"
+>cowslip</SPAN
+> como ruta predeterminada y configurar a 
+<SPAN
+CLASS="SYSTEMITEM"
+>cowslip</SPAN
+> como pasarela <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+> (gateway)</I
+></SPAN
+>.</P
+><P
+>Dos cosas que no tienen nada que ver con la invocación de 
+<B
+CLASS="COMMAND"
+>ifconfig</B
+>: La opción <SPAN
+CLASS="SYSTEMITEM"
+>pointopoint</SPAN
+>
+especifica la dirección del servidor remoto en nuestro enlace punto a punto y <SPAN
+CLASS="SYSTEMITEM"
+>vlager-slip</SPAN
+> es la dirección local de la interfase SLIP.</P
+><P
+>Ya se ha mencionado que se puede utilizar la misma dirección asignada para la 
+interfaz Ethernet <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>como para su 
+enlace SLIP. En este caso, <SPAN
+CLASS="SYSTEMITEM"
+>vlager-slip</SPAN
+> 
+necesita otro alias para la dirección <SPAN
+CLASS="SYSTEMITEM"
+>172.16.1.1</SPAN
+>.
+Sin embargo, es posible tener una dirección completamente distinta para su enlace SLIP.
+Este es el caso cuando no se tienen direcciones IP registradas como con Cervecera.
+En la próxima sección se hablará con más detalle de este tipo de escenario.</P
+><P
+>Como referencia, siempre se usará <SPAN
+CLASS="SYSTEMITEM"
+>vlager-slip</SPAN
+>
+para referirse a su interfase local SLIP.</P
+><P
+>Cuando se quiera terminar el enlace SLIP, debe empezarse por eliminar todas las rutas 
+que pasan por <SPAN
+CLASS="SYSTEMITEM"
+>cowslip</SPAN
+> usando la orden
+<B
+CLASS="COMMAND"
+>route</B
+> con la opción <TT
+CLASS="OPTION"
+>del</TT
+>, luego desactivar la interfaz,
+y enviar al proceso <B
+CLASS="COMMAND"
+>slattach</B
+> la señal de colgar.
+Después se podrá colgar el módem usando el terminal:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>route del default</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>route del cowslip</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>ifconfig sl0 down</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>kill -HUP <TT
+CLASS="REPLACEABLE"
+><I
+>516</I
+></TT
+></B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Nota: el número <TT
+CLASS="REPLACEABLE"
+><I
+>516</I
+></TT
+> deberá ser reemplazado por el
+correspondiente identificador de proceso (como muestran las salidas de las 
+órdenes <TT
+CLASS="USERINPUT"
+><B
+>ps ax</B
+></TT
+>) para el proceso <B
+CLASS="COMMAND"
+>slattach</B
+> 
+que controla al gestor SLIP que se quiera desconectar.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-slip.general.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x6095.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Requerimientos Generales</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-slip.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Trabajando con direcciones de red IP privadas</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

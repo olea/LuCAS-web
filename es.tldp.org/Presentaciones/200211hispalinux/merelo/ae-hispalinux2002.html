@@ -1,0 +1,354 @@
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>Algoritmos evolutivos en Perl</title><meta name="generator" content="DocBook XSL Stylesheets V1.50.0"><meta name="keywords" content="Algoritmos evolutivos, XML, Perl"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article"><div class="titlepage"><div><h1 class="title"><a name="id2757372"></a>Algoritmos evolutivos en Perl</h1></div><div><div class="author"><h3 class="author">Juan J. Merelo Guervós</h3></div></div><div><div class="legalnotice"><p>Copyright (C) 2002 J. J. Merelo Guervós.     Permitida la redistribución ilimitada de copias literales y la     traducción del texto a otros idiomas, siempre y cuando se mantenga     esta autorización y la nota de copyright.
+</p></div></div><div><div class="revhistory"><table border="1" width="100%" summary="Revision history"><tr><th align="left" valign="top" colspan="2"><b>Historial de revisiones</b></th></tr><tr><td align="left">Revisión 1.1</td><td align="left">26 Septiembre 2002</td></tr><tr><td align="left" colspan="2">Versión revisada para el congreso</td></tr><tr><td align="left">Revisión 1.0</td><td align="left">30 Julio 2002</td></tr><tr><td align="left" colspan="2">Submitted.</td></tr><tr><td align="left">Revisión 0</td><td align="left">26 de julio de 2002</td></tr></table></div></div><div><div class="abstract"><p class="title"><b>Resumen</b></p><p>En este artículo se describe el módulo Algorithm::Evolutionary,
+un módulo en Perl para algoritmos evolutivos, diseñado con el objeto
+de que fuera fácilmente integrable con XML. Esto ha forzado a una
+serie de decisiones de diseño, que se detallan en el
+artículo.
+</p></div></div><hr></div><div class="toc"><p><b>Tabla de contenidos</b></p><dl><dt>1. <a href="#id2757812">Introducción </a></dt><dt>2. <a href="#id2757948">Estado del arte</a></dt><dt>3. <a href="#id2758528">Descripción de la biblioteca</a></dt><dt>4. <a href="#id2759006">Aplicaciones</a></dt><dt>5. <a href="#id2759163">Conclusiones, discusión y trabajo futuro</a></dt><dt><a href="#id2759277">Referencias</a></dt></dl></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757812"></a>1. Introducción </h2></div></div><p>En una aplicación Open Source, aparte del hecho de que exista en
+sí, se debe, desde nuestro punto de vista, probar tres cosas: su
+<span class="bold"><b>necesidad</b></span>, su <span class="bold"><b>calidad</b></span> y su <span class="bold"><b>aplicabilidad</b></span>.</p><p>En el mundo Open Source, no se trata simplemente de escribir una
+aplicación porque sí, sino de probar que realmente es un producto para
+el cual existe un hueco; si no, se cae en el error de crear sin ton ni
+son, sin que se produzca realmente un beneficio a la comunidad. En la
+sección <a href="#sec1">Sección 1</a> presentaremos el panorama de las
+bibliotecas de algoritmos evolutivos, mostrando que, hasta el momento,
+no se había hecho una biblioteca versátil para algoritmos evolutivos en
+Perl</p><p>Por otro lado, habrá que probar que realmente lo diseñado
+corresponde a la necesidad existente, es decir, que cubre el nicho que
+se le ha sido asignado, y que lo hace con un mínimo de
+dignidad. También a qué decisiones de diseño han llevado estas
+especificaciones, y qué ventajas ha tenido el usar las herramientas
+que se han usado. Esto se describirá en la sección <a href="#sec2">Sección 2</a> </p><p>Por último, ninguna herramienta, por muy Open Source que sea, sirve
+de nada si no ha sido usada en aplicaciones reales; en la sección
+<a href="#sec3">Sección 3</a> describimos una serie de aplicaciones que han
+usado el módulo <tt>Algorithm::Evolutionary</tt> .</p><p>Finalmente, term<a href="#sec4">Sección 4</a>inaremos con una sección () en la que expondremos las
+líneas futuras de trabajo en esta biblioteca.</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757948"></a>2. Estado del arte</h2></div></div><p>Los algoritmos evolutivos son métodos de optimización
+estocásticos basados en someter a un grupo de estructuras de datos
+que representan soluciones a un problema determinado a una serie de
+operadores inspirados en la teoría de la evolución de Darwin:
+mutaciones ciegas, recombinación, y selección de los más adecuados. Un
+algoritmo evolutivo procedería de la forma siguiente:</p><div class="orderedlist"><ol type="1"><li><p>Inicializar una población de <tt>n</tt>
+individuos aleatoriamente.</p></li><li><p>Evaluar los individuos, asignándoles un
+<span class="emphasis"><em>fitness</em></span>, que representa su adecuación como
+soluciones del problema.</p></li><li><p>Escoger una parte de la población, que servirán como
+progenitores de la siguiente generación.</p></li><li><p>Someter a los progenitores a operadores de variación
+unarios (individuo por individuo) o n-arios (que usan varios
+individuos, produciendo a su vez uno o varios individuos).</p></li><li><p>Insertar en la población estos nuevos individuos,
+sustituyendo, siguiendo algún criterio, una parte de la población.</p></li><li><p>Vuelta al segundo paso.</p></li></ol></div><p>
+</p><p>Actualmente, se considera que todos los algoritmos evolutivos
+forman parte de una misma familia, pero hay diferentes
+<span class="emphasis"><em>tribus</em></span> que difieren en cosas como las estructuras
+de datos que usan para representación, operadores de variación, y
+método de selección, tal como se ve en la tabla siguiente. En
+realidad, es difícil encontrar un algoritmo de los anteriores en
+estado puro, aunque cada cual designa su algoritmo con la tribu a la
+que más se parece:
+</p><div class="table"><p class="title"><b>Tabla 1. Tribus de algoritmos evolutivos</b></p><table summary="Tribus de algoritmos evolutivos" border="1"><colgroup><col><col><col><col></colgroup><tbody><tr><td>Algoritmo</td><td>Representación del
+problema</td><td>Operadores de variación</td><td>Métodos
+de selección</td></tr><tr><td>Algoritmos genéticos (Goldberg)</td><td>Cadena
+binaria</td><td>Mutación y crossover</td><td>Selección
+de rueda de ruleta (a veces con elitismo)</td></tr><tr><td>Estrategias de Evolución
+(Rechenberg/Schwefel)</td><td>Vector de reales + desviaciones
+estándar</td><td>Mutación gaussiana y crossover aritmético
+(diferentes tipos)</td><td>Diferentes tipos de selección:
+lambda,mu; lambda+mu...</td></tr><tr><td>Programación evolutiva (Fogel)</td><td>Números reales</td><td>Mutación</td><td>Diversos tipos de selección</td></tr><tr><td>Programación genética (Koza)</td><td>Expresiones-S de LISP representadas habitualmente
+como árboles</td><td>Crossover, algo de mutación</td><td>Diversos tipos de selección</td></tr></tbody></table></div><p>
+</p><p>Hasta julio de 2002, había pocos módulos Perl publicados
+suficientemente flexible para implementar la gama 
+completa de algoritmos evolutivos; la mayor parte de los esfuerzos han
+sido destinados a 
+implementar programación genética en Perl. El primer trabajo publicado
+sobre el tema es aparentemente el de Baldi y otros [<a href="#baldi00" title="[baldi00]">baldi00</a>],
+aunque el código en sí no fue publicado, y no podemos aventurar
+ninguna hipótesis sobre sus características. En todo caso,
+posteriormente se han publicado una serie de artículos que mencionan
+una implementación de Perl de un algoritmo evolutivo: Kunken
+[<a href="#glotbot01" title="[glotbot01]">glotbot01</a>] describe una aplicación en la que hace
+evolucionar palabras que parecen escritas en inglés, a base de tratar
+de generarlas con la misma frecuencia que en inglés. Esa misma
+aplicación es también mencionada por Zlatanov en [<a href="#zlatanov01" title="[zlatanov01]">zlatanov01</a>], en
+donde implementa un sistema de programación genética para realizar la
+misma tarea.</p><p>Quizás el primer artículo que describe programación genética en Perl
+fue escrito por Murray y Williams [<a href="#murray99-ga" title="[murray99-ga]">murray99-ga</a>], que, a pesar de
+su título, describen un sistema de programación genética, similar al
+mencionado en un artículo del sitio Perl Monks ([<a href="#gumpu01" title="[gumpu01]">gumpu01</a>]). Otro
+módulo publicado en 2001 [<a href="#ag01" title="[ag01]">ag01</a>] implementa un algoritmo
+genético canónico, sin muchas posibilidades de ampliación ni de
+adaptación. </p><p>Ninguno de los sistemas mencionados anteriormente usan plenamenta las
+capacidades del Perl para diseñar una biblioteca orientada a objetos,
+adaptable y fácil de ampliar, tal como se ha pretendido que sea
+<tt>Algorithm::Evolutionary</tt>. El producto
+que más se acerca ha aparecido durante el año 2002, y se denomina
+myBeasties [<a href="#myBeasties" title="[myBeasties]">myBeasties</a>]. Este módulo implementa un
+mecanismo general de evolución de genotipos, y de asignación de
+fenotipos a genotipos, así como un método para serialización usando
+ficheros de texto; los algoritmos (tipos de cromosomas y operadores
+que se le van a aplicar) se pueden describir mediante un fichero de
+texto. Aparentemente, trabaja simplemente con cromosomas (que llama
+<span class="emphasis"><em>blobs</em></span>) lineales, y, además, los operadores están
+asociados al cromosoma, no son independientes. Aunque el módulo es
+bastante general, nosotros lo hemos 
+encontrado un tanto complicado; habrá que ver cómo evoluciona en el
+futuro. </p><p>Por otro lado, teniendo en cuenta que
+<tt>Algorithm::Evolutionary</tt> se ha
+concebido desde el principio para trabajar con XML como formato de
+serialización, habrá que prestar atención a cómo se ha usado XML
+dentro de los algoritmos evolutivos: pues bien, sucede que el reino del XML aplicado a algoritmos genéticos se ha mantenido
+tradicionalmente aparte del anterior, aunque ha habido unos cuantos
+acercamientos al tema. El más notable es el lenguaje EAML, descrito
+por Veenhuis y otros [<a href="#EAML" title="[EAML]">EAML</a>]. Este lenguaje, especificado como un
+grupo de etiquetas en XML con un significado concreto y determinado,
+especifica un algoritmo evolutivo, a partir del cual se puede generar
+código en C++. Este lenguaje trata de ser una descripción exhaustiva
+de un algoritmo evolutivo, pero no lo consigue, porque, por ejemplo,
+los operadores de variación son etiquetas, en vez de ser atributos;
+los atributos pueden tener cualquier valor, pero sólo se pueden usar
+las etiquetas especificadas en el diccionario; de esta forma, la
+introducción de un nuevo operador significaría la modificación del
+diccionario. Tiene otros errores de diseño, pero, en todo caso, es un
+paso en la dirección correcta. El dialecto usado en esta
+implementación en Perl/XML de un algoritmo genético trata de evitar
+estos errores.</p><p>En los primeros meses del año 2002 han surgido otros muchos
+esfuerzos por combinar XML y algoritmos evolutivos. Por ejemplo, se ha
+propuesto un servicio web basado en algoritmos evolutivos
+[<a href="#eaWeb" title="[eaWeb]">eaWeb</a>], al cual se proporciona una descripciónd de
+las funciones a optimizar, y los parámetros del algoritmo evolutivo
+usando XML, y devuelve la función optimizada. En el wiki XMLMen
+[<a href="#XmlMen" title="[XmlMen]">XmlMen</a>] también se exploran los diferentes
+paradigmas de especificación de algoritmos evolutivos usando XML
+(inclusive una versión previa del usado en
+<tt>Algorithm::Evolutionary</tt>), usando
+finalmente EAML [<a href="#EAML" title="[EAML]">EAML</a>] para hacer diferentes
+experimentos dentro de un sistema denominado Sutherland. Otros
+sistemas basados en algoritmos evolutivos prometen, para versiones
+sucesivas, especificaciones XML de los algoritmos o bien serialización
+XML. También eaLib [<a href="#eaLib" title="[eaLib]">eaLib</a>] incluye un método de
+serialización XML, pero se trata de un método automático de
+serialización de objetos en Java, no uno específico que sea legible
+para alguien entendido en algoritmos evolutivos.</p><div class="important" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Importante</h3><p>
+En resumen, <tt>Algorithm::Evolutionary</tt>
+pretende llevar un paso más allá el estado del arte, creando una
+biblioteca bien integrada con XML, flexible, que admita cualquier
+paradigma de computación evolutiva, que sepa aprovechar las
+características del lenguaje, y, finalmente, con una licencia
+      libre. Hay que hacer notar que, en nuestra biblioteca, XML no es
+un procedimiento para dar los parámetros a un programa, sino una forma
+alternativa de representar las estructuras de datos del programa. </p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2758528"></a>3. Descripción de la biblioteca</h2></div></div><p>Dado que en los algoritmos evolutivos existen dos tipos de
+objetos, <span class="emphasis"><em>cromosomas</em></span> (o simplemente objetos), es
+decir, estructuras de datos que irán cambiando para ser una solución
+lo más buena posible del problema, y <span class="emphasis"><em>operadores</em></span>,
+que actúan sobre grupos de objetos, la jerarquía de clases de
+<tt>Algorithm::Evolutionary</tt> reflejará este hecho,
+tanto en el diseño de la biblioteca, como de las etiquetas XML que se
+usarán para representarla. En su actuado actual, esta biblioteca supone
+una mejora sobre su versión anterior, OPEAL [<a href="#opeal-aeb02" title="[opeal-aeb02]">opeal-aeb02</a>], aunque
+las reglas básicas de diseño son las mismas.</p><p>Empecemos con lo más simple: un individuo. Un individuo, en
+computación evolutiva, es <span class="emphasis"><em>lo que evoluciona</em></span>, es
+decir, la estructura de datos que, en en contexto de una población, va
+sufriendo cambios hasta que, cuando se cumple alguna de las
+condiciones de terminación, se extrae la mejor. Un individuo se puede
+definir de la siguiente forma:<pre class="programlisting">
+my $indi = new Algorithm::Evolutionary::Individual::BitString 10;
+</pre>
+lo cual crearía una cadena de bits de longitud 10. Un individuo de la
+misma clase se puede definir de la forma siguiente:<pre class="programlisting">
+&lt;indi type='BitString'&gt;
+    &lt;atom&gt;0&lt;/atom&gt;&lt;atom&gt;1&lt;/atom&gt;&lt;atom&gt;0&lt;/atom&gt;&lt;atom&gt;1&lt;/atom&gt;&lt;atom&gt;1&lt;/atom&gt;
+&lt;/indi&gt;
+</pre>
+que luego se puede deserializar de la forma siguiente:<pre class="programlisting">
+my $indibis =  Algorithm::Evolutionary::Individual::Base-&gt;fromXML( $xml  )
+</pre>
+si es que hemos asignado la cadena anterior a la variable
+<tt>$xml</tt>; <tt>$indibis</tt> será
+un inviduo de la clase adecuada, deducida a partir del atributo
+<tt>type</tt> del elemento XML. Generalmente, los individuos se crean
+en grupos, y para ello lo más razonable es usar un objeto
+<tt>Creator</tt>, que se instancia de la forma
+siguiente:<pre class="programlisting">
+my $creator =  new Algorithm::Evolutionary::Op::Creator( 20, 'BitString', { length =&gt; '10' });
+</pre>. Un <tt>Creator</tt> recibe como
+parámetros el número de elementos que va a crear, el nombre de la
+clase, y los parámetros adicionales que necesita el individuo en forma
+de <span class="emphasis"><em>hash</em></span>. A partir de este
+<tt>Creator</tt>, se crea la población completa de
+individuos de la forma siguiente:<pre class="programlisting">
+my @pop;
+$creator-&gt;apply( \@pop )
+</pre></p><p>Los operadores se aplican a individuos y/o devuelven
+individuos (como el <tt>Creator</tt> mencionado
+anteriormente). Su uso es similar al caso de los individuos: se pueden
+instanciar de forma independiente, o bien a partir de su descripción
+en XML. Sin embargo, los operadores son estructuras de datos más
+complejas, que en algún caso incluye código (para evaluar a los
+individuos), y otros operadores. Un operador complejo se representaría
+en XML de la forma siguiente:
+</p><pre class="programlisting">
+        &lt;op name='Easy'  type='unary'&gt;
+        &lt;param name='selrate' value='0.4' /&gt;
+        &lt;param name='maxgen' value='1' /&gt;
+        &lt;code type='eval' language='perl'&gt;
+    	  &lt;src&gt;&lt;![CDATA[ my $chrom = shift;
+                my $str = $chrom-&gt;Chrom();
+                my $fitness = 0;
+                my $blockSize = 4;
+                for ( my $i = 0; $i &lt; length( $str ) / $blockSize; $i++ ) {
+	              my $block = 1;
+	              for ( my $j = 0; $j &lt; $blockSize; $j++ ) {
+	                $block &amp;= substr( $str, $i*$blockSize+$j, 1 );
+	              }
+	              ( $fitness += $blockSize ) if $block;
+                }
+                return $fitness;
+          ]]&gt;&lt;/src&gt;
+        &lt;/code&gt;
+        &lt;op name='Bitflip' type='unary' rate='1'&gt;
+            &lt;param name='probability' value='0.5' /&gt;
+            &lt;param name='howMany' value='1' /&gt;
+      	&lt;/op&gt;
+      	&lt;op name='Crossover' type='binary' rate='5'&gt;
+        	&lt;param name='numPoints' value='2' /&gt;
+      	&lt;/op&gt;
+    &lt;/op&gt;
+</pre><div class="orderedlist"><ol type="1"><li><p>Declaración de los parámetros para el operador</p></li><li><p>Declaración del código de la función
+<tt>eval</tt>, se indica que está escrito en Perl y se
+incluye el código, que se convertirá en una subrutina en Perl</p></li><li><p>Declaración de un operador de mutación, que será
+aplicado a los individuos dentro del algoritmo. El cómo se aplique el
+operador dependerá del objeto.</p></li><li><p>Declaración de un operador de Crossover</p></li></ol></div><p>Los individuos se combinan en una población, a la cual se
+aplicarán una serie de operadores secuencialmente, para dar lugar a la
+población final. El operador de generación de la población y el de
+evolución de la población se combinan en un
+<tt>Experiment</tt> o experimento, de la forma
+siguiente:
+<pre class="programlisting">my $onemax = sub { 
+  my $indi = shift;
+  my $total = 0;
+  my $len = $indi-&gt;length();
+  my $i;
+  while ($i &lt; $len ) {
+	$total += substr($indi-&gt;{'_str'}, $i, 1);
+	$i++;
+  }
+  return $total;
+};
+
+my $ez = new Algorithm::Evolutionary::Op::Easy $onemax;
+my $popSize = 20;
+my $indiType = 'BitString';
+my $indiSize = 64;
+
+my $e = new Algorithm::Evolutionary::Experiment $popSize, $indiType, $indiSize, $ez;
+</pre>; en este listado se crea un operador de evolución de
+la población (<tt>Easy</tt>, un operador fácil de usar que
+corresponde al algoritmo genético simple), y, posteriormente, con
+otros parámetros como el tipo y número de individuos que van a componer la
+población y su tamaño, se crea un objeto experimento. Ese objeto
+experimento se puede usar posteriormente para llevar a cabo la
+evolución de la forma siguiente:
+<pre class="programlisting">my $popRef = $ez-&gt;go();</pre>;
+que devolverá la población al final del experimento. </p><p><tt>Algorithm::Evolutionary</tt> incluye
+individuos de tipo vector, cadena, cadena binaria y árbol (para
+programación genética), operadores para mutación y entrecruzamiento
+para cada uno de ellos, diferentes tipos de métodos de selección y de
+terminación, y algunas clases de utilidad (por ejemplo, una clase para
+hacer tiradas de &quot;rueda de ruleta&quot;). </p><p>La extensión de <tt>Algorithm::Evolutionary</tt>
+es relativamente simple: habría que crear un individuo en alguna de
+las dos jerarquías, con la única restricción que se pueda serializar
+usando XML; en el caso de los operadores, hay que definir a qué tipo
+de individuo se aplica, y definirle el método
+<tt>apply</tt>. Cualquier otro método externo que se
+necesite, fuera de los operadores y estructuras de datos necesarios
+para la evolución, no tienen porqué seguir ningún tipo de
+convención. </p><p>Las ventajas que nos ha ofrecido Perl en todo esto han sido
+diferentes: aparte de que, evidentemente, un desarrolla mejor en el
+lenguaje que mejor conoce, la &quot;orientación a objetos&quot; de Perl es
+bastante heterodoxa, pero muy flexible: se puede determinar el tipo de
+un objeto en tiempo de ejecución, e instanciarlo sabiendo únicamente
+el nombre; en lenguajes como Java se puede hacer también, pero en C++
+sería poco menos que imposible, salvo que se compare el nombre con una
+lista de nombres preexistente, y se modifique el código para cada
+nuevo tipo que se añada. Por otra parte, Perl permite serialización de
+código incluido dentro de un objeto: el código de las funciones de
+evaluación se almacena dentro de los objetos como un puntero a código;
+y para serializarlo sólo hay que llamar a una función del módulo
+<tt>B::Deparse</tt> para obtener las fuentes: Perl
+permite decompilar en tiempo de ejecución. Esto, que sepamos es
+difícil, o probablemente imposible, en lenguajes no interpretados. En
+cuanto a la eficiencia, es difícil comparar lenguajes diferentes,
+puesto que la programación de un benchmark no va a ser nunca
+exactamente igual, pero sí podemos decir que la velocidad en un PC
+normal es bastante aceptable.</p><p>Por otro lado, el hecho de preparar esta biblioteca para su inclusión en <a href="http://www.cpan.org" target="_top">CPAN</a>,
+el sitio web de módulos de Perl &quot;oficiales&quot;, obliga a una disciplina
+que consiste en que el empaquetamiento e instalación del módulo debe
+ser siempre igual; se debe consultar con la comunidad para ver si
+existe algún otro módulo que cumpla la misma necesidad, y, además, se
+aconseja que se diseñen una serie de tests que se ejecutan a la hora
+de la instalación. El diseño de estos tests ha obligado a ser
+sistemático en el desarrollo del módulo, y también a evitar ciertos
+errores tras su ejecución sistemática. Con los tests se asegura que,
+al menos en lo fundamental, la biblioteca funciona.</p><div class="important" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Importante</h3><p>En resumen, el diseñar un módulo alrededor de su
+serialización en XML ha hecho que se corresponda la jerarquía de
+clases (y los espacios de nombres) con las etiquetas en XML, y que
+cada nuevo objeto necesite tener una función para
+serializar/deserializar desde XML. A la vez, el trabajar con un
+lenguaje sin tipificación fuerte e interpretado, como el Perl, permite
+bastantes ventajas a la hora de esta serialización, permitiendo
+incluso hacerlo con el propio código, sin que signifique un handicap
+importante sobre la velocidad de ejecución.</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2759006"></a>4. Aplicaciones</h2></div></div><p>Este módulo ha sido usado en una serie de aplicaciones, que describimos a continuación:</p><div class="itemizedlist"><ul type="disc"><li><p>Una de las primera aplicaciones usó el módulo
+<tt>SOAP::Lite</tt> [<a href="#soap-aeb02" title="[soap-aeb02]">soap-aeb02</a>] para crear un algoritmo evolutivo
+paralelo usando SOAP, en este caso, usar Perl permitió usar esa
+biblioteca, que, dentro de las implementaciones de SOAP, es de las más
+fáciles de usar.</p></li><li><p>También se usó, en conjunción con los módulos de Perl
+para acceso a BDs, para la asignación de revisores a trabajos para un
+congreso, el  <a href="http://ppsn2002.ugr.es" target="_top">PPSN2002</a></p></li><li><p>Una aplicación a la cual se puede acceder online es la
+ <a href="http://geneura.ugr.es/Mason/EvolveWords.html" target="_top">generación de palabras</a> , de la cual se ha hablado en <a href="http://barrapunto.com/article.pl?sid=01/09/05/179212" target="_top"> Barrapunto</a>. En este caso,
+el código en Perl se usa en combinación con la biblioteca
+<tt>HTML::Mason</tt> para incluir el algoritmo
+evolutivo dentro de la misma página.
+</p></li><li><p>Unos alumnos de proyecto de fin de carrera la han
+usado para generación de equipos para jugar a la <a href="http://es.fantasysports.yahoo.com/es_fb" target="_top">liga fantástica de Yahoo</a>, 
+donde han probado diferentes estrategias para generación de equipos:
+optimización en cada jornada, u optimización de las reglas de cambio
+de jugadores usando información procedente de varias jornadas; ésta
+última ha sido la que ha tenido más éxito.</p></li></ul></div><p>
+</p><div class="important" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Importante</h3><p>Aunque evidentemente, todavía no se trata de un producto
+maduro, la biblioteca tiene una calidad de producción adecuada para
+trabajar en una serie de proyectos que necesiten algoritmos evolutivos.</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2759163"></a>5. Conclusiones, discusión y trabajo futuro</h2></div></div><p>En este trabajo se ha presentado una visión general de la
+biblioteca <tt>Algorithm::Evolutionary</tt>, una
+biblioteca de algoritmos evolutivos en Perl fuertemente integrada con
+XML, que además proporciona un dialecto de XML para intercambio de
+información entre diferentes bibliotecas de algoritmos evolutivos. Se ha
+mostrado cuál es la estructura general de la biblioteca y sus
+aplicaciones.</p><p>Una de las principales dificultades a las que nos hemos
+enfrentado es precisamente la serialización usando XML. El módulo que
+se usó en un principio, <tt>XML::Simple</tt>, distaba
+mucho de ser simple, y dependiendo del número de etiquetas, se
+comportaba de forma diferente. Actualmente se está considerando la
+posibilidad de usar algún otro módulo.</p><p>Pero todavía queda mucho trabajo por hacer. Por ejemplo,
+haría falta un interfaz gráfico, para que se pudieran seleccionar las
+opciones del algoritmo evolutivo de forma gráfica. La parte de
+programación genética está todavía en cuadro, y falta por
+desarrollar. Algunos módulos del OPEAL antiguo, especialmente los de
+programación paralela usando SOAP, no han sido portados a la nueva
+biblioteca. Evidentemente, hará falta también subirla a CPAN. Y, finalmente, harían falta más aplicaciones y demos online
+para demostrar la utilidad del módulo.</p><div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Sugerencia</h3><i> La biblioteca está disponible en <a href="http://opeal.sourceforge.net" target="_top">SourceForge</a>, 
+de dónde se puede bajar la última versión (la 0.5 en julio 2002), participar en los
+      foros, solicitar ayuda, y, por supuesto, ofrecerla. Por el
+      momento, no se puede decir que sea extraordinariamente popular,
+      porque ha tenido aproximadamente unas 100 descargas, aunque ha
+      sido generalmente bien acogida entre los usuarios de la lista de
+      Perl e Inteligencia artificial.</i></div></div><p class="ackno">Quiero agradecer a los organizadores de HispaLinux el haberme
+obligado a aprender el DocBook este, lo cual me ha abierto un mundo
+entero de posibilidades.</p><div class="bibliography"><div class="titlepage"><div><h2 class="title"><a name="id2759277"></a>Referencias</h2></div></div><div class="biblioentry"><p>[] <span class="title"><i>Genetic Algorithms + Data Structures = Evolution
+programs</i>. </span><span class="subtitle"><a href="http://www.amazon.com/exec/obidos/ASIN/3540606769/perltutobyjjmere" target="_top">Ficha en Amazon</a>. </span><span class="author">Zbigniew Michalewicz. </span><span class="publisher"><span class="publishername">Springer-Verlag. </span></span><span class="date">1996. </span><span class="edition">3rd (revised). </span></p></div><div class="biblioentry"><a name="baldi00"></a><p>[baldi00] <span class="authorgroup">M Baldi	, F Corno	,  M Rebaudengo	,  M Sonza Reorda	, y G Squillero.. </span><span class="title"><i>GA-Based Verification of Network Protocols Performance</i>. </span><span class="subtitle"><span class="emphasis"><em>Telecommunications Optimization: Heuristic and Adaptive
+  Computation Techniques by David Corne (Editor) - George Smith - Martin J.
+  Oates</em></span>. </span><span class="date">2000. </span><span class="publisher"><span class="publishername">Wiley. </span></span></p></div><div class="biblioentry"><a name="myBeasties"></a><p>[myBeasties] <span class="authorgroup">James   Hugman. </span><span class="title"><i>Project: myBeasties</i>. </span><span class="subtitle">An Object Ecosystem: Document Manager. <a href="http://sourceforge.net/docman/?group_id=26958 " target="_top"> Disponible en http://sourceforge.net/docman/?group_id=26958 </a>. </span></p></div><div class="biblioentry"><a name="glotbot01"></a><p>[glotbot01] <span class="authorgroup">Joshua  Kunken.. </span><span class="title"><i>The application of genetic algorithms in english vocabulary
+  generation.</i>. </span><span class="subtitle">In Proceedings of the Twelfth Midwest Artificial Intelligence
+  and Cognitive Science Conference 2001. Miami University Press 2001. <a href="http://www.ocf.berkeley.edu/~jkunken/glot-bot" target="_top"> Available also from http://www.ocf.berkeley.edu/~jkunken/glot-bot</a>. </span><span class="date">2001. </span></p></div><div class="biblioentry"><a name="zlatanov01"></a><p>[zlatanov01] <span class="author">Teodor  Zlatanov.. </span><span class="title"><i>Cultured perl : Genetic algorithms applied with perl create your own
+  darwinian breeding grounds. <a href="http://www-106.ibm.com/developerworks/linux/library/l-genperl" target="_top">Available from
+  http://www-106.ibm.com/developerworks/linux/library/l-genperl/</a> </i>. </span><span class="date"> August 2001.. </span></p></div><div class="biblioentry"><a name="murray99-ga"></a><p>[murray99-ga] <span class="authorgroup">Brad   Murray y  Ken  Williams.. </span><span class="title"><i>Genetic algorithms with perl.</i>. </span><span class="subtitle"> The Perl Journal, 5(1) <a href="http://mathforum.org/~ken/genetic/article.html" target="_top"> Also available from 
+  http://mathforum.org/~ken/genetic/article.html</a> . </span><span class="date"> Fall 1999.. </span></p></div><div class="biblioentry"><a name="gumpu01"></a><p>[gumpu01] <span class="author">gumpu. </span><span class="title"><i> Genetic programming or breeding perls, <a href="http://perlmonks.org/index.pl?node_id=31147" target="_top">Available from PerlMonks</a></i>. </span><span class="date">  September 2001. </span></p></div><div class="biblioentry"><a name="ag01"></a><p>[ag01] <span class="authorgroup">Michael K. Neylon. </span><span class="title"><i> Algorithm::genetic<a href="http://perlmonks.org/index.pl?node_id=81678" target="_top">Available from PerlMonks</a></i>. </span><span class="date">  May 2001.. </span></p></div><div class="biblioentry"><a name="EAML"></a><p>[EAML] <span class="authorgroup">Christian  Veenhuis	,  Katrin  Franke	, y  and Mario  Köppen.. </span><span class="title"><i>A semantic model for evolutionary computation.</i>. </span><span class="subtitle">En  <span class="emphasis"><em>Proceedings IIZUKA</em></span>, 2000.. </span></p></div><div class="biblioentry"><a name="eaWeb"></a><p>[eaWeb] <span class="authorgroup">Vladimir Filipovic. </span><span class="title"><i>Evolutionary Algorithm Web Service      <a href="http://www.matf.bg.ac.yu/~vladaf/EaWeb/index_e.html" target="_top">Available from its website</a></i>. </span><span class="date">Junio 2002. </span></p></div><div class="biblioentry"><a name="XmlMen"></a><p>[XmlMen] <span class="authorgroup">David Gjerdingen. </span><span class="title"><i>   XmlMen Project Report      <a href="http://tyvex.mrs.umn.edu/twiki/view/CSci4553/XmlMenProjectReport" target="_top">Disponible en el wiki de su curso</a></i>. </span><span class="date">Mayo 2002. </span></p></div><div class="biblioentry"><a name="eaLib"></a><p>[eaLib] <span class="authorgroup">Andreas Rummler. </span><span class="title"><i>eaLib <a href="http://www.inf-technik.tu-ilmenau.de/~rummler/eng/ealib.html" target="_top">Disponible en la página web del autor</a></i>. </span><span class="date">2002. </span></p></div><div class="biblioentry"><a name="opeal-aeb02"></a><p>[opeal-aeb02] <span class="authorgroup">Juan J. Merelo-Guervós	. </span><span class="title"><i><span class="emphasis"><em>OPEAL</em></span>, una librería de algoritmos evolutivos en Perl </i>. </span><span class="subtitle">Publicado en las Actas del Primer Congreso Español
+sobre Algoritmos Evolutivos y Bioinspirados, AEB'02, Mérida, Febrero
+2002. </span><span class="pagenums">54-59. </span><span class="isbn">84-607-3913-9. </span></p></div><div class="biblioentry"><a name="soap-aeb02"></a><p>[soap-aeb02] <span class="authorgroup">Juan J. Merelo-Guervós	, Pedro Ángel  Castillo Valdivieso, y Javier  García Castellano. </span><span class="title"><i>Algoritmos evolutivos P2P usando SOAP </i>. </span><span class="subtitle">Publicado en las Actas del Primer Congreso Español
+sobre Algoritmos Evolutivos y Bioinspirados, AEB'02, Mérida, Febrero
+2002. </span><span class="pagenums">31-37. </span><span class="isbn">84-607-3913-9. </span></p></div></div></div></body></html>

@@ -1,0 +1,71 @@
+#!/bin/sh
+# vim: set sw=4 ts=4 et:
+# written by guido socher
+# A warning for users which do not use Linux to access the Internet:
+# This is a UNIX text file. Before you make it executable to run
+# it as a script make sure that it has UNIX line endings ("\n").
+#
+help()
+{
+  cat <<HELP
+mount the CompactFlash card (or camera) as usb storage device and
+retrieve all images
+
+USAGE: cfimageget [-h] destinationdirectory
+
+EXAMPLE: cfimageget .
+
+OPTIONS:
+      -h this help text
+
+This script requires that you have in /etc/fstab the following
+entry:
+/dev/sda1 /mnt/camera0 vfat rw,noauto,user 0 0
+
+HELP
+  exit 0
+} 
+
+error()
+{
+    # print an error and exit
+    echo "$1"
+    exit 1
+} # The option parser, change it as needed
+
+# In this example -f and -h take no arguments -l takes an argument
+# after the l
+while [ -n "$1" ]; do
+case $1 in
+    -h) help;shift 1;; # function help is called
+    --) shift;break;; # end of options
+    -*) echo "error: no such option $1. -h for help";exit 1;;
+    *)  break;;
+esac
+done # The main program of you script comes after this line
+
+if [ -z "$1" ]; then
+	help
+fi
+if [ ! -d "$1" ]; then
+	error "ERROR: directory $1 does  not exist"
+fi
+
+if  mount | grep camera > /dev/null 2>&1; then
+	echo "camera0 already mounted"
+else
+	echo "mounting /mnt/camera0 ..."
+	mount /mnt/camera0 || error "ERROR: mount /mnt/camera0 failed"
+fi
+
+echo "moving all images to \"$1\" ..."
+
+for f in `find /mnt/camera0 -type f -print` ; do
+    echo "$f ..."
+    mv $f "$1"
+done
+echo "un-mounting /mnt/camera0 ..."
+umount /mnt/camera0 || error "ERROR: umount failed"
+echo "done"
+#
+

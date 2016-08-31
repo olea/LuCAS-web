@@ -1,0 +1,114 @@
+<html><head><title>27 Rutinas de ficheros de datos</title><body>
+<h1><a name="27 Rutinas de ficheros de datos">27 Rutinas de ficheros de datos</a></h1>
+<p>
+<ul><h4>
+<li><a href="#load_datafile">load_datafile</a>
+<li><a href="#unload_datafile">unload_datafile</a>
+<li><a href="#load_datafile_object">load_datafile_object</a>
+<li><a href="#unload_datafile_object">unload_datafile_object</a>
+<li><a href="#get_datafile_property">get_datafile_property</a>
+<li><a href="#register_datafile_object">register_datafile_object</a>
+<li><a href="#fixup_datafile">fixup_datafile</a>
+</h4></ul>
+<p><br><br>
+<p>
+Los ficheros de datos son creados por la utilidad grabber, y tienen la
+extensión .dat. Pueden contener bitmaps, paletas de color, fuentes, sonidos,
+música MIDI, animaciones FLI/FLC y cualquier otro tipo binario de datos que
+importe.
+<p>
+Atención: cuando use imágenes truecolor, debería activar el modo gráfico
+antes de cargar ningún bitmap! Si no, el formato (RGB o BGR) será
+desconocido, y el fichero probablemente será convertido erróneamente.
+<p>
+Mire la documentación en pack_fopen() para obtener información sobre como
+leer directamente de un fichero de datos.
+<p>
+<b>DATAFILE *<a name="load_datafile">load_datafile</a>(char *filename);</b><br>
+   Carga un fichero de datos en memora, devolviendo un puntero hacia el, o
+   NULL si ha habido un error. Si el fichero de datos ha sido encriptado,
+   primero tiene que usar la función packfile_password() para introducir la
+   clave correcta. Mire grabber.txt para mas información.
+<p>
+<b>void <a name="unload_datafile">unload_datafile</a>(DATAFILE *dat);</b><br>
+   Libera todos los objetos de un fichero de datos.
+<p>
+<b>DATAFILE *<a name="load_datafile_object">load_datafile_object</a>(char *filename, char *objectname);</b><br>
+   Carga un objeto específico de un fichero dat. Esto no funcionará si
+   elimina los nombres de los objetos del fichero, y será muy lento si
+   salvas el fichero de datos con compresión general. Mire grabber.txt para
+   mas información.
+<p>
+<b>void <a name="unload_datafile_object">unload_datafile_object</a>(DATAFILE *dat);</b><br>
+   Libera un objeto previamente cargado con load_datafile_object().
+<p>
+<b>char *<a name="get_datafile_property">get_datafile_property</a>(DATAFILE *dat, int type);</b><br>
+   Retorna la propiedad especifica de un objeto, o una cadena vacía si la
+   propiedad no esta presente. Mire grabber.txt para mas información.
+<p>
+<b>void <a name="register_datafile_object">register_datafile_object</a>(int id, void *(*load)(PACKFILE *f, long size),</b>
+<b>                                      void (*destroy)(void *data));</b><br>
+   Usado para añadir tipos de objetos propios, especificando las funciones
+   de carga y destrucción de este tipo. Mire grabber.txt para mas
+   información.
+<p>
+<b>void <a name="fixup_datafile">fixup_datafile</a>(DATAFILE *data);</b><br>
+   Si está usando ficheros de datos compilados (producidos por la utilidad
+   dat2s) que contienen imágenes truecolor, tiene que llamar esta función
+   una vez haya puesto el modo de vídeo que vayas a usar, para convertir
+   los valores de los colores al formato apropiado. Puede intercambiar los
+   formatos RGB y BGR, y convertirlos a diferentes profundidades de color
+   siempre que sea posible sin cambiar el tamaño de la imagen (por ejemplo:
+   cambiando entre 15 y 16 bits de color para bitmaps y sprites RLE, y entre
+   24 y 32 bits de color para sprites RLE).
+<p>
+<p><hr><p>
+Cuando cargue un fichero de datos, obtendrá un puntero a un array de
+estructuras DATAFILE:
+<p><pre>
+typedef struct DATAFILE
+{
+   void *dat;     - puntero a los datos
+   int type;      - tipo del dato
+   long size;     - tamaño de los datos en bytes
+   void *prop;    - propiedades de los objetos
+} DATAFILE;
+<p></pre>
+El campo type puede tener uno de los siguientes valores:
+<pre>
+   DAT_FILE       - dat apunta a un fichero de datos anidado
+   DAT_DATA       - dat apunta a un bloque ordinario de datos
+   DAT_FONT       - dat apunta a una fuente
+   DAT_SAMPLE     - dat apunta a un fichero de sonido
+   DAT_MIDI       - dat apunta a un fichero MIDI
+   DAT_PATCH      - dat apunta a un 'patch' para la GUS
+   DAT_FLI        - dat apunta a una animación FLI/FLC
+   DAT_BITMAP     - dat apunta a una estructura BITMAP
+   DAT_RLE_SPRITE - dat apunta a una estructura RLE_SPRITE
+   DAT_C_SPRITE   - dat apunta a una sprite compilado linearmente
+   DAT_XC_SPRITE  - dat apunta a un sprite de modo-X
+   DAT_PALETTE    - dat apunta a un array de 256 estructuras RGB
+   DAT_END        - biestable especial que marca el final de una lista de
+                    datos
+<p></pre>
+El programa grabber también puede producir un fichero de cabecera que define
+el índice de los objetos dentro de un fichero de datos como una serie de
+constantes definidas, usando los nombres que les diste en el grabber. Por
+ejemplo, si creó un fichero de datos llamado foo.dat que contiene el bitmap
+llamado LA_IMAGEN, puede enseñarlo con el siguiente fragmento de código:
+<p><pre>
+   #include "foo.h"
+<p>
+   DATAFILE *data = load_datafile("foo.dat");
+   draw_sprite(screen, data[LA_IMAGEN].dat, x, y);
+<p></pre>
+Si está programando en C++. obtendrás un error porque el campo dat es un
+puntero void y draw_sprite espera un puntero BITMAP. Puede solucionarlo con
+un 'cast'. Ejemplo:
+<p><pre>
+   draw_sprite(screen, (BITMAP *)data[LA_IMAGEN].dat, x, y);
+<p></pre>
+<br>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

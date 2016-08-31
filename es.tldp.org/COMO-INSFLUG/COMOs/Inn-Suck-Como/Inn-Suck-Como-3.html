@@ -1,0 +1,704 @@
+<HTML>
+<HEAD>
+<TITLE>C&oacute;mo Intentar configurar un servidor de news con INN+SUCK: M&eacute;todo</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Inn-Suck-Como-2.html">Anterior</A>
+<A HREF="Inn-Suck-Como-4.html">Siguiente</A>
+<A HREF="Inn-Suck-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. M&eacute;todo</A></H2>
+
+
+
+<H2><A NAME="ss3.1">3.1 configuraci&oacute;n de INN </A></H2>
+
+
+<P>Una vez que <CODE>INN</CODE> est&aacute; instalado necesitamos los ficheros de
+configuraci&oacute;n de <CODE>INN</CODE>. Estos ficheros de configuraci&oacute;n est&aacute;n
+normalmente en <CODE>/usr/lib/news</CODE>, pero esto puede depender de la
+distribuci&oacute;n. En mi caso </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# ls -la /usr/lib/news
+
+drwxrwxr-x   3 news     news         1024 May 19 21:38 .
+drwxr-xr-x  63 root     root         8192 Jun 17 15:39 ..
+drwxrwxr-x   5 news     news         1024 May 19 21:38 bin
+-r--r-----   1 news     news         5206 Oct 20  1997 innshellvars
+-r--r-----   1 news     news         6816 Oct 20  1997 innshellvars.csh
+-r--r-----   1 news     news         6452 Oct 20  1997 innshellvars.pl
+-r--r-----   1 news     news         7098 Oct 20  1997 innshellvars.tcl
+-r-xr-x---   1 news     news         4728 Oct 20  1997 parsecontrol
+-rwxr-xr-x   1 news     news        18040 Oct 20  1997 rnews      
+
+# ls -la /etc/news
+
+drwxrwxr-x   2 news     news         1024 Jun 15 01:53 .
+drwxr-xr-x  28 root     root         4096 Jul 26 12:21 ..
+-r--r-----   1 news     news          265 Oct 20  1997 actsync.cfg
+-r--r-----   1 news     news          371 Oct 20  1997 actsync.ign
+-r--r-----   1 news     news        26879 Oct 20  1997 control.ctl
+-r--r--r--   1 news     news          491 Oct 20  1997 distrib.pats
+-r--r-----   1 news     news         1537 Oct 20  1997 expire.ctl
+-r--r-----   1 news     news          260 May 22 18:22 hosts.nntp
+-r--r-----   1 news     news          161 Oct 20  1997 hosts.nntp.nolimit
+-r--r--r--   1 news     news          831 May 24 22:05 inn.conf
+-r--r-----   1 news     news         2978 Oct 20  1997 innwatch.ctl
+-r--r--r--   1 news     news          633 Oct 20  1997 moderators
+-r--r--r--   1 news     news         3843 Jun 15 01:53 newsfeeds
+-r--r-----   1 news     news          114 May 20 15:37 nnrp.access
+-r--r-----   1 news     news          583 Oct 20  1997 nntpsend.ctl
+-r--r--r--   1 news     news          388 Oct 20  1997 overview.fmt
+-r--r-----   1 news     news          596 Oct 20  1997 passwd.nntp
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Observe que los ficheros son propiedad de <CODE>news</CODE>. Compru&eacute;belo en su
+caso, y tambi&eacute;n que existan el usuario <CODE>news</CODE> y el grupo
+<CODE>news</CODE>. </P>
+<P>A continuaci&oacute;n vemos los ficheros que necesitan alguna modificaci&oacute;n:</P>
+
+<H3><CODE>inn.conf</CODE> </H3>
+
+
+<P>Voy a poner un listado de mi <CODE>inn.conf</CODE>, que adem&aacute;s resulta
+autoexplicativo. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ cat /etc/news/inn.conf
+
+##  $Revision: 1.6 $
+##  inn.conf -- inn configuration data
+##  Formato:
+##      &lt;parametro&gt;:&lt;espacio&gt;&lt;valor&gt;
+##  Usados por varios programas y libinn. Se definen los siguientes
+##                                                       parametros:
+##      domain          Dominio local, sin punto inicial.
+##      fromhost        Que poner en la linea From ; por defecto es FQDN
+##                      del host local.
+##      moderatormailer Donde enviar los post moderados, si no lo encuentra
+##                      en el fichero de moderadores; vea moderators(5).
+##      pathhost        Que poner en las cabeceras Path y Xref headers; por
+##                      defecto es el FQDN del host local.
+##      organization    Si $ORGANIZATION no existe. Lo que pone en 
+##                      la cabecera Organization si esta en blanco.
+##      server          Si $NNTPSERVER no existe. Host servidor NNTP local 
+##                      al que conectarse.
+
+organization:   Servidor en mired.es
+
+server:         localhost
+
+domain: mired.es
+
+## tengo un alias del localhost CNAME news.mired.es
+
+pathhost: news.mired.es
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3><CODE>newsfeeds</CODE> </H3>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+##  $Revision: 1.17 $
+
+##  newsfeeds - determine where Usenet articles get sent
+##  Formato:
+##      site[/excluido,excluido...]\
+##              :modelo,modelo...[/distrib,distrib...]\
+##              :flag,flag...\
+##              :param
+## Lista de flags:
+##      &lt;size           El articulo debe ser menor de size bytes.
+##      Aitems          Comprobacion de articulo -- d (necesita la 
+##                      cabecera Distribution)
+##                      p (no verifica los sitios de la cabecera Path).
+##      Bhigh/low       Tamanio interno del bufferr antes de escribir a la
+##                      salida.
+##      H[count]        El articulo debe tener menos de count saltos; 1 por
+##                      defecto.
+##      Isize           Tamanio interno del buffer (si nos suministra un
+##                      fichero)
+##      Nm              Solo grupos moderados que verifican el modelo
+##      Nu              Solo grupos no moderados que verifican el modelo
+##      Ssize           Inicia spooling si la cola tiene mas de size bytes.
+##      Ttype           Tipo de suministro -- f (fichero) m (embudo; los
+##                      nombres de parametro indican la entrada real ) 
+##                      p (pipe a programa) c (envio a stdin
+##                      de los sub-prcesos del parametro); x (como c, pero
+##                      maneja comandos en stdin).
+##      Witems          Que escribir -- b (tamanio en bytes del articulo) 
+##                      f (rutas completas )
+##                      g (primer newsgroup) m (Message-ID) n (path relativo)
+##                      s (sitio que suministra el articulo) t (hora recibida)
+##                      * (nombres de embudos o sitios que obtienen el articulo
+##                      N (Cabecera Newsgroups ) D (Cabecera Distribution
+##                      H (todas las cabeceras) O (overview data) 
+##                      R (replicado de datos).
+
+## Los campos de parametro dependen del flag T. Para Tf, las rutas
+## relativas son del directorio .Para Tp y Tc, es ejecutar un comando de
+## shell. 
+
+## Si un Tm se refiere a esta entrada (que tendra su propio parametro T )
+## entonces &quot;*&quot; se expande a todos los sitios embudo lanzados por este. 
+
+## Este fichero es complicado -- vea newsfeeds.5!
+
+##  Este es el sitio local.
+##  El campo modelo da la lista de suscripcion para todos los otros
+##  sitios.
+##  Le puede interesar poner !control,!junk,!&lt;local&gt;.* alli. El subcampo
+##  distrib limita los articulos entrantes.
+##
+##  Puede tener tambien ME/mal.site: para rehusar articulos de un sitio
+##  particular (que verifique la entrada Path: ). Se pueden poner aqui
+##  pseudo-sitios para REHUSAR ciertos tipos de mensajes cancelados.
+##  (Vea la &quot;Cancel FAQ&quot; news.admin.net-abuse.misc):
+
+##      cyberspam       Cancela Spam, post binarios
+##      spewcancel      just munged articles from runaway gateways
+##      bincancel       Cancela post binarios a grupos no binarios 
+##
+
+##  Observe que rehusar articulos significa que no los ofrece a los sitios
+##  a los que el servidor les suministra 
+
+## Por defecto todo a todos salvo para junk, control, cualquiera con &quot;local&quot; 
+## como el prefijo de grupo de noticias (i.e. verifica &quot;localhost.loquesea&quot;) o
+## grupos bajo foo. Los articulos posteados a cualquier grupo bajo
+## alt.binaries.warez no se propagaran, incluso si son cross posted.
+
+ME\
+
+        :*,@alt.binaries.warez.*,!junk,!control*,!local*,!foo.*\
+                /world,usa,na,gnu,bionet,pubnet,u3b,eunet,vmsnet,inet,ddn,k12\
+::
+ 
+## Crea los enlaces para los artss posted 
+crosspost:*:Tc,Ap,WR:/usr/lib/news/bin/crosspost -s -
+
+##  News overview
+overview!:*:Tc,WO:/usr/lib/news/bin/overchan
+
+# Suministra todos los post origen moderados a un archivo. 
+#source-archive!:!*,*sources*,!*wanted*,!*.d\
+
+#       :Tc,Wn:/usr/news/bin/archive -f -i /usr/spool/news.archive/INDEX
+
+
+# Suministra todos los post no internos a nearnet; los envia off-line via
+# nntpsend o send-nntp.
+#nic.near.net\
+#       :!junk/!foo\
+#       :Tf,Wnm:nic.near.net
+
+# Un enlace que suministra en tiempo real
+#uunet\
+#       :/!foo\
+#       :Tc,Wnm:/usr/news/bin/nntplink -i stdin news.uu.net
+
+# Capture all Foo, Incorporated, postings
+#capture\
+#       :*/foo\
+#       :Tp,H2:/usr/news/local/capture %s
+
+news.servidor-isp.es\
+:!junk,!control:Tf,Wnm:news.servidor-isp.es
+
+
+#foros.euskaltel.es/news.euskaltel.es\
+#:*,!control,!junk,!fido.*,!subnet.*/!local\
+#:Tf,Wnm:foros.euskaltel.es
+.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Vamos a ver si aclaramos algo esto. Por ejemplo la siguiente entrada:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+noticias.servidor-isp.es/news.servidor-isp.es\ 
+:*,!mios.*/!mios\ 
+:Tf,Wnm:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para ser sincero parece complejo, pero vamos a aclararlo:</P>
+
+<P><CODE>noticias.servidor-isp.es</CODE> es el nombre del equipo suministrador.
+<CODE>/news.servidor-isp.es</CODE> es un alias del anterior.</P>
+<P>Esto es importante ya que <CODE>INN</CODE> usa la cabecera <CODE>"Path"</CODE>
+para asegurarse de que los art&iacute;culos no se env&iacute;an m&aacute;s de una vez al mismo
+sitio. De esta forma cualquier art&iacute;culo que tenga
+<CODE>noticias.servidor-isp.es</CODE> o <CODE>news.servidor-isp.es</CODE> no se
+enviar&aacute;n. Como son dominios registrados, estamos seguros de que ning&uacute;n
+otro sitio inserta estas cabeceras.</P>
+<P>La segunda l&iacute;nea indica qu&eacute; art&iacute;culos se enviar&aacute;n a este sitio
+<CODE>*,!mios.*</CODE> quiere decir que se enviar&aacute;n a
+<CODE>news.servidor-isp.es</CODE> todos los salvo los de aquellos grupos que
+empiezan por <CODE>mios.</CODE>. El segundo <CODE>/!mios</CODE> significa que los
+art&iacute;culos con una cabecera <CODE>Distribution</CODE> de ``mios'' tampoco se
+enviar&aacute;n a <CODE>nes.servidor-isp.es</CODE>.</P>
+<P>El &uacute;ltimo campo especifica exactamente el tipo de suministro.  <CODE>Tf</CODE>
+quiere decir que es un fichero. Salvo casos muy especiales, que uno ya
+debe saber lo que hace, siempre pondremos esto. <CODE>Wnm</CODE> significa que
+el path relativo y el <CODE>Message-ID</CODE> del art&iacute;culo se escribir&aacute;n en
+este fichero. La <CODE>n</CODE> significa <CODE>nombre de path relativo</CODE>,
+la <CODE>m</CODE> es el <CODE>Message-ID</CODE> del art&iacute;culo. </P>
+<P>Ahora en nuestro servidor, cada art&iacute;culo destinado a
+<CODE>news.servidor-isp.es</CODE> tendr&aacute; su nombre de fichero y su
+<CODE>Message-ID</CODE> en el fichero
+<CODE>/var/spool/news/out.going/noticias.servidor-isp.es.</CODE>. </P>
+
+<H3><CODE>nnrp.access</CODE> </H3>
+
+
+<P>En este fichero necesita especificar a qu&eacute; equipos se les permite enviar y
+recibir noticias desde su equipo. Para que el sistema funcione puede poner
+permisos globales de lectura y env&iacute;o a los distintos hosts a&ntilde;adiendo unas
+simples l&iacute;neas como las siguientes (ojo esto no son los permisos de
+fichero, lea m&aacute;s abajo). </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+## hosts:permiso:username:password:modelos 
+
+## hosts: Direccion de red o nombre de hosts
+
+## permiso: 
+##              R    El cliente puede leer articulos
+##              P    El cliente puede enviar articulos
+
+## username:clave este campo especifica que clave tiene que utilizar el usuario 
+## para enviar articulos.
+
+## modelos: este campo indica a que grupos puede acceder el usuario
+##
+
+## Por defecto no permitiriamos el acceso a nadie. 
+## Puede depender de la instalacion
+
+## *:: -no- : -no- :!*
+
+##  host:perm:user:pass:groups
+
+##  los hosts mired no tiene password, cualquiera puede leer.
+## *.mired.es:Read Post:::*
+
+##  Una determinada estacion no puede accedor a los grupos es.alt.
+## pardillo.mired.es:RP:usuario:hdys:*,!es.alt.*
+
+# Permitir el acceso a localhost
+localhost:Read Post:::*
+
+# Permitimos el acceso a todo el mundo
+*:Read Post:::*
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para las pretensiones de este documento no necesitamos m&aacute;s, en
+consecuencia ponemos un comentario al resto de las l&iacute;neas (usando un
+<CODE>#</CODE> al principio de l&iacute;nea).</P>
+<P>Otro detalle. Si el fichero contiene claves no deber&iacute;a tener permiso de
+lectura a otros. </P>
+
+<H3><CODE>hosts.nntp</CODE> </H3>
+
+
+<P>En este fichero especificamos los lugares que nos suministran noticias,
+matizando, los sitios que suministran noticias a <CODE>INN</CODE>. </P>
+<P>El proceso que seguiremos ser&aacute; usar suck para transferir los art&iacute;culos de
+los grupos selecconados hacia nuestro host. Una vez en nuestro host estos
+art&iacute;culos se le env&iacute;an a <CODE>INN</CODE>. </P>
+<P>Como somos nosotros mismos los que proporcionamos las noticias, tenemos
+que especificar nuestro propio host como el sitio que nos suministra las
+noticias. Por ejemplo, si su host se llama <CODE>news.mired.es</CODE>, tendr&iacute;a
+que poner: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+##  $Revision: 1.7 $
+
+##  hosts.nntp - nombres y direcciones que nos suministran noticias 
+
+##  Formato
+##      &lt;host&gt;:
+##      &lt;host&gt;:&lt;password&gt;
+
+##  &lt;host&gt; puede ser una IP o nombre.; no admite plantilla. 
+##  Cualquier host no incluido aqui no es gestionado por nnrpd.
+
+ 
+news.mired.es:
+
+localhost:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3><CODE>active</CODE> </H3>
+
+
+<P>Este archivo contiene informaci&oacute;n sobre los grupos de noticias que
+gestiona este host. Por defecto viene con una lista de miles de posibles
+grupos de noticias. Suele estar ubicado en <CODE>/var/lib/news</CODE>. </P>
+<P>Se organiza en l&iacute;neas de cuatro campos. </P>
+<P>
+<UL>
+<LI>El primer campo es el nombre del grupo de noticias. Los grupos que
+comienzan por "to." (vea <CODE>innd(8)</CODE>). 
+</LI>
+<LI>El segundo campo es el n&uacute;mero de art&iacute;culo m&aacute;s alto que se ha usado
+en el grupo. 
+</LI>
+<LI>El tercero es el n&uacute;mero de art&iacute;culo bajo del grupo. 
+</LI>
+<LI>El cuarto campo puede ser uno de los siguientes indicadores
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ y        Se permiten los post locales
+ n        Solo se permiten post remotos, no locales
+ m        El grupo es moderado
+ j        Los art se mantienen. se pasan.
+ x        No se pueden postear articulos a este grupo
+=fict.bar Los articulos van localmente al grupo ``fict.bar'' 
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</UL>
+</P>
+<P>Notas: si el n&uacute;mero de art&iacute;culo m&aacute;s bajo es mayor que el m&aacute;s alto,
+entonces no hay art&iacute;culos en el grupo. Para facilitar el trabajo, los
+campos num&eacute;ricos tienen una longitud fija, a&ntilde;adi&eacute;ndosele ceros. Este
+fichero, aunque se puede editar, es mejor gestionarlo con
+<CODE>ctlinnd</CODE>. </P>
+<P>Cuando instalamos el servidor necesitamos estas cuatro l&iacute;neas. M&aacute;s tarde
+veremos como a&ntilde;adir m&aacute;s grupos. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+         general 0000000000 0000000001 y
+         control 0000000001 0000000001 y
+         junk 0000000000 0000000001 y
+         to 0000000000 0000000001 y
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Disponemos de un programa llamado <CODE>makeactive</CODE> que nos puede ser &uacute;til
+(<CODE>man makeactive</CODE>).</P>
+
+
+<H2><A NAME="ss3.2">3.2 Verificaciones</A></H2>
+
+
+<P>Ahora debemos ejecutar un programa llamado <CODE>inncheck</CODE> que comprobar&aacute; si
+la configuraci&oacute;n es correcta.</P>
+<P>Como puede que las distintas distribuciones usen cada una de ellas su
+propia ubicaci&oacute;n, podemos poner</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+type inncheck
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>o </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+find /usr -name inncheck
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Cuando haya hecho todo esto, puede iniciar su servidor <CODE>INN</CODE> (si no
+lo est&aacute; ya) ejecutando el programa</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+./rc.news
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>que puede encontrar en <CODE>/usr/lib/news/etc</CODE> o en
+<CODE>/usr/libexec/inn</CODE> (o bien <CODE>/etc/rc.d/news</CODE> start, o bien
+<CODE>/etc/rc.d/innit.d/inn</CODE> start, o bien ...) </P>
+<P>En mi caso</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+$ ls /usr/lib/news/bin/
+
+actmerge        ctlinnd         inncheck        newsrequeue     sendxbatches
+actsync         ctlrun          innconfval      nntpget         shlock
+actsyncd        cvtbatch        innstat         nntpsend        shrinkfile
+archive         expire          innwatch        overchan        tally.control
+auth.dir        expireover      innxbatch       pgpverify       tally.unwanted
+batcher         expirerm        innxmit         prunehistory    writelog
+buffchan        fastrm          makeactive      rnews
+control         filechan        makegroup       scanlogs
+convdate        getlist         makehistory     scanspool
+crosspost       grephistory     news.daily      sendbatch   
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si todo va bien, inn esta en ejecuci&oacute;n. Ahora tiene que a&ntilde;adir grupos de
+noticias. Los grupos de noticias se a&ntilde;aden con <CODE>ctlinnd</CODE>, que a&ntilde;adir&aacute;
+una entrada al fichero active. No intente a&ntilde;adir grupos manualmente. </P>
+<P>Para un s&oacute;lo grupo podemos hacer:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ctlinnd newgroup es.comp.os.linux
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y para crear grupos exclusivos de nuestra red local podemos hacer</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ctlinnd newgroup local.primero.linux
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tenga en cuenta que nuestro ISP no conoce el grupo local.primero.linux,
+por lo que no debiera de llegarle. Esto ya lo hicimos en
+<CODE>/etc/news/newsfeeds</CODE> con</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ME\
+        :*,@alt.binaries.warez.*,!junk,!control*,!local*,!foo.*\
+                /world,usa,na,gnu,bionet,pubnet,u3b,eunet,vmsnet,inet,ddn,k12\
+::
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si vamos a dar de alta muchos grupos en un sistema en funcionamiento
+conviene detener el servidor <CODE>ctlinnd pause</CODE>. Vea <CODE>man ctlinnd</CODE>, es
+de suma importancia.</P>
+<P>Tambi&eacute;n podemos eliminar grupos de nuestro servidor:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ctlinnd rmgroup es.comp.os.mswindows
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss3.3">3.3 Estaciones cliente</A></H2>
+
+
+<P>Ahora ya est&aacute; disponible inn como servidor de news. En el equipo servidor
+podemos acceder a &eacute;l como <CODE>localhost</CODE>. En equipos clientes se pone
+nuestro equipo servidor como su servidor de noticias. Si no tenemos un
+servidor DNS ni archivos hosts adecuados en los clientes tendremos que
+poner directamente la direcci&oacute;n del equipo servidor como servidor de
+noticias en cada equipo cliente.</P>
+
+
+<H2><A NAME="ss3.4">3.4 Instalar suck</A></H2>
+
+
+<P>Una vez descomprimidas las fuentes tenemos el directorio
+<CODE>suck-3.9.2/</CODE> y nos vamos a &eacute;l. </P>
+<P>C&oacute;mo instalarlo</P>
+<P>
+<OL>
+<LI>Ejecutamos el script <CODE>./configure</CODE></LI>
+<LI>Modifique <CODE>suck_config.h</CODE> - hay un mont&oacute;n de cosas configurables </LI>
+<LI>Comp&iacute;lelo:  (<CODE>make</CODE> , <CODE>make install</CODE>)</LI>
+<LI>Defina un <CODE>sucknewsrc</CODE> con los grupos que quiera cargar del
+servidor (Si ya est&aacute; INN en funcionamiento use la opci&oacute;n <CODE>-A -hl
+localhost</CODE> y se generar&aacute; el <CODE>sucknewsrc</CODE>). En comentarios se
+especifica algo m&aacute;s.
+</LI>
+<LI>Edite el fichero <CODE>sample/get.news.innxmit</CODE>, ponga su servidor
+de noticias y aseg&uacute;rese de que los path son correctos. La ejecuci&oacute;n de
+suck para bajar art&iacute;culos del servidor y el env&iacute;o de los art&iacute;culos locales
+se hacen mediante este script. C&oacute;pielo en en el path de ejecuci&oacute;n para
+mayor comodidad y haga
+
+<BLOCKQUOTE><CODE>
+<PRE>
+   
+   chown news.news get.news.innxmit
+   chmod o-x get.news.innxmit
+   chmod ug+x get.news.innxmit
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI><CODE>make install_sman</CODE> para instalar la documentaci&oacute;n en
+castellano.</LI>
+</OL>
+</P>
+
+<H3><CODE>get.news.innxmit</CODE></H3>
+
+
+<P>Este es el programa que va a gestionar nuestras transferencias con el ISP</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#
+#ANTES DE USAR - compruebe que todos los paths definidos son correctos
+
+REMOTE_HOST=news.servidor-isp.es
+LOCAL_HOST=localhost
+SPOOLDIR=/var/spool/news                # directorio base para artteados
+NEWSDIR=/usr/lib/news/                  # directorio base para binarios de news 
+BASEDIR=/var/lib/news/                  # directorio base para scripts y ficheros de datos 
+CTLINND=${NEWSDIR}/bin/ctlinnd          # ubicacion
+SHLOCK=${NEWSDIR}/bin/shlock            # location of binary
+TMPDIR=${BASEDIR}                       # ubicacion ficheros de suck
+MSGDIR=${BASEDIR}/Msgs                  # donde poner mensajes multifichero
+SITE=news.servidor-isp.es               # nombre del sitio que nos suministra
+
+ 
+OUTGOING=${SPOOLDIR}/out.going/${SITE}  # articulos para enviar
+OUTGOINGNEW=${OUTGOING}.new             # fichero de lista temporal
+OUTGOINGFAIL=${OUTGOINGNEW}.fail        # fichero con indicaciones de fallos
+SCRIPT=${BASEDIR}/put.news              # filtro para rpost
+OUTFILE=/tmp/news/tmp$$                 # usado por rpost como articulo tras el filtrado
+LOCKFILE=${BASEDIR}/getnews.lock        # fichero de bloqueo para prevenir instancias
+NEWSGROUP=news                          # que grupo posee los ficheros de 
+                                        # out.going
+TESTHOST=/usr/local/bin/testhost
+RPOST=/usr/local/bin/rpost
+SUCK=/usr/local/bin/suck
+
+# Si ya estamos en ejecucion, abortar
+
+trap 'rm -f ${LOCKFILE} ; echo &quot;Abortando&quot; ; exit 1' 1 2 3 15
+${SHLOCK} -p $$ -f ${LOCKFILE}
+
+if [ $? -ne 0 ]; then
+        echo &quot;Ya estoy en ejecucion, no puedo ejecutarme mas de una vez&quot;
+        exit
+fi
+
+# Esta el host local funcionando para que podamos enviar los mensajes que
+# cargamos? 
+
+${TESTHOST} ${LOCAL_HOST} -s
+LOCAL_RESULT=$?
+
+# esta el host remoto listo para bajarnos mensajes? 
+
+${TESTHOST} ${REMOTE_HOST} -s
+REMOTE_RESULT=$?
+
+if [ ${REMOTE_RESULT} -eq 0 -a ${LOCAL_RESULT} -eq 0 ]; then
+
+# bajar mensajes
+
+${SUCK} ${REMOTE_HOST} -c -A -bp -hl ${LOCAL_HOST} -dt ${TMPDIR} -dm ${MSGDIR} -dd ${BASEDIR}
+        SUCK_STATUS=$?
+
+        if [ ${SUCK_STATUS} -eq 0 ]; then
+                echo &quot;Articulos Bajados&quot;
+ 
+       elif [ ${SUCK_STATUS} -eq 1 ]; then
+                echo &quot;No hay articulos para bajar&quot;
+
+       elif [ ${SUCK_STATUS} -eq 2 ]; then
+                echo &quot;Respuesta inesperada del servidor remoto a un comando&quot;
+
+       elif [ ${SUCK_STATUS} -eq 4 ]; then
+                echo &quot;No puedo hacer una autorizacion NNTP &quot;
+
+       elif [ ${SUCK_STATUS} -eq -1 ]; then
+                echo &quot;General failure&quot;
+        fi
+
+# Ahora nos bajamos los mensajes
+
+        if [ -s ${OUTGOING}  -o -s ${OUTGOINGNEW} ]; then
+                ${TESTHOST} ${REMOTE_HOST} -s
+                if [ $? -ne 0 ]; then
+                        echo &quot;El host remoto no respponde al post&quot;
+                else
+
+# esto es necesario por INND para que el fichero outgoing sea 
+# vaciado adecuadamente y tengamos uno en blanco para seguir trabajando 
+# cuando terminemos
+
+                        if [ ! -s ${OUTGOINGNEW} ]; then
+                                mv ${OUTGOING} ${OUTGOINGNEW}
+                                ${CTLINND} flush ${SITE}
+                        fi
+
+# mensajes de outgoing para postear
+
+${RPOST} ${REMOTE_HOST} -d -b ${OUTGOINGNEW} -p ${SPOOLDIR} -f \$\$o=${OUTFILE} ${SCRIPT} \$\$i ${OUTFILE}
+
+           ERRLEV=$?
+
+                if [ ${ERRLEV} -eq 0 ]; then
+                     echo &quot;Articulos posteados remotamente&quot;
+                     rm ${OUTFILE}
+
+                elif [ ${ERRLEV} -eq 1 ]; then
+                     echo &quot;Error posteando un mensaje&quot;
+
+                elif [ ${ERRLEV} -eq 2 ]; then
+                     echo &quot;No puedo obtener autorizacion NNTP con el servidor remoto&quot;
+
+                elif [ ${ERRLEV} -eq 3 ]; then
+                   echo &quot;Respuesta inesperada del servidor a un comando en la autorizacion NNTP&quot;
+
+                elif [ ${ERRLEV} -eq -1 ]; then
+                   echo &quot;Error Fatal &quot;
+                        fi
+
+ 
+
+            if [ -f ${OUTGOINGFAIL} ]; then
+                  mv ${OUTGOINGFAIL} ${OUTGOINGNEW}       # so we can re do it
+                  chown news.${NEWSGROUP} ${OUTGOINGNEW}
+                  chmod 664 ${OUTGOINGNEW}
+                        fi
+                fi
+        fi
+
+        echo &quot;Ya puede colgar el modem&quot;
+
+fi
+
+rm -f ${LOCKFILE}
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>Ejecutar suck</H3>
+
+
+<P>Simplemente ejecute como root</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+su -c get.news.innxmit news
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y primero bajar&aacute; los grupos de noticias indicados en sucknewsrc y enviar&aacute;
+los art&iacute;culos posteados localmente. </P>
+
+
+<HR>
+<A HREF="Inn-Suck-Como-2.html">Anterior</A>
+<A HREF="Inn-Suck-Como-4.html">Siguiente</A>
+<A HREF="Inn-Suck-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,339 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 04 Rutinas de temporización
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="04 Rutinas de temporización">04 Rutinas de temporización</a></h1>
+
+<ul>
+<li><a href="#install_int">install_int</a>
+<li><a href="#install_int_ex">install_int_ex</a>
+<li><a href="#install_param_int">install_param_int</a>
+<li><a href="#install_param_int_ex">install_param_int_ex</a>
+<li><a href="#install_timer">install_timer</a>
+<li><a href="#remove_int">remove_int</a>
+<li><a href="#remove_param_int">remove_param_int</a>
+<li><a href="#remove_timer">remove_timer</a>
+<li><a href="#rest">rest</a>
+<li><a href="#rest_callback">rest_callback</a>
+<li><a href="#retrace_count">retrace_count</a>
+<li><a href="#retrace_proc">retrace_proc</a>
+<li><a href="#timer_can_simulate_retrace">timer_can_simulate_retrace</a>
+<li><a href="#timer_is_using_retrace">timer_is_using_retrace</a>
+<li><a href="#timer_simulate_retrace">timer_simulate_retrace</a>
+</ul>
+
+<p>
+Allegro puede establecer varias funciones virtuales de temporización, todas
+funcionando a diferentes velocidades.
+
+<p>
+Bajo DOS reprogramará el reloj contínuamente para asegurarse de que todas se
+llaman en el momento adecuado. Dado que estas rutinas alteran el chip de
+temporización de bajo nivel, estas rutinas no deben usarse con otras rutinas
+de temporización del DOS, como la rutina uclock() del djgpp.
+
+<p>
+En otras plataformas están implementados usando hilos, que corren de forma
+paralela al hilo principal. Por lo tanto las rutinas de llamada instaladas
+con temporizadores no bloquearán al hilo principal cuando sean llamadas, por
+lo que podría necesitar dispositivos de sincronización apropiados (ej:
+semáforos, mutexes, etc) cuando acceda a datos compartidos por el hilo
+principal y su rutina de temporización. (Por ahora Allegro no provee este
+tipo de dispositivos de sincronización.)
+
+<p><br>
+<b>int <a name="install_timer">install_timer</a>();</b><br>
+   Instala el controlador de temporización de Allegro. Debe hacer esto antes
+   de instalar cualquier rutina de temporización propia, e incluso antes de
+   visualizar el puntero del ratón, reproducir una animación FLI, reproducir
+   música MIDI y usar cualquiera de las rutinas GUI. Devuelve cero con éxito,
+   o un número negativo si hubo problemas (pero puede decidir si quiere
+   verificar el valor de retorno de esta función, dado que es muy poco
+   probable que pueda fallar).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#remove_timer">remove_timer</a>,
+<a class="xref" href="#install_int">install_int</a>.</font></blockquote>
+<b>void <a name="remove_timer">remove_timer</a>();</b><br>
+   Quita el controlador de temporización de Allegro (y, bajo DOS, devuelve el
+   control del reloj al sistema operativo). Normalmente no hace falta llamar
+   esta función, porque allegro_exit() lo hará por usted.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="alleg000.html#allegro_exit">allegro_exit</a>.</font></blockquote>
+<b>int <a name="install_int">install_int</a>(void (*proc)(), int speed);</b><br>
+   Instala un temporizador con el tiempo dado en número de milisegundos
+   entre cada tick. Esto es lo mismo que hacer install_int_ex(proc,
+   MSEC_TO_TIMER(speed)). Si llama esta rutina sin haber instalado primero
+   el módulo de temporización, install_timer() será llamado automáticamente.
+   Si no hay más espacio para añadir otro temporizador de usuario,
+   install_int() devolverá un número negativo, en otro caso devolverá cero.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#remove_int">remove_int</a>,
+<a class="xref" href="#install_int_ex">install_int_ex</a>.</font></blockquote>
+<b>int <a name="install_int_ex">install_int_ex</a>(void (*proc)(), int speed);</b><br>
+   Añade una función a la lista de temporizadores del usuario, o si ya está
+   instalada, ajusta su velocidad retroactivamente (es decir, hace como si
+   el cambio de velocidad hubiese ocurrido precisamente en el último tick).
+   El valor se da en ticks de reloj, que son 1193181 por segundo. Puede
+   convertir la velocidad a partir de otros formatos de tiempo con las
+   siguientes macros:
+<blockquote class="text"><pre>
+      SECS_TO_TIMER(secs)  - pase el número de segundos entre cada tick
+      MSEC_TO_TIMER(msec)  - pase el número de milisegundos entre cada tick
+      BPS_TO_TIMER(bps)    - pase el número de ticks por segundo
+      BPM_TO_TIMER(bpm)    - pase el número de ticks por minuto
+</pre></blockquote>
+   Si no queda espacio para un temporizador nuevo, install_int_ex()
+   devolverá un número negativo, o cero de otro modo. Sólo puede haber 16
+   temporizadores a la vez, y algunas partes de Allegro (código GUI, rutinas
+   para visualizar el puntero del ratón, rest(), el reproductor de ficheros
+   FLI o MIDI) necesitan instalar sus propios temporizadores, por lo que
+   debería evitar usar muchos a la vez.
+
+<p>
+   Su función será llamada por el controlador de interrupciones de Allegro y
+   no directamente por el procesador, por lo que puede ser una función normal
+   en C, y no necesita ninguna función de envoltura. Sin embargo tenga en
+   cuenta que será llamada en contexto de interrupción, lo que impone muchas
+   restricciones sobre lo que puede hacer en ella. No debería usar grandes
+   cantidades de pila, no puede hacer llamadas al sistema operativo o usar
+   funciones de la biblioteca de C, o contener código con operaciones en coma
+   flotante, y debe ejecutarse rápidamente. No intente hacer cosas
+   complicadas con su temporizador: como regla general debería ajustar un par
+   de valores y actuar en consecuencia de éstos dentro de su bucle de control
+   principal.
+
+<p>
+   En un entorno DOS en modo protegido como djgpp, la memoria es virtualizada
+   y puede ser paginada a disco. Debido a la no-reentrancia del DOS, si una
+   paginación al disco ocurre dentro de su función de temporización, el
+   sistema morirá de forma dolorosa, por lo que debe asegurarse de bloquear
+   (lock) toda la memoria (de código y datos) que sea modificada dentro de
+   su rutina de temporización. Allegro bloqueará todo lo que use, pero usted
+   es responsable de bloquear su rutina de temporización. Las macros
+   LOCK_VARIABLE(variable), END_OF_FUNCTION(nombre_de_funcion), y
+   LOCK_FUNCTION(nombre_de_funcion) pueden ser usadas para simplificar esta
+   tarea. Por ejemplo, si quiere que su temporizador incremente una variable
+   de contador, debería escribir:
+<blockquote class="code"><pre>
+      volatile int contador;
+
+      void mi_temporizador()
+      {
+         contador++;
+      }
+
+      END_OF_FUNCTION(mi_temporizador);
+</pre></blockquote>
+   y en su código de inicio debería bloquear la memoria de esta manera:
+<blockquote class="code"><pre>
+      LOCK_VARIABLE(contador);
+      LOCK_FUNCTION(mi_temporizador);
+</pre></blockquote>
+   Obviamente esto puede ser extraño si usa estructuras de datos
+   complicadas y llama otras funciones desde su temporizador, por lo que
+   debería crear sus temporizadores tan simples como pueda.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#remove_int">remove_int</a>,
+<a class="xref" href="#install_int">install_int</a>.</font></blockquote>
+<b>void <a name="remove_int">remove_int</a>(void (*proc)());</b><br>
+   Quita una función de la lista de temporizadores de usuario. Al finalizar
+   su programa, allegro_exit() hará esto automáticamente.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_int">install_int</a>,
+<a class="xref" href="#install_int_ex">install_int_ex</a>.</font></blockquote>
+<b>int <a name="install_param_int">install_param_int</a>(void (*proc)(void *), void *param, int speed);</b><br>
+   Como install_int(), pero a la rutina callback se le pasará una copia del
+   puntero void especificado. Para desactivar este temporizador, use
+   remove_param_int() en vez de remove_int().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#remove_param_int">remove_param_int</a>,
+<a class="xref" href="#install_param_int_ex">install_param_int_ex</a>,
+<a class="xref" href="#install_int">install_int</a>.</font></blockquote>
+<b>int <a name="install_param_int_ex">install_param_int_ex</a>(void (*proc)(void *), void *param, int speed);</b><br>
+   Como install_int_ex(), pero a la rutina callback se le pasará una copia
+   del puntero void especificado. Para desactivar este temporizador, use
+   remove_param_int() en vez de remove_int().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#remove_param_int">remove_param_int</a>,
+<a class="xref" href="#install_param_int">install_param_int</a>,
+<a class="xref" href="#install_int_ex">install_int_ex</a>.</font></blockquote>
+<b>void <a name="remove_param_int">remove_param_int</a>(void (*proc)(void *), void *param);</b><br>
+   Como remove_int(), pero se usa con las rutinas de temporización que tienen
+   parámetros. Si hay más de una copia de la misma rutina activa a la vez,
+   elegirá la rutina a desactivar comprobando el valor del parámetro (por lo
+   que no puede tener más de una copia de un mismo temporizador usando un
+   parámetro idéntico).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_param_int">install_param_int</a>,
+<a class="xref" href="#install_param_int_ex">install_param_int_ex</a>,
+<a class="xref" href="#remove_int">remove_int</a>.</font></blockquote>
+<b>int <a name="timer_can_simulate_retrace">timer_can_simulate_retrace</a>()</b><br>
+   Comprueba si es posible sincronizar el módulo de temporización con el
+   retrazo del monitor, dependiendo del entorno y plataforma actual (por el
+   momento esto sólo es posible ejecutándo un el programa en modo DOS puro y
+   en una resolución VGA o modo-X). Devuelve distinto de cero si la
+   simulación es posible.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#timer_simulate_retrace">timer_simulate_retrace</a>,
+<a class="xref" href="#timer_is_using_retrace">timer_is_using_retrace</a>.</font></blockquote>
+<b>void <a name="timer_simulate_retrace">timer_simulate_retrace</a>(int enable);</b><br>
+   El controlador DOS de temporización puede ser usado para simular
+   interrupciones de retrazo vertical. Una interrupción de retrazo puede ser
+   extremadamente útil para implementar una animacion suave, pero
+   desafortunadamente el hardware de la VGA no puede hacerlo. La Ega lo podía
+   hacer, y algunas SVGA pueden pero no completamente, y de forma no
+   suficientemente estandarizada para que sea útil. Allegro soluciona esto
+   programando el reloj para que genere una unterrupción cuando crea que va
+   a ocurrir, y leyendo la VGA dentro del controlador de interrupción para
+   asegurarse de que está sincronizado con el refresco del monitor. Esto
+   funciona bastante bien en algunas situaciones, pero hay muchos problemas:
+
+<p>
+   - Nunca use el simulador de retrazo en modos SVGA. Funcionará con algunas
+     tarjetas, pero no en otras, y tiene conflictos con la mayoría de las
+     implementaciones VESA. La simulación de retrazo sólo es fiable en el
+     modo 13 de la VGA y en el modo-X.
+
+<p>
+   - La simulación de retrazo no funciona bajo win95, porque win95 devuelve
+     basura cuando intento leer el tiempo transcurrido del PIT. Si alguien
+     sabe cómo solucionar esto, ¡que por favor me mande un email!
+
+<p>
+   - La simulación de retrazo conlleva mucha espera del controlador de
+     temporización con las interrupciones desactivadas. Esto reducirá la
+     velocidad del sistema de forma significante, y podría causar estática
+     el reproducir sonidos con tarjetas SB 1.0 (ya que no soportan la
+     auto-inicialización DMA: las SB 2.0 y superiores funcionarán bien).
+
+<p>
+   Considerando todos estos problemas, se aconsejaría no depender del
+   simulador de retrazo vertical. Si está trabajando en modo-X, y no le
+   importa que su programa funcione bajo win95, está bien, pero sería buena
+   idea dejar al usuario la posibilidad de desactivarlo.
+
+<p>
+   La simulación de retrazo debe ser activada antes de usar las funciones de
+   triple buffer en resoluciones del modo-X. Esto puede ser útil también
+   como una simple detección de retrazo, ya que leer vsync() puede hacer que
+   ignore algún retrazo de vez en cuando si justo una interrupción de
+   sonido o temporización ocurre a la vez. Cuando la simulación de retrazo
+   está activada, vsync() comprobará la variable retrace_count en vez de
+   leer los registros de la VGA, para que no pierda ningún retrazo incluso
+   si está siendo enmascarado por otras interrupciones.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg007.html#enable_triple_buffer">enable_triple_buffer</a>,
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#retrace_count">retrace_count</a>,
+<a class="xref" href="#retrace_proc">retrace_proc</a>,
+<a class="xref" href="alleg007.html#request_scroll">request_scroll</a>,
+<a class="xref" href="alleg010.html#vsync">vsync</a>,
+<a class="xref" href="#timer_can_simulate_retrace">timer_can_simulate_retrace</a>,
+<a class="xref" href="#timer_is_using_retrace">timer_is_using_retrace</a>.</font></blockquote>
+<b>int <a name="timer_is_using_retrace">timer_is_using_retrace</a>()</b><br>
+   Comprueba si el modulo de temporización está, en ese momento, sincronizado
+   con el monitor o no. Devuelve distinto de cero si lo está.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#timer_simulate_retrace">timer_simulate_retrace</a>,
+<a class="xref" href="#timer_can_simulate_retrace">timer_can_simulate_retrace</a>.</font></blockquote>
+<b>extern volatile int <a name="retrace_count">retrace_count</a>;</b><br>
+   Si el simulador de retrazo está instalado, esto es incrementado con cada
+   retrazo vertical, de otro modo es incrementado 70 veces por segundo
+   (ignorando los retrazos). Esto le permite controlar la velocidad de su
+   programa sin tener que instalar funciones de temporización propias.
+
+<p>
+   La velocidad del retrazo depende del modo gráfico. En el modo 13h y
+   resoluciones en modo-X de 200/400 líneas hay 70 retrazos por segundo, y
+   en modos-X de 240/480 líneas hay 60. Puede ser tan bajo como 50 (en modo
+   376x282) o tan alto como 92 (en modo 400x300).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#timer_simulate_retrace">timer_simulate_retrace</a>,
+<a class="xref" href="#retrace_proc">retrace_proc</a>.</font></blockquote>
+<b>extern void (*<a name="retrace_proc">retrace_proc</a>)();</b><br>
+   Si el simulador de retrazo está instalado, esta función será llamada
+   durante cada retrazo, de otro modo es llamada 70 veces por segundo
+   (ignorando los retrazos). Póngala a NULL para desactivar las llamadas.
+   Esta función obedece las mismas reglas que los temporizadores normales (es
+   decir: debe estar bloqueada (locked), y no puede llamar al DOS o funciones
+   de libc) pero incluso más: debe ejecutarse _muy_ rápido, o fastidiará la
+   sincronización del reloj. El único uso que veo para esta función es para
+   hacer manipulaciones de paleta, ya que el triple buffering puede hacerse
+   con la función request_scroll(), y la variable retrace_count puede ser
+   usada para temporizar su código. Si quiere alterar la paleta dentro de
+   retrace_proc, debe usar la función inline _set_color() en vez de la
+   corriente set_color() o set_palette(), y no debería intentar alterar más
+   de dos o tres colores de la paleta en un mismo retrazo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg010.html#_set_color">_set_color</a>,
+<a class="xref" href="#timer_simulate_retrace">timer_simulate_retrace</a>,
+<a class="xref" href="#timer_is_using_retrace">timer_is_using_retrace</a>,
+<a class="xref" href="#retrace_count">retrace_count</a>.</font></blockquote>
+<b>void <a name="rest">rest</a>(long time);</b><br>
+   Una vez que Allegro reprograma el reloj, la función estándar delay() no
+   funcionará, por lo que tendrá que usar ésta. El tiempo time se pasa en
+   milisegundos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#rest_callback">rest_callback</a>.</font></blockquote>
+<b>void <a name="rest_callback">rest_callback</a>(long time, void (*callback)())</b><br>
+   Como rest(), pero llama continuamente la función específica mientras está
+   esperando que pase el tiempo requerido.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_timer">install_timer</a>,
+<a class="xref" href="#rest">rest</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

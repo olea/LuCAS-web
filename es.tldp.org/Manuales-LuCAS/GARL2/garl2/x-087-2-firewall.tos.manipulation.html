@@ -1,0 +1,747 @@
+<HTML
+><HEAD
+><TITLE
+>Manipulación de los bits de TOS</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="Netfilter e 'IP Tables' (Núcleos 2.4)"
+HREF="x-087-2-firewall.future.html"><LINK
+REL="NEXT"
+TITLE="Comprobación de una
+configuración del cortafuegos"
+HREF="x-087-2-firewall.checkingconf.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.future.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.checkingconf.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.TOS.MANIPULATION">9.9. Manipulación de los bits de TOS</H1
+><P
+>&#13;
+
+Los bits del campo de tipo de servicio (TOS
+<A
+NAME="X-087-2-FW-TFN18"
+HREF="#FTN.X-087-2-FW-TFN18"
+>[1]</A
+>) son
+un conjunto de cuatro indicadores de un bit de la cabecera de IP.
+Si uno de estos indicadores de bit vale 1,
+un encaminador puede manipular el datagrama de forma diferente del
+caso en el que ningún indicador valiera 1.
+Cada uno de los cuatro bits tiene un propósito diferente y
+sólo uno de los bits de TOS puede valer 1 al mismo tiempo,
+es decir, las combinaciones no están permitidas. Estos indicadores
+de bit se denominan de "tipo de servicio" porque permiten que la
+aplicación que transmite los datos informe a la red del tipo
+de servicio de red que requiere.</P
+><P
+>Las clases de servicios de red disponibles son:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>Demora mínima</DT
+><DD
+><P
+>Se utiliza cuando se le da la máxima importancia al tiempo de
+viaje de un datagrama del 'host' de
+origen al 'host' de destino (demora).
+Por ejemplo, un suministrador de red podría estar utilizando
+tanto conexiones de red de fibra como por satélite. Los
+datos transportados por las conexiones por satélite tienen
+que viajar más lejos y su demora entre los mismos
+extremos será por lo general mayor
+que la de las conexiones de red terrestres.
+Un suministrador de red podría elegir asegurarse que
+los datagramas con este tipo de servicio no se transporten
+por satélite.</P
+></DD
+><DT
+>Rendimiento máximo</DT
+><DD
+><P
+>Se utiliza cuando el volumen de datos transmitidos en cualquier período
+de tiempo es importante. Existen numerosos tipos de aplicaciones de
+red para las que el tiempo de demora no es muy importante pero
+el rendimiento sí que lo es; por ejemplo, las transferencias
+de ficheros en bloque. Un suministrador de red podría elegir encaminar
+los datagramas con este tipo de servicio vía rutas de demora alta,
+pero de gran ancho de banda, como las conexiones por satélite.</P
+></DD
+><DT
+>Fiabilidad máxima</DT
+><DD
+><P
+>Se utiliza cuando es importante tener alguna certeza de que
+los datos llegarán al destino sin necesidad de una retransmisión.
+El protocolo IP puede transportarse sobre un número variado
+de medios de transmisión de bajo nivel. Mientras que SLIP y PPP son adecuados
+para protocolos de enlace de datos
+<A
+NAME="X-087-2-FW-TFN19"
+HREF="#FTN.X-087-2-FW-TFN19"
+>[2]</A
+>, no son tan fiables
+para transportar IP como otras redes, como las redes X.25.
+Un suministrador de red podría tener disponible una red alternativa,
+que ofreciera alta fiabilidad para transportar IP y que
+se utilizaría cuando se eligiera este tipo de servicio.</P
+></DD
+><DT
+>Coste mínimo</DT
+><DD
+><P
+>Se utiliza cuando resulta importante minimizar el coste de los
+datos transmitidos. El alquiler de ancho de banda de un satélite
+para una transmisión transoceánica cuesta generalmente menos
+que el alquier de espacio de un cable de fibra óptica sobre
+la misma distancia, por lo que los suministradores de red
+pueden elegir proporcionar ambos y cobrar de forma
+diferente según sea el que se utilice. En este escenario,
+el bit de tipo de servicio de &ldquo;coste mínimo&rdquo; 
+puede ocasionar que los datagramas sean encaminados vía la
+ruta de menor coste por satélite.</P
+></DD
+></DL
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN9118">9.9.1. Establecimiento de los bits de TOS con ipfwadm o ipchains</H2
+><P
+>&#13;
+Las órdenes <B
+CLASS="COMMAND"
+>ipfwadm</B
+> e <B
+CLASS="COMMAND"
+>ipchains</B
+> gestionan
+los bits de TOS prácticamente de la misma forma. En ambos casos, se especifica
+una regla que coincide con los datagramas que contengan un conjunto particular
+de bits de TOS, y en ambos se utiliza el argumento
+<TT
+CLASS="OPTION"
+>-t</TT
+> para especificar los cambios que se desean realizar.</P
+><P
+>Los cambios se especifican utilizando máscaras de dos bits. Se realiza
+un AND lógico con la primera
+de estas máscaras de bits y el campo de las opciones de IP, mientras
+que se realiza un OR exclusivo con la segunda. Por si puede parecer
+complicado, en un momento se darán las recetas que se necesitan 
+para habilitar cada uno de los tipos de servicio.</P
+><P
+>Las máscaras de bit se especifican utilizando valores hexadecimales de
+ocho bits. Tanto
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> como <B
+CLASS="COMMAND"
+>ipchains</B
+> utilizan
+la misma sintaxis para el argumento:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="LITERAL"
+>-t <TT
+CLASS="REPLACEABLE"
+><I
+>máscara_and</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>máscara_xor</I
+></TT
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><P
+>Afortunadamente, pueden utilizarse los mismo argumentos de máscara cada vez
+que se desee establececer un tipo de servicio particular, lo que ahorra
+el tener que averiguarlas cada vez. En
+la <A
+HREF="x-087-2-firewall.tos.manipulation.html#X-087-2-FIREWALL.IPCHAINS.TOS.RECIPES"
+>Tabla 9-3</A
+> se presentan
+junto con algunas sugerencias de uso.</P
+><DIV
+CLASS="TABLE"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.TOS.RECIPES"><P
+><B
+>Tabla 9-3. Sugerencias de uso de las máscaras de bits de TOS</B
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+WIDTH="144"
+ALIGN="LEFT"
+VALIGN="TOP"
+>TOS</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>ANDmask</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>XORmask</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Uso sugerido</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+WIDTH="144"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Demora mínima</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x01</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x10</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>ftp, telnet, ssh</TD
+></TR
+><TR
+><TD
+WIDTH="144"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Rendimiento máximo</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x01</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x08</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>ftp-data, www</TD
+></TR
+><TR
+><TD
+WIDTH="144"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Fiabilidad máxima</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x01</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x04</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>snmp, dns</TD
+></TR
+><TR
+><TD
+WIDTH="144"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Coste mínimo</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x01</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>0x02</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>nntp, smtp</TD
+></TR
+></TBODY
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN9179">9.9.2. Establecimiento de los bits de TOS con iptables</H2
+><P
+>&#13;La herramienta 
+<B
+CLASS="COMMAND"
+>iptables</B
+> permite especificar reglas
+que capturen sólo los datagramas con los bits de TOS coincidentes
+con los valores prederminados por la opción
+<TT
+CLASS="OPTION"
+>-m tos</TT
+>,
+y que establezcan los bits de TOS de los datagramas
+de IP que coincidan con una regla con el blanco
+<TT
+CLASS="LITERAL"
+>-j
+TOS</TT
+>.
+Pueden establecerse los bits de TOS sólamente en las cadenas
+<TT
+CLASS="LITERAL"
+>FORWARD</TT
+> y <TT
+CLASS="LITERAL"
+>OUTPUT</TT
+>.
+La coincidencia y el establecimiento ocurren de forma independiente.
+Se puede configurar todo tipo de reglas interesante. Por ejemplo,
+puede configurarse una regla que descarte todos los datagramas con
+una cierta combinación de bits de TOS, o una regla que
+establezca los bits de TOS sólamente de los datagramas que provengan 
+de unos ciertos 'hosts'. La mayoría de las veces, se utilizarán
+reglas que contengan tanto la coincidencia como el establecimiento
+para así realizar traducciones de bits de TOS, como ya se podía
+hacer con
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> o <B
+CLASS="COMMAND"
+>ipchains</B
+>.</P
+><P
+>En lugar de la configuración complicada de dos máscaras de
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> e <B
+CLASS="COMMAND"
+>ipchains</B
+>,
+<B
+CLASS="COMMAND"
+>iptables</B
+> utiliza la estrategia más
+simple de especificar de forma plana los bits de TOS que deben
+buscar coincidencias con, o los bits de TOS que deben establecerse.
+Además, en lugar de tener que recordar y utilizar el valor
+hexadecimal, puede especificarse los bits de TOS utilizando los
+nombres mnemotécnicos mostrados en la tabla siguiente.</P
+><P
+>La sintaxis general utilizada para buscar coincidencias con los bits de TOS
+se parece a:
+ 
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="LITERAL"
+>-m tos --tos <TT
+CLASS="REPLACEABLE"
+><I
+>nombre_mnemotécnico</I
+></TT
+> [<TT
+CLASS="REPLACEABLE"
+><I
+>otros_args</I
+></TT
+>] -j <TT
+CLASS="REPLACEABLE"
+><I
+>objetivo</I
+></TT
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La sintaxis general utilizada para establecer los bits de TOS
+se parece a:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="LITERAL"
+>[<TT
+CLASS="REPLACEABLE"
+><I
+>otros_args</I
+></TT
+>] -j TOS --set <TT
+CLASS="REPLACEABLE"
+><I
+>nombre_mnemotécnico</I
+></TT
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Recuérdese que las dos posibilidades generalmente se utilizarán juntas, pero que
+también pueden ser utilizadas de forma independiente si
+se quiere una configuración que así lo requiera.</P
+><DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="X-087-2-FIREWALL.IPTABLES.TOS.RECIPES"><P
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Mnemónico</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Hexadecimal</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Normal-Service<A
+NAME="X-087-2-FW-TFN20"
+HREF="#FTN.X-087-2-FW-TFN20"
+>[a]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0x00</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Minimize-Cost<A
+NAME="X-087-2-FW-TFN21"
+HREF="#FTN.X-087-2-FW-TFN21"
+>[b]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0x02</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Maximize-Reliability<A
+NAME="X-087-2-FW-TFN22"
+HREF="#FTN.X-087-2-FW-TFN22"
+>[c]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0x04</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Maximize-Throughput<A
+NAME="X-087-2-FW-TFN23"
+HREF="#FTN.X-087-2-FW-TFN23"
+>[d]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0x08</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Minimize-Delay<A
+NAME="X-087-2-FW-TFN24"
+HREF="#FTN.X-087-2-FW-TFN24"
+>[e]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0x10</TD
+></TR
+></TBODY
+><TR
+><TD
+COLSPAN="2"
+>Notas:<BR><A
+NAME="FTN.X-087-2-FW-TFN20"
+>a. </A
+> N. del T.: "servicio normal" <BR><A
+NAME="FTN.X-087-2-FW-TFN21"
+>b. </A
+> N. del T.: "minimizar los costes" <BR><A
+NAME="FTN.X-087-2-FW-TFN22"
+>c. </A
+> N. del T.: "maximizar la fiabilidad" <BR><A
+NAME="FTN.X-087-2-FW-TFN23"
+>d. </A
+> N. del T.: "maximizar el rendimiento" <BR><A
+NAME="FTN.X-087-2-FW-TFN24"
+>e. </A
+> N. del T.: "minimizar la demora" <BR></TD
+></TR
+></TABLE
+><P
+></P
+></DIV
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN18"
+HREF="x-087-2-firewall.tos.manipulation.html#X-087-2-FW-TFN18"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: 'Type Of Service' en el original en inglés</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN19"
+HREF="x-087-2-firewall.tos.manipulation.html#X-087-2-FW-TFN19"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: 'datalink' en el original en inglés</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.future.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.checkingconf.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Netfilter e 'IP Tables' (Núcleos 2.4)</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Comprobación de una
+configuración del cortafuegos</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

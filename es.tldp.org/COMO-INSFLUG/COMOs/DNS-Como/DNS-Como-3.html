@@ -1,0 +1,303 @@
+<HTML>
+<HEAD>
+<TITLE>DNS COMO: Servidor de nombres de ``s&oacute;lo cacheo''.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="DNS-Como-2.html">Anterior</A>
+<A HREF="DNS-Como-4.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Servidor de nombres de ``s&oacute;lo cacheo''.</A></H2>
+
+
+<P>Un primer ataque a la configuraci&oacute;n DNS, muy &uacute;til para los usuarios de
+conexiones telef&oacute;nicas.</P>
+<P>Un servidor de nombres de ``s&oacute;lo cacheo'' (<I>caching only nameserver</I>) 
+obtendr&aacute; la respuesta a las solicitudes de nombre provenientes de su red
+preguntando a servidores externos, recordando la respuesta para la pr&oacute;xima
+vez que lo necesite. </P>
+<P>Lo primero que necesita es el archivo llamado <CODE>/etc/named.boot</CODE>. 
+Este archivo es le&iacute;do cuando se inicia <CODE>named</CODE>. Por ahora contendr&aacute;
+simplemente: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+;  Archivo boot de servidor de nombres de solo cacheo:
+;
+directory /var/named
+;
+; tipo          dominio                         fichero o maquina fuente
+cache           .                               root.cache
+primary         0.0.127.in-addr.arpa            pz/127.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<DL>
+<DT><B>MUY IMPORTANTE:</B><DD><P>En algunas versiones de este documento, en el
+contenido de los archivos que aqu&iacute; aparecen hay un par de espacios o
+tabuladores antes del primer car&aacute;cter no blanco. Se supone que estos
+caracteres <B>NO</B> est&aacute;n en el archivo.  Borre cualquier espacio
+inicial de los archivos que corte y pegue de este COMO. </P>
+</DL>
+</P>
+<P>La l&iacute;nea <CODE>directory</CODE> indica a <CODE>named</CODE> d&oacute;nde buscar los
+archivos. Todos los archivos indicados a continuaci&oacute;n ser&aacute;n relativos a
+este directorio.  <CODE>/var/named</CODE> es el directorio correcto de acuerdo
+con el <I> LFS, Linux File system Standard</I>. As&iacute;, <CODE>pz</CODE> es un
+directorio bajo <CODE>/var/named</CODE>, esto es, <CODE>/var/named/pz</CODE>. </P>
+
+<H2><A NAME="ss3.1">3.1 <CODE>/var/named/root.cache</CODE></A></H2>
+
+
+<P>Vamos a describir el archivo llamado <CODE>/var/named/root.cache</CODE>
+nombrado en el archivo <CODE>boot.named</CODE>. </P>
+<P><CODE>/var/named/root.cache</CODE> deber&iacute;a contener esto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ .       518400  NS      D.ROOT-SERVERS.NET.
+ .       518400  NS      E.ROOT-SERVERS.NET.
+ .       518400  NS      I.ROOT-SERVERS.NET.
+ .       518400  NS      F.ROOT-SERVERS.NET.
+ .       518400  NS      G.ROOT-SERVERS.NET.
+ .       518400  NS      A.ROOT-SERVERS.NET.
+ .       518400  NS      H.ROOT-SERVERS.NET.
+ .       518400  NS      B.ROOT-SERVERS.NET.
+ .       518400  NS      C.ROOT-SERVERS.NET.
+;
+D.ROOT-SERVERS.NET.     3600000 A       128.8.10.90
+E.ROOT-SERVERS.NET.     3600000 A       192.203.230.10
+I.ROOT-SERVERS.NET.     3600000 A       192.36.148.17
+F.ROOT-SERVERS.NET.     3600000 A       192.5.5.241
+G.ROOT-SERVERS.NET.     3600000 A       192.112.36.4
+A.ROOT-SERVERS.NET.     3600000 A       198.41.0.4
+H.ROOT-SERVERS.NET.     3600000 A       128.63.2.53
+B.ROOT-SERVERS.NET.     3600000 A       128.9.0.107
+C.ROOT-SERVERS.NET.     3600000 A       192.33.4.12
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>¡Recuerde lo que dije sobre los espacios iniciales!</P>
+<P>Este archivo describe los servidores de nombres ra&iacute;z en el mundo. Este
+archivo cambiar&aacute; a lo largo del tiempo y tiene que ser mantenido y
+actualizado con una cierta regularidad.  Vea la secci&oacute;n de mantenimiento
+(
+<A HREF="DNS-Como-6.html#mantenimiento">mantenimiento</A>) para saber c&oacute;mo mantenerlo actualizado. Este
+archivo est&aacute; descrito en la p&aacute;gina <CODE>man</CODE> de <CODE>named</CODE>, pero
+esto es, IMHO
+<SL><I>In My Honest Opinion</I>, EMMO o <I>En Mi
+Modesta Opini&oacute;n</I> en castellano.</SL>
+, m&aacute;s apropiado para gente
+que ya comprende <CODE>named</CODE>.</P>
+<P>La siguiente l&iacute;nea de <CODE>named.boot</CODE> es la l&iacute;nea <CODE>primary</CODE>.
+Explicar&eacute; su uso en un cap&iacute;tulo posterior: Por ahora, cree un archivo
+llamado <CODE>127.0.0</CODE> en el subdirectorio <CODE>pz</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+@               IN      SOA     ns.linux.bogus. hostmaster.linux.bogus. (
+                                1       ; Numero de Serie
+                                28800   ; Tasa de Refresco
+                                7200    ; Tasa de Reintento
+                                604800  ; Caducidad para secundario
+                                86400)  ; Validez para Clientes
+                        NS      ns.linux.bogus.
+1                       PTR     localhost.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>A continuaci&oacute;n necesita el archivo <CODE>/etc/resolv.conf</CODE>, que ser&aacute;
+algo similar a este:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+search subdominio.su-dominio.edu su-dominio.edu
+nameserver 127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La l&iacute;nea `<CODE>search</CODE>' especifica en qu&eacute; dominios se buscar&iacute;a para
+cualquier nombre de m&aacute;quina a la que quiera conectar. La l&iacute;nea
+`<CODE>nameserver</CODE>' especifica la direcci&oacute;n de su servidor de nombres,
+en este caso su propia m&aacute;quina, ya que es ah&iacute; donde <CODE>named</CODE> se
+estar&aacute; ejecutando. Si quiere una lista de varios servidores ponga una
+l&iacute;nea <CODE>nameserver</CODE> para cada uno. (Nota: <CODE>named</CODE> nunca lee
+este archivo, lo hace el resolutor que usa <CODE>named</CODE>).</P>
+<P>Para ilustrar lo que hace este archivo: <BR> Si un cliente intenta buscar
+a <CODE>fulano</CODE>, <CODE>fulano.subdominio.su-dominio.edu</CODE> se probar&aacute;
+primero, a continuaci&oacute;n <CODE>fulano.su-dominio.edu</CODE>, y finalmente
+<CODE>fulano</CODE>. Si un cliente intenta buscar <CODE>sunsite.unc.edu</CODE>,
+<CODE>sunsite.unc.edu.subdominio.su-dominio.edu</CODE> se prueba primero (s&iacute;,
+es tonto, pero es as&iacute; como tiene que ser), despu&eacute;s
+<CODE>sunsite.unc.edu.su-dominio.edu</CODE>, y finalmente
+<CODE>sunsite.unc.edu</CODE>. Puede que no quiera poner demasiados dominios en
+la l&iacute;nea <CODE>search</CODE>, lleva su tiempo el efectuar las b&uacute;squedas. </P>
+<P>El ejemplo supone que pertenece al dominio
+<CODE>subdominio.su-dominio.edu</CODE>, su m&aacute;quina probablemente se llame
+<CODE>su-maquina.subdominio.su-dominio.edu</CODE>. La l&iacute;nea <CODE>search</CODE> no
+deber&iacute;a contener su <I>TLD</I> (<I>Top Level Domain</I> o <I>Dominio de
+Nivel Superior</I>, `<CODE>edu</CODE>' en este caso).  Si necesita conectar
+frecuentemente con m&aacute;quinas de otro dominio, puede a&ntilde;adir ese dominio a la
+l&iacute;nea <CODE>search</CODE> como sigue: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+search subdominio.su-dominio.edu su-dominio.edu otro-dominio.com
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y as&iacute; sucesivamente. Obviamente necesita poner un dominio real en su
+lugar. Por favor, d&eacute;se cuenta de la falta de puntos al final de estos
+nombres de dominio. </P>
+<P>Lo siguiente, dependiendo de su versi&oacute;n de la librer&iacute;a <CODE>libc</CODE> puede
+necesitar arreglar <CODE>/etc/nsswitch.conf</CODE> o <CODE>/etc/host.conf</CODE>. 
+Si ya tiene <CODE>nsswitch.conf</CODE> corregiremos &eacute;ste, en otro caso
+arreglaremos <CODE>host.conf</CODE>.</P>
+
+
+<H2><A NAME="ss3.2">3.2 <CODE>/etc/nsswitch.conf</CODE></A></H2>
+
+
+<P>Se trata de un extenso archivo donde se especifica de d&oacute;nde obtener las
+diferentes clases de tipos de datos, y de cu&aacute;l archivo o base de datos. 
+Generalmente contiene comentarios &uacute;tiles al comienzo, que por cierto
+deber&iacute;a considerar leer ahora. Despu&eacute;s busque la l&iacute;nea que comienza por
+<CODE>hosts:</CODE>, debe leerse:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+hosts:      files dns
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si no hay una l&iacute;nea que comience por <CODE>`hosts:'</CODE> p&oacute;ngala. Eso indica
+que los programas deben mirar primero en el fichero <CODE>/etc/hosts</CODE> ,
+y despu&eacute;s comprobar DNS de acuerdo con <CODE>resolv.conf</CODE>.</P>
+
+
+<H2><A NAME="ss3.3">3.3 <CODE>/etc/host.conf</CODE></A></H2>
+
+
+<P>Probablemente contiene varias l&iacute;neas, una de ellas deber&iacute;a comenzar con
+<CODE>order</CODE> y tendr&iacute;a que parecerse a lo siguiente: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+order hosts,bind
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si no hay una l&iacute;nea <CODE>order</CODE> tiene que incluirla.  Esto le indica a
+las rutinas de resoluci&oacute;n de nombres que busquen primero en
+<CODE>/etc/hosts</CODE>, y pregunte luego al servidor de nombres (que dijo en
+<CODE>resolv.conf</CODE> que est&aacute; en <CODE>127.0.0.1</CODE>). Estos dos &uacute;ltimos
+archivos est&aacute;n documentados en la p&aacute;gina de manual <CODE>resolv (8)</CODE>
+(haciendo <CODE>man 8 resolv</CODE>)  en la mayor&iacute;a de las distribuciones
+<B>Linux</B>. Esta p&aacute;gina de manual es de obligada lectura <I>IMHO</I>, y
+todos, especialmente los administradores DNS, deber&iacute;an leerla. H&aacute;galo
+ahora, si se dice a s&iacute; mismo <I>``lo har&eacute; m&aacute;s tarde''</I> entonces nunca
+lo har&aacute;.</P>
+
+
+<H2><A NAME="ss3.4">3.4 Arranque de <CODE>named</CODE></A></H2>
+
+
+<P>Despu&eacute;s de todo esto, ya es hora de iniciar <CODE>named</CODE>.  Si est&aacute;
+utilizando una conexi&oacute;n telef&oacute;nica, con&eacute;ctese primero. Teclee <CODE>ndc
+start</CODE> y presione <CODE>return</CODE>, sin opciones. Si tiene problemas
+intente <CODE>/usr/sbin/ndc start</CODE> en su lugar.  Si el problema persiste
+vea la secci&oacute;n PUF (
+<A HREF="DNS-Como-8.html#PUF">PUF</A>). Ahora ya puede comprobar su
+configuraci&oacute;n. Si mira en el archivo de mensajes de <CODE>syslog</CODE>
+(generalmente llamado <CODE>/var/adm/messages</CODE>, o en el directorio
+<CODE>/var/log</CODE>) mientras inicia <CODE>named</CODE>, (haga <CODE>tail -f
+/var/adm/messages</CODE>) deber&iacute;a ver algo como esto: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ Jun 30 21:50:55 roke named[2258]: starting.  named 4.9.4-REL Sun Jun 30 21:29:03 MET DST 1996   
+                            janl@roke.slip.ifi.uio.no:/var/tmp/bind/named
+ Jun 30 21:50:55 roke named[2258]: cache zone &quot;&quot; loaded (serial 0)
+ Jun 30 21:50:55 roke named[2258]: primary zone &quot;0.0.127.in-addr.arpa&quot; loaded (serial 1)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si hay cualquier mensaje de error se deber&aacute; a alguna equivocaci&oacute;n. 
+<CODE>named</CODE> determinar&aacute; el archivo que ocasiona el error (de
+<CODE>named.boot</CODE> o <CODE>root.cache</CODE> espero :-). Mate a <CODE>named</CODE> y
+vuelva a comprobar el archivo.</P>
+<P>Ahora es el momento de iniciar <CODE>nslookup</CODE> para examinar su trabajo: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     $ nslookup
+     Default Server:  localhost
+     Address:  127.0.0.1
+
+     &gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si es eso lo que obtiene entonces est&aacute; funcionando.  Eso espero. En
+cualquier otro caso, vuelva atr&aacute;s y compru&eacute;belo todo. Cada vez que cambie
+el archivo <CODE>named.boot</CODE> tiene que reinicializar <CODE>named</CODE>
+usando el comando <CODE>ndc restart</CODE>.</P>
+<P>Ahora puede introducir una consulta. Intente buscar alguna m&aacute;quina cercana
+a la suya. <CODE>pat.uio.no</CODE> est&aacute; cerca de m&iacute;, en la Universidad de
+Oslo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; pat.uio.no
+     Server:  localhost
+     Address:  127.0.0.1
+
+     Name:    pat.uio.no
+     Address:  129.240.2.50
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>nslookup</CODE> ahora solicita a <CODE>named</CODE> que busque la m&aacute;quina
+<CODE>pat.uio.no</CODE>.  Contactar&aacute; con alguna de las m&aacute;quinas servidoras de
+nombres nombradas en el archivo <CODE>root.cache</CODE>, y preguntar&aacute; all&iacute;.
+Puede tardar un poco antes de conseguir el resultado ya que busca todos
+los dominios indicados en <CODE>/etc/resolv.conf</CODE>. </P>
+<P>Si intenta de nuevo obtendr&aacute; esto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; pat.uio.no
+     Server:  localhost
+     Address:  127.0.0.1
+
+     Non-authoritative answer:
+     Name:    pat.uio.no
+     Address:  129.240.2.50
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Nota a la l&iacute;nea ``<CODE>Non-authoritative answer:</CODE>'' : le dedicaremos un
+poco de tiempo. Esto significa que <CODE>named</CODE> no sale de la red para
+preguntar esta vez, en su lugar mira en su cach&eacute; y lo encuentra all&iacute;. Pero
+la informaci&oacute;n de la cach&eacute; puede no estar actualizada. Entonces informa de
+este peligro (de modo un tanto eufem&iacute;stico) con <CODE>Non-authorative
+answer:</CODE>. Cuando <CODE>nslookup</CODE> dice esto la segunda vez que
+pregunta por una m&aacute;quina, es un signo seguro de que <CODE>named</CODE>
+almacena la informaci&oacute;n en la cach&eacute; y que est&aacute; funcionando. Ahora puede
+salir de <CODE>nslookup</CODE> usando el comando <CODE>exit</CODE>. </P>
+<P>Si es un usuario de conexiones telef&oacute;nicas, (ppp, slip) por favor lea la
+secci&oacute;n sobre conexiones telef&oacute;nicas (
+<A HREF="DNS-Como-7.html#timofonicas">timofonicas</A>), hay algunas
+advertencias para Vd.</P>
+<P>Ahora ya sabe c&oacute;mo configurar un servidor de nombres de ``s&oacute;lo cacheo''. 
+T&oacute;mese una cerveza, un vaso de leche o cuaquier otra cosa que prefiera
+para celebrarlo.</P>
+
+
+<HR>
+<A HREF="DNS-Como-2.html">Anterior</A>
+<A HREF="DNS-Como-4.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

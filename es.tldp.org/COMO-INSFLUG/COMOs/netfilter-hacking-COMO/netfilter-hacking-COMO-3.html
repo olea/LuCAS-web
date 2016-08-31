@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.7.4">
+ <TITLE>Linux netfilter Hacking COMO: La arquitectura de Netfilter</TITLE>
+ <LINK HREF="netfilter-hacking-COMO-4.html" REL=next>
+ <LINK HREF="netfilter-hacking-COMO-2.html" REL=previous>
+ <LINK HREF="netfilter-hacking-COMO.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="netfilter-hacking-COMO-4.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-2.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="s3">3.</A> <A HREF="netfilter-hacking-COMO.html#toc3">La arquitectura de Netfilter</A></H2>
+
+<P>Netfilter es meramente una serie de ganchos en varios puntos de la 
+pila de un protocolo (a estas alturas IPv4, IPv6 y DECnet). El diagrama 
+de recorrido (idealizado) de IPv4 se parece a lo siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Un paquete atravesando el sistema Netfilter:
+
+   --->[1]--->[ROUTE]--->[3]--->[4]--->
+                 |            ^
+                 |            |
+                 |         [ROUTE]
+                 v            |
+                [2]          [5]
+                 |            ^
+                 |            |
+                 v            |
+</PRE>
+</CODE></BLOCKQUOTE>
+<A NAME="netfilter-traversal"></A> </P>
+<P>Los paquetes entran desde la izquierda: tras haber pasado las sencillas 
+comprobaciones de sanidad (es decir, no est&aacute; truncado, la suma de control 
+IP es correcta y no es una recepci&oacute;n promiscua), son pasados al gancho 
+NF_IP_PRE_ROUTING [1] del sistema netfilter.</P>
+
+<P>Luego entran en el c&oacute;digo de enrutamiento, que decide si el paquete est&aacute; 
+destinado a otra interfaz o a un proceso local. El c&oacute;digo de enrutamiento 
+puede rechazar paquetes que no se pueden enrutar.</P>
+
+<P>Si est&aacute; destinado a la propia m&aacute;quina, se llama de nuevo al sistema 
+netfilter para el gancho NF_IP_LOCAL_IN [2], antes de ser enviado al 
+proceso (si hay alguno).</P>
+
+<P>Si, en cambio, est&aacute; destinado hacia otra interfaz, se llama al sistema 
+netfilter para el gancho NF_IP_FORWARD [3].</P>
+
+<P>Luego el paquete pasa por un gancho final, el gancho NF_IP_POST_ROUTING 
+[4], antes de ser enviado de nuevo al cable.</P>
+
+<P>Para los paquetes creados localmente, se llama al gancho NF_IP_LOCAL_OUT 
+[5]. Aqu&iacute; puede ver que el enrutamiento ocurre despu&eacute;s haber llamado a 
+este gancho: de hecho, se llama primero al c&oacute;digo de enrutamiento (para 
+averiguar la direcci&oacute;n IP y algunas opciones IP), y luego se le llama 
+otra vez si el paquete ha sido alterado.</P>
+
+<H2><A NAME="ss3.1">3.1 La base de Netfilter</A>
+</H2>
+
+<P>Ahora que tenemos un ejemplo de netfilter en IPv4, ya puede ver cu&aacute;ndo se 
+activa cada gancho. &Eacute;sta es la esencia de netfilter.</P>
+
+<P>Uno o varios m&oacute;dulos del kernel pueden registrarse para escuchar en 
+alguno de estos ganchos. Luego, cuando se llama al gancho de netfilter 
+desde el c&oacute;digo de red, los m&oacute;dulos registrados en ese punto tienen 
+libertad para manipular el paquete. Un m&oacute;dulo puede decirle a netfilter 
+que haga una de estas cinco cosas:</P>
+<P>
+<OL>
+<LI> NF_ACCEPT: contin&uacute;a el recorrido normalmente.</LI>
+<LI> NF_DROP: rechaza el paquete; no contin&uacute;es el recorrido.</LI>
+<LI> NF_STOLEN: me hago cargo del paquete; no contin&uacute;es el 
+recorrido.</LI>
+<LI> NF_QUEUE: pon el paquete en una cola (normalmente para tratar con 
+el espacio de usuario).</LI>
+<LI> NF_REPEAT: llama de nuevo a este gancho.</LI>
+</OL>
+</P>
+
+<P>Las otras partes de netfilter (manejo de paquetes en la cola, comentarios 
+&uacute;tiles) se cubrir&aacute;n luego en la secci&oacute;n del kernel.</P>
+
+<P>Sobre esta base, podemos construir manipulaciones de paquetes bastante 
+complejas, como se muestra en las dos pr&oacute;ximas secciones.</P>
+
+<H2><A NAME="ss3.2">3.2 Selecci&oacute;n de paquetes: IP Tables</A>
+</H2>
+
+<P>Se ha construido una sistema de selecci&oacute;n de paquetes llamado IP Tables 
+sobre el sistema netfilter. Es un descendiente directo de ipchains (que 
+vino de ipfwadm, que vino del ipfw IIRC de BSD), con extensibilidad. Los 
+m&oacute;dulos del kernel pueden registrar una tabla nueva, e indicarle a un 
+paquete que atraviese una tabla dada. Este m&eacute;todo de selecci&oacute;n de 
+paquetes se utiliza para el filtrado de paquetes (la tabla `filter'), 
+para la Traducci&oacute;n de Direcciones de Red (la tabla `nat') y para la 
+manipulaci&oacute;n general de paquetes antes del enrutamiento (la tabla 
+`mangle').</P>
+
+<H3>Filtrado de Paquetes</H3>
+
+<P>Esta tabla, `filter', nunca altera los paquetes: s&oacute;lo los filtra.</P>
+
+<P>Una de las ventajas de iptables sobre ipchains es que es peque&ntilde;o y 
+r&aacute;pido, y se engancha a netfilter en los puntos NF_IP_LOCAL_IN, 
+NF_IP_FORWARD y NF_IP_LOCAL_OUT. Esto significa que para cualquier 
+paquete dado, existe un (y s&oacute;lo un) posible lugar donde pueda ser 
+filtrado. Esto hace las cosas mucho m&aacute;s sencillas. Adem&aacute;s, el hecho de 
+que el sistema netfilter proporcione las dos interfaces de entrada 
+(input) y salida (output) para el gancho NF_IP_FORWARD significa que hay 
+bastantes tipos de filtrado que se simplifican mucho.</P>
+
+<P>Nota: He portado las porciones del kernel de ipchains e ipfwadm en forma 
+de m&oacute;dulos sobre netfilter, permitiendo el uso de las viejas herramientas 
+de usuario ipfwadm y ipchains sin que se requiera una actualizaci&oacute;n.</P>
+
+<H3>NAT</H3>
+
+<P>Esto es el reino de la tabla `nat', que se alimenta de paquetes mediante  
+tres ganchos de netfilter: para los paquetes no locales, los ganchos 
+NF_IP_PRE_ROUTING y NF_IP_POST_ROUTING son perfectos para las 
+alteraciones en el destino y el origen, respectivamente. Para alterar el 
+destino de los paquetes locales, se utiliza el gancho NF_IP_LOCAL_OUT.</P>
+
+<P>Esta tabla es ligeramente distinta a la tabla `filter' en el sentido de 
+que s&oacute;lo el primer paquete de una conexi&oacute;n nueva atravesar&aacute; la tabla: el 
+resultado de este recorrido se aplica luego a todos los paquetes futuros 
+de la misma conexi&oacute;n.</P>
+
+<H3>Enmascaramiento, redireccionamiento de puertos y proxys transparentes</H3>
+
+<P>Divido NAT en NAT de Origen (en el que se altera el origen del primer 
+paquete), y NAT de Destino (en el que se altera el destino del primer 
+paquete).</P>
+
+<P>El enmascaramiento es una forma especial de NAT de Origen; el 
+redireccionamiento de puertos y los proxys transparentes son formas 
+especiales de NAT de Destino. Ahora todas se hacen utilizando el sistema 
+NAT, en vez de ser entidades independientes.</P>
+
+<H2><A NAME="ss3.3">3.3 Seguimiento de conexiones</A>
+</H2>
+
+<P>El seguimiento de conexiones es fundamental para NAT, pero est&aacute; 
+implementado en un m&oacute;dulo aparte; esto permite una extensi&oacute;n del 
+filtrado de paquetes para utilizar de manera limpia y sencilla el
+seguimiento de conexiones (el m&oacute;dulo `state').</P>
+
+<H2><A NAME="ss3.4">3.4 Otros a&ntilde;adidos</A>
+</H2>
+
+<P>La nueva flexibilidad nos da la oportunidad de hacer cosas 
+realmente chulas, y permitir a la gente que escriba mejoras o complete 
+recambios, que pueden mezclarse y combinarse.</P>
+
+<HR>
+<A HREF="netfilter-hacking-COMO-4.html">Página siguiente</A>
+<A HREF="netfilter-hacking-COMO-2.html">Página anterior</A>
+<A HREF="netfilter-hacking-COMO.html#toc3">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_0.6">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="Applications">
+ <TITLE>Applications : Acelerando pequeñas bases de datos en Linux</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 CELLSPACING=0 CELLPADDING=5 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/Mark-Nielsen.jpg" ALT="[Foto del autor]" HEIGHT=159 WIDTH=110>
+<BR>por  <A HREF="mailto:mark@tcu-inc.com">Mark Nielsen</A>
+<BR><BR><I>Sobre el Author:</I><BR><P>
+El autor trabaja en
+
+<a href="http://www.tcu-inc.com">The Computer Underground, Inc.</a>
+ como experto en Linux y se divierte haciendo tonterias y proyectos tontos, porque, ¡vaya!, los ordenadores SE SUPONE que son divertidos. Mark también trabaja en ZING,
+
+<a href="http://www.genericbooks.com">
+www.genericbooks.com</a>
+ como voluntario para ayudar y promover el software y las publicaciones libres y abiertas.
+
+</P><P><FONT COLOR="#336633">Contenidos</FONT>:
+<OL>
+  <LI><A HREF="#lfindex0">Introducción</A></LI>
+  <LI><A HREF="#lfindex1">Preparando un ramdisk para /Test</A></LI>
+  <LI><A HREF="#lfindex2">Configurando un ramdisk para PostgreSQL </A></LI>
+  <LI><A HREF="#lfindex3">Comentarios acerca de la velocidad</A></LI>
+  <LI><A HREF="#lfindex4">Comentarios</A></LI>
+  <LI><A HREF="#lfindex5">Referencias</A></LI>
+</OL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Acelerando pequeñas bases de datos en Linux</H2>
+ <IMG SRC="../../common/images/illustration21.jpg" ALT="[Ilustración]" HSPACE=10 HEIGHT=100 WIDTH=100><P><FONT COLOR="#336633">Resumen</FONT>:
+<P>
+
+Este artículo muestra como acelerar un servidor de bases de datos PostgreSQL usando un disco ram (RAMDISK).
+
+</P><HR size="2" noshade><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducción</H2>
+
+Ok, ¿qué es un disco ram y como lo podemos usar para acelerar un servidor de bases de datos como  PostgreSQL?
+
+<p>
+Un ramdisk es básicamente memoria que pretendes usar como si fuera una unidad de disco duro. En cualquier momento que usas un ramdisk, básicamente estás usando tu memoria y no tu disco duro. Hay ventajas y desventajas de esta aproximación. Fundamentalmente, la gran ventaja es que dado que estás usando memoria, cualquier cosa que estés haciendo será mucho más rápida dado que el disco duro es más lento que la memoria. La gran desventaja es que si haces cambios en el servidor de bases de datos y reinicias el ordenador, perderás todos los cambios.
+<p>
+En el caso del servidor de bases de datos PostgreSQL, podrás aumentar
+la velocidad si colocas todas las bases de datos en memoria.
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Preparando un ramdisk para /Test</H2>
+
+
+Para preparar uno de tus ramdisks por defecto en el directorio /Test, haz lo siguiente:
+
+<pre>
+
+mkdir -p /Test
+mkfs -t ext2 /dev/ram0
+mount /dev/ram0 /Test
+</pre>
+
+Para cambiar el tamaño del ramdisk a 50MB, haz lo siguiente:
+
+<ol>
+	<li> Decide como de grande quieres que sea el disco ram, en este caso usaremos 50MB
+	<li> Ahora, edita el fichero /etc/lilo.conf y ejecuta el
+comando "lilo". Lilo es un programa que le dice al ordenador como debe arrancar cuando lo enciendes y además modifica algunos parámetros del arranque de Linux. Añade "ramdisk=50000" como yo hice en este fichero:
+	
+		<pre>
+boot=/dev/hda
+map=/boot/map
+install=/boot/boot.b
+prompt
+timeout=50
+image=/boot/vmlinuz-2.2.5-15
+        label=linux
+        root=/dev/hda2
+        read-only
+        ramdisk=50000		
+		</pre>
+	<li> Ahora ejecuta el comando "lilo" y reinicia el ordenador
+
+Después de reiniciar el ordenador ejecuta los 3 comandos siguientes:
+<pre>
+mkdir -p /Test
+mkfs -t ext2 /dev/ram0
+mount /dev/ram0 /Test
+</pre>
+<p> Si hubieses añadido esas 3 lineas al fichero /etc/rc.d/rc.local, se ejecutarían cada vez que arrancases el ordenador.
+
+</ol>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Configurando un ramdisk para PostgreSQL </H2>
+
+
+Idealmente, tendrías dos servidores de bases de datos. Uno al cual le
+podrías hacer cambios, y otro que es una copia que existe en tu ramdisk. Para hacerlo, usarías comandos como "pg_dump" o "pg_dumpall".
+
+<p>
+<b><font size=+1>NOTE:</font></b> Aquí asumiremos que tu has fijado la opción "ramdisk" en el lilo.conf a un tamaño mayor del que tiene tu servidor de bases de datos. Si necesitas averiguar el tamaño aproximado, ejecuta este comando "cd /var/lib/pgsql; du ". 
+<p>
+De todas maneras, para coger tu servidor postgresql instalado en "/var/lib/pgsql" y ponerlo en memoria, haz lo siguiente:
+
+<pre>
+        ### Detener el servidor postgres real
+/etc/rc.d/init.d/postgres stop
+        ### Renombrar el directorio real
+mv /var/lib/pgsql /var/lib/pgsql_main
+        #### Crear un directorio para tener ahí nuestro disco ram
+mkdir -p /var/lib/pgsql_memory
+ 	#### Cambiar el propietario del nuevo directorio a posgres o cualquiera
+	#### que sea el dueño real. 
+chown postgres /var/lib/pgsql_memory
+	#### Crear un alias o un enlace al nombre original, /var/lib/pgsql
+ln -s /var/lib/pgsql_memory /var/lib/pgsql
+
+	#### Formatea el ramdisk
+mkfs -t ext2 /dev/ram0
+	#### Monta el ramdisk en el directorio postgresql
+mount /dev/ram0 /var/lib/pgsql_memory
+
+	#### Copia todo del directorio principal al ramdisk
+tar -C /var/lib/pgsql_main -cp . | tar -C /var/lib/pgsql_memory -xp
+        ### Arranca el servidor postgresql actual
+/etc/rc.d/init.d/postgres start
+
+
+</pre>
+
+
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Comentarios acerca de la velocidad</H2>
+
+He estado probando para comprobar la velocidad de ejecución con y sin poner postgresql en un ramdisk. Algunas veces 
+la velocidad de ejecución se incrementó un 50% al estar postgresql en un ramdisk, y otras veces no lo hizo.
+<p>
+Lo que se puede notar es que cuando los datos son "cacheados" por el
+sistema, la ganancia en velocidad no es muy elevada, cerca del 10% o el
+20%. Cuando se introducen muchos datos &uacute;nicos dentro de la
+base de datos, la velocidad crece drasticamente.
+<p>La mayor ventaja del truco del ramdisk es que obligas a la base de datos a
+permanecer en memoria y evitas usar el disco duro.
+Si no usas un ramdisk, tu base de datos probablemente a la larga sea "swapeada" fuera de la 
+cach&eacute;, y entonces cuando vuelva a ser usada, tendrá que ser recargada desde el disco duro.
+ 
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Comentarios</H2>
+
+<ol>
+<li>En el caso del sistema operativo Linux, aparentemente una vez un fichero se lee, se conserva en memoria hasta que ese espacio de memoria tiene que ser usado para alguna otra cosa. Dicho de otra forma, lo cachea. Bien, esta puede ser una solución, excepto por la experiencia práctica, cuando mi servidor de bases de datos recibe un acceso, yo siempre oigo moverse el disco duro.
+Usar un disco ram fuerza al servidor de bases de datos a residir en memoria, haci&eacute;ndolo de manera que no sea "swapeado" fuera de ella. Si usas mucho tu servidor de bases de datos, yo lo forzaría a permanecer en memoria.
+
+<li> La ventaja de usar un disco ram para tu base de datos es velocidad, llana y claramente. Para bases de datos de solo lectura, esto es fantástico de verdad.
+
+<li> La desventaja es que tienes que saber como mantenerlo y que si haces cambios, harías bien en asegurarte de salvaguardar los cambios hechos.
+
+</ol>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Referencias</H2>
+
+<ol>
+<li><a href="article124.html">
+Como usar un Ramdisk en Linux</a> <i>por Mark Nielsen</i>
+<li><a href="http://www.postgresql.org">Homepage de PostgreSQL</a>
+
+</ol>
+
+
+
+
+
+<!-- vim: set sw=2 ts=2 et: -->
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#777777">
+<A HREF="../../common/lfteam.html"><FONT COLOR="#FFFFFF">Contactar con el equipo de LinuFocus</FONT></A>
+<BR><FONT COLOR="#FFFFFF">&copy; Mark Nielsen <BR>LinuxFocus 1999</FONT></TD>
+<TD BGCOLOR="#777777"><!-- TRANSLATION INFO -->
+<font size=2>Translation information:</font><TABLE>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:mark@tcu-inc.com"><FONT COLOR="#FFFFFF">Mark Nielsen</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:odaf@nexo.es"><FONT COLOR="#FFFFFF">David Abilleira Freijeiro</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>1999-12-17, generated by lfparser version 0.6</font></p></BODY></HTML>

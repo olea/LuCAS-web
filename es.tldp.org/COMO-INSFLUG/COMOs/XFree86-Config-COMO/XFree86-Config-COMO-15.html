@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="LinuxDoc-Tools 0.9.6">
+ <TITLE>C&Oacute;MO configurar los ajustes de v&iacute;deo en XFree86: Representando gr&aacute;ficamente las capacidades del monitor.</TITLE>
+ <LINK HREF="XFree86-Config-COMO-16.html" REL=next>
+ <LINK HREF="XFree86-Config-COMO-14.html" REL=previous>
+ <LINK HREF="XFree86-Config-COMO.html#toc15" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="XFree86-Config-COMO-16.html">Página siguiente</A>
+<A HREF="XFree86-Config-COMO-14.html">Página anterior</A>
+<A HREF="XFree86-Config-COMO.html#toc15">Índice general</A>
+<HR>
+<H2><A NAME="cplot"></A> <A NAME="s15">15.</A> <A HREF="XFree86-Config-COMO.html#toc15">Representando gr&aacute;ficamente las capacidades del monitor.</A></H2>
+
+
+<P>Para dibujar el diagrama de un modo del monitor, usted necesitar&aacute; el paquete
+gnuplot (un lenguaje de representaci&oacute;n gr&aacute;fica gratuito para sistemas operativos
+UNIX) y la herramienta <CODE>modeplot</CODE>, un script para gnuplot que representa
+gr&aacute;ficamente el diagrama de las caracter&iacute;sticas de su monitor, introducidas
+como opciones en l&iacute;nea de comandos.</P>
+<P>Esta es una copia de <CODE>modeplot</CODE>:</P>
+<P>
+<PRE>
+#!/bin/sh
+#
+# modeplot -- genera un gr&aacute;fico en modo X de los modos de monitor disponibles
+#
+# Utilice `modeplot -?' para ver las opciones de control.
+#
+# ($Id: video-modes.sgml,v 1.5 1998/02/21 02:23:11 esr Exp $)
+
+# Descripci&oacute;n del monitor. Ancho de banda en MHz, frecuencias horizontales en KHz
+# y verticales en Hz.
+TITLE="Viewsonic 21PS"
+BANDWIDTH=185
+MINHSF=31
+MAXHSF=85
+MINVSF=50
+MAXVSF=160
+ASPECT="4/3"
+vesa=72.5       # M&iacute;nima velocidad de refresco recomendada por VESA
+
+while [ "$1" != "" ] 
+do
+        case $1 in
+        -t) TITLE="$2"; shift;; 
+        -b) BANDWIDTH="$2"; shift;; 
+        -h) MINHSF="$2" MAXHSF="$3"; shift; shift;; 
+        -v) MINVSF="$2" MAXVSF="$3"; shift; shift;; 
+        -a) ASPECT="$2"; shift;; 
+        -g) GNUOPTS="$2"; shift;; 
+        -?) cat &lt;&lt;EOF
+opciones de control de modeplot:
+
+-t "&lt;descripci&oacute;n>"      nombre del monitor         por defecto: "Viewsonic 21PS" 
+-b &lt;nn>                ancho de banda en MHz      por defecto: 185 
+-h &lt;min> &lt;max>      FSH m&iacute;n y m&aacute;x (KHz)        por defecto: 31 85
+-v &lt;min> &lt;max>      FSV m&iacute;n y m&aacute;x (Hz)         por defecto: 50 160
+-a &lt;raz&oacute;n de aspecto>  raz&oacute;n ancho/alto           por defecto: 4/3 
+-g "&lt;opciones>"        opciones para gnuplot
+
+Las opciones -b, -h y -v son obligatorias, -a, -t, -g son opcionales.
+Uste puede utilizar -g para redireccionar la salida de gnuplot para que
+el gr&aacute;fico de modo se imprima en su impresora.  Vea gnuplot(1) para m&aacute;s
+detalles.
+
+La utilidad modeplot fue creada por Eric S. Raymond &lt;esr@thyrsus.com> basada
+en el an&aacute;lisis y c&oacute;digo de Martin Lottermoser &lt;Martin.Lottermoser@mch.sni.de>.
+La traducci&oacute;n de esta utilidad al castellano fue realizada por 
+David Mar&iacute;n Carre&ntilde;o &lt;davefx@bigfoot.com>.
+
+Esta es la $Revision: 1.5 $ de modeplot.
+EOF
+                exit;;
+        esac
+        shift
+done
+
+gnuplot $GNUOPTS &lt;&lt;EOF
+set title "Gr&aacute;fico de modos de $TITLE"
+
+# N&uacute;meros m&aacute;gicos. Desafortunadamente, el dibujo es muy sensible a los cambios
+# que se realicen en estos, y pueden hacer que no se represente la realidad
+# en algunos monitores.  Necesitamos fijar unos valores para conseguir 
+# incluso una aproximaci&oacute;n del diagrama de modos.  Estos han salido de
+# investigar montones de valores en la base de datos ModeDB.
+F1 = 1.30       # factor para convertir la resoluci&oacute;n horizontal en anchura de imagen
+F2 = 1.05       # factor para convertir la resoluci&oacute;n vertical en altura de imagen
+
+# Definiciones de funciones (la multiplicaci&oacute;n por 1.0 fuerza los c&aacute;lculos en reales)
+ac = (1.0*$ASPECT)*F1/F2
+refresh(hsync, dcf) = ac * (hsync**2)/(1.0*dcf)
+dotclock(hsync, rr) = ac * (hsync**2)/(1.0*rr)
+resolution(hv, dcf) = dcf * (10**6)/(hv * F1 * F2)
+
+# Pone etiquetas en los ejes
+set xlabel 'DCF (MHz)'
+set ylabel 'RR (Hz)' 6  # La coloca justo sobre el eje Y
+
+# Genera el diagrama
+set grid
+set label "AB" at $BANDWIDTH+1, ($MAXVSF + $MINVSF) / 2 left
+set arrow from $BANDWIDTH, $MINVSF to $BANDWIDTH, $MAXVSF nohead
+set label "FSV m&aacute;x" at 1, $MAXVSF-1.5
+set arrow from 0, $MAXVSF to $BANDWIDTH, $MAXVSF nohead
+set label "FSV m&iacute;n" at 1, $MINVSF-1.5
+set arrow from 0, $MINVSF to $BANDWIDTH, $MINVSF nohead
+set label "FSH m&iacute;n" at dotclock($MINHSF, $MAXVSF+17), $MAXVSF + 17 right
+set label "FSH m&aacute;x" at dotclock($MAXHSF, $MAXVSF+17), $MAXVSF + 17 right
+set label "VESA $vesa" at 1, $vesa-1.5
+set arrow from 0, $vesa to $BANDWIDTH, $vesa nohead # style -1
+plot [dcf=0:1.1*$BANDWIDTH] [$MINVSF-10:$MAXVSF+20] \
+  refresh($MINHSF, dcf) notitle with lines 1, \
+  refresh($MAXHSF, dcf) notitle with lines 1, \
+  resolution(640*480,   dcf) title "640x480  " with points 2, \
+  resolution(800*600,   dcf) title "800x600  " with points 3, \
+  resolution(1024*768,  dcf) title "1024x768 " with points 4, \
+  resolution(1280*1024, dcf) title "1280x1024" with points 5, \
+  resolution(1600*1280, dcf) title "1600x1200" with points 6
+
+pause 9999
+EOF
+</PRE>
+</P>
+<P>Una vez que sepa que tiene <CODE>modeplot</CODE> y el paquete gnuplot
+en su m&aacute;quina, necesitar&aacute; saber las siguientes caracter&iacute;sticas
+del monitor:</P>
+<P>
+<UL>
+<LI> ancho de banda de v&iacute;deo (AB);</LI>
+<LI> rango de frecuencias de sincronizaci&oacute;n horizontal (FSH);</LI>
+<LI> rango de frecuencias de sincronizaci&oacute;n vertical (FSV).</LI>
+</UL>
+</P>
+<P>El programa de dibujo necesitar&aacute; asumir algunos datos que no tienen
+por qu&eacute; ser correctos.  Este es el porqu&eacute; de que el gr&aacute;fico resultante
+es s&oacute;lo una descripci&oacute;n grosso modo. Estos datos asumidos son:</P>
+<P>
+<OL>
+<LI> Todas las resoluciones tienen una raz&oacute;n de aspecto fija RA = RH/RV.
+Las resoluciones est&aacute;ndar tienen RA = 4/3 o RA = 5/4.  El programa 
+<CODE>modeplot</CODE> asume 4/3 por defecto, pero usted puede hacer que &eacute;sto
+no sea as&iacute;.</LI>
+<LI> Para los modos considerados, las longitudes de imagen horizontales 
+y verticales son m&uacute;ltiplos fijos de las resoluciones horizontal y vertical,
+respectivamente:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+        LIH = F1 * RH
+        LIV = F2 * RV
+</PRE>
+</CODE></BLOCKQUOTE>
+</LI>
+</OL>
+</P>
+<P>A ojo de buen cubero, tome F1 = 1,30 y F2 = 1,05 (vea 
+<A HREF="XFree86-Config-COMO-8.html#frame">frame</A>
+
+"Calculando tama&ntilde;os de imagen").</P>
+<P>Ahora tome una frecuencia de sincronizaci&oacute;n particular, FSH.  Asumiendo
+los datos que hemos expuesto, cada valor de frecuencia de p&iacute;xel FRTV
+ya determina la tasa de refresco TR, esto es: para cada valor de FSH hay
+una funci&oacute;n TR(FRTV). Esta funci&oacute;n est&aacute; definida as&iacute;:</P>
+<P>La tasa de refresco es igual a la velocidad de p&iacute;xel dividida por el 
+producto de los tama&ntilde;os de imagen:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        TR = FRTV / (LIH * LIV)         (*)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Por otra parte, la longitud de imagen horizontal es igual a la velocidad
+de p&iacute;xel dividida por la frecuencia horizontal de sincronizaci&oacute;n:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        LIH = FRTV / FSH                        (**)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>LIV puede hallarse a partir de LIH con los datos asumidos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        LIV = F2 * RV
+            = F2 * (RH / RA)
+            = (F2/F1) * LIH / RA        (***)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Sustituyendo (**) y (***) en (*) obtenemos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        TR = FRTV / ((F2/F1) * LIH^2 / RA)
+           = (F1/F2) * RA * FRTV * (FSH/FRTV)^2
+           = (F1/F2) * RA * FSH^2 / FRTV
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para unas FSH, F1, F2 y RA fijas, esta es una hip&eacute;rbola en nuestro gr&aacute;fico.
+Dibujando sendas curvas para los valores m&iacute;nimo y m&aacute;ximo de la frecuencia
+de sincronizaci&oacute;n horizontal, hemos obtenido los dos bordes restantes de 
+la regi&oacute;n permitida.</P>
+<P>Las l&iacute;neas rectas que cruzan la regi&oacute;n h&aacute;bil representan resoluciones
+particulares.  Esto est&aacute; basado en (*) y en lo segundo que hemos
+asumido:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        TR = FRTV / (LIH * LIV) = FRTV / (F1 * RH * F2 * RV)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Dibujando esas l&iacute;neas para todas las resolucines en las que se 
+est&aacute; interesado, se puede averiguar cu&aacute;les son las relaciones
+posibles entre resoluci&oacute;n, frecuencia de p&iacute;xel y tasa de refresco
+de las que el monitor es capaz, pero ello depende de la segunda
+ecuaci&oacute;n asumida.</P>
+<P>La herramienta <CODE>modeplot</CODE> le proporciona de una manera f&aacute;cil
+de hacer esto. Teclee <CODE>modeplot -?</CODE> para ver las opciones de
+control. Una orden t&iacute;pica tendr&iacute;a este aspecto:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        modeplot -t "Swan SW617" -b 85 -v 50 90 -h 31 58
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La opci&oacute;n -b especifica el ancho de banda de v&iacute;deo; -v y -h establecen
+los rangos de frecuencia vertical y horizontal.</P>
+<P>Cuando lea la salida de <CODE>modeplot</CODE>, siempre recuerde que s&oacute;lo da
+una descripci&oacute;n aproximada.  Por ejemplo, no tiene en cuenta las
+limitaciones de LIH resultantes de una anchura m&iacute;nima requerida para
+el pulso de sincronizaci&oacute;n, y solo puede ser preciso hasta donde llegan
+las condiciones asumidas.  Por lo tanto, no es en absoluto un sustituto
+para unos c&aacute;lculos detallados (que requieren algo de "magia oscura") 
+tal y como se han desarrollado en 
+<A HREF="XFree86-Config-COMO-10.html#synth">Resumiendo</A>.
+Sin embargo, podr&iacute;a mostrarle de manera m&aacute;s intuitiva qu&eacute; es posible y
+qu&eacute; factores se involucran.</P>
+
+<HR>
+<A HREF="XFree86-Config-COMO-16.html">Página siguiente</A>
+<A HREF="XFree86-Config-COMO-14.html">Página anterior</A>
+<A HREF="XFree86-Config-COMO.html#toc15">Índice general</A>
+</BODY>
+</HTML>

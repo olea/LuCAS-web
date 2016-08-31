@@ -1,0 +1,804 @@
+<HTML
+><HEAD
+><TITLE
+>Configuraciones avanzadas de PPP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Protocolo Punto-a-Punto"
+HREF="x-087-2-ppp.html"><LINK
+REL="PREVIOUS"
+TITLE="Depurando su configuración de PPP"
+HREF="x7338.html"><LINK
+REL="NEXT"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x7338.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 8. El Protocolo Punto-a-Punto</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN7373">8.10. Configuraciones avanzadas de PPP</H1
+><P
+>&#13;Mientras que configurar PPP para conectar a una red como Internet es 
+la más común de sus aplicaciones, hay algunos de vosotros que tenéis
+requerimientos más avanzados. En esta sección hablaremos sobre algunas
+de las configuraciones más avanzadas que son posibles con PPP bajo GNU/Linux.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN7379">8.10.1. Servidor PPP</H2
+><P
+>&#13; 
+ 
+Hacer funcionar el <B
+CLASS="COMMAND"
+>pppd</B
+> como servidor es solo cuestión de
+configurar un dispositivo terminal serie para que invoque al
+<B
+CLASS="COMMAND"
+>pppd</B
+> con las opciones apropiadas cuando una llamada entrante
+es recibida. Una manera de hacer esto es crear una cuenta especial, digamos
+<SPAN
+CLASS="SYSTEMITEM"
+>ppp</SPAN
+>, y asociarle un script o programa como
+shell de entrada que llame al <B
+CLASS="COMMAND"
+>pppd</B
+> con esas opciones.
+De forma alternativa, si quiere soportar autentificacion PAP o CHAP, puede usar
+el programa <B
+CLASS="COMMAND"
+>mgetty</B
+> para soportar su módem y explotar su característica
+ &ldquo;/autoPPP/&rdquo;.</P
+><P
+>Para configurar un servidor usando el método de registro (login), añada una línea
+similar a la siguiente a su fichero <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+>:
+<A
+NAME="X-087-2-FNPP14"
+HREF="#FTN.X-087-2-FNPP14"
+>[1]</A
+>
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ppp:x:500:200:Public PPP Account:/tmp:/etc/ppp/ppplogin</PRE
+></TD
+></TR
+></TABLE
+>
+Si su sistema soporta shadow passwords, tambien necesita añadir una entrada
+al fichero <TT
+CLASS="FILENAME"
+>/etc/shadow</TT
+>:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ppp:!:10913:0:99999:7:::</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Por supuesto, el UID y GID que utilice dependen de que usuario desea que
+sea dueño de la conexión, y de cómo lo haya creado. Además tiene que establecer
+la contraseña para la cuenta mencionada usando la orden <B
+CLASS="COMMAND"
+>passwd</B
+>.</P
+><P
+>El script <B
+CLASS="COMMAND"
+>ppplogin</B
+> podría tener este aspecto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    #!/bin/sh
+    # ppplogin - script to fire up pppd on login
+    mesg n
+    stty -echo
+    exec pppd -detach silent modem crtscts</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La orden <B
+CLASS="COMMAND"
+>mesg</B
+> deshabilita la opción  que permite que otros usuarios
+puedan escribir en el terminal (tty) usado utilizando, por ejemplo, la orden
+<B
+CLASS="COMMAND"
+>write</B
+>. La orden <B
+CLASS="COMMAND"
+>stty</B
+> desactiva el eco
+de caracteres. Esto es necesario, pues de otra forma todo lo que el otro
+ordenador envíe le será devuelto a modo de eco. La opción del
+<B
+CLASS="COMMAND"
+>pppd</B
+> más importante de las incluidas en el script es
+<SPAN
+CLASS="SYSTEMITEM"
+>&ndash;detach</SPAN
+>, porque evita que el
+<B
+CLASS="COMMAND"
+>pppd</B
+> se separe de la terminal controlada. Si no especificásemos
+esta opción, se iría a segundo plano, haciendo que el script del shell terminase.
+Esto provocaría que la línea serie colgase y se perdiera la conexión. La opción
+<B
+CLASS="COMMAND"
+>silent</B
+> hace que el <B
+CLASS="COMMAND"
+>pppd</B
+> espere hasta recibir
+un paquete del sistema llamante antes de comenzar a enviar. Esto evita la aparición
+de timeouts al transmitir cuando el sistema que nos llama es lento en lanzar su
+cliente PPP. La opción <SPAN
+CLASS="SYSTEMITEM"
+>modem</SPAN
+> hace al
+<B
+CLASS="COMMAND"
+>pppd</B
+> vigilar la línea DTR para ver si el otro sistema ha colgado.
+Siempre deberia activar esta opción cuando use <B
+CLASS="COMMAND"
+>pppd</B
+> con un
+modem. La opción <TT
+CLASS="OPTION"
+>crtscts</TT
+> activa el control de flujo por hardware.</P
+><P
+>Además de estas opciones, se puede forzar alguna clase de autentificación,
+por ejemplo especificando <TT
+CLASS="OPTION"
+>auth</TT
+> en la línea de órdenes de
+<B
+CLASS="COMMAND"
+>pppd</B
+>, o en el fichero de opciones globales. La página del
+manual también habla sobre opciones más especíificas para activar o desactivar
+los protocolos de autentificación individuales.</P
+><P
+>Si desea usar <B
+CLASS="COMMAND"
+>mgetty</B
+>,
+todo lo que tiene que hacer es configurar <B
+CLASS="COMMAND"
+>mgetty</B
+>
+para que soporte el dispositivo serie al que su módem está conectado
+(vea <A
+HREF="x-087-2-serial.getty.html#X-087-2-SERIAL.GETTY.MGETTY"
+>Sección 4.6.1</A
+>&rdquo; para más detalles),
+configurar <B
+CLASS="COMMAND"
+>pppd</B
+> bien para autentificación PAP o CHAP
+con las opciones apropiadas en sus ficheros <TT
+CLASS="FILENAME"
+>options</TT
+>,
+y finalmente, añadir una sección similar a la siguiente a su fichero
+<TT
+CLASS="FILENAME"
+>/etc/mgetty/login.config</TT
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # Configura mgetty para automaticamente detectar llamandas entrantes e invocar
+    # al demonio pppd para que se haga cargo de la conexión.
+    #
+    /AutoPPP/ -     ppp   /usr/sbin/pppd auth -chap +pap login</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El primer campo es una parte especial mágica usada para detectar que la llamada
+entrante es una de tipo PPP. No debe cambiar el aspecto de esta cadena; es
+sensitivo a minúusculas y mayúusculas. La tercera columna en el nombre de usuario
+que aparece en en el listado de <B
+CLASS="COMMAND"
+>who</B
+> cuando alquien
+a entrado en el sistema. El resto de la línea es el comando a invocar. En
+nuestro ejemplo, nos hemos asegurado de que la autentificación por PAP es
+requerida, deshabilitado  CHAP, y especificado que el fichero del sistema
+<TT
+CLASS="FILENAME"
+>passwd</TT
+> debe ser usado para autentificar usuarios.
+Esto es probablemente parecido a lo que usted querrá. Recuerde, puede especificar
+las opciones en el fichero <TT
+CLASS="FILENAME"
+>options</TT
+> o en la linea de comandos
+si lo prefiere.</P
+><P
+>Esto es una pequeña lista de comprobación de los pasos que debe realizar y
+la secuencia que debe seguir para tener funcionando en su máquina un
+servidor PPP. Asegúrese de que cada paso funciona correctamente antes de pasar
+al siguiente:
+
+<P
+></P
+></P><OL
+TYPE="1"
+><LI
+><P
+>Configure el módem para que funcione en modo de auto-respuesta. En los módems compatibles
+Hayes, esto se realiza mediante la orden <TT
+CLASS="LITERAL"
+>ATS0=3</TT
+>. Si
+va a utilizar el demonio <B
+CLASS="COMMAND"
+>mgetty</B
+>, esto no será necesario.</P
+></LI
+><LI
+><P
+>Configure el dispositivo serie con una orden tipo <B
+CLASS="COMMAND"
+>getty</B
+>
+para que responda a las llamadas entrantes. Una variante comúnmente usada de
+<B
+CLASS="COMMAND"
+>getty</B
+> es <B
+CLASS="COMMAND"
+>mgetty</B
+>.</P
+></LI
+><LI
+><P
+>Considere la autentificación. ¿Como se autentificarán con usted los clientes,
+usando PAP, CHAP, o el registro del sistema?</P
+></LI
+><LI
+><P
+>Configure  <B
+CLASS="COMMAND"
+>pppd</B
+> como servidor tal como se describe en esta sección.</P
+></LI
+><LI
+><P
+>Considere el encaminamiento. ¿Necesitará proporcionar una ruta de red a los
+clientes? El encaminamiento puede realizarse usando el script <TT
+CLASS="FILENAME"
+>ip-up</TT
+>.</P
+></LI
+></OL
+><P></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN7455">8.10.2. Llamada bajo demanda</H2
+><P
+>&#13;
+
+
+
+Cuando hay tráfico IP para ser transportado a través del enlace, 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>la llamada en demanda</I
+></SPAN
+> provoca la llamada de su modem
+y el establecimiento de una conexión con un host remoto. La llamada en demanda
+resulta útil cuando no puede dejar su línea telefónica permanentemente conectada
+a su proveedor de Internet. Por ejemplo, puede que tenga que pagar llamadas locales
+por tiempo de uso, así le resultará más barato tener la conexión establecida sólo
+cuando lo necesite y desconectada cuando no está usando Internet.</P
+><P
+>Las soluciones GNU/Linux tradicionales han usado la orden <B
+CLASS="COMMAND"
+>diald</B
+>,
+que funcionaba bien pero era algo complicado de configurar. Las versiones
+2.3.0 y posteriores del demonio PPP tienen incluído el soporte de llamada bajo demanda y
+una configuración muy sencilla de realizar. Debe usar un núcleo actual para
+poder hacer esto. Cualquiera de los núcleos posteriores al 2.0 funcionará
+bien.</P
+><P
+>Para configurar <B
+CLASS="COMMAND"
+>pppd</B
+> para llamada bajo demanda, todo lo
+que tiene que hacer es añadir opciones a su fichero  <TT
+CLASS="FILENAME"
+>/etc/options</TT
+>
+o a la línea de órdenes de <B
+CLASS="COMMAND"
+>pppd</B
+>. La tabla siguiente resume
+las opciones relacionadas a la llamada en demanda:
+
+<DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN7479"><P
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Opción</TH
+><TH
+WIDTH="264"
+ALIGN="LEFT"
+VALIGN="TOP"
+>Descripción</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>demand</TT
+></TD
+><TD
+WIDTH="264"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción especifica que el enlace PPP debe ser establecido en modo de
+llamada bajo demanda. El dispositivo de red PPP será creado, pero la orden
+<TT
+CLASS="LITERAL"
+>connect</TT
+> no será usada hasta que un datagrama sea transmitido
+por el host local. Esta opción es obligatoria para que funcione la llamada bajo demanda.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>active-filter</TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>expresión</I
+></TT
+></TD
+><TD
+WIDTH="264"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar qué paquetes de datos van a ser considerados
+como tráfico activo. Cualquier tráfico que cumpla la regla especificada
+reiniciará el temporizador de la llamada bajo demanda, asegurando que
+<B
+CLASS="COMMAND"
+>pppd</B
+> espera de nuevo antes de terminar el enlace. La
+sintaxis del filtro ha sido cogida prestada de la orden <B
+CLASS="COMMAND"
+>tcpdump</B
+>
+El filtro predeterminado especifica todos los datagramas.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>holdoff</TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>n</I
+></TT
+></TD
+><TD
+WIDTH="264"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Esta opción le permite especificar la cantidad míma de tiempo, en segundos,
+que esperar antes de reconectar el enlace si termina. Si la conexión falla
+mientras <B
+CLASS="COMMAND"
+>pppd</B
+> cree que está en uso activo, será reestablecido
+después de que este temporizador finalice. Este temporizador no se aplica a
+las reconexiones producidas por la no transmisión de paquetes.</P
+></TD
+></TR
+><TR
+><TD
+WIDTH="48"
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>idle</TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>n</I
+></TT
+></TD
+><TD
+WIDTH="264"
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Si esta opción está configurada, <B
+CLASS="COMMAND"
+>pppd</B
+> desconectará el enlace 
+cuando este temporizador expire. Los tiempos muertos son especificados en segundos.
+Cada paquete de datos nuevo activo reseteará el temporizador.</P
+></TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+>
+
+Una configuración simple de llamada bajo demanda podría ser algo como esto:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    demand
+    holdoff 60
+    idle 180</PRE
+></TD
+></TR
+></TABLE
+>
+
+Esta configuración activará la llamada bajo demanda, esperará 60 segundos antes
+de reestablecer un conexión fallida, y terminará el enlace si pasan 180
+segundos sin ningún dato activo en el enlace.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN7517">8.10.3. llamada persistente</H2
+><P
+>&#13;
+
+
+
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>La llamada persistente</I
+></SPAN
+> es lo que la gente que tiene
+conexiones permanentes a una red querrá usar. Hay una sutil diferencia
+entre llamada en demanda y llamada persistente. Con la llamada persistente,
+la conexión es automáticamente establecida tan pronto como el demonio
+PPP es lanzado, y el aspecto de persistencia viene a cuento siempre que
+la llamada telefónica que soporta el enlace se interrumpa. La llamada
+persistente asegura que el enlace está siempre disponible relanzando
+automáticamete la conexión si ésta se interrumpe.</P
+><P
+>Usted podría ser afortunado de no tener que pagar por sus llamdas telefónicas;
+quizás sean locales y gratuitas, o quizás su empresa es quién las paga.
+La opción de llamada persistente es extremadamente útil en esta situación.
+Si tiene que pagar por sus llamadas telefónicas, entonces tiene que tener
+un poco de cuidado. Si paga por sus llamadas telefónicas en base al tiempo
+que la utiliza, la llamada persistente es algo que casi seguro no es
+lo que quiere, a menos que esté seguro de que estará usando la conexión
+constantemente muy amenudo veinticuatro horas al día.
+Si paga las llamadas, pero no en base al tiempo, necesitará tener cuidado de
+protegerse de situaciones que puedan causar que el módem llame de forma
+interminable. El demonio <B
+CLASS="COMMAND"
+>pppd</B
+> provee de una opción que
+puede ayudar a reducir el efecto de este problema.</P
+><P
+>Para activar la llamada persistente, debe incluir la opción
+<SPAN
+CLASS="SYSTEMITEM"
+>persist</SPAN
+> en uno de los
+ficheros de opciones de <B
+CLASS="COMMAND"
+>pppd</B
+>. Incluir esta
+opción es todo lo que necesita para tener al
+<B
+CLASS="COMMAND"
+>pppd</B
+> invocando automáticamente la orden especificada en la
+opción <SPAN
+CLASS="SYSTEMITEM"
+>connect</SPAN
+> para 
+restablecer la conexión cuando el enlace se interrumpe.
+Si está preocupado por el remarcado demasiado rápido del módem (en el
+caso de un fallo del servidor o módem del otro extremo de la conexión),
+puede usar la opción <SPAN
+CLASS="SYSTEMITEM"
+>holdoff</SPAN
+>
+para establecer el tiempo mínimo que  <B
+CLASS="COMMAND"
+>pppd</B
+>
+deberá esperar antes de intentar reconectar. Esta opción no resolverá
+el problema de un fallo y su consecuente gasto en llamadas de teléfono,
+pero al menos le servirá para reducir el impacto de uno de ellos.</P
+><P
+>Una configuración típica de llamada persistente podría parecerse a
+ésta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    persist
+    holdoff 600</PRE
+></TD
+></TR
+></TABLE
+>
+
+El tiempo de espera es especificado en segundos. En nuestro ejemplo,
+el <B
+CLASS="COMMAND"
+>pppd</B
+> espera durante cinco minutos antes de
+rellamar cuando una llamada ha fallado.</P
+><P
+>Es posible combinar la llamada persistente con la llamada en demanda, usando
+<SPAN
+CLASS="SYSTEMITEM"
+>idle</SPAN
+> para interrumpir el 
+enlace si ha estado inactivo por un período especificado de tiempo.
+Dudamos de que sean muchos los usuarios que quieran hacer esto, pero
+este escenario está descrito brevemente en la página del manual de
+<B
+CLASS="COMMAND"
+>pppd</B
+>, por si tuviera que buscarlo.</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP14"
+HREF="x7373.html#X-087-2-FNPP14"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> La utilidades <B
+CLASS="COMMAND"
+>useradd</B
+> o
+<B
+CLASS="COMMAND"
+>adduser</B
+>, si las tiene, simplificaran la tarea.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x7338.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Depurando su configuración de PPP</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Cortafuegos de TCP/IP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,200 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>FAQ de R34.LINUX: Redes con Linux</TITLE>
+ <LINK HREF="FAQ-R34.LINUX-5.html" REL=next>
+ <LINK HREF="FAQ-R34.LINUX-3.html" REL=previous>
+ <LINK HREF="FAQ-R34.LINUX.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="FAQ-R34.LINUX-5.html">Página siguiente</A>
+<A HREF="FAQ-R34.LINUX-3.html">Página anterior</A>
+<A HREF="FAQ-R34.LINUX.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="s4">4. Redes con Linux</A></H2>
+
+<H2><A NAME="ss4.1">4.1 Conectarse a Internet desde Linux</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>Quisiera saber si hay alg&uacute;n m&eacute;todo mediante el cual conectarse con
+Internet a trav&eacute;s de Linux.
+<P>
+<DT><B>RESPUESTA</B><DD><P>Hay mil m&eacute;todos. Dependiendo de qui&eacute;n sea tu enlace, (universidad, proveedor
+de acceso, red-local, modem) y del tipo de conexi&oacute;n que tengas (PPP, SLIP,
+ethernet, RDSI...) necesitar&aacute;s usar un m&eacute;todo u otro.
+<P>Lo normal es establecer el enlace mediante PPP y para eso solo necesitas
+configurar el cliente ppp en tu m&aacute;quina. Una vez que tu modem marque el numero
+de tel&eacute;fono y establezcas el enlace TCP/IP con tu proveedor, tendr&aacute;s acceso a
+Internet completo y podras usar cualesquiera de los clientes de que dispongas
+(ftp, ncftp, netscape, mosaic, gopher, irc, telnet, voicechat, rlogin, muds y
+un largo etc.). La mayor&iacute;a de esos clientes vienen con las distribuciones
+habituales.
+<P>Tambi&eacute;n puedes seguir el magn&iacute;fico documento Infovia-HOWTO del grupo
+INSFLUG. Puedes encontrarlo en las p&aacute;ginas web de INSFLUG y LuCAS. Dichas
+p&aacute;ginas las puedes encontrar al final de este FAQ. En las distribuciones m&aacute;s
+modernas tienes programas para configurar el acceso a Internet. Por ejemplo,
+en Debian 2.0 tienes el <B>pppconfig</B>.
+</DL>
+<P>
+<H2><A NAME="ss4.2">4.2 Entrar por telnet como root</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>¿C&oacute;mo puedo acceder por telnet directamente como root? Lo he intentado y no me deja, lo &uacute;nico 
+que he podido hacer es entrar como usuario y ya dentro pasar a root con el comando <I>su</I>...
+<P>
+<DT><B>RESPUESTA</B><DD><P>El no poder acceder como root por telnet es una medida de seguridad. El archivo que tienes que 
+configurar para poder acceder por telnet como root es el <I>/etc/securetty</I>. En este archivo
+tienes todas las consolas por las que <B>SI</B> que puedes acceder como root. Como ves, no est&aacute;n 
+puestas las consolas ttyp?. Simplemente a&ntilde;adiendo ttyp0, ttyp1, etc... podr&aacute;s acceder como root. 
+Por cierto, no es nada recomendable hacer esto, es un agujero de seguridad bastante grande.
+</DL>
+<P>
+<H2><A NAME="ss4.3">4.3 Conectar una LAN a Internet mediante Linux</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>Tengo dos ordenadores conectados en red, uno es Linux (el que tiene m&oacute;dem) y 
+el otro es un Windows 95. ¿Es posible conectarme con Linux a Internet y 
+usar el Windows para ver p&aacute;ginas web, IRC, ftp, etc...?
+<P>
+<DT><B>RESPUESTA</B><DD><P>Por supuesto que se puede. Necesitar&aacute;s configurar el Linux para que haga 
+enmascaramiento de IP's (IP Masquerade). El IP-Masquerade sirve para que los 
+ordenadores de una LAN que poseen IP's reservadas, puedan acceder a Internet 
+como si estuviesen realmente conectados.
+<P>Para configurar el Linux, recompila el kernel con soporte para IP Masquerade.
+Una vez hecho, con el programa <CODE>ipfwadm</CODE> y un peque&ntilde;o script, cuando 
+te conectes a Internet con Linux, podr&aacute;s utilizar el Windows para navegar, 
+chatear, etc...
+<P>Aqui te pongo 2 scripts para activar el IP Masquerade:
+<P>Para kernels de la serie 2.0:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# Inicio de la tarjeta Ethernet
+ifconfig eth0 192.168.1.1 netmask 255.255.255.0 up
+# Inicio del enmascaramiento de IP
+ipfwadm -F -a m -S 192.168.1.0/24 -D 0.0.0.0/0
+# Inicio del rutado de red
+route add -net 192.168.1.0 dev eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para kernels de la serie 2.1 y 2.2, necesitas hacer un par de cosillas m&aacute;s.
+Primero, consigue el programa <CODE>ipchains</CODE> y compila el kernel con las
+opciones:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[*] IP: advanced router
+[*] IP: masquerading
+[*] IP: ICMP masquerading
+[*] IP: masquerading special modules support
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Una vez compilado, usa este script para ponerlo a funcionar.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# Inicio de la tarjeta Ethernet
+ifconfig eth0 192.168.1.1 netmask 255.255.255.0 up
+# Inicio del enmascaramiento de IP
+ipchains -A forward -j MASQ -s 192.168.1.0/24 -d ! 192.168.1.0/24
+# Activamos el forward
+echo 1 &gt; /proc/sys/net/ipv4/ip_forward
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>S&oacute;lo te queda cambiar las IP's si te hace falta, y poner el script en el 
+arranque. Ah! En las otras m&aacute;quinas has de poner los DNS de tu servidor de 
+acceso a Internet.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[10]
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+</DL>
+<P>
+<H2><A NAME="ss4.4">4.4 Error durante el arranque: "SIOCADDRT: Invalid argument"</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>He compilado e instalado un kernel de la serie 2.2, y al reiniciar Linux, me salen mensajes
+del tipo
+<BLOCKQUOTE><CODE>
+<PRE>
+SIOCADDRT: Invalid argument
+SIOCADDRT: Invalid argument
+</PRE>
+</CODE></BLOCKQUOTE>
+
+Con los kernels 2.0 no me sal&iacute;a. ¿Qu&eacute; error es &eacute;ste y c&oacute;mo lo soluciono?
+<P>
+<DT><B>RESPUESTA</B><DD><P>Este error es debido a que intentas definir una ruta en la tarjeta ethernet o en el
+<I>loopback</I> que ya
+estaba definida. ¿Qu&eacute; como puede ocurrir eso, si el comando <I>route</I> lo tenias puesto solo
+una vez? Muy f&aacute;cil. En la serie de kernels 2.2 (y superiores), un <I>ifconfig</I> lleva
+implicito un <I>route</I>. Si en tus ficheros de inicio tienes algo como esto:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig lo 127.0.0.1 up
+route add -net 127.0.0.0 lo
+
+ifconfig eth0 192.168.1.1 up
+route add -net 192.168.1.0 eth0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>elimina (comenta con un # delante) los comandos <I>route</I>, ver&aacute;s como ya no te aparecen los
+mensajes de error.
+</DL>
+<P>
+<H2><A NAME="ss4.5">4.5 TCP-Wrappers</A>
+</H2>
+
+<P>
+<DL>
+<DT><B>PREGUNTA</B><DD><P>¿Qu&eacute; son los TCP-Wrappers?
+<P>
+<DT><B>RESPUESTA</B><DD><P>Los TCP-Wrappers son una serie de peque&ntilde;as reglas para controlar los demonios que se est&eacute;n
+ejecutando en el sistema y son controlados mediante <I>inetd</I>. Un TCP-Wrapper puede, por 
+ejemplo, limitar las conexiones, avisar
+que se est&aacute; produciendo una conexi&oacute;n, redirigir conexiones, etc... Estas reglas se ponen en
+el fichero <I>/etc/hosts.allow</I>. Te voy a poner unos ejemplos:
+<P>Regla para que solo pueda montar unidades por NFS un determinado host:
+<BLOCKQUOTE><CODE>
+<PRE>
+portmap: 192.168.1.2
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Regla para que el sistema avise de una conexi&oacute;n:
+<BLOCKQUOTE><CODE>
+<PRE>
+ALL: ALL: spawn ( cat /etc/aviso.au > /dev/audio  &amp; )
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Regla para redirigir conexiones:
+<BLOCKQUOTE><CODE>
+<PRE>
+in.telnetd: ALL: twist /usr/sbin/redir --inetd %a 23
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este &uacute;ltimo es especialmente gracioso si hacen telnet a tu m&aacute;quina, ya que en cuanto conecten,
+se redirecciona a su propia m&aacute;quina. Imaginate que cara se le pondr&aacute; cuando vea que est&aacute;
+intentando hacer telnet a su propia m&aacute;quina :) M&aacute;s informaci&oacute;n: man redir.
+</DL>
+<P>
+<HR>
+<A HREF="FAQ-R34.LINUX-5.html">Página siguiente</A>
+<A HREF="FAQ-R34.LINUX-3.html">Página anterior</A>
+<A HREF="FAQ-R34.LINUX.html#toc4">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,407 @@
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>Adecuándose a la norma ISO/IEC 1799 mediante software libre</title><meta name="generator" content="DocBook XSL Stylesheets V1.45"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article"><div class="titlepage"><div><h1 class="title"><a name="id2724369"></a>Adecuándose a la norma ISO/IEC 1799 mediante software libre</h1></div><div><h3 class="author">Jose Fernando Carvajal Vión &lt;carvaco@ati.es&gt; y Javier Fernández-Sanguino Peña &lt;jfs@computer.org&gt;.</h3><div class="affiliation"><span class="orgname">Grupo de Interés en Seguridad de ATI (ATI-GISI)<br></span></div></div><div><div class="abstract"><p><b>Resumen</b></p><p>Este artículo muestra la forma de adecuar a la norma ISO/IEC 17999 un  sistema de información implementado en un servidor cuyo software de  sistema operativo se basa en alguna alternativa de software Libre y  código abierto. La utilización de una distribución Debian GNU/Linux   sirve como base a la que añadir las utilidades y paquetes necesarios  para conseguir el objetivo.</p></div></div><hr></div><div class="toc"><p><b>Tabla de contenidos</b></p><dl><dt>1. <a href="#id2726566">Introducción</a></dt><dt>2. <a href="#id2724801">Objetivo y Asunciones </a></dt><dt>3. <a href="#id2727303">Cumplimiento de la Norma ISO/IEC 17799 en GNU/Linux </a></dt><dt>4. <a href="#id2727394">Conclusiones </a></dt><dt>5. <a href="#id2727464">Referencias </a></dt><dt>6. <a href="#id2729331">Referencias Generales </a></dt></dl></div><p>
+{Copyright: Copyright (c) 2002 Jose Fernando Carvajal y Javier  Fernández-Sanguino.  Se otorga permiso para copiar, distribuir y/o  modificar este documento bajo los términos de la Licencia de \ 
+Documentación Libre GNU, Versión 1.1 o cualquier otra versión  posterior publicada por la Free Software Foundation. Puede consultar  una copia de la licencia en: <a href="http://www.gnu.org/copyleft/fdl.html" target="_top">http://www.gnu.org/copyleft/fdl.html</a>}
+</p><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2726566"></a>1. Introducción</h2></div></div><p>
+De forma general para mantener la seguridad de los activos de
+información se deben preservar las características siguientes [1].
+</p><div class="orderedlist"><ol type="1"><li><p>Confidencialidad: sólo el personal o equipos autorizados pueden    acceder a la información.</p></li><li><p>Integridad: la información y sus métodos de proceso son exactos y completos.</p></li><li><p>Disponibilidad: los usuarios autorizados tienen acceso a la    información y a sus activos asociados cuando se requieran.</p></li></ol></div><p>
+La implantación de la seguridad de la información, en la medida de lo
+posible, se consigue mediante un conjunto adecuado controles, que
+pueden ser políticas, prácticas, procedimientos, estructuras
+organizativas y funciones software. Estas medidas de control sirven
+para asegurar que se cumplen los objetivos específicos de seguridad de
+la Organización.
+</p><p>
+En el campo normativo voluntario de la gestión de la seguridad de las
+TI existen actualmente, como más relevantes, las normas siguientes:
+</p><div class="itemizedlist"><ul><li><p>La norma ISO/IEC 17799 [2] que ofrece las recomendaciones para    realizar la gestión de la seguridad de la información, las versión    española de esta norma es la UNE 717799 [116].  </p></li><li><p>La norma multiparte ISO/IEC 13335 [117,118,119,120,121] conocidas    como las GMITS donde se recogen las etapas del ciclo de gestión de    la seguridad proporcionando orientaciones organizativas y técnicas,    la versión española de esta norma multiparte es la UNE 71501 IN    [122,123,124].</p></li><li><p>Generalmente cada Organización en base a los riesgos a que esté    expuesta y los aspectos intrínsecos de su funcionamiento, define e    implanta un Sistema propio para realizar de forma estructurada,    sistemática y metódica la gestión de la seguridad de TI.</p></li><li><p>Para algunas organizaciones puede ser orientativa la norma Británica    BS-7799-2 [3], la cual fija requisitos para establecer,    implementar y mantener un Sistema de gestión de la seguridad de los    sistemas de información (ISMS: Information Systems Management    System).</p></li><li><p>Aquellas organizaciones que quieran ser conformes a la norma    BS-7799-2 deberán cumplir estrictamente los requisitos según se    indican en su texto.  Dada la riqueza de variantes presentes en el    mundo real, para algunas organizaciones la norma resulta meramente    orientativa.</p></li></ul></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2724801"></a>2. Objetivo y Asunciones </h2></div></div><p>
+Nuestro objetivo es realizar una identificación de aquellos puntos de
+la norma ISO/IEC 17799 que pueden ser cumplidos por toda instalación
+de un servidor basado en Debian GNU/Linux, por tanto nos dirigimos a
+la implementación de los controles de seguridad según las necesidades
+de la organización o partes de ésta indicando que herramientas pueden
+utilizarse para implementar cada control concreto. Algunas de las
+herramientas (la gran mayoría como se verá) estarán proporcionadas
+como software libre dentro del software que forma parte de la
+distribución mientras que otras, también software libre, habrán de ser
+obtenidas de otras fuentes e instaladas en éste.
+</p><p>
+En este artículo supondremos en todo momento la existencia de unas
+necesidades de seguridad identificadas, evaluadas y establecidas
+dentro de una organización o empresa conforme a sus necesidades.
+</p><p>
+No obstante, para pequeñas y medianas empresas (PYMES), se podrían
+implementar las medidas de seguridad dictadas por la Norma ISO/IEC
+17799 en sus servidores utilizando un sistema operativo Debian
+GNU/Linux 3.0 <span class="emphasis"><i>woody</i></span> como referencia [4] y configurándolo con
+las herramientas y utilidades necesarias. Adecuándolo así a las
+medidas de control dictadas por ésta que permitan cubrir
+razonablemente los requisitos de seguridad específicos para cada caso.
+</p><p>
+Tomamos la versión estable de Debian como referencia por que es, a
+nuestro juicio, la que mejor se adapta a la filosofía del software
+libre [5] (también llamado en algunos casos código abierto
+[6]). Ejemplos de instalación de servidores puede consultarse por toda
+la Red Internet [7].
+</p><p>
+Como marco de referencia debemos presuponer que nos encontramos dentro
+de una organización o empresa con una política de seguridad definida o
+que al menos toma como base el código de buenas prácticas [2]. Esto
+nos permite obviar la parte organizativa de la norma y centrarnos en
+la parte de implementación técnica de la misma; intentando en todo
+momento equiparar las especificaciones de la norma en su aspecto
+operativo y no en el organizativo.
+</p><p>
+La idea central es, pues, determinar en qué puntos un sistema
+operativo GNU/Linux dotado de los programas de utilidad adecuadas
+puede llegar a cumplir y ser certificado en la norma. No se debe
+considerar una cortapisa el hecho de que, actualmente, ninguna de las
+distintas distribuciones del sistema operativo GNU/Linux se hayen
+certificadas en el ámbito de la seguridad. Uno de estos estándares
+bien podría ser el conocido como <span class="emphasis"><i>Common Criteria</i></span>). En este
+análisis no se va a incidir en los aspectos que pueda cubrir el
+sistema operativo GNU/Linux con respecto a los elementos de los
+Perfiles de Protección de Sistemas Operativos de dicho estándar
+(perfiles de protección que, por otro lado, aún están en fase de
+borrador).
+</p><p>
+En el análisis de la norma se marcará como <span class="emphasis"><i>Política</i></span> aquellos controles
+que no puedan limitarse a una aplicación software concreta y que por
+el contrario deben implementarse como un conjunto de medidas software
+y/o medidas organizativas. En algunos de estos puntos podrán indicarse
+las referencias a los documentos y/o <span class="emphasis"><i>HowTos</i></span> (documentos
+descriptivos de la utilización de algún elemento en software, a veces
+traducido como <span class="emphasis"><i>Comos</i></span>) adecuados al caso y que
+pueden ser utilizados para crear los procedimientos organizativos que
+permitan cumplir ese control.
+</p><p>
+En cuanto al hardware del servidor mencionar que partimos del supuesto
+de un criterio de selección basado en las especificaciones actuales de
+hardware que pueden encontrarse en un PC de altas prestaciones del
+mercado de consumo cuyo rango de precio se encuentre dentro del coste
+aceptable para una pequeña empresa. Evidentemente, algunos de los
+controles contemplados en la norma se han de implementar mediante
+mecanismos físicos. La discusión de los mecanismos físicos de
+protección de los recursos salen fuera del ámbito de este trabajo.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2727303"></a>3. Cumplimiento de la Norma ISO/IEC 17799 en GNU/Linux </h2></div></div><p>
+En la <a href="tabla-linux-iso17799.html" target="_top">tabla adjunta</a> se relacionan
+los objetivos de control y los controles con marcado carácter
+operativo que pueden ser proporcionados bien por el núcleo del sistema
+operativo (Linux) o bien por los programas de utilidad adecuados.  Por
+este motivo los puntos especificados en los apartados 3.1.1 a 8.1 se
+han obviado ya que entendemos que todos ellos deberían estar
+implementados mediante los procedimientos adecuados según el código de
+buenas prácticas [2] y ser realizados mediante procesos manuales o más
+o menos automatizados. Como ejemplo de este tipo de proceso podríamos
+usar el punto 6.3.1 <span class="emphasis"><i>Notificación de Incidentes de Seguridad</i></span> en el
+que parte del mismo puede ser implementado mediante un sistema de
+detección de integridad como tripwire [8], un sistema de detección de
+intrusos como Snort [9], un sistema de análisis de ficheros como
+logcheck [125] un servicio de comunicación vía mail o GSM/SMS.
+</p><p>
+La tabla muestra la información recogida en el análisis realizado de
+forma conjunta a este trabajo. En aquellos elementos de control que
+disponen de herramientas de software libre para su implementación. No
+se ha hecho distinción de las herramientas proporcionadas dentro de la
+distribución Debian GNU/Linux (la mayoría) y las que no lo están. Esto
+es así porque, debido al ritmo de crecimiento de la distribución
+(actualmente consta de más de 3 Gbs de software, la versión anterior
+ofrecía más de 2 Gbs de sofware libre) es más que probable que
+aquellas herramientas de software libre útiles para el sistema serán
+incluidas en siguientes revisiones.
+</p><p>
+Se pueden consultar fuentes de información adicionales [10] que enlazan
+con documentación y utilidades software que pueden usarse para
+establecer los controles de seguridad previsto en la norma.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2727394"></a>4. Conclusiones </h2></div></div><p>
+Desde el punto de vista de una pequeña empresa aplicar las medidas
+técnicas para cumplir con la norma BS 7799-2 sería una tarea que
+cualquier administrador de seguridad podría llevar a cabo sin mayor
+dificultades a la vista de este artículo. Desgraciadamente las
+pequeñas empresas suelen carecer de una política de seguridad
+formalmente establecida (aunque también carecen de ésta política
+muchas empresas de mayor envergadura); sin embargo en el mejor de los
+casos impera el sentido común.
+</p><p>
+En los casos de empresa medianas y grandes es fundamental el
+establecimiento formal del entorno &quot;político&quot; de seguridad mediante la
+difusión y seguimiento de las buenas prácticas establecidas por la
+ISO/IEC 17799:2000.
+</p><p>
+En cualquier caso, es importante destacar el hecho de que las medidas
+de seguridad puedan implementarse con software libre, como demuestra
+el análisis realizado. Esto permite llevar a cabo implementaciones de
+la política de seguridad sin que sea necesario considerar el coste del
+software (dado que éste es software libre) y sin que aparezcan
+problemas de escalabilidad (no existiendo pago por licencias en
+función del número de equipos). El primero de los problemas es al que
+habitualmente se enfrentan las pequeñas empresas por el elevado coste
+del software asociado a la seguridad, el segundo de los problemas es
+también común en empresas grandes debido al elevado número de sistemas
+a asegurar.
+</p><p>
+El software libre ofrece, por tanto, una solución válida al entorno de
+seguridad de cualquier organización permitiendo la adecuación e
+implementación de políticas de seguridad basadas en estándares
+internacionales.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2727464"></a>5. Referencias </h2></div></div><p>
+[1] Stallings Willian , / Introduction Cryptography and network security: principles and practice. Chapter 1, 2nd Ed. Edit. Prentice Hall New Jersey (USA),1999, pp. 5.
+</p><p>
+[2] Information Security Management, Code of Practice for Information Security Management. International Standard ISO/IEC 17799:2000.
+</p><p>
+[3] Information Security Management. Part 2 Specification for information security management systems. Draft BS 7799-2:2002.
+</p><p>
+[4] Proyecto Debian. Paquetes y Documentación [en línea]. 1 julio  2002. &lt;<a href="http://www.debian.org" target="_top">http://www.debian.org</a>&gt; [Consulta: 5 julio 2002].
+</p><p>
+[5] FSF (Free software Foundation). La definición de Software Libre [en línea]. 10 mayo 2002 &lt;<a href="http://www.gnu.org/philosophy/free-sw.es.html" target="_top">http://www.gnu.org/philosophy/free-sw.es.html</a>&gt; [Consulta: 5 julio 2002].
+</p><p>
+[6] Open Source Initiative. The Open Source Definition [en línea] . &lt;<a href="http://www.opensource.org/docs/definition_plain.html" target="_top">http://www.opensource.org/docs/definition_plain.html</a> &gt; [Consulta: 5 julio 2002].
+</p><p>
+[7] Aguilar, Vicente. Suau, Pablo. Ejemplo de Instalación Debian Potato 2.2, Agosto 2000.&lt;<a href="http://www.mmlabx.ua.es/Instalacion/" target="_top">http://www.mmlabx.ua.es/Instalacion/</a>&gt; [Consulta: 5 julio 2002].
+</p><p>
+[8] Tripwire.org. Tripwire Open Source, Linux Edition [en línea]. <a href="http://www.tripwire.org/" target="_top">http://www.tripwire.org/</a>  [Consulta: 5 julio 2002].
+</p><p>
+[9] Caswell, Brian y Roesch,  Marty. Snort: The Open Source Network Intrusion Detection System,  5 julio 2002  [en línea]. &lt;<a href="http://www.snort.org/" target="_top">http://www.snort.org/</a>&gt; [Consulta: 5 julio 2002].
+</p><p>
+[10] Linux-Consulting. IDS: Intrusion Detection Systems.[en línea].30 mayo 2002. &lt;<a href="http://www.linux-sec.net/IDS/" target="_top">http://www.linux-sec.net/IDS/</a> &gt; [Consulta: 5 julio 2002].
+</p><p>
+[11] Yoshinori K. Okuji. Gnu Grub. .[en línea]. 4 julio 2002. &lt;<a href="http://www.gnu.org/software/grub/" target="_top">http://www.gnu.org/software/grub/</a> &gt; [Consulta: 6 julio 2002].
+</p><p>
+[12] Harris, Tony. Koehntopp, Kristian. Linux Partition HOWTO.[en línea].Ver 3.3 10 July 2001 &lt;<a href="http://www.tldp.org/HOWTO/mini/Partition/" target="_top">http://www.tldp.org/HOWTO/mini/Partition/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[13] HotScripts.com. Script para Manejo de Usuarios en Perl .[en línea] &lt;<a href="http://www.hotscripts.com/Perl/Scripts_and_Programs/User_Management/" target="_top">http://www.hotscripts.com/Perl/Scripts_and_Programs/User_Management/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[14] Oslo University College. Cfengine a configuration engine. [en línea]. &lt;<a href="http://www.cfengine.org/" target="_top">http://www.cfengine.org/</a>&gt;  [Consulta: 6 julio 2002].
+</p><p>
+[15] BB4 Technologies. Big Brother. [en línea]. &lt;<a href="http://www.bb4.com/" target="_top">http://www.bb4.com/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[16] Trocki, Jim. Mon: Service Monitoring Daemon. [en línea]. &lt;<a href="http://www.kernel.org/software/mon/" target="_top">http://www.kernel.org/software/mon/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[17] PandaSoftware.es. Panda Antivirus para Linux. [online]. &lt;<a href="http://www.pandasoftware.es/es/linux/" target="_top">http://www.pandasoftware.es/es/linux/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[18] OpenAntivirus.org. The Open Antivirus Project. [online]. &lt;<a href="http://www.openantivirus.org" target="_top">http://www.openantivirus.org</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[19] Kapersky Lab Int. Kaspersky Anti-Virus for Linux Systems. [online]. &lt;<a href="http://www.kaspersky.com/products.html?tgroup=4&amp;pgroup=11" target="_top">http://www.kaspersky.com/products.html?tgroup=4&amp;pgroup=11</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[20] GeCAD Software. RAV Reliable Antivirus [online]. &lt;<a href="http://www.ravantivirus.com" target="_top">http://www.ravantivirus.com</a> &gt; [Consulta: 6 julio 2002].
+</p><p>
+[21] Bogar, Lisa. SUID, SGID and fix-modes Suid, Gid, [online]. &lt;<a href="http://www.homepage.montana.edu/~unixuser/051602/SUID.html" target="_top">http://www.homepage.montana.edu/~unixuser/051602/SUID.html</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[22] Samhain Labs. Samhain. [online].&lt;<a href="http://samhain.sourceforge.net/" target="_top">http://samhain.sourceforge.net/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[23] Lehti, Rami. Virolainen, Pablo. AIDE Advanced Intrusion Detection Environment. [online]. &lt;<a href="http://www.cs.tut.fi/~rammer/aide.html" target="_top">http://www.cs.tut.fi/~rammer/aide.html</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[24] University of Maryland at College Park. Amanda: The Advanced Maryland Automatic Network Disk Archiver. [en línea]. 10 junio 2002. &lt;<a href="http://www.amanda.org/" target="_top">http://www.amanda.org/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[25] Arkeia. Arkeia Entreprise Network Backup. [en línea]. &lt;<a href="http://www.arkeia.com" target="_top">http://www.arkeia.com</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[26] Hülswitt, Stefan .CDBackup. [en línea].&lt;<a href="http://www.muempf.de/cdbackup.html" target="_top">http://www.muempf.de/cdbackup.html</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[27] Gignac, John-Paul. Volokhov. Mike M. cdbkup [en línea].&lt;<a href="http://cdbkup.sourceforge.net/" target="_top">http://cdbkup.sourceforge.net/</a> &gt;[Consulta: 6 julio 2002].
+</p><p>
+[28] BalaBit IT Ltd. Syslog-ng. [en línea]. &lt;<a href="http://www.balabit.hu/en/downloads/syslog-ng/" target="_top">http://www.balabit.hu/en/downloads/syslog-ng/</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[29] Event log, 2002 Event Logging . [en línea]. &lt;<a href="http://evlog.sourceforge.net/linuxEvlog.html" target="_top">http://evlog.sourceforge.net/linuxEvlog.html</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[30] Karim Yaghmour  et al. The Linux Trace Toolkit. . [en línea]. &lt;<a href="http://www.opersys.com/LTT/index.html" target="_top">http://www.opersys.com/LTT/index.html</a>&gt; [Consulta: 6 julio 2002].
+</p><p>
+[31] Linux Kernel Audit daemon,. [en línea]. 2002 &lt;<a href="http://www.hert.org/projects/linux/auditd/" target="_top">http://www.hert.org/projects/linux/auditd/</a> &gt;[Consulta: 6 julio 2002].
+</p><p>
+[32] Wolfe Wiliam, Miller Donna . Secure Audit for Linux. [en línea] <a href="http://secureaudit.sourceforge.net/" target="_top">http://secureaudit.sourceforge.net/</a> [Consulta: 6 julio 2002]. 
+</p><p>
+[33] McIntyre Jim. Mastering system accounting in Linux. [en línea]. Ver Nov 22, 2000 &lt;<a href="http://mycomputerstore.ca/llsa.html" target="_top">http://mycomputerstore.ca/llsa.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[34] linuxvirtualserver.org. Linux Virtual Server Project [en línea] &lt;<a href="http://www.linuxvirtualserver.org/" target="_top">http://www.linuxvirtualserver.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[35] Oetiker, Tobias.Rand, Dave et al. MRTG: Multi Router Traffic Grapher. [en línea] &lt;<a href="http://people.ee.ethz.ch/~oetiker/webtools/mrtg/" target="_top">http://people.ee.ethz.ch/~oetiker/webtools/mrtg/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[36] Psionic Technologies Inc. TriSentry. [en línea] &lt;<a href="http://www.psionic.com/products/trisentry.html" target="_top">http://www.psionic.com/products/trisentry.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[37] Deraison Renaud, Hrycaj, Jordan. Nessus. [en línea] &lt;<a href="http://www.nessus.org/" target="_top">http://www.nessus.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[38] Fyodor. Nmap. [en línea] &lt;<a href="http://www.insecure.org/nmap/" target="_top">http://www.insecure.org/nmap/</a>&gt; [Consulta: 6 julio 2002], 
+</p><p>
+[39] Venema Wietse (The Indiana University Web site). Tcpwrappers.[en línea]  &lt;<a href="http://www.uwsg.indiana.edu/security/tcp_wrappers.html" target="_top">http://www.uwsg.indiana.edu/security/tcp_wrappers.html</a>&gt;  [Consulta: 6 julio 2002]
+</p><p>
+[40] Huagang Xie.  LIDS Linux Intrusion Detection System.[en línea] &lt;<a href="http://www.lids.org/" target="_top">http://www.lids.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[41] Security Software Technologies, Inc. Antisniff .[en línea] &lt;<a href="http://www.securitysoftwaretech.com/antisniff/" target="_top">http://www.securitysoftwaretech.com/antisniff/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[42] WU-FTPD Development Group. Wu-ftpd. .[en línea] &lt;<a href="http://www.wu-ftpd.org" target="_top">http://www.wu-ftpd.org</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[43] The ProFTPD Project. ProFTPD.[en línea] &lt;<a href="http://www.proftpd.org" target="_top">http://www.proftpd.org</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[44] The Sendmail Consortium. Sendmail .[en línea] &lt;www.sendmail.org &gt; [Consulta: 6 julio 2002] 
+</p><p>
+[45] Pozicom Technologies Incorporated. EDIPro. [en línea] &lt;<a href="http://www.pozicom.net/Sales/Catalog/EDI_PRO/edi_pro.html" target="_top">http://www.pozicom.net/Sales/Catalog/EDI_PRO/edi_pro.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[46] GnuPGP. [en línea] &lt;<a href="http://www.gnupg.org/" target="_top">http://www.gnupg.org/</a> &gt;[Consulta: 6 julio 2002]
+</p><p>
+[47] Trojnara, Michal et al. Stunnel. [en línea] &lt;<a href="http://www.stunnel.org/" target="_top">http://www.stunnel.org/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[48] OpenBSD. OpenSSH .[en línea] &lt;<a href="http://www.openssh.org" target="_top">http://www.openssh.org</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[49]  OpenSSL.[en línea]  &lt;<a href="http://www.openssl.org" target="_top">http://www.openssl.org</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[50] IBM Corporation. IBM zseries .[en línea] &lt;<a href="http://www-1.ibm.com/servers/eserver/zseries/900.html" target="_top">http://www-1.ibm.com/servers/eserver/zseries/900.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[51] Zope Corporation. ZOPE. [en línea]  &lt;<a href="http://www.zope.org/" target="_top">http://www.zope.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[52]     Tallyman .[en línea]  &lt;<a href="http://Tallyman.akopia.com" target="_top">http://Tallyman.akopia.com</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[53]  Sainio, Garth. Eyler, Pat. Yams: Yet Another Merchant System. [en línea] &lt;<a href="http://yams.sourceforge.net/" target="_top">http://yams.sourceforge.net/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[54] Mutz, Marc. Encryption HOWTO. [en línea] Ver:0.2.2, 04 Oct 2000 &lt;<a href="http://encryptionhowto.sourceforge.net/Encryption-HOWTO.html#toc6" target="_top">http://encryptionhowto.sourceforge.net/Encryption-HOWTO.html#toc6</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[55]  Tzeck, Doobee. R. Encrypting your Disks with Linux. [en línea] Ver 25 Oct 1999.  &lt;<a href="http://koeln.ccc.de/~drt/crypto/linux-disk.html" target="_top">http://koeln.ccc.de/~drt/crypto/linux-disk.html</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[56] Bernstein, Dan. The Qmail Homepage. [en línea] &lt;<a href="http://www.qmail.org" target="_top">http://www.qmail.org</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[57] Univerisity of Cambridge. Exim .[en línea]  <a href="http://www.exim.org" target="_top">http://www.exim.org</a> [Consulta: 6 julio 2002]
+</p><p>
+[58] Aegypten, .[en línea]  &lt;<a href="http://www.gnupg.org/aegypten/" target="_top">http://www.gnupg.org/aegypten/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[59] Reelsen, Alexander. Fernández-Sanguino Peña, Javier. Debian Security Manual. [en línea]  <a href="http://www.debian.org/doc/manuals/securing-debian-howto/index.en.html" target="_top">http://www.debian.org/doc/manuals/securing-debian-howto/index.en.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[60] W3C. Amaya. [en línea]  &lt;<a href="http://www.w3.org/Amaya/" target="_top">http://www.w3.org/Amaya/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[61] Leffler, Sam. Hylafax. [en línea]  &lt;<a href="http://www.hylafax.org/" target="_top">http://www.hylafax.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[62]  Knorr, Gerd.Video4Linux Links. [en línea]. &lt;<a href="http://bytesex.org/xawtv/links.html" target="_top">http://bytesex.org/xawtv/links.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[63] Dreier, Roland. Johnson, Rob. Bhattacharyya, Bina. Gphone. [en línea] &lt;<a href="http://gphone.sourceforge.net/" target="_top">http://gphone.sourceforge.net/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[64] Jackson, Michael H. Linux Shadow Password Howto..[en línea]   Ver: .3, 3 Abril 1996 &lt;<a href="http://www.linuxdoc.org/HOWTO/Shadow-Password-HOWTO.html" target="_top">http://www.linuxdoc.org/HOWTO/Shadow-Password-HOWTO.html</a>&gt; [Consulta: 6 julio 2002] 
+</p><p>
+[65]  Morgan, Andrew G. The Linux-PAM System Administrators' Guide. [en línea]  Ver: v0.75 18 Marzo 2001 &lt;<a href="http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam.html" target="_top">http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/pam.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[66]  Rsbac.org. RSBAC: Rule Set Based Access Control for Linux . [en línea]   &lt;<a href="http://www.rsbac.org/" target="_top">http://www.rsbac.org/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[67] Smartcard en Linux,  .[en línea]   &lt;<a href="http://www.linuxnet.com/" target="_top">http://www.linuxnet.com/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[68] Gélinas, Jacques. Linuxconf. [en línea]  &lt;<a href="http://dns.solucorp.qc.ca/linuxconf/" target="_top">http://dns.solucorp.qc.ca/linuxconf/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[69] Cameron, Jaime. Webmin. [en línea]  &lt;<a href="http://www.webmin.com" target="_top">http://www.webmin.com</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[70]  The OpenLDAP Foundation. Open LDAP. [en línea]  &lt;<a href="http://www.openldap.org" target="_top">http://www.openldap.org</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[71] Forbes, Liam.  Sudo and SSH: A Scheme for Controlling Administrator Privileges and System Account.[en línea]. Ver: Junio 2001 &lt;<a href="http://rr.sans.org/authentic/sudo.php" target="_top">http://rr.sans.org/authentic/sudo.php</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[72]  Muffett, Alec. FAQ for Crack v5.0a [en línea].Ver: 21 Marzo 2001 &lt;<a href="http://www.users.dircon.co.uk/~crypto/download/c50-faq.html" target="_top">http://www.users.dircon.co.uk/~crypto/download/c50-faq.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[73]  OpenWall Project. John the Ripper password cracker. [en línea] &lt;<a href="http://www.openwall.com/john/" target="_top">http://www.openwall.com/john/</a>&gt; [Consulta: 6 julio 2002] 
+</p><p>
+[74]. Mirzazhanov, Adel I. APG (Automated Password Generator).[en línea]   &lt;<a href="http://www.adel.nursat.kz/apg/" target="_top">http://www.adel.nursat.kz/apg/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[75]   Texas A&amp;M University y otros. Tiger: TAMU Security Tools . [en línea] &lt;<a href="http://savannah.gnu.org/projects/tiger" target="_top">http://savannah.gnu.org/projects/tiger</a>&gt; &lt;<a href="http://www.net.tamu.edu/network/tools/tiger.html" target="_top">http://www.net.tamu.edu/network/tools/tiger.html</a>&gt; [Consulta: 19 agosto 2002]
+</p><p>
+[76] Farmer, Dan. COPS!. [en línea] &lt;<a href="http://www.fish.com/cops/" target="_top">http://www.fish.com/cops/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[77] Libes, Don. Mkpasswd.[en línea] &lt;<a href="http://tcl.activestate.com/man/expect5.31/mkpasswd.1.html" target="_top">http://tcl.activestate.com/man/expect5.31/mkpasswd.1.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[78] OpenWall Project. Passwdqc. [en línea]  &lt;<a href="http://www.openwall.com/passwdqc/" target="_top">http://www.openwall.com/passwdqc/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[79]  Wu, Tom. The Stanford SRP Authentication Project. [en línea]  &lt;<a href="http://www-cs-students.stanford.edu/~tjw/srp/" target="_top">http://www-cs-students.stanford.edu/~tjw/srp/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[80] Zawinski, Jamie. Xscreensaver. [en línea]. &lt;<a href="http://www.jwz.org/xscreensaver/" target="_top">http://www.jwz.org/xscreensaver/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[81] Bagley, David A. Xlock.[en línea] &lt;<a href="http://www.chez.com/vidalc/xlock/xlock.htm" target="_top">http://www.chez.com/vidalc/xlock/xlock.htm</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[82] Yoshinori K. Okuji. Matzigkeit, Gordon et al. GNU GRUB. [en línea] &lt;<a href="http://www.gnu.org/software/grub/" target="_top">http://www.gnu.org/software/grub/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[83] McQuillan Jim, Colcernian Ron, Glutting Jim, Allie Billy, McInnis Jack, Lauffer Stephan, Baum Georg,. Collins Michael H, Balneaves Scott, Stanford Robbie, Williams Andrew, LTSP:Linux Terminal Server project. [en línea]  &lt;<a href="http://www.ltsp.org/index.php" target="_top">http://www.ltsp.org/index.php</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[84] Karazniewicz Artur, Open PKI. [en línea] &lt;<a href="http://sourceforge.net/projects/openpki/" target="_top">http://sourceforge.net/projects/openpki/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[85] Massachusetts Institute of Technology. Kerberos:The Network Authentication Protocol. [en línea] &lt;<a href="http://web.mit.edu/kerberos/www/" target="_top">http://web.mit.edu/kerberos/www/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[86] Russell Rusty. Linux IP Firewalling Chains. [en línea]  Ver 1.3.10 &lt;<a href="http://netfilter.samba.org/ipchains/" target="_top">http://netfilter.samba.org/ipchains/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[87] Kadlecsik  Jozsef, Welte, Harald Morris, James. Boucher, Marc. Russell Rusty. Netfilter -Iptables. [en línea]   &lt;<a href="http://netfilter.samba.org/" target="_top">http://netfilter.samba.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[88] Eastep, Tom. Seawall: Seattle Firewall 4.1.[en línea] &lt;<a href="http://seawall.sourceforge.net/" target="_top">http://seawall.sourceforge.net/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[89] Drake, Joshua. Linux Networking HOWTO.[en línea].Ver: 1.7.0 &lt;<a href="http://www.tldp.org/HOWTO/Net-HOWTO/index.html" target="_top">http://www.tldp.org/HOWTO/Net-HOWTO/index.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[90] Gilmore, John. Spencer, Henry. Linux FreeSWAN (Ipsec). [en línea] &lt;<a href="http://www.freeswan.org/" target="_top">http://www.freeswan.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[91] Foucher Laurent, Latu Philippe, Mallard Thierry, Quenec'hdu  Yannick. Linux Advanced Routing &amp; Traffic Control HOWTO.[en línea] Ver 1.0.0 8 Julio 2002 &lt;<a href="http://lartc.org/" target="_top">http://lartc.org/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[92] Kuznetsov, Alexey N. Iproute2: IP Command Reference. [en línea]   &lt;<a href="http://defiant.coinet.com/iproute2/ip-cref/" target="_top">http://defiant.coinet.com/iproute2/ip-cref/</a>&gt; [Consulta: 6 julio 2002] 
+</p><p>
+[93] Light-Williams, Corwin. Drake Joshua. Linux PPP Howto. .[en línea]. &lt;<a href="http://www.ibiblio.org/mdw/HOWTO/PPP-HOWTO/index.html" target="_top">http://www.ibiblio.org/mdw/HOWTO/PPP-HOWTO/index.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[94] Controlling Suid Root Programs.[en línea] &lt;<a href="http://www.dpo.uab.edu/~grapeape/suid.html" target="_top">http://www.dpo.uab.edu/~grapeape/suid.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[95] Akin, Thomas. Dangers of SUID Shell Scripts. [en línea]  &lt;<a href="http://www.samag.com/documents/s=1149/sam0106a/0106a.htm" target="_top">http://www.samag.com/documents/s=1149/sam0106a/0106a.htm</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[96] Bishop, Matt. Secure Suid programs. [en línea] &lt;<a href="http://nob.cs.ucdavis.edu/~bishop/secprog/index.html" target="_top">http://nob.cs.ucdavis.edu/~bishop/secprog/index.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[97] Counterpane.com. Log Analysis Resources. [en línea] &lt;<a href="http://www.counterpane.com/log-analysis.html" target="_top">http://www.counterpane.com/log-analysis.html</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[98] McDonald, Andrew D. StegFS - A Steganographic File System for Linux. [en línea]  <a href="http://www.mcdonald.org.uk/StegFS/" target="_top">http://www.mcdonald.org.uk/StegFS/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[99] Mills, Dave. Network Time Protocol (NTP). [en línea] &lt;<a href="http://www.eecis.udel.edu/~ntp/" target="_top">http://www.eecis.udel.edu/~ntp/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[100] Wilson, Matthew D. VPN Howto. [en línea] Ver: Revision 2.0  30 Mayo 2002 &lt;<a href="http://www.tldp.org/HOWTO/VPN-HOWTO/" target="_top">http://www.tldp.org/HOWTO/VPN-HOWTO/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[101] The FreeRADIUS Project. FreeRADIUS Server Project. [en línea] &lt;<a href="http://www.freeradius.org" target="_top">http://www.freeradius.org</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[102]  Davey, Dave. GSM Mobile Phones and Linux. [en línea]  &lt;<a href="http://www.physiol.usyd.edu.au/daved/linux/gsm-modem.html" target="_top">http://www.physiol.usyd.edu.au/daved/linux/gsm-modem.html</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[103] Tourrilhes, Jean. Brattli, Dag. Heuser, Werner. Costin, Claudiu. Linux IrDA Project. [en línea]  &lt;<a href="http://irda.sourceforge.net/" target="_top">http://irda.sourceforge.net/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[104] Tourrilhes, Jean .Wireless Tools for Linux. [en línea] &lt;<a href="http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html" target="_top">http://www.hpl.hp.com/personal/Jean_Tourrilhes/Linux/Tools.html</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[105] Kannel Foundation . Kannel: Open Source WAP and SMS gateway. [en línea] &lt;<a href="http://www.kannel.3glab.org/index.shtml" target="_top">http://www.kannel.3glab.org/index.shtml</a>  &gt; [Consulta: 6 julio 2002]
+</p><p>
+[106] Loscocco, Peter. Smalley, Stephen. Integrating Flexible Support for Security Policies into the Linux Operating System. [en línea] &lt;<a href="http://www.nsa.gov/selinux/doc/slinux.pdf" target="_top">http://www.nsa.gov/selinux/doc/slinux.pdf</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[107] Lasser, Jon. Véale, Jay. et al. Bastille Linux. [en línea]  &lt;<a href="http://www.bastille-linux.org/" target="_top">http://www.bastille-linux.org/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[108] Powell, Brad. Titan .[en línea] &lt;<a href="http://www.fish.com/titan/TITAN_documentation.html" target="_top">http://www.fish.com/titan/TITAN_documentation.html</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[109] Wheeler, David A. Secure Programming for Linux and Unix HOWTO. [en línea] Ver: 2.962, 12 Mazo 2002 &lt;<a href="http://www.tldp.org/HOWTO/Secure-Programs-HOWTO/" target="_top">http://www.tldp.org/HOWTO/Secure-Programs-HOWTO/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[109] Tsai, Tim. Singh, Navjot. Libsafe: Protecting Critical Elements of Stacks. [en línea] &lt;<a href="http://www.research.avayalabs.com/project/libsafe/" target="_top">http://www.research.avayalabs.com/project/libsafe/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[110] Free Software Foundation, Inc.  GDB Project Debugger. [en línea] &lt;<a href="http://www.gnu.org/software/gdb/gdb.es.html" target="_top">http://www.gnu.org/software/gdb/gdb.es.html</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[111] Free Software Foundation, Inc.  Checker. [en línea] &lt;<a href="http://www.gnu.org/software/checker/checker.es.html" target="_top">http://www.gnu.org/software/checker/checker.es.html</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[112] LoopAes. [en línea] , &lt;<a href="http://loop-aes.sourceforge.net/" target="_top">http://loop-aes.sourceforge.net/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[113] Picaud, Benoît. Colombet, Laurence. IDX-PKI: Open Source implementation of a Public Key Infrastructure. [en línea] &lt;<a href="http://idx-pki.idealx.org/" target="_top">http://idx-pki.idealx.org/</a> &gt; [Consulta: 6 julio 2002]
+</p><p>
+[114] Pascal Molli et al. CVS Concurrent Versions System. [en línea] &lt;<a href="http://www.loria.fr/~molli/cvs/doc/cvs_toc.html" target="_top">http://www.loria.fr/~molli/cvs/doc/cvs_toc.html</a> &gt; [Consulta: 6 julio 2002]. 
+</p><p>
+[115] Miller Peter  Aegis 4.5 Configuration Management System. [en línea] &lt;<a href="http://aegis.sourceforge.net/" target="_top">http://aegis.sourceforge.net/</a>&gt; [Consulta: 6 julio 2002]
+</p><p>
+[116] UNE 717799-1:2002 IN Código de buenas prácticas para la Gestión de la Seguridad de la Información
+</p><p>
+[117] ISO/IEC 13335-1 IT- Security techniques - Guidelines for the management of IT security - Part 1: Concepts and models for managing and planning IT security
+</p><p>
+[118] ISO/IEC 13335-2 IT- Security techniques - Guidelines for the management of IT security - Part 2: Managing and planning IT security
+</p><p>
+[119] ISO/IEC 13335-3 IT- Security techniques - Guidelines for the management of IT security - Part 3: Techniques for the management of IT security
+</p><p>
+[120] ISO/IEC 13335-4 IT- Security techniques - Guidelines for the management of IT security - Part 4: Selection of safeguards
+</p><p>
+[121] ISO/IEC 13335-5 IT- Security techniques - Guidelines for the management of IT security - Part 5: Management guidance on network security
+</p><p>
+[122] UNE 71501-1 IN Parte 1: Conceptos y modelos para la seguridad de TI
+</p><p>
+[123] UNE 71501-2 IN Parte 2: Gestión y planificación de la seguridad de TI
+</p><p>
+[124] UNE 71501-3 IN Parte 3: Técnicas para la gestión de la seguridad de TI
+</p><p>
+[125] Craig H. Rowland: Logcheck, &lt;<a href="http://www.psionic.com/tools/" target="_top">http://www.psionic.com/tools/</a>&gt;
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2729331"></a>6. Referencias Generales </h2></div></div><p>
+Nota: Estas referencias pueden ser tomadas como base para crear la
+política que se ajusta a los puntos del código de buenas prácticas que
+puede cumplir nuestra empresa una vez evaluados los riesgos a los que
+se está expuesto. Puede
+</p><div class="itemizedlist"><ul><li><p>SecurityFocus. Linux Security tools [en línea] &lt;<a href="http://online.securityfocus.com/infocus/1423" target="_top">http://online.securityfocus.com/infocus/1423</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>NSA. Security Enhanced Linux. [en línea] &lt;<a href="http://www.nsa.gov/selinux/" target="_top">http://www.nsa.gov/selinux/</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>SecurityFocus. Linux Kernel Hardening. [en línea] &lt;<a href="http://online.securityfocus.com/infocus/1539" target="_top">http://online.securityfocus.com/infocus/1539</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Stross, Charlie. Linux and Cryptography. [en línea] &lt;<a href="http://www.antipope.org/charlie/linux/shopper/167.crypto.html" target="_top">http://www.antipope.org/charlie/linux/shopper/167.crypto.html</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Seifried, Kurt. Linux Administrator's Security Guide. [en línea] Ver: 1 Oct 2001. &lt;<a href="http://www.seifried.org/lasg/" target="_top">http://www.seifried.org/lasg/</a>&gt; &gt;[Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Gerhard Mourani and OpenDocs, LLC. and Madhusudan (Madhu &quot;Maddy&quot;). Securing and Optimizing Linux: RedHat Edition. [en línea]  &lt;<a href="http://www.tldp.org/LDP/solrhe/Securing-Optimizing-Linux-RH-Edition-v1.3/" target="_top">http://www.tldp.org/LDP/solrhe/Securing-Optimizing-Linux-RH-Edition-v1.3/</a>&gt;  [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Naidu, Krishni.  Auditing Linux. [en línea] &lt;<a href="http://www.sans.org/SCORE/checklists/AuditingLinux.doc" target="_top">http://www.sans.org/SCORE/checklists/AuditingLinux.doc</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>LinuxLinks.com Referencia a programas de backup. [en línea]    &lt;<a href="http://www.linuxlinks.com/Software/Backup/" target="_top">http://www.linuxlinks.com/Software/Backup/</a>&gt; [Consulta: 6 julio    2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Graham,Robert Antisniff FAQ Ver 0.3.3, 14 September, 2000  [en línea] &lt;<a href="http://www.robertgraham.com/pubs/sniffing-faq.html" target="_top">http://www.robertgraham.com/pubs/sniffing-faq.html</a> &gt;</p></li></ul></div><div class="itemizedlist"><ul><li><p>Reichard, Kevin. Implementing E-Commerce on Your Linux System  Previews of TallyMan, Yams, and OpenMerchant [en línea] &lt;<a href="http://www.linuxplanet.com/linuxplanet/reports/1363/1/" target="_top">http://www.linuxplanet.com/linuxplanet/reports/1363/1/</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Hubert, Bert ( Netherlabs BV). Maxwell, Gregory. Van Mook  Remco. Oosterhout, Martijn Van.  Schroeder, Paul B. Linux 2.4 \ </p></li></ul></div><p>
+Advanced Routing HOWTO. [en línea] \ 
+&lt;<a href="http://www.linuxdocs.org/HOWTOs/Adv-Routing-HOWTO-13.html" target="_top">http://www.linuxdocs.org/HOWTOs/Adv-Routing-HOWTO-13.html</a>&gt; [Consulta:  6 julio 2002]
+</p><div class="itemizedlist"><ul><li><p>Linuxdoc.org The linux documentation project. [en línea] &lt;<a href="http://www.tldp.org/docs.html#howto" target="_top">http://www.tldp.org/docs.html#howto</a>.&gt; [Consulta: 6 julio 2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Friberg, Paul. Using a Cryptographic Hardware Token with Linux: the   OpenSSL Project's New Engine [en línea] Ver: 20 Jun. 2001   &lt;<a href="http://www.linuxjournal.com/article.php?sid=4744&gt;[Consulta" target="_top">http://www.linuxjournal.com/article.php?sid=4744&gt;[Consulta</a>: 6 julio   2002]</p></li></ul></div><div class="itemizedlist"><ul><li><p>Spitzner, Lance. Armoring Linux. [en línea] Ver: 19 Sep. 2000 &lt;<a href="http://www.enteract.com/~lspitz/linux.html" target="_top">http://www.enteract.com/~lspitz/linux.html</a>&gt; [Consulta: 6 julio 2002]</p></li></ul></div></div></div></body></html>

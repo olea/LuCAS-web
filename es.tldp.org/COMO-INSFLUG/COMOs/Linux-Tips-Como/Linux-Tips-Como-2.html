@@ -1,0 +1,157 @@
+<HTML>
+<HEAD>
+<TITLE>Trucos y consejos para Linux: Ayudas Cortas</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Linux-Tips-Como-1.html">Anterior</A>
+<A HREF="Linux-Tips-Como-3.html">Siguiente</A>
+<A HREF="Linux-Tips-Como.html#toc2">Indice</A>
+<HR>
+<H2><A NAME="s2">2. Ayudas Cortas</A></H2>
+
+
+
+<H2><A NAME="ss2.1">2.1 Mover directorios entre sistemas de ficheros. </A></H2>
+
+
+<P>(Alan Cox, 
+<CODE>
+<A HREF="mailto:A.Cox@swansea.ac.uk">A.Cox@swansea.ac.uk</A></CODE>)</P>
+<P>Forma r&aacute;pida de mover un &aacute;rbol entero de ficheros de un disco a otro:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+(cd /origen/directorio; tar cf - . ) | (cd /dest/directorio; tar xvfp -)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss2.2">2.2 Parche para el GNU, Ted Stern, <CODE>stern@amath.wwashington.edu</CODE></A></H2>
+
+
+<P>Para cambiar el comportamiento del VPATH. (Make 3.70)</P>
+<P>No s&eacute; si mucha gente tiene este problema, pero hay una caracter&iacute;stica del
+GNU make versi&oacute;n 3.70 que no me gusta. VPATH act&uacute;a raramente si le das un
+path absoluto. Existe un patch extremadamente s&oacute;lido que arregla esto, el
+cual se puede obtener de Paul D. Smith, <CODE>psmith@wellfleet.com</CODE>. &Eacute;l
+tambi&eacute;n pone la documentaci&oacute;n y el patch despu&eacute;s de cada revisi&oacute;n del GNU
+make en el servidor de newsgroups al cual tengo acceso. </P>
+
+
+<H2><A NAME="ss2.3">2.3 C&oacute;mo puedo hacer que el sistema no ejecute el fsck en cada</A>arranque? Dale Lutz, <CODE>dal@wimsey.com</CODE></H2>
+
+
+<P><EM>¿C&oacute;mo hago para que e2fsck no chequee mi disco cada vez que arranco?</EM></P>
+<P>Cuando recompilas el kernel, el sistema de ficheros se marca como "sucio"
+y por eso el disco es chequeado en cada arranque. La soluci&oacute;n es ejecutar
+: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  rdev -R /zImage 1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto arregla el kernel para que no se siga creyendo que el sistema de
+ficheros est&aacute; "sucio". </P>
+<P>Nota : Si usas lilo, entonces a&ntilde;ade s&oacute;lo-lectura al setup del linux en tu
+fichero de configuracion del lilo (normalmente <CODE>/etc/lilo.conf</CODE>) </P>
+
+
+<H2><A NAME="ss2.4">2.4 C&oacute;mo evitar fsck's causados por "device busy" al arrancar. Jon</A>Tombs, <CODE>jon@gtex02.us.es</CODE></H2>
+
+
+<P>Si usualmente sufres errores de "device busy" al apagar , que dejan al
+sistema de ficheros con la necesidad de un fsck al arrancar, aqu&iacute; tienes
+un arreglo simple :</P>
+<P>A&ntilde;ade la siguiente linea al fichero /etc/brc o /sbin/brc</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mount -o remount,ro /mount.dir
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>para todos tus sistemas de ficheros montados excepto <CODE>/</CODE>, antes de
+la llamada para desmontar -a. Esto significa que si, por alguna raz&oacute;n,
+shutdown falla al matar todos los procesos y desmontar los discos, &eacute;stos
+estar&aacute;n igualmente limpios al arrancar. Me ahorra un mont&oacute;n de tiempo al
+arrancar. </P>
+
+
+<H2><A NAME="ss2.5">2.5 C&oacute;mo imprimir una p&aacute;gina con margen para hacer agujeros. Mike Dickey, <CODE>mdickey@thorplus.lib.purdue.edu</CODE></A></H2>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# /usr/local/bin/print
+# una muestra de impresi&oacute;n simple, para permitirnos
+# perforar lo obtenido y poder archivarlo:
+cat $1 | pr -t -o 5 -w 85 | lpr
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss2.6">2.6 Un m&eacute;todo para buscar a trav&eacute;s de &aacute;rboles de ficheros una expresi&oacute;n</A>regular dada, Raul Deluth Miller, <CODE>rockwell@nova.umd.edu</CODE></H2>
+
+
+
+<P>He llamado a este script 'forall'. Se usa as&iacute; :</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+forall /usr/include grep -i ioctl
+forall /usr/man grep ioctl
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aqu&iacute; est&aacute; <CODE>forall</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+if [ 1 = `expr 2 \&gt; $#` ]
+then
+echo Usage: $0 dir cmd [optargs]
+exit 1
+fi
+dir=$1
+shift
+find $dir -type f -print | xargs &quot;$@&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss2.7">2.7 Un script para limpiar despu&eacute;s de usar programas que crean ficheros</A>temporales y de backup, Barry Tolnas, <CODE>tolnas@nestor.engr.utk.edu</CODE></H2>
+
+
+<P>Aqu&iacute; ten&eacute;is un sencillo script que desciente recursivamente un directorio
+borrando ficheros de auto-grabado y backup de emacs, ficheros .o, y
+ficheros .log de TeX. Tambi&eacute;n comprime ficheros .tex y ficheros README. 
+Yo lo llamo ``<CODE>squeeze</CODE>'' en mi sistema. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#SQUEEZE borra ficheros inutiles, y comprime ficheros .tex y README 
+#By Barry tolnas, tolnas@sun1.engr.utk.edu
+#
+echo squeezing $PWD
+find  $PWD \( -name \*~ -or -name \*.o -or -name \*.log -or -name \*\#\) exec rm -f {} \;
+find $PWD \( -name \*.tex -or -name \*README\* -or -name \*readme\* \) - exec gzip -9 {} \;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Linux-Tips-Como-1.html">Anterior</A>
+<A HREF="Linux-Tips-Como-3.html">Siguiente</A>
+<A HREF="Linux-Tips-Como.html#toc2">Indice</A>
+</BODY>
+</HTML>

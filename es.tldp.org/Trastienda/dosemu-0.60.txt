@@ -1,0 +1,489 @@
+			COMOSEHACE     EMULADOR DE DOS
+			----------     -------- -- ---
+
+	Voy a describir brevemente los pasos que hay que hacer para las
+instalación del emulador de DOS. Haré una mención especial al fichero de
+configuración del emulador de DOS.
+	Es una instalación principal y básica.
+
+	Este listado tendrá numerosos fallos que espero con vuesta ayuda me
+vayais informando para poderlo mejorar.
+	Es una traducción al español (lo mejor posible) del fichero
+QuickInstall para Dosemu con comentarios mios.
+
+	La instalación esta descrita para un sistema linux con kernel 1.1.57
+y dosemu 0.53pl34.
+
+	Se necesita para este dosemu un linux con versión 1.1.43 o mejor y
+el compilador de C GCC 2.5.8 y libc 4.5.21 
+
+1º Instalación
+
+	El emulador de dos viene comprimido y empaquetado, para los que sean
+nuevos en este mundo haremos lo siguiente. Copiamos el dosemu, disco, CD-ROM
+de cualquier sitio o forma a la raiz (/) y desde ahi lo descomprimimos de
+dos formas:
+    1¬
+	gzip -d <nombredelpaquetedosemu>    #descomprimimos
+	tar xvf <nombrepaquetedescomprimido>#desempaquetamos
+    2¬ La mas facil:
+	tar xzf <nombredelpaquetedosemu>
+
+	Veremos que el paquete se empieza a desempaquetar, hacer sus
+directorios y demas. Una vez terminado esto, podemos borrar en la raiz los
+ficheros originales del dosemu.
+	
+2º Creación de un disco autoarrancable DOS
+	NOTA: Aunque este apartado no es del todo obligatorio puede ser
+	recomendable. Puede arrancarse directamente del disco duro sin tener
+	problemas. Sobre todo los que tengan el lilo puesto en el H.D.
+
+	Desde el DOS (el verdadero)
+	- Formatea un diskette con FORMAT A: /S
+	- Copia c:\dos\fdisk\.exe al diskette
+	- Copia c:\dos\sys.com al disketee
+
+3º Compilación del DOSEMU
+	
+	Comentarios especiales: Aunque en las últimas veriones ya no pasa,
+		puede estar mal la referencia del /usr/src/linux/include en
+		el Makefile. Versiones antiguas ponian este path en un sitio
+		diferente al normal.
+			El kernel si lo habeis recompilado que no se os haya
+		olvidado decir que si a la ocion IPC (dla quien me suena a mi
+		esto? :-D)
+
+	- Hacer 'make doeverything' si teneis TeX, sino hacer 'make most'
+	  Si esto falla al hacer un fichero '.h' poner 'make install'.
+	- Copiar '.examples/config.dist' a '/etc/dosemu.conf' editalo y mira
+	que es lo que te gusta y que no, hablaré mas tarde luego del fichero de
+	configuración.
+
+	- Copiar ./commands/exitemu.com al diskette nuevo formateado, este
+	comando sirve para poder salir del DOS desde el emulador en linux.
+	- Copiar ./hdimage.dist como /var/lib/dosemu/hdimage. La primera
+	declaración de disco en el /etc/dosemu.conf deberia apuntar a este
+	fichero.
+
+4º Preparar DOSEMU
+
+	NOTA: Si arrancamos directamente desde el disco duro podemos hacer
+
+	- Desde el directorio de dosemu0.53 poner dos -A (para arrancar
+	desde el disquete que formateamos).
+	Despues de un rato el emulador parece que reinicia el sistema (no os
+	asusteis, esperar un rato) y tendrá que salir el tan famoso prompt
+	'A>' del DOS
+		Si no estas como root deberas añadir su "nombre o cuenta"
+		a el fichero  /etc/dosemu.users 
+	- Desde el A: trata de ver C: para estar seguro de que estas usando
+	el fichero de la imagen de disco.
+	- Pon 'FDISK /MBR'. Esto añadirá el Master Boot Record a la emulada 
+	disco C: que es acutalmente el fichero hdimage.
+	- Desde el disco A: pon 'sys C:' esto te permitirá arrancar
+	directamente sin requirir un disquette.
+
+5º A por ellos (que son pocos y cobardes)
+	
+	- Pon "dos" desde el linux
+	- Dosemu deberia arrancar tu versión instalada de DOS esta ver desde
+	  tu hdimage.
+	- Si pulsando Alt-TecladeFuncón con se activan consolas virtuales,
+	  prueba con Ctrl-Alt-TecladeFunción para activar consolas.
+	- Ahora puedes empezar modificando /etc/dosemu.conf mas
+	  concienzudamente.
+	- Puedes hacer que DOSEMU arranque tu partición de disco duro
+	- Si quieres usar comprensión de disco como STACKER o DOUBLESPACE
+	  con DOSEMU, necesitaras el comando /usr/lib/dosemu/mkpartition
+	  para crear los ficheros de datos de la tabla de partición.
+	- Desde aqui toda la suerte del mundo
+
+6º Algo no va bien.
+	
+	- Si has compilado bien el DOSEMU continua con el fichero de
+	configuración, es un poco dificil al principio :-(
+	- Leete todas los ficheros de documentación sobre el DOSEMU
+	detenidamente.
+	- Si estas muy desesperado. Has contactado con FIDO, con el fichero
+	de configuración dale que te pego y sigue sin funcionar. Pon
+	'dos -D+a 2>debug' crearas un fichero de errores el cual puedes enviar a
+	jmaclean@fox.nstn.ns.ca que te ayudará mejor que nadie.
+
+
+		FICHERO DE CONFIGURACION DEL EMULADOR DE DOS DOSEMU
+/etc/dosemu.conf
+	Como sabeis, consisten en quitar el comentario (borrar el #) a las 
+lineas que os interesan, aunque está muy bien escrito creo que son interesantes
+algunos comentarios.
+	Es un fichero "pa' ir tirando", dado yo no conozco este emulador en
+profundidad y porque hay ciertas cosas que yo ni siquiera se.
+
+# Linux dosemu 0.53 configuration file. 
+
+#************************* DEBUG ******************************************
+# Esta secion es de interes si tienes graves problemas con el DOSEMU y
+# quieres información del debug del emulador. Para creal el fichero con la 
+# la informació del debug poner "dos 2>debug" se os creará un fichero
+# llamado "debug" con toda la información deseada.
+# Pon en on las opciones que te interesen.
+# Evita esta sección si estas empezando o no te interesa.
+
+debug { config  off     disk    off     warning off     hardware off
+	port    off     read    off     general off     IPC      off
+	video   off     write   off     xms     off     ems      off
+	serial  off     keyb    off     dpmi    off
+	printer off     mouse   off
+      }
+
+
+#************************ MISCALLENOUS ************************************
+#
+# dl Quieres arrancar DOSEMU con mensajes banner messages? 
+dosbanner on
+#
+#   timint es necesario en muchos programas para funcionar.
+timint on
+
+
+#************************** KEYBOARD ************************************
+# 
+# QuickStart:
+#    Con la palabra clave "layout" puedes especificar el pais de tu teclado
+#    que son los siguientes:
+#        finnish           us           dvorak       sf
+#        finnish-latin1    uk           sg           sf-latin1
+#        de                dk           sg-latin1    es
+#        de-latin1         dk-latin1    fr           es-latin1
+#        be                no           fr-latin1    portuguese
+
+#    El teclado us es selecionado por defecho si "layout" esta omitido.
+
+keyboard {  layout us  keybint on  rawkeyboard on  } #este es el que mejor
+						     #me va :-?
+
+# keyboard {  layout de-latin1  keybint on  rawkeyboard on  }
+#
+
+#    Si la velocidad del DOSEMU no es importante y el tiempo de CPU es de 
+#    mucho valor para ti, pon HogThreshold a un valor distinto de 0.
+#    This means
+#    the number of keypress requests in a row before CPU time is given
+#    away from DOSEMU.  A good value to use could be 10000.  
+#    A zero disables CPU hogging detection via keyboard requests. 
+#
+HogThreshold 0
+
+ 
+#**************************** SERIAL ************************************
+#
+# QuickStart:
+#    Puedes especificar hasta 4 puertos series aqui.
+
+#    Si mas de un puerto tiene la misma IRQ solo uno de los puertos puede
+#    ser utilizado al mismo tiempo. Tambien puedes especificar el puerto,
+#    la dirección, irq y el camino del dispositivo. Por defecto son los
+#    siguientes.
+
+#        COM1 default is base 0x03F8, irq 4, and device /dev/cua0
+#        COM2 default is base 0x02F8, irq 3, and device /dev/cua1 
+#        COM3 default is base 0x03E8, irq 4, and device /dev/cua2
+#        COM4 default is base 0x02E8, irq 3, and device /dev/cua3
+
+#    That means what is COM3 on IRQ 5 in real DOS, can become 
+#    COM1 on IRQ 4 in DOSEMU!
+#
+#    Por ejemplo, estas lineas son iguales:
+#    serial { com 1  mouse }
+#    serial { com 1  mouse  base 0x03F8  irq 4  device /dev/cua0 }
+#
+#    If you want to use a serial mouse with DOSEMU, the "mouse" keyword 
+#    should be specified in only one of the serial lines.  (For PS/2
+#    mice, it is not necessary, and device path is in mouse line instead)
+#
+#    Quita el comentario de una de las lineas siguientes si quieres utilizar
+#    modem:
+#    (o otro dispositivo serie.)
+#serial { com 1  device /dev/modem }
+#serial { com 2  device /dev/modem }
+#serial { com 3  device /dev/modem }
+serial { com 4  device /dev/modem }
+#serial { com 3  base 0x03E8  irq 5  device /dev/cua2 }
+#
+#    Si tienes un raton no-PS/2, descomenta uno de los siguientes. 
+serial { mouse  com 1  device /dev/mouse }
+#serial { mouse  com 2  device /dev/mouse }
+#
+#    dlDe que tipo es tu raton?  Descomenta uno de los siguientes.
+#    Use the 'internaldriver' option with ps2 and busmouse options.
+mouse { microsoft }
+#mouse { logitech }
+#mouse { mmseries }
+#mouse { mouseman }
+#mouse { hitachi }
+#mouse { mousesystems }
+#mouse { busmouse }
+#mouse { ps2  device /dev/mouse internaldriver }
+#    The following line won't run for now, but I hope it will sometimes
+#mouse { mousesystems device /dev/mouse internaldriver cleardtr }
+
+
+#    Soporte de RED (no se nada). Dejar como esta.
+
+
+# (Esta sección es para si ejecutais el DOSEMU desde una terminal remota)
+#************************** TERMINALS *************************************
+
+# para los que desean arrancar el emulador desde las X
+#************************** X SUPPORT *************************************
+# valid keywords for the X { } config line:
+#
+#    "updatefreq" value                                    (default 8)
+#       Frecuencia de refresco de pantalla. Cuanto mas pequeño mas veces por
+#       segundo refresca.
+
+#       A value of 20 gives a 
+#       frequency of about one per second, which is very slow.  However, more
+#       CPU time is given to DOS applications when updates are less frequent.
+#
+#    "updatelines" value                                   (default 25)
+#       The size of each screen update in number of lines.  
+#       The smaller this number, the better the typing response, but the
+#       slower the update becomes.
+#
+#    "display" string                                      (default ":0")
+#       El servidor X a utilizar. Si no está especificado, dosemu utilizará
+#       la variable de entorno DISPLAY. (Este es el caso normal)
+#
+#    "title" string                                    (default "dosemu")
+#       Lo que quieras que salga como titulo de la ventana.
+#
+#    "icon_name" string                                (default "dosemu")
+#       Nombre que pondra cuando este en modo de icono el dosemu.
+#
+#    "keycode"                                          (default 0)
+#       Used to give Xdos access to keycode part of XFree86.
+#
+#    "blinkrate" value                                  (default 8)
+#       Used to add blinking to cursor.
+#
+#    "font" value                                       (default vga)
+#       Usalo para utilizar otra fuente que no sea VGA, debe ser moespaciada.
+#
+X { updatefreq 8 updatelines 25 title "DOS in a BOX" icon_name "xdos" }
+
+
+
+#************************* VIDEO ******************************************
+#
+# !!WARNING!!: A LOT OF THIS VIDEO CODE IS ALPHA!  IF YOU ENABLE GRAPHICS
+# ON AN INCOMPATIBLE ADAPTOR, YOU COULD GET A BLANK SCREEN OR MESSY SCREEN
+# EVEN AFTER EXITING DOSEMU.  JUST REBOOT (BLINDLY) AND THEN MODIFY CONFIG.
+#
+# Si quereis para empezar, dejarlo en texto, luego elegir la tarjeta que
+# tengais
+#
+#video { vga  console }          # Use this line, if you are using VGA
+#video { cga  console }          # Use this line, if you are using CGA
+#video { ega  console }          # Use this line, if you are using EGA
+#video { mda  console }          # Use this line, if you are using MDA
+#
+# QuickStart Notes for Graphics:
+#   - If your VGA-Bios resides at E000-EFFF, turn off video BIOS shadow
+#     for this address range and add the statement vbios_seg 0xe000
+#     to the correct vios-statement, see the example below
+#   - If your VBios size is only 32K you set it with  vbios_size 0x8000,
+#     you then gain some space for UMB or hardware ram locations.
+#   - Set "allowvideoportaccess on" earlier in this configuration file
+#     if DOSEMU wont boot properly, such as hanging with a blank screen,
+#     beeping, leaving Linux video in a bad state, or the video card 
+#     bootup message seems to stick.
+#   - Video BIOS shadowing (in your CMOS setup) at C000-CFFF must be disabled. 
+#
+#     *> CAUTION <*: TURN OFF VIDEO BIOS SHADOWING BEFORE ENABLING GRAPHICS!
+#                    This is not always necessary, but a word to the wise
+#                    shall be sufficient.
+#
+#   - If you have a dual-monitor configuration (e.g. MDA as second display),
+#     you then may run CAD programs on 2 displays or let play your debugger
+#     on the MDA while debugging a graphics program on the VGA (e.g TD -do ).
+#     You also may switch to the MDA display by using the DOS command
+#     mode mono (mode co80 returns to your normal display).
+#     This feature can be enabled by the switch "dualmon" like this:
+#       video { vga  console  graphics dualmon }
+#     and can be used on a xterm and the console, but of course not, if you
+#     have the MDA as your primary display. 
+#     You also must set USE_DUALMON 1 in include/video.h.
+#     NOTE: Make shure no more then one process is using this feature !
+#           ( you will get funny garbage on your MDA display. ) 
+#           Also, you must NOT have the dualmon-patches for kernel applied
+#           ( having the MDA as Linux console ) 
+
+
+#        
+#   NOTA poner la siguiente linea en on si vuestra tarjeta gráfica con
+#   funciona bien al arrancar dosemu, el problema es que poniendola en on
+#   puede interferir con algunos puertos serie (a mi por ejemplo)
+
+#
+allowvideoportaccess on
+#
+
+#   ELEGIS la tarjeta que mas os venga a gusto (la trident funciona bien)
+
+#   Any 100% compatible standard VGA card _MAY_ work with this:
+#video { vga  console  graphics }
+#
+#   If your VGA-BIOS is at segment E000, this may work for you:
+#video { vga  console  graphics  vbios_seg 0xe000 }
+#
+#   Trident SVGA with 1 megabyte on board
+#video { vga  console  graphics  chipset trident  memsize 1024 }
+#
+#   Diamond SVGA
+#video { vga  console  graphics  chipset diamond }
+#
+#   ET4000 SVGA card with 1 megabyte on board:
+#video { vga  console  graphics  chipset et4000  memsize 1024 }
+# or
+#video { vga  console  graphics  chipset et4000  memsize 1024 vbios_size=0x8000 }
+#
+#   S3-based SVGA video card with 1 megabyte on board:
+#video { vga  console  graphics  chipset s3  memsize 1024 }
+# For ATI graphic mode
+#ports { 0x1ce 0x1cf 0x238 0x23b 0x23c 0x23f 0x9ae8 0x9ae9 0x9aee 0x9aef }
+
+
+#************************** MISCALLENOUS **********************************
+#
+# QuickStart:
+#       Creo que esto es fácil a si que poneis lo que mas os interesa
+#       mathco on significa que quereis utilizar el coprocesador
+#       cpu el tipo de procesador que quereis que os reconozca
+#       bootA que empieze arrancando en la disquetera A
+mathco on           # Math coprocessor valid values:  on  off
+cpu 80386           # CPU emulation valid values:  80286  80386  80486
+bootA               # Startup drive valid values:  bootA  bootC
+
+
+#*********************** MEMORY ******************************************
+#
+# QuickStart:
+#       Estos son los parámetros de memoria en kilobytes. Os recomiendo que
+#    no utiliceis demasiado sino utilizará swaping de linux y notareis
+#    bastante lentitud.
+#
+#       Tener cuidado con DPMI aun no funciona del todo bien (la verdad es
+#    casca bastantes veces).
+#       Tambien podeis mapear las direcciones de memoria.
+xms 1024            # XMS size in K,  or "off"
+
+ems 1024            # EMS size in K,  or "off"
+
+# or:
+#ems { 1024 ems_frame 0xe000 }
+#ems { ems_size 2048 emsframe 0xd000 }
+
+#hardware_ram { 0xc8000 range 0xcc000 0xcffff }
+#             the above mappes 0xc8000..0xc8fff and 0xcc000..0xcffff
+  
+dpmi off            # DPMI size in K, or "off"  Be careful with DPMI!
+
+# Maximum conventional RAM to show apps
+# dosmem 640
+
+#*********************** IRQ ******************************************
+#
+# QuickStart:
+#       Lo siento pero de aqui no tengo ni idea, asi me funciona (como viene
+#       por defecto) 
+#
+
+sillyint off    # this disables IRQ monitoring
+#sillyint 15
+#sillyint { 15 }
+#sillyint { use_sigio 15 }
+#sillyint { 10  use_sigio range 3 5 }
+
+
+#********************** PORT ACCESS **************************************
+#
+#
+# ports { 0x388 0x389 }  # for SimEarth
+# ports { 0x21e 0x22e 0x23e 0x24e 0x25e 0x26e 0x27e 0x28e 0x29e } # for jill
+ 
+
+#******************* SPEAKER *********************************************
+# 
+# These keywoards are allowable on the "speaker" line:
+#   native      Enable DOSEMU direct access to the speaker ports.
+#   emulated    Enable simple beeps at the terminal.
+#   off         Disable speaker emulation.
+#
+speaker native         # or "off" or "emulated"
+
+
+#******************* HARD DISKS ******************************************
+#
+# !!WARNING!!: DAMAGE MIGHT RESULT TO YOUR HARD DISK (LINUX AND/OR DOS)
+# IF YOU FIDDLE WITH THIS SECTION WITHOUT KNOWING WHAT YOU'RE DOING!
+#
+# QuickStart:
+#       La mejor forma para empezar en con un disco de arranque, y poner
+# "bootA" arriba en la configuración. Continuar usando el disco de arranque
+# hasta que quieras configurar la sección de disco duro.
+#       La forma mas segura es que el dosemu acceda a una partición solo de
+# vuestro disco duro. (Y asi os evitais que entreis en sitios indeseables)
+
+#    !!! IMPORTANTE !!!
+#    No debes tener LILO instalado en la partición de dosemu para arrancar.
+#    Doublespace y stacker pueden funciona con wholedisk o una partición
+#    solo de acceso. Si quieres utilizar la compressión del disco utilizando
+#    acceso a una partición necesitarás utilizar el comando "mkpartition" para
+#    crear un fichero de datos de la tabla de particiones para dosemu
+#    The command are installed in /var/lib/dosemu.
+#
+#    Please read the documentation in the "doc" subdirectory for info
+#    on how to set up access to real hard disk.
+#
+#    "image" specifies a hard disk image file.
+#    "partition" specifies partition access, with device and partition number.
+#    "wholedisk" specifies full access to entire hard drive.
+#    "readonly" for read only access.  A good idea to set up with.
+#
+#disk { image "/var/lib/dosemu/hdimage" }    # use diskimage file.
+#disk { partition "/dev/hda1" 1 readonly }   # 1st partition on 1st IDE.
+#disk { partition "/dev/hda6" 6 readonly }   # 6th logical partition.
+#disk { partition "/dev/sda2" 1 readonly }   # 1st partition on 2nd SCSI.
+#disk { wholedisk "/dev/hda" }               # Entire disk drive unit
+
+
+#******************* DOSEMU BOOT *******************************************
+#    Si descomentais lo siguiente nada mas arrancar buscara los ficheros
+#    CONFIG.EMU y AUTOEXEC.EMU con los cuales conseguireis que arranque con
+#    vuestras preferencias, sino seguirá arrancando de forma normal
+#
+#EmuSys EMU
+#EmuBat EMU
+
+
+#******************* FLOPPY DISKS ****************************************
+#
+# QuickStart:
+#      Aqui poneis las diqueteras que teneis y a donde estan dirigidas
+#
+floppy { device /dev/fd0 threeinch }  
+floppy { device /dev/fd1 fiveinch }  
+#floppy { heads 2  sectors 18  tracks 80  
+#         threeinch  file /var/lib/dosemu/diskimage }
+#
+
+#******************* PRINTERS ********************************************
+#
+# QuickStart:
+#    La impresora es emulada con el comando lpr. Reconzco que es muy
+#    eficiente. Podeis añadir o modificar lo siguiente.
+#
+printer { options "%s"  command "lpr"  timeout 20 }
+#printer { options "-p %s"  command "lpr"  timeout 10 }    # pr format it
+#printer { file "lpt3" }
+

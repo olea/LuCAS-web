@@ -1,0 +1,529 @@
+<HTML
+><HEAD
+><TITLE
+>Utilizando los Mapas passwd y group</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Sistema de Información de Red (NIS)"
+HREF="x-087-2-nis.html"><LINK
+REL="PREVIOUS"
+TITLE="Escogiendo los Mapas Correctos"
+HREF="x-087-2-nis.nsswitch.html"><LINK
+REL="NEXT"
+TITLE="Usando NIS con Soporte de Contraseñas
+Ocultas"
+HREF="x-087-2-nis.shadow.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.nsswitch.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 13. El Sistema de Información de Red (NIS)</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.shadow.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NIS.PASSWD">13.8. Utilizando los Mapas passwd y group</H1
+><P
+>&#13;
+
+
+Una de las aplicaciones más importantes de NIS es sincronizar la información del
+usuario y de su cuenta en todos los nodos de un dominio NIS. Por consiguiente,
+normalmente usted sólo mantendrá un fichero <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+>
+pequeño, al cual se añade la información global de los mapas NIS. Sin embargo,
+no es suficiente con habilitar las búsquedas NIS para este servicio en el
+fichero <TT
+CLASS="FILENAME"
+>nsswitch.conf</TT
+>.</P
+><P
+>Antes de fiarse de la información de contraseñas distribuida por NIS, debe
+asegurarse de que todos los números ID de usuario que haya en el fichero local
+<TT
+CLASS="FILENAME"
+>passwd</TT
+> concuerdan con los del servidor NIS. La consistencia
+de los IDs también es importante para otros propósitos, como montar particiones
+NFS desde otros nodos de su red.</P
+><P
+> 
+ 
+Si alguno de los IDs numéricos de <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+> o
+<TT
+CLASS="FILENAME"
+>group</TT
+> difiere de los de los mapas, debe ajustar el dueño de
+todos los ficheros que pertenezcan a ese usuario. Primero, debe cambiar todos
+los uids y gids de <TT
+CLASS="FILENAME"
+>passwd</TT
+> y <TT
+CLASS="FILENAME"
+>group</TT
+> a
+los nuevos valores, luego mirar que todos los ficheros que pertenecen a los
+usuarios han cambiado, y cambiar su dueño. Suponga que
+<SPAN
+CLASS="SYSTEMITEM"
+>news</SPAN
+> tenía un ID de usuario de 9 y que
+<SPAN
+CLASS="SYSTEMITEM"
+>okir</SPAN
+> tenía un ID de usuario de 103, y que
+fueron cambiados a otro valor; luego puede 
+ejecutar las siguientes órdenes como root:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>find / -uid   9 -print &#62;/tmp/uid.9</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>find / -uid 103 -print &#62;/tmp/uid.103</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>cat /tmp/uid.9   | xargs chown news</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>cat /tmp/uid.103 | xargs chown okir</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Es importante que ejecute estas ordenes con el nuevo fichero
+<TT
+CLASS="FILENAME"
+>passwd</TT
+> instalado, y que reúna todos los ficheros antes de
+cambiar el dueño de alguno de ellos. Para actualizar los grupos dueños de los
+ficheros, utilice un método similar con gid en vez de uid y chgrp en vez de
+chown.</P
+><P
+>Una vez que haya hecho esto, los uids y gids de su sistema concordarán con los
+de todos los nodos de su dominio NIS. El siguiente paso será añadir a
+<TT
+CLASS="FILENAME"
+>nsswitch.conf</TT
+> las líneas de configuración que habilitan la
+búsqueda NIS de la información de usuario y grupo:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # /etc/nsswitch.conf - tratamiento de passwd y group
+    passwd: nis files
+    group:  nis files</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+> 
+Esto afecta a qué lugar buscarán la información de usuario la orden
+<B
+CLASS="COMMAND"
+>login</B
+> y todos sus amigos. Cuando un usuario intente registrarse
+en el sistema, <B
+CLASS="COMMAND"
+>login</B
+> consultará primero los mapas NIS, y si
+esta búsqueda falla, recurrirá a los ficheros locales. Normalmente, usted
+eliminará a casi todos los usuarios de sus ficheros locales, y sólo dejará las
+entradas de <SPAN
+CLASS="SYSTEMITEM"
+>root</SPAN
+> y otras cuentas
+genéricas como <SPAN
+CLASS="SYSTEMITEM"
+>mail</SPAN
+>. Eso es porque
+algunas tareas vitales del sistema pueden requerir resolver uids a partir de
+nombres de usuario o viceversa. Por ejemplo, los trabajos administrativos de
+<B
+CLASS="COMMAND"
+>cron</B
+> pueden utilizar la orden <B
+CLASS="COMMAND"
+>su</B
+> para
+convertirse temporalmente en el usuario
+<SPAN
+CLASS="SYSTEMITEM"
+>news</SPAN
+>, o el subsistema UUCP puede tener
+que enviar un informe de estado por correo. Si
+<SPAN
+CLASS="SYSTEMITEM"
+>news</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>uucp</SPAN
+> no tienen entradas en el fichero
+local <TT
+CLASS="FILENAME"
+>passwd</TT
+>, estos trabajos fallarán estrepitosamente
+durante una caída del servicio NIS.</P
+><P
+>Finalmente, si usted está usando la implementación de NIS antigua (soportada por
+el modo <SPAN
+CLASS="SYSTEMITEM"
+>compat</SPAN
+> para los ficheros
+<TT
+CLASS="FILENAME"
+>passwd</TT
+> y <TT
+CLASS="FILENAME"
+>group</TT
+> en las implementaciones
+de NYS o glibc), debe insertar las pesadas entradas especiales dentro de ellos.
+Estas entradas determinan dónde se insertarán los registros derivados NIS dentro
+de la base de datos. Las entradas pueden añadirse en cualquier lugar, pero
+normalmente se añaden al final. Las entradas que hay que añadir en el fichero
+<TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+> son:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>+::::::</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+y las del fichero <TT
+CLASS="FILENAME"
+>/etc/groups</TT
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>+:::</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Con la glibc 2.x y NYS se puede ignorar los parámetros del registro de un
+usuario recibido desde el servidor NIS creando entradas con un &ldquo;+&rdquo;
+antes del nombre de ingreso, y excluir usuarios específicos creando entradas con
+un &ldquo;-&rdquo; antes del nombre de ingreso.
+Por ejemplo, las entradas:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>+stuart::::::/bin/jacl</B
+></TT
+>
+    <TT
+CLASS="USERINPUT"
+><B
+>-jedd::::::</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+ignorarían el intérprete de órdenes proporcionado por el servidor NIS para el usuario
+<SPAN
+CLASS="SYSTEMITEM"
+>stuart</SPAN
+>, y no permitirían al usuario
+<SPAN
+CLASS="SYSTEMITEM"
+>jedd</SPAN
+> ingresar en esta máquina. En los
+campos que se dejan vacíos se utiliza la información proporcionada por el
+servidor NIS.</P
+><P
+>Existen dos inconvenientes aquí. Primero, la configuración descrita arriba sólo
+funciona en los sistemas de ingreso que no utilizan contraseñas ocultas (shadow
+passwords). Los misterios de usar contraseñas ocultas con NIS se discutirán en
+la siguiente sección. Segundo, las órdenes de ingreso no son las únicos que
+acceden al fichero <TT
+CLASS="FILENAME"
+>passwd</TT
+>&mdash;fíjese en la orden
+<B
+CLASS="COMMAND"
+>ls</B
+>, que casi todo el mundo utiliza constantemente. Al hacer
+listados largos, el comando <B
+CLASS="COMMAND"
+>ls</B
+> muestra los nombres simbólicos
+de los usuarios y los grupos dueños de un archivo; esto es, para cada uid y gid
+que se encuentra, tiene que consultar al servidor NIS. Una consulta NIS tarda
+algo más que la búsqueda equivalente en un fichero local. Puede encontrarse con
+que al compartir la información de <TT
+CLASS="FILENAME"
+>passwd</TT
+> y
+<TT
+CLASS="FILENAME"
+>group</TT
+> mediante NIS se produce una reducción significativa
+del rendimiento de algunos programas que utilizan esta información de manera
+frecuente.</P
+><P
+>Y esto no es toda la historia. Imagine qué ocurriría si una usuaria quiere
+cambiar su contraseña. Normalmente invocará la orden
+<B
+CLASS="COMMAND"
+>passwd</B
+>, que lee la nueva contraseña y actualiza el fichero
+local <TT
+CLASS="FILENAME"
+>passwd</TT
+>. Esto es imposible con NIS, ya que ese fichero
+ya no está disponible localmente, pero hacer que los usuarios tengan que
+ingresar en el servidor NIS cada vez que quieran cambiar su contraseña tampoco
+es una opción. Es por esto que NIS proporciona un sustituto para
+<B
+CLASS="COMMAND"
+>passwd</B
+> llamado <B
+CLASS="COMMAND"
+>ypasswd</B
+>, que maneja los
+cambios de contraseña bajo NIS. Para cambiar la contraseña en el nodo servidor,
+contacta con el demonio <B
+CLASS="COMMAND"
+>yppasswdd</B
+> de ese nodo mediante RPC, y
+le proporciona la información de la contraseña actualizada. Normalmente se
+instala <B
+CLASS="COMMAND"
+>yppasswd</B
+> sobre el programa normal haciendo algo así:
+
+ 
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>cd /bin</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>mv passwd passwd.old</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>ln yppasswd passwd</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Al mismo tiempo, debe instalar <B
+CLASS="COMMAND"
+>rpc.yppasswdd</B
+> en el servidor y
+lanzarlo desde un script de red. Esto ocultará de manera efectiva las
+viscisitudes de NIS a sus usuarios.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.nsswitch.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.shadow.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Escogiendo los Mapas Correctos</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Usando NIS con Soporte de Contraseñas
+Ocultas</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

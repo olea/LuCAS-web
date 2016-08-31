@@ -1,0 +1,682 @@
+<!-- TV,1 -->
+<!-- Juan Pedro Paredes, juampe@mx4.redestb.es -->
+<!-- 0.4,1999-07-05 -->
+
+<!doctype linuxdoc system>
+
+<article>
+<title>TV Como
+<author>Juan Pedro Paredes <tt><htmlurl url="mailto:juampe@mx4.redestb.es"
+name="juampe@mx4.redestb.es"></tt>
+<date>v 0.4, Lunes 5 Julio de 1999
+
+<abstract>
+Distribuir bajo licencia GPL vigente de la FSF.
+Cualquier contribución, corrección o actualización es bienvenida.
+Este documento pretende ser una guía rápida de configuración y puesta
+en funcionamiento de procedimientos para ver la televisión bajo Linux (incluso
+escuchar la radio).
+
+Como cierre educativo se explicara también como ver el C++ y utilizar el mando
+a distancia que puede acompañar a su tarjeta.
+Se va a hacer desde el punto de vista de tarjetas con los chips bt848, bt849,
+bt878 y bt879.
+</abstract>
+
+<toc>
+
+<sect>Agradecimientos
+<p>
+<itemize>
+<item><htmlurl url="http://pusa.uv.es/~sergi/TV.html" name=Sergi>
+<item>Jack Kerouac por buen corrector (Mad On the Road) 
+<item>NoP esto va a tu página :) a cambio de un link a la mía
+<item>La gente de os.comp.os.linux por su critica y apoyo
+<item>La gente de #linux que me animó
+<item>A mi P100 por seguir aguantando sin caerse a trozos
+<item>A las empresas de hard por dar información....
+<item>A timofonica por hacer que ahorre mas....
+</itemize>
+	
+<sect>Enlaces de Interés
+<p>
+<itemize>
+<item>(Tengo que publicitarme ¿No?) <tt><htmlurl url="http://norba.unex.es/~juampe" name="http://norba.unex.es/~juampe"></tt>
+<item>Este sabe alemán y traduce :P <tt><htmlurl url="http://pusa.uv.es/~sergi/TV.html" name="http://pusa.uv.es/~sergi/TV.html"></tt>
+<item>Tuner <tt><htmlurl url="http://www.cs.tu-berlin.de/~kraxel/linux/" name="http://www.cs.tu-berlin.de/~kraxel/linux/"></tt>
+<item>Xawtv <tt><htmlurl url="http://www.in-berlin.de/User/kraxel/xawtv.html" name="http://www.in-berlin.de/User/kraxel/xawtv.html"></tt>
+<item>BTTV <tt><htmlurl url="http://www.thp.uni-koeln.de/~rjkm/linux/bttv.html" name="http://www.thp.uni-koeln.de/~rjkm/linux/bttv.html"></tt>
+<item>Mando a distancia <tt><htmlurl url="http://fsinfo.cs.uni-sb.de/~columbus/lirc/" name="http://fsinfo.cs.uni-sb.de/~columbus/lirc/"></tt>
+<item>Para oir Cadena 40 ;) <tt><htmlurl url="http://asterix.uc3m.es/nagraudio" name="http://asterix.uc3m.es/nagraudio"></tt>
+<item>Para ver Los Pitufos Makineros ;) <tt><htmlurl url="http://freetv.notrix.de" name="http://freetv.notrix.de"></tt>
+<item>RadioTuner <tt><htmlurl url="http://home.pages.de/~fionn/archive/wmtune-1.0_bttv.tar.bz2" name="http://home.pages.de/~fionn/archive/wmtune-1.0_bttv.tar.bz2"></tt>
+<item>De todo un poco <tt><htmlurl url="ftp://sunsite.unc.edu/pub/Linux/apps/video" name="ftp://sunsite.unc.edu/pub/Linux/apps/video"></tt>
+</itemize>
+	
+<sect>Introducción
+<p>
+En este documento se intentará dar unas pautas generales a la configuración de
+su tarjeta de TV, ante la escasez de documentación del tema o su amplia
+difusión en alemán (tengo que aprender alemán :( ).
+
+Reflejo el soporte de framebuffers (con el fbtv) aunque no tengo tarjeta que la 
+soporte, además no es mas que saltarse el paso de DGA bajo xwindow.
+
+<sect>Requisitos
+<p>
+<enum>
+<item>Por supuesto una tarjeta de televisión con los chips bt848, bt849, bt878 o
+bt879. 
+<item>Una tarjeta de sonido (Full-Duplex para C+ la tarjeta debe ser FD y el driver de sonido también recomiendo ver ALSA <htmlurl url="http://alsa.jcu.cz/" name="http://alsa.jcu.cz/"> y léase el
+Sonido-COMO) si tiene un kernel 2.2.X puede que tenga suerte y su tarjeta este
+soportada como full-duplex por oss (ej. sb).
+<item>Tarjerta compatible VESA 2.0, para framebuffer.
+<item>Un kernel con drivers 'video for Linux' o la distribución original bttv.
+<item>Programas para ver la TV como xawtv y el C++ xawtv-nagra y nagratv.
+<item>Para C++ un BUEN procesador.(aunque en mi caso 23fps con P100 y nagratv)
+<item>Mucha paciencia. :)
+</enum>
+
+<sect>Manos a la obra
+<p>
+Básicamente se deben tomar 3 pasos:
+<enum>
+<item>Compilar los <ref id="drivers" name="drivers">.
+<item>Crear los <ref id="dispositivos" name="dispositivos">.
+<item><ref id="formalizar" name="Formalizar"> una vez configurado.
+</enum>
+
+<sect1>Drivers<label id="drivers">
+<p>
+Es importantísimo que el driver se compile como modulo por motivos obvios de
+configuración. Se puede hacer como parte del kernel pero tienes que saber cual
+es tu configuración válida y además enredar en las fuentes de driver cambiando
+'defines' por defecto. Como no creo que sepas cual es tu configuración ni te
+interese meterte con los fuentes seguiremos por el método de los módulos.
+
+De momento los parámetros de configuración no están incluidos en el sistema de
+configuración del kernel (espero se solucione pronto).
+Los módulos pueden hacerse de 2 formas: 
+
+<sect2>A partir del kernel 
+<p>
+Recomendado teniendo un kernel 2.2.X.
+
+Se supone que ya sabes compilar el kernel, si no es así mira el Kernel-COMO.
+
+Vete a la sección Character devices/Video For Linux.
+Señala como modulo lo siguiente:
+
+<tscreen><verb>
+<M> Video For Linux
+<M> BT848 Video For Linux
+<M> SAA5249 Teletext processor
+</verb></tscreen>
+
+y compila los módulos, si miras en /lib/modules/2.X.X/misc debe haber lo
+siguiente:
+
+<descrip>
+<tag/bttv.o/ Driver general.
+<tag/msp3400.o/ Driver chip de sonido stereo (problemático en hauppauge).
+<tag/saa5249.o/ Driver chip vbi y teletexto (indispensable para teletexto y C++).
+<tag/videodev.o/ Driver con api v4l (a ver para cuando v4l2...).
+<tag/i2c.o/ Driver bus i2c (verde en hauppauge).
+<tag/tuner.o/ Driver para el sintonizador de radio y tv.
+</descrip>
+
+Ahora viene la parte mas de 'try and error' para ello debes tener los programas
+debidamente configurados de secciones posteriores ejemplo con xawtv.
+
+Se trata de insertar los módulos en el kernel debidamente configurados, esto
+es con los parámetros propios de su tarjeta y probar a ver si se ve algo con
+el xawtv (el como de este programa vease 3.2.1); debe tambien escucharse.
+
+Voy a pasar de ejemplo un script de carga de módulos no debe hacerse con
+conf.modules o en /etc/modules en caso de debian (por lo menos hasta no saber bien los parametros necestarios). Este script se puede incorporar
+en la cadena init esto es como en /etc/init.d/ o /etc/rc.d/init/
+según distribución; incorporándolo como enlace en /etc/rcX.d/S13v4l o K13v4l
+ó /etc/rc.d/X/S13v4l o K13v4l mas info véase información sobre la cadena de
+arranque. Si desconoce el tema de la cadena de arranque solo pruebe como root
+(asignando permisos de ejecución al script):
+
+v4l start
+
+y para quitar los módulos para cambiar de configuración:
+
+v4l stop
+
+El siguiente script tiene parámetros de configuración bastante comunes en
+España y las tarjetas de tv recientes (a la fecha de este Como). De todas
+formas comentare cada uno de los parámetros de cada modulo en el caso de que
+necesite modificarlos para atender a las especificaciones de su tarjeta de TV.
+<tscreen><verb>
+------------
+script v4l
+---------------------8<--------------------------------------------------
+#!/bin/sh
+
+# Carga el soporte de tv para v4l
+
+case "$1" in
+    start | restart | force-reload | reload)
+#Decomentar lo siguiente para metodo bttv
+#	    /sbin/insmod videodev
+	    /sbin/insmod i2c verbose=1 scan=0 i2c_debug=1
+#Alternativo bttv
+#	    /sbin/insmod i2c_chardev verbose=1 scan=0 i2c_debug=1	    
+	    /sbin/insmod msp3400 debug=1
+	    /sbin/insmod saa5249 
+	    /sbin/insmod tuner debug=1 type=5
+	    /sbin/insmod bttv card=10 radio=1 pll=2,2 
+	;;
+    stop)
+	    /sbin/rmmod bttv
+	    /sbin/rmmod tuner
+	    /sbin/rmmod saa5249
+	    /sbin/rmmod msp3400
+	    /sbin/rmmod i2c
+#Alternativo bttv
+#           /sbin/rmmod i2c_chardev
+#Decomentar lo siguiente para metodo bttv
+#           /sbin/rmmod videodev
+	;;
+    *)
+	echo "Usage: $0 {start|stop|restart|reload|force-reload}"
+	exit 1
+	;;
+esac
+----------------8<------------------------------------------------------
+</verb></tscreen>
+<descrip>
+<tag/Modulo videodev/ Ofrece api v4l para bttv
+
+Parametros de modulo:
+
+Nada
+		
+<tag/Modulo i2c/ 
+Este modulo en el kernel por defecto se compila como dispositivo de caracteres cosa que pude variar en la distribución bttv (3.1.2).
+
+parametros de modulo:
+<descrip>
+<tag/verbose/
+
+0 Indica que queremos que sea silecioso
+
+1 Indica que queremos que muestre informacion
+
+<tag/scan/
+
+0 No hace escan de sispositivos encontrados
+
+1 Hace scan de dispositivos encontrados
+
+<tag/i2c_debug/
+
+0 No infromacion de debug (lo mismo que omitir el parametro)
+
+1 Ofrece información de debug
+</descrip>
+<tag/Modulo msp3400/ 
+Este modulo permite escuchar la televisión en estereo (para escuchar el sonido 
+en mono no hace falta), es el que maneja el chip de sonido estéreo.
+
+parámetros de modulo:
+<descrip>
+<tag/debug/
+0 No información de debug (lo mismo que omitir el parámetro)
+
+1 Ofrece información de debug
+
+2 Ofrece aun mas información de debug
+</descrip>
+<tag/Modulo saa5249/
+Este módulo permite manejar dispositivos de teletexto y vbi (sólo tarjetas de
+teletexto).
+
+parámetros de modulo:
+
+Nada
+
+<tag/Modulo tuner/
+Este módulo permite sintonizar los canales de TV es de vital importancia
+seleccionar el sintonizador correcto. Suele ir bastante bien el tipo 5 en
+España pues normalmente se usa PAL.
+
+parámetros de modulo:
+<descrip>
+<tag/debug/
+0 No información de debug (lo mismo que omitir el parámetro)
+
+1 Ofrece información de debug
+
+<tag/type/
+0 Temic PAL tuner
+
+1 Philips PAL_I tuner
+
+2 Philips NTSC tuner
+
+3 Philips SECAM tuner
+
+4 sin tuner
+
+5 Philips PAL tuner
+
+6 Temic NTSC tuner
+
+7 Temic PAL tuner
+</descrip>
+<tag/Modulo bttv/
+Es el modulo de control de las tarjetas BookTree. En este modulo suele andar
+toda la problemática de los fallos de configuración así que tendrás que afinar
+los siguientes parámetros, por supuesto debes modificar el script en el caso de
+que no tengas una bt878 hauppauge. De todas forma recomiendo probar todos los
+valores y ver cual va mejor. (En mi caso tengo una pixelview y con el card=16
+Aimslab VHX se oye el sonido)
+
+parámetros de modulo:
+<descrip>
+
+<tag/remap/
+?
+<tag/vidmem/
+Este es un parámetro numérico hexadecimal solo debe usarse en caso que nuestras 
+X no soporten extensión DGA (a partir v3.3.2).
+Indica la zona de memoria base a usar como búfer de video.
+
+Esta información se obtiene al iniciar las X véase:
+<tscreen><verb>	
+root:wavecomp:[16:08:00]:~$ X 2 > log
+root:wavecomp:[16:08:00]:~$ less log
+........
+(--) SVGA: Using Linear Frame Buffer at 0x0f0000000, Size 1MB
+........
+
+Se recoge 0x0f0000000 si se utiliza una mascara es decir
+          ______XXXXX
+	  0x0f00
+se quitan cinco ceros obteniendo 0x0f00 este sera el parámetro
+</verb></tscreen>
+
+<tag/triton/
+0 No fuerza la detección de triton
+
+1 Fuerza la detección de triton 1 en caso de no hacerlo
+<tag/pll/
+0 No usar PLL (plain Bt848, revisión 17), usa 1 or 2 si tienes una Bt848A, Bt849, Bt878 o Bt879
+
+1 Cristal de 28 MHz
+
+2 Cristal de 34 MHz
+<tag/radio/
+0 No tiene radio
+
+1 Tiene radio. Esta opción ha sido la solución a algunos problemas de sonido de algunas tarjetas
+</descrip>
+</descrip>		
+
+Aprovechando los datos de es.comp.os.linux se añaden tarjetas que funcionan
+con el mismo card que las señaladas:
+<tscreen><verb>
+Card:
+0 Auto-Detect
+1 Miro
+  BestBuy Easy TV
+2 Hauppauge (bt848)
+3 STB
+4 Intel
+5 Diamond
+6 AVerMedia
+7 MATRIX Vision MV-Delta
+8 FlyVideo
+9 TurboTV
+10 Hauppauge (bt878)
+11 Miro Pro
+12 TV-Boostar
+13 Hauppauge WinCam
+14 MAXI
+15 Terratec TerraTV+
+16 Aimslab VHX
+   Pixelview Play TV
+17 PXC200
+18 AVermedia98
+19 FlyVideo98 (newer FlyVideo cards)
+
+	*Hasta el momento son los modelos que han aparecido ver documentación
+	bttv para mas info
+</verb></tscreen>
+Una vez insertados los módulos en el kernel correctamente, el método es probar
+el xawtv sintonizar algún canal (hacer un scan manual con los cursores) y si 
+no se ve nada revisar las configuraciones de módulos.
+¡Suerte!
+
+<sect2>A partir de la distribución bttv-X.X.tar.gz.
+<p>
+Recomendado solo si usas un kernel 2.0.X o quieres utilizar la ultima versión.
+En esencia el proceso es similar al anterior excepto la compilación del driver
+y opción para usar como dispositivo de carácter el i2c.
+Ir a la sección src, editar el Makefile y seleccionar parámetros por defecto
+aunque luego en la carga pongamos los que queremos:
+<tscreen><verb>
+root:wavecomp:[16:31:43]:/usr/src/bttv$ make
+root:wavecomp:[16:35:21]:/usr/src/bttv$ make install
+</verb></tscreen>
+Esto ultimo colocará los modulos en /lib/modules/2.X.X/misc,lo demás es 
+análogo al paso anterior
+
+<sect1> Creación de dispositivos<label id="dispositivos">
+<p>
+Bueno el kernel ya soporta tu tarjeta, pero ¿Cómo los programas se comunican
+con el driver?, pues mediante los interfaces de dispositivos
+
+Bueno en teoria y resumen estos son los dispositivos (tranquilos la práctica
+es mas sencilla)
+<tscreen><verb>
+81 char        video4linux
+
+0 = /dev/video0		Dispositivo de caprura de video
+...
+63 = /dev/video63	Dispositivo de caprura de video
+64 = /dev/radio0	Dispositivo de radio
+...
+127 = /dev/radio63	Dispositivo de radio
+192 = /dev/vtx0		Dispositivo de teletexto
+...
+223 = /dev/vtx31	Dispositivo de teletexto
+224 = /dev/vbi0		Dispositivo VBI (Vertical Blank Interrupt) 
+...
+255 = /dev/vbi31	Dispositivo VBI (Vertical Blank Interrupt)
+</verb></tscreen>
+Enlaces que han de crearse para compatibilidad con programas antiguos
+<tscreen><verb>
+/dev/bttv0      video0          simbólico        
+/dev/bttv-fm	radio0		simbólico
+/dev/bttv-vbi	vbi0		simbólico
+/dev/radio      radio0          simbólico        
+</verb></tscreen>
+En la practica se utilizara un script que utiliza el mknod para crear los
+dispositivos (el bttv suele llevar uno se denomina MAKEDEV) y sólo se crean
+una vez:
+<tscreen><verb>
+--------------
+script MAKEDEV
+----------------8<------------------------------------------------------
+#!/bin/bash
+
+function makedev () {
+
+	for dev in 0 1 2 3; do
+		echo "/dev/$1$dev: char 81 $[ $2 + $dev ]"
+		rm -f /dev/$1$dev
+		mknod /dev/$1$dev c 81 $[ $2 + $dev ]
+		chmod 666 /dev/$1$dev
+	done
+
+	# symlink for default device
+	rm -f /dev/$1
+	ln -s /dev/${1}0 /dev/$1
+}
+
+# mirar http://roadrunner.swansea.uk.linux.org/v4lapi.shtml
+
+echo "*** Nuevos dispositivos ***"
+makedev video 0
+makedev radio 64
+makedev vtx 192
+makedev vbi 224
+
+echo "*** Dispositivos viejos (sólo por compatibilidad) ***"
+ln -s /dev/video0 /dev/bttv0
+ln -s /dev/radio0 /dev/radio
+ln -s /dev/radio0 /dev/bttv-fm
+ln -s /dev/vbi0 /dev/bttv-vbi
+----------------8<------------------------------------------------------
+</verb></tscreen>
+<sect1>Formalización<label id="formalizar">
+<p>
+Bueno supongo que una vez que has probado bastantes configuraciones distintas
+(muchas de ellas al azar) has dado en el clavo y ves y oyes la TV
+Antes comente que se podrian insertar lo modulos co el script pero algunas 
+distribuciones como la Debian o la RH utilizan un fichero /etc/modules o
+/etc/conf.modules.
+En este fichero se pueden poner lo modulos que han de ser cargados al arrancar
+el sistema, así como los parametros que han de necesitar estos.
+Como ejemplo pondre un /etc/modules y un /etc/conf.modules:
+<tscreen><verb>
+--------------
+ficero /etc/modules
+----------------8<------------------------------------------------------
+#Sonido
+soundcore
+sound
+
+uart401 io=0x330
+sb io=0x220 irq=5 dma=3 dma16=-1
+opl3 io=0x388
+
+#ad1848
+#mad16 io=0x530 irq=11 dma=0 dma16=3 mpu_io=0x320 mpu_irq=9
+
+softoss2
+v_midi
+
+#Joystick
+joystick
+joy-analog js_an=0x200,0x33,0xcc
+
+#Video for Linux
+
+#radio-zoltrix io=0x30c
+videodev
+i2c verbose=1 scan=0 i2c_debug=1
+msp3400 debug=1
+tuner debug=1 type=5
+bttv card=16 radio=1 pll=2,2 
+----------------8<------------------------------------------------------
+</verb></tscreen>
+Aquí se insertan modulos para la tarjeta de sonido, el joystick y la TV
+<tscreen><verb>
+--------------
+fichero /etc/conf.modules
+----------------8<------------------------------------------------------
+Si tienes algun ejemplo enviamelo.
+----------------8<------------------------------------------------------
+</verb></tscreen>
+
+<sect>Programas<label id="programas">
+<p>
+He de decir que los programas están muy verdes y tienen muchos bugs.
+Algunos necesitan permisos de root (utilizan los dispositivos de memoria a
+pelo) y al ser inestables pueden colgar tu maquina. Recomiendo la opción SysReQ
+de los kernel 2.2.X para apagar la maquina ordenadamente. En algunos (esto a
+riesgo del root) se deberian hacer suid (como root: chmod 4755 programa)) en
+el caso que utilizen los dispositivos de memoria (DGA para modo full-screen).
+
+<sect1>Para ver TV
+<p>
+Bueno una serie de programas para ver la TV no esta todos pero de momento se
+ajustan a necesidades normales.
+<descrip>
+<tag/xawtv/
+Para que este programa funcione bien se necesita un buen .xawtv
+como ejemplo:
+
+<tscreen><verb>
+-------------
+fichero .xawtv
+------------8<------------------------------------------------------------
+#Norma a usar pal secam....
+norm = pal
+#lo siguiente permite ver en frames o en sobreescritura de memoria
+#overlay gasta gasta pocos recursos excepto el bus
+#capture = grabdisplay
+capture = overlay
+source = television
+mixer = line
+#tabla de frecuencias y canales disponible para europa
+freqtab = pal-europe
+#fullscreen=768x576
+fullscreen=800x600
+#wm-off-by=-4-24
+
+#estos son los canales preselecionados (presintonias)
+
+[La Primera]
+channel = E11
+key=1
+
+[La 2]
+channel = 50
+#channel = 23
+key=2
+
+[Antena 3]
+channel = 38
+#channel = 41
+key=3
+
+[Canal +]
+channel = 36
+#channel = 44
+key=4
+
+[Telecinco]
+channel = 46
+#channel = 48
+key=5
+
+#[Canal Sur]
+#channel = 31
+#key=6
+-----------------8<----------------------------------------------------
+</verb></tscreen>
+
+Para mas info utilizar el manual y para vistazo rápido en las pruebas
+los cursores se utilizan para pasar canales y fine-tuning, no confundir
+con presintonias.
+
+<tag/fbtv/
+Viene con el xawtv y es similar.
+
+Para poder ejecutar fbtv tienes que iniciar (compilar el kernel previamente)
+linux con la consola en modo "frame buffer". Si eso ya lo tienes, entonces
+solo te falta crear el dispositivo fb0.
+
+Ponte en el directorio /dev y alli ejecuta esto:
+<tscreen><verb>
+root:wavecomp:[16:50:41]:/dev/$ mknod fb0 c 29 0
+</verb></tscreen>
+A partir de ahora ejecutas el fbtv como si delxawtv se tratara.
+</descrip> 
+<sect1> Para ver los pitufos makineros
+<p>
+Todo esto debe usarse para fines educacionales, NO me responsabilizo 
+del daño que pueda ocasionar el mal uso de esta información. He de advertir
+que es una practica ilegal y penada por la ley, el mal uso de esta información.
+<descrip>
+<tag/xawtv-nagra/
+(oJo solo con MMX).
+
+Es idéntico al anterior pero difiere en el soporte de un decoder nagra
+Se necesitan unas couples o tablas numéricas generadas a partir de un key
+que suele venir en keys.h.
+
+Una vez compilado ejecutar:
+<tscreen><verb>
+root:wavecomp:[16:40:32]:/usr/src/xawtv-nagra$ make
+root:wavecomp:[16:46:03]:/usr/src/xawtv-nagra$ make install
+root:wavecomp:[16:46:53]:/usr/src/xawtv-nagra$ prep-tabs
+</verb></tscreen>
+colocar las couples en /usr/local/share/xawtv/ tardará como 20 minutos o mas
+dependerá de la pontencia de su computadora.
+
+Sólo de queda ejecutar en un xterminal:
+<tscreen><verb>
+root:wavecomp:[17:07:25]:~$ xawtv -p
+</verb></tscreen>
+La opción -p es la que de soporte nagra al xawtv
+Solo le queda sintonizar un canal con rayas.
+y pulsar la v hasta poner el programa en modo grabdisplay.
+
+¿que raro antes había rayas?
+
+<tag/nagratv/
+(Rula hasta en un P100 NO necesita mmx).
+
+Es bastante buggy suele colgar la maquina cinco minutos despues de su
+ejecución.
+
+Es similar al anterior solo que utiliza toda la pantalla (seria mejor decir
+que desaprovecha 3/4) pero es muy rápido.
+
+Para la generación de tablas ha de utilizarse corr y es similar al prep-tabs
+<tscreen><verb>
+root:wavecomp:[17:11:72]:/usr/src/nagratv-1.32d$ make
+root:wavecomp:[17:16:38]:/usr/src/nagratv-1.32d$ make install
+root:wavecomp:[17:17:14]:/usr/src/nagratv-1.32d$ corr
+</verb></tscreen>
+Sólo de queda ejecutar en un xterminal:
+Se necesita set-tv (viene con xawtv) para sintonizar las emisoras de acuerdo a
+lo puesto en .xawtv:
+<tscreen><verb>
+root:wavecomp:[17:38:25]:~$ set-tv "Tele Cinco"
+root:wavecomp:[17:38:53]:~$ nagratv -2bsp
+</verb></tscreen>
+</descrip>
+<sect1>Para oir los 40 principales
+<p>
+Este apartado es solo si eres capaz de escuchar la television (es decir 
+ves y oyes la television)
+
+Hay programas que decodifican video y audio (ej. nagratv)
+Hay programas que decodifican audio (ej. nagraudio)
+
+Ambos necesitan:
+<itemize>
+<item>Que le llegue algo a la entrada en linea de su tarjeta de sonido.
+<item>Que su tarjeta de sonido sea full-duplex y tenga drivers full-duplex.
+<item>Mas capacidad de proceso.
+</itemize>	
+Para no oir el sonido codificado y descodificado a la vez hay que usar un buen
+mixer como xltmix (este permite cerrar o abrir los canales a voluntad).
+Hace distinguir la entrada de la salida (distinguir la entrada en linea de dos
+formas entrada y salida).
+
+<sect>Radio
+<p>
+Si teneis una tarjeta con radio no habra problemas usar un programa como:
+<descrip>
+<tag/gradio/
+Tiene soporte de terminal y de X es sencillo pero pontente
+ejemplo de uso modo texto:
+<tscreen><verb>
+gradio -d /dev/radio -c -v1 -f 92.6
+</verb></tscreen>
+Hay tarjetas como la BestBuy EasyTV que en principio no tienen radio
+y con un pequeño hack y un programa sintonizador es posible escuchar la radio
+<tscreen><verb>
+ln -s /dev/bttv /dev/radio
+</verb></tscreen>
+Ahora como la antena de radio no es inherente a ella la calidad es pesima
+pero uno se puede hacer una antena con un cable de cobre de unos tres metros
+(según la teoría de ondas... ) y un soldador...
+</descrip>
+<sect>Control Remoto
+<p>
+¿Que tu tarjeta de tv trae un mando a distancia?
+¡Que no sabes que hacer con el control remoto de tu tarjeta de TV!
+Maravillas...
+Cambiar la TV y la Radio (basico) 
+Pero mapeando modos y botones de tu mando a distancia puedes (desde su sofá o
+su cama) navegar por web, leer las news, utilizarlo como raton...
+Basicamente se necesita el lirc que actualmente soporta Avermedia y alguna
+otra trajeta que se me escapa.
+Alternativamente se esta trabajando en modulos como remote.o (Alpha) que
+generan mensages al syslog (sólo soportado para Avermedia).
+Y muchos candidatos que pronto apareceran...
+
+Mire <htmlurl url="http://fsinfo.cs.uni-sb.de/~columbus/lirc/" name="http://fsinfo.cs.uni-sb.de/~columbus/lirc/">
+
+</article>

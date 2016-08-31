@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_0.6">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>System Administration : Reciclando Direcciones IP con Apache</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 CELLSPACING=0 CELLPADDING=5 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/Atif-Ghaffar.jpg" ALT="[Photo of the Author]" HEIGHT=100 WIDTH=100>
+<BR>por  <A HREF="mailto:aghaffar@developer.ch">Atif Ghaffar</A>
+<BR><BR><I>Sobre el Author:</I><BR><P>
+
+Vivo y trabajo en Suiza como webmaster/administrador unix.
+Entre mis pasiones se incluyen Linux, unix, Perl, Apache y el software GPL.
+M&aacute;s sobre m&iacute; en mi 
+<a href="http://www.developer.ch/~aghaffar/">homepage</a>
+<br>
+</P><P><FONT COLOR="#336633">Contenidos</FONT>:
+<OL>
+  <LI><A HREF="#lfindex0">Por qu&eacute; deber&iacute;amos reciclar direcciones IP ?</A></LI>
+  <LI><A HREF="#lfindex1">C&oacute;mo reciclar las direcciones ip?</A></LI>
+  <LI><A HREF="#lfindex2">Usando wildcards, nombres de host din&aacute;micos (dynamic hostnames)</A></LI>
+  <LI><A HREF="#lfindex3">Mi fichero de configuracion de hosts virtuales</A></LI>
+  <LI><A HREF="#lfindex4">Rescursos Adicionales</A></LI>
+</OL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Reciclando Direcciones IP con Apache</H2>
+ <IMG SRC="../../common/images/illustration129.gif" ALT="[Illustration]" HSPACE=10 HEIGHT=133 WIDTH=360><P><FONT COLOR="#336633">Resumen</FONT>:
+<P>
+
+Este art&iacute;culo demuestra c&oacute;mo servir m&uacute;ltiples servidores web utilizando la misma 
+direcci&oacute;n ip con Apache bajo Unix/Linux.
+El art&iacute;culo asume que el lector tiene conocimientos de Apache, de DNS y de Unix.
+
+La audiencia objetivo de este art&iacute;culo son los ISP, administradores de sistemas o cualquiera que 
+quiera leerlo y aprender.
+
+</P><HR size="2" noshade><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Por qu&eacute; deber&iacute;amos reciclar direcciones IP ?</H2>
+
+<p>
+El reciclado de las direcciones ip es &uacute;til por diversos motivos.
+<ol>
+<li>nos podemos quedar f&aacute;cilmente sin direcciones ip
+<li>puede ser que tan solo tengamos una direccion ip (como puede ser mi caso)
+<li>los administradores de sistemas pierden mucho tiempo a&ntilde;adiendo interfaces al servidor para utilizar m&uacute;ltiples direcciones ip.
+</ol>
+
+
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>C&oacute;mo reciclar las direcciones ip?</H2>
+
+Utilizando Apache, resulta muy simple servir m&uacute;ltiples dominios con una sola direcci&oacute;n ip.
+<br>
+A lo largo de este art&iacute;culo asumiremos que la direcci&oacute;n ip es la 192.168.1.1 y que el nombre del host
+es hometranet.home.
+<br>
+Simplemente, a&ntilde;adimos una l&iacute;nea como esta a nuestro fichero httpd.conf<br>
+<xmp>
+
+NameVirtualHost 192.168.1.1:80
+
+</xmp>
+<br>
+<i>A continuaci&oacute;n a&ntilde;adimos tres servidores virtuales utilizando la misma direcci&oacute;n ip</i>
+<br>
+<xmp>
+#Host para ficheros unix
+<VirtualHost 192.168.1.1:80>
+	ServerName	unix.hometranet.home
+	DocumentRoot	/www/unix/html
+	ScriptAlias	/cgi-bin/ /www/unix/cgi-bin/
+	TransferLog	/www/unix/logs/access_log
+	ErrorLog	/www/unix/logs/error_log
+</VirtualHost>
+
+#Host para cosas de perl
+<VirtualHost 192.168.1.1:80>
+	ServerName	perl.hometranet.home
+	DocumentRoot	/www/perl/html
+	ScriptAlias	/cgi-bin/ /www/perl/cgi-bin/
+	TransferLog	/www/perl/logs/access_log
+	ErrorLog	/www/perl/logs/error_log
+</VirtualHost>
+
+
+#Host para cosas chulas de Apache
+<VirtualHost 192.168.1.1:80>
+	ServerName	apache.hometranet.home
+	DocumentRoot	/www/apache/html
+	ScriptAlias	/cgi-bin/ /www/apache/cgi-bin/
+	TransferLog	/www/apache/logs/access_log
+	ErrorLog	/www/apache/logs/error_log
+</VirtualHost>
+
+
+</xmp>
+
+<i>
+Asi que, utilizando una sola direcci&oacute;n hemos configurado tres servidores virtuales diferentes.<br>
+<br>
+A continuaci&oacute;n a&ntilde;adimos CNAMES o Registros A para esos nombres en el fichero de zona 
+de nuestro servidor de nombres<br>
+y no nos olvidamos de incrementar el n&uacte;mero de serie :)<br>
+por ejemplo: en mi /var/named/hometranet.home.fwd, a&ntilde;adir&iacute;a<br>
+</i>
+<xmp>
+perl.hometranet.home.	IN	A	192.168.1.1
+apache.hometranet.home.	IN	A	192.168.1.1
+unix.hometranet.home.	IN	A	192.168.1.1
+</xmp>
+
+<br>
+Nota importante:
+si llamamos a este host con otro nombre diferente al que damos en el ficheros de configuraci&ocute;n de los virtuales,
+ser&aacute; el primer host virtual quien responder&aacute;.
+<br>
+Con Apache 1.3.x el &uacte;ltimo deber&iacute;a haber respondido.
+<br>
+Por ejemplo: si este host se llama madmag, si llamamos a http://madmag.hometranet.home 
+tendremos la misma respuesta que si llamamos a unix.hometranet.home.
+<br>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Usando wildcards, nombres de host din&aacute;micos (dynamic hostnames)</H2>
+
+<p>
+Esta es la parte divertida. Apache permite utilizar wildcards en los nombres de los hosts.
+<br>
+Esto quiere decir que podemos configurar un dominio *.home.hometranet.home y todas las peticiones a los servidores
+user1.home.hometranet.home, user2.home.hometranet.home, user3.home.hometranet.home,etc
+responder&aacute;n.
+<br>
+Ejemplo:
+<br>
+<xmp>
+#host para usuarios
+<VirtualHost 192.168.1.1:80>
+	ServerName	home.hometranet.home
+	ServerAlias     *.home.hometranet.home
+        DocumentRoot	/www/home/html
+	TransferLog	/www/home/logs/access_log
+	ErrorLog	/www/home/logs/error_log
+</VirtualHost>
+y una entrada en el fichero de nombres de zona.
+
+*.home.hometranet.home.  IN      A       192.168.1.1
+
+</xmp>
+Nota: este truco no funciona si utilizamos Microsoft DNS Server. Aparentemente, no deja usar wildcards en los nombres de host.
+<br>
+(Pero no lo est&aacute;s usando, verdad??)
+
+<br>
+Una vez escrib&iacute; un peque&ntilde;o sistema que permit&iacute;a que los usuarios de una red a&ntilde;adieran su
+CV en una base de datos y, usando el truco anterior, sus CVs estaban disponibles en las direcciones
+http://theirUserName.cv.developer.ch.
+
+
+</p>
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2><a href="../../common/src/article129/vhosts.conf.txt">Mi fichero de configuracion de hosts virtuales</a></H2>
+
+<p>
+<a href="../../common/src/article129/vhosts.conf.txt">Aqu&iacute;</a> est&aacute; un fichero un poco m&aacute;s 
+exhaustivo que he separado de mi fichero httpd.conf principal.<br>
+Este es el que tengo actualmente en mi servidor.<br>
+<br>PAra incluir este fichero en el httpd.conf principal puedes usar la directiva <b>Include</b> en el httpd.conf.
+<br>Include "/etc/vhosts.conf"
+</p>
+
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Rescursos Adicionales</H2>
+
+<dl>
+<dt>
+	[Apache name-based Virtual Host Support]
+	<dd>
+		<a href="http://www.apache.org/docs/vhosts/name-based.html">http://www.apache.org/docs/vhosts/name-based.html</a>
+<dt>
+	[Apache Virtual Host documentation]
+	<dd>
+		<a href="http://www.apache.org/docs/vhosts/index.html">http://www.apache.org/docs/vhosts/index.html</a>
+	<dt>[An In-Depth Discussion of Virtual Host Matching]
+	<dd>
+		<a href="http://www.apache.org/docs/vhosts/details.html">http://www.apache.org/docs/vhosts/details.html</a>
+</dl>
+
+
+
+<!-- vim: set sw=2 ts=2 et: -->
+
+
+
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#777777">
+<A HREF="../../common/lfteam.html"><FONT COLOR="#FFFFFF">Contactar con el equipo de LinuFocus</FONT></A>
+<BR><FONT COLOR="#FFFFFF">&copy; Atif Ghaffar <BR>LinuxFocus 1999</FONT></TD>
+<TD BGCOLOR="#777777"><!-- TRANSLATION INFO -->
+<font size=2>Translation information:</font><TABLE>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:aghaffar@developer.ch"><FONT COLOR="#FFFFFF">Atif Ghaffar</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:jose.rodriguez@inria.fr"><FONT COLOR="#FFFFFF">Jos&eacute; Rodr&iacute;guez Ruibal</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>1999-11-02, generated by lfparser version 0.6</font></p></BODY></HTML>

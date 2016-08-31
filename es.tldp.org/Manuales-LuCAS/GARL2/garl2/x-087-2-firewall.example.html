@@ -1,0 +1,639 @@
+<HTML
+><HEAD
+><TITLE
+>Un ejemplo de configuración del cortafuegos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="Comprobación de una
+configuración del cortafuegos"
+HREF="x-087-2-firewall.checkingconf.html"><LINK
+REL="NEXT"
+TITLE="Contabilidad IP"
+HREF="x-087-2-accounting.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.checkingconf.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-accounting.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.EXAMPLE">9.11. Un ejemplo de configuración del cortafuegos</H1
+><P
+>&#13;Se han discutido los fundamentos de la configuración del cortafuegos.
+Veamos ahora qué aspecto tendría una configuración real del cortafuegos.</P
+><P
+>Se ha diseñado la configuración de este ejemplo con vistas
+a que sea fácilmente extensible y personalizable. Se proporcionan
+tres versiones.
+la primera se implementa con la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>
+(o el guión <B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+>), 
+la segunda utiliza
+<B
+CLASS="COMMAND"
+>ipchains</B
+>, y la tercera
+<B
+CLASS="COMMAND"
+>iptables</B
+>.
+En el ejemplo no se intenta aprovechar las posibilidades
+de las cadenas de usuario, pero le mostrará las similitudes
+y diferencias entre las sintaxis de las viejas y las nuevas
+herramientas de configuración:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    #!/bin/bash
+    ##########################################################################
+    # VERSIÓN PARA IPFWADM 
+    # Esta configuración está pensada como ejemplo de configuración de
+    # un cortafuegos sobre un 'host' único que no hospede él mismo ningún
+    # servicio
+    ##########################################################################
+    
+    # SECCIÓN CONFIGURABLE POR EL USUARIO
+    
+    # El nombre y la localización de la utilidad ipfwadm. Utilice
+    # ipfwadm-wrapper para los núcleos 2.2.*.
+    IPFWADM=ipfwadm
+    
+    # Ruta del ejecutable de ipfwadm.    
+    PATH="/sbin"
+    
+    # El espacio de direcciones de nuestra red interna y el dispositivo
+    # de red que la soporta.
+    OURNET="172.29.16.0/24"
+    OURBCAST="172.29.16.255"
+    OURDEV="eth0"
+    
+    # Las direcciones de fuera y el dispositivo de red que la soporta.
+    ANYADDR="0/0"
+    ANYDEV="eth1"
+    
+    # Los servicios de TCP que deseamos permitir que pasen - un "" vacío
+    # significa todos los puertos
+    # nota: separados por espacios
+    TCPIN="smtp www"
+    TCPOUT="smtp www ftp ftp-data irc"
+    
+    # Los servicios de UDP que deseamos permitir que pasen - un "" vacío
+    # significa todos los puertos
+    # nota: separados por espacios
+    UDPIN="domain"
+    UDPOUT="domain"
+    
+    # Los servicios de ICMP que deseamos permitir que pasen - un "" vacío
+    # significa todos los tipos 
+    # referencia para los números de los tipos: /usr/include/netinet/ip_icmp.h 
+    # nota: separados por espacios
+    ICMPIN="0 3 11"
+    ICMPOUT="8 3 11"
+    
+    # Registro; descomente la siguiente línea para habilitar el registro
+    # de los datagramas rechazados por el cortafuegos
+    # LOGGING=1
+    
+    # FIN DE LA SECCIÓN CONFIGURABLE POR EL USUARIO
+    ###########################################################################
+    # Borra las reglas de la cadena de entrada 
+    $IPFWADM -I -f
+    
+    # Por defecto, queremos denegar el acceso a los intentos de entrada
+    $IPFWADM -I -p deny
+    
+    # SUPLANTACIÓN DE IDENTIDAD
+    # No se debería aceptar ningún datagrama proveniente de fuera con una 
+    # direccción de origen coincidente con una de las nuestras, por
+    # eso las rechazamos.
+    $IPFWADM -I -a deny -S $OURNET -W $ANYDEV
+    
+    # 'SMURF'
+    # No se permiten difusiones dirigidas de ICMP a nuestra red para evitar
+    # los ataques del estilo denominado 'Smurf'.
+    $IPFWADM -I -a deny -P icmp -W $ANYDEV -D $OURBCAST
+    
+    # TCP
+    # Aceptaremos todos los datagramas de TCP que pertenezcan a una
+    # conexión ya existente (i.e. cuyo bit de ACK valga 1) 
+    # en el caso de los puertos de TCP que estamos permitiendo.
+    # Esto debería capturar más del 95% de todos los paquetes válidos de TCP.
+    $IPFWADM -I -a accept -P tcp -D $OURNET $TCPIN -k -b
+    
+    # TCP - CONEXIONES ENTRANTES
+    # Aceptaremos únicamente las solicitudes de conexión desde
+    # fuera sólamente en los puertos de TCP permitidos.
+    $IPFWADM -I -a accept -P tcp -W $ANYDEV -D $OURNET $TCPIN -y
+    
+    # TCP - CONEXIONES SALIENTES
+    # Aceptaremos todas las conexiones salientes de TCP hacia los puertos
+    # de TCP permitidos.
+    $IPFWADM -I -a accept -P tcp -W $OURDEV -D $ANYADDR $TCPOUT -y
+    
+    # UDP - ENTRADA
+    # Aceptaremos la entrada de datagramas UDP por puertos permitidos
+    $IPFWADM -I -a accept -P udp -W $ANYDEV -D $OURNET $UDPIN
+    
+    # UDP - SALIDA
+    # Aceptaremos la salida de datagramas hacia los puertos permitidos.
+    $IPFWADM -I -a accept -P udp -W $OURDEV -D $ANYADDR $UDPOUT
+    
+    # ICMP - ENTRADA
+    # Aceptaremos la entrada de los datagramas de ICMP de los tipos permitidos.
+    $IPFWADM -I -a accept -P icmp -W $ANYDEV -D $OURNET $ICMPIN
+    
+    # ICMP - SALIDA
+    # Aceptaremos la salida de los datagramas de ICMP de los tipos permitidos.
+    $IPFWADM -I -a accept -P icmp -W $OURDEV -D $ANYADDR $ICMPOUT
+    
+    # CASO POR DEFECTO y REGISTRO
+    # Todos los restantes datagramas caen dentro de la regla por defecto
+    # y son eliminados. Serán registrados si más arrriba se ha configurado
+    # la variable LOGGING.
+    #
+    if [ "$LOGGING" ]
+    then
+    	# Registra los paquetes de TCP descartados
+    	$IPFWADM -I -a reject -P tcp -o
+    
+    	# Registra los paquetes de UDP descartados
+    	$IPFWADM -I -a reject -P udp -o
+    
+    	# Registra los paquetes de ICMP descartados
+    	$IPFWADM -I -a reject -P icmp -o
+    fi
+    #
+    # fin.</PRE
+></TD
+></TR
+></TABLE
+><P
+>Ahora se vuelve a implementar el ejemplo con la orden
+<B
+CLASS="COMMAND"
+>ipchains</B
+>:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    #!/bin/bash
+    ##########################################################################
+    # VERSIÓN PARA IPCHAINS
+    # Este configuración está pensada como ejemplo de configuración de
+    # un cortafuegos sobre un 'host' único que no hospede él mismo ningún
+    # servicio
+    ##########################################################################
+    
+    # SECCIÓN CONFIGURABLE POR EL USUARIO
+    
+    # El nombre y la localización de la utilidad ipchains.
+    IPCHAINS=ipchains
+    
+    # Ruta del ejecutable de ipchains.
+    PATH="/sbin"
+    
+    # El espacio de direcciones de nuestra red interna y el dispositivo
+    # de red que la soporta.
+    OURNET="172.29.16.0/24"
+    OURBCAST="172.29.16.255"
+    OURDEV="eth0"
+    
+    # Las direcciones de fuera y el dispositivo de red que la soporta.
+    ANYADDR="0/0"
+    ANYDEV="eth1"
+    
+    # Los servicios de TCP que deseamos permitir que pasen - un "" vacío
+    # significa todos los puertos
+    # nota: separados por espacios
+    TCPIN="smtp www"
+    TCPOUT="smtp www ftp ftp-data irc"
+    
+    # Los servicios de UDP que deseamos permitir que pasen - un "" vacío
+    # significa todos los puertos
+    # nota: separados por espacios
+    UDPIN="domain"
+    UDPOUT="domain"
+    
+    # Los servicios de ICMP que deseamos permitir que pasen - un "" vacío
+    # significa todos los tipos 
+    # referencia para los números de los tipos: /usr/include/netinet/ip_icmp.h 
+    # nota: separados por espacios
+    ICMPIN="0 3 11"
+    ICMPOUT="8 3 11"
+    
+    # Registro; descomente la siguiente línea para habilitar el registro
+    # de los datagramas rechazados por el cortafuegos
+    # LOGGING=1
+    
+    # FIN DE LA SECCIÓN CONFIGURABLE POR EL USUARIO
+    ##########################################################################
+    # Borra las reglas de la cadena de entrada
+    $IPCHAINS -F input
+    
+    # Por defecto, queremos denegar el acceso a los intentos de entrada
+    $IPCHAINS -P input deny
+    
+    # SUPLANTACIÓN DE IDENTIDAD
+    # No se debería aceptar ningún datagrama proveniente de fuera con una 
+    # direccción de origen coincidente con una de las nuestras, por
+    # eso las rechazamos.
+    $IPCHAINS -A input -s $OURNET -i $ANYDEV -j deny
+    
+    # 'SMURF'
+    # No se permiten difusiones dirigidas de ICMP a nuestra red para evitar
+    # los ataques del estilo denominado 'Smurf'.
+    $IPCHAINS -A input -p icmp -w $ANYDEV -d $OURBCAST -j deny
+    
+    # Deberíamos aceptar fragmentos, esto se debe explicitar en ipchains.
+    $IPCHAINS -A input -f -j accept
+    
+    # TCP
+    # Aceptaremos todos los datagramas de TCP que pertenezcan a una
+    # conexión ya existente (i.e. cuyo bit de ACK valga 1) 
+    # en el caso de los puertos de TCP que estamos permitiendo.
+    # Esto debería capturar más del 95% de todos los paquetes válidos de TCP.
+    $IPCHAINS -A input -p tcp -d $OURNET $TCPIN ! -y -b -j accept
+    
+    # TCP - CONEXIONES ENTRANTES
+    # Aceptaremos únicamente las solicitudes de conexión desde
+    # fuera en los puertos de TCP permitidos.
+    $IPCHAINS -A input -p tcp -i $ANYDEV -d $OURNET $TCPIN -y -j accept
+    
+    # TCP - CONEXIONES SALIENTES
+    # Aceptaremos todas las conexiones salientes de TCP hacia los puertos
+    # de TCP permitidos.
+    $IPCHAINS -A input -p tcp -i $OURDEV -d $ANYADDR $TCPOUT -y -j accept
+    
+    # UDP - ENTRADA
+    # Aceptaremos la entrada de los datagramas de UDP por puertos permitidos
+    $IPCHAINS -A input -p udp -i $ANYDEV -d $OURNET $UDPIN -j accept
+    
+    # UDP - SALIDA
+    # Aceptaremos la salida de datagramas hacia los puertos permitidos.
+    $IPCHAINS -A input -p udp -i $OURDEV -d $ANYADDR $UDPOUT -j accept
+    
+    # ICMP - ENTRADA
+    # Aceptaremos la entrada de los datagramas de ICMP de los tipos permitidos
+    $IPCHAINS -A input -p icmp -w $ANYDEV -d $OURNET $ICMPIN -j accept
+    
+    # ICMP - SALIDA
+    # Aceptaremos la salida de los datagramas de ICMP de los tipos permitidos.
+    $IPCHAINS -A input -p icmp -i $OURDEV -d $ANYADDR $ICMPOUT -j accept
+    
+    # CASO POR DEFECTO y REGISTRO
+    # Todos los restantes datagramas caen dentro de la regla por defecto
+    # y son eliminados. Serán registrados si más arriba se ha configurado
+    # la variable LOGGING.
+    #
+    if [ "$LOGGING" ]
+    then
+    	# Registra los paquetes de TCP descartados
+    	$IPCHAINS -A input -p tcp -l -j reject
+    
+    	# Registra los paquetes de UDP descartados
+    	$IPCHAINS -A input -p udp -l -j reject
+    
+    	# Registra los paquetes de ICMP descartados
+    	$IPCHAINS -A input -p icmp -l -j reject
+    fi
+    #
+    # fin.</PRE
+></TD
+></TR
+></TABLE
+><P
+>En el ejemplo con
+<B
+CLASS="COMMAND"
+>iptables</B
+>, 
+se ha pasado autilizar el conjunto de reglas
+<TT
+CLASS="LITERAL"
+>FORWARD</TT
+> por la diferencia de
+significado del conjunto de reglas 
+<TT
+CLASS="LITERAL"
+>INPUT</TT
+> en la implementación de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>. 
+Esto tiene implicaciones; significa que ninguna de las reglas
+protege el 'host' mismo del cortafuegos.
+Para imitar con precisión el ejemplo con
+<B
+CLASS="COMMAND"
+>ipchains</B
+>,
+se replicaría cada una de las reglas de la cadena 
+<TT
+CLASS="LITERAL"
+>INPUT</TT
+>. 
+En aras de la claridad, en su lugar se ha decidido eliminar
+todos los datagramas entrantes provenientes desde el lado
+de fuera de la interfaz</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    #!/bin/bash
+    ##########################################################################
+    # VERSIÓN PARA IPTABLES
+    # Este configuración está pensada como ejemplo de configuración de
+    # un cortafuegos sobre un 'host' único que no hospede él mismo ningún
+    # servicio
+    ##########################################################################
+    
+    # SECCIÓN CONFIGURABLE POR EL USUARIO
+    
+    # El nombre y la localización de la utilidad iptables.
+    IPTABLES=iptables
+    
+    # Ruta del ejecutable de iptables.
+    PATH="/sbin"
+    
+    # El espacio de direcciones de nuestra red interna y el dispositivo
+    # de red que la soporta.
+    OURNET="172.29.16.0/24"
+    OURBCAST="172.29.16.255"
+    OURDEV="eth0"
+    
+    # Las direcciones de fuera y el dispositivo de red que la soporta.
+    ANYADDR="0/0"
+    ANYDEV="eth1"
+    
+    # Los servicios de TCP que deseamos permitir que pasen - un "" vacío
+    # significa todos los puertos
+    # nota: separados por espacios
+    TCPIN="smtp,www"
+    TCPOUT="smtp,www,ftp,ftp-data,irc"
+    
+    # Los servicios de UDP que deseamos permitir que pasen - un "" vacío
+    # significa todos los puertos
+    # nota: separados por espacios
+    UDPIN="domain"
+    UDPOUT="domain"
+    
+    # Los servicios de ICMP que deseamos permitir que pasen - un "" vacío
+    # significa todos los tipos 
+    # referencia para los números de los tipos: /usr/include/netinet/ip_icmp.h 
+    # nota: separados por espacios
+    ICMPIN="0,3,11"
+    ICMPOUT="8,3,11"
+    
+    # Registro; descomente la siguiente línea para habilitar el registro
+    # de los datagramas rechazados por el cortafuegos
+    # LOGGING=1
+    
+    # FIN DE LA SECCIÓN CONFIGURABLE POR EL USUARIO
+    ###########################################################################
+    # Borra las reglas de la cadena de entrada
+    $IPTABLES -F FORWARD
+    
+    # # Por defecto, queremos denegar el acceso a los intentos de entrada
+    $IPTABLES -P FORWARD deny
+    
+    # Rechaza todos los datagramas destinados a este host y recibidos
+    # desde fuera.
+    $IPTABLES -A INPUT -i $ANYDEV -j DROP
+    
+    # SUPLANTACIÓN DE IDENTIDAD
+    # No se debería aceptar ningún datagrama proveniente de fuera con una 
+    # direccción de origen coincidente con una de las nuestras, por
+    # eso las rechazamos.
+    $IPTABLES -A FORWARD -s $OURNET -i $ANYDEV -j DROP
+    
+    # 'SMURF'
+    # No se permiten difusiones dirigidas de ICMP a nuestra red para evitar
+    # los ataques del estilo denominado 'Smurf'.
+    $IPTABLES -A FORWARD -m multiport -p icmp -i $ANYDEV -d $OURNET -j DENY
+    
+    # Deberíamos aceptar fragmentos, esto se debe explicitar en iptables.
+    $IPTABLES -A FORWARD -f -j ACCEPT
+    
+    # TCP
+    # Aceptaremos todos los datagramas de TCP que pertenezcan a una
+    # conexión ya existente (i.e. cuyo bit de ACK valga 1) 
+    # en el caso de los puertos de TCP que estamos permitiendo.
+    # Esto debería capturar más del 95% de todos los paquetes válidos de TCP.
+    $IPTABLES -A FORWARD -m multiport -p tcp -d $OURNET --dports $TCPIN /
+        ! --tcp-flags SYN,ACK ACK -j ACCEPT
+    $IPTABLES -A FORWARD -m multiport -p tcp -s $OURNET --sports $TCPIN /
+        ! --tcp-flags SYN,ACK ACK -j ACCEPT
+    
+    # TCP - CONEXIONES ENTRANTES
+    # Aceptaremos únicamente las solicitudes de conexión desde
+    # fuera en los puertos de TCP permitidos.
+    $IPTABLES -A FORWARD -m multiport -p tcp -i $ANYDEV -d $OURNET $TCPIN /
+        --syn -j ACCEPT
+    
+    ## TCP - CONEXIONES SALIENTES
+    # Aceptaremos todas las conexiones salientes de TCP hacia los puertos
+    # de TCP permitidos
+    $IPTABLES -A FORWARD -m multiport -p tcp -i $OURDEV -d $ANYADDR /
+        --dports $TCPOUT --syn -j ACCEPT
+    # UDP - ENTRADA
+    ## Aceptaremos la entrada y vuelta de los datagramas de UDP por puertos
+    #permitidos.
+    $IPTABLES -A FORWARD -m multiport -p udp -i $ANYDEV -d $OURNET /
+        --dports $UDPIN -j ACCEPT
+    $IPTABLES -A FORWARD -m multiport -p udp -i $ANYDEV -s $OURNET /
+        --sports $UDPIN -j ACCEPT
+    # UDP - SALIDA
+    # Se aceptarán la salida de los datagramas de UDP hacia los puertos
+    permitidos y su vuelta.
+    $IPTABLES -A FORWARD -m multiport -p udp -i $OURDEV -d $ANYADDR /
+        --dports $UDPOUT -j ACCEPT
+    $IPTABLES -A FORWARD -m multiport -p udp -i $OURDEV -s $ANYADDR /
+        --sports $UDPOUT -j ACCEPT
+    # ICMP - ENTRADA
+    # Aceptaremos la entrada de los datagramas de ICMP de los tipos permitidos
+    $IPTABLES -A FORWARD -m multiport -p icmp -i $ANYDEV -d $OURNET /
+        --dports $ICMPIN -j ACCEPT
+    # ICMP - SALIDA
+    # Aceptaremos la salida de los datagramas de ICMP de los tipos permitidos.
+    $IPTABLES -A FORWARD -m multiport -p icmp -i $OURDEV -d $ANYADDR /
+        --dports $ICMPOUT -j ACCEPT
+    # CASO POR DEFECTO y REGISTRO
+    # Todos los restantes datagramas caen dentro de la regla por defecto
+    # y son eliminados. Serán registrados si más arriba se ha configurado
+    # la variable LOGGING.
+    #
+    if [ "$LOGGING" ]
+    then
+    	# Registra los paquetes de TCP descartados
+    	$IPTABLES -A FORWARD -m tcp -p tcp -j LOG
+    	# Registra los paquetes de UDP descartados
+    	$IPTABLES -A FORWARD -m udp -p udp -j LOG
+    	# Registra los paquetes de ICMP descartados
+    	$IPTABLES -A FORWARD -m udp -p icmp -j LOG
+    fi
+    #
+    # fin.</PRE
+></TD
+></TR
+></TABLE
+><P
+>En muchas situaciones simples, para utilizar el ejemplo todo lo que
+necesitará será editar la sección superior del fichero denominado
+&ldquo;SECCIÓN CONFIGURABLE POR EL USUARIO&rdquo; 
+para especificar qué protocolos y tipos 
+de datagramas desea que se les permita su entrada y su salida.
+Para el caso de configuraciones más complejas, se necesitará también editar
+la sección inferior.
+Recuerde que el ejemplo es simple, por tanto examínelo cuidadosamente
+para asegurarse de que hace lo que usted desea cuando lo implemente.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.checkingconf.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-accounting.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Comprobación de una
+configuración del cortafuegos</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Contabilidad IP</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

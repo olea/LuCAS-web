@@ -1,0 +1,155 @@
+<html><head><title>31 Reduciendo el tama¤o del ejecutable</title><body>
+<h1><a name="31 Reduciendo el tamaño del ejecutable">31 Reduciendo el tamaño del ejecutable</a></h1>
+<p>
+Algunas personas se quejan de que Allegro produce ejecutables muy largos.
+Esto es cierto: un simple programa "hola mundo" ocupara unos 200k. Pero no
+se preocupe, esto es un tamaño extra fijo, y no se incrementará a la par
+que lo hace su programa. Tal y como George dijo concisamente, el que esté
+preocupado por la relación entre el código de la biblioteca y el de su
+programa debería ponerse manos a la obra y escribir más código para su
+programa :-)
+<p>
+Una vez dicho esto, hay algunas cosas que puede hacer para empequeñecer sus
+programas:
+<p><ul><li>
+Para principiantes, lean la sección 8.15 del FAQ de djgpp, y tomen nota del
+parámetro -s y del compresor de ejecutables DJP. ¡Y no olvide compilar su
+programa con las optimizaciones activadas!
+<p><li>
+Si su programa va a ser ejecutado en un número limitado de modos gráficos,
+puede especificar qué controladores gráficos quiere incluir en su código:
+<p><pre>
+   BEGIN_GFX_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_GFX_DRIVER_LIST
+<p></pre>
+donde los nombres driverx son cualquiera de las definiciones:
+<p><pre>
+   GFX_DRIVER_VBEAF
+   GFX_DRIVER_VGA
+   GFX_DRIVER_MODEX
+   GFX_DRIVER_VESA3
+   GFX_DRIVER_VESA2L
+   GFX_DRIVER_VESA2B
+   GFX_DRIVER_XTENDED
+<p></pre>
+Esta construcción debe ser incluida en un sólo fichero C (¡y no en un
+fichero de cabecera!). El orden de los nombres es importante, porque la
+rutina de autodetección funciona hacia abajo desde el comienzo de la lista
+hasta que encuentre el primer controlador que soporta el modo requerido. Le
+sugiero que siga el orden dado aquí, y que simplemente borre las entradas
+que no vaya a usar.
+<p>
+Como regla general, el quitar los controladores MODEX y XTENDED salvará
+bastante espacio, así como el quitar los controladores VESA y VBE/AF si sólo
+va a usar los modos estándar VGA.
+<p><li>
+Si su programa no va a usar todas las profundidades de color posibles,
+puede especificar qué formatos quiere incluir en su código:
+<p><pre>
+   BEGIN_COLOR_DEPTH_LIST
+      depth1
+      depth2
+      etc...
+   END_COLOR_DEPTH_LIST
+<p></pre>
+donde los nombres depth son cualquiera de los defines:
+<p><pre>
+   COLOR_DEPTH_8
+   COLOR_DEPTH_15
+   COLOR_DEPTH_16
+   COLOR_DEPTH_24
+   COLOR_DEPTH_32
+<p></pre>
+El quitar cualquier profundidad de color se ahorrará un poco de espacio, con
+excepción de los modos de 15 y 16 bits: estos comparten mucho código, por lo
+que si incluye uno, no hay razón para no usar ambos. ¡Tenga en cuenta que si
+intenta usar alguna profundidad de color que no está en la lista, su
+programa se bloqueará de una forma horrible!
+<p><li>
+Del mismo modo que arriba, puede especificar qué controladores de sonido
+quiere incluir en su código:
+<p><pre>
+   BEGIN_DIGI_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_DIGI_DRIVER_LIST
+<p></pre>
+usando las definiciones de controladores digitales:
+<p><pre>
+   DIGI_DRIVER_SOUNDSCAPE
+   DIGI_DRIVER_AUDIODRIVE
+   DIGI_DRIVER_SB
+<p></pre>
+y para la música MIDI:
+<p><pre>
+   BEGIN_MIDI_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_MIDI_DRIVER_LIST
+<p></pre>
+usando las definiciones de controladores MIDI:
+<p><pre>
+   MIDI_DRIVER_AWE32
+   MIDI_DRIVER_DIGMID
+   MIDI_DRIVER_ADLIB
+   MIDI_DRIVER_MPU
+   MIDI_DRIVER_SB_OUT
+<p></pre>
+Si va a usar alguno de éstas construcciones, debe usar las dos. Si sólo
+quiere incluir controladores de sonido digital, simplemente escriba
+DECLARE_MIDI_DRIVER_LIST() para no incluir controladores de música.
+<p><li>
+De igual modo para los controladores de joystick puede declarar una lista:
+<p><pre>
+   BEGIN_JOYSTICK_DRIVER_LIST
+      driver1
+      driver2
+      etc...
+   END_JOYSTICK_DRIVER_LIST
+<p></pre>
+usando las definiciones de controladores de joystick:
+<p><pre>
+   JOYSTICK_DRIVER_STANDARD
+   JOYSTICK_DRIVER_SIDEWINDER
+   JOYSTICK_DRIVER_GAMEPAD_PRO
+   JOYSTICK_DRIVER_SNESPAD
+   JOYSTICK_DRIVER_WINGWARRIOR
+<p></pre>
+El controlador estándar incluye soporte para joysticks duales, número
+superior de botones, Flightstick Pro, y Wingman Extreme, porque éstos son
+variaciones menores del código básico.
+<p><li>
+Si _realmente_ está decidido a reducir los tamaños, mire el comienzo del
+fichero allegro.h y verá las líneas:
+<p><pre>
+   #define ALLEGRO_COLOR16
+   #define ALLEGRO_COLOR24
+   #define ALLEGRO_COLOR32
+<p></pre>
+Si comenta cualquiera de estas definiciones y reconstruye la librería,
+tendrá una versión sin soporte para las profundidades de color ausentes, lo
+que incluso reducirá más el ejecutable que la macro
+DECLARE_COLOR_DEPTH_LIST(). El quitar el define ALLEGRO_COLOR16 eliminará
+el soporte para los modos de 15 y 16bits, ya que éstos comparten mucho
+código.
+<p></ul>
+<br>
+Si está distribuyendo una copia del programa setup junto con su juego, puede
+llegar a conseguir una dramática reducción de tamaño mezclando el código del
+programa setup junto con su programa principal, para que sólo una copia de
+las rutinas de Allegro tenga que ser enlazada. Para hacer esto, renombre la
+función main() de setup.c a algo como setup_main(), enlace setup.c y
+setupdat.s con su programa, y añada un parámetro (ejemplo: opción -setup
+desde la línea de comando) que llamará la función setup_main() en vez de su
+juego. Después de comprimir el ejecutable, esto probablemente le ahorrará
+unas 200k comparado con tener dos programas por separado para el setup y el
+propio juego.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

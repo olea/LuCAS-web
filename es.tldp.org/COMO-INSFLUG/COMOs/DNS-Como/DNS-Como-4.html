@@ -1,0 +1,663 @@
+<HTML>
+<HEAD>
+<TITLE>DNS COMO: Un dominio simple.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="DNS-Como-3.html">Anterior</A>
+<A HREF="DNS-Como-5.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. Un dominio simple.</A></H2>
+
+
+<P>Como configurar su propio dominio.</P>
+
+<H2><A NAME="ss4.1">4.1 Pero primero algo de teor&iacute;a a secas.</A></H2>
+
+
+<P>Antes de comenzar realmente con esta secci&oacute;n, voy a dar un poco de teor&iacute;a
+sobre c&oacute;mo funciona DNS.  Y lo va a leer porque ser&aacute; mejor para Vd.  Si no
+quiere, al menos deber&iacute;a echar un vistazo r&aacute;pido. Deje el repaso cuando
+sepa lo que debe incluir en su archivo <CODE>named.boot</CODE>. </P>
+<P>El DNS es un sistema jer&aacute;rquico. La ra&iacute;z se escribe como `<CODE>.</CODE>' y se
+denomina <I>`root'</I>. Debajo hay cierto n&uacute;mero de Dominios de Nivel
+Superior (<I>Top Level Domains</I>, <I>TLD</I>s), los m&aacute;s conocidos son
+<CODE>ORG, COM, EDU</CODE> y <CODE>NET</CODE>, pero hay muchos m&aacute;s. </P>
+<P>Cuando se busca una m&aacute;quina, la pregunta procede recursivamente en la
+jerarqu&iacute;a comenzando desde arriba. Si quiere localizar la direcci&oacute;n de
+<CODE>prep.ai.mit.edu</CODE>, su servidor de nombres ha de encontrar primero
+un servidor de nombres que sirva a <CODE>edu</CODE>. Pregunta al servidor
+<CODE>.</CODE> (ya conoce los servidores <CODE>.</CODE>, es para lo que se utiliza el
+<CODE>archivo root.cache</CODE>), y el servidor <CODE>.</CODE> proporcionar&aacute; una lista
+de servidores <CODE>edu</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     $ nslookup
+     Default Server:  localhost
+     Address:  127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Comienza preguntando a un servidor ra&iacute;z.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; server c.root-servers.net.
+     Default Server:  c.root-servers.net
+     Address:  192.33.4.12
+</PRE>
+</CODE></BLOCKQUOTE>
+   </P>
+<P>Pone el tipo de petici&oacute;n (<I>Query</I>) a <CODE>NS</CODE> (<I>Name Server
+records</I>). </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; set q=ns 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Pregunta por <CODE>edu</CODE>.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+&gt; edu.
+</PRE>
+</CODE></BLOCKQUOTE>
+ </P>
+<P>El punto (".") final aqu&iacute; es significativo, indica al servidor que le
+pedimos un <CODE>edu</CODE> que est&aacute; justo debajo de ".", y esto reduce la
+b&uacute;squeda un poco.  </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     edu     nameserver = A.ROOT-SERVERS.NET
+     edu     nameserver = H.ROOT-SERVERS.NET
+     edu     nameserver = B.ROOT-SERVERS.NET
+     edu     nameserver = C.ROOT-SERVERS.NET
+     edu     nameserver = D.ROOT-SERVERS.NET
+     edu     nameserver = E.ROOT-SERVERS.NET
+     edu     nameserver = I.ROOT-SERVERS.NET
+     edu     nameserver = F.ROOT-SERVERS.NET
+     edu     nameserver = G.ROOT-SERVERS.NET
+     A.ROOT-SERVERS.NET      internet address = 198.41.0.4
+     H.ROOT-SERVERS.NET      internet address = 128.63.2.53
+     B.ROOT-SERVERS.NET      internet address = 128.9.0.107
+     C.ROOT-SERVERS.NET      internet address = 192.33.4.12
+     D.ROOT-SERVERS.NET      internet address = 128.8.10.90
+     E.ROOT-SERVERS.NET      internet address = 192.203.230.10
+     I.ROOT-SERVERS.NET      internet address = 192.36.148.17
+     F.ROOT-SERVERS.NET      internet address = 192.5.5.241
+     G.ROOT-SERVERS.NET      internet address = 192.112.36.4
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto nos dice que <CODE>*.root-servers.net</CODE> sirve a <CODE>edu.</CODE>, y as&iacute;
+podemos seguir preguntando a <CODE>C</CODE>. Ahora queremos saber qui&eacute;n sirve el
+siguiente nivel del nombre de dominio: <CODE>mit.edu.</CODE> </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; mit.edu.
+     Server:  c.root-servers.net
+     Address:  192.33.4.12
+
+     Non-authoritative answer:
+     mit.edu nameserver = STRAWB.mit.edu
+     mit.edu nameserver = W20NS.mit.edu
+     mit.edu nameserver = BITSY.mit.edu
+
+     Authoritative answers can be found from:
+     STRAWB.mit.edu  internet address = 18.71.0.151
+     W20NS.mit.edu   internet address = 18.70.0.160
+     BITSY.mit.edu   internet address = 18.72.0.3
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>steawb, w20ns</CODE> y <CODE>bitsy</CODE> sirven a <CODE>mit</CODE>, selecciona uno 
+y pregunta por <CODE>ai.mit.edu</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; server W20NS.mit.edu.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Los nombres de m&aacute;quina no son sensibles a may&uacute;sculas/min&uacute;sculas, pero como
+yo uso el rat&oacute;n para cortar y pegar, obtengo una copia tal y como aparece
+en la pantalla. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     Server:  W20NS.mit.edu
+     Address:  18.70.0.160
+
+     &gt; ai.mit.edu.
+     Server:  W20NS.mit.edu
+     Address:  18.70.0.160
+
+     Non-authoritative answer:
+     ai.mit.edu      nameserver = WHEATIES.AI.MIT.EDU
+     ai.mit.edu      nameserver = ALPHA-BITS.AI.MIT.EDU
+     ai.mit.edu      nameserver = GRAPE-NUTS.AI.MIT.EDU
+     ai.mit.edu      nameserver = TRIX.AI.MIT.EDU
+     ai.mit.edu      nameserver = MUESLI.AI.MIT.EDU
+
+     Authoritative answers can be found from:
+     AI.MIT.EDU      nameserver = WHEATIES.AI.MIT.EDU
+     AI.MIT.EDU      nameserver = ALPHA-BITS.AI.MIT.EDU
+     AI.MIT.EDU      nameserver = GRAPE-NUTS.AI.MIT.EDU
+     AI.MIT.EDU      nameserver = TRIX.AI.MIT.EDU
+     AI.MIT.EDU      nameserver = MUESLI.AI.MIT.EDU
+     WHEATIES.AI.MIT.EDU     internet address = 128.52.32.13
+     WHEATIES.AI.MIT.EDU     internet address = 128.52.35.13
+     ALPHA-BITS.AI.MIT.EDU   internet address = 128.52.32.5
+     ALPHA-BITS.AI.MIT.EDU   internet address = 128.52.37.5
+     GRAPE-NUTS.AI.MIT.EDU   internet address = 128.52.32.4
+     GRAPE-NUTS.AI.MIT.EDU   internet address = 128.52.36.4
+     TRIX.AI.MIT.EDU internet address = 128.52.32.6
+     TRIX.AI.MIT.EDU internet address = 128.52.38.6
+     MUESLI.AI.MIT.EDU       internet address = 128.52.32.7
+     MUESLI.AI.MIT.EDU       internet address = 128.52.39.7
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Entonces <CODE>weaties.ai.mit.edu</CODE> es un servidor de nombres para
+<CODE>ai.mit.edu</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; server WHEATIES.AI.MIT.EDU.
+     Default Server:  WHEATIES.AI.MIT.EDU
+     Addresses:  128.52.32.13, 128.52.35.13
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora cambia el tipo de solicitud; ha encontrado el servidor de nombres y
+va a preguntar todo lo que queremos saber sobre <CODE>prep.ai.mit.edu</CODE>.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; set q=any
+     &gt; prep.ai.mit.edu.
+     Server:  WHEATIES.AI.MIT.EDU
+     Addresses:  128.52.32.13, 128.52.35.13
+
+     prep.ai.mit.edu CPU = dec/decstation-5000.25    OS = unix
+     prep.ai.mit.edu
+             inet address = 18.159.0.42, protocol = tcp
+              #21 #23 #25 #79
+     prep.ai.mit.edu preference = 1, mail exchanger = life.ai.mit.edu
+     prep.ai.mit.edu internet address = 18.159.0.42
+     ai.mit.edu      nameserver = alpha-bits.ai.mit.edu
+     ai.mit.edu      nameserver = wheaties.ai.mit.edu
+     ai.mit.edu      nameserver = grape-nuts.ai.mit.edu
+     ai.mit.edu      nameserver = mini-wheats.ai.mit.edu
+     ai.mit.edu      nameserver = trix.ai.mit.edu
+     ai.mit.edu      nameserver = muesli.ai.mit.edu
+     ai.mit.edu      nameserver = count-chocula.ai.mit.edu
+     ai.mit.edu      nameserver = life.ai.mit.edu
+     ai.mit.edu      nameserver = mintaka.lcs.mit.edu
+     life.ai.mit.edu internet address = 128.52.32.80
+     alpha-bits.ai.mit.edu   internet address = 128.52.32.5
+     wheaties.ai.mit.edu     internet address = 128.52.35.13
+     wheaties.ai.mit.edu     internet address = 128.52.32.13
+     grape-nuts.ai.mit.edu   internet address = 128.52.36.4
+     grape-nuts.ai.mit.edu   internet address = 128.52.32.4
+     mini-wheats.ai.mit.edu  internet address = 128.52.32.11
+     mini-wheats.ai.mit.edu  internet address = 128.52.54.11
+     mintaka.lcs.mit.edu     internet address = 18.26.0.36
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>De esta forma comenzando en <CODE>.</CODE> ha encontrado los sucesivos servidores
+de nombre para el siguiente nivel en el nombre de dominio. Si ha usado su
+propio servidor DNS en lugar de usar todos esos otros servidores, su
+<CODE>named</CODE>, desde luego, habr&aacute; almacenado en el cach&eacute; toda la
+informaci&oacute;n que haya encontrado mientras profundizaba en la b&uacute;squeda, y en
+consecuencia no tendr&aacute; que preguntar de nuevo durante un tiempo. </P>
+<P>Se habla mucho menos sobre &eacute;l, pero un dominio importante es
+<CODE>in-addr.arpa</CODE>. Tambi&eacute;n est&aacute; anidado como los dominios
+<I>'normales'</I>. <CODE>in-addr.arpa</CODE> nos permite determinar el
+nombre de la m&aacute;quina cuando conocemos su direcci&oacute;n IP. Una cosa importante
+aqu&iacute; es observar que que las direcciones IP est&aacute;n escritas en orden
+inverso en el dominio <CODE>in-addr.arpa</CODE>. Si tiene la direcci&oacute;n de
+m&aacute;quina <CODE>192.128.52.43</CODE>, <CODE>named</CODE> procede como para el ejemplo de
+<CODE>prep.ai.mit.edu</CODE>: Busca los servidores <CODE>arpa.</CODE>.  Busca los
+servidores <CODE>in-addr.arpa.</CODE>, los servidores
+<CODE>192.in-addr.arpa.</CODE>, los servidores <CODE>128.192.in-addr.arpa.</CODE> , y
+los servidores <CODE>52.128.192.in-addr.arpa.</CODE> y finalmente, los registros
+necesarios para <CODE>43.52.128.192.in-addr.arpa.</CODE> ¿Inteligente? (Diga
+`s&iacute;'). La inversi&oacute;n de n&uacute;meros puede ser confusa los 2 primeros a&ntilde;os. </P>
+<P>He contado una mentira. DNS no funciona como he dicho de forma literal.
+Pero es bastante parecido. </P>
+
+
+<H2><A NAME="ss4.2">4.2 Nuestro propio dominio</A></H2>
+
+
+<P>Ahora vamos a definir nuestro propio dominio.  Vamos a crear el dominio
+<CODE>linux.bogus</CODE> y definir m&aacute;quinas en &eacute;l. Uso un nombre de dominio
+totalmente falso para estar seguro de que no molestamos a nadie de fuera.</P>
+<P>Ya hemos comenzado esta parte con la siguiente l&iacute;nea en
+<CODE>named.boot</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+primary         0.0.127.in-addr.arpa            pz/127.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Por favor tome nota de la ausencia de `.' al final de los nombres de
+dominio en este archivo. La primera l&iacute;nea nombra al archivo
+<CODE>pz/127.0.0</CODE> como definici&oacute;n de <CODE>0.0.127.in-addr.arpa</CODE>. Ya hemos
+configurado este archivo, en &eacute;l podremos leer: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+@               IN      SOA     ns.linux.bogus. hostmaster.linux.bogus. (
+                                1       ; Numero de Serie
+                                28800   ; Tasa de Refresco
+                                7200    ; Tasa de Reintento
+                                604800  ; Caducidad para secundario
+                                86400)  ; Tiempo de Validez para Clientes
+                        NS      ns.linux.bogus.
+1                       PTR     localhost.
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Por favor observe los `<CODE>.</CODE>' al final de los nombres de dominio completo
+en contraste con el archivo <CODE>named.boot</CODE> anterior. A algunas
+personas les gusta iniciar cada zona del archivo con una directiva
+<CODE>$ORIGIN</CODE>, pero esto es superfluo. El origen (lugar de la
+jerarqu&iacute;a DNS a donde pertenece) de un fichero de zona se especifica en la
+columna <CODE>dominio</CODE> del archivo <CODE>named.boot</CODE>; en este caso es
+<CODE>0.0.127.in-addr.arpa.</CODE></P>
+<P>Este ``fichero de zona'' contiene tres <I>registros de recursos</I>
+(RRs): Un <CODE>RR SOA</CODE>, Un <CODE>RR NS</CODE> y un <CODE>RR PTR</CODE>.
+<CODE>SOA</CODE> es una abreviatura de <I>Start Of Authority</I>. La
+`<CODE>@</CODE>' es una notaci&oacute;n especial que simboliza el origen, y como
+la columna <CODE>dominio</CODE> para este archivo indica
+<CODE>0.0.127.in-addr.arpa</CODE>. La primera l&iacute;nea realmente significa: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       0.0.127.IN-ADDR.ARPA. IN      SOA ...
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P><CODE>NS</CODE> es el <CODE>RR Name Server</CODE> (Servidor de Nombres), e indica
+a DNS qu&eacute; m&aacute;quina es el servidor de nombres del dominio. Y finalmente el
+registro <CODE>PTR</CODE> tiene valor <CODE>1</CODE> (igual a
+<CODE>1.0.0.127.IN-ADDR.ARPA</CODE>, esto es, <CODE>127.0.0.1</CODE>) que es el
+<CODE>localhost</CODE> de <CODE>named</CODE>.</P>
+<P>El registro <CODE>SOA</CODE> es el pre&aacute;mbulo de todos los archivos de zona y
+debe haber uno exactamente en cada archivo de zona, como primer registro
+de todos. El registro <CODE>SOA</CODE> describe la zona, de d&oacute;nde proviene
+(una m&aacute;quina llamada <CODE>linux.bogus</CODE>), qui&eacute;n es el responsable de su
+contenido (<CODE>hostmaster@linux.bogus</CODE>), qu&eacute; versi&oacute;n del
+archivo de zona es (<CODE>Numero de Serie</CODE>, <CODE>1</CODE>), y otras cosas que
+tienen que ver con el cach&eacute; y los servidores secundarios DNS. Para el
+resto de los campos (<CODE>Tasa de Refresco</CODE>, <CODE>Tasa de
+Reintento</CODE>, <CODE>Caducidad para secundario</CODE> y <CODE>Tiempo de Validez
+para Clientes</CODE>) use los valores que aparecen aqu&iacute; para mayor
+seguridad. </P>
+<P>El registro <CODE>NS</CODE> nos indica qui&eacute;n efect&uacute;a el servicio DNS para
+<CODE>0.0.127.in-addr.arpa</CODE>, que es <CODE>ns.linux.bogus</CODE>. El registro
+<CODE>PTR</CODE> nos dice que <CODE>1.0.0.127.in-addr.arpa</CODE> (aka
+<CODE>127.0.0.1</CODE>) es conocido como <CODE>localhost</CODE>.</P>
+<P>Ahora reiniciamos <CODE>named</CODE> (el comando es <CODE>ndc restart</CODE>) y
+usamos <CODE>nslookup</CODE> para examinar lo que ha hecho: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     $ nslookup
+
+     Default Server:  localhost
+     Address:  127.0.0.1
+
+     &gt; 127.0.0.1
+     Server:  localhost
+     Address:  127.0.0.1
+
+     Name:    localhost
+     Address:  127.0.0.1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>as&iacute; obtiene <CODE>localhost</CODE> de <CODE>127.0.0.1</CODE>, bien. Ahora para
+nuestra tarea principal, el dominio <CODE>linux.bogus</CODE>, inserte una
+nueva l&iacute;nea, <CODE>primary</CODE>, en <CODE>named.boot</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+primary               linux.bogus                     pz/linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Observe que contin&uacute;a la ausencia de "<CODE>.</CODE>" final en el nombre de dominio
+del archivo <CODE>named.boot</CODE>. </P>
+<P>En el archivo de zona de <CODE>linux.bogus</CODE> pondremos algunos datos
+totalmente falsos
+<SL>N del T <BR> Por si no lo ha notado todav&iacute;a,
+<I>bogus</I> en ingl&eacute;s significa precisamente <I>falso</I>.</SL>
+: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+;
+; Fichero de zona para linux.bogus
+;
+; Minimo indspensable para tener funcionando un dominio
+;
+@       IN      SOA     ns.linux.bogus. hostmaster.linux.bogus. (
+                        199511301       ; Numero de serie, fecha de hoy + n. de serie de hoy
+                        28800           ; Tasa de Refresco, en segundos
+                        7200            ; Tasa de Reintento, en segundos
+                        3600000         ; Caducidad para secundario, en segundos
+                        86400 )         ; Tiempo de Validez para Clientes, en segundos
+                NS      ns.linux.bogus.
+                NS      ns.friend.bogus.
+                MX      10 mail.linux.bogus   ; Intercambiador de Correo Primario
+                MX      20 mail.friend.bogus. ; Intercambiador de Correo Secundario
+
+localhost       A       127.0.0.1
+ns              A       127.0.0.2
+mail            A       127.0.0.4
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Deben de observarse dos cosas sobre los registros <CODE>SOA</CODE>. 
+<CODE>ns.linux.bogus</CODE> debe ser una m&aacute;quina actual con un registro
+<CODE>A</CODE>. No es legal tener un registro <CODE>CNAME</CODE> para la m&aacute;quina
+mencionada en el registro <CODE>SOA</CODE>. Su nombre no necesita ser
+<CODE>ns</CODE>, podr&iacute;a ser cualquier nombre legal de m&aacute;quina. A continuaci&oacute;n,
+en <CODE>hostmaster.linux.bogus</CODE> deber&aacute; aparecer algo como
+<CODE>hostmaster@linux.bogus</CODE>; esto ser&iacute;a un alias de email, o
+una cuenta de correo, donde la(s) persona(s) que realizan el mantenimiento
+de DNS deber&iacute;an leer con frecuencia el correo. Cualquier email respecto
+del dominio ser&aacute; mandado a la direcci&oacute;n aqu&iacute; indicada. El nombre no tiene
+por que ser <CODE>hostmaster</CODE>, puede ser cualquier direcci&oacute;n email
+legal, pero la direcci&oacute;n email <CODE>hostmaster</CODE> funcionar&aacute; bien. </P>
+<P>Hay un nuevo tipo de <CODE>RR</CODE> en este archivo, el <CODE>MX</CODE>, o
+<I>Mail eXchanger</I>. Este indica el sistema de correo a donde mandar
+el correo dirigido a <CODE>alguien@linux.bogus</CODE>, pudiendo ser
+tambi&eacute;n <CODE>mail.linux.bogus</CODE> o <CODE>mail.friend.bogus</CODE>.  El n&uacute;mero
+que precede a cada nombre de m&aacute;quina es la prioridad del <CODE>RR MX</CODE>.
+El <CODE>RR</CODE> con el n&uacute;mero m&aacute;s bajo (<CODE>10</CODE>) es aquel al que el correo ser&aacute;
+enviado primero.  Si este falla, puede ser mandado a otro con un n&uacute;mero
+m&aacute;s alto, que ser&aacute; gestor secundario de correo, como
+<CODE>mail.friend.bogus</CODE> que tiene una prioridad <CODE>20</CODE> aqu&iacute;.</P>
+<P>Reinicie <CODE>named</CODE> ejecutando <CODE>ndc restart</CODE>.  Examine los
+resultados con <CODE>nslookup</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     $ nslookup
+     &gt; set q=any
+     &gt; linux.bogus
+     Server:  localhost
+     Address:  127.0.0.1
+
+     linux.bogus
+             origin = linux.bogus
+             mail addr = hostmaster.linux.bogus
+             serial = 199511301
+             refresh = 28800 (8 hours)
+             retry   = 7200 (2 hours)
+             expire  = 604800 (7 days)
+             minimum ttl = 86400 (1 day)
+     linux.bogus     nameserver = ns.linux.bogus
+     linux.bogus     nameserver = ns.friend.bogus
+     linux.bogus     preference = 10, mail exchanger = mail.linux.bogus.linux.bogus
+     linux.bogus     preference = 20, mail exchanger = mail.friend.bogus
+     linux.bogus     nameserver = ns.linux.bogus
+     linux.bogus     nameserver = ns.friend.bogus
+     ns.linux.bogus  internet address = 127.0.0.2
+     mail.linux.bogus        internet address = 127.0.0.4
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Con un examen cuidadoso podr&aacute; descubrir un error. La l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       linux.bogus     preference = 10, mail exchanger = mail.linux.bogus.linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>est&aacute; equivocada. Deber&iacute;a ser</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       linux.bogus     preference = 10, mail exchanger = mail.linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Comet&iacute; el error de forma deliberada para que aprenda de &eacute;l <CODE>:-)</CODE>
+Mirando en el archivo de zona podemos ver que la l&iacute;nea</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     @               MX      10 mail.linux.bogus     ; Intercambiador de Correo Primario
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>no tiene punto. O tiene demasiados <CODE>linux.bogus</CODE>.  Si un nombre de
+m&aacute;quina no termina en punto en un archivo de zona, el origen es a&ntilde;adido a
+su final. As&iacute;, </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+@               MX      10 mail.linux.bogus.    ; Intercambiador de Correo Primario
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>o</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+@               MX      10 mail                 ; Primary Mail Exchanger
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>ser&aacute;n correctos. Yo prefiero la &uacute;ltima forma, hay que escribir menos. En
+un archivo de zona el dominio deber&iacute;a ser escrito y terminado con un
+punto, o no debe ser incluido, en cuyo caso se referir&aacute; al origen por
+defecto.  Debo hacer hincapi&eacute; que en el archivo <CODE>named.boot</CODE> no
+deber&iacute;a haber puntos despu&eacute;s de los nombres de dominio. No tiene ni idea
+de cuantas veces un '.' por estar o por no estar ha hecho fallar toda una
+configuraci&oacute;n y ha confundido horrorosamente a la gente...</P>
+<P>Una vez hecha esta <I>puntualizaci&oacute;n</I>, he aqu&iacute; el nuevo archivo de zona,
+con algo de informaci&oacute;n extra tambi&eacute;n:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+;
+; Archivo de zona para  linux.bogus
+;
+; minimo indispensable para hacer funcionar un dominio
+;
+@       IN      SOA     ns.linux.bogus. hostmaster.linux.bogus. (
+                        199511301       ; Numero de Serie, fecha de hoy + n. de serie de hoy 
+                        28800           ; Tasa de Refresco, en segundos
+                        7200            ; Tasa de Reintento, en segundos
+                        604800          ; Caducidad para secundario, en segundos
+                        86400 )         ; Validez para Clientes, en segundos
+
+                NS      ns              ; Direccion de Internet del servidor de nombres
+                NS      ns.friend.bogus.
+                MX      10 mail         ; Intercambiador de Correo Primario
+                MX      20 mail.friend.bogus. ; Intercambiador de Correo Secundario
+
+localhost       A       127.0.0.1
+ns              A       127.0.0.2
+mail            A       127.0.0.4
+;
+; Extras
+;
+@               TXT     &quot;Linux.Bogus, your DNS consultants&quot;
+
+ns              MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   &quot;Pentium&quot; &quot;Linux 1.2&quot;
+                TXT     &quot;RMS&quot;
+richard         CNAME   ns
+www             CNAME   ns
+
+donald          A       127.0.0.3
+                MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   &quot;i486&quot;  &quot;Linux 1.2&quot;
+                TXT     &quot;DEK&quot;
+
+mail            MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   &quot;386sx&quot; &quot;Linux 1.0.9&quot;
+
+ftp             A       127.0.0.5
+                MX      10 mail
+                MX      20 mail.friend.bogus.
+                HINFO   &quot;P6&quot; &quot;Linux 1.3.59&quot;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Puede que quiera desplazar los tres primeros registros tipo <CODE>A</CODE>
+(<CODE>localhost, ns</CODE> y <CODE>mail</CODE>) junto con los otros registros de su mismo
+tipo (<CODE>donald</CODE>, <CODE>mail</CODE>, y <CODE>ftp</CODE>), en vez de colocarlos separados
+al principio como aqu&iacute;. </P>
+<P>Hay varios registros nuevos aqu&iacute;: <CODE>HINFO</CODE> (<I>Host
+INFOrmation</I>), tiene dos partes, es una buena costumbre poner comillas
+a cada uno. La primera parte es el hardware o CPU de la m&aacute;quina, y la
+segunda parte corresponde al software o Sistema Operativo de la misma. 
+<CODE>ns</CODE> tiene una CPU Pentium con Linux 1.2. El registro <CODE>TXT</CODE> es
+un texto en formato libre que puede usar para cualquier cosa que le
+interese.  <CODE>CNAME</CODE> (<I>Canonical NAME</I>) es una forma de dar a
+cada m&aacute;quina varios nombres. Por tanto <CODE>richard</CODE> y <CODE>www</CODE> son
+alias para <CODE>ns</CODE>.  Es importante observar que los registros
+<CODE>A</CODE>, <CODE>MX</CODE>, <CODE>CNAME</CODE> y <CODE>SOA</CODE> <B>nunca deben
+hacer referencia al registro</B> <CODE>CNAME</CODE>, s&oacute;lo pueden referirse a
+registros <CODE>A</CODE>.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+fulanito  CNAME   richard                 ; ¡¡¡NO!!!
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>siendo correcto tener </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+fulanito  CNAME   ns                      ; ¡¡¡SI!!!
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Tambi&eacute;n es importante observar que <CODE>CNAME</CODE> no es un nombre de
+m&aacute;quina legal para direcciones de correo: 
+<CODE>webmaster@www.linux.bogus</CODE> es una direcci&oacute;n email ilegal
+dada en la configuraci&oacute;n anterior. Encontrar&aacute; muy pocos administradores de
+correo de Ah&iacute; Afuera que recomienden esta regla, incluso si a Vd. le
+funciona.  La forma de evitar esto es usar un registro <CODE>A</CODE> (y
+quiz&aacute;s algunos otros tambi&eacute;n, como un registro <CODE>MX</CODE>) en su lugar: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+www     A       127.0.0.2
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Paul Vixie, el principal gur&uacute; de <CODE>named</CODE> recomienda no usar CNAME.
+Por tanto considere el no utilizarlo seriamente. </P>
+<P>Cargue la nueva base de datos ejecutando <CODE>ndc reload</CODE>, esto provoca
+la lectura de sus archivos de nuevo.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     $ nslookup
+     Default Server:  localhost
+     Address:  127.0.0.1
+
+     &gt; ls -d linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto har&iacute;a que todos los registros fuesen listados.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     [localhost]
+      linux.bogus.       SOA   ns.linux.bogus hostmaster.linux.bogus. (199511301 28800 7200 604800 86400)
+      linux.bogus.       NS    ns.linux.bogus
+      linux.bogus.       NS    ns.friend.bogus
+      linux.bogus.       MX    10   mail.linux.bogus
+      linux.bogus.       MX    20   mail.friend.bogus
+      linux.bogus.       TXT   &quot;Linux.Bogus, your DNS consultants&quot;
+      localhost          A     127.0.0.1
+      mail               A     127.0.0.4
+      mail               MX    10   mail.linux.bogus
+      mail               MX    20   mail.friend.bogus
+      mail               HINFO 386sx       Linux 1.0.9
+      donald             A     127.0.0.3
+      donald             MX    10   mail.linux.bogus
+      donald             MX    20   mail.friend.bogus
+      donald             HINFO i486        Linux 1.2
+      donald             TXT   &quot;DEK&quot;
+      www                CNAME ns.linux.bogus
+      richard            CNAME ns.linux.bogus
+      ftp                A     127.0.0.5
+      ftp                MX    10   mail.linux.bogus
+      ftp                MX    20   mail.friend.bogus
+      ftp                HINFO P6          Linux 1.3.59
+      ns                 A     127.0.0.2
+      ns                 MX    10   mail.linux.bogus
+      ns                 MX    20   mail.friend.bogus
+      ns                 HINFO Pentium     Linux 1.2
+      ns                 TXT   &quot;RMS&quot;
+      linux.bogus.       SOA   ns.linux.bogus hostmaster.linux.bogus. (199511301 28800 7200 604800 86400)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Esto est&aacute; bien. Comprobemos qu&eacute; dice para <CODE>www</CODE> s&oacute;lo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     &gt; set q=any
+     &gt; www.linux.bogus.
+     Server:  localhost
+     Address:  127.0.0.1
+
+     www.linux.bogus canonical name = ns.linux.bogus
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>...En otras palabras, el nombre real de 
+<CODE>www.linux.bogus</CODE> es <CODE>ns.linux.bogus</CODE></P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     linux.bogus     nameserver = ns.linux.bogus
+     linux.bogus     nameserver = ns.friend.bogus
+     ns.linux.bogus  internet address = 127.0.0.2
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y <CODE>ns.linux.bogus</CODE> tiene la direcci&oacute;n <CODE>127.0.0.2</CODE>. Parece
+correcto tambi&eacute;n.</P>
+
+
+<H2><A NAME="ss4.3">4.3 Relaj&eacute;monos</A></H2>
+
+
+<P>Desde luego, este dominio es falso, y como tal son todas sus direcciones,
+y quiz&aacute;s, desafortunadamente sea un poco confuso. Para un ejemplo real
+de dominio vea la siguiente secci&oacute;n. </P>
+
+
+<HR>
+<A HREF="DNS-Como-3.html">Anterior</A>
+<A HREF="DNS-Como-5.html">Siguiente</A>
+<A HREF="DNS-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

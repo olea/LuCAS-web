@@ -1,0 +1,103 @@
+<html><head><title>21 Rutinas de inicializaci¢n de sonido</title><body>
+<h1><a name="21 Rutinas de inicialización de sonido">21 Rutinas de inicialización de sonido</a></h1>
+<p>
+<ul><h4>
+<li><a href="#detect_digi_driver">detect_digi_driver</a>
+<li><a href="#detect_midi_driver">detect_midi_driver</a>
+<li><a href="#reserve_voices">reserve_voices</a>
+<li><a href="#install_sound">install_sound</a>
+<li><a href="#remove_sound">remove_sound</a>
+<li><a href="#set_volume">set_volume</a>
+</h4></ul>
+<p><br><br>
+<p>
+<b>int <a name="detect_digi_driver">detect_digi_driver</a>(int driver_id);</b><br>
+   Detecta si el dispositivo de sonido digital seleccionado está disponible,
+   usando los mismos valores ID que install_sound(). Devuelve el máximo
+   número de voces que el controlador puede proporcionar, o cero si el
+   hardware no está presente. Esta función debe ser llamada _antes_ de
+   install_sound().
+<p>
+<b>int <a name="detect_midi_driver">detect_midi_driver</a>(int driver_id);</b><br>
+   Detecta si el dispositivo de sonido MIDI seleccionado está disponible,
+   usando los mismos valores ID que install_sound(). Devuelve el máximo
+   número de voces que el controlador puede proporcionar, o cero si el
+   hardware no está presente. Hay dos valores especiales que pueden ser
+   devueltos y debe controlar: si esta función devuelve -1, se trata de un
+   controlador ladrón de notas (ejemplo: DIGMID) que comparte las voces con
+   el controlador de sonido digital seleccionado, y si devuelve 0xFFFF, se
+   trata de un dispositivo externo como un MPU-401 donde no se puede
+   determinar el número de voces disponibles. Esta función debe ser llamada
+   _antes_ de install_sound().
+<p>
+<b>void <a name="reserve_voices">reserve_voices</a>(int digi_voices, int midi_voices);</b><br>
+   Llame esta función para especificar el número de voces que van a ser
+   usadas por los controladores de sonido digital y MIDI respectivamente.
+   Esto debe ser llamado _antes_ de llamar install_sound(). Si reserva
+   demasiadas voces, las llamadas siguientes a install_sound() fallarán.
+   Cuántas voces haya disponibles, depende del controlador, y en algunos
+   casos llegará a reservar más de las deseadas (ejemplo: los controladores
+   de música sintética FM siempre dan 9 voces en una OPL2 y 18 en una OPL3,
+   y el controlador de sonido digital de la SB redondeará el número de voces
+   al siguiente valor potencia de dos). Pase un valor negativo para
+   recuperar los valores por defecto. Debería tener en cuenta, que la
+   calidad del sonido es inversamente proporcional al número de voces que
+   reserve, por lo que no reserve más de las que necesite.
+<p>
+<b>int <a name="install_sound">install_sound</a>(int digi_card, int midi_card, char *cfg_path);</b><br>
+   Inicializa el módulo de sonido, devolviendo cero si no hay problemas. El
+   parámetro digi_card debería ser uno de los valores:
+<p><pre>
+      DIGI_AUTODETECT      - Allegro elige un controlador de sonido digital.
+      DIGI_NONE            - Sin sonido digital
+      DIGI_SB              - Sound Blaster (autodetección)
+      DIGI_SB10            - SB 1.0 (8 bit mono single shot dma)
+      DIGI_SB15            - SB 1.5 (8 bit mono single shot dma)
+      DIGI_SB20            - SB 2.0 (8 bit mono auto-initialised dma)
+      DIGI_SBPRO           - SB Pro (8 bit estéreo)
+      DIGI_SB16            - SB16 (16 bit estéreo)
+      DIGI_AUDIODRIVE      - ESS AudioDrive
+      DIGI_SOUNDSCAPE      - Ensoniq Soundscape
+<p></pre>
+   midi_card debería ser uno de los valores:
+<p><pre>
+      MIDI_AUTODETECT      - Allegro elige un controlador de sonido MIDI.
+      MIDI_NONE            - Sin sonido MIDI
+      MIDI_ADLIB           - Adlib o SB FM (autodetección)
+      MIDI_OPL2            - OPL2 sintético (mono, usado en la Adlib y SB)
+      MIDI_2XOPL2          - OPL2 sintético dual (estéreo, usado en la SB
+                             Pro-I)
+      MIDI_OPL3            - OPL3 sintético (estéreo, SB Pro-II y superiores)
+      MIDI_SB_OUT          - Interfaz MIDI SB
+      MIDI_MPU             - Interfaz MIDI MPU-401
+      MIDI_DIGMID          - reproductor wavetable basado en samples
+      MIDI_AWE32           - AWE32 (EMU8000 chip)
+<p></pre>
+   Normalmente debería pasar los parámetros DIGI_AUTODETECT y
+   MIDI_AUTODETECT a esta función, en cuyo caso Allegro leerá los ajustes de
+   hardware del fichero de configuración actual. Esto permite al usuario
+   seleccionar valores diferentes con la utilidad setup: lea la sección de
+   configuración para más detalles.
+<p>
+   El parámetro cfg_path sólo está presente por compatibilidad con versiones
+   previas de Allegro, y no tiene ningún efecto.
+<p>
+   Devuelve cero si el sonido es instalado con éxito, y -1 si hay fallos. Si
+   hay fallos, almacenará una descripción del problema en allegro_error.
+<p>
+<b>void <a name="remove_sound">remove_sound</a>();</b><br>
+   Limpia el entorno cuando haya acabado con las rutinas de sonido.
+   Normalmente no hace falta que llame esto, ya que allegro_exit() lo hará
+   por usted.
+<p>
+<b>void <a name="set_volume">set_volume</a>(int digi_volume, int midi_volume);</b><br>
+   Altera el volumen de salida del sonido. Especifica el volumen para la
+   reproducción de MIDIs y samples digitales, con enteros de 0 a 255, o pasa
+   un valor negativo para no cambiar alguno de los ajustes. Es posible que
+   esta rutina use el mezclador de hardware para controlar el volumen, de
+   otro modo, le dirá a los reproductores de samples y MIDI que simulen el
+   mezclador por software.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt COMO: Caracteres especiales: secuencias de escape octales</TITLE>
+ <LINK HREF="Bash-Prompt-Como-7.html" REL=next>
+ <LINK HREF="Bash-Prompt-Como-5.html" REL=previous>
+ <LINK HREF="Bash-Prompt-Como.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bash-Prompt-Como-7.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-5.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc6">Índice general</A>
+<HR>
+<H2><A NAME="s6">6. Caracteres especiales: secuencias de escape octales</A></H2>
+
+<P>
+<P>Aparte de los caracteres que se pueden teclear mediante un teclado, hay
+muchos otros que se pueden mostrar por la pantalla. He creado un script
+que permite comprobar qu&eacute; tiene disponible el tipo que est&eacute; usando. El
+comando principal a usar para utilizar estos caracteres es <CODE>echo -e</CODE>.
+La opci&oacute;n <CODE>-e</CODE> le indica a <CODE>echo</CODE> que habilite la interpretaci&oacute;n de
+caracteres escapados mediante contrabarra. Lo que aparezca a partir de un
+200-400 octal ser&aacute; muy diferente con un tipo VGA de lo que aparezca con un
+tipo est&aacute;ndar linux. Queda avisado de que algunas de estas secuencias de
+escape tienen extra&ntilde;os efectos en el terminal, y no he intentado
+evitarlos. Los caracteres de dibujos de l&iacute;neas y bloques (que nos resultan
+tan familiares a los usuarios de <I>WordPerfect</I>)  utilizados masivamente
+en el proyecto <I>Bashprompt</I> est&aacute;n entre el <CODE>260</CODE> y <CODE>337</CODE> octal. 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+
+  #   Script: escgen
+
+  function usage {
+     echo -e "\033[1;34mescgen\033[0m &lt;valor_inferior> [&lt;valor_superior>]"
+     echo "   Generador de secuencias de escape octales: imprime todas las"
+     echo "   secuencias de escape contenidas entre los valores menor y"
+     echo "   mayor. Si no se proporciona el segundo valor, se imprimen"
+     echo "   8 caracteres."
+     echo "   1998 - Giles Orr, sin garant&iacute;a."
+     exit 1
+  }
+
+  if [ "$#" -eq "0" ]
+  then
+     echo -e "\033[1;31mPor favor incluya uno o dos valores.\033[0m"
+     usage
+  fi
+  let lower_val=${1}
+  if [ "$#" -eq "1" ]
+  then
+     # Si no hay dos valores, sacar 8 caracteres
+     upper_val=$(echo -e "obase=8 \n ibase=8 \n $lower_val+10 \n quit" | bc)
+  else
+     let upper_val=${2}
+  fi
+  if [ "$#" -gt "2" ]
+  then
+     echo -e "\033[1;31mPor favor, incluya dos valores.\033[0m"
+     echo
+     usage
+  fi
+  if [ "${lower_val}" -gt "${upper_val}" ]
+  then
+     echo -e "\033[1;31m${lower_val} es mayor que ${upper_val}."
+     echo
+     usage
+  fi
+  if [ "${upper_val}" -gt "777" ]
+     then
+     echo -e "\033[1;31mLos valores no pueden superar 777.\033[0m"
+     echo
+     usage
+  fi
+
+  let i=$lower_val
+  let line_count=1
+  let limit=$upper_val
+  while [ "$i" -lt "$limit" ]
+  do
+     octal_escape="\\$i"
+     echo -en "$i:'$octal_escape' "
+     if [ "$line_count" -gt "7" ]
+     then
+        echo
+        #   Put a hard return in.
+        let line_count=0
+     fi
+     let i=$(echo -e "obase=8 \n ibase=8 \n $i+1 \n quit" | bc)
+     let line_count=$line_count+1
+  done
+  echo
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Tambi&eacute;n se puede usar <CODE>xfd</CODE> para mostrar todos los caracteres de un
+tipo X, mediante el comando <CODE>xfd -fn &lt;tipo&gt;</CODE>. Pinchando sobre un
+caracter determinado se puede obtener mucha informaci&oacute;n sobre &eacute;l,
+incluyendo su valor octal. El script de arriba puede resultar &uacute;til en la
+consola, y en el caso de que no se est&eacute; seguro acerca del nombre del tipo
+de letra. 
+<P>
+<HR>
+<A HREF="Bash-Prompt-Como-7.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-5.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc6">Índice general</A>
+</BODY>
+</HTML>

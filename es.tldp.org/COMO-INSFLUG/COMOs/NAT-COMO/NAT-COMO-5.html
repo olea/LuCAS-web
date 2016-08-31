@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux 2.4 NAT COMO: ¿Qu&eacute; pasa con ipmasqadm?</TITLE>
+ <LINK HREF="NAT-COMO-6.html" REL=next>
+ <LINK HREF="NAT-COMO-4.html" REL=previous>
+ <LINK HREF="NAT-COMO.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="NAT-COMO-6.html">Página siguiente</A>
+<A HREF="NAT-COMO-4.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="s5">5. ¿Qu&eacute; pasa con ipmasqadm?</A></H2>
+
+<P>Este programa tiene un nicho de usuarios mucho m&aacute;s definido, de manera que
+no me he preocupado mucho de darle compatibilidad retroactiva. Puede usar
+«iptables -t nat» para hacer reenv&iacute;o de puertos. De manera que, por
+ejemplo, en Linux 2.2 podr&iacute;a haber hecho:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#Linux 2.2
+#Reenv&iacute;a los paquetes TCP dirigidos al puerto 8080 de 1.2.3.4 al 80 de
+#192.168.1.1
+ipmasqadm portfw -a -P tcp -L 1.2.3.4 8080 -R 192.168.1.1 80
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ahora deber&iacute;a hacer:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Linux 2.4
+# Agrega una regla previa al encaminamiento (-A PREROUTING) a la tabla NAT
+# (-t nat) de manera que los paquetes TCP (-p tcp) que vayan a 1.2.3.4
+# (-d 1.2.3.4), puerto 8080 (--dport 8080) tengan una correspondencia de
+# destino (-j DNAT) con 192.168.1.1, puerto 80 (--to 192.168.1.1:80).
+iptables -A PREROUTING -t nat -p tcp -d 1.2.3.4 --dport 8080 \
+        -j DNAT --to 192.168.1.1:80
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Si desea que esta regla altere tambi&eacute;n las conexiones locales (aquellas
+que se originen en la propia m&aacute;quina que hace NAT), puede insertar la
+misma regla en la cadena OUTPUT (que es para los paquetes locales de
+salida):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# Linux 2.4
+iptables -A OUTPUT -t nat -p tcp -d 1.2.3.4 --dport 8080 \
+        -j DNAT --to 192.168.1.1:80
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="NAT-COMO-6.html">Página siguiente</A>
+<A HREF="NAT-COMO-4.html">Página anterior</A>
+<A HREF="NAT-COMO.html#toc5">Índice general</A>
+</BODY>
+</HTML>

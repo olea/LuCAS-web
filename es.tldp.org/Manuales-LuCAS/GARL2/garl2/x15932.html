@@ -1,0 +1,771 @@
+<HTML
+><HEAD
+><TITLE
+>Pistas y Trucos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Sendmail"
+HREF="x-087-2-sendmail.html"><LINK
+REL="PREVIOUS"
+TITLE="Ejecución de Sendmail"
+HREF="x15890.html"><LINK
+REL="NEXT"
+TITLE="Poner Eximen marcha"
+HREF="x-087-2-exim.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x15890.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 18. Sendmail</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN15932">18.11. Pistas y Trucos</H1
+><P
+>&#13;Hay varias cosas que  se pueden hacer para que la gestión de  un sitio 
+<B
+CLASS="COMMAND"
+>sendmail</B
+> sea eficiente. Se proporcionan varias herramientas
+en el paquete <B
+CLASS="COMMAND"
+>sendmail</B
+>; echemos un vistazo a las más importantes de éstas.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN15940">18.11.1. Gestión de la Cola de Correo</H2
+><P
+>&#13;
+El correo es encolado en el directorio <TT
+CLASS="FILENAME"
+>/var/spool/mqueue</TT
+> 
+antes de ser transmitido. Este directorio se llama la cola de correo<A
+NAME="AEN15949"
+HREF="#FTN.AEN15949"
+>[1]</A
+>.
+El programa <B
+CLASS="COMMAND"
+>sendmail</B
+>proporciona un método para mostrar una 
+lista formateada de todos los mensajes de correo en la cola y su estado.</P
+><P
+>La orden <B
+CLASS="COMMAND"
+>/usr/bin/mailq</B
+> es un enlace simbólico al ejecutable de 
+<B
+CLASS="COMMAND"
+>sendmail</B
+> y se comporta idénticamente a:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>sendmail -bp</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+La salida muestra el identificador del mensaje (ID), su tamaño, la hora
+en que fue colocado en la cola, quién lo envió y un mensaje indicando su estado actual.
+El siguiente ejemplo muestra un mensaje de correo atascado en la cola con un problema:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>mailq</B
+></TT
+>
+                    Mail Queue (1 request)
+    --Q-ID-- --Size-- -----Q-Time----- ------------Sender/Recipient------------
+    RAA00275      124 Wed Dec  9 17:47 root
+                     (host map: lookup (tao.linux.org.au): deferred)
+                                       terry@tao.linux.org.au</PRE
+></TD
+></TR
+></TABLE
+>
+
+Este mensaje está todavía en la cola de correo porque la dirección IP del anfitrión de destino 
+no se ha podido resolver.</P
+><P
+>Podemos forzar <B
+CLASS="COMMAND"
+>sendmail</B
+> para procesar la cola ahora mediante la instrucción 
+ <TT
+CLASS="FILENAME"
+>/usr/bin/runq</TT
+>.</P
+><P
+>La orden  <B
+CLASS="COMMAND"
+>runq</B
+> no produce ninguna salida.
+<B
+CLASS="COMMAND"
+>sendmail</B
+> comenzará procesando la cola de correo en segundo plano.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN15965">18.11.2. Forzar a un Anfitrión Remoto a Procesar su Cola de Correo</H2
+><P
+>&#13;
+Si usa una conexión a Internet temporal mediante marcado telefónico con una 
+dirección IP <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>fija</I
+></SPAN
+> y delega en un anfitrión MX para recibir
+su correo mientras está desconectado, encontrará útil forzar al anfitrión MX para que
+procese su cola de correo tan pronto como se establezca una conexión</P
+><P
+>Un pequeño programa  <B
+CLASS="COMMAND"
+>perl</B
+> se incluye con la distribución de 
+<B
+CLASS="COMMAND"
+>sendmail</B
+> que hace esto simple para los anfitriones de correo que lo
+soportan. El guión <B
+CLASS="COMMAND"
+>etrn</B
+> tiene como mucho el mismo efecto 
+en un anfitrión remoto como la instrucción <B
+CLASS="COMMAND"
+>runq</B
+> tiene en el nuestro.
+Si invocamos la orden como  se indica en este ejemplo:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>etrn vstout.vbrew.com</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+forzaremos al anfitrión <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>vstout.vbrew.com</B
+></SPAN
+> que procese cualquier correo en espera para
+nuestra máquina local.</P
+><P
+>Típicamente añadiría esta instrucción al guión PPP <TT
+CLASS="FILENAME"
+>ip-up</TT
+> 
+de manera que se ejecute tan pronto como la conexión de red sea establecida.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN15985">18.11.3. Análisis de las Estadísticas de Correo</H2
+><P
+>&#13;<B
+CLASS="COMMAND"
+>sendmail</B
+> almacena datos de los volúmenes de tráfico de correo y 
+alguna información sobre los anfitriones a los cuáles ha entregado correo. Hay
+dos instrucciones disponibles para mostrar esta información,
+<B
+CLASS="COMMAND"
+>mailstats</B
+>, y <B
+CLASS="COMMAND"
+>hoststat</B
+>.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN15994">18.11.3.1. mailstats</H3
+><P
+>&#13;
+La orden <B
+CLASS="COMMAND"
+>mailstats</B
+> muestra estadísticas del volumen
+de correo procesado por <B
+CLASS="COMMAND"
+>sendmail</B
+>. La hora a la que
+la recogida de datos comenzó se imprime primero, seguida de una tabla
+con una columna para cada transporte configurado y una mostrando un 
+resumen total de todo el correo. Cada línea presenta ocho puntos de información:
+
+
+<DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN16004"><P
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Campo</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Significado</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>M</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>El número del transporte (protocolo de transporte)</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>msgsfr</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>El número de mensajes desde el transporte</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>bytes_from</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Los Kbytes de correo desde el transporte</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>msgsto</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>El número de mensajes enviados al transporte</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>bytes_to</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>Los Kbytes de correo enviados al transporte</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>msgsreg</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>El número de mensajes rechazados</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>msgsdis</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>El número de mensajes descartados</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="LITERAL"
+>Mailer</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>El nombre del transporte</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+>
+
+Un ejemplo de la salida de la orden <B
+CLASS="COMMAND"
+>mailstats</B
+> se muestra
+en <A
+HREF="x15932.html#X-087-2-SENDMAIL.MAILSTATS"
+>Ejemplo 18-5</A
+>.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-SENDMAIL.MAILSTATS"><P
+><B
+>Ejemplo 18-5. Ejemplo de la Salida de la Instrucción mailstats</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>/usr/sbin/mailstats</B
+></TT
+>
+    Statistics from Sun Dec 20 22:47:02 1998
+     M   msgsfr  bytes_from   msgsto    bytes_to  msgsrej msgsdis  Mailer
+     0        0          0K       19        515K        0       0  prog
+     3       33        545K        0          0K        0       0  local
+     5       88        972K      139       1018K        0       0  esmtp
+    =============================================================
+     T      121       1517K      158       1533K        0       0</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>Estos datos son recogidos si la opción <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>StatusFile</I
+></SPAN
+> está activada
+en el fichero  <TT
+CLASS="FILENAME"
+>sendmail.cf</TT
+> y el fichero de estado existe.
+Típicamente añadiría lo siguiente a su fichero <TT
+CLASS="FILENAME"
+>sendmail.cf</TT
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # status file
+    O StatusFile=/var/log/sendmail.st</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Para reiniciar la recogida de estadísticas, necesita hacer el fichero de estadísticas
+de longitud cero:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    &gt; /var/log/sendmail.st</PRE
+></TD
+></TR
+></TABLE
+>
+
+y reiniciar <B
+CLASS="COMMAND"
+>sendmail</B
+>.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN16058">18.11.3.2. Hoststat</H3
+><P
+>&#13;
+La instrucción <B
+CLASS="COMMAND"
+>hoststat</B
+> muestra información sobre el estado de 
+los anfitriones a los que <B
+CLASS="COMMAND"
+>sendmail</B
+> ha intentado enviar correo. La 
+instrucción <B
+CLASS="COMMAND"
+>hoststat</B
+> es equivalente a invocar <B
+CLASS="COMMAND"
+>sendmail</B
+> 
+como:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+>sendmail -bh</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La salida presenta cada anfitrión en su propia línea, y para cada
+uno la hora desde que se intentó la entrega a él, y el mensaje de
+estado recibido a esa hora.</P
+><P
+><A
+HREF="x15932.html#X-087-2-SENDMAIL.HOSTSTAT"
+>Ejemplo 18-6</A
+> muestra la clase de salida que podría esperarse
+de la instrucción  <B
+CLASS="COMMAND"
+>hoststat</B
+>. Nótese que la mayor parte de los 
+resultados indican una entrega exitosa. El resultado para 
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>earthlink.net</B
+></SPAN
+>, por otra parte, indica 
+que la entraga no fue exitosa. El mensaje de estado puede algunas veces ayudar
+a determinar la causa del fallo. En este caso, la conexión expiró, probablemente 
+porque el anfitrión estaba caído o inalcanzable a la hora en que la entrega se intentó.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-SENDMAIL.HOSTSTAT"><P
+><B
+>Ejemplo 18-6. Ejemplo de Salida de la Instrucción hoststat</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>hosts at</B
+></TT
+>
+     -------------- Anfitriónname ---------- How long ago ---------Results---------
+     mail.telstra.com.au                    04:05:41 250 Message accepted for
+     scooter.eye-net.com.au              81+08:32:42 250 OK id=0zTGai-0008S9-0
+     yarrina.connect.com.a               53+10:46:03 250 LAA09163 Message acce
+     happy.optus.com.au                  55+03:34:40 250 Mail accepted
+     mail.zip.com.au                        04:05:33 250 RAA23904 Message acce
+     kwanon.research.canon.com.au        44+04:39:10 250 ok 911542267 qp 21186
+     linux.org.au                        83+10:04:11 250 IAA31139 Message acce
+     albert.aapra.org.au                    00:00:12 250 VAA21968 Message acce
+     field.medicine.adelaide.edu.au      53+10:46:03 250 ok 910742814 qp 721
+     copper.fuller.net                   65+12:38:00 250 OAA14470 Message acce
+     amsat.org                            5+06:49:21 250 UAA07526 Message acce
+     mail.acm.org                        53+10:46:17 250 TAA25012 Message acce
+     extmail.bigpond.com                 11+04:06:20 250 ok
+     earthlink.net                       45+05:41:09 Deferred: Connection time </PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>La instrucción <B
+CLASS="COMMAND"
+>purgestat</B
+> vacía los datos del anfitrión recogidos y es 
+equivalente a invocar sendmail como:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>sendmail -bH</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><P
+>Las estadísticas continuarán creciendo hasta que usted las purge. Quizá quiera
+ejecutar periódicamente la instrucción <B
+CLASS="COMMAND"
+>purgestat</B
+> para hacer
+más fácil buscar y encontrar entradas recientes, especialmente si tiene un sitio 
+con mucho tráfico. Podría poner la orden en un fichero  <TT
+CLASS="FILENAME"
+>crontab</TT
+> para que 
+se ejecute automáticamente, o tan sólo hacerlo usted mismo ocasionalmente.</P
+></DIV
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN15949"
+HREF="x15932.html#AEN15949"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>mail spool</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x15890.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Ejecución de Sendmail</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-sendmail.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Poner Eximen marcha</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

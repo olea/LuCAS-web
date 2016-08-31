@@ -1,0 +1,56 @@
+<html><head><title>24 Rutinas de flujo de sonido</title><body>
+<h1><a name="24 Rutinas de flujo de sonido">24 Rutinas de flujo de sonido</a></h1>
+<p>
+<ul><h4>
+<li><a href="#play_audio_stream">play_audio_stream</a>
+<li><a href="#stop_audio_stream">stop_audio_stream</a>
+<li><a href="#get_audio_stream_buffer">get_audio_stream_buffer</a>
+<li><a href="#free_audio_stream_buffer">free_audio_stream_buffer</a>
+</h4></ul>
+<p><br><br>
+<p>
+Las rutinas de flujo de sonido son para reproducir sonidos digitales que son
+demasiado grandes para caber en la estructura SAMPLE, bien porque son
+ficheros enormes que quiere cargar en trozos según necesita los datos, o
+porque está haciendo algo inteligente como generar la curva del sonido en
+tiempo real.
+<p>
+<b>AUDIOSTREAM *<a name="play_audio_stream">play_audio_stream</a>(int len, bits, freq, vol, pan);</b><br>
+   Esta función crea un nuevo flujo de audio y comienza a reproducirlo. len
+   es el tamaño de cada buffer de transferencia (en samples), que debería
+   ser de al menos 2k: buffers más grandes son más eficientes y requieren
+   menos actualizaciones, pero resultan en un desfase mayor entre los datos
+   que suministras y los que realmente están siendo reproducidos. El
+   parámetro bits debe ser 8 o 16, freq es la frecuencia de los datos, y vol
+   y pan son los mismos valores 0-255 que en las funciones regulares de
+   reproducción de samples. Su quiere modificar la frecuencia, el volumen, o
+   la panoramización del flujo una vez está siendo reproducido, puede usar
+   las funciones normales voice_*() con stream->voice como parámetro. Los
+   datos siempre están en formato sin signo, siendo las ondas estéreo una
+   alternación contínua de samples para los canales izquierda/derecha.
+<p>
+<b>void <a name="stop_audio_stream">stop_audio_stream</a>(AUDIOSTREAM *stream);</b><br>
+   Destruye un flujo de audio cuando no lo necesite más.
+<p>
+<b>void *<a name="get_audio_stream_buffer">get_audio_stream_buffer</a>(AUDIOSTREAM *stream);</b><br>
+   Debe llamar este función a intervalos regulares mientras el flujo de
+   audio está siendo reproducido, para proveer el siguiente buffer de datos
+   del sample (cuanto más pequeño sea el tamaño del buffer del flujo, más
+   frecuentemente debe llamar esta función). Si devuelve NULL, el flujo
+   todavía está reproduciendo los datos y no debe hacer nada. Si devuelve un
+   valor, esa es la localización del próximo buffer a tocar, y debería
+   cargar el número apropiado de samples (tantos como especificó al crear
+   el flujo) a esa dirección, por ejemplo usando un fread() de un fichero.
+   Después de llenar el buffer con datos, llame free_audio_stream_buffer()
+   para indicar que los datos nuevos ahora son válidos. Fíjese que esta
+   función no debería ser llamada desde una función de temporizador.
+<p>
+<b>void <a name="free_audio_stream_buffer">free_audio_stream_buffer</a>(AUDIOSTREAM *stream);</b><br>
+   Llame esta función después de que get_audio_stream_buffer() devuelva una
+   dirección que no sea NULL, para indicar que ya ha cargado un nuevo bloque
+   de samples en esa dirección y que los datos están listos para ser
+   reproducidos.
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

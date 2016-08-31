@@ -1,0 +1,127 @@
+#! /usr/bin/perl
+# $Id: dict2index,v 1.3 2000/05/11 19:30:16 villate Exp $
+#
+# dict2index - program to create the orca glossary index file with the
+#              format used by the dict program.
+# Copyright (C) Jaime Villate <villate@fe.up.pt>, 2000
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# Jaime Villate, Faculdade de Engenharia, Rua dos Bragas, 4050-123 Porto
+# Portugal
+#
+# The ORCA project <http://orca.sourceforge.net> 
+
+=head1 NAME 
+
+dict2index - Creates the .index file for a .dict text file
+
+=head1 SYNOPSIS
+
+S<dict2index filename>
+
+=head1 DESCRIPTION
+
+This programs reads a dict text file and creates the corresponding index
+file required by the dict program. The dict text file can be uncompressed
+(filename extension dict) or compressed (filename extension dict.dz).
+
+=head1 AUTHOR
+
+Jaime Villate E<lt>villate@fe.up.ptE<gt>.
+
+=head1 SEE ALSO
+
+L<dict>(1), L<dictd>(8)
+
+=cut
+use strict;
+use vars qw(@b64);
+@b64 = ('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
+	'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
+	'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
+	'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/');
+
+sub base64
+{
+    (my $n) = @_;
+    my $val = '';
+    if ($n > 0)
+    {
+	while ($n != 0)
+	{
+	    $val = $b64[$n % 64] . $val;
+	    $n = int($n/64);
+	}
+    }
+    else 
+    {
+	$val = 'A';
+    }
+    return $val;
+}
+
+sub usage
+{
+    print "Usage <filename.dict[.dz]>\n";
+    exit;
+}
+
+my $offset = 0;
+my $keyw = '';
+my $offset64 = 'A';
+my $len = 0;
+my $linelen = 0;
+my $len64 = 'A';
+usage() if ($#ARGV != 0);
+my $filehandle = $ARGV[0];
+usage() if ($filehandle =~ /^\-/);
+(my $indexname = $filehandle) =~ s/\.dict/\.index/;
+if ($filehandle =~ /\.dz$/)
+{
+    $filehandle = "zcat $filehandle|";
+    $indexname =~ s/\.dz$//;
+}
+else
+{
+    $filehandle = "< $filehandle";
+}
+open(DICT,$filehandle);
+open(IND,"| sort -df >$indexname");
+while (<DICT>)
+{
+    $linelen = length($_);
+    if (/^(\S)/)
+    {
+	$len64 = base64($len);
+	print IND "$keyw\t$offset64\t$len64\n" if(length($keyw));
+	$offset64 = base64($offset);
+	$len = length($_);
+	chop;
+	$keyw = $_;
+    }
+    else
+    {
+	$len += length($_);
+    }
+    $offset += $linelen;
+}
+$len64 = base64($len);
+print IND "$keyw\t$offset64\t$len64\n" if(length($keyw));
+close IND;
+close DICT;
+exit;
+
+

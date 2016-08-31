@@ -1,0 +1,2142 @@
+<HTML
+><HEAD
+><TITLE
+>Árboles AVL</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.74b"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN2"
+>Árboles AVL</A
+></H1
+><H3
+CLASS="AUTHOR"
+><A
+NAME="AEN4"
+>Sebastián Gurin (Cancerbero)</A
+></H3
+><SPAN
+CLASS="RELEASEINFO"
+><BR></SPAN
+><P
+CLASS="COPYRIGHT"
+>Copyright &copy; 2004 by Sebastián Gurin</P
+><HR></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN13"
+>Introducción</A
+></H1
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Definición. </B
+>Un <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>árbol
+      AVL</I
+></SPAN
+> es un árbol binario de búsqueda que cumple
+      con la condición de que la diferencia entre las alturas de
+      los subárboles de cada uno de sus nodos es, como mucho
+      1. </P
+></DIV
+><P
+>La denominación de árbol AVL viene dada por los
+    creadores de tal estructura (Adelson-Velskii y
+    Landis). </P
+><P
+>Recordamos que un <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>árbol binario de
+    búsqueda</I
+></SPAN
+> es un árbol binario en el cual cada nodo
+    cumple con que todos los nodos de su subárbol izquierdo son
+    menores que la raíz y todos los nodos del subárbol derecho
+    son mayores que la raíz. </P
+><P
+>Recordamos también que el tiempo de las operaciones
+    sobre un árbol binario de búsqueda son O(log n) promedio,
+    pero el peor caso es O(n), donde n es el número de
+    elementos.</P
+><P
+>La <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>propiedad de equilibrio</I
+></SPAN
+> que
+    debe cumplir un árbol para ser AVL asegura que la profundidad
+    del árbol sea O(log(n)), por lo que las operaciones sobre
+    estas estructuras no deberán recorrer mucho para hallar el
+    elemento deseado. Como se verá, el tiempo de ejecución de las
+    operaciónes sobre estos árboles es, a lo sumo O(log(n)) en el
+    peor caso, donde n es la cantidad de elementos del
+    árbol. </P
+><P
+>Sin embargo, y como era de esperarse, esta misma
+      propiedad de equilibrio de los árboles AVL implica una
+      <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>dificultad</I
+></SPAN
+> a la hora de insertar o
+      eliminar elementos: estas operaciones pueden no conservar
+      dicha propiedad. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE01"
+></A
+><P
+><B
+>Figure 1. Árbol AVL de enteros</B
+></P
+><P
+><IMG
+SRC="tree01.png"
+ALIGN="CENTER"></P
+></DIV
+><P
+>A modo de ejemplificar esta dificultad, supongamos que
+      al árbol AVL de enteros de <A
+HREF="#TREE01"
+>Figure 1</A
+> le
+      queremos agregar el entero 3. Si lo hacemos con el
+      procedimiento normal de inserción de árbols binarios de
+      búsqueda el resultado sería el árbol de <A
+HREF="#TREE02"
+>Figure 2</A
+> el cual ya no cumple con la condición de
+      equilibrio de los árboles AVL dado que la altura del
+      subárbol izquierdo es 3 y la del subárbol derecho es
+      1. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE02"
+></A
+><P
+><B
+>Figure 2. Árbol que no cumple con la condición de equilibrio
+        de los árboles AVL.</B
+></P
+><P
+><IMG
+SRC="tree02.png"
+ALIGN="CENTER"></P
+></DIV
+><P
+>En <A
+HREF="#ROTACION_SIMPLE"
+>the Section called <I
+>Rotaciones simples</I
+></A
+> se pasará a explicar una
+    serie de operaciones sobre los nodos de un árbol AVL con las
+    cuales poder restaurar la propiedad de equilibrio de un árbol
+    AVL luego de agregar o eliminar elementos. </P
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ALTURA_VS_SIZE"
+>Menor cantidad posible de nodos para una altura
+    dada</A
+></H1
+><P
+>pag 115.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="DECL_TIPO_DATO"
+>Declaración del tipo de dato</A
+></H1
+><P
+>Iremos ya declarando el tipo de dato que representará
+    un árbol AVL. Esto nos ayudará a formalizar las cosas y nos
+    permitirá en el correr de este documento ir definiendo las
+    operaciones sobre el tipo de dato abstracto. </P
+><P
+>El lenguaje a utilizar será C. Fue elegido tan sólo por
+    gustos personales del autor de este documento. Sin embargo se
+    tratará de usar sólo aquellas características de C que puedan
+    ser fácilmente implementadas en la mayoría de los lenguajes
+    estructurados como Pascal, Modula-2, etc. </P
+><P
+></P
+><P
+><B
+>Algunas consideraciones sobre la implementación del
+      tipo de dato abstracto</B
+></P
+><UL
+><LI
+><P
+>Las declaraciones que se listarán a
+        continuación no tienen porqué tomarse al pie de la
+        letra. Cada programador tendrá su estilo y su forma de
+        resolver sus problemas.</P
+></LI
+><LI
+><P
+>Las declaraciones que se listarán a continuación no
+      tienen porqué tomarse al pie de la letra. Cada programador
+      tendrá su estilo y su forma de resolver sus
+      problemas.</P
+></LI
+><LI
+><P
+>Como se podrá ver en el siguiente listado, la única
+      diferencia de los nodos de un árbol AVL con los de un árbol
+      binario común es la variable <TT
+CLASS="VARNAME"
+>altura</TT
+> en
+      la estructura nodo.</P
+></LI
+><LI
+><P
+>Los nodos de un árbol pueden almacenar cualquier
+        tipo de dato, arbitrariamente complejo. En este
+        documento, por razones de simplicidad se usará el tipo de
+        dato más simple que soporte comparaciones, o sea los
+        enteros (tipo int de Ansi C). En el caso de que los datos
+        almacenados en cada nodo sean más complicados (por
+        ejemplo estructuras) o sean dinámicamente almacenados en
+        memoria, algunas funciones deberán adaptarse para
+        manejarlos. Por ejemplo, se deberá pasar como parámetros
+        funciones de comparación, equivalencia, y de liberación
+        de memoria. </P
+></LI
+></UL
+><P
+>A continuación se lista la declaración del tipo
+      abstracto de dato <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Árbol AVL</I
+></SPAN
+>:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>typedef struct AVLNode AVLTree;
+
+struct AVLNode 
+{
+  int dato;                                                <A
+NAME="TIPODATO"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+>
+  AVLTree izq;
+  AVLTree der;
+  int altura;                                              <A
+NAME="ALTURA"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+>
+};
+      </PRE
+><DIV
+CLASS="CALLOUTLIST"
+><DL
+COMPACT="COMPACT"
+><DT
+><A
+HREF="#TIPODATO"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+></DT
+><DD
+>Como ya dijimos, por cuestiones de simplicidad,
+          la información almacenada en cada nodo del árbol será
+          un entero. </DD
+><DT
+><A
+HREF="#ALTURA"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+></DT
+><DD
+>Cada nodo tendrá almacenada su propia altura con
+          respecto a la raíz absoluta del árbol con el que
+            estamos trabajando. Esta característica se verá en
+          <A
+HREF="#ALTURA_SEC"
+>the Section called <I
+>Consideraciones sobre la altura de los nodos</I
+></A
+>. </DD
+></DL
+></DIV
+><P
+>A continuación declaramos las operaciónes básicas
+    sobre árboles binarios y con las cuales trabajaremos para
+      acceder al tipo abstracto de dato <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Árbol
+    AVL</I
+></SPAN
+> de aquí en más. </P
+><DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>Si se usa algún lenguaje orientado a objetos como C++
+      o java y ya se tienen clases como árboles binarios o
+      árboles binarios de búsqueda, conviene declarar los árboles
+      AVL como una subclase de alguna de estas. Luego, las
+      operaciones declaradas a continuación se heredarán de estos
+      tipos.  </P
+></BLOCKQUOTE
+></DIV
+><PRE
+CLASS="PROGRAMLISTING"
+>/* Constructores */
+
+AVLTree *vacio (void);
+/* devuelve un árbol AVL vacío */
+
+AVLTree *hacer (int x, AVLTree * izq, AVLTree * der);
+/* devuelve un nuevo árbol formado por una raíz con valor x,
+   subárbol izquierdo el árbol izq y subárbol derecho el árbol
+   der. */
+
+
+
+
+/*  Predicados   */
+
+bool es_vacio (AVLTree * t);
+/* devuelve true sii. t es un árbol vacío. */
+
+
+
+
+/*  Selectores   */
+
+AVLTree *izquierdo (AVLTree * t);
+/* devuelve el subárbol izquierdo de t. */
+
+AVLTree *derecho (AVLTree * t);
+/* devuelve el subárbol derecho de t. */
+
+int raiz (AVLTree * t);
+/* devuelve el valor de la raíz del árbol t. Precondición:
+   !es_vacio(t) */
+
+int altura (AVLTree * t);
+/* devuelve la altura del nodo t en el árbol */
+
+
+
+
+/*  Destructures */
+
+void destruir (AVLTree * t, void (*free_dato) (int));
+/* libera la memoria ocupada por los nodos del árbol. Si los
+   datos almacenados en cada nodo están almacenados dinámicamente
+   y se los quiere liberar también, debe pasarse como segundo
+   parámetro una función de tipo void func(int t) que libere
+   la memoria de objetos int. Si los datos no están
+   almacenados dinámicamente o simplemente no se los quiere
+   destruir (liberar de memoria), pásese como segundo parámetro
+   NULL. Nota: Función Recursiva! */</PRE
+><DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>Como se ha podido apreciar en el segmento de código
+      anterior, se ha tratado de usar, en lo posible, el lenguaje
+      español tanto para los comentarios como para los
+      identificadores de variables y funciones. Sin embargo, esto
+      se hace sólo con motivo de ser coherentes con el documento
+      y el autor recomienda a los lectores programadores que en
+      sus programas utilicen el lenguaje inglés para nombrar los
+      identificadores. </P
+></BLOCKQUOTE
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ALTURA_SEC"
+>Consideraciones sobre la altura de los nodos</A
+></H1
+><P
+>Como vimos en la definición del tipo abstracto para
+    nodos de árboles AVL, se necesitará tener acceso a la altura
+    cada nodo del árbol en tiempo constante. Dado que una función
+    para hallar la altura de un nodo dado en un árbol tendrá un
+    tiempo de ejecución de O(log(n)) peor caso, no nos queda otra
+    alternativa que almacenar una variable altura en cada nodo e
+    irla actualizando en las inserciones y eliminaciones que se
+    efectúen sobre el árbol. </P
+><P
+>Como el lector ya debería saber, una función para
+    calcular la altura de un nodo puede escribirse recursivamente
+    como: </P
+><PRE
+CLASS="PROGRAMLISTING"
+>int altura(AVLTree *t)
+{
+  if(es_vacio(t)) 
+    return -1;
+  else 
+    return max(altura(izquierdo(t)), altura(derecho(t)));
+}</PRE
+><P
+>Queremos que la altura de un árbol que consta de sólo
+    un nodo sea 0. Entonces debemos definir la altura de un árbol
+    vacío como -1.</P
+><P
+>Sin embargo, no podemos darnos el lujo de tener una
+    función cuyo tiempo de ejecución siempre es O(n) ya que, como
+    dijimos, necesitamos la altura de un nodo en tiempo
+    constante. Para ello, redefiniremos la función de la
+    siguiente manera, aprovechando el campo altura que ahora
+    tiene cada nodo del árbol. </P
+><PRE
+CLASS="PROGRAMLISTING"
+>int altura (AVLTree * t)
+{
+  if(es_vacio(t))
+    return -1;
+  else 
+    return t-&#62;altura;
+}</PRE
+><DIV
+CLASS="IMPORTANT"
+><BLOCKQUOTE
+CLASS="IMPORTANT"
+><P
+><B
+>Important: </B
+>Debemos tener mucho cuidado en actualizar el campo
+      altura de cada nodo siempre que modifiquemos de alguna
+      manera el árbol AVL. </P
+></BLOCKQUOTE
+></DIV
+><P
+>Así, es importante tener una función que nos permita
+    actualizar la altura de un nodo cualquiera del árbol y cuyo
+    tiempo de ejecución sea O(1) en el peor de los casos. A
+    continuación se lista una tal función:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>void
+actualizar_altura (AVLTree * t)
+{
+  if(!es_vacio(t))
+    t-&#62;altura = max (altura ((t)-&#62;izq), altura ((t)-&#62;der)) + 1;
+}</PRE
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ROTACION_SIMPLE"
+>Rotaciones simples</A
+></H1
+><P
+>Veremos a continuación una operación sencilla sobre un
+    árbol binario de búsqueda que conserva el órden en sus nodos
+    y que nos ayudará a restaurar la propiedad de equilibrio de
+    un árbol AVL al efectuar operaciones sobre el mismo que
+    puedan perturbarla. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE03"
+></A
+><P
+><B
+>Figure 3. Árbol antes de la rotación simple</B
+></P
+><P
+><IMG
+SRC="tree03.png"
+ALIGN="CENTER"></P
+></DIV
+><P
+>Miremos por un momento el árbol de <A
+HREF="#TREE03"
+>Figure 3</A
+>. Dado que este es un árbol de búsqueda se
+    debe cumplir <TT
+CLASS="VARNAME"
+>x</TT
+> &lt; <TT
+CLASS="VARNAME"
+>y</TT
+> y
+    además todos los nodos del subárbol <TT
+CLASS="VARNAME"
+>A</TT
+>
+    deben ser menores que <TT
+CLASS="VARNAME"
+>x</TT
+> y
+    <TT
+CLASS="VARNAME"
+>y</TT
+>; todos los nodos del subárbol
+    <TT
+CLASS="VARNAME"
+>B</TT
+> deben ser mayores que
+    <TT
+CLASS="VARNAME"
+>x</TT
+> pero menores que <TT
+CLASS="VARNAME"
+>y</TT
+>; y
+    todos los nodos del subárbol <TT
+CLASS="VARNAME"
+>C</TT
+> deben ser
+    mayores que <TT
+CLASS="VARNAME"
+>y</TT
+> y por lo tanto que
+    <TT
+CLASS="VARNAME"
+>x</TT
+>. </P
+><P
+>En <A
+HREF="#TREE04"
+>Figure 4</A
+> se ha modificado
+    sencillamante el árbol. Como puede verificarse fácilmente por
+    las desigualdades descriptas en el párrafo anterior, el nuevo
+    árbol sigue manteniendo el órden entre sus nodos, es decir,
+    sigue siendo un árbol binario de búsqueda. A esta
+    transformación se le denomina rotación simple (o
+    sencilla). </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE04"
+></A
+><P
+><B
+>Figure 4. Árbol luego de la rotación simple</B
+></P
+><P
+><IMG
+SRC="tree04.png"
+ALIGN="CENTER"></P
+></DIV
+><P
+>Veamos un ejemplo concreto. Deseamos insertar el número
+      3 en el árbol de enteros de <A
+HREF="#TREE05"
+>Figure 5</A
+>. La
+      inserción se muestra punteada en <A
+HREF="#TREE06"
+>Figure 6</A
+>. Sin embargo, como puede verse, la
+      inserción a provocado la pérdida de la propiedad de
+      equilibrio del árbol ya que dicha propiedad no se cumple en
+      el nodo marcado con rojo. ¿Qué hacemos para recomponer
+      dicha pripiedad? Simplemente realizamos una rotación
+      simple. En este caso se dice que la rotación es
+      <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>izquierda</I
+></SPAN
+> ya que la "pérdida de
+      equilibrio se produce hacia la izquierda. En <A
+HREF="#TREE07"
+>Figure 7</A
+> puede verse el árbol luego de la
+      rotación: la propiedad de equilibrio ha sido
+      reestablecida. Como mostramos atrás, la rotación conserva
+      el orden entre los nodos, por lo que podemos afirmar que
+      este último árbol si es AVL. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE05"
+></A
+><P
+><B
+>Figure 5. Árbol AVL</B
+></P
+><P
+><IMG
+SRC="tree05.png"
+ALIGN="CENTER"></P
+></DIV
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE06"
+></A
+><P
+><B
+>Figure 6. Árbol luego de la inserción: pérdida de la propiedad
+      de equilibrio marcada con rojo. </B
+></P
+><P
+><IMG
+SRC="tree06.png"
+ALIGN="CENTER"></P
+></DIV
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE07"
+></A
+><P
+><B
+>Figure 7. Reestablecimiento de la propiedad de equilibrio
+      mediante una rotación simple sobre el nodo de valor 5. </B
+></P
+><P
+><IMG
+SRC="tree07.png"
+ALIGN="CENTER"></P
+></DIV
+><P
+>Como podemos observar, el resultado luego de la rotación
+    es un árbol AVL: posee tanto el órden correcto de un árbol de
+    búsqueda entre sus nodos y la propiedad de equilibrio. En
+    este caso el "desequilibrio" en el árbol con raíz 5 era
+    enteramente hacia la izquierda y por lo tanto, como ya
+      dijimos, la rotación efectuada se denomina
+    <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>rotación simple izquierda</I
+></SPAN
+>. En el caso de
+    un "desequilibrio" hacia la derecha, la rotación es análoga y
+      se denomina <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>rotación simple
+        derecha</I
+></SPAN
+>. En <A
+HREF="#TREE08"
+>Figure 8</A
+> se ven dos
+    árboles: el primero tiene un "desequilibrio hacia la derecha"
+    marcado en rojo y el segundo es el resultado de aplicar una
+    rotación simple derecha. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE08"
+></A
+><P
+><B
+>Figure 8. Ejemplo de reestablecimiento de propiedad de
+      equilibrio gracias a una rotación simple derecha. </B
+></P
+><P
+><IMG
+SRC="tree08.png"
+ALIGN="CENTER"></P
+></DIV
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Ilustración de la operación rotación simple. </B
+>en <A
+HREF="#TREE10"
+>Figure 9</A
+> se ilustra la operación
+      rotación simple. Los arcos de colores son los que se
+      eliminan o agregan, según sea la rotación izquierda o
+      derecha. </P
+></DIV
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE10"
+></A
+><P
+><B
+>Figure 9. Rotación simple</B
+></P
+><P
+><IMG
+SRC="tree10.png"
+ALIGN="CENTER"></P
+></DIV
+><DIV
+CLASS="SECTION"
+><H2
+CLASS="SECTION"
+><A
+NAME="ROTAR_S_IMPL"
+>Implementación de la rotación simple:</A
+></H2
+><PRE
+CLASS="PROGRAMLISTING"
+>void rotar_s (AVLTree ** t, bool izq);                     <A
+NAME="ROTAR_S_DECL"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+>
+
+/* realiza una rotación simple del árbol t el cual se      <A
+NAME="ROTAR_S_COMMENT"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+>
+   pasa por referencia. La rotación será izquierda
+   sii. (izq==true) o será derecha
+   sii. (izq==false). 
+
+   Nota: las alturas de t y sus subárboles serán actualizadas
+   dentro de esta función!
+
+   Precondición:
+   si (izq==true) ==&#62; !es_vacio(izquierdo(t)) 
+   si (izq==false) ==&#62; !es_vacio(derecho(t))
+*/
+
+
+
+void
+rotar_s (AVLTree ** t, bool izq)                           <A
+NAME="ROTAR_S_PARAMS"
+><IMG
+SRC="../images/callouts/3.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(3)"></A
+>                           <A
+NAME="ROTAR_S_PARAMS2"
+><IMG
+SRC="../images/callouts/4.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(4)"></A
+>
+{
+  AVLTree *t1;
+  if (izq)	/* rotación izquierda */
+    {
+      t1 = izquierdo (*t);
+      (*t)-&#62;izq = derecho (t1);
+      t1-&#62;der = *t;
+    }
+  else		/* rotación derecha */
+    {
+      t1 = derecho (*t);
+      (*t)-&#62;der = izquierdo (t1);
+      t1-&#62;izq = *t;
+    }
+
+  /* actualizamos las alturas de ambos nodos modificados */
+  actualizar_altura (*t);
+  actualizar_altura (t1);
+
+  /* asignamos nueva raíz */
+  *t = t1;
+}</PRE
+><DIV
+CLASS="CALLOUTLIST"
+><DL
+COMPACT="COMPACT"
+><DT
+><A
+HREF="#ROTAR_S_DECL"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+></DT
+><DD
+>Declaración de la función rotar_s(). Esta
+            declaración y el siguiente comentario deberían ir en
+              el archivo de cabecera, interfaz del tipo abstracto
+              <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>árbol AVL</I
+></SPAN
+> con el usuario. </DD
+><DT
+><A
+HREF="#ROTAR_S_COMMENT"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+></DT
+><DD
+>Un breve comentario que explica lo que hace la
+            función, los parámetros que acepta y las
+            precondiciones que éstos deben cumplir para que la
+            función se ejecute correctamente. </DD
+><DT
+><A
+HREF="#ROTAR_S_PARAMS"
+><IMG
+SRC="../images/callouts/3.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(3)"></A
+></DT
+><DD
+>Como el programador de C más experimentado
+            puede ver, el paso a la función es el paso por
+            referencia clásico en C. Lo que se pasa no es un
+            puntero a la raiz del árbol sino la dirección de
+            dicho puntero. De esta manera, dentro de la función
+            podremos cambiar la misma raiz si es necesario (lo
+            que justamente hacemos en las rotaciones). </DD
+><DT
+><A
+HREF="#ROTAR_S_PARAMS2"
+><IMG
+SRC="../images/callouts/4.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(4)"></A
+></DT
+><DD
+>También se acepta como segundo parámetro un
+            valor boleano que determina si la rotación simple a
+            efectuar sobre el árbol es izquierda o
+            derecha. </DD
+></DL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="ROTACION_DOBLE"
+>Rotaciones dobles</A
+></H1
+><P
+>Hemos visto cómo restaurar la propiedad de equilibrio
+    cuando se presentan desequilibrios "hacia la izquierda" o
+    "hacia la derecha" luego de realizar inserciones en un árbol
+    AVL. Sin embargo y como veremos, pueden ocurrir
+    "desequilibrios en zig-zag", es decir desequilibios que no
+    son ni a la derecha ni a la izquierda como es el caso de los
+      árboles de <A
+HREF="#TREE09"
+>Figure 10</A
+>.  </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE09"
+></A
+><P
+><B
+>Figure 10. Ejemplos de "desequilibrios" en los cuales no
+      funciona la rotación simple. </B
+></P
+><P
+><IMG
+SRC="tree09.png"
+ALIGN="CENTER"></P
+></DIV
+><P
+>En estos casos se aplica otro tipo de rotación
+      denominado <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>rotación doble</I
+></SPAN
+> la cual,
+      análogamente a la rotación simple, puede ser izquierda o
+      derecha según el caso. </P
+><P
+>En realidad, la rotación doble constará de dos
+    rotaciones simples. El caso general de la
+    rotación doble izquierda en un árbol AVL se puede observar en
+      <A
+HREF="#TREE11"
+>Figure 11</A
+>. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE11"
+></A
+><P
+><B
+>Figure 11. Rotación doble izquierda</B
+></P
+><P
+><IMG
+SRC="tree11.png"></P
+></DIV
+><P
+>La rotación doble derecha es el proceso inverso a la
+    rotación doble izquierda. </P
+><P
+>Dado que, como vimos, una rotación doble es en realidad
+    dos rotaciones simples, podemos implementar la función para
+    la rotación doble tan sólo utilizando
+    <TT
+CLASS="FUNCTION"
+>rotar_s</TT
+> vista en <A
+HREF="#ROTAR_S_IMPL"
+>the Section called <I
+>Implementación de la rotación simple:</I
+></A
+> lo cual se hace a
+    continuación:</P
+><PRE
+CLASS="PROGRAMLISTING"
+>void rotar_d (AVLTree ** t, bool izq);                     <A
+NAME="ROTAR_D_DECL"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+>
+/* realiza una rotación doble. Funciona análogamente a
+   rotar_s(). */
+
+
+void
+rotar_d (AVLTree ** t, bool izq)                           <A
+NAME="ROTAR_D_PARAMS"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+>
+{
+  if (izq)	       	/* rotación izquierda */
+    {
+      rotar_s (&#38;(*t)-&#62;izq, false);
+      rotar_s (t, true);
+    }
+  else		       	/* rotación derecha */
+    {
+      rotar_s (&#38;(*t)-&#62;der, true);
+      rotar_s (t, false);
+    }
+
+  /* la actualización de las alturas se realiza en las rotaciones
+     simples */
+}</PRE
+><DIV
+CLASS="CALLOUTLIST"
+><DL
+COMPACT="COMPACT"
+><DT
+><A
+HREF="#ROTAR_D_DECL"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+></DT
+><DD
+>Declaración de la función
+          <TT
+CLASS="FUNCTION"
+>rotar_d()</TT
+>; debería ir en un
+          archivo de cabecera. </DD
+><DT
+><A
+HREF="#ROTAR_D_PARAMS"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+></DT
+><DD
+>Los parámetros de <TT
+CLASS="FUNCTION"
+>rotar_d()</TT
+>
+            son análogos a los de <TT
+CLASS="FUNCTION"
+>rotar_s()</TT
+>
+            vistos en <A
+HREF="#ROTAR_S_IMPL"
+>the Section called <I
+>Implementación de la rotación simple:</I
+></A
+>. </DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="BALANCE_SEC"
+>Balance del árbol</A
+></H1
+><P
+>Como se mostró anteriormente, cda vez que se modifique
+    el árbol (i.e. agreguen o eliminen elementos) corremos el
+    riesgo de que pierda su propiedad de equilibrio en alguno de
+    sus nodos, la cual debe conservarse si queremos obtener
+    tiempos de ejecución de orden O(log(n)) en el peor de los
+    casos. </P
+><P
+>La idea general que se utiliza en esta implementación
+    de árboles AVL para implementar los algoritmos de inserción y
+      de eliminación de nodos sobre un AVL es la
+    siguiente:<P
+></P
+><UL
+><LI
+><P
+>Efectuar los algoritmos de igual forma que en los
+          árboles binarios de búsqueda pero</P
+></LI
+><LI
+><P
+>en cada recursión ir actualizando las alturas y
+          rebalanceando el árbol en caso de que sea necesario.
+          </P
+></LI
+></UL
+>
+    </P
+><P
+>En <A
+HREF="#ALTURA_SEC"
+>the Section called <I
+>Consideraciones sobre la altura de los nodos</I
+></A
+> se implementó una
+    función de tiempo de ejecución O(log(n)), peor caso, para
+    actualizar la altura de un nodo. Así, lo que nos falta es una
+    función que detecte un "desequilibrio" en un nodo dado del
+    árbol y por medio de un número finito de rotaciones lo
+    equilibre. </P
+><DIV
+CLASS="IMPORTANT"
+><BLOCKQUOTE
+CLASS="IMPORTANT"
+><P
+><B
+>Important: </B
+>No se demostrará aquí, pero cabe señalar la
+      existencia de un teorema que asegura que el número máximo
+      de rotaciones para equilibrar un árbol AVL luego de una
+      inserción es 2 y luego de una eliminación es log(n) dónde n
+      es el número de nodos. </P
+></BLOCKQUOTE
+></DIV
+><P
+>En las secciones anteriores hemos ya descripto a
+    grandes razgos cuál rotación usar en cada caso de
+    desequilibrio. Esperamos que en el código siguiente el lector
+    pueda formalizar tales ideas. </P
+><PRE
+CLASS="PROGRAMLISTING"
+>void balancear (AVLTree ** t);                             <A
+NAME="BALANCEAR_DECL"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+>
+/* Detecta y corrige por medio de un número finito de rotaciones
+   un desequilibrio en el árbol *t. Dicho desequilibrio no debe
+   tener una diferencia de alturas de más de 2. */
+
+
+void
+balancear (AVLTree ** t)
+{
+  if(!es_vacio(*t))
+  {
+    if (altura (izquierdo (*t)) - altura (derecho (*t)) == 2)<A
+NAME="BALANCEAR_ALTURA"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+>
+      {		      	/* desequilibrio hacia la izquierda! */
+        if (altura ((*t)-&#62;izq-&#62;izq) &#62;= altura ((*t)-&#62;izq-&#62;der))<A
+NAME="BALANCEAR_DESEQ"
+><IMG
+SRC="../images/callouts/3.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(3)"></A
+>
+          /* desequilibrio simple hacia la izquierda */
+          rotar_s (t, true);
+        else
+          /* desequilibrio doble hacia la izquierda */
+          rotar_d (t, true);
+      }
+    
+    else if (altura (derecho (*t)) - altura (izquierdo (*t)) == 2)<A
+NAME="BALANCEAR_DERECHA"
+><IMG
+SRC="../images/callouts/4.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(4)"></A
+>
+      {		  	/* desequilibrio hacia la derecha! */
+        if (altura ((*t)-&#62;der-&#62;der) &#62;= altura ((*t)-&#62;der-&#62;izq))
+          /* desequilibrio simple hacia la izquierda */
+          rotar_s (t, false);
+        else
+          /* desequilibrio doble hacia la izquierda */
+          rotar_d (t, false);
+      }
+  }
+}</PRE
+><DIV
+CLASS="CALLOUTLIST"
+><DL
+COMPACT="COMPACT"
+><DT
+><A
+HREF="#BALANCEAR_DECL"
+><IMG
+SRC="../images/callouts/1.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(1)"></A
+></DT
+><DD
+>Declaración de la función
+          <TT
+CLASS="FUNCTION"
+>balancear()</TT
+>. Esta declaración
+          junto con el comentario que le sigue deberían estar en
+          un archivo de cabecera usado para la interfaz del tipo
+          abstracto de dato árbol avl con el usuario-programador.</DD
+><DT
+><A
+HREF="#BALANCEAR_ALTURA"
+><IMG
+SRC="../images/callouts/2.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(2)"></A
+></DT
+><DD
+>Como dice en el comentario de la función, sólo se
+          contemplarán aquellos desequilibrios cuya diferencia
+          entre alturas es hasta 2. </DD
+><DT
+><A
+HREF="#BALANCEAR_DESEQ"
+><IMG
+SRC="../images/callouts/3.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(3)"></A
+></DT
+><DD
+>Sabiendo que en el nodo al que apunta *t hay un
+          desequilibrio hacia la izquierda (de diferencia de
+          alturas 2), debemos averiguar qué clase de rotación
+            aplicar. En <A
+HREF="#TREE12"
+>Figure 12</A
+> se explica
+          gráficamente a dónde apuntan las variables de la
+          función en un árbol genérico. </DD
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE12"
+></A
+><P
+><B
+>Figure 12. Decidiendo qué clase de rotación aplicar para
+            solucionar desequilibrio en el nodo.</B
+></P
+><P
+><IMG
+SRC="tree12.png"></P
+></DIV
+><DD
+><P
+>Como puede verse en el código, nos decidimos por
+            una rotación simple izquierda si el subárbol más pesado de
+            <TT
+CLASS="VARNAME"
+>(*t)-&#62;izq</TT
+> es el izquierdo o por
+            una rotación doble izquierda si el subárbol más pesado de
+            <TT
+CLASS="VARNAME"
+>(*t)-&#62;izq</TT
+> es el derecho. </P
+></DD
+><DT
+><A
+HREF="#BALANCEAR_DERECHA"
+><IMG
+SRC="../images/callouts/4.gif"
+HSPACE="0"
+VSPACE="0"
+BORDER="0"
+ALT="(4)"></A
+></DT
+><DD
+>Si detectamos un desequilibrio hacia la derecha,
+          la toma de deciciones son análogas a las de un
+          desequilibrio hacia la izquierda, las cuales ya
+          explicamos. </DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN229"
+>Inserción</A
+></H1
+><P
+>Como dijimos en <A
+HREF="#BALANCE_SEC"
+>the Section called <I
+>Balance del árbol</I
+></A
+>,
+    implementaremos la inserción de elementos en un árbol AVL de
+    forma análoga a cómo lo haríamos para árboles binarios de
+    búsqueda salvo que en cada recursión del algoritmo
+    verificaremos y corregiremos el equilibrio del árbol. También
+    es importante ir actualizando las alturas de cada nodo en
+    cada recursión dado que las rotaciones, inserciónes y
+    eliminaciones pueden modificarlas. </P
+><P
+>Dado que ya vimos funciones tanto para balancear un
+    árbol y para actualizar la altura de un nodo (ambas de tiempo
+    de ejecución constante), estamos listos para implementar el
+    algoritmo de inserción. Esperamos que sea intuitivo. </P
+><PRE
+CLASS="PROGRAMLISTING"
+>void insertar (AVLTree ** t, int x);
+/* inserta x en el árbol en un tiempo O(log(n)) peor caso. */
+
+
+void
+insertar (AVLTree ** t, int x)
+{
+  if (es_vacio (*t))
+    *t = hacer (x, vacio (), vacio ());	/* altura actualizada
+					   automáticamente */
+  else
+    {
+      if (x &#60; raiz (*t))
+	insertar (&#38;(*t)-&#62;izq, x);
+
+      else
+	insertar (&#38;(*t)-&#62;der, x);
+
+      balancear (t);
+      actualizar_altura (*t);
+    }
+}
+      </PRE
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN235"
+>Eliminación</A
+></H1
+><P
+>La estrategia para diseñar el algoritmo de eliminación
+    sobre árboles AVL es la misma que para la inserción: Se
+    utiliza el mismo algoritmo que sobre árboles binarios de
+    búsqueda, pero en cada recursión se detectan y corrijen
+    errores por medio de <TT
+CLASS="FUNCTION"
+>balancear()</TT
+> y se
+    actualiza la altura del nodo actual. </P
+><P
+>Recordamos un poco la idea del algoritmo de eliminación
+    sobre árboles binarios de búsqueda. Primero se recorre el
+    árbol para detectar el nodo a eliminar. Una vez hecho esto
+    hay tres casos a diferenciar por su complejidad: </P
+><P
+></P
+><UL
+><LI
+><P
+>Si dicho nodo es una hoja procedemos a eliminarlos
+        de inmediato, sin más.</P
+></LI
+><LI
+><P
+>Si dicho nodo tiene un sólo hijo, el nodo puede
+        eliminarse después de ajustar un apuntador del padre para
+          saltar el nodo. Esto se muestra en <A
+HREF="#TREE13"
+>Figure 13</A
+>. </P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="TREE13"
+></A
+><P
+><B
+>Figure 13. Eliminación de un nodo (7) con un sólo
+          hijo. </B
+></P
+><P
+><IMG
+SRC="tree13.png"></P
+></DIV
+></LI
+><LI
+><P
+>Si dicho nodo tiene dos hijos el caso es un poco
+        más complicado. Lo que se estila hacer (y que de hecho se
+          hace en el algoritmo gracias a la función auxiliar
+          <TT
+CLASS="FUNCTION"
+>eliminar_min()</TT
+>) reemplazar el nodo
+        actual por el menor nodo de su subárbol derecho (y luego
+        eliminar éste). </P
+></LI
+></UL
+><PRE
+CLASS="PROGRAMLISTING"
+>void eliminar (AVLTree ** t, int x);
+/* elimina x del árbol en un tiempo O(log(n)) peor caso. 
+   Precondición: existe un nodo con valor x en el árbol
+   t. */
+
+
+int eliminar_min (AVLTree ** t);
+/* Función auxiliar a eliminar(). Elimina el menor nodo del árbol
+   *t devolviendo su contenido (el cual no se libera de
+   memoria). Se actualizan las alturas de los nodos. 
+   Precondición: !es_vacio(*t) */
+
+
+
+void
+eliminar (AVLTree ** t, int x)
+{
+  AVLTree *aux;
+
+  if (x &#60; raiz (*t))
+    eliminar (&#38;(*t)-&#62;izq, x);
+
+  else if (x &#62; raiz (*t))
+    eliminar (&#38;(*t)-&#62;der, x);
+
+  else		    /* coincidencia! */
+    {
+      if (es_vacio (izquierdo (*t)) &#38;&#38; es_vacio (derecho (*t)))	
+	{/* es una hoja */
+	  free (*t);
+	  (*t) = vacio();
+	}
+      else if (es_vacio (izquierdo (*t)))	
+	{/* subárbol izquierdo vacio */
+	  aux = (*t);
+	  (*t) = (*t)-&#62;der;
+	  free (aux);
+	}
+      else if (es_vacio (derecho (*t)))
+	{/* subárbol derecho vacio */
+	  aux = (*t);
+	  (*t) = (*t)-&#62;izq;
+	  free (aux);
+	}
+      else     	/* caso más complicado */
+	{
+	  (*t)-&#62;dato = eliminar_min (&#38;(*t)-&#62;der);
+	}
+    }
+
+  balancear (t);
+  actualizar_altura (*t);
+}
+
+
+
+
+
+int
+eliminar_min (AVLTree ** t)
+{
+  if (es_vacio (*t))
+    {
+      fprintf (stderr,
+	       "No se respeta precondición de eliminar_min()\n");
+      exit(0);
+    }
+  else
+    {
+      if (!es_vacio (izquierdo (*t)))
+	{
+	  int x = eliminar_min (&#38;(*t)-&#62;izq);
+	  balancear (t);
+	  actualizar_altura (*t);
+	  return x;
+	}
+      else
+	{
+	  AVLTree *aux = (*t);
+	  int x = raiz (aux);
+	  *t = derecho (*t);
+	  free (aux);
+	  balancear (t);
+	  actualizar_altura (*t);
+	  return x;
+	}
+    }
+}
+
+    </PRE
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN253"
+>Conclusión</A
+></H1
+><P
+>No realizada aún.</P
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN256"
+>Performance</A
+></H1
+><P
+>No realizada aún. Hacer: comparaciones de tiempos con otros TADs
+    similares (ABB, Heaps, linkedlists, etc). </P
+></DIV
+><A
+NAME="AEN259"
+></A
+><HR><H1
+><A
+NAME="AEN259"
+>Bibliography</A
+></H1
+><DIV
+CLASS="BIBLIOENTRY"
+><A
+NAME="AEN260"
+></A
+><P
+><I
+>Estructuras de datos y algoritmos, sección 4.4,
+      pág. 114</I
+>, <SPAN
+CLASS="AUTHOR"
+>Mark Allen Weiss</SPAN
+>.</P
+><DIV
+CLASS="BIBLIOENTRYBLOCK"
+STYLE="margin-left=0.5in"
+></DIV
+></DIV
+><DIV
+CLASS="BIBLIOENTRY"
+><A
+NAME="AEN264"
+></A
+><P
+><I
+>Data Structure Techniques, Standish, 1980, section
+      3.7.3</I
+>.</P
+><DIV
+CLASS="BIBLIOENTRYBLOCK"
+STYLE="margin-left=0.5in"
+></DIV
+></DIV
+><DIV
+CLASS="BIBLIOENTRY"
+><A
+NAME="AEN266"
+></A
+><P
+><I
+> Handbook of Algorithms and Data Structures, Gonnet,
+   1984, section 3.4.1</I
+>.</P
+><DIV
+CLASS="BIBLIOENTRYBLOCK"
+STYLE="margin-left=0.5in"
+></DIV
+></DIV
+><DIV
+CLASS="APPENDIX"
+><H1
+CLASS="APPENDIX"
+><A
+NAME="AEN268"
+>A. GNU Free Documentation License</A
+></H1
+><PRE
+CLASS="PROGRAMLISTING"
+>      GNU Free Documentation License      Version 1.2, November 2002
+    </PRE
+><P
+>Copyright (C) 2000,2001,2002 Free Software Foundation,
+      Inc.</P
+><P
+>59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+      Everyone is permitted to copy and distribute verbatim copies of
+      this license document, but changing it is not allowed.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>0. PREAMBLE</I
+></SPAN
+></P
+><P
+>The purpose of this License is to make a manual, textbook, or
+      other functional and useful document "free" in the sense of
+      freedom: to assure everyone the effective freedom to copy and
+      redistribute it, with or without modifying it, either commercially
+      or noncommercially. Secondarily, this License preserves for the
+      author and publisher a way to get credit for their work, while not
+      being considered responsible for modifications made by
+      others.</P
+><P
+>This License is a kind of "copyleft", which means that
+      derivative works of the document must themselves be free in the
+      same sense. It complements the GNU General Public License, which is
+      a copyleft license designed for free software.</P
+><P
+>We have designed this License in order to use it for manuals
+      for free software, because free software needs free documentation:
+      a free program should come with manuals providing the same freedoms
+      that the software does. But this License is not limited to software
+      manuals; it can be used for any textual work, regardless of subject
+      matter or whether it is published as a printed book. We recommend
+      this License principally for works whose purpose is instruction or
+      reference.</P
+><P
+>APPLICABILITY AND DEFINITIONS</P
+><P
+>This License applies to any manual or other work, in any
+      medium, that contains a notice placed by the copyright holder
+      saying it can be distributed under the terms of this License. Such
+      a notice grants a world-wide, royalty-free license, unlimited in
+      duration, to use that work under the conditions stated herein. The
+      "Document", below, refers to any such manual or work. Any member of
+      the public is a licensee, and is addressed as "you". You accept the
+      license if you copy, modify or distribute the work in a way
+      requiring permission under copyright law.</P
+><P
+>A "Modified Version" of the Document means any work
+      containing the Document or a portion of it, either copied verbatim,
+      or with modifications and/or translated into another
+      language.</P
+><P
+>A "Secondary Section" is a named appendix or a front-matter
+      section of the Document that deals exclusively with the
+      relationship of the publishers or authors of the Document to the
+      Document's overall subject (or to related matters) and contains
+      nothing that could fall directly within that overall subject.
+      (Thus, if the Document is in part a textbook of mathematics, a
+      Secondary Section may not explain any mathematics.) The
+      relationship could be a matter of historical connection with the
+      subject or with related matters, or of legal, commercial,
+      philosophical, ethical or political position regarding them.</P
+><P
+>The "Invariant Sections" are certain Secondary Sections whose
+      titles are designated, as being those of Invariant Sections, in the
+      notice that says that the Document is released under this License.
+      If a section does not fit the above definition of Secondary then it
+      is not allowed to be designated as Invariant. The Document may
+      contain zero Invariant Sections. If the Document does not identify
+      any Invariant Sections then there are none.</P
+><P
+>The "Cover Texts" are certain short passages of text that are
+      listed, as Front-Cover Texts or Back-Cover Texts, in the notice
+      that says that the Document is released under this License. A
+      Front-Cover Text may be at most 5 words, and a Back-Cover Text may
+      be at most 25 words.</P
+><P
+>A "Transparent" copy of the Document means a machine-readable
+      copy, represented in a format whose specification is available to
+      the general public, that is suitable for revising the document
+      straightforwardly with generic text editors or (for images composed
+      of pixels) generic paint programs or (for drawings) some widely
+      available drawing editor, and that is suitable for input to text
+      formatters or for automatic translation to a variety of formats
+      suitable for input to text formatters. A copy made in an otherwise
+      Transparent file format whose markup, or absence of markup, has
+      been arranged to thwart or discourage subsequent modification by
+      readers is not Transparent. An image format is not Transparent if
+      used for any substantial amount of text. A copy that is not
+      "Transparent" is called "Opaque".</P
+><P
+>Examples of suitable formats for Transparent copies include
+      plain ASCII without markup, Texinfo input format, LaTeX input
+      format, SGML or XML using a publicly available DTD, and
+      standard-conforming simple HTML, PostScript or PDF designed for
+      human modification. Examples of transparent image formats include
+      PNG, XCF and JPG. Opaque formats include proprietary formats that
+      can be read and edited only by proprietary word processors, SGML or
+      XML for which the DTD and/or processing tools are not generally
+      available, and the machine-generated HTML, PostScript or PDF
+      produced by some word processors for output purposes only.</P
+><P
+>The "Title Page" means, for a printed book, the title page
+      itself, plus such following pages as are needed to hold, legibly,
+      the material this License requires to appear in the title page. For
+      works in formats which do not have any title page as such, "Title
+      Page" means the text near the most prominent appearance of the
+      work's title, preceding the beginning of the body of the
+      text.</P
+><P
+>A section "Entitled XYZ" means a named subunit of the
+      Document whose title either is precisely XYZ or contains XYZ in
+      parentheses following text that translates XYZ in another language.
+      (Here XYZ stands for a specific section name mentioned below, such
+      as "Acknowledgements", "Dedications", "Endorsements", or
+      "History".) To "Preserve the Title" of such a section when you
+      modify the Document means that it remains a section "Entitled XYZ"
+      according to this definition.</P
+><P
+>The Document may include Warranty Disclaimers next to the
+      notice which states that this License applies to the Document.
+      These Warranty Disclaimers are considered to be included by
+      reference in this License, but only as regards disclaiming
+      warranties: any other implication that these Warranty Disclaimers
+      may have is void and has no effect on the meaning of this
+      License.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>2. VERBATIM COPYING</I
+></SPAN
+></P
+><P
+>You may copy and distribute the Document in any medium,
+      either commercially or noncommercially, provided that this License,
+      the copyright notices, and the license notice saying this License
+      applies to the Document are reproduced in all copies, and that you
+      add no other conditions whatsoever to those of this License. You
+      may not use technical measures to obstruct or control the reading
+      or further copying of the copies you make or distribute. However,
+      you may accept compensation in exchange for copies. If you
+      distribute a large enough number of copies you must also follow the
+      conditions in section 3.</P
+><P
+>You may also lend copies, under the same conditions stated
+      above, and you may publicly display copies.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>3. COPYING IN QUANTITY</I
+></SPAN
+></P
+><P
+>If you publish printed copies (or copies in media that
+      commonly have printed covers) of the Document, numbering more than
+      100, and the Document's license notice requires Cover Texts, you
+      must enclose the copies in covers that carry, clearly and legibly,
+      all these Cover Texts: Front-Cover Texts on the front cover, and
+      Back-Cover Texts on the back cover. Both covers must also clearly
+      and legibly identify you as the publisher of these copies. The
+      front cover must present the full title with all words of the title
+      equally prominent and visible. You may add other material on the
+      covers in addition. Copying with changes limited to the covers, as
+      long as they preserve the title of the Document and satisfy these
+      conditions, can be treated as verbatim copying in other
+      respects.</P
+><P
+>If the required texts for either cover are too voluminous to
+      fit legibly, you should put the first ones listed (as many as fit
+      reasonably) on the actual cover, and continue the rest onto
+      adjacent pages.</P
+><P
+>If you publish or distribute Opaque copies of the Document
+      numbering more than 100, you must either include a machine-readable
+      Transparent copy along with each Opaque copy, or state in or with
+      each Opaque copy a computer-network location from which the general
+      network-using public has access to download using public-standard
+      network protocols a complete Transparent copy of the Document, free
+      of added material. If you use the latter option, you must take
+      reasonably prudent steps, when you begin distribution of Opaque
+      copies in quantity, to ensure that this Transparent copy will
+      remain thus accessible at the stated location until at least one
+      year after the last time you distribute an Opaque copy (directly or
+      through your agents or retailers) of that edition to the
+      public.</P
+><P
+>It is requested, but not required, that you contact the
+      authors of the Document well before redistributing any large number
+      of copies, to give them a chance to provide you with an updated
+      version of the Document.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>4. MODIFICATIONS</I
+></SPAN
+></P
+><P
+>You may copy and distribute a Modified Version of the
+      Document under the conditions of sections 2 and 3 above, provided
+      that you release the Modified Version under precisely this License,
+      with the Modified Version filling the role of the Document, thus
+      licensing distribution and modification of the Modified Version to
+      whoever possesses a copy of it. In addition, you must do these
+      things in the Modified Version:</P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>Use in the Title Page (and on the covers, if any) a title
+          distinct from that of the Document, and from those of previous
+          versions (which should, if there were any, be listed in the History
+          section of the Document). You may use the same title as a previous
+          version if the original publisher of that version gives
+          permission.</P
+></LI
+><LI
+><P
+>List on the Title Page, as authors, one or more persons
+          or entities responsible for authorship of the modifications in the
+          Modified Version, together with at least five of the principal
+          authors of the Document (all of its principal authors, if it has
+          fewer than five), unless they release you from this
+          requirement.</P
+></LI
+><LI
+><P
+>State on the Title page the name of the publisher of the
+          Modified Version, as the publisher.</P
+></LI
+><LI
+><P
+>Preserve all the copyright notices of the
+          Document.</P
+></LI
+><LI
+><P
+>Add an appropriate copyright notice for your
+          modifications adjacent to the other copyright notices.</P
+></LI
+><LI
+><P
+>Include, immediately after the copyright notices, a
+          license notice giving the public permission to use the Modified
+          Version under the terms of this License, in the form shown in the
+          Addendum below.</P
+></LI
+><LI
+><P
+>Preserve in that license notice the full lists of
+          Invariant Sections and required Cover Texts given in the Document's
+          license notice.</P
+></LI
+><LI
+><P
+>Include an unaltered copy of this License.</P
+></LI
+><LI
+><P
+>Preserve the section Entitled "History", Preserve its
+          Title, and add to it an item stating at least the title, year, new
+          authors, and publisher of the Modified Version as given on the
+          Title Page. If there is no section Entitled "History" in the
+          Document, create one stating the title, year, authors, and
+          publisher of the Document as given on its Title Page, then add an
+          item describing the Modified Version as stated in the previous
+          sentence.</P
+></LI
+><LI
+><P
+>Preserve the network location, if any, given in the
+          Document for public access to a Transparent copy of the Document,
+          and likewise the network locations given in the Document for
+          previous versions it was based on. These may be placed in the
+          "History" section. You may omit a network location for a work that
+          was published at least four years before the Document itself, or if
+          the original publisher of the version it refers to gives
+          permission.</P
+></LI
+><LI
+><P
+>For any section Entitled "Acknowledgements" or
+          "Dedications", Preserve the Title of the section, and preserve in
+          the section all the substance and tone of each of the contributor
+          acknowledgements and/or dedications given therein.</P
+></LI
+><LI
+><P
+>Preserve all the Invariant Sections of the Document,
+          unaltered in their text and in their titles. Section numbers or the
+          equivalent are not considered part of the section
+          titles.</P
+></LI
+><LI
+><P
+>Delete any section Entitled "Endorsements". Such a
+          section may not be included in the Modified Version.</P
+></LI
+><LI
+><P
+>Do not retitle any existing section to be Entitled
+          "Endorsements" or to conflict in title with any Invariant
+          Section.</P
+></LI
+><LI
+><P
+>Preserve any Warranty Disclaimers.</P
+></LI
+></OL
+><P
+>If the Modified Version includes new front-matter sections or
+      appendices that qualify as Secondary Sections and contain no
+      material copied from the Document, you may at your option designate
+      some or all of these sections as invariant. To do this, add their
+      titles to the list of Invariant Sections in the Modified Version's
+      license notice. These titles must be distinct from any other
+      section titles.</P
+><P
+>You may add a section Entitled "Endorsements", provided it
+      contains nothing but endorsements of your Modified Version by
+      various parties--for example, statements of peer review or that the
+      text has been approved by an organization as the authoritative
+      definition of a standard.</P
+><P
+>You may add a passage of up to five words as a Front-Cover
+      Text, and a passage of up to 25 words as a Back-Cover Text, to the
+      end of the list of Cover Texts in the Modified Version. Only one
+      passage of Front-Cover Text and one of Back-Cover Text may be added
+      by (or through arrangements made by) any one entity. If the
+      Document already includes a cover text for the same cover,
+      previously added by you or by arrangement made by the same entity
+      you are acting on behalf of, you may not add another; but you may
+      replace the old one, on explicit permission from the previous
+      publisher that added the old one.</P
+><P
+>The author(s) and publisher(s) of the Document do not by this
+      License give permission to use their names for publicity for or to
+      assert or imply endorsement of any Modified Version.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>5. COMBINING DOCUMENTS</I
+></SPAN
+></P
+><P
+>You may combine the Document with other documents released
+      under this License, under the terms defined in section 4 above for
+      modified versions, provided that you include in the combination all
+      of the Invariant Sections of all of the original documents,
+      unmodified, and list them all as Invariant Sections of your
+      combined work in its license notice, and that you preserve all
+      their Warranty Disclaimers.</P
+><P
+>The combined work need only contain one copy of this License,
+      and multiple identical Invariant Sections may be replaced with a
+      single copy. If there are multiple Invariant Sections with the same
+      name but different contents, make the title of each such section
+      unique by adding at the end of it, in parentheses, the name of the
+      original author or publisher of that section if known, or else a
+      unique number. Make the same adjustment to the section titles in
+      the list of Invariant Sections in the license notice of the
+      combined work.</P
+><P
+>In the combination, you must combine any sections Entitled
+      "History" in the various original documents, forming one section
+      Entitled "History"; likewise combine any sections Entitled
+      "Acknowledgements", and any sections Entitled "Dedications". You
+      must delete all sections Entitled "Endorsements".</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>6. COLLECTIONS OF DOCUMENTS</I
+></SPAN
+></P
+><P
+>You may make a collection consisting of the Document and
+      other documents released under this License, and replace the
+      individual copies of this License in the various documents with a
+      single copy that is included in the collection, provided that you
+      follow the rules of this License for verbatim copying of each of
+      the documents in all other respects.</P
+><P
+>You may extract a single document from such a collection, and
+      distribute it individually under this License, provided you insert
+      a copy of this License into the extracted document, and follow this
+      License in all other respects regarding verbatim copying of that
+      document.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>7. AGGREGATION WITH INDEPENDENT
+        WORKS</I
+></SPAN
+></P
+><P
+>A compilation of the Document or its derivatives with other
+      separate and independent documents or works, in or on a volume of a
+      storage or distribution medium, is called an "aggregate" if the
+      copyright resulting from the compilation is not used to limit the
+      legal rights of the compilation's users beyond what the individual
+      works permit. When the Document is included in an aggregate, this
+      License does not apply to the other works in the aggregate which
+      are not themselves derivative works of the Document.</P
+><P
+>If the Cover Text requirement of section 3 is applicable to
+      these copies of the Document, then if the Document is less than one
+      half of the entire aggregate, the Document's Cover Texts may be
+      placed on covers that bracket the Document within the aggregate, or
+      the electronic equivalent of covers if the Document is in
+      electronic form. Otherwise they must appear on printed covers that
+      bracket the whole aggregate.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>8. TRANSLATION</I
+></SPAN
+></P
+><P
+>Translation is considered a kind of modification, so you may
+      distribute translations of the Document under the terms of section
+      4. Replacing Invariant Sections with translations requires special
+      permission from their copyright holders, but you may include
+      translations of some or all Invariant Sections in addition to the
+      original versions of these Invariant Sections. You may include a
+      translation of this License, and all the license notices in the
+      Document, and any Warranty Disclaimers, provided that you also
+      include the original English version of this License and the
+      original versions of those notices and disclaimers. In case of a
+      disagreement between the translation and the original version of
+      this License or a notice or disclaimer, the original version will
+      prevail.</P
+><P
+>If a section in the Document is Entitled "Acknowledgements",
+      "Dedications", or "History", the requirement (section 4) to
+      Preserve its Title (section 1) will typically require changing the
+      actual title.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>9. TERMINATION</I
+></SPAN
+></P
+><P
+>You may not copy, modify, sublicense, or distribute the
+      Document except as expressly provided for under this License. Any
+      other attempt to copy, modify, sublicense or distribute the
+      Document is void, and will automatically terminate your rights
+      under this License. However, parties who have received copies, or
+      rights, from you under this License will not have their licenses
+      terminated so long as such parties remain in full
+      compliance.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>10. FUTURE REVISIONS OF THIS
+        LICENSE</I
+></SPAN
+></P
+><P
+>The Free Software Foundation may publish new, revised
+      versions of the GNU Free Documentation License from time to time.
+      Such new versions will be similar in spirit to the present version,
+      but may differ in detail to address new problems or concerns. See
+      http://www.gnu.org/copyleft/.</P
+><P
+>Each version of the License is given a distinguishing version
+      number. If the Document specifies that a particular numbered
+      version of this License "or any later version" applies to it, you
+      have the option of following the terms and conditions either of
+      that specified version or of any later version that has been
+      published (not as a draft) by the Free Software Foundation. If the
+      Document does not specify a version number of this License, you may
+      choose any version ever published (not as a draft) by the Free
+      Software Foundation.</P
+><P
+>ADDENDUM: How to use this License for your documents</P
+><P
+>To use this License in a document you have written, include a
+      copy of the License in the document and put the following copyright
+      and license notices just after the title page:</P
+><P
+>Copyright (c) YEAR YOUR NAME. Permission is granted to copy,
+      distribute and/or modify this document under the terms of the GNU
+      Free Documentation License, Version 1.2 or any later version
+      published by the Free Software Foundation; with no Invariant
+      Sections, no Front-Cover Texts, and no Back-Cover Texts. A copy of
+      the license is included in the section entitled "GNU Free
+      Documentation License".</P
+><P
+>If you have Invariant Sections, Front-Cover Texts and
+      Back-Cover Texts, replace the "with...Texts." line with
+      this:</P
+><P
+>with the Invariant Sections being LIST THEIR TITLES, with the
+      Front-Cover Texts being LIST, and with the Back-Cover Texts being
+      LIST.</P
+><P
+>If you have Invariant Sections without Cover Texts, or some
+      other combination of the three, merge those two alternatives to
+      suit the situation.</P
+><P
+>If your document contains nontrivial examples of program
+      code, we recommend releasing these examples in parallel under your
+      choice of free software license, such as the GNU General Public
+      License, to permit their use in free software.</P
+></DIV
+></DIV
+></BODY
+></HTML
+>

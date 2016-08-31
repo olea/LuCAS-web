@@ -1,0 +1,596 @@
+<HTML
+><HEAD
+><TITLE
+>Protocolos UUCP de bajo nivel</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Administración deTaylor UUCP"
+HREF="x-087-2-uucp.html"><LINK
+REL="PREVIOUS"
+TITLE="Configuración de su sistema para recibir llamadas"
+HREF="x-087-2-uucp.dialin.html"><LINK
+REL="NEXT"
+TITLE="Resolución de problemas"
+HREF="x-087-2-uucp.misc.faq.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-uucp.dialin.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 16. Administración deTaylor UUCP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-uucp.misc.faq.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-UUCP.PROTOCOLS">16.5. Protocolos UUCP de bajo nivel</H1
+><P
+>&#13;Para negociar el control de la sesión y las transferencias de ficheros con
+el sistema remoto, <B
+CLASS="COMMAND"
+>uucico</B
+> usa un grupo de mensajes estándar.
+Esto es lo que se llama normalmente <B
+CLASS="COMMAND"
+>protocolo de alto nivel</B
+>.
+Durante la fase de inicialización y la fase de desconexión éstos se envían
+simplemente como cadenas de caracteres.  Sin embargo, durante la fase de 
+transferencia, se usa también un protocolo de bajo nivel, que resulta
+transparente para los niveles superiores. De esta manera es posible
+comprobar errores cuando se usan líneas poco fiables, por ejemplo.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN13885">16.5.1. Descripción del protocolo</H2
+><P
+>&#13;Dado que UUCP se usa sobre diferentes tipos de conexiones, como líneas
+serie, TCP, o incluso X.25, es preciso usar protocolos de bajo nivel
+específicos.  Además, varias implementaciones de UUCP han introducido
+diferentes protocolos para hacer lo mismo.</P
+><P
+>Los protocolos se pueden dividir en dos categorías:  de flujo
+<B
+CLASS="COMMAND"
+>streaming</B
+> y por <B
+CLASS="COMMAND"
+>paquetes</B
+>. La primera 
+clase de protocolos transfiere un fichero entero, posiblemente calculando una 
+suma de comprobación.  Esto apenas supone un gasto extra de tiempo, 
+pero precisa una conexión fiable, porque cualquier error causaría que todo el 
+fichero tenga que volver a ser enviado.
+Estos protocolos se suelen usar sobre conexiones de TCP, pero no
+sobre líneas telefónicas.  Aunque los modems modernos hacen un
+buen trabajo corrigiendo errores, no son perfectos, y tampoco lo es la
+detección de errores entre el ordenador y el módem.</P
+><P
+>Por otra parte, los protocolos por paquetes parten el fichero en varias
+partes de igual tamaño.  Cada paquete se envía y recibe por separado,
+se realiza una suma de comprobación, y se devuelve al origen un
+paquete de confirmación.
+Para que sea más eficiente, se inventaron protocolos de ventanas deslizantes, 
+que permiten un número limitado (una ventana) de paquetes sin esperar 
+confirmación en un momento dado.  Esto reduce considerablemente la cantidad de 
+tiempo que <B
+CLASS="COMMAND"
+>uucico</B
+> tiene que esperar durante una transmisión.
+Aún así, todos los cálculos extra necesarios en comparación a un protocolo de 
+flujo hace que los protocolos de paquetes sean ineficientes sobre TCP pero 
+ideales para las líneas telefónicas.</P
+><P
+>El caudal del flujo de datos también supone una diferencia. A veces enviar 
+caracteres de 8 bits sobre una conexión serie puedes resultar imposible; por
+ejemplo, si la conexión atraviesa un estúpido servidor de terminales que se
+deshace del octavo bit. Cuando transmite caracteres de 8 bits sobre una 
+conexión de 7 bits tienen que codificarse. En el peor caso posible, la
+codificación duplica la cantidad de datos a transmitir aunque la compresión 
+por hardware pueda compensarlo. Las líneas por las que se pueden transmitir 
+caracteres de 8 bits arbitrarios suelen llamarse <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>preparadas para 8 
+bits</I
+></SPAN
+>. Éste es el caso de todas las conexiones por TCP, así como de 
+la mayoría de las conexiones por módem.</P
+><P
+>Taylor UUCP 1.06 soporta una amplia variedad de protocolos UUCP. Los más 
+comunes son éstos:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+></DT
+><DD
+><P
+>Éste es el protocolo más común y deberían entenderlo prácticamente todos los
+<B
+CLASS="COMMAND"
+>uucico</B
+>s. Al estar dotado de una potente comprobación de 
+errores resulta especialmente apropiado para conexiones telefónicas con
+interferencias. <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+> requiere una conexión preparada para 
+8 bits. Es un protocolo orientado a paquetes que usa una técnica de ventana
+deslizante.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>i</I
+></SPAN
+></DT
+><DD
+><P
+>Éste es un protocolo de paquete bidireccionales por el que pueden enviar y
+recibirse ficheros al mismo tiempo. Requiere una conexión full-duplex y un
+flujo de datos preparado para 8 bits. Actualmente sólo lo entiende Taylor
+UUCP.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>t</I
+></SPAN
+></DT
+><DD
+><P
+>Este protocolo está pensado para usarse sobre una conexión TCP u otras redes
+realmente libres de errores. Usa paquetes de 1.024 bytes y requiere una 
+conexión preparada para 8 bits.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>e</I
+></SPAN
+></DT
+><DD
+><P
+>Éste debería hacer básicamente lo mismo que <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>t</I
+></SPAN
+>. La 
+principal diferencia reside en que <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>e</I
+></SPAN
+> es un protocolo
+de flujo por lo que está orientado únicamente a conexiones de red eficientes.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>f</I
+></SPAN
+></DT
+><DD
+><P
+>Este protocolo está orientado a conexiones X.25 eficientes. Es un protocolo de
+flujo y espera un flujo de datos de 7 bits. Los caracters de 8 bits tienen que
+codificarse, lo que puede hacerlo muy poco eficiente.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>G</I
+></SPAN
+></DT
+><DD
+><P
+>Ésta es la versión 4 System V del protocolo <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+>. También
+lo entienden otras versiones de UUCP.</P
+></DD
+><DT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>a</I
+></SPAN
+></DT
+><DD
+><P
+>Este protocolo es similar al ZMODEM. Requiere una conexión de 8 bits pero
+codifica ciertos caracterse de control como XON y XOFF.</P
+></DD
+></DL
+></DIV
+><P></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN13940">16.5.2. Afinar el protocolo de transmisión</H2
+><P
+>&#13;Todos los protocolos permiten alguna variación en el tamaño de los paquetes,
+el cronómetro y similares.  Usualmente, los valores por omisión funcionan
+bien, pero puede no ser óptimo para su configuración.  El protocolo 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+>, por ejemplo, usa tamaños de ventanas de 1 a 7, y 
+tamaños de paquetes en potencias de 2 desde 64 a 4096. Si su línea telefónica 
+es tan ruidosa que ignora el 5 por ciento de los paquetes, probablemente 
+debería disminuir el tamaño de los paquetes y de la ventana.  Sin embargo, en 
+líneas de teléfono muy buenas el hecho de enviar acuses de recibo por cada 
+128 bytes puede resultar un desperdicio, así que podría incrementar el tamaño 
+de los paquetes a 512 o incluso 1024. La mayoría de los binarios que se 
+incluyen en las distribuciones de Linux usan de manera predeterminada un
+tamaño de ventana 7 y paquetes de 128 bytes.</P
+><P
+>Taylor UUCP le permite ajustar los parámetros con la orden 
+<B
+CLASS="COMMAND"
+>protocol-parameter</B
+> en el fichero
+<TT
+CLASS="FILENAME"
+>sys</TT
+>. Por ejemplo, para ajustar el tamaño de paquete a 512
+en el protocolo <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+> cuando se hable con
+<SPAN
+CLASS="SYSTEMITEM"
+>pablo</SPAN
+>, tendrá que añadir:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    system          pablo
+    ...
+    protocol-parameter g  packet-size  512</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Los parámetros configurables y sus nombres varian de un protocolo a otro. Para
+una lista completa de ellos acuda a la documentación que acompaña a las 
+fuentes de Taylor UUCP.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN13955">16.5.3. Elegir protocolos específicos</H2
+><P
+>&#13;No todas las implementaciones de <B
+CLASS="COMMAND"
+>uucico</B
+> son capaces de
+comunicarse por medio de todos los protocolos, por lo que durante la fase de
+negociación inicial ambos procesos tienen que ponerse de acuerdo en la
+elección de un protocolo común. El <B
+CLASS="COMMAND"
+>uucico</B
+> maestro
+proporciona al esclavo una lista de protocolos soportados enviándole
+<TT
+CLASS="LITERAL"
+>P</TT
+><TT
+CLASS="REPLACEABLE"
+><I
+>protlist</I
+></TT
+>, de la cual el esclavo
+elegirá uno.</P
+><P
+>Basándose en el tipo de puerto usado (módem, TCP o conexión directa)
+<B
+CLASS="COMMAND"
+>uucico</B
+> compondrá una lista de protocolos predeterminados.
+Para la conexión directa o por módem esta lista suele constar de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>i</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>a</I
+></SPAN
+>,
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>G</I
+></SPAN
+> y
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>j</I
+></SPAN
+>.  Para las conexiones por TCP la lista suele ser
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>t</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>e</I
+></SPAN
+>,
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>i</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>a</I
+></SPAN
+>,
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>G</I
+></SPAN
+>,
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>j</I
+></SPAN
+> y <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>f</I
+></SPAN
+>. Puede sobreescribrir esta
+lista predeterminada con la orden <B
+CLASS="COMMAND"
+>protocols</B
+>, que puede 
+especificarse en una entrada de sistema así como en una entrada de puerto.
+Por ejemplo, puede editar la entrada de su módem en el fichero
+<TT
+CLASS="FILENAME"
+>port</TT
+> de esta manera:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    port            serial1
+    ...
+    protocols       igG</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Esto requerirá que cualquier conexión entrante o saliente por este puerto use
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>i</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>g</I
+></SPAN
+> o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>G</I
+></SPAN
+>. Si
+el sistema remoto no soporta ninguno de éstos la negociación fallará.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-uucp.dialin.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-uucp.misc.faq.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Configuración de su sistema para recibir llamadas</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-uucp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Resolución de problemas</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

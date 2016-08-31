@@ -1,0 +1,1735 @@
+<HTML
+><HEAD
+><TITLE
+>Netfilter e 'IP Tables' (Núcleos 2.4)</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="Cortafuegos 'IP Chains' (núcleos 2.2)"
+HREF="x-087-2-firewall.fwchains.html"><LINK
+REL="NEXT"
+TITLE="Manipulación de los bits de TOS"
+HREF="x-087-2-firewall.tos.manipulation.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.fwchains.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.tos.manipulation.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.FUTURE">9.8. Netfilter e 'IP Tables' (Núcleos 2.4)</H1
+><P
+>Mientras desarrollaba el cortafuegos 'IP Chains', Paul Russell decidió
+que realizar funciones de cortafuegos de IP debería ser algo menos difícil;
+pronto asumió como tarea simplificar los aspectos de procesamiento
+de datagramas en el código de cortafuegos del núcleo y produjo
+un esquema de filtrado que era mucho más claro y mucho más flexible.
+Denominó este nuevo esquema
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>.</P
+><DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Nota: </B
+>En el momento de la preparación de este libro, el diseño
+de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> no está todavía estable.
+Esperamos que perdone cualquier error en la descripción de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> o de cualquiera de las herramientas
+de configuración asociadas que sea debido a cambios ocurridos
+tras la preparación de este material. Consideramos el trabajo
+realizado sobre
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> suficientemente importante
+como para justificar la inclusión de este material, pese a que
+partes de él sean especulativas por sí mismas. Si tiene alguna
+duda, los documentos HOWTO correspondientes contendrán
+la información más precisa y actualizada sobre los detalles
+asociados con la configuración de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>.</P
+></BLOCKQUOTE
+></DIV
+><P
+>Pero, ¿qué era lo que no estaba bien con las cadenas de IP de ipchains ?
+Habían aumentado de forma importante la eficiencia y la gestión de las
+reglas del cortafuegos. Pero la forma que tenían de procesar los datagramas
+eran todavía complejas, en especial en conjunción con
+características relacionadas con las funciones de cortafuegos como
+el enmascaramiento de IP (discutido en el
+<A
+HREF="x-087-2-ipmasq.html"
+>Capítulo 11</A
+>) y con otras formas de traducciones
+de direcciones. Parte de esta complejidad era debida a que
+el enmascaramiento de IP y la traducción de direcciones
+de red
+<A
+NAME="X-087-2-FW-TFN17"
+HREF="#FTN.X-087-2-FW-TFN17"
+>[1]</A
+>
+fueron funciones desarrolladas independientemente del código
+de cortafuegos e integradas más tarde, en vez de haber sido
+diseñadas como partes mismas del código del cortafuegos
+desde el principio. Si un desarrollador deseara añadir todavía
+más características a la secuencia de procesamiento de datagramas,
+entonces se encontraría con dificultades para encontrar el lugar
+donde insertar el código y se habría visto obligado a realizar
+cambios en el núcleo.</P
+><P
+>Además, había otros problemas. En concreto, la cadena
+&ldquo;input&rdquo; describía la entrada a 
+la capa de red de IP tomada en conjunto. La cadena
+input afectaba tanto a los datagramas que estaban
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>destinados a</I
+></SPAN
+> este 'host' así como
+los datagramas que iban a ser
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>encaminados</I
+></SPAN
+>. 
+Esto resulta contrario a la intuición porque se confundía
+la función de la cadena 'input' con la de la cadena 'forward',
+que se aplicaba sólo a los datagramas que iban a ser reenviados,
+pero que siempre seguía a la cadena 'input'. Se se quería
+tratar de forma diferente los datagramas para el propio 'host' de
+los que iban a ser reenviados, era necesario construir reglas
+complejas que excluían a unos o a otros. El mismo problema
+aparecía con la cadena &ldquo;output&rdquo; de salida.</P
+><P
+>Esta complejidad influía de forma inevitable en el trabajo
+del administrador de sistemas porque se veía reflejada en
+la forma en que se debían diseñar los conjuntos de reglas.
+Además, cualquier extensión al proceso de filtrado exigía
+la modificación directa del núcleo, porque todas las
+políticas de filtrados estaban implementadas allí y no
+había forma de proporcionar una interfaz transparente.
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> aborda
+tanto la complejidad como la rigidez de las soluciones
+antiguas implementando un esquema genérico en el núcleo
+que simplifica la forma en que se procesan los 
+datagramas y proporciona la posibilidad de extender
+las políticas de filtrado sin tener que modificar
+el núcleo.</P
+><P
+>&#13;Veamos dos de los cambios claves realizados.
+La <A
+HREF="x-087-2-firewall.future.html#X-087-2-FIREWALL.ROUTING.IPCHAINS"
+>Figura 9-8</A
+> 
+ilustra cómo se procesan los datagramas en la implementación
+de 'IP Chains',
+mientras que
+<A
+HREF="x-087-2-firewall.future.html#X-087-2-FIREWALL.ROUTING.NETFILTER"
+>Figura 9-9</A
+> 
+ilustra cómo se procesan en la implementación de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>.
+La diferencias claves consisten en la eliminación
+de la función de enmascaramiento del código central
+y de un cambio en la localización de las cadenas
+de entrada y de salida. En acompañamiento a 
+estos cambios, se creó una herramienta de
+configuración nueva y extensible que se denominó
+<B
+CLASS="COMMAND"
+>iptables</B
+>.</P
+><P
+>En 'IP Chains' la cadena de entrada se aplica a todos los datagramas
+recibidos por el 'host', independientemente de si están destinados
+al 'host' local o de si serán encaminados a otro 'host'.
+En <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>,
+la cadena 'input' de entrada se aplica
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>sólamente</I
+></SPAN
+> a los datagramas destinados al 'host' local,
+y la cadena 'forward' de reenvío se aplica sólo a los datagramas
+destinados a
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>otro</I
+></SPAN
+> 'host'. 
+De forma similar, en 'IP chains', la cadena 'output' de salida
+se aplica a todos los datagramas que abadonen el 'host' local,
+independientemente de si el datagrama se genera en el 'host' local
+o ha sido encaminado desde otro 'host'. En
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>,
+la cadena 'output' de salida se aplica
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>sólamente</I
+></SPAN
+>
+a los datagramas generados en este 'host' y
+no se aplica a los datagramas que están siendo 
+encaminados provenientes de otro 'host'. Este cambio por
+sí solo ofrece una enorme simplificación de muchas
+configuraciones de cortafuegos.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.ROUTING.IPCHAINS"><P
+><B
+>Figura 9-8. Procesamiento de datagramas en 'IP Chains'</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0908.jpg"></P
+></DIV
+></DIV
+><P
+>En la <A
+HREF="x-087-2-firewall.future.html#X-087-2-FIREWALL.ROUTING.IPCHAINS"
+>Figura 9-8</A
+>, 
+los componentes etiquetados como
+&ldquo;demasq&rdquo; y &ldquo;masq&rdquo;
+son componentes separados del núcleo que son responsables
+del procesamiento de los datagramas enmascarados entrantes y
+salientes. Estos componentes han sido reimplementados como
+módulos de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>.</P
+><P
+>Considérese el caso de una configuración para la que la política
+por defecto para cada una de las cadenas 'input', 'forward' y
+'output' es
+<TT
+CLASS="LITERAL"
+>deny</TT
+>.
+En 'IP Chains', 
+se necesitarían seis reglas para permitir cualquier sesión  a través
+del 'host' cortafuegos; dos para cada una de las cadenas
+'input, 'forward' y 'output' (una cubriría el camino en un sentido
+y la otra en el sentido contrario). Puede imaginarse cómo
+esto puede llegar a resultar extremadamente complejo y difícil
+de gestionar cuando se mezclan sesiones que pueden ser
+encaminadas y sesiones que podrían conectarse al 'host'
+local sin que deban ser encaminadas. 'IP chains' le permite
+crear cadenas que le simplificarían esta tarea un poco,
+pero su diseño no resulta evidente y requiere de un cierto
+nivel de experiencia.</P
+><P
+>En la implementación de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>
+con <B
+CLASS="COMMAND"
+>iptables</B
+>, 
+esta complejidad desaparece completamente.
+Para que se pueda encaminar por
+un 'host' cortafuegos un servicio que
+se desea prohibir que termine en el propio 'host', 
+sólo se necesitan
+dos reglas: una para un sentido y otra para el contrario
+ambas en la cadena 'forward'. Esto es la forma obvia
+de diseñar reglas de cortafuegos, y servirá para
+simplificar enormemente el diseño de las configuraciones
+del cortafuegos.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.ROUTING.NETFILTER"><P
+><B
+>Figura 9-9. Cadena de procesamientos de datagramas en 'netfilter'</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0909.jpg"></P
+></DIV
+></DIV
+><P
+>&#13;
+El documento PACKET-FILTERING-HOWTO ofrece una lista
+detallada de los cambios que se han realizado, por lo que aquí
+nos vamos a centrar en los aspectos más prácticos.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN8753">9.8.1. Compatibilidad hacia atrás con ipfwadm e ipchains</H2
+><P
+>La flexibilidad notoria de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> en GNU/Linux
+queda ilustrada por su habilidad para emular las interfaces
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> e
+<B
+CLASS="COMMAND"
+>ipchains</B
+>. 
+La emulación hace un poco más sencilla la transición a la nueva generación
+del software de cortafuegos.</P
+><P
+>&#13;Los dos módulos de 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>
+del núcleo denominados
+<TT
+CLASS="FILENAME"
+>ipfwadm.o</TT
+> e <TT
+CLASS="FILENAME"
+>ipchains.o</TT
+>
+proporcionan la compatibilidad hacia atrás para 
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> e
+<B
+CLASS="COMMAND"
+>ipchains</B
+>. 
+Sólo puede cargarse uno de estos módulos a la vez,
+y utilizarlo sólo si el módulo
+<TT
+CLASS="FILENAME"
+>ip_tables.o</TT
+>
+no está cargado.
+Cuando se ha cargado el módulo apropiado, entonces
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> 
+funciona exactamente de la misma forma que la anterior implementación
+del cortafuegos.</P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>
+imita la interfaz de
+<B
+CLASS="COMMAND"
+>ipchains</B
+>
+con las siguientes órdenes:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    rmmod ip_tables
+    modprobe ipchains
+    ipchains <TT
+CLASS="REPLACEABLE"
+><I
+>...</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.USINGIPTABLES">9.8.2. Uso de iptables</H2
+><P
+>&#13;La utilidad
+<B
+CLASS="COMMAND"
+>iptables</B
+> se utiliza para configurar
+las reglas de filtrado de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>.
+Su sintaxis se apoya fuertemente en la de la orden 
+<B
+CLASS="COMMAND"
+>ipchains</B
+>, pero difiere 
+en un aspecto muy importante: es
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>extensible</I
+></SPAN
+>. 
+Esto quiere decir que su funcionalidad puede extenderse sin
+tener que recompilar. Consigue este truco utilizando bibliotecas
+compartidas. Hay extensiones estándares de las que se explorarán
+algunas dentro de un momento.</P
+><P
+>Antes de que se pueda utilizar la orden
+<B
+CLASS="COMMAND"
+>iptables</B
+>, se debe cargar el módulo del núcleo de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+> que proporciona el soporte para ello.
+La forma más fácil de hacerlo es con la orden
+<B
+CLASS="COMMAND"
+>modprobe</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    modprobe ip_tables</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La orden
+<B
+CLASS="COMMAND"
+>iptables</B
+> se utiliza para configurar
+tanto el filtrado de IP como la traducción de direcciones
+de red.
+Para facilitar esto, existen dos tablas de reglas denominadas
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>filter</I
+></SPAN
+> y
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>nat</I
+></SPAN
+>. 
+Por defecto, se asume la tabla 'filter' salvo que se especifique la opción
+<TT
+CLASS="OPTION"
+>-t</TT
+>. 
+También se proporciona cinco cadenas predefinidas.
+Las cadenas
+<TT
+CLASS="LITERAL"
+>INPUT</TT
+> y <TT
+CLASS="LITERAL"
+>FORWARD</TT
+>
+están disponibles para la tabla
+<TT
+CLASS="LITERAL"
+>filter</TT
+>, 
+las cadenas
+<TT
+CLASS="LITERAL"
+>PREROUTING</TT
+> y <TT
+CLASS="LITERAL"
+>POSTROUTING</TT
+>
+están disponbiles para la tabla
+<TT
+CLASS="LITERAL"
+>nat</TT
+> ,
+y la cadena
+<TT
+CLASS="LITERAL"
+>OUTPUT</TT
+> está disponible para ambas tablas.
+
+En este capítulo se discutirá solamente la tabla
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>filter</I
+></SPAN
+>. 
+Se contemplará la tabla <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>nat</I
+></SPAN
+> en el <A
+HREF="x-087-2-ipmasq.html"
+>Capítulo 11</A
+></P
+><P
+>La sintaxis general de la mayoría de las órdenes 
+de <B
+CLASS="COMMAND"
+>iptables</B
+> es:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <B
+CLASS="COMMAND"
+>iptables</B
+> <TT
+CLASS="REPLACEABLE"
+><I
+>orden</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>especificación_de_regla</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>extensiones</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Veamos alguna de las opciones con detalle, y después
+se revisarán algunos ejemplos.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPTABLES.COMMANDS">9.8.2.1. Órdenes</H3
+><P
+>Existen varias formas de manipular las reglas y los conjuntos
+de reglas con la orden
+<B
+CLASS="COMMAND"
+>iptables</B
+>. Las relevantes para
+la función de cortafuegos de IP son:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-A cadena</DT
+><DD
+><P
+>Añade una o más reglas al final de la cadena especificada.
+Si se proporciona un nombre de 'host' tanto como origen como
+destino y se resuelve a más de una dirección IP, se añadirá
+una regla por cada una de esas direcciones.</P
+></DD
+><DT
+>-I cadena número_de_regla</DT
+><DD
+><P
+>Inserta una o más reglas al comienzo de la cadena especificada.
+De nuevo, si se proporciona un nombre de 'host' en la especificación
+de la regla, se añadirá una regla por cada una de las direcciones
+que se resuelvan.</P
+></DD
+><DT
+>-D cadena</DT
+><DD
+><P
+>Borra de la cadena especificada una o más reglas que coincidan con la
+especificación de regla de la cadena especificada.</P
+></DD
+><DT
+>-D cadena número_de_regla</DT
+><DD
+><P
+>Borra la regla que ocupa la posición
+<TT
+CLASS="REPLACEABLE"
+><I
+>número_de_regla</I
+></TT
+> en
+la cadena especificada.
+Las posiciones de reglas comienzan en el 1 para la primera regla de la
+cadena.</P
+></DD
+><DT
+>-R cadena número_de_regla</DT
+><DD
+><P
+>Reemplaza la regla que ocupa la posición
+<TT
+CLASS="REPLACEABLE"
+><I
+>número_de_regla</I
+></TT
+>
+en la cadena especificada por la regla
+proporcionada en la especificación.</P
+></DD
+><DT
+>-C cadena</DT
+><DD
+><P
+>Comprueba el datagrama descrito por la especificación de la regla contra
+la cadena especificada. Esta orden devolverá un mensaje que 
+describe cómo el datagrama procesa la cadena. Resulta de la mayor
+utilidad para las pruebas de la configuración del cortafuegos
+por lo que se contemplará con más detalle más adelante.</P
+></DD
+><DT
+>-L [cadena]</DT
+><DD
+><P
+>Muestra las reglas de la cadena especificada, o de todas las cadenas
+si no se especifica ninguna.</P
+></DD
+><DT
+>-F [cadena]</DT
+><DD
+><P
+>Borra todas las reglas de la cadena especificada, o de todas las
+cadenas si no se especifica ninguna.</P
+></DD
+><DT
+>-Z [cadena]</DT
+><DD
+><P
+>Pone a cero los contadores de datagramas y bytes en todas
+las reglas de la cadena especificada, o de todas las cadenas
+si no se especifica ninguna.</P
+></DD
+><DT
+>-N cadena</DT
+><DD
+><P
+>Crea una nueva cadena con el nombre especificado.
+No puede existir antes una cadena del mismo nombre. Así es cómo
+se crean las cadenas de usuario.</P
+></DD
+><DT
+>-X [cadena]</DT
+><DD
+><P
+>Borra la cadena de usuario especificada, o todas
+las cadenas de usuario si no se especifica ninguna.
+Para que este comando tenga éxito, no deben existir
+referencias a la cadena especificada desde cualquier
+otra cadena de reglas.</P
+></DD
+><DT
+>-P cadena política</DT
+><DD
+><P
+>Establece la política por defecto de la cadena especificada a la
+política especificada. Las políticas válidas de cortafuegos
+son
+<TT
+CLASS="LITERAL"
+>ACCEPT</TT
+>, <TT
+CLASS="LITERAL"
+>DROP</TT
+>,
+<TT
+CLASS="LITERAL"
+>QUEUE</TT
+>, y <TT
+CLASS="LITERAL"
+>RETURN</TT
+>.
+<TT
+CLASS="LITERAL"
+>ACCEPT</TT
+> 
+permite pasar a los datagramas.
+<TT
+CLASS="LITERAL"
+>DROP</TT
+>
+causa que el datagrama sea descartado. <TT
+CLASS="LITERAL"
+>QUEUE</TT
+>
+causa que el datagrama sea pasado al espacio de usuario para
+posterior procesamiento.
+La política
+<TT
+CLASS="LITERAL"
+>RETURN</TT
+> causa que el código
+del cortafuegos de IP vuelva a la cadena que llamó a la que contenía
+esta regla, y que continúe con la regla situada tras la regla desde la que
+se hizo la llamada.</P
+></DD
+></DL
+></DIV
+><P>&#13;</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPTABLES.RULESPEC">9.8.2.2. Parámetros de especificación de reglas</H3
+><P
+>Existe una serie de parámetros de
+<B
+CLASS="COMMAND"
+>iptables</B
+> que constituyen la especificación
+de una regla. Donde se requiera la especificación de una regla,
+se debe proporcionar algunos de esos  parámetros o se asumirá
+sus valores por defecto.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-p [!]protocolo</DT
+><DD
+><P
+>Especifica el protocolo del datagrama que buscar coincidencias coná con esta regla.
+Los nombres válidos de protocolos son
+<TT
+CLASS="LITERAL"
+>tcp</TT
+>, <TT
+CLASS="LITERAL"
+>udp</TT
+>,
+<TT
+CLASS="LITERAL"
+>icmp</TT
+>, o un número, si se conoce el
+número del protocolo de IP.<A
+NAME="X-087-2-X-087-2-FW-FN06"
+HREF="#FTN.X-087-2-X-087-2-FW-FN06"
+>[2]</A
+>
+Por ejemplo, podría utilizarse un
+<TT
+CLASS="LITERAL"
+>4</TT
+> para buscar coincidencias con el protocolo de encapsulamiento
+<TT
+CLASS="LITERAL"
+>ipip</TT
+>.
+Si se proporciona el signo<TT
+CLASS="LITERAL"
+>!</TT
+>, 
+entonces se niega la regla y el datagrama buscar coincidencias coná
+con cualquier protocolo diferente del especificado.
+Si no se proporciona este parámetro, se asume por omisión la
+coincidencia con todos los protocolos.</P
+></DD
+><DT
+>-s [!]dirección[/máscara]</DT
+><DD
+><P
+>Especifica la dirección de origen del datagrama que buscar coincidencias coná con
+esta regla. Se puede proporcionar la dirección como un nombre
+de 'host', como un nombre de red o como una dirección de IP.
+El parámetro opcional
+<TT
+CLASS="LITERAL"
+>máscara</TT
+> es la máscara de red que
+se utilizará y puede proporcionarse
+tanto en la forma tradicional 
+(e.g., /255.255.255.0) como en la forma moderna
+(e.g., /24).</P
+></DD
+><DT
+>-d [!]dirección[/máscara]</DT
+><DD
+><P
+>Especifica la dirección de destino del datagrama
+que buscar coincidencias coná con esta regla. La codificación de este parámetro
+es la misma que la del parámetro
+<TT
+CLASS="OPTION"
+>-s</TT
+>.</P
+></DD
+><DT
+>-j blanco</DT
+><DD
+><P
+>Especifica qué acción se tomará cuando se coincida con esta regla.
+Puede pensarse en este parámetro como con el significado de
+&ldquo;salta a&rdquo;.
+Los blancos válidos son 
+<TT
+CLASS="LITERAL"
+>ACCEPT</TT
+>, <TT
+CLASS="LITERAL"
+>DROP</TT
+>, <TT
+CLASS="LITERAL"
+>QUEUE</TT
+>,
+y <TT
+CLASS="LITERAL"
+>RETURN</TT
+>. 
+Se describieron sus significados más
+arriba. Sin embargo, también puede proporcionarse el nombre de una cadena
+de usuario, que sería por donde el proceso continuaría.
+También puede proporcionarse el nombre de un blanco complementado
+con el de una extensión. Se hablará acerca de las extensiones en breve.
+Si se omite este parámetro, no se realizará ninguna acción sobre
+los datagramas coincidentes, excepto la actualización de los
+contadores de datagramas y bytes de esta regla.</P
+></DD
+><DT
+>-i [!]nombre_de_interfaz</DT
+><DD
+><P
+>Especifica la interfaz por la que se recibió el datagrama. De nuevo,
+el signo
+&ldquo;<TT
+CLASS="LITERAL"
+>!</TT
+> invierte el resultado de la coincidencia.
+Si el nombre de la interfaz acaba con un signo 
+ &ldquo;<TT
+CLASS="LITERAL"
+>+</TT
+>&rdquo;entonces cualquier interfaz que comience con la cadena
+     proporcionada buscar coincidencias coná. Por ejemplo, 
+<TT
+CLASS="LITERAL"
+>-i ppp+</TT
+>
+buscar coincidencias coná con cualquier dispositivo de red de PPP y 
+<TT
+CLASS="LITERAL"
+>-i ! eth+</TT
+>
+con todas las
+interfaces excepto las correspondientes a dispositivos de Ethernet.</P
+></DD
+><DT
+>-o [!]nombre_de_interfaz</DT
+><DD
+><P
+>Especifica la interfaz por la que se enviará el datagrama.
+Este argumento tiene la misma codificación que el argumento
+<TT
+CLASS="OPTION"
+>-i</TT
+>.</P
+></DD
+><DT
+>[!] -f</DT
+><DD
+><P
+>Especifica que esta regla se aplica al segundo y restantes fragmentos
+de un datagrama fragmentado, y no al primer fragmento.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPTABLES.OPTIONS">9.8.2.3. Opciones</H3
+><P
+>Las siguientes opciones de
+<B
+CLASS="COMMAND"
+>iptables</B
+>
+son más generales por naturaleza propia.
+Algunas de ellas controlan características bastante
+esotéricas del software de 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-v</DT
+><DD
+><P
+>Hace que 
+<B
+CLASS="COMMAND"
+>iptables</B
+>
+sea más explícito en su salida. Proporcionará más información.</P
+></DD
+><DT
+>-n</DT
+><DD
+><P
+>Hace que
+<B
+CLASS="COMMAND"
+>iptables</B
+>
+muestre las direcciones de IP y los números de puertos en forma de números sin intentar resoverlos contra
+sus correspondientes nombres.</P
+></DD
+><DT
+>-x</DT
+><DD
+><P
+>Fuerza que los números de salida de
+<B
+CLASS="COMMAND"
+>iptables</B
+>
+parezcan con sus valores exactos sin ninguna aproximación.</P
+></DD
+><DT
+>- -line-number</DT
+><DD
+><P
+>Causa que se muestren los números de línea en los listados de
+los conjuntos de reglas. El número de línea corresponderá
+con la posición de la regla dentro de la cadena.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPTABLES.EXTENSIONS">9.8.2.4. Extensiones</H3
+><P
+>&#13;Se dijo antes que la utilidad
+<B
+CLASS="COMMAND"
+>iptables</B
+> es extensible a través
+de módulos de bibliotecas compartidas. Existen
+alguna extensiones estándares que proporciona algunas
+de las características que
+<B
+CLASS="COMMAND"
+>ipchains</B
+> proporcionaba.
+Para utilizar una extensión, se debe especificar su nombre
+con el argumento
+<TT
+CLASS="OPTION"
+>-m</TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>nombre</I
+></TT
+> de
+<B
+CLASS="COMMAND"
+>iptables</B
+>.
+La lista siguiente muestra las opciones
+<TT
+CLASS="OPTION"
+>-m</TT
+> y <TT
+CLASS="OPTION"
+>-p</TT
+>
+que establecen el contexto de la extensión, y las opciones proporcionadas
+por esa extensión.</P
+><DIV
+CLASS="SECT4"
+><H4
+CLASS="SECT4"
+><A
+NAME="AEN8966">9.8.2.4.1. Extensiones de TCP: utilizadas con <TT
+CLASS="LITERAL"
+>-m tcp -p tcp</TT
+></H4
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>- -sport [!] [puerto[:puerto]]</DT
+><DD
+><P
+>Especifica el puerto que debe utilizar el origen del datagrama para
+buscar coincidencias con esta regla.
+Se pueden especificar los puertos en la forma de un rango, 
+especificando los límites inferior y superior con un signo 
+<TT
+CLASS="LITERAL"
+>:</TT
+> como
+delimitador. 
+Por ejemplo, <TT
+CLASS="LITERAL"
+>20:25</TT
+> describe todos los puertos
+que van desde el 20 hasta el 25 incluyendo ambos. De nuevo, el signo <TT
+CLASS="LITERAL"
+>!</TT
+> puede utilizarse para negar los valores.</P
+></DD
+><DT
+>- -dport [!] [puerto[:puerto]]</DT
+><DD
+><P
+>Especifica el puerto que el datagrama de destino utilizará
+para buscar coincidencias con este regla. Este argumento se codifica
+de forma idéntica a la opción
+<TT
+CLASS="OPTION"
+>- -sport</TT
+>.</P
+></DD
+><DT
+>- -tcp-flags [!] máscara comp</DT
+><DD
+><P
+>&#13;Especifica que esta regla debe buscar coincidencias con cuando los indicadores
+de TCP del datagrama coincidan con los especificados por
+<TT
+CLASS="REPLACEABLE"
+><I
+>máscara</I
+></TT
+> y
+<TT
+CLASS="REPLACEABLE"
+><I
+>comp</I
+></TT
+>. <TT
+CLASS="REPLACEABLE"
+><I
+>máscara</I
+></TT
+>
+es una lista separada por comas de los indicadores que deben examinarse
+en la comprobación.
+<TT
+CLASS="REPLACEABLE"
+><I
+>comp</I
+></TT
+> es una lista separada por comas
+de indicadores cuyo valores han de ser todos 1 para que la regla
+coincida. Los indicadores válidos son:
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>SYN</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ACK</I
+></SPAN
+>,
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>FIN</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>RST</I
+></SPAN
+>,
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>URG</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>PSH</I
+></SPAN
+>, <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ALL</I
+></SPAN
+>
+o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>NONE</I
+></SPAN
+>.
+Esto constituye una opción avanzada: consúltese
+una buena descripción del protocolo de TCP, como el documento
+RFC-793, para la explicación del significado y la implicación
+de cada uno de estos indicadores.
+El signo <TT
+CLASS="LITERAL"
+>!</TT
+> niega la regla.</P
+></DD
+><DT
+>[!] - -syn</DT
+><DD
+><P
+>Especifica que la regla buscar coincidencias coná sólo con los datagramas
+cuyo bit
+<TT
+CLASS="LITERAL"
+>SYN</TT
+> valga 1 y cuyos bits
+<TT
+CLASS="LITERAL"
+>ACK</TT
+> y
+<TT
+CLASS="LITERAL"
+>FIN</TT
+> valgan ambos 0. 
+Los datagramas con estos valores de los indicadores se utilizan
+para abrir las conexiones de TCP, por tanto esta opción
+puede ser utilizada para gestionar las solicitudes de
+conexión. Esta opción es una abreviatura de:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="90%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="LITERAL"
+>- -tcp-flags SYN,RST,ACK SYN</TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Cuando se utilice el operador de negación,
+la regla buscar coincidencias coná con todos los datagramas
+cuyos bits 
+<TT
+CLASS="LITERAL"
+>SYN</TT
+> y <TT
+CLASS="LITERAL"
+>ACK</TT
+> no
+valgan 1 simultáneamente.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT4"
+><H4
+CLASS="SECT4"
+><A
+NAME="AEN9012">9.8.2.4.2. Extensions de UDP: utilizadas con -m udp -p udp</H4
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>- -sport [!] [port[:port]]</DT
+><DD
+><P
+>Especifica el puerto que debe utilizar el origen del datagrama para
+buscar coincidencias con esta regla.
+Se pueden especificar los puertos en la forma de un rango, 
+especificando los límites inferior y superior con un signo 
+<TT
+CLASS="LITERAL"
+>:</TT
+> como
+delimitador. 
+Por ejemplo, <TT
+CLASS="LITERAL"
+>20:25</TT
+> describe todos los puertos
+que van desde el 20 hasta el 25 incluyendo ambos. De nuevo, el signo <TT
+CLASS="LITERAL"
+>!</TT
+> puede utilizarse para negar los valores.</P
+></DD
+><DT
+>- -dport [!] [port[:port]]</DT
+><DD
+><P
+>Especifica el puerto que el datagrama de destino utilizará
+para buscar coincidencias con esta regla. Este argumento se codifica
+de forma idéntica a la opción
+<TT
+CLASS="OPTION"
+>- -sport</TT
+>.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT4"
+><H4
+CLASS="SECT4"
+><A
+NAME="AEN9027">9.8.2.4.3. Extensiones de ICMP: utilizadas con <TT
+CLASS="LITERAL"
+>-m icmp -p icmp</TT
+></H4
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>- -icmp-type [!] nombre_de_tipo</DT
+><DD
+><P
+>Especifica el tipo de mensaje de ICMP que buscar coincidencias coná con
+esta regla. Puede especificarse el tipo tanto por su número
+como por su nombre.
+Algunos nombres válidos son:
+<TT
+CLASS="LITERAL"
+>echo-request</TT
+>, <TT
+CLASS="LITERAL"
+>echo-reply</TT
+>,
+<TT
+CLASS="LITERAL"
+>source-quench</TT
+>, <TT
+CLASS="LITERAL"
+>time-exceeded</TT
+>,
+<TT
+CLASS="LITERAL"
+>destination-unreachable</TT
+>,
+<TT
+CLASS="LITERAL"
+>network-unreachable</TT
+>, <TT
+CLASS="LITERAL"
+>host-unreachable</TT
+>,
+<TT
+CLASS="LITERAL"
+>protocol-unreachable</TT
+>, y
+<TT
+CLASS="LITERAL"
+>port-unreachable</TT
+>.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT4"
+><H4
+CLASS="SECT4"
+><A
+NAME="AEN9044">9.8.2.4.4. Extensiones de MAC: utilizadas con <TT
+CLASS="LITERAL"
+>-m mac</TT
+></H4
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>- -mac-source [!] address</DT
+><DD
+><P
+>Especifica la dirección Ethernet del 'host' transmisor que
+coincide con esta regla. Esto sólo tiene sentido en una
+regla de la cadena de entrada 'input' o de reenvío 'forward'
+porque se trasmitirá cualquier datagrama que pase la
+cadena de salida 'output'.</P
+></DD
+></DL
+></DIV
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN9053">9.8.3. Nuestro ejemplo simple revisado otra vez</H2
+><P
+>Para implementar nuestro ejemplo simple con 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>netfilter</I
+></SPAN
+>,
+simplemente se podría cargar el módulo
+<TT
+CLASS="FILENAME"
+>ipchains.o</TT
+> para que se comporte como
+la versión
+<B
+CLASS="COMMAND"
+>ipchains</B
+>.
+En cambio, se volverá a realizar una implementación con
+<B
+CLASS="COMMAND"
+>iptables</B
+> para ilustrar lo similar
+que es.</P
+><P
+>De nuevo, supóngase que se dispone en nuestra organización
+de una red y que se está utilizando una máquina cortafuegos
+basada en GNU/Linux para permiir a nuestros usuarios que sean
+capaces de acceder a servidores WWW de Internet, y para
+impedir el paso de cualquier otro tipo de tráfico.</P
+><P
+>Si nuestra red tiene una máscara de red de 24 bits
+(clase C) y tiene como dirección 
+172.16.1.0, 
+entonces se podría utilizar las siguientes reglas
+de <B
+CLASS="COMMAND"
+>iptables</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>modprobe ip_tables</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>iptables -F FORWARD</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>iptables -P FORWARD DROP</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>iptables -A FORWARD -m tcp -p tcp -s 0/0 --sport 80 -d 172.16.1.0/24 /
+    --syn -j DROP</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>iptables -A FORWARD -m tcp -p tcp -s 172.16.1.0/24 --sport /
+    80 -d 0/0 -j ACCEPT</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>iptables -A FORWARD -m tcp -p tcp -d 172.16.1.0/24 --dport 80 -s 0/0 -j /
+    ACCEPT</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>En este ejemplo, las órdenes de
+<B
+CLASS="COMMAND"
+>iptables</B
+> se interpretan exactamente
+como sus equivalentes de
+<B
+CLASS="COMMAND"
+>ipchains</B
+>. La diferencia más importante es
+que debe cargarse el módulo
+<TT
+CLASS="FILENAME"
+>ip_tables.o</TT
+>. 
+Nótese que  <B
+CLASS="COMMAND"
+>iptables</B
+> no soporta la opción
+<TT
+CLASS="OPTION"
+>-b</TT
+>,
+por lo que debe proporcionarse una regla para cada sentido.</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN17"
+HREF="x-087-2-firewall.future.html#X-087-2-FW-TFN17"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: 'Network Address Translation' en el original en inglés</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-X-087-2-FW-FN06"
+HREF="x-087-2-firewall.future.html#X-087-2-X-087-2-FW-FN06"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Véase el fichero
+<TT
+CLASS="FILENAME"
+>/etc/protocols</TT
+> para buscar los nombres
+y números de los protocolos.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.fwchains.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.tos.manipulation.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Cortafuegos 'IP Chains' (núcleos 2.2)</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Manipulación de los bits de TOS</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

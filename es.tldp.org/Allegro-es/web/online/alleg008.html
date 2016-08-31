@@ -1,0 +1,372 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 08 Objetos bitmap
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="08 Objetos bitmap">08 Objetos bitmap</a></h1>
+
+<ul>
+<li><a href="#acquire_bitmap">acquire_bitmap</a>
+<li><a href="#acquire_screen">acquire_screen</a>
+<li><a href="#bitmap_color_depth">bitmap_color_depth</a>
+<li><a href="#bitmap_mask_color">bitmap_mask_color</a>
+<li><a href="#create_bitmap">create_bitmap</a>
+<li><a href="#create_bitmap_ex">create_bitmap_ex</a>
+<li><a href="#create_sub_bitmap">create_sub_bitmap</a>
+<li><a href="#create_system_bitmap">create_system_bitmap</a>
+<li><a href="#create_video_bitmap">create_video_bitmap</a>
+<li><a href="#destroy_bitmap">destroy_bitmap</a>
+<li><a href="#is_linear_bitmap">is_linear_bitmap</a>
+<li><a href="#is_memory_bitmap">is_memory_bitmap</a>
+<li><a href="#is_planar_bitmap">is_planar_bitmap</a>
+<li><a href="#is_same_bitmap">is_same_bitmap</a>
+<li><a href="#is_screen_bitmap">is_screen_bitmap</a>
+<li><a href="#is_sub_bitmap">is_sub_bitmap</a>
+<li><a href="#is_system_bitmap">is_system_bitmap</a>
+<li><a href="#is_video_bitmap">is_video_bitmap</a>
+<li><a href="#lock_bitmap">lock_bitmap</a>
+<li><a href="#release_bitmap">release_bitmap</a>
+<li><a href="#release_screen">release_screen</a>
+<li><a href="#screen">screen</a>
+<li><a href="#set_clip">set_clip</a>
+</ul>
+
+<p>
+Una vez haya seleccionado un modo gráfico, puede dibujar cosas en la
+pantalla por el bitmap 'screen'. Todas las rutinas de dibujo de Allegro
+dibujan en estructuras BITMAP, que son áreas de memoria que contienen
+imágenes rectangulares, almacenadas en arrays de packs de bytes (un byte por
+pixel en modos de 8 bits, sizeof(short) bytes por pixel en modos de 15 y 16
+bits por pixel, 3 bytes por pixel en modos de 24 bits y sizeof(long) bytes
+por pixel en modos de 32 bits). Puede crear y manipular bitmaps en la memoria
+RAM, o puede dibujar en el bitmap especial 'screen' que representa la memoria
+de vídeo de su tarjeta gráfica.
+
+<p>
+Por ejemplo, para dibujar un pixel en la pantalla escribiría:
+<blockquote class="code"><pre>
+   putpixel(screen, x, y, color);
+</pre></blockquote>
+O para implementar un sistema doble-buffer:
+<blockquote class="code"><pre>
+   BITMAP *bmp = create_bitmap(320, 200);    // crea un bitmap en la RAM
+   clear_bitmap(bmp);                        // limpia el bitmap
+   putpixel(bmp, x, y, color);               // dibuja sobre el bitmap
+   blit(bmp, screen, 0, 0, 0, 0, 320, 200);  // lo copia a la pantalla
+</pre></blockquote>
+Mire abajo para saber cómo obtener acceso directo a la memoria de un bitmap.
+
+<p>
+Allegro soporta varios tipos diferentes de bitmaps:
+
+<p>
+   - El bitmap screen, que representa la memoria de vídeo de su hardware.
+     Debe dibujar sobre él para que su imagen sea visible.
+
+<p>
+   - Bitmaps de memoria, que están situados en la RAM del sistema y pueden
+     ser usados para almacenar gráficos o como espacios de dibujo temporales
+     para sistemas doble buffer. Estos pueden ser obtenidos llamando
+     create_bitmap(), load_pcx(), o al cargar un fichero de datos.
+
+<p>
+   - Sub-bitmaps. Estos comparten memoria de imagen con un bitmap padre (que
+     puede ser la pantalla, un bitmap de memoria u otro sub-bitmap), por lo
+     que dibujar en ellos también modificará al bitmap padre. Pueden tener
+     cualquier tamaño y estar localizados en cualquier parte del bitmap
+     padre. Pueden tener sus propias áreas de recorte, por lo que son útiles
+     para dividir un bitmap en varias unidades más pequeñas, ej: partir una
+     pantalla virtual grande en múltiples secciones (mire
+     examples/exscroll.c).
+
+<p>
+   - Bitmaps de memoria de vídeo. Estos son creados con la función
+     create_video_bitmap(), y normalmente son implementados como sub-bitmaps
+     del objeto screen.
+
+<p>
+   - Bitmaps de sistema. Se crean mediante la función create_system_bitmap(),
+     y están a caballo entre los bitmaps de memoria y los de video. Viven
+     en la memoria de sistema, así pues no están limitado por la cantidad
+     de ram de video de su tarjeta, pero se guardan en un formato específico
+     de la plataforma que puede activar una aceleración hardware mejor de la
+     que es posible con un bitmap de memoria normal (vea los bits
+     GFX_HW_SYS_TO_VRAM_BLIT y GFX_HW_SYS_TO_VRAM_BLIT_MASKED en
+     gfx_capabilities). A los bitmaps de sistema se debe acceder de la misma
+     manera que a los bitmaps de video, usando las funciones de cambio de
+     banco y las macro bmp_write*(). No todas las plataformas implementan
+     este tipo de bitmap: si no están disponibles create_system_bitmap()
+     funcionará idénticamente igual que create_bitmap().
+
+<p><br>
+<b>extern BITMAP *<a name="screen">screen</a>;</b><br>
+   Puntero global a un bitmap, de tamaño VIRTUAL_W x VIRTUAL_H. Esto es
+   creado por set_gfx_mode(), y representa la memoria de vídeo de su
+   hardware. Sólo una parte de este bitmap será visible, de tamaño SCREEN_W
+   x SCREEN_H. Normalmente estará en la parte superior izquierda de la
+   pantalla virtual, por lo que puede ignorar el resto de la pantalla
+   virtual si no está interesado en scroll por hardware o intercambio de
+   páginas. Para mover la ventana visible a otras partes del bitmap screen,
+   llama scroll_screen(). Inicialmente el área de recorte será igual de
+   grande que la pantalla física, por lo que si quiere dibujar en la
+   pantalla virtual fuera de este rectángulo, deberá ajustar el área de
+   recorte.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg007.html#set_gfx_mode">set_gfx_mode</a>,
+<a class="xref" href="#is_screen_bitmap">is_screen_bitmap</a>,
+<a class="xref" href="#create_video_bitmap">create_video_bitmap</a>,
+<a class="xref" href="alleg007.html#scroll_screen">scroll_screen</a>.</font></blockquote>
+<b>BITMAP *<a name="create_bitmap">create_bitmap</a>(int width, int height);</b><br>
+   Crea un bitmap de memoria con tamaño width por height, y devuelve un
+   puntero a él. El bitmap tendrá el área de recorte activada y ajustada al
+   tamaño total del bitmap. La memoria de la imagen no será limpiada, por lo
+   que probablemente tendrá basura: debería limpiar el bitmap antes de
+   usarlo. Esta rutina usa siempre el formato global de profundidad de color
+   especificado al llamar set_color_depth().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_bitmap_ex">create_bitmap_ex</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>,
+<a class="xref" href="#create_video_bitmap">create_video_bitmap</a>,
+<a class="xref" href="#destroy_bitmap">destroy_bitmap</a>,
+<a class="xref" href="alleg007.html#set_color_depth">set_color_depth</a>,
+<a class="xref" href="#is_memory_bitmap">is_memory_bitmap</a>.</font></blockquote>
+<b>BITMAP *<a name="create_bitmap_ex">create_bitmap_ex</a>(int color_depth, int width, int height);</b><br>
+   Crea un bitmap de una profundidad de color específica (8, 15, 16, 24 o 32
+   bits por pixel).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_bitmap">create_bitmap</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>,
+<a class="xref" href="#create_video_bitmap">create_video_bitmap</a>,
+<a class="xref" href="#destroy_bitmap">destroy_bitmap</a>,
+<a class="xref" href="#is_memory_bitmap">is_memory_bitmap</a>.</font></blockquote>
+<b>BITMAP *<a name="create_sub_bitmap">create_sub_bitmap</a>(BITMAP *parent, int x, y, width, height);</b><br>
+   Crea un sub-bitmap, es decir, un bitmap que comparte memoria con un
+   bitmap ya existente, pero posiblemente con un tamaño y área de recorte
+   diferentes. Cuando cree un sub-bitmap de la pantalla en modo-X, la
+   posición x debe ser un múltiplo de cuatro. La anchura y altura del
+   sub-bitmap pueden extenderse fuera de los bordes del bitmap padre (serán
+   recortados), pero el punto de origen debe estar en una región del bitmap
+   padre.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_bitmap">create_bitmap</a>,
+<a class="xref" href="#create_bitmap_ex">create_bitmap_ex</a>,
+<a class="xref" href="#destroy_bitmap">destroy_bitmap</a>,
+<a class="xref" href="#is_sub_bitmap">is_sub_bitmap</a>.</font></blockquote>
+<b>BITMAP *<a name="create_video_bitmap">create_video_bitmap</a>(int width, int height);</b><br>
+   Reserva un bitmap de memoria de vídeo del tamaño especificado,
+   devolviendo un puntero si funcionó, o NULL si hubo algún error (ej: se
+   has quedado sin memoria vram libre). Esto puede ser usado para reservar
+   memoria de vídeo oculta para almacenar gráficos preparados para
+   operaciones aceleradas por hardware, o para crear múltiples páginas de
+   vídeo que luego pueden ser visualizadas con show_video_bitmap(). Los
+   bitmaps de memoria de vídeo son normalmente reservados usando el mismo
+   espacio que el bitmap screen, ya que pueden sobreescribirlo: por lo tanto
+   no es una buena idea usar screen al mismo tiempo que las superficies
+   devueltas por esta función.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_bitmap">create_bitmap</a>,
+<a class="xref" href="#create_bitmap_ex">create_bitmap_ex</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>,
+<a class="xref" href="#destroy_bitmap">destroy_bitmap</a>,
+<a class="xref" href="#screen">screen</a>,
+<a class="xref" href="alleg007.html#show_video_bitmap">show_video_bitmap</a>,
+<a class="xref" href="alleg007.html#gfx_capabilities">gfx_capabilities</a>,
+<a class="xref" href="#is_screen_bitmap">is_screen_bitmap</a>.</font></blockquote>
+<b>BITMAP *<a name="create_system_bitmap">create_system_bitmap</a>(int width, int height);</b><br>
+   Crea un bitmap en memoria de sistema del tamaño especificado, devolviendo
+   un puntero a él si no hubo problemas o NULL en caso contrario.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_bitmap">create_bitmap</a>,
+<a class="xref" href="#create_bitmap_ex">create_bitmap_ex</a>,
+<a class="xref" href="#create_video_bitmap">create_video_bitmap</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>,
+<a class="xref" href="#destroy_bitmap">destroy_bitmap</a>,
+<a class="xref" href="#is_system_bitmap">is_system_bitmap</a>.</font></blockquote>
+<b>void <a name="destroy_bitmap">destroy_bitmap</a>(BITMAP *bitmap);</b><br>
+   Destruye un bitmap de memoria, sub-bitmap, bitmap de memoria de vídeo o un
+   bitmap de sistema cuando ya no lo necesite.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_bitmap">create_bitmap</a>,
+<a class="xref" href="alleg009.html#load_bitmap">load_bitmap</a>.</font></blockquote>
+<b>void <a name="lock_bitmap">lock_bitmap</a>(BITMAP *bitmap);</b><br>
+   Bajo DOS, fija toda la memoria usada por un bitmap. Normalmente no
+   necesita llamar a esta función a no ser que esté haciendo cosas realmente
+   raras en su programa.
+
+<p><br>
+<b>int <a name="bitmap_color_depth">bitmap_color_depth</a>(BITMAP *bmp);</b><br>
+   Devuelve la profundidad de color del bitmap especificado (8, 15, 16, 24,
+   o 32).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg007.html#set_color_depth">set_color_depth</a>,
+<a class="xref" href="#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<b>int <a name="bitmap_mask_color">bitmap_mask_color</a>(BITMAP *bmp);</b><br>
+   Devuelve el color de máscara del bitmap especificado (el valor que es
+   ignorado al dibujar sprites). En bitmaps de 256 colores es cero, y en
+   bitmaps truecolor es rosa fucsia (rojo y azul al máximo, verde a cero).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg011.html#MASK_COLOR_8">MASK_COLOR_8</a>,
+<a class="xref" href="alleg007.html#set_color_depth">set_color_depth</a>,
+<a class="xref" href="#bitmap_color_depth">bitmap_color_depth</a>.</font></blockquote>
+<b>int <a name="is_same_bitmap">is_same_bitmap</a>(BITMAP *bmp1, BITMAP *bmp2);</b><br>
+   Devuelve TRUE si ambos bitmaps describen el mismo área de dibujo, ej: sus
+   punteros son iguales, uno es un sub-bitmap del otro, o ambos son
+   sub-bitmaps de un padre común.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>.</font></blockquote>
+<b>int <a name="is_linear_bitmap">is_linear_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es un bitmap lineal, es decir, es un bitmap de
+   memoria, pantalla en modo 13h o SVGA. En bitmaps lineales puede usar las
+   funciones _putpixel(), _getpixel(), bmp_write_line(), y bmp_read_line().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#is_planar_bitmap">is_planar_bitmap</a>,
+<a class="xref" href="#is_memory_bitmap">is_memory_bitmap</a>.</font></blockquote>
+<b>int <a name="is_planar_bitmap">is_planar_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es un bitmap de pantalla plano (modo-X o Xtended).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#is_linear_bitmap">is_linear_bitmap</a>,
+<a class="xref" href="#is_memory_bitmap">is_memory_bitmap</a>.</font></blockquote>
+<b>int <a name="is_memory_bitmap">is_memory_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es un bitmap de memoria, es decir, que fue creado
+   llamando create_bitmap() o cargado de un fichero de datos o una imagen.
+   Los bitmaps de memoria pueden ser accedidos con los punteros de línea de
+   la estructura bitmap, ej: bmp-&gt;line[y][x] = color.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#is_linear_bitmap">is_linear_bitmap</a>,
+<a class="xref" href="#is_planar_bitmap">is_planar_bitmap</a>.</font></blockquote>
+<b>int <a name="is_screen_bitmap">is_screen_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es el bitmap screen, o un sub-bitmap de él.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#screen">screen</a>,
+<a class="xref" href="#create_video_bitmap">create_video_bitmap</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>.</font></blockquote>
+<b>int <a name="is_video_bitmap">is_video_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es el bitmap screen, o un bitmap de memoria de video,
+   o un sub-bitmap de alguno de ellos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#screen">screen</a>,
+<a class="xref" href="#create_video_bitmap">create_video_bitmap</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>.</font></blockquote>
+<b>int <a name="is_system_bitmap">is_system_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es un bitmap de sistema, o un sub-bitmap de uno.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_system_bitmap">create_system_bitmap</a>,
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>.</font></blockquote>
+<b>int <a name="is_sub_bitmap">is_sub_bitmap</a>(BITMAP *bmp);</b><br>
+   Devuelve TRUE si bmp es un sub-bitmap.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#create_sub_bitmap">create_sub_bitmap</a>.</font></blockquote>
+<b>void <a name="acquire_bitmap">acquire_bitmap</a>(BITMAP *bmp);</b><br>
+   Bloquea el bitmap de memoria de vídeo especificado antes de dibujar en él.
+   Esto no se aplica a los bitmaps de memoria, y sólo afecta a algunas
+   plataformas (Windows lo necesita, DOS no). Estas llamadas no son
+   estrictamente necesarias, porque las rutinas de dibujo adquirirán el
+   bitmap automáticamente antes de acceder a él, pero bloquear una superficie
+   de DirectDraw es muy lento, y obtendrá mucho más rendimiento si adquiere
+   la pantalla sólo una vez antes del inicio de la función de redibujado
+   principal, y la suelta cuando el dibujado ha concluido completamente.
+   Múltiples llamadas de adquisición serán anidadas, y el bitmap sólo será
+   liberado cuando el contador de bloqueo sea cero. Tenga cuidado porque los
+   programas DirectX activan un bloqueo de exclusión mutua (mutex) siempre
+   que una superficie es bloqueada, lo que impide que reciban cualquier
+   mensaje de entrada, ¡así que debe asegurarse de liberar todos sus bitmaps
+   antes de usar alguna rutina de temporización, teclado o cualquier otra
+   rutina no gráfica!
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#release_bitmap">release_bitmap</a>,
+<a class="xref" href="#acquire_screen">acquire_screen</a>,
+<a class="xref" href="#release_screen">release_screen</a>.</font></blockquote>
+<b>void <a name="release_bitmap">release_bitmap</a>(BITMAP *bmp);</b><br>
+   Libera un bitmap que fue bloqueado previamente mediante una llamada a
+   acquire_bitmap(). Si el bitmap fue bloqueado varias veces, deberá
+   liberarlo el mismo número de veces para que esté verdaderamente
+   desbloqueado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#acquire_bitmap">acquire_bitmap</a>,
+<a class="xref" href="#acquire_screen">acquire_screen</a>,
+<a class="xref" href="#release_screen">release_screen</a>.</font></blockquote>
+<b>void <a name="acquire_screen">acquire_screen</a>();</b><br>
+   Sinónimo de acquire_bitmap(screen);
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#acquire_bitmap">acquire_bitmap</a>,
+<a class="xref" href="#release_bitmap">release_bitmap</a>,
+<a class="xref" href="#release_screen">release_screen</a>.</font></blockquote>
+<b>void <a name="release_screen">release_screen</a>();</b><br>
+   Sinónimo de release_bitmap(screen);
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#acquire_bitmap">acquire_bitmap</a>,
+<a class="xref" href="#release_bitmap">release_bitmap</a>,
+<a class="xref" href="#acquire_screen">acquire_screen</a>.</font></blockquote>
+<b>void <a name="set_clip">set_clip</a>(BITMAP *bitmap, int x1, int y1, int x2, int y2);</b><br>
+   Cada bitmap tiene un área de recorte asociada, que es el área de pantalla
+   sobre la que puede dibujar. Nada será dibujado fuera de este espacio.
+   Pase las dos esquinas opuestas del área de recorte: éstas son inclusivas,
+   ej: set_clip(bitmap, 16, 16, 32, 32) le permitirá dibujar en (16, 16) y
+   (32, 32), pero no en (15, 15) o (33, 33). Si x1, y1, x2 e y2 son cero, el
+   área de recorte se desactivará, lo que puede acelerar algunas operaciones
+   de dibujo (normalmente casi nada, aunque cualquier poco ayuda) pero harán
+   que su programa muera horriblemente si intenta dibujar fuera de los
+   bordes del bitmap.
+
+
+
+<p><br>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

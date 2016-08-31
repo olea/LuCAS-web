@@ -1,0 +1,421 @@
+<html><head><title>06 Modos gr ficos</title><body>
+<h1><a name="06 Modos gráficos">06 Modos gráficos</a></h1>
+<p>
+<ul><h4>
+<li><a href="#set_color_depth">set_color_depth</a>
+<li><a href="#set_gfx_mode">set_gfx_mode</a>
+<li><a href="#gfx_capabilities">gfx_capabilities</a>
+<li><a href="#scroll_screen">scroll_screen</a>
+<li><a href="#request_scroll">request_scroll</a>
+<li><a href="#poll_scroll">poll_scroll</a>
+<li><a href="#show_video_bitmap">show_video_bitmap</a>
+<li><a href="#request_video_bitmap">request_video_bitmap</a>
+<li><a href="#request_modex_scroll">request_modex_scroll</a>
+<li><a href="#poll_modex_scroll">poll_modex_scroll</a>
+<li><a href="#split_modex_screen">split_modex_screen</a>
+</h4></ul>
+<p><br><br>
+<p>
+<b>void <a name="set_color_depth">set_color_depth</a>(int depth);</b><br>
+   Especifica el formato gráfico que será usado en las siguientes llamadas a
+   set_gfx_mode() y create_bitmap(). Las profundidades válidas son 8 (por
+   defecto), 15, 16, 24 y 32 bits.
+<p>
+<b>int <a name="set_gfx_mode">set_gfx_mode</a>(int card, int w, int h, int v_w, int v_h);</b><br>
+   Cambia el modo gráfico. El parámetro card debe ser uno de los siguientes
+   valores:
+<p><pre>
+      GFX_TEXT          - vuelve al modo texto
+      GFX_AUTODETECT    - deja que Allegro seleccione la tarjeta apropiada
+      GFX_VGA           - VGA estándar (320x200, 320x100, o 160x120)
+      GFX_MODEX         - selecciona un modo VGA lineal modificado (modo-X)
+      GFX_VESA1         - usa el controlador VESA 1.x
+      GFX_VESA2B        - usa el controlador VBE 2.0 con bancos
+      GFX_VESA2L        - usa el controlador VBE 2.0 con framebuffer lineal
+      GFX_VESA3         - usa el VBE 3.0 driver
+      GFX_VBEAF         - usa el controlador VBE/AF acelerado por hardware
+      GFX_XTENDED       - usa el controlador 640x400 en modo desencadenado
+<p></pre>
+   Los parámetros w y h especifican la resolución gráfica que quiere. Los
+   modos posibles son:
+<p><ul><li>
+      El modo 13h estándar de 256 colores de la VGA, usando el controlador
+      GFX_VGA. Este es normalmente 320x200, que le permitirá trabajar con
+      cualquier VGA pero no soporta pantallas virtuales grandes ni scroll
+      por hardware. Allegro permite también varias variantes modificadas de
+      este modo que permiten scroll, miden 320x100 (con una pantalla virtual
+      de 200 pixels de altura), 160x120 (con una pantalla virtual de 409
+      pixels de altura), y 80x80 (con una pantalla virtual de 819 pixels).
+<p><li>
+      Modo-X, usando el controlador GFX_MODEX. Esto funcionará con cualquier
+      VGA, y permite un rango de diferentes resoluciones modificadas de 256
+      colores.
+<p><ul><li>
+      Resoluciones de modo-X estables:
+<p><ul><li>
+    Razón de aspecto cuadrado: 320x240
+<p><li>
+    Razón de aspecto oblicuo: 256x224, 256x240, 320x200, 320x400,
+                     320x480, 320x600, 360x200, 360x240, 360x360,
+                     360x400, 360x480
+<p></ul>
+    Estos funcionaron en cada tarjeta/monitor que he probado.
+<p><li>
+      Resoluciones de modo-X inestables:
+<p><ul><li>
+    Razón de aspecto cuadrado: 360x270, 376x282, 400x300
+<p><li>
+    Razón de aspecto oblicuo: 256x200, 256x256, 320x350, 360x600,
+                              376x308, 376x564, 400x150, 400x600
+<p></ul>
+    Estos sólo funcionan en algunos monitores. Funcionaron bien en mi
+    máquina vieja, pero no se llevan bien con mi nuevo monitor. Si está
+    preocupado por la posibilidad de dañar su monitor usando estos modos, no
+    lo esté. Por supuesto no estoy dando ninguna garantía al respecto, y si
+    su hardware explota es una pena, pero no creo que este tipo de ajustes
+    puedan hacer algún daño. De la documentación del programa TWEAK de
+    Robert Schmidt:
+<p>
+      "Hace tiempo, poner valores o combinaciones ilegales o no soportadas
+      en los registros de la tarjeta de vídeo podía ser peligroso para su
+      salud y para su monitor. *Nunca* he declarado que esto no puede pasar
+      si usa TWEAK, pero estoy muy seguro de que esto nunca pasará. Nunca
+      he oído que usar TWEAK o cambiar manualmente los registros de la VGA
+      hayan ocasionado daño alguno."
+<p></ul>
+    La mayoría de las funciones de dibujo en el modo-X son más lentas que en
+    el modo 13h, dada la complejidad de la organización plana del bitmap,
+    pero los rellenos sólidos y los blits alineados al plano de una parte de
+    la memoria de vídeo a otra pueden ser significantemente más rápidos,
+    particularmente en hardware antiguo. El modo-x accede a las 256k totales
+    de la RAM de la VGA, por lo que el scroll por hardware y el intercambio
+    de páginas es posible, y es posible partir la pantalla para mover la
+    parte superior y tener un indicador de estado fijo en la parte inferior.
+<p><li>
+      Modos SVGA estándar, 640x480, 800x600 y 1024x768. Estos deberían
+      funcionar con cualquier SVGA: si no lo hacen, consiga una copia del
+      Scitech Display Doctor y mire si se soluciona el problema. Las
+      profundidades de color disponibles dependen de su hardware. La mayoría
+      de las tarjetas soportan resoluciones de 15 y 16 bits, pero si es
+      posible se recomendaría implementar ambas (no es tan difícil...) en
+      caso de que una no esté disponible. Algunas tarjetas permiten color
+      verdadero de 24 y 32 bits, en cuyo caso la elección es entre 24
+      (salvar memoria) o 32 (va más rápido), pero algunas tarjetas antiguas
+      no tienen modos de 32 bits y algunas nuevas no tienen modos de 24
+      bits. Use el programa de test vesainfo para saber qué modos puede
+      visualizar con su controlador VESA.
+<p><li>
+      Muchas tarjetas también soportan 640x400, 1280,1024 y 1600x1200, pero
+      estos modos no siempre están disponibles, por ejemplo las tarjetas S3
+      no tienen modo 640x400. Otras resoluciones raras pueden estar
+      disponibles, ej: algunas tarjetas Tseng tienen un modo 640x350, y la
+      Advance Logic tiene un modo de 512x512.
+<p><li>
+      Modo Xtended, tal y como lo describe Mark Feldman en la PCGPE, mide
+      640x400 (256 colores) y usa el controlador GFX_XTENDED. Esto usa VESA
+      para seleccionar un modo SVGA (por lo que sólo funcionará en tarjetas
+      que soportan la resolución VESA 640x400), y entonces modifica el
+      hardware de la VGA como en el modo-X. Esto se permite acceder a toda
+      la pantalla sin necesidad de cambiar bancos, pero el scroll por
+      hardware o el intercambio de pantallas no es posible. Este driver
+      nunca será autodetectado (el modo VESA 640x400 será elegido en su
+      lugar), por lo que si quiere usar este modo, debe pasar explícitamente
+      GFX_XTENDED a set_gfx_mode().
+<p><li>
+      El SciTech Display Doctor provee varios modos de baja resolución en
+      los que puede hacer scroll en un rango diferente de profundidades de
+      color (320x200, 320x240, 320x400, 320x480, 360x200, 360x240, 360x400,
+      y 360x480 funcionan en mi ET4000 a 8, 15 o 16 bits por pixel). Estos
+      modos son fenomenales, permitiéndle hacer scroll o intercambio de
+      páginas sin la complejidad del modo-X, pero desafortunadamente no son
+      un estándar, por lo que necesitará el Display Doctor para poder
+      usarlos.
+<p><li>
+      VBE/AF es un superconjunto del estándar VBE 2.0, que trae un API para
+      acceder características de aceleración por hardware. Esto por ahora
+      sólo lo soporta el pack del SciTech Display Doctor, pero puede
+      proporcionar grandes mejoras en la velocidad si se usa con el hardware
+      adecuado. Para ver una discusión detallada sobre la aceleración por
+      hardware, lea la documentación sobre el biestable gfx_capabilities.
+<p>
+      Puede usar el programa test afinfo para comprobar si tiene un
+      controlador VBE/AF, y para ver qué resoluciones soporta.
+<p>
+      Los controladores VBE/AF de SciTech requieren que el acceso con
+      nearptr esté activado, por lo que cualquier puntero erróneo puede
+      bloquear su máquina cuando estos controladores estén en uso. Esto
+      significa que puede ser buena idea usar VESA mientras depura su
+      programa, y activa VBE/AF sólo cuando el código funcione
+      correctamente. Los controladores FreeBE/AF no tienen este problema.
+<p></ul>
+   Los parámetros v_w y v_h especifican el tamaño mínimo de la pantalla
+   virtual, en caso de que necesite una pantalla virtual grande para hacer
+   scroll por hardware o intercambio de páginas. Debería ponerlos a cero si
+   no le importa la pantalla virtual. Las pantallas virtuales crean mucha
+   confusión, pero en realidad son muy simples. Aviso: ahora viene una
+   explicación condescendiente, por lo que quizás quiera saltarse el resto
+   del párrafo :-) Imagínese la memoria de vídeo como una pieza rectangular
+   de papel que es vista a través de un pequeño agujero (su monitor) hecho
+   sobre cartón. Ya que el papel es más grande que el agujero, sólo puede
+   ver una parte de él cada vez, pero moviendo el cartón puede alterar qué
+   porción está visualizando. Puede dejar el agujero en una posición e
+   ignorar el resto de la memoria de vídeo no visible, pero puede conseguir
+   una gran variedad de útiles efectos desplazando la ventana de
+   visualización, o dibujando en una parte de la memoria de vídeo no
+   visible, y entonces intercambiar páginas para visualizar la nueva
+   pantalla.
+<p>
+   Por ejemplo, puede seleccionar el modo 640x480 en el cual el monitor
+   actúa como una ventana sobre la pantalla virtual de 1024x1024, y
+   entonces mover la pantalla visible dentro del área grande. Inicialmente,
+   la parte visible está posicionada en la parte superior izquierda de la
+   memoria de vídeo. Esta configuración sería así:
+<p><pre>
+   (0,0)------------(640,0)----(1024,0)
+   |                  |           |
+   | pantalla visible |           |
+   |                  |           |
+   (0,480)----------(640,480)     |
+   |                              |
+   | resto de la memoria de vídeo |
+   |                              |
+   (0,1024)--------------------(1024,1024)
+<p></pre>
+   ¿Qué es eso? ¿Está viendo esto con una fuente proporcional? Jejeje.
+<p>
+   Cuando llama set_gfx_mode(), los parámetros v_w y v_h representan el
+   tamaño mínimo de la pantalla virtual que es aceptable para su programa.
+   El rango de tamaños posibles es normalmente muy restringido, y es posible
+   que Allegro acabe creando una pantalla virtual más grande que la que
+   solicitó. En una SVGA con una mega de vram cuente con conseguir una
+   pantalla virtual de 1024x1024 (256 colores) o 1024x512 (15 o 16 bpp), y
+   con 512k de ram puede conseguir 1024x512 (256 colores). Otros tamaños
+   pueden ser y no ser posibles: no asuma que vayan a funcionar. En modo-X
+   la anchura virtual puede ser cualquier múltiplo de 8 mayor o igual a la
+   anchura de la pantalla, y la altura virtual se ajustará de la misma forma
+   (la VGA tiene 256k de vram, por lo que la altura virtual será
+   256*1024/virtual_width).
+<p>
+   Después de seleccionar el modo gráfico, los tamaños físicos y virtuales
+   pueden obtenerse con las macros SCREEN_W(), SCREEN_H(), VIRTUAL_W(), y
+   VIRTUAL_H().
+<p>
+   Si Allegro no es capaz de seleccionar un modo apropiado, set_gfx_mode()
+   devuelve un modo negativo y almacena la descripción del problema en
+   allegro_error. De otro modo devuelve cero.
+<p>
+<b>extern int <a name="gfx_capabilities">gfx_capabilities</a>;</b><br>
+   Campo de bits describiendo las capacidades del controlador gráfico y
+   hardware de vídeo actual. Esto puede contener cualquiera de los
+   siguientes biestables:
+<p>
+   <b>GFX_CAN_SCROLL:</b><br>
+      Indica que la función scroll_screen() puede ser usada con este
+      controlador.
+<p>
+   <b>GFX_CAN_TRIPLE_BUFFER:</b><br>
+      Indica que las funciones request_scroll() y poll_scroll() pueden ser
+      usadas con este controlador. A modo especial, el controlador modo-X
+      sólo soporta triple buffering cuando el simulador de retrazo está
+      instalado, por lo que debe llamar timer_simulate_retrace() antes de
+      hacer algo con triple buffer en una resolución de modo-X.
+<p>
+   <b>GFX_HW_CURSOR:</b><br>
+      Indica que un puntero de ratón por hardware está siendo usado. Cuando
+      este biestable esté activado, puede dibujar sin problemas en la
+      pantalla sin tener que ocultar antes el puntero del ratón. Tenga en
+      cuenta que no todo cursor gráfico puede ser implementado via hardware:
+      en particular, VBE/AF sólo soporta imágenes de 2 colores y de hasta
+      32x32 pixels, donde el segundo color es un inverso exacto del primero.
+      Esto significa que Allegro puede necesitar alternar entre cursores por
+      hardware o software en cualquier punto durante la ejecución de su
+      programa, por lo que no debe asumir que esta biestable será constante
+      durante largos periodos de tiempo. Sólo le dice si un cursor hardware
+      está siendo usado ahora, y puede cambiar cuando oculte/enseñe el
+      puntero.
+<p>
+   <b>GFX_HW_HLINE:</b><br>
+      Indica que la versión opaca normal de la función hline() está
+      implementada usando aceleración por hardware. Esto incrementará el
+      rendimiento, no sólo de hline(), sino también de otras funciones que
+      la usen internamente, por ejemplo circlefill(), triangle(), y
+      floodfill().
+<p>
+   <b>GFX_HW_HLINE_XOR:</b><br>
+      Indica que la versión XOR de la función hline(), y cualquier otra que
+      la use, estan implementadas usando aceleración por hardware.
+<p>
+   <b>GFX_HW_HLINE_SOLID_PATTERN:</b><br>
+      Indica que los modos sólidos y con patrones de la función hline(), y
+      cualquier otra función que la use, estan implementadas usando
+      aceleración por hardware (lea nota abajo).
+<p>
+   <b>GFX_HW_HLINE_COPY_PATTERN:</b><br>
+      Indica que el modo copia de patrón de la función hline(), y cualquier
+      otra función que la use, estan implementadas usando aceleración por
+      hardware (lea nota abajo).
+<p>
+   <b>GFX_HW_FILL:</b><br>
+      Indica que la versión opaca de las funciones rectfill(), clear() y
+      clear_to_color(), están implementadas usando aceleración por hardware.
+<p>
+   <b>GFX_HW_FILL_XOR:</b><br>
+      Indica que la versión XOR de la función rectfill() está implementada
+      usando aceleración por hardware.
+<p>
+   <b>GFX_HW_FILL_SOLID_PATTERN:</b><br>
+      Indica que los modos sólidos y con patrones de la función rectfill()
+      están implementados usando aceleración por hardware (lea nota abajo).
+<p>
+   <b>GFX_HW_FILL_COPY_PATTERN:</b><br>
+      Indica que el modo copia de patrón de la función rectill() está
+      implementado usando aceleración por hardware (lea nota abajo).
+<p>
+   <b>GFX_HW_LINE:</b><br>
+      Indica que la versión opaca de las funciones line() y vline() está
+      implementada usando aceleración por hardware.
+<p>
+   <b>GFX_HW_LINE_XOR:</b><br>
+      Indica que la versión XOR de las funciónes line() y vline() está
+      implementada usando aceleración por hardware.
+<p>
+   <b>GFX_HW_TRIANGLE:</b><br>
+      Indica que la versión opaca de la función triangle() está implementada
+      usando aceleración por hardware.
+<p>
+   <b>GFX_HW_TRIANGLE_XOR:</b><br>
+      Indica que la versión XOR de la función triangle() está implementada
+      usando aceleración por hardware.
+<p>
+   <b>GFX_HW_TEXTOUT_FIXED:</b><br>
+      Indica que la expansión de caracteres monocromos (para fuentes
+      monoespaciadas de 8x8 y 8x16) está implementada usando aceleración por
+      hardware.
+<p>
+   <b>GFX_HW_VRAM_BLIT:</b><br>
+      Indica que hacer un blit desde una parte de la pantalla a otra está
+      implementado usando aceleración por hardware. Si este biestable está
+      activado, hacer blits dentro de la memoria de vídeo será ciertamente
+      el modo más rápido para enseñar una imagen, por lo que sería útil
+      almacenar parte de sus gráficos más usados en una posición oculta de
+      la memoria de vídeo.
+<p>
+   <b>GFX_HW_VRAM_BLIT_MASKED:</b><br>
+      Indica que la rutina masked_blit() es capaz de hacer una copia de una
+      parte de vídeo a otra usando aceleración por hardware, y que
+      draw_sprite() usará copia por hardware cuando un sub-bitmap de la
+      pantalla sea la imagen origen. Si este biestable está activado, el
+      copiar desde la memoria de vídeo será casi seguramente el modo más
+      rápido para visualizar una imagen, por lo que podría ser rentable
+      almacenar algunos de sus sprites más usados en una porción no visible
+      de la memoria de vídeo.
+<p>
+      Aviso: ¡si esta biestable no está activado, masked_blit() y
+      draw_sprite() no funcionarán correctamente cuando los use con la
+      memoria de vídeo como bitmap origen! Sólo puede usar estas funciones
+      para copiar memoria de vídeo si están soportadas por el hardware.
+<p>
+   <b>GFX_HW_MEM_BLIT:</b><br>
+      Indica que hacer un blit desde un bitmap de memoria a la pantalla usa
+      aceleración por hardware.
+<p>
+   <b>GFX_HW_MEM_BLIT_MASKED:</b><br>
+      Indica que masked_blit() y draw_sprite() usan aceleración por hardware
+      cuando la imagen fuente es un bitmap de memoria, y la imagen destino
+      es la pantalla física.
+<p>
+   Nota: incluso cuando la información diga que el dibujo con patrón está
+   soportado usando aceleración por hardware, no será posible para cualquier
+   tamaño de patrón. El controlador VBE/AF sólo soporta patrones de hasta
+   8x8 pixels, y usará la versión original no acelerada por hardware de las
+   rutinas de dibujo siempre que use patrones más grandes.
+<p>
+   Nota2: estas características de aceleración por hardware sólo surtirán
+   efecto cuando dibuje directamente sobre la pantalla física, o un
+   sub-bitmap de ésta. La aceleración por hardware es útil sobre todo con
+   una configuración de cambio de páginas o triple buffer, y probablemente no
+   habrá diferencia de rendimiento con el sistema "dibuja en un bitmap de
+   memoria, entonces cópialo a la pantalla".
+<p>
+<b>int <a name="scroll_screen">scroll_screen</a>(int x, int y);</b><br>
+   Intenta hacer un scroll de la pantalla para enseñar una parte diferente
+   de la pantalla virtual (que será posicionada inicialmente en 0, 0,
+   esquina superior izquierda). Devuelve cero con éxito: podría fallar si el
+   controlador gráfico no soporta scroll por hardware o si la pantalla
+   virtual no es suficientemente grande. Esta función esperará un retrazo
+   vertical si la tarjeta lo requiere, por lo que no necesita llamar vsync()
+   manualmente. Puede usar esto para mover la pantalla de visualización en
+   un espacio virtual grande, o para cambiar hacia/desde dos áreas de la
+   pantalla virtual que no se sobreescriben (intercambio de páginas). Tenga
+   en cuenta que para dibujar fuera de la posición original en la pantalla,
+   deberá alterar el área de recorte: mire abajo.
+<p>
+   Scroll en modo-X es posible en cualquier tarjeta. Desafortunadamente la
+   mayoría de las implementaciones VESA solo pueden hacer scroll en
+   incrementos de 4 pixels, por lo que hacer un scroll horizontal es
+   imposible en modos SVGA. Esto es una vergüenza, pero no puedo
+   solucionarlo. Un número bien grande de implementaciones VESA tienen
+   fallos cuando hay que hacer scroll en modos truecolor, por lo que le
+   recomiendo no usar esta rutina en resoluciones truecolor a no ser que
+   esté seguro que SciTech Display Doctor esta instalado.
+<p>
+   Allegro se ocupará de la sincronización con el retrazo vertical cuando
+   haga un scroll de la pantalla, por lo que no hace falta llamar vsync()
+   antes. Esto significa que scroll_screen() tiene los mismos efectos de
+   retraso que vsync().
+<p>
+<b>int <a name="request_scroll">request_scroll</a>(int x, int y);</b><br>
+   Esta función es usada con triple buffering. Hace una petición de scroll
+   por hardware a la posición especificada, pero volverá inmediatamente en
+   vez de esperar el retrazo. El scroll tendrá lugar después del siguiente
+   retrazo, pero puede seguir ejecutando su código mientras usa la rutina
+   poll_scroll() para detectar cuándo ocurre el scroll en realidad (mire
+   examples/ex20.c). Triple buffering es sólo posible en cierto hardware:
+   sólo funcionará en modo-X si el simulador de retrazo está activo (pero
+   esto no funciona bien en win95), y está soportado por los controladores
+   VBE 3.0 y VBE/AF para un número limitado de tarjetas gráficas de alto
+   nivel. Puede mirar el bit GFX_CAN_TRIPLE_BUFFER del biestable
+   gfx_capabilities para ver si funcionará con el controlador actual.
+<p>
+<b>int <a name="poll_scroll">poll_scroll</a>();</b><br>
+   Esta función es usada con triple buffering. Chequea el estado de un
+   scroll por hardware iniciado previamente por la rutina request_scroll(),
+   devolviendo no-cero si todavía está esperando a que ocurra, y cero si ya
+   ha ocurrido.
+<p>
+<b>int <a name="show_video_bitmap">show_video_bitmap</a>(BITMAP *bitmap);</b><br>
+   Solicita intercambiar la página de pantalla hardware para visualizar el
+   objeto bitmap de vídeo especificado, que debe tener el mismo tamaño que
+   la pantalla física, y debe haber sido obtenido usando la función
+   create_video_bitmap(). Devuelve cero si no hubo problemas. Esta función
+   esperará un retrazo vertical si su tarjeta de vídeo lo requiere, por lo
+   que no hace falta que llame vsync() manualmente.
+<p>
+<b>int <a name="request_video_bitmap">request_video_bitmap</a>(BITMAP *bitmap);</b><br>
+   Esta función se usa con triple buffering. Solicita intercambiar la página
+   de pantalla al objeto bitmap de vídeo especificado, pero retorna
+   inmediatamente en vez de esperar el retrazo. El intercambio tendrá lugar
+   con el siguiente retrazo vertical, pero puede mientras puede seguir
+   ejecutando su código y usar la rutina poll_scroll() para detectar cuándo
+   ocurre el intercambio realmente. Triple buffering sólo es posible en
+   determinado hardware: mire los comentarios de request_scroll().
+<p>
+<b>int <a name="request_modex_scroll">request_modex_scroll</a>(int x, int y);</b><br>
+<b>int <a name="poll_modex_scroll">poll_modex_scroll</a>();</b><br>
+   Versiones obsoletas de request_scroll() y poll_scroll(), preservadas para
+   mantener la compatibilidad con aplicaciones antiguas.
+<p>
+<b>void <a name="split_modex_screen">split_modex_screen</a>(int line);</b><br>
+   Esta función sólo está disponible en modo-X. Parte la pantalla VGA en dos
+   partes en la línea especificada. En la mitad superior puede hacer scroll
+   hacia cualquier parte de la vram con la función scroll_screen(), pero la
+   parte inferior quedará fija y enseñará la pantalla desde la posición (0,
+   0). Después de partir la pantalla, generalmente querrás hacer un scroll de
+   tal forma que la parte superior empiece más abajo en la memoria de vídeo,
+   y crear dos sub-bitmas para acceder a las dos secciones (mire
+   examples/ex19.c, demuestra cómo hacerlo). Para desactivar la pantalla
+   partida, llame split_modex_screen(0).
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

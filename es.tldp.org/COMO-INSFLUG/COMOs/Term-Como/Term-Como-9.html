@@ -1,0 +1,117 @@
+<HTML>
+<HEAD>
+<TITLE>TERM Como: Automatizando las cosas.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Term-Como-8.html">Anterior</A>
+<A HREF="Term-Como-10.html">Siguiente</A>
+<A HREF="Term-Como.html#toc9">Indice</A>
+<HR>
+<H2><A NAME="s9">9. Automatizando las cosas.</A></H2>
+
+<P> </P>
+<P>Ahora que ya sabe c&oacute;mo conseguir todos los servicios de red sobre
+<CODE>term</CODE>, ser&iacute;a bonito colocar las cosas de tal modo que su enlace se
+establezca y configure autom&aacute;ticamente. B&aacute;sicamente hay infinitas formas
+de hacerlo, dependiendo de que programa de comunicaci&oacute;n utilice y c&oacute;mo
+acceda a su sistema remoto.</P>
+<P>Un programa que yo no he usado, pero que he o&iacute;do que es bastante
+agradable, es <CODE>fet</CODE>: un <I>front-end</I> para <CODE>term</CODE>. Est&aacute;
+dise&ntilde;ado para introducirle en un sistema remoto y poner en marcha
+<CODE>term</CODE> y todos sus <CODE>tredirs</CODE>. Cualquier comentario sobre
+<CODE>fet</CODE> ser&aacute; bienvenido. </P>
+<P>Le dar&eacute; un ejemplo de una serie de comandos que usa <CODE>kermit</CODE> para
+introducirse en el sistema remoto y que efect&uacute;a todas las inicializaciones
+de <CODE>term</CODE>. Obviamente, si usa estos ejemplos, tendr&aacute; que
+modificarlos para sus propios procedimientos de acceso.</P>
+<P>El comando que se invoca en este caso es la <I>shell script</I> <CODE>knet</CODE>, dada 
+por:</P>
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+/usr/bin/kermit -y $HOME/.kerm_term &gt; $HOME/klog &lt; /dev/null 2&gt;& 1 
+exec $HOME/bin/tstart &gt;&gt; $HOME/klog 2&gt;& 1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La script <CODE>.kerm_term</CODE> viene dada por:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+pause 2 
+# El numero al que llamar
+output atdtXXXXXXX \13 
+# Acceso al servidor de terminal
+input 145 {name: } 
+output MYNAME \13 
+input 3 {word: } 
+output MYPASSWORD \13 
+input 5 {xyplex&gt;} 
+# Hacer la linea transparente
+output term telnet-t \13 
+output term stopb 1 \13 
+# Conectar al host remoto
+output telnet remotehost.somedomain.org \13 
+input 10 {ogin: } 
+output MYOTHERNAME \13 
+input 3 word: 
+output MYOTHERPASSWORD \13 
+pause 5  
+# Lanzar term en el host remoto
+output exec term -s 38400 -l $HOME/tlog -w 10 -t 150  \13
+! /usr/bin/term -r -l $HOME/tlog -s 38400 -c off -w 10 -t 150 &lt; /dev/modem  &gt; /dev/modem &
+# Abrir otros clientes aqui
+suspend 
+!killall -KILL term 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>y finalmente, el <I>script</I> <CODE>tstart</CODE> que lanza los clientes <CODE>term</CODE> es:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+#!/bin/sh 
+# 
+# Esto hace que salga el correo, pueda leer news, y pueda recoger correo.
+# 
+/usr/local/bin/tredir 2025 25 2119 newshost:119 2110 pophost:110 
+# 
+# Puedo abrir una Xwindow aqui
+# 
+/usr/local/bin/trsh -s txconn 
+# 
+# Ahora recibire el correo....
+# 
+/usr/local/bin/pop 
+# 
+# Limpiar la cola, en caso de boo-boos
+# 
+/usr/bin/runq 
+# 
+# Acabado
+# 
+echo ^G^G &gt; /dev/console 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Cuando por fin quiera cerrar la conexi&oacute;n, retoma y termina el <CODE>kermit</CODE>.
+La &uacute;ltima l&iacute;nea del <I>script</I> mata el <CODE>term</CODE> local y al sistema a
+su estado inicial.
+<SL> Nota del autor: en lugar de hacer
+<CODE>!killall -KILL term</CODE>, creo que ser&iacute;a posible hacer solamente
+<CODE>!tshutdown</CODE>. ¿Funcionar&aacute; esto tambi&eacute;n?  </SL>
+</P>
+<P>Como ya dije, hay <I>zillones</I> de formas de hacerlo; estas s&oacute;lo se han
+citado como ejemplos para que pueda comenzar. Otros ejemplos pueden
+encontrarse en los paquetes <CODE>autoterm</CODE> y <CODE>JoelTermStuff</CODE>. </P>
+
+<HR>
+<A HREF="Term-Como-8.html">Anterior</A>
+<A HREF="Term-Como-10.html">Siguiente</A>
+<A HREF="Term-Como.html#toc9">Indice</A>
+</BODY>
+</HTML>

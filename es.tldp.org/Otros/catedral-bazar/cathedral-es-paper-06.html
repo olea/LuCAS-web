@@ -1,0 +1,164 @@
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.04 [en] (X11; I; Linux 2.0.31 i586) [Netscape]">
+   <TITLE>The Cathedral and the Bazaar: Popclient becomes Fetchmail</TITLE>
+<LINK HREF="cathedral-paper-7.html" REL=next>
+<LINK HREF="cathedral-paper-5.html" REL=previous>
+<LINK HREF="cathedral-paper.html#toc6" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="cathedral-es-paper-07.html">Siguiente</A>
+<A HREF="cathedral-es-paper-05.html">Anterior</A> <A HREF="cathedral-es-paper-00.html#toc6">Indice</A>&nbsp;
+<HR>
+<H2>
+<A NAME="s6"></A>6. Popclient se convierte en Fetchmail</H2>
+El punto a partir del cual el programa cambi&oacute; de verdad fue cuando
+Harry Hochheiser me envi&oacute; su versi&oacute;n inicial para redirigir
+el correo a una puerta SMTP. Me di cuenta casi inmediatamente de que la
+implementaci&oacute;n fiable de esta posibilidad hac&iacute;a de los dem&aacute;s
+modos de reenv&iacute;o algo casi obsoleto.
+
+<P>Hab&iacute;a estando modificando 'fetchmail' durante varias semanas
+de forma progresiva pero no dejaba de notar que el dise&ntilde;o de la
+interfase era utilizable pero poco presentable -- muy poco elegante y con
+demasiadas opciones de uso poco frecuente dando vueltas por ah&iacute;.
+Las opciones para volcar el correo recogido a un fichero 'mailbox' o a
+la salida est&aacute;ndar me preocupaban de manera especial, pero no terminaba
+de entender la raz&oacute;n.
+
+<P>Lo que v&iacute; cuando pens&eacute; sobre el reenv&iacute;o a un servidor
+SMTP era que 'popclient' hab&iacute;a intentado hacer demasiadas cosas.
+Hab&iacute;a sido dise&ntilde;ado para ser a la vez un agente de transporte
+de correo ("mail transport agent" MTA) y un agente de env&iacute;o de correo
+local ("local delivery agent" MDA). Con el reenv&iacute;o a un servidor
+SMTP, pod&iacute;a salir del mundo MDA y convertirse en un MTA aut&eacute;ntico,
+encarg&aacute;ndose de remitir el correo a otros programas para su entrega
+local del mismo modo en que lo hace 'sendmail'.
+
+<P>&iquest;Qu&eacute; necesidad hay de lidiar con la complejidad de configurar
+un agente de env&iacute;o de correo o con el bloqueo y la adici&oacute;n
+a un fichero 'mailbox' si existe una garant&iacute;a casi total de que
+la puerta 25 se encuentre disponible desde el principio en cualquier plataforma
+que soporte TCP/IP?. En especial cuando eso significa que el correo que
+se recoja tiene la garant&iacute;a de aparecer como un correo normal SMTP
+remitido desde el lugar de origen, que es lo que en verdad andamos buscando.
+
+<P>Hay varias lecciones que extraer de aqu&iacute;. En primer lugar, que
+esta idea de realizar un reenv&iacute;o al servidor SMTP fue la mayor contribuci&oacute;n
+individual que obtuve al intentar imitar los m&eacute;todos de Linus. Un
+usuario me di&oacute; una idea tan brillante -- y todo lo que tuve que
+hacer por mi parte fue comprender sus implicaciones.
+
+<P><I>11. La siguiente cosa mejor que tener buenas ideas consiste en reconocer
+las buenas ideas de tus usuarios. Y en ocasiones &eacute;sta &uacute;ltima
+es la mejor en t&eacute;rminos absolutos.</I>
+
+<P>Resulta bastante interesante observar que uno se da cuenta enseguida
+de que si se es completa y generosamente ver&iacute;dico acerca de cuanto
+le debes a los dem&aacute;s, el resto de la humanidad te tratar&aacute;
+como si fueras el responsable de hasta la &uacute;ltima porci&oacute;n
+de un invento y considerar&aacute; que est&aacute;s siendo simplemente
+modesto respecto a tu indiscutible genialidad. &iexcl;No hay m&aacute;s
+que ver lo bien que este efecto funcion&oacute; con Linus!
+
+<P>(Cuando present&eacute; esta comunicaci&oacute;n en la conferencia Perl
+en Agosto de 1997, Larry Wall estaba sentado en la primera fila. Al llegar
+a la &uacute;ltima l&iacute;nea citada anteriormente, exclam&oacute;: "D&iacute;
+que s&iacute;, d&iacute; que s&iacute;, t&iacute;o". Todos los presentes
+rieron, porque sab&iacute;an que tambi&eacute;n le hab&iacute;a ocurrido
+exactamente igual al inventor de Perl).
+
+<P>Y despu&eacute;s de unas pocas semanas de conducir el proyecto de esta
+forma, comenc&eacute; a recibir un reconocimiento similar no solo de mis
+usuarios, sino tambi&eacute;n de otra gente a la que le hab&iacute;an llegado
+noticias indirectamente. Guard&eacute; a buen recaudo algunos de aquellos
+mensajes de e-mail; y los leer&eacute; de nuevo si alguna vez me pregunto
+si mi vida ha servido para algo &uacute;til.
+
+<P>Pero hay aqu&iacute; dos lecciones fundamentales m&aacute;s, nada pol&iacute;ticas,
+que pueden aplicarse a cualquier clase de dise&ntilde;o.
+
+<P><I>12. A menudo, las soluciones m&aacute;s sorprendentes e innovadoras
+surgen al darte cuenta de que la idea que se ten&iacute;a del problema
+estaba equivocada.</I>
+
+<P>Hab&iacute;a tratado de resolver el problema equivocado al continuar
+desarrollando 'popclient' como una combinaci&oacute;n MTA/MDA capaz de
+realizar cualquier suerte de entrega local del correo por extra&ntilde;a
+que pudiera resultar.&nbsp; El dise&ntilde;o de 'fetchmail' deb&iacute;a
+ser rehacerse por completo, plante&aacute;ndolo como un MTA puro, como
+una parte m&aacute;s del camino habitual del correo en Internet regulado
+mediante dialogos SMTP.
+
+<P>Cuando topas con una pared en un desarrollo dado -- cuando te ves obligado
+a pensar m&aacute;s all&aacute; de cual va aser el pr&oacute;ximo parche
+-- suele ser el momento de plantearte no si tienes la respuesta adecuada,
+sino si est&aacute;s respondiendo la respuesta correcta. Quiz&aacute; el
+problema necesita ser replanteado.
+
+<P>Bueno, hab&iacute;a replanteado mi problema. Estaba claro que lo m&aacute;s
+adecuado era (1) transformar el soporte para redireccionar el correo mediante
+SMTP en el driver gen&eacute;rico, (2) fijarlo como el modo de funcionamiento
+por defecto, y (3) eliminar cuando fuera posible las dem&aacute;s formas
+de entrega de correo, en especial las opciones de entrega a fichero y a
+la salida est&aacute;ndar.
+
+<P>Estuve dudando alg&uacute;n tiempo sobre la conveniencia de poner en
+pr&aacute;ctica la tercera etapa, temiendo perjudicar a aquellos antiguos
+usuarios de 'pop-client' que depend&iacute;an de los modos alternativos
+de entrega de correo. En teor&iacute;a, podr&iacute;an pasar inmediatamente
+a emplear ficheros '.forward' o sus equivalencias alternativas al empleo
+de 'sendmail' para conseguir los mismos resultados. Pero en la pr&aacute;ctica,
+la transici&oacute;n hubiera podido crearles un cierto l&iacute;o.
+
+<P>Pero cuando termin&eacute; por hacerlo, los beneficios fueron enormes.
+La parte m&aacute;s problem&aacute;tica del driver desapareci&oacute;.
+La configuraci&oacute;n se hizo much&iacute;simo m&aacute;s simple -- ya
+no hab&iacute;a necesidad de andar buscando el MDA del sistema o el&nbsp;
+fichero 'mailbox' del usuario, ni era preciso preocuparse de si el sistema
+operativo sobre el que se ejecutaba soportaba o no el bloqueo de ficheros.
+
+<P>Adem&aacute;s, despareci&oacute; la &uacute;nica posibilidad de que
+se perdiera el correo. Si intentabas entregar el correo en un fichero y
+el espacio en disco se acababa, lo perd&iacute;as. Algo que no puede pasar
+mediante la redirecci&oacute;n en SMTP por cuanto el receptor SMTP no devolver&aacute;
+un OK a menos que el mensaje se haya entregado o al menos se haya puesto
+en lista de espera para entregarlo en cuanto sea posible.
+
+<P>Por otra parte, la velocidad aument&oacute; (aunque no tanto como para
+poderlo notar en un uso ocasional). Otro beneficio nada insignificante
+del cambio consisti&oacute; en que la p&aacute;gina 'man' del programa
+se hizo mucho m&aacute;s sencilla.
+
+<P>M&aacute;s adelante, hube de reintroducir la posibilidad de realizar
+la entrega a trav&eacute;s de un MDA local para poder trabajar en algunas
+oscuras situaciones relacionadas con el uso de SLIP din&aacute;mico. Pero
+encontr&eacute; una manera mucho m&aacute;s sencilla de hacerlo.
+
+<P>La moraleja?. No dudes en eliminar posibilidades ya caducas cuando sea
+posible hacerlo sin p&eacute;rdida de efectividad. Antoine de Saint-Exupery
+(que fue aviador y dise&ntilde;ador de aeroplanos antes que autor de libros
+cl&aacute;sicos para ni&ntilde;os) dec&iacute;a que:
+
+<P><I>13. ``La perfecci&oacute;n (de un dise&ntilde;o) no se consigue cuando
+no queda nada por a&ntilde;adir, sino m&aacute;s bien cuando no resta nada
+por eliminar.''</I>
+
+<P>Cuando tu c&oacute;digo se hace mejor y m&aacute;s sencillo, es cuando
+<I>notas </I>que es correcto. El dise&ntilde;o de 'fetchmail' adquiri&oacute;
+su propia identidad en este proceso, una distinta a la de su antepasado
+'popclient'
+
+<P>Hab&iacute;a llegado el momento de cambiarle el nombre. El nuevo dise&ntilde;o
+se parec&iacute;a m&aacute;s a un asistente de 'sendmail' de lo que lo
+hab&iacute;a sido el entiguo 'popclient'; ambos son del tipo MTA, pero
+mientras 'sendmail' remite los mensajes y luego los env&iacute;a, el nuevo
+'popclient' los recoge y luego los env&iacute;a. Tras dos meses de esfuerzos,
+le cambi&eacute; el nombre a 'fetchmail'.
+
+<P>
+<HR><A HREF="cathedral-es-paper-07.html">Siguiente</A> <A HREF="cathedral-es-paper-05.html">Anterior</A>
+<A HREF="cathedral-es-paper-00.html#toc6">Indice</A>
+</BODY>
+</HTML>

@@ -1,0 +1,969 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf175, System Administration: xinetd</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<IMG src="../../common/images/Frederic_Raynal.png">
+<BR>por  <A href="mailto:pappy@users.sourceforge.net">Fr&eacute;d&eacute;ric Raynal</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>
+Fr&eacute;d&eacute;ric Raynal est&aacute; preparando su tesis sobre
+marcas de agua en im&aacute;genes digitales en el INRIA (Instituto Nacional de
+Investigaci&oacute;n en Inform&aacute;tica y Automatizaci&oacute;n, con sus siglas en franc&eacute;s)
+</P>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">&iquest;De qu&eacute; se trata xinetd ?</A></LI>
+  <LI><A HREF="#lfindex1">Compilaci&oacute;n e instalaci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex2">Configuraci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex3">La secci&oacute;n defaults </A></LI>
+  <LI><A HREF="#lfindex4">Configurando un servicio</A></LI>
+  <LI><A HREF="#lfindex5">El atributo bind</A></LI>
+  <LI><A HREF="#lfindex6">Redirecci&oacute;n de servicios hacia otra m&aacute;quina: el atributo redirect
+</A></LI>
+  <LI><A HREF="#lfindex7">Servicios Especiales</A></LI>
+  <LI><A HREF="#lfindex8">Juguemos un poco...</A></LI>
+  <LI><A HREF="#lfindex9">Comencemos con un acertijo</A></LI>
+  <LI><A HREF="#lfindex10">El comando chroot</A></LI>
+  <LI><A HREF="#lfindex11">Conclusi&oacute;n</A></LI>
+  <LI><A HREF="#lfindex12">El servidor POP3</A></LI>
+  <LI><A HREF="#lfindex13">Errores de configuraci&oacute;n en RH7.0, Mandrake 7.2 y quiz&aacute;s en otras distribuciones...</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=175&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>xinetd</H2>
+ <IMG alt=security border=0 height=100
+src="../../common/images/illustration175.gif" width=100>
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+<p>
+Xinetd ("Demonio de Servicios Extendidos de Internet" con sus siglas en
+ingl&eacute;s) brinda una excelente defensa contra intrusiones y reduce los riesgos de ataques por
+<I>Negaci&oacute;n de Servicios</I>
+(<I>DoS</I>). Al igual la conocida dupla
+<FONT face="Courier New,Courier">inetd</FONT>+<FONT face="Courier New,Courier">tcpd</FONT>,
+permite corregir los permisos de acceso a una determinada m&aacute;quina si bien puede hacer mucho
+m&aacute;s que esto.  En el presente art&iacute;culo analizaremos muchas de sus caracter&iacute;sticas.
+</p></P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+<A NAME="lfindex0">&nbsp;</A>
+<H3>&iquest;De qu&eacute; se trata xinetd ?</H3>
+El cl&aacute;sico <FONT
+face="Courier New,Courier">inetd</FONT> ayuda a controlar las conexiones de red en una
+computadora. Cuando llega una petici&oacute;n al puerto administrado por
+<FONT face="Courier New,Courier">inetd</FONT>, &eacute;ste la redirige a un programa denominado
+tcpd. Tcpd decide, de acuerdo con las reglas contenidas en los archivos
+<FONT face="Courier New,Courier">hosts.{allow, deny}</FONT> si se autoriza o no la petici&oacute;n.
+Si la petici&oacute;n se acepta, se inicia el proceso del servidor correspondiente (ej. ftp).
+Este mecanismo se conoce con el nombre de <FONT face="Courier New,Courier">tcp_wrapper</FONT>.
+<P>xinetd ofrece capacidades de control de acceso similares a las proporcionadas por
+<FONT face="Courier New,Courier">tcp_wrapper</FONT>. Sin embargo, sus posibilidades se
+extienden mucho m&aacute;s all&aacute;:
+<UL>
+  <LI>control de acceso para los servicios TCP, UDP y RPC (en estos &uacute;ltimos no funciona
+  del todo bien)
+  <LI>control de acceso basado en intervalos de tiempo
+  <LI>prevenci&oacute;n efectiva contra ataques del tipo <I>Negaci&oacute;n de Servicios</I> (DoS)
+  que bloquean una m&aacute;quina saturando sus recursos:
+  <UL>
+    <LI>limitaci&oacute;n del n&uacute;mero de servidores del mismo tipo ejecut&aacute;ndose en forma simult&aacute;nea.
+    <LI>limitaci&oacute;n del n&uacute;mero total de servidores
+    <LI>limitaci&oacute;n del tama&ntilde;o de los archivos log. </LI></UL>
+  <LI>anexi&oacute;n de un servicio a una interface determinada permitiendo, por ejemplo, hacer
+  accesibles los servicios en una red privada pero no en el entorno ajena a ella.
+  <LI>puede oficiar de proxy para otros sistemas lo cual resulta muy pr&aacute;ctico en el caso
+  del ip_masquerading (o NAT) afin de acceder a m&aacute;quinas situadas en una red interna.
+  </LI></UL>El principal
+  inconveniente, como ya se mencion&oacute;, est&aacute; relacionado con la admistraci&oacute;n de las llamadas
+  RPC que a&uacute;n no se encuentran bien soportadas.
+  Sin embargo, <FONT face="Courier New,Courier">portmap</FONT> y xinetd se complementan
+  perfectamente.
+<P>La primera parte de este art&iacute;culo explica c&oacute;mo funciona xinetd. Nos centraremos
+en la configuraci&oacute;n general de un servicio, en algunas opciones espec&iacute;ficas e ilustraremos
+todo esto con ayuda de ejemplos. La segunda parte muestra el funcionamiento de xinetd,
+los archivos logs que genera y  finaliza con un peque&ntilde;o truco muy &uacute;til.
+<A NAME="lfindex1">&nbsp;</A>
+<H3>Compilaci&oacute;n e instalaci&oacute;n</H3>
+Se puede obtener xinetd desde la p&aacute;gina
+<A href="http://www.xinetd.org/">http://www.xinetd.org/</A>. Para este art&iacute;culo hemos usado
+la versi&oacute;n 2.1.8.9pre10. <BR>La compilaci&oacute;n e instalaci&oacute;n se realiza de la manera habitual,
+es decir, con los comandos que hacen todo :) :
+ <FONT face="Courier New,Courier">./configure;
+make; make install</FONT>. <FONT face="Courier New,Courier">configure</FONT>
+admite las opciones usuales.
+Existen tres opciones expec&iacute;ficas para compilar el programa:
+<OL>
+  <LI><FONT face="Courier New,Courier">--with-libwrap</FONT> : con esta opci&oacute;n
+  xinetd comienza examinando los archivos de configuraci&oacute;n de
+  <FONT face="Courier New,Courier">tcpd</FONT>
+  (<FONT face="Courier New,Courier">/etc/hosts.{allow, deny}</FONT>) y si se acepta
+  el acceso, utiliza sus propios mecanismos de control. Para que esta opci&oacute;n funcione
+  es necesario contar con tcp_wrapper y sus bibliotecas (Nota del autor: lo que se puede
+  hacer con el wrapper se puede hacer con xinetd. El permitir esta compatibilidad conduce
+  a multiplicar los archivos de configuraci&oacute;n lo cual complica la tarea de administraci&oacute;n...
+  en pocas palabras, no lo recomiedo);
+  <LI><FONT face="Courier New,Courier">--with-loadavg</FONT> : esta opci&oacute;n permite a
+  xinetd manejar la opci&oacute;n de configuraci&oacute;n max_load (carga m&aacute;xima). Esto permite desactivar
+  algunos servicios cuando la carga de la m&aacute;quina supera un l&iacute;mite determinado lo cual
+  es fundamental para prevenir algunos ataques DoS (ver el atributo
+  <FONT face="Courier New,Courier">max_load</FONT> en la
+ <A href="#tableau1">tabla
+  1</A>) ;
+  <LI><FONT face="Courier New,Courier">--with-inet6</FONT> : si desea utilizar
+  IPv6 esta opci&oacute;n permite soportarlo. Se administran las conexiones IPv4 <B>y</B> IPv6,
+  pero las direcciones IPv4 se convierten al formato IPv6.
+</LI></OL>Antes de iniciar xinetd no es necesario desactivar inetd. No obstante si no
+se toma en cuenta esta precauci&oacute;n puede originarse un comportamiento bastante impredecible
+de ambos demonios.
+<P>Algunas se&ntilde;ales influyen en el comportamiento de xinetd:
+<UL>
+  <LI>SIGUSR1 : reconfiguraci&oacute;n del software. Se vuelve a leer el archivo de configuraci&oacute;n
+  y se cambian adecuadamente los par&aacute;metros de los servicios.
+  <LI>SIGUSR2 : reconfiguraci&oacute;n del hardware. Como antes pero adem&aacute;s mata a los demonios
+  desactualizados
+  <LI>SIGTERM : finaliza xinetd y a todos los demonios que gener&oacute; </LI></UL>Existen otras
+m&aacute;s pero las tres mencionadas pueden manejarse f&aacute;cilmente con un peque&ntilde;o script que contenga las opciones
+start, stop, restart, soft y hard  (las &uacute;ltimas dos corresponden respectivamente a las se&ntilde;ales
+SIGUSR1 y SIGUSR2). Se&ntilde;alemos de paso un error presente en la documentaci&oacute;n y en las p&aacute;ginas del manual: SIGHUP
+escribe su volcado en en archivo <FONT face="Courier New,Courier">/var/run/xinetd.dump</FONT>
+y no en <FONT face="Courier New,Courier">/tmp/xinetd.dump</FONT>.
+<A NAME="lfindex2">&nbsp;</A>
+<H3>Configuraci&oacute;n</H3>
+El archivo <FONT face="Courier New,Courier">/etc/xinetd.conf</FONT>
+es el archivo de configuraci&oacute;n por defecto del demonio xinetd (una opci&oacute;n de la l&iacute;nea de comandos
+permite designar otro). Si bien la configuraci&oacute;n de xinetd no es muy complicada, es bastante
+extensa y -desgraciadamente- su sintaxis difiere de la empleada por su predecedor
+<FONT face="Courier New,Courier">inetd</FONT>.
+<P>Dos utilidades que acompa&ntilde;an a xinetd (<FONT face="Courier New,Courier">itox</FONT> y
+<FONT face="Courier New,Courier">xconv.pl</FONT>) permiten convertir
+el archivo <FONT face="Courier New,Courier">/etc/inetd.conf </FONT>
+en un archivo de configuraci&oacute;n para xinetd. Obviamente, esto no es suficiente ya que
+se ignoran las reglas especificadas en la configuraci&oacute;n del wrapper. El programa itox
+no se sigue desarrollando a pesar de que se sigue manteniendo.
+<FONT face="Courier New,Courier">xconv.pl </FONT> constituye una mejor soluci&oacute;n, incluso
+a pesar de que sus resultados necesitan modificarse, pues xinetd ofrece m&aacute;s posibilidades que
+<FONT face="Courier New,Courier">inetd</FONT>: <BR>
+<BLOCKQUOTE><FONT face="Courier New,Courier">&gt;&gt;/usr/local/sbin/xconv.pl
+  &lt; /etc/inetd.conf &gt; /etc/xinetd.conf</FONT></BLOCKQUOTE>El archivo de configuraci&oacute;n
+comienza con una secci&oacute;n por defecto cuyos atributos utilizar&aacute;n todos los servicios
+administrados por xinetd. A continuaci&oacute;n, se encuentran tanta secciones como servicios
+existan. En cada una de ellas se pueden redefinir las opciones espec&iacute;ficas que vienen
+por defecto.
+<P>Los valores por defecto de cada secci&oacute;n se escriben de la siguiente manera:
+<BLOCKQUOTE><I><FONT face="Courier New,Courier">defaults</FONT></I> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;&nbsp;&nbsp; atributo operador
+  valor(es)</FONT> <BR><FONT face="Courier New,Courier">&nbsp;&nbsp;&nbsp;
+  ...</FONT> <BR><FONT face="Courier New,Courier">}</FONT></BLOCKQUOTE>Cada
+uno de los atributos definidos en esta secci&oacute;n conserva el (los) valor(es) proporcionados
+por los servicios descriptos a continuaci&oacute;n.
+As&iacute;, el atributo <FONT face="Courier New,Courier">only_from</FONT>
+permite estipular una lista de direcciones autorizadas para conectarse a los servidores:
+<BLOCKQUOTE><FONT face="Courier New,Courier">only_from = 192.168.1.0/24
+  192.168.5.0/24 192.168.10.17</FONT></BLOCKQUOTE>A continuaci&oacute;n, todos los servicios
+declarados permiten el acceso a las m&aacute;quinas cuyas direcciones corresponden a algunas
+de las que figuran en la lista. Igualmente, es posible modificar para cada servicio
+estos valores por defecto (ver los operadores explicados m&aacute;s abajo).
+Sin embargo, este proceso implica ciertos riesgos. En efecto, es mejor, por razones
+de sencillez y seguridad, no definir valores por defecto para posteriormente
+modificarlos dentro de un servicio. En el caso de los permisos de acceso, por ejemplo,
+la pol&iacute;tica m&aacute;s simple y eficaz consiste en denegar el acceso a todo el mundo y
+a continuaci&oacute;n autorizar el uso de cada servicio s&oacute;lo a aquellos que realmente
+lo necesitan (con tcp_wrapper, esta pol&iacute;tica se traduce en un archivo
+<FONT face="Courier New,Courier">hosts.deny</FONT> que contiene la l&iacute;nea
+<FONT face="Courier New,Courier">ALL:ALL@ALL</FONT> y un archivo
+<FONT face="Courier New,Courier">hosts.allow</FONT> que contiene &uacute;nicamente los
+servicios autorizados con las direcciones adecuadas).
+<P>Cada secci&oacute;n que describe un servicio en el archivo de configuraci&oacute;n es de la forma:
+<BLOCKQUOTE><FONT face="Courier New,Courier"><I>service</I> nombre_del_servicio</FONT>
+  <BR><FONT face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;&nbsp;&nbsp; atributo operador
+  valor(es)</FONT> <BR><FONT face="Courier New,Courier">&nbsp;&nbsp;&nbsp;
+  ...</FONT> <BR><FONT face="Courier New,Courier">}</FONT></BLOCKQUOTE>Existen
+tres operadores: '=', '+=' y '-='. La mayor&iacute;a de los atributos s&oacute;lo soportan el
+operador '=' que fija un valor a un determinado atributo. El operador '+='
+agrega un elemento a una lista de valores en tanto que el operador '-=' lo elimina.
+<P>La <A
+href="#tableau1">tabla
+1</A> describe brevemente a algunos de estos atributos. Veremos su uso en los ejemplos
+que siguen. La lectura de la p&aacute;gina <FONT face="Courier New,Courier">man</FONT>
+de <FONT face="Courier New,Courier">xinetd.conf</FONT>
+brinda una informaci&oacute;n m&aacute;s amplia.
+<BR>&nbsp; <BR>&nbsp; <A name=tableau1>&nbsp;</A>
+<CENTER>
+<TABLE bgColor=#9999bb border=1 width="100%" NOSAVE>
+  <TBODY>
+  <TR>
+    <TD><B>Atributo</B></TD>
+    <TD><B>Valores y descripci&oacute;n</B></TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">flags</FONT></TD>
+    <TD>Aqu&iacute; s&oacute;lo se describen los valores m&aacute;s comunes . Ver la documentaci&oacute;n
+        para descubrir los restantes.
+      <UL>
+        <LI>IDONLY : &uacute;nicamente acepta conexiones de clientes que tengan un servidor
+        de identificaci&oacute;n;
+        <LI>NORETRY : en caso de fracasar evita que se desdoble el proceso;
+        <LI>NAMEINARGS : el primer argumento del atributo <FONT face="Courier New,Courier">server_args</FONT> se usa mientras
+        <FONT face="Courier New,Courier">argv[0]</FONT> para el <FONT
+        face="Courier New,Courier">servidor</FONT>. Esto permite usar <FONT
+        face="Courier New,Courier">tcpd</FONT> poni&eacute;ndolo en el atributo del <FONT
+        face="Courier New,Courier">server</FONT>. Se escribe el
+        nombre del servidor y sus argumentos tal como <FONT face="Courier New,Courier">server_args</FONT>, al igual que se har&iacute;a con
+        <FONT face="Courier New,Courier">inetd</FONT>. </LI></UL></TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">log_type</FONT></TD>
+    <TD>xinetd usa por defecto <FONT face="Courier New,Courier">syslogd</FONT> y el selector
+      <FONT face="Courier New,Courier">daemon.info</FONT>.
+      <UL>
+        <LI>SYSLOG selector [nivel] : permite elegir entre <FONT
+        face="Courier New,Courier">daemon</FONT>, <FONT
+        face="Courier New,Courier">auth</FONT>, <FONT
+        face="Courier New,Courier">user</FONT> o <FONT
+        face="Courier New,Courier">local0-7</FONT> de <FONT
+        face="Courier New,Courier">syslogd</FONT> ;
+        <LI>FILE [tama&ntilde;o_max [tama&ntilde;o_max_absoluto]] : el archivo especificado recibe la
+        informaci&oacute;n. Las dos opciones fijan los l&iacute;mites del tama&ntilde;o del archivo. Cuando
+  	se alcanza el primero, se env&iacute;a un mensaje a syslogd; en tanto cuando se alcanza
+        el segundo, se interrumpe el registro de los logs del servicio
+	(si se trata de un archivo compartido o fijo por defecto pueden verse afectados
+        diversos servicios). </LI></UL></TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">log_on_success</FONT></TD>
+    <TD>Cuando el servidor arranca quedan registrados diversos datos:
+      <UL>
+        <LI>PID : el PID del servidor (si se trata de un servicio interno de xinetd el PID
+        vale 0) ;
+        <LI>HOST : la direcci&oacute;n del cliente ;
+        <LI>USERID : la identidad del usuario remoto de acuerdo con la <A
+        href="http://www.ietf.org/rfc/rfc1413.txt">RFC1413</A> que define
+        el protocolo de identificaci&oacute;n;
+        <LI>EXIT : el status de salida del proceso;
+        <LI>DURATION : la duraci&oacute;n de la sesi&oacute;n. </LI></UL></TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">log_on_failure</FONT></TD>
+    <TD>Nuevamente xinetd registra una gran cantidad de datos cuando el servidor no
+	puede arrancar, ya sea por falta de recursos o por las reglas de acceso:
+      <UL>
+        <LI>HOST, USERID : como arriba ;
+        <LI>ATTEMPT : registra todo intento de acceso. Esta es una opci&oacute;n autom&aacute;tica
+        salvo que se proporciones otro valor.
+        <LI>RECORD : registra toda la informaci&oacute;n diponible del cliente.
+  </LI></UL></TD></TR>
+
+
+  <TR>
+    <TD><FONT face="Courier New,Courier">nice</FONT></TD>
+    <TD>Cambia la prioridad del servidor al igual que lo hace el comando <FONT
+      face="Courier New,Courier">nice</FONT>.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">no_access</FONT></TD>
+    <TD>Lista los clientes que no tienen acceso al servicio.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">only_from</FONT></TD>
+    <TD>Lista a los clientes autorizados. Si este atributo carece de un valor, se
+      deniega el servicio.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">port</FONT></TD>
+    <TD>El puerto asociado al servicio. Tambi&eacute;n es definido en el archivo <FONT
+      face="Courier New,Courier">/etc/services</FONT>. Los 2 n&uacute;meros de puerto
+      deben coincidir.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">protocol</FONT></TD>
+    <TD>El protocolo especificado debe existe en el archivo <FONT
+      face="Courier New,Courier">/etc/protocols</FONT>. Si no se proporciona
+      un protocolo se emplea el asociado por defecto.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">server</FONT></TD>
+    <TD>La ruta al servidor.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">server_args</FONT></TD>
+    <TD>Argumentos que se deben pasar al servidor.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">socket_type</FONT></TD>
+    <TD>stream (TCP), dgram (UDP), raw (acceso directo a IP) o seqpacket
+  ().</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">type</FONT></TD>
+    <TD>xinetd puede administrar 3 tipos de servicios:
+      <OL>
+        <LI>RPC : para aquellos definidos en el archivo <FONT
+        face="Courier New,Courier">/etc/rpc</FONT> (no funciona del todo bien);
+        <LI>INTERNAL : para los servicios directamente administrados por xinetd (<FONT
+        face="Courier New,Courier">echo</FONT>, <FONT
+        face="Courier New,Courier">time</FONT>, <FONT
+        face="Courier New,Courier">daytime</FONT>, <FONT
+        face="Courier New,Courier">chargen</FONT> y <FONT
+        face="Courier New,Courier">discard</FONT>) ;
+        <LI>UNLISTED : para los servicios que no est&aacute;n definidos en el archivo <FONT
+        face="Courier New,Courier">/etc/rpc</FONT> ni en el <FONT
+        face="Courier New,Courier">/etc/services</FONT>; </LI></OL> Notemos que
+      es posible combinar distintos valores como lo veremos con los servicios internos <FONT
+      face="Courier New,Courier">servers</FONT>, <FONT
+      face="Courier New,Courier">services</FONT> y <FONT
+      face="Courier New,Courier">xadmin</FONT>.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">wait</FONT></TD>
+    <TD>Define el comportamiento frente a los threads (hebras). Son posibles dos
+      valores:
+      <UL>
+        <LI>yes : el servicio es monohebra, el servicio puede administrar una sola
+        conexi&oacute;n de este tipo;
+        <LI>no : por cada servicio nuevo solicitado, xinetd arranca un nuevo servidor
+        de acuerdo al l&iacute;mite m&aacute;ximo definido (<FONT
+        color=#ff0000>Atenci&oacute;n:</FONT> por defecto este l&iacute;mite es infinito).
+      </LI></UL></TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">cps</FONT></TD>
+    <TD>Limita el n&uacute;mero de conexiones entrantes. El primer argumento es precisamente
+      este n&uacute;mero. Cuando se supera este l&iacute;mite, se desactiva el servicio con un
+      retraso (expresado en segundos) proporcionado por el segundo argumento.
+    </TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">instances</FONT></TD>
+    <TD>Determina el m&aacute;ximo n&uacute;mero de servidores del mismo tipo que pueden funcionar
+	en forma simult&aacute;nea.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">max_load</FONT></TD>
+    <TD>Proporciona la carga m&aacute;xima del servidor (por ejemplo, 2 &oacute; 2.5). M&aacute;s all&aacute; de este l&iacute;mite
+	las solicitudes que se realizan al servidor se rechazan.</TD></TR>
+  <TR>
+    <TD>per_source</TD>
+    <TD>Restringe el n&uacute;mero de conexiones al servidor que tienen un mismo origen. Es un entero
+        o bien UNLIMITED</TD></TR>
+  <CAPTION align=bottom><A
+  href="#tableau1">Tabla
+  1</A> : algunos atributos para xinetd</CAPTION></TABLE></CENTER>
+<P>Los &uacute;ltimos cuatro atributos mostrados en la <A
+href="#tableau1">tabla 1</A>
+permiten el control de los recursos que dependen de un servidor. Esto es eficiente para
+protegernos de manera eficaz de los ataques del tipo <I>Negaci&oacute;n de servicios</I> (DoS)
+cuyo objetivo consiste en colgar una m&aacute;quina usando la totalidad de sus recursos.
+<P>En esta secci&oacute;n se presentaron algunas caracter&iacute;sticas de xinetd. Las siguientes secciones
+ muestran c&oacute;mo usarlo y se dan ciertas reglas para que funcione correctamente.
+<A NAME="lfindex3">&nbsp;</A>
+<H2>La secci&oacute;n <I>defaults </I></H2>
+La secci&oacute;n <FONT
+face="Courier New,Courier">defaults</FONT> permite fijar valores a cierto n&uacute;mero de
+atributos (ver la documentaci&oacute;n para la lista completa). Algunos de estos atributos
+(<FONT face="Courier New,Courier">only_from</FONT>, <FONT
+face="Courier New,Courier">no_access</FONT>, <FONT
+face="Courier New,Courier">log_on_success</FONT>, <FONT
+face="Courier New,Courier">log_on_failure</FONT>, ...) contienen simult&aacute;neamente los valores
+contenidos en esta secci&oacute;n y los proporcionados por los servicios.
+
+<P>Denegar por defecto el acceso a la m&aacute;quina es la primera etapa de una pol&iacute;tica
+de seguridad viable. A continuaci&oacute;n, bastar&aacute; con permitir el acceso  (en funci&oacute;n
+de los servicios) a los que tienen la autorizaci&oacute;n para hacerlo.
+Hemos visto dos atributos que permiten controlar el acceso a una m&aacute;quina
+basados en las direcciones IP: <FONT face="Courier New,Courier">only_from</FONT> y
+<FONT face="Courier New,Courier">no_access</FONT>. Elegir el segundo y escribir:
+<BLOCKQUOTE><FONT face="Courier New,Courier">no_access =
+0.0.0.0/0</FONT></BLOCKQUOTE>lo cual bloquea completamente el acceso a los servicios.
+No obstante, si se desea permitir el acceso a todo el mundo, por ejemplo,
+de <FONT face="Courier New,Courier">echo (ping)</FONT>, se debe escribir en el servicio
+echo:
+<BLOCKQUOTE><FONT face="Courier New,Courier">only_from =
+0.0.0.0/0</FONT></BLOCKQUOTE>Aqu&iacute; est&aacute; el mensaje registrado con esta
+configuraci&oacute;n en el archivo log:
+<BLOCKQUOTE><FONT face="Courier New,Courier">Sep 17 15:11:12 charly
+  xinetd[26686]: Service=echo-stream: only_from list and no_access list match
+  equally the address 192.168.1.1</FONT></BLOCKQUOTE>De hecho, el control de acceso
+se hace comparando las listas de direcciones contenidas en los dos atributos.
+Cuando la direcci&oacute;n del cliente se corresponde en ambas listas se da prioridad
+a la lista menos general. En caso de igualdad, como ocurre en nuestro ejemplo, xinetd es incapaz
+de elegir y rechaza la conexi&oacute;n. Para evitar esta ambig&uuml;edad, ser&aacute; suficiente con escribir:
+<BLOCKQUOTE><FONT face="Courier New,Courier">only_from =
+192.0.0.0/8</FONT></BLOCKQUOTE>Otra soluci&oacute;n menos problem&aacute;tica consiste en controlar
+el acceso &uacute;nicamente mediante el atributo:
+<BLOCKQUOTE><FONT face="Courier New,Courier">only_from =</FONT></BLOCKQUOTE>Al no
+precisar ning&uacute;n valor condena todas las conexiones al fracaso :). A continuaci&oacute;n,
+cada servicio permite el acceso mediante este mismo atributo.
+<P>Detalle importante, por no decir esencial: <FONT color=#ff0000> en caso de una ausencia
+total de reglas de acceso </FONT>(es decir, ni <FONT
+face="Courier New,Courier">only_from</FONT>, ni <FONT
+face="Courier New,Courier">no_access</FONT>) para un determinado servicio
+<FONT color=#ff0000>&iexcl;se permite el acceso al mismo!</FONT>
+<P>Veamos a continuaci&oacute;n un ejemplo de <FONT face="Courier New,Courier">defaults</FONT> :
+<BLOCKQUOTE><FONT face="Courier New,Courier">defaults</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  instances&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 15</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  log_type&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = FILE
+  /var/log/servicelog</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  log_on_success&nbsp; = HOST PID USERID DURATION EXIT</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; log_on_failure&nbsp; = HOST USERID
+  RECORD</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  only_from&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; per_source&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  5</FONT>
+  <P><FONT face="Courier New,Courier">&nbsp; disabled = shell login exec
+  comsat</FONT> <BR><FONT face="Courier New,Courier">&nbsp; disabled = telnet
+  ftp</FONT> <BR><FONT face="Courier New,Courier">&nbsp; disabled = name uucp
+  tftp</FONT> <BR><FONT face="Courier New,Courier">&nbsp; disabled = finger
+  systat netstat</FONT>
+  <P><FONT face="Courier New,Courier">&nbsp; #INTERNAL</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; disabled = time daytime chargen servers
+  services xadmin</FONT>
+  <P><FONT face="Courier New,Courier">&nbsp; #RPC</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; disabled = rstatd rquotad rusersd sprayd
+  walld</FONT> <BR><FONT face="Courier New,Courier">}</FONT></P></BLOCKQUOTE>Entre los
+servicios internos, <FONT face="Courier New,Courier">servers</FONT>, <FONT
+face="Courier New,Courier">services</FONT> y &nbsp; <FONT
+face="Courier New,Courier">xadmin</FONT> permiten administrar a xinetd. Volveremos
+sobre este asunto m&aacute;s adelante.
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Configurando un servicio</H2>
+Para configurar un servicio, necesitamos...nada :)
+De hecho, todo se comporta exactamente como si los valores fueran los de defecto:
+basta con precisar los atributos y su(s) valor(es) para administrar el servicio. Esto
+implica una modificaci&oacute;n de los valores por defecto o bien el a&ntilde;adido de un atributo para este
+servicio.
+<P>Algunos atributos necesariamente deben aparecer en funci&oacute;n del tipo de servicio (INTERNAL,
+UNLISTED o RPC)&nbsp;: <BR>&nbsp; <BR>&nbsp; <A name=tableau2></A>
+<CENTER>
+<TABLE bgColor=#9999bb border=1 width="60%" NOSAVE>
+  <TBODY>
+  <TR>
+    <TD><B>Atributo</B></TD>
+    <TD><B>Comentario</B></TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">socket-type</FONT></TD>
+    <TD>Todos los servicios.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">user</FONT></TD>
+    <TD>&Uacute;nicamente para los servicios del tipo no INTERNAL</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">server</FONT></TD>
+    <TD>&Uacute;nicamente para los servicio del tipo no INTERNAL</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">wait</FONT></TD>
+    <TD>Todos los servicios.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">protocol</FONT></TD>
+    <TD>Todos los servicios RPC que no se encuentran en <FONT
+      face="Courier New,Courier">/etc/services</FONT>.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">rpc_version</FONT></TD>
+    <TD>Todos los servicios RPC.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">rpc_number</FONT></TD>
+    <TD>Todos los servicios RPC que no se encuentran en <FONT
+      face="Courier New,Courier">/etc/rpc</FONT>.</TD></TR>
+  <TR>
+    <TD><FONT face="Courier New,Courier">port</FONT></TD>
+    <TD>Todos los servicios no RPC que no se encuentran en <FONT
+      face="Courier New,Courier">/etc/services</FONT>.</TD></TR>
+  <CAPTION align=bottom><A
+  href="#tableau2">Tabla
+  2</A>: atributos obligatorios</CAPTION></TABLE></CENTER>
+<P>Este ejemplo muestra c&oacute;mo se definen los servicios:
+<BLOCKQUOTE><FONT face="Courier New,Courier">service ntalk</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; socket_type&nbsp;&nbsp; = dgram</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp;
+  wait&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = yes</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp;
+  user&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = nobody</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp;
+  server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = /usr/sbin/in.ntalkd</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; only_from&nbsp;&nbsp;&nbsp;&nbsp;
+  = 192.168.1.0/24</FONT> <BR><FONT face="Courier New,Courier">}</FONT>
+  <P><FONT face="Courier New,Courier">service ftp</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; socket_type&nbsp; = stream</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  wait&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  user&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = root</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  /usr/sbin/in.ftpd</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  server_args&nbsp; = -l</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  instances&nbsp;&nbsp;&nbsp; = 4</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; access_times = 7:00-12:30 13:30-21:00</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp;
+  nice&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 10</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; only_from&nbsp;&nbsp;&nbsp; =
+  192.168.1.0/24</FONT> <BR><FONT
+face="Courier New,Courier">}</FONT>
+</P></BLOCKQUOTE>&nbsp;Notemos que estos servicios est&aacute;n &uacute;nicamente autorizados
+en la red local (192.168.1.0/24). En cuanto al FTP, se preveen restricciones
+suplementarias: el n&uacute;mero de instancias se limita a 4 y s&oacute;lo ser&aacute; posible
+su uso en ciertos intervalos de tiempo.
+<A NAME="lfindex5">&nbsp;</A>
+<H3>El atributo <I>bind</I></H3>
+Este servicio permite vincular
+un servicio a una direcci&oacute;n IP. Si su m&aacute;quina dispone de una &uacute;nica direcci&oacute;n
+esto no sirve para nada. En cambio, si tomamos el caso de un ordenador de una red local
+conectado a Internet la m&aacute;quina tiene por lo menos dos direcciones.
+<P>Por ejemplo, una compa&ntilde;&iacute;a desea instalar un servidor FTP para sus empleados
+para que puedan consultar los documentos internos. Asimismo quiere brindar un acceso FTP
+a sus clientes para que puedan consultar sus productos...<FONT
+face="Courier New,Courier">bind</FONT> est&aacute; hecho a medida para esta compan&iacute;a :)
+Definamos dos servicios FTP. Sin embargo, xinetd debe poder distinguirlos:
+la soluci&oacute;n radica en el atributo <FONT face="Courier New,Courier">id</FONT>
+que define un servicio de manera &uacute;nica (cuando no est&aacute; definido dentro de un servicio
+su valor, por defecto, es el nombre del servicio). <BR>
+<BLOCKQUOTE><FONT face="Courier New,Courier">service ftp</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  id&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  ftp-public</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  wait&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  user&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = root</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  /usr/sbin/in.ftpd</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  server_args&nbsp; = -l</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  instances&nbsp;&nbsp;&nbsp; = 4</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  nice&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 10</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; only_from&nbsp;&nbsp;&nbsp; = 0.0.0.0/0
+  #autoriza a todos los clientes</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  bind&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 212.198.253.142 #direcci&oacute;n
+  IP p&uacute;blica para este servidor</FONT> <BR><FONT
+  face="Courier New,Courier">}</FONT>
+  <P><FONT face="Courier New,Courier">service ftp</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  id&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  ftp-private</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  socket_type&nbsp; = stream</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  wait&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  user&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = root</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  /usr/sbin/in.ftpd</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  server_args&nbsp; = -l</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  only_from&nbsp;&nbsp;&nbsp; = 192.168.1.0/24 #s&oacute;lo para uso interno</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp;
+  bind&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = 192.168.1.1&nbsp;
+  #direcci&oacute;n local IP para este servidor (charly)</FONT> <BR><FONT
+  face="Courier New,Courier">}</FONT></P>
+</BLOCKQUOTE>El uso de <FONT face="Courier New,Courier">bind</FONT> permitir&aacute; invocar al demonio correspondiente
+seg&uacute;n el destino de los paquetes. De esta manera, en esta configuraci&oacute;n, un cliente en una red local
+debe precisar la direcci&oacute;n local (o el nombre que le es
+asociado) para acceder a los datos internos. En el archivo log
+aparecen los siguientes registros:
+<BLOCKQUOTE><FONT face="Courier New,Courier">00/9/17@16:47:46: START: <FONT
+  color=#00aa55>ftp-public</FONT> pid=26861 from=212.198.253.142</FONT>
+  <BR><FONT face="Courier New,Courier">00/9/17@16:47:46: EXIT: <FONT
+  color=#00aa55>ftp-public</FONT> status=0 pid=26861 duration=30(sec)</FONT>
+  <BR><FONT face="Courier New,Courier">00/9/17@16:48:19: START: <FONT
+  color=#0088ff>ftp-internal</FONT> pid=26864 from=192.168.1.1</FONT> <BR><FONT
+  face="Courier New,Courier">00/9/17@16:48:19: EXIT: <FONT
+  color=#0088ff>ftp-internal</FONT> status=0 pid=26864
+duration=15(sec)</FONT></BLOCKQUOTE>La primera parte proviene del comando <FONT
+color=#00aa55 face="Courier New,Courier">ftp 212.198.253.142</FONT> mientras
+que la segunda fue ejecutada desde <FONT
+face="Courier New,Courier">charly</FONT> a s&iacute; mismo: <FONT color=#0088ff
+face="Courier New,Courier">ftp 192.168.1.1</FONT>.
+<P>Obviamente, hay un problema: &iquest;qu&eacute; ocurre si una m&aacute;quina no posee dos direcciones
+IP est&aacute;ticas? Este es el caso de las conexiones <FONT
+face="Courier New,Courier">ppp</FONT> o cuando se usa el protocolo <FONT
+face="Courier New,Courier">dhcp</FONT>. Pareciera que ser&iacute;a m&aacute;s conveniente
+vincular los servicios con las interfaces en vez de hacerlo con las direcciones.
+No obstante, esto a&uacute;n no est&aacute; previsto por xinetd y plantea numerosos problemas
+(por ejemplo, el escribir un m&oacute;dulo C para acceder a las interfaces y direcciones
+depende del sistema operativo y puesto que xinetd es soportado por diversos
+OSes...). El uso de un script permite resolver el problema:
+<BLOCKQUOTE><FONT face="Courier New,Courier">#!/bin/sh</FONT>
+  <P><FONT face="Courier New,Courier">PUBLIC_ADDRESS=`/sbin/ifconfig $1 | grep
+  "inet addr" | awk '{print $2}'| awk -F: '{print $2}'`</FONT> <BR><FONT
+  face="Courier New,Courier">sed s/PUBLIC_ADDRESS/"$PUBLIC_ADDRESS"/g
+  /etc/xinetd.base &gt; /etc/xinetd.conf</FONT></P></BLOCKQUOTE>Este script toma
+el archivo <FONT face="Courier New,Courier">/etc/xinetd.base</FONT>, que contiene
+la configuraci&oacute;n deseada con&nbsp; PUBLIC_ADDRESS en lugar de la direcci&oacute;n variable
+y la transforma en <FONT face="Courier New,Courier">/etc/xinetd.conf</FONT> reemplazando
+la cadena de caracteres <FONT face="Courier New,Courier">PUBLIC_ADDRESS</FONT>
+por la direcci&oacute;n asociada a la interfase pasada como argumento del script.
+Por lo tanto, la llamada de este script depende del tipo de conexi&oacute;n: lo m&aacute;s sencillo
+consiste en agregar la llamada al archivo <FONT face="Courier New,Courier">ifup-*</FONT>
+adecuado y volver a ejecutar xinetd.
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Redirecci&oacute;n de servicios hacia otra m&aacute;quina: el atributo <I>redirect</I>
+</H2>
+Con ayuda del atributo <FONT face="Courier New,Courier">redirect</FONT>, se puede
+hacer un uso transparente de xinetd como proxy (bueno, como veremos posteriormente esto
+no es estrictamente as&iacute;). <FONT face="Courier New,Courier">Redirect</FONT> permite enviar la
+solicitud de un servicio hacia un determinado puerto de otra m&aacute;quina.
+<BLOCKQUOTE><FONT face="Courier New,Courier">telnet service</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; flags&nbsp; = REUSE</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; socket_type = stream</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; wait&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; user&nbsp; = root</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; server = /usr/sbin/in.telnetd</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; only_from = 192.168.1.0/24</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; redirect = 192.168.1.15 23</FONT>
+  <BR><FONT face="Courier New,Courier">}</FONT></BLOCKQUOTE>Veamos qu&eacute; sucede
+ahora:
+<BLOCKQUOTE><FONT face="Courier New,Courier">&gt;&gt;telnet charly</FONT>
+  <BR><FONT face="Courier New,Courier">Trying 192.168.1.1...</FONT> <BR><FONT
+  face="Courier New,Courier">Connected to charly.</FONT> <BR><FONT
+  face="Courier New,Courier">Escape character is '^]'.</FONT> <BR>&nbsp;
+  <P><FONT face="Courier New,Courier">Digital UNIX (sabrina) (ttyp1)</FONT>
+  <P><FONT face="Courier New,Courier">login:</FONT></P></BLOCKQUOTE>En efecto,
+la conexi&oacute;n parece establecerse con <FONT
+face="Courier New,Courier">charly</FONT> pero lo siguiente muestra que <FONT
+face="Courier New,Courier">sabrina</FONT> (una m&aacute;quina alpha y por lo tanto "<FONT
+face="Courier New,Courier">Digital UNIX</FONT>") tom&oacute; el control.
+Este mecanismo puede ser &uacute;til como peligroso. Al configurarlo, el acceso se debe
+realizar en ambos extremos de la conexi&oacute;n. Por otra parte, es altamente recomendable
+el uso de un DMZ y un cortafuegos para este tipo de servicio ;-).
+<A NAME="lfindex7">&nbsp;</A>
+<H3>Servicios Especiales</H3>
+Xinetd dispone de tres servicios que le son propios. Estos
+servicios no aparecen en <FONT face="Courier New,Courier">/etc/rpc</FONT> ni en
+<FONT face="Courier New,Courier">/etc/services</FONT> y deben tener la bandera
+UNLISTED (adem&aacute;s de la bandera INTERNAL que informa que se tratan de servicios de
+xinetd).
+<OL>
+  <LI>servers: informa sobre los servidores en uso ;
+  <LI>services: informa sobre los servicios disponibles, su protolo y su puerto
+  ;
+  <LI>xadmin: combina las funciones de los dos servicios anteriores. </LI></OL>Obviamente,
+<FONT color=#ff0000>estos servicios hacen a nuestro sistema m&aacute;s vulnerable ya que brindan
+informaci&oacute;n importante</FONT>. Por el momento, su acceso no est&aacute; protegido
+(mediante una contrase&ntilde;a, por ejemplo). Deben usarse solamente durante el proceso de
+configuraci&oacute;n de xinetd. Luego, en la secci&oacute;n
+<FONT face="Courier New,Courier">defaults</FONT>
+se debe prohibir su uso:
+<BLOCKQUOTE><FONT face="Courier New,Courier">defaults {</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; ...</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; disabled = servers services xadmin</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; ...</FONT> <BR><FONT
+  face="Courier New,Courier">}</FONT></BLOCKQUOTE>Antes de activarlos, deben tomarse
+ ciertas precauciones:
+
+
+
+
+
+
+<OL>
+  <LI>&Uacute;nicamente se debe poder conectar la m&aacute;quina donde se ejecuta xinetd
+  <LI>Limitar a uno el n&uacute;mero de instancias
+  <LI>Permitir &uacute;nicamente el acceso a la m&aacute;quina donde se ejecuta el servidor. </LI></OL>
+Consideremos el caso del servicio
+<FONT face="Courier New,Courier">xadmin</FONT> (los otros dos se pueden configurar
+de la misma manera a exepci&oacute;n del n&uacute;mero de puerto ;-) :
+<BLOCKQUOTE><FONT face="Courier New,Courier">service xadmin</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; type&nbsp; = INTERNAL UNLISTED</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; port&nbsp; = 9100</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; protocol = tcp</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; socket_type = stream</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; wait&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; instances = 1</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; only_from = 192.168.1.1&nbsp; #charly</FONT>
+  <BR><FONT face="Courier New,Courier">}</FONT></BLOCKQUOTE>El servicio <FONT
+face="Courier New,Courier">xadmin</FONT> dispone de 5 comandos:
+<OL>
+  <LI><FONT face="Courier New,Courier">help</FONT> ...
+  <LI><FONT face="Courier New,Courier">show run</FONT> : al igual que el servicio <FONT
+  face="Courier New,Courier">servers</FONT> informa sobre los servidores que
+  se est&aacute;n ejecutando.
+  <LI><FONT face="Courier New,Courier">show avail</FONT> : al igual que el servicio <FONT
+  face="Courier New,Courier">services</FONT> informa sobre los servicios disponibles
+  (y algo m&aacute;s)
+  <LI><FONT face="Courier New,Courier">bye</FONT> o <FONT
+  face="Courier New,Courier">exit</FONT> ... </LI></OL>Ahora que saben que existen,
+olv&iacute;denlos ;-) Se pueden realizar las pruebas sin recurrir a ellos. Comandos tales como (<FONT
+face="Courier New,Courier">netstat</FONT>, <FONT
+face="Courier New,Courier">fuser</FONT>, <FONT
+face="Courier New,Courier">lsof</FONT>, ... nos permitir&aacute;n conocer lo que exactamente
+ocurre en nuestra m&aacute;quina sin exponerla demasiado al hacer uso de tantos servicios.
+<A NAME="lfindex8">&nbsp;</A>
+<H3>Juguemos un poco...</H3>
+
+<A NAME="lfindex9">&nbsp;</A>
+<H2>Comencemos con un acertijo</H2>
+Veamos un peque&ntilde;o ejercicio  para aquellos que
+han logrado sobrevivir ;-) Primero explicar&eacute; la configuraci&oacute;n utilizada y luego
+intentaremos indagar qu&eacute; ocurre y por qu&eacute; no funciona.
+<P>Necesitaremos &uacute;nicamente el servicio <FONT face="Courier New,Courier">finger</FONT> :
+<BLOCKQUOTE><FONT face="Courier New,Courier">finger service</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; flags&nbsp; = REUSE NAMEINARGS</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; server = /usr/sbin/tcpd</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; server_args = in.fingerd</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; socket_type = stream</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; wait&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; user&nbsp; = nobody</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; only_from = 192.168.1.1&nbsp; #charly</FONT>
+  <BR><FONT face="Courier New,Courier">}</FONT></BLOCKQUOTE>No se compil&oacute; xinetd
+con la opci&oacute;n <FONT face="Courier New,Courier">--with-libwrap</FONT>
+(ver el atributo <FONT face="Courier New,Courier">server</FONT>). La secci&oacute;n <FONT
+face="Courier New,Courier">defaults</FONT> es del mismo estilo que la proporcionada
+anteriormente: se deniega todo acceso a <FONT
+face="Courier New,Courier">charly</FONT> independientemente del origen de la conexi&oacute;n.
+No obstante el servicio <FONT face="Courier New,Courier">finger</FONT> no se encuentra
+desactivado, por lo tanto:
+<BLOCKQUOTE><FONT face="Courier New,Courier">pappy@<I>charly</I> &gt;&gt;
+  finger pappy@charly</FONT> <BR><FONT
+  face="Courier New,Courier">[charly]</FONT> <BR><FONT
+  face="Courier New,Courier">pappy@<I>charly</I> &gt;&gt;</FONT>
+  <P><FONT face="Courier New,Courier">pappy@<I>bosley</I> &gt;&gt;&nbsp; finger
+  pappy@charly</FONT> <BR><FONT face="Courier New,Courier">[charly]</FONT>
+  <P><FONT face="Courier New,Courier">pappy@<I>bosley</I>
+&gt;&gt;</FONT></P></BLOCKQUOTE>
+<P><BR>A primera, pareciera que la petici&oacute;n no funciona adecuadamente, ni desde <FONT
+face="Courier New,Courier">charly</FONT> (192.168.1.1), una m&aacute;quina autorizada
+ni desde <FONT face="Courier New,Courier">bosley</FONT> (192.168.1.10). Examinemos
+los archivos log:
+<BLOCKQUOTE><B><FONT face="Courier New,Courier">/var/log/servicelog
+  :</FONT></B> <BR><FONT face="Courier New,Courier">00/9/18@17:15:42: START:
+  finger pid=28857 from=192.168.1.1</FONT> <BR><FONT
+  face="Courier New,Courier">00/9/18@17:15:47: EXIT: finger status=0 pid=28857
+  duration=5(sec)</FONT> <BR><FONT face="Courier New,Courier">00/9/18@17:15:55:
+  FAIL: finger address from=192.168.1.10</FONT></BLOCKQUOTE>Seg&uacute;n xinetd la petici&oacute;n
+proveniente de <FONT face="Courier New,Courier">charly</FONT> (las dos primeras l&iacute;neas)
+funciona correctamente: se permite el acceso y la petici&oacute;n insume 5 segundos. Por otra
+parte, se rechaza la petici&oacute;n proveniente de
+<FONT face="Courier New,Courier">bosley</FONT>
+(<FONT face="Courier New,Courier">FAIL</FONT>). <BR>Si se observa la configuraci&oacute;n
+del servicio <FONT face="Courier New,Courier">finger</FONT>
+el servidor empleado no es directamente <FONT
+face="Courier New,Courier">in.fingerd</FONT> sino el servicio <FONT
+face="Courier New,Courier">tcp_wrapper tcpd</FONT>. El archivo log del wrapper
+contiene las siguientes l&iacute;neas:
+<BLOCKQUOTE><B><FONT face="Courier New,Courier">/var/log/services :</FONT></B>
+  <BR><FONT face="Courier New,Courier">Sep 18 17:15:42 charly in.fingerd[28857]:
+  refused connect from 192.168.1.1</FONT></BLOCKQUOTE>Como vemos  &iexcl;existe una
+&uacute;nica l&iacute;nea correspondiente a las dos peticiones! Efectivamente, la proveniente de <FONT
+face="Courier New,Courier">bosley</FONT> (la segunda) fue interceptada por
+xinetd con lo cual era de esperar que no figurara en el archivo log. En realidad, la l&iacute;nea
+seleccionada corresponde a la petici&oacute;n autorizada por xinetd proveniente desde
+ <FONT
+face="Courier New,Courier">charly</FONT> hacia <FONT
+face="Courier New,Courier">charly</FONT> (la primera): la hora y sobre todo el PID
+son id&eacute;nticos.
+<P>Resumamos los hechos:
+<OL>
+  <LI>xinetd autoriz&oacute; la petici&oacute;n;
+  <LI>la petici&oacute;n de <FONT face="Courier New,Courier">finger</FONT> pasa por
+  <FONT face="Courier New,Courier">tcpd</FONT> ;
+  <LI><FONT face="Courier New,Courier">in.fingerd</FONT> rechaz&oacute; esta misma petici&oacute;n.
+  </LI></OL>&iquest;Qu&eacute; ocurre entonces? Luego de que la petici&oacute;n fue aceptada por xinetd &eacute;sta fue
+transmitida al servidor especificado (en este caso <FONT face="Courier New,Courier">tcpd</FONT>).
+No obstante, <FONT face="Courier New,Courier">tcpd</FONT> rechaza esta conexi&oacute;n.
+Por lo tanto, debemos analizar los archivos <FONT face="Courier New,Courier">hosts.{allow,deny}</FONT>.
+El archivo <FONT face="Courier New,Courier">/etc/hosts.deny</FONT> solo contiene
+la l&iacute;nea <FONT face="Courier New,Courier">ALL:ALL@ALL</FONT>, lo cual explica por qu&eacute; la
+petici&oacute;n fue rechazada por el wrapper.
+<P>De acuerdo a la manera en que han sido definido las l&iacute;neas <FONT face="Courier New,Courier">server</FONT> y
+<FONT face="Courier New,Courier">server_args</FONT> del servicio, a&uacute;n son accesibles las caracter&iacute;sticas
+del wrapper (<FONT
+face="Courier New,Courier">banner</FONT> - hay un atributo <FONT
+face="Courier New,Courier">banner</FONT> para xinetd-, <FONT
+face="Courier New,Courier">spawn</FONT>, <FONT
+face="Courier New,Courier">twist</FONT>, ...). Hay que recordar que la opci&oacute;n de compilaci&oacute;n
+--with-libwrap s&oacute;lo agrega el control de los permisos de acceso (con ayuda de los archivos <FONT
+face="Courier New,Courier">hosts.{allow,deny}</FONT>) antes de que el proceso
+xinetd se ejecute. En este ejemplo hemos visto que esta configuraci&oacute;n nos permite
+continuar usando las caracter&iacute;sticas del tcp wrapper. </P>
+<P>Esta supersposici&oacute;n de caracter&iacute;sticas si bien puede funcionar puede
+conducir a comportamientos extra&ntilde;os. Para que xinetd pueda coexistir junto con <FONT
+face="Courier New,Courier">inetd</FONT> y <FONT
+face="Courier New,Courier">portmap</FONT> resulta conveniente administrar un servicio
+&uacute;nicamente con <U>solo uno</U> de estos "superdemonios". </P>
+<A NAME="lfindex10">&nbsp;</A>
+<H2>El comando chroot</H2>
+A menudo es conveniente restringir los alcances de ciertos
+servicios o crear un nuevo entorno. El comando <FONT
+face="Courier New,Courier">chroot</FONT> permite cambiar el directorio ra&iacute;z
+por un comando (o un script) que ser&aacute; ejecutado a continuaci&oacute;n:
+<BLOCKQUOTE><FONT face="Courier New,Courier">chroot [options]
+new_root</FONT></BLOCKQUOTE>Generalmente esto se usa para proteger los servicios tales como
+bind/DNS &oacute; ftp. Para emular (reproducir) este comportamiento y aprovechar las caracter&iacute;sticas
+de xinetd hay que declarar <FONT face="Courier New,Courier">chroot</FONT> como servidor.
+Bastar&aacute; entonces con pasar el resto de los argumentos por intermedio del atributo server_args
+:)
+<BLOCKQUOTE><FONT face="Courier New,Courier">service ftp</FONT> <BR><FONT
+  face="Courier New,Courier">{</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  id&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = ftp</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp; socket_type&nbsp; = stream</FONT>
+  <BR><FONT face="Courier New,Courier">&nbsp;
+  wait&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = no</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp;
+  user&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = root</FONT> <BR><FONT
+  face="Courier New,Courier">&nbsp; server&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; =
+  /usr/sbin/chroot</FONT> <BR><FONT face="Courier New,Courier">&nbsp;
+  server_args&nbsp; = /var/servers/ftp /usr/sbin/in.ftpd -l</FONT> <BR><FONT
+  face="Courier New,Courier">}</FONT></BLOCKQUOTE>As&iacute; cuando se env&iacute;a una
+petici&oacute;n a este servicio la primera instrucci&oacute;n que se ejecuta es <FONT
+face="Courier New,Courier">chroot</FONT>. A continuaci&oacute;n, se le pasa el primer
+argumento de la l&iacute;nea <FONT face="Courier New,Courier">server_args</FONT>,
+es decir, el nuevo root. Por &uacute;ltimo se arranca el servidor.
+<A NAME="lfindex11">&nbsp;</A>
+<H3>Conclusi&oacute;n</H3>
+
+<P>Uno puede preguntarse qu&eacute; demonio es conveniente elegir: xinetd o inetd. De hecho
+xinetd exige un peque&ntilde;o esfuerzo adicional de administraci&oacute;n en especial porque
+no viene por defecto incluido en todas las distribuciones (aunque si lo hace Red Hat 7.0).
+Lo m&aacute;s conveniente es usar xinetd en m&aacute;quinas con acceso p&uacute;blico (como Internet) puesto
+que ofrece una mejor defensa contra posibles intrusiones. Para m&aacute;quinas dentro de una
+red local, en cambio, <FONT
+face="Courier New,Courier">inetd</FONT> resultar&aacute; m&aacute;s que suficiente. No obstante
+no hay que descartar el empleo de un cortafuegos.<BR></P>
+<A NAME="lfindex12">&nbsp;</A>
+<H3>El servidor <CODE>POP3</CODE></H3>
+
+<P>Un servicio muy popular parece ser el <CODE>POP3</CODE>&nbsp;. Recib&iacute;
+un mont&oacute;n de mensajes preguntando sobre su puesta a punto a trav&eacute;s de
+<CODE>xinetd</CODE>. A continuaci&oacute;n veamos la configuraci&oacute;n necesaria:
+<PRE>     service pop3
+     {
+             disable = no
+             socket_type             = stream
+             wait                    = no
+             user                    = root
+             server                  = /usr/sbin/ipop3d
+     #       log_on_success          += USERID
+     #       log_on_failure          += USERID
+     }
+</PRE>Hay que colocar, en la l&iacute;nea que figura <CODE>server</CODE> la ruta
+del servidor que se utiliza.
+<P>El uso de <CODE>POP3</CODE> via <CODE>xinetd</CODE> puede resultar
+un tanto complicado seg&uacute;n las directivas proporcionadas a los logs.
+En efecto, como hemos visto, el empleo del valor <CODE>USERID</CODE>
+provoca una petici&oacute;n de <CODE>xinetd</CODE> hacia un servidor <CODE>identd</CODE> del cliente
+<CODE>POP</CODE>. Ahora bien, si algun servidor de este tipo no funciona el tiempo de
+espera es de 30 segundos.
+<P>Por lo tanto, cuando una persona se conecta para descargar su correo, deber&aacute; esperar
+por lo menos 30 segundos si alg&uacute;n servidor <CODE>identd</CODE> no funciona.
+En este caso se deber&aacute; elegir entre &nbsp;:
+<OL>
+  <LI>instalar un servidor <CODE>identd</CODE> en todas las m&aacute;quinas clientes
+  afin de conservar los archivos logs completos (sin embargo hay que tener cuidado ya que
+  la informaci&oacute;n proporcionada por un servidor <CODE>identd</CODE>
+  pueden ser alterada)&nbsp;;
+  <LI>disminuir la calidad de los archivos logs para este servicio afin de no entorpecer
+  las peticiones de acceso al correo de los usuarios </LI></OL><BR>
+<HR width="50%">
+<A name=lfindex8>&nbsp;</A>
+<A NAME="lfindex13">&nbsp;</A>
+<H3>Errores de configuraci&oacute;n en RH7.0, Mandrake 7.2 y quiz&aacute;s en otras distribuciones...</H3>
+
+<P><A href="http://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=24279">fallo
+24279</A> dado conocer en bugzilla. Algunos servicios configurados en el directorio
+<CODE>/etc/xinetd.d</CODE> no se encuentran definidos en el archivo
+<CODE>/etc/services</CODE>. <PRE>[pappy@rootdurum xinetd.d]# grep service *udp
+chargen-udp:service chargen-udp
+daytime-udp:service daytime-udp
+echo-udp:service echo-udp
+time-udp:service time
+</PRE>
+<P>El responsable del fallo en RH se&ntilde;ala que no se puede usar la correcci&oacute;n que
+suger&iacute; pues plantear&iacute;a problemas en el uso de
+<CODE>chkconfig</CODE> y <CODE>ntsysv</CODE>. Si debo elegir entre estas herramientas y
+<CODE>xinetd</CODE> no lo dudo ;-)
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=175&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Fr&eacute;d&eacute;ric Raynal, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article175.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:pappy@users.sourceforge.net"><FONT COLOR="#FFFFFF">Fr&eacute;d&eacute;ric Raynal</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:georges.t@linuxfocus.org"><FONT COLOR="#FFFFFF">Georges Tarbouriech</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:wecharri@yahoo.com"><FONT COLOR="#FFFFFF">Walter Echarri</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-07-02, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

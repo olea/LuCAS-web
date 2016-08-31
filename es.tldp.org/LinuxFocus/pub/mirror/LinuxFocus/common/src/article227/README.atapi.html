@@ -1,0 +1,97 @@
+<pre>
+X-CD-Roast 0.98alpha9
+----------------------
+
+This file lists specific instructions how to easily setup
+SCSI-Emulation needed for X-CD-Roast to access ATAPI-cdwriters.
+(Linux only)
+
+A general text about this topic is the CD-Writing-HOWTO
+by Winfried Truemper (http://www.linuxdoc.org/HOWTO/CD-Writing-HOWTO.html).
+
+In most recent distributions it is however much easier to setup
+SCSI-Emulation as described in the HOWTO.
+(You should NEVER need to compile your kernel!)
+
+This is of course not complete and should become much more detailed in
+the future. Please provide me with updates.
+
+
+Instructions for RedHat 7 / Mandrake 7.2:
+-----------------------------------------
+(may also work fine on all other distributions of Linux)
+
+
+Your CD-Writer is recognized by the kernel at boot up and is assigned
+an ATAPI-device name like /dev/hdc. 
+
+Look in the boot-up messages for a text like that:
+
+kernel:     ide0: BM-DMA at 0xd000-0xd007, BIOS settings: hda:DMA, hdb:pio
+kernel:     ide1: BM-DMA at 0xd008-0xd00f, BIOS settings: hdc:DMA, hdd:pio
+kernel: hda: IBM-DTLA-307030, ATA DISK drive
+kernel: hdc: GENERIC CRD-BP1300P, ATAPI CDROM drive
+
+Here you see -&gt; hdc is my writer (Its usually detected as CDROM-drive). 
+Add /dev/ to it and that is the information we need to continue.
+
+Add a line to your /etc/lilo.conf:
+
+	append="hdc=ide-scsi"
+
+NOTE: If you have more as one CD-ROM/Writer the line to use is like this:
+	
+	append="hdc=ide-scsi hdd=ide-scsi"
+
+(restart lilo after this by simply typing "lilo")
+
+Add this to your /etc/modules.conf:
+
+	options ide-cd ignore=hdc
+	pre-install sg modprobe ide-scsi
+
+NOTE: If you have more as one CD-ROM/Writer the lines to use are like this:
+
+	options ide-cd ignore='hdc hdd'
+	pre-install sg modprobe ide-scsi
+
+
+After a reboot your cdwriter should be displayed by "cdrecord -scanbus"
+
+	1,0,0	100) 'GENERIC ' 'CRD-BP1300P     ' 'ah26' Removable CD-ROM
+
+If this does not work, try to load the emulation-module manually:
+
+	/sbin/insmod ide-scsi
+
+If now "cdrecord -scanbus" displays your writer, consider to add that
+insmod-call to the end of your /etc/rc.local-file.
+Otherwise something has gone wrong. Please consult the CD-Writing HOWTO
+for further information.
+
+Now xcdroast is fully operational - but its perhaps nice to change the
+link /dev/cdrom from /dev/hdc to /dev/scd0. (Look also into /etc/fstab
+to remove all reverences to /dev/hdc). 
+
+Note: This procedure does NOT require any kernel-compilation and is easily
+      reversible. It's very possible that this works exactly for other
+      distributions. Please tell me...
+
+
+Advanced Notes:
+
+Multiple SCSI Devices: For systems with more than one SCSI controller 
+(including the usage of ide-scsi) there must be a line in 
+conf.modules for each SCSI controller. For example, if the first 
+is an Adaptec 2940 dual channel (aic7xxx) and the second is an
+IDE Zip drive, conf.modules should have the following entries:
+
+
+	alias scsi_hostadapter aic7xxx
+	alias scsi_hostadapter1 aic7xxx
+	alias scsi_hostadapter2 ide-scsi
+
+
+
+17.07.2001 Thomas Niederreiter (tn@xcdroast.org)
+</pre>

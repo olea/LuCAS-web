@@ -1,0 +1,201 @@
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.04 [en] (X11; I; Linux 2.0.31 i586) [Netscape]">
+   <TITLE>The Cathedral and the Bazaar: The Mail Must Get Through</TITLE>
+</HEAD>
+<BODY>
+<A HREF="cathedral-es-paper-03.html">Siguiente</A>
+<A HREF="cathedral-es-paper-01.html">Anterior</A> <A HREF="cathedral-es-paper-00.html#toc2">Indice</A>&nbsp;
+<HR>
+<H2>
+<A NAME="s2"></A>2. El correo debe pasar</H2>
+Desde 1993, he estado manteniendo la parte t&eacute;cnica de un peque&ntilde;o
+proveedor de Internet de acceso libre llamado Chester County InterLink
+(CCIL) en West Chester, Pennsylvania (soy cofundador de CCIL y escrib&iacute;
+nuestro &uacute;nico sofware BBS multiusuario -- como puedes comprobar
+realizando un "telnet" a&nbsp; <A HREF="telnet://locke.ccil.org">locke.ccil.org</A>.
+En la actualidad da soporte a casi tres mil usuarios a trav&eacute;s de
+diecinueve l&iacute;neas.) Este trabajo me permit&iacute;a tener un acceso
+a la red durante 24 horas diarias a trav&eacute;s de la l&iacute;nea de
+56K del CCIL -- de hecho, &iexcl;casi fui yo el que exigi&oacute; tal cosa!.
+
+<P>En consecuencia, me he acostumbrado bastante a tener un acceso instant&aacute;neo
+al email en Internet. Por una serie de complejas razones, era dif&iacute;cil
+conseguir que SLIP funcionara entre la m&aacute;quina de mi casa (snark.thyrsus.com)
+y CCIL. Cuando finalmente lo consegu&iacute;, me encontr&eacute; teniendo
+que realizar peri&oacute;dicamente sesiones de "telnet" en "locke" para
+poder comprobar mi correo, lo que me result&oacute; molesto. Lo que yo
+quer&iacute;a era que mi correo llegara a "snark", de modo que biff(1)
+pudiera informarme de su llegada.
+
+<P>Una simple redirecci&oacute;n mediante el "sendmail forwarding" no hubiera
+funcionado, ya que "snark" no est&aacute; siempre en red y cerece de direcci&oacute;n
+IP est&aacute;tica. Lo que yo necesitaba era un programa que pudiera recogerlo
+a trav&eacute;s de mi conexi&oacute;n SLIP y se trajera mi correo para
+entregarlo en mi casa. Sab&iacute;a que tales cosas exist&iacute;an, y
+que la mayor parte de ellas empleaban un sencillo protocolo denominado
+POP (Post Office Protocol). Y estaba bastante seguro de que el sistema
+operativo BSD/OS con que funcionaba "locke" contaba ya con un servidor
+POP3.
+
+<P>Necesitaba un cliente POP3. Por lo tanto me d&iacute; unas vueltas por
+la red y encontr&eacute; uno. De hecho, encontr&eacute; tres o cuatro.
+Emple&eacute; pop-perl durante una temporada, pero echaba en falta lo que
+parec&iacute;a ser una capacidad obvia, la abilidad de capturar las direcciones
+del correo recogido de modo que las contestaciones funcionaran correctamente.
+
+<P>El problema era &eacute;ste: supongamos que alguien llamado `joe' en
+"locke" me env&iacute;a un mensaje. Si lo recojo y lo env&iacute;o a "snark"
+e intento contestar, mi programa de correo intentar&aacute; enviarlo alegremente
+a un inexistente 'joe' en "snark". Editar a mano las direcciones de las
+respuestas para restaurar el original '@ccil.org' se convirti&oacute; pronto
+en una considerable molestia.
+
+<P>Era claramente algo que el ordenador deb&iacute;a hacer en mi lugar.
+(De hecho, seg&uacute;n RFC1123 secci&oacute;n 5.2.18, sendmail deber&iacute;a
+estar haci&eacute;ndolo.) &iexcl;Pero ninguno de los clientes POP sab&iacute;a
+como!. Y esto nos lleva a la primera lecci&oacute;n:
+
+<P><I>1. Todos los trabajos buenos en software comienzan tratando de paliar
+un problema personal del que los programa.&nbsp;</I>
+
+<P>Quiz&aacute; esto hubiera debido resultar evidente (se sabe desde hace
+tiempo que "La necesidad es la madre de la invenci&oacute;n") pero los
+programadores desperdician demasiado a menudo sus d&iacute;as peleando
+por dinero con programas que no necesitan y a los que no aman. No as&iacute;
+en el mundo Linux -- lo que puede explicar porqu&eacute; la calidad media
+del software desarrollado por dicha comunidad es tan alta.
+
+<P>&iquest;Me entregu&eacute; de inmediato, por tanto, a un fren&eacute;tico
+intento de programaci&oacute;n de un nuevo cliente POP3 para competir con
+los que ya hab&iacute;a?. Jam&aacute;s de los jamases. Busqu&eacute; cuidadosamente
+entre las utilidades POP que ten&iacute;a a mano pregunt&aacute;ndome "&iquest;cual
+es la que m&aacute;s se acerca a lo que yo quiero?". Porque ...
+
+<P><I>2. Los buenos programadores saben qu&eacute; escribir. Los grandes
+saben qu&eacute; reescribir (y reutilizar).</I>
+
+<P>Aunque no pretendo ser un gran programador, trato de imitarlos. Una
+caracter&iacute;stica importante de los grandes de verdad es la vagancia
+constructiva. Saben que te dan un diez no por tu esfuerzo, sino por los
+resultados, y es casi siempre m&aacute;s f&aacute;cil empezar a partir
+de una buena soluci&oacute;n parcial que desde la nada m&aacute;s absoluta.
+
+<P>Linus, sin ir m&aacute;s lejos, no intent&oacute; en realidad escribir
+Linux partiendo de cero. En vez de eso, comenz&oacute; reutilizando c&oacute;digo
+e ideas de Minix, un min&uacute;sculo simil de Unix para m&aacute;quinas
+386. Al final, todo el c&oacute;digo Minix fue desechado o se reescribi&oacute;
+por completo -- pero mientras estuvo all&iacute; proporcion&oacute; el
+andamiaje necesario para la criatura que eventualmente llegar&iacute;a
+a ser Linux.
+
+<P>En la misma l&iacute;nea, comenc&eacute; a buscar una herramienta POP
+ya existente que estuviera razonablemente bien programada para utilizarla
+como punto de partida.
+
+<P>La tradici&oacute;n Unix de compartir el c&oacute;digo fuente ha facilitado
+la reutilizaci&oacute;n del c&oacute;digo (es la raz&oacute;n por la que
+el proyecto GNU
+<BR>eligi&oacute; Unix como sistema operativo de partida, a pesar de tener
+serias reservas sobre el mismo). El mundo Linux ha llevado
+<BR>esta tradici&oacute;n muy cerca de su l&iacute;mite desde el punto
+de vista tecnol&oacute;gico; pues cuenta con terabytes de c&oacute;digo
+fuente de uso
+<BR>libre. Es por eso por lo que es m&aacute;s probable que invertir tiempo
+en la b&uacute;squeda de algo casi lo suficientemente bueno realizado
+<BR>por otro de mejores resultados que en ningun otro lugar.
+
+<P>Y a m&iacute; me lo di&oacute;. Con los que ya hab&iacute;a encontrado
+anteriormente, mi segunda b&uacute;squeda elev&oacute; el total a nueve
+candidatos --
+<BR>fetchpop, PopTart, get-mail, gwpop, pimp, pop-perl, popc, popmail y
+upop. Al principio me qued&eacute; con 'fetchpop' de
+<BR>Seung-Hong Oh. Le a&ntilde;adi&acute; mi caracter&iacute;stica de reescribir
+las cabeceras, y le hice algunas otras mejoras que fueron
+<BR>aceptadas por el autor e incorporadas a la versi&oacute;n 1.9.
+
+<P>Sin embargo, algunas semanas despu&eacute;s cay&oacute; en mis manos
+el c&oacute;digo de `popclient' de Carl Harris, y supe que ten&iacute;a
+un
+<BR>problema. Aunque 'fetchpop' contaba con algunas ideas originales (su
+modo demon, sin ir m&aacute;s lejos), s&oacute;lo era capaz de
+<BR>manejar POP3 y estaba codificado de una forma no demasiado seria (Seung-Hong
+era un programador brillante pero poco
+<BR>experimentado, y ambas caracter&iacute;sticas quedaban claramente de
+manifiesto). El c&oacute;digo de Carl era mejor, bastante
+<BR>profesional y s&oacute;lido, pero su programa carec&iacute;a de varias
+posibilidades importantes y bastante pu&ntilde;eteras de implementar con
+<BR>las que contaba 'fetchpop' (entre ellas las que yo le hab&iacute;a
+a&ntilde;adido).
+
+<P>&iquest;Seguir o cambiar?. Si cambiaba, ten&iacute;a que renunciar al
+c&oacute;digo que ya hab&iacute;a desarrollado a cambio de una mejor base
+para el
+<BR>futuro.
+
+<P>Una raz&oacute;n pr&aacute;ctica para realizar el cambio era la presencia
+de soporte para protocolos m&uacute;ltiples. POP3 es el que se usa m&aacute;s
+<BR>comunmente, pero no el &uacute;nico. 'Fetchpop' y los dem&aacute;s
+competidores no soportaban POP2, RPOP o APOP, y yo albergaba ya
+<BR>alguna remota intenci&oacute;n de a&ntilde;adir tal vez IMAP (Internet
+Message Access Protocol, el protocolo m&aacute;s reciente y potente para
+<BR>oficinas de correo) aunque solo fuera como diversi&oacute;n.
+
+<P>Pero ten&iacute;a una raz&oacute;n te&oacute;rica adicional para pensar
+que cambiar pod&iacute;ia ser tambi&eacute;n una buena idea, algo que aprend&iacute;
+mucho
+<BR>antes de llegar a Linux.
+
+<P>3. ``Piensa en desechar al menos uno: lo terminar&aacute;s haciendo
+de todos modos.'' (Fred Brooks, ``The Mythical
+<BR>Man-Month'', Cap&iacute;tulo 11)
+
+<P>O, por decirlo de otra manera, a menudo no entiendes un problema hasta
+despu&eacute;s de haber implementado una primera
+<BR>soluci&oacute;n. La segunda vez, tal vez sepas lo suficiente como para
+hacerlo bien. Por tanto, si lo quieres hacer bien, debes estar
+<BR>preparado para empezar al menos dos veces.
+
+<P>Bueno (me dije) es posible que 'fetchpop' haya sido mi primer intento.
+Y cambi&eacute;.
+
+<P>Tras enviar mi primera remesa de modificaciones a 'popclient' a Carl
+Harris el 25 de Junio de 1996, me di cuenta de que hac&iacute;a
+<BR>ya alg&uacute;n tiempo que &eacute;l hab&iacute;a perdido inter&eacute;s
+en 'popclient'. El c&oacute;digo se ve&iacute;a un tanto polvoriento, con
+algunos errores
+<BR>menores dando vueltas por ah&iacute;. Ten&iacute;a muchas modificaciones
+que hacer, y nos pusimos de acuerdo con rapidez en que lo m&aacute;s
+<BR>l&oacute;gico era que me hiciera cargo del programa.
+
+<P>Sin darme cuenta, la escala del proyecto hab&iacute;a cambiado. Ya no
+se trataba de realizar peque&ntilde;as modificaciones a un cliente
+<BR>POP ya existente, sino de mantener uno por completo, y sab&iacute;a
+que por si fuera poco algunas de las ideas que bull&iacute;an en mi
+<BR>cabeza conduc&iacute;an a cambios dr&aacute;sticos.
+
+<P>En una cultura que promueve compartir c&oacute;digo esta es la forma
+natural en que evoluciona un proyecto. La cosa funcionaba
+<BR>del siguiente modo:
+
+<P>4. Si tienes la actitud adecuada, los problemas interesantes te encontrar&aacute;n
+
+<P>Pero la actitud de Carl Harris era incluso m&aacute;s importante. Entend&iacute;a
+que...
+
+<P>5. Cuando un programa deja de interesarte, tu &uacute;ltimo deber es
+pasarlo a un sucesor competente.
+
+<P>Sin tener que entrar en discusiones, Carl y yo sab&iacute;amos que compart&iacute;amos
+el prop&oacute;sito de desarrollar la mejor soluci&oacute;n de
+<BR>todas al problema que nos ocupaba. El &uacute;nico punto a aclarar
+era si yo era un sucesor digno. Una vez que qued&oacute; claro, actu&oacute;
+<BR>con gracia y determinaci&oacute;n. Espero ser capaz de actuar de la
+misma forma cuando llegue mi turno.
+
+<P>
+<HR><A HREF="cathedral-es-paper-03.html">Siguiente</A> <A HREF="cathedral-es-paper-01.html">Anterior</A>
+<A HREF="cathedral-es-paper-00.html#toc2">Indice</A>
+</BODY>
+</HTML>

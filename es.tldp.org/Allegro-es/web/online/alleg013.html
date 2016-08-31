@@ -1,0 +1,424 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 13 Blits y sprites
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="13 Blits y sprites">13 Blits y sprites</a></h1>
+
+<ul>
+<li><a href="#blit">blit</a>
+<li><a href="#clear">clear</a>
+<li><a href="#clear_bitmap">clear_bitmap</a>
+<li><a href="#clear_to_color">clear_to_color</a>
+<li><a href="#draw_character">draw_character</a>
+<li><a href="#draw_gouraud_sprite">draw_gouraud_sprite</a>
+<li><a href="#draw_lit_sprite">draw_lit_sprite</a>
+<li><a href="#draw_sprite">draw_sprite</a>
+<li><a href="#draw_sprite_h_flip">draw_sprite_h_flip</a>
+<li><a href="#draw_sprite_v_flip">draw_sprite_v_flip</a>
+<li><a href="#draw_sprite_vh_flip">draw_sprite_vh_flip</a>
+<li><a href="#draw_trans_sprite">draw_trans_sprite</a>
+<li><a href="#masked_blit">masked_blit</a>
+<li><a href="#masked_stretch_blit">masked_stretch_blit</a>
+<li><a href="#pivot_scaled_sprite">pivot_scaled_sprite</a>
+<li><a href="#pivot_scaled_sprite_v_flip">pivot_scaled_sprite_v_flip</a>
+<li><a href="#pivot_sprite">pivot_sprite</a>
+<li><a href="#pivot_sprite_v_flip">pivot_sprite_v_flip</a>
+<li><a href="#rotate_scaled_sprite">rotate_scaled_sprite</a>
+<li><a href="#rotate_scaled_sprite_v_flip">rotate_scaled_sprite_v_flip</a>
+<li><a href="#rotate_sprite">rotate_sprite</a>
+<li><a href="#rotate_sprite_v_flip">rotate_sprite_v_flip</a>
+<li><a href="#stretch_blit">stretch_blit</a>
+<li><a href="#stretch_sprite">stretch_sprite</a>
+</ul>
+
+<p>
+Todas estas rutinas son afectadas por el área de recorte del bitmap destino.
+
+<p><br>
+<b>void <a name="clear_bitmap">clear_bitmap</a>(BITMAP *bitmap);</b><br>
+   Limpia el bitmap con el color 0.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#clear_to_color">clear_to_color</a>,
+<a class="xref" href="#clear">clear</a>.</font></blockquote>
+<b>void <a name="clear">clear</a>(BITMAP *bitmap);</b><br>
+   Un alias de clear_bitmap(), existe para mantener compatibilidad hacia
+   atrás. Está implementado como una función estática inline. El alias puede
+   ser desactivado definiendo el símbolo de preprocesador
+   ALLEGRO_NO_CLEAR_BITMAP_ALIAS antes de incluir los ficheros de cabecera
+   de Allegro, por ejemplo:
+<blockquote class="code"><pre>
+      #define ALLEGRO_NO_CLEAR_BITMAP_ALIAS
+      #include &lt;allegro.h&gt;
+</pre></blockquote>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#clear_bitmap">clear_bitmap</a>.</font></blockquote>
+<b>void <a name="clear_to_color">clear_to_color</a>(BITMAP *bitmap, int color);</b><br>
+   Limpia el bitmap con el color especificado.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#clear_bitmap">clear_bitmap</a>.</font></blockquote>
+<b>void <a name="blit">blit</a>(BITMAP *source, BITMAP *dest, int source_x, int source_y,</b>
+<b>          int dest_x, int dest_y, int width, int height);</b><br>
+   Copia un área rectangular del bitmap origen en el bitmap destino. Los
+   parámetros source_x y source_y son de la esquina superior izquierda del
+   área a copiar del bitmap origen, y dest_x y dest_y es la posición
+   correspondiente en el bitmap destino. Esta rutina respeta el área de
+   recorte del destino, y también habrá recorte si intenta copiar áreas que
+   quedan fuera del bitmap origen.
+
+<p>
+   Puede hacer un blit entre cualquier parte de dos bitmaps, incluso si las
+   dos áreas se superponen (ejemplo: source y dest son el mismo bitmap, o
+   uno es un sub-bitmap del otro). Debería tener en cuenta, sin embargo, que
+   muchas tarjetas SVGA no tienen bancos de lectura/escritura separados, lo
+   que significa que hacer un blit de una parte de la pantalla a otra
+   requiere el uso de un bitmap de memoria temporal, y es por ello
+   extremadamente lento. Como regla general debería evitar hacer blits de la
+   pantalla sobre sí misma en modos SVGA.
+
+<p>
+   Sin embargo, hacer un blit en modo-X de una parte de la pantalla a otro
+   lado puede ser significantemente más rápido que desde la memoria hacia la
+   pantalla, siempre y cuando el origen y el destino estén correctamente
+   alineados el uno con el otro. Hacer una copia entre áreas de la pantalla
+   que se superponen es lento, pero si las áreas no se superponen, y si
+   tienen la misma alineación de planos (es decir: (source_x%4) ==
+   (dest_x%4)), entonces se pueden usar los registros de la VGA para
+   realizar una rápida transferencia de datos. Para tomar ventaja de esto,
+   en modo-X normalmente se almacenan los gráficos en una parte oculta de la
+   memoria de vídeo (usando una pantalla virtual grande), y se hacen blits
+   desde allí a la parte visible de la pantalla.
+
+<p>
+   Si el bit GFX_HW_VRAM_BLIT está activado en la variable gfx_capabilities,
+   el controlador actual soporta blits de una parte de la pantalla a otra
+   usando aceleración por hardware. Esto es extremadamente rápido, por lo
+   que si este bit está activado, sería útil almacenar parte de sus gráficos
+   más frequentemente usados en una porción oculta de la memoria de vídeo.
+
+<p>
+   Al contrario que la mayoría de las rutinas gráficas, blit() permite que
+   los bitmaps de origen y destino sean de diferentes profundidades de
+   color, por lo que se puede usar para convertir imágenes de un formato de
+   pixel a otro.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#masked_blit">masked_blit</a>,
+<a class="xref" href="#stretch_blit">stretch_blit</a>,
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="alleg007.html#gfx_capabilities">gfx_capabilities</a>.</font></blockquote>
+<b>void <a name="masked_blit">masked_blit</a>(BITMAP *source, BITMAP *dest, int source_x, int source_y,</b>
+<b>                  int dest_x, int dest_y, int width, int height);</b><br>
+   Como blit(), pero salta los pixels transparentes (cero en modos de 256
+   colores, y rosa fucsia para modos truecolor). La imagen origen debe ser un
+   bitmap de memoria o un sub-bitmap, y las regiones de origen y destino no
+   pueden superponerse.
+
+<p>
+   Si el bit GFX_HW_VRAM_BLIT_MASKED está activado en la variable
+   gfx_capabilities, el controlador actual soporta blits de una parte de la
+   pantalla a otra usando aceleración por hardware. Esto es extremadamente
+   rápido, por lo que si este bit está activado, sería útil almacenar parte
+   de sus gráficos más frequentemente usados en una porción oculta de la
+   memoria de vídeo.
+
+<p>
+   Atención: ¡si el bit de aceleración por hardware no está activado,
+   masked_blit() no funcionará correctamente cuando la imagen origen sea la
+   memoria de vídeo, y el gráfico a dibujar siempre tiene que ser un bitmap
+   de memoria!
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#blit">blit</a>,
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<b>void <a name="stretch_blit">stretch_blit</a>(BITMAP *source, BITMAP *dest,</b>
+<b>                  int source_x, source_y, source_width, source_height,</b>
+<b>                  int dest_x, dest_y, dest_width, dest_height);</b><br>
+   Como blit(), excepto que puede escalar imágenes de tal forma que las áreas
+   de origen y destino no tienen que tener el mismo tamaño. Esta rutina no
+   realiza tantas comprobaciones de seguridad como blit(): en particular debe
+   tener cuidado de no copiar desde áreas fuera del bitmap origen, y no puede
+   hacer la copia entre áreas que se superponen, y el bitmap origen y destino
+   no pueden ser el mismo. Además, el origen debe ser un bitmap de memoria o
+   sub-bitmap, no la pantalla hardware.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#blit">blit</a>,
+<a class="xref" href="#stretch_sprite">stretch_sprite</a>.</font></blockquote>
+<b>void <a name="masked_stretch_blit">masked_stretch_blit</a>(BITMAP *source, BITMAP *dest,</b>
+<b>                         int source_x, source_y, source_w, source_h,</b>
+<b>                         int dest_x, dest_y, dest_w, dest_h);</b><br>
+   Como stretch_blit(), pero se salta pixels transparentes, que están
+   marcados con un 0 en modos de 256 colores o magenta fara datos en
+   truecolor (rojo y azul al máximo y el verde a  cero). Las regiones origen
+   (source) y destino (destination) no deben solaparse.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#blit">blit</a>,
+<a class="xref" href="#masked_blit">masked_blit</a>,
+<a class="xref" href="#stretch_blit">stretch_blit</a>,
+<a class="xref" href="#stretch_sprite">stretch_sprite</a>.</font></blockquote>
+<b>void <a name="draw_sprite">draw_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y);</b><br>
+   Dibuja una copia del bitmap sprite en el bitmap destino en la posición
+   especificada. Eso es casi igual que blit(sprite, bmp, 0, 0, x, y,
+   sprite-&gt;w, sprite-&gt;h), pero usa un modo de dibujado con máscara en el
+   cual los pixels transparentes (cero en modos de 256 colores, rosa fucsia
+   para modos truecolor) son ignorados, por lo que la imagen de fondo se
+   podrá ver por las partes enmascaradas del sprite. El sprite debe ser un
+   bitmap de memoria, no la pantalla o un sub-bitmap. El destino puede ser
+   cualquier bitmap.
+
+<p>
+   Si el bit GFX_HW_VRAM_BLIT_MASKED está activado en la variable
+   gfx_capabilities, el controlador actual soporta blits de una parte de la
+   pantalla a otra usando aceleración por hardware. Esto es extremadamente
+   rápido, por lo que si este bit está activado, sería útil almacenar
+   parte de sus gráficos más frequentemente usados en una porción oculta de
+   la memoria de vídeo.
+
+<p>
+   Atención: ¡si el bit de aceleración por hardware no está activado,
+   draw_sprite() no funcionará correctamente cuando la imagen origen sea la
+   memoria de vídeo, y el gráfico a dibujar siempre tiene que ser un bitmap
+   de memoria!
+
+<p>
+   A pesar de no soportar generalmente gráficos de diferentes profundidades
+   de color, como caso especial puede usar esta función para dibujar
+   imágenes origen de 256 colores en bitmaps destino truecolor, por lo que
+   puede usar efectos de paleta en sprites específicos dentro de un
+   programa truecolor.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>,
+<a class="xref" href="#draw_gouraud_sprite">draw_gouraud_sprite</a>,
+<a class="xref" href="#stretch_sprite">stretch_sprite</a>,
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#draw_character">draw_character</a>,
+<a class="xref" href="alleg014.html#draw_rle_sprite">draw_rle_sprite</a>,
+<a class="xref" href="alleg015.html#draw_compiled_sprite">draw_compiled_sprite</a>,
+<a class="xref" href="#masked_blit">masked_blit</a>,
+<a class="xref" href="#blit">blit</a>,
+<a class="xref" href="#draw_sprite_v_flip">draw_sprite_v_flip</a>,
+<a class="xref" href="#draw_trans_sprite">draw_trans_sprite</a>,
+<a class="xref" href="#draw_lit_sprite">draw_lit_sprite</a>.</font></blockquote>
+<b>void <a name="draw_sprite_v_flip">draw_sprite_v_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y);</b><br>
+<b>void <a name="draw_sprite_h_flip">draw_sprite_h_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y);</b><br>
+<b>void <a name="draw_sprite_vh_flip">draw_sprite_vh_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y);</b><br>
+   Estas son como draw_sprite(), pero invierten la imagen sobre el eje
+   vertical, horizontal o ambos. Esto produce imágenes espejo exactas, que
+   no es lo mismo que rotar el sprite (y además esto es más rápido que la
+   rutina de rotación). El sprite debe ser un bitmap de memoria.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<b>void <a name="draw_trans_sprite">draw_trans_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y);</b><br>
+   Usa la tabla global color_map o las funciones de fundido truecolor para
+   sobreimprimir un sprite encima de una imagen existente. Esto sólo debe
+   usarse si antes se ha creado la tabla de colores (para modos de 256
+   colores) o las funciones de fundido (para modos truecolor). Ya que tiene
+   que leer al igual que escribir en la memoria del bitmap, el dibujado
+   translúcido es muy lento si dibuja directamente en la memoria de vídeo,
+   así que siempre que sea posibe debería usar un bitmap de memoria. El
+   bitmap y el sprite deben, normalmente, tener la misma profundidad de
+   color, pero como caso especial puede dibujar sprites en formato RGBA de
+   32 bits en cualquier bitmap hicolor o truecolor, siempre y cuando llame
+   primero a set_alpha_blender(), y puede dibujar imágenes con 8 bits de
+   alfa en un destino en RGBA de 32 bits, mientras llame antes a
+   set_write_alpha_blender().
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>,
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="#draw_lit_sprite">draw_lit_sprite</a>,
+<a class="xref" href="alleg014.html#draw_trans_rle_sprite">draw_trans_rle_sprite</a>,
+<a class="xref" href="alleg018.html#color_map">color_map</a>,
+<a class="xref" href="alleg018.html#set_trans_blender">set_trans_blender</a>,
+<a class="xref" href="alleg018.html#set_alpha_blender">set_alpha_blender</a>,
+<a class="xref" href="alleg018.html#set_write_alpha_blender">set_write_alpha_blender</a>.</font></blockquote>
+<b>void <a name="draw_lit_sprite">draw_lit_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y, int color);</b><br>
+   Entinta el sprite hacia el color o nivel de luz especificado, usando la
+   tabla global color_map, y dibuja la imagen resultante en el bitmap
+   destino. Esto sólo se puede usar si antes ha creado una tabla de colores
+   (para modos de 256 colores) o un mapa de fundido (para modos truecolor).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg014.html#draw_lit_rle_sprite">draw_lit_rle_sprite</a>,
+<a class="xref" href="alleg018.html#color_map">color_map</a>,
+<a class="xref" href="alleg018.html#set_trans_blender">set_trans_blender</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>,
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="#draw_trans_sprite">draw_trans_sprite</a>,
+<a class="xref" href="#draw_gouraud_sprite">draw_gouraud_sprite</a>.</font></blockquote>
+<b>void <a name="draw_gouraud_sprite">draw_gouraud_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                         int c1, int c2, int c3, int c4);</b><br>
+   Entinta el sprite al color o nivel de luz especificado, interpolando los
+   cuatro colores de la esquina sobre la imagen. Esto sólo se puede usar si
+   antes ha creado una tabla de colores (para modos de 256 colores) o un
+   mapa de fundido (para modos truecolor).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>,
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="#draw_lit_sprite">draw_lit_sprite</a>,
+<a class="xref" href="alleg018.html#color_map">color_map</a>,
+<a class="xref" href="alleg018.html#set_trans_blender">set_trans_blender</a>.</font></blockquote>
+<b>void <a name="draw_character">draw_character</a>(BITMAP *bmp, BITMAP *sprite, int x, int y, int color);</b><br>
+   Dibuja una copia del sprite en el bitmap destino en la posición
+   especificada, dibujando los pixels transparentes (cero en modos de 256
+   colores, rosa fucsia en modos truecolor) con el modo de texto actual
+   (ignorándolos si el modo de texto es -1, de otra forma los dibuja en el
+   color de fondo del texto), y ajustando el resto de los pixels al color
+   especificado. El sprite debe ser una imagen de 8 bits, incluso si el
+   destino es un bitmap truecolor.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<b>void <a name="rotate_sprite">rotate_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y, fixed angle);</b><br>
+   Dibuja el sprite en el bitmap destino. Será colocado usando su esquina
+   superior izquierda como la posición especificada, y entonces será rotado
+   el ángulo especificado sobre su centro. El ángulo es un número de punto
+   fijo 16.16 con el mismo formato usado por las funciones trigonométricas
+   de punto fijo, siendo 256 un círculo completo, 64 un ángulo recto, etc.
+   Todas las funciones de rotación pueden usar diferentes tipos de bitmaps
+   de origen y destino, incluso bitmaps de pantalla o con una profundidad
+   de color distinta.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="#rotate_scaled_sprite">rotate_scaled_sprite</a>,
+<a class="xref" href="#rotate_sprite_v_flip">rotate_sprite_v_flip</a>,
+<a class="xref" href="alleg029.html#itofix">itofix</a>,
+<a class="xref" href="alleg029.html#Trigonometría de punto fijo">Trigonometría de punto fijo</a>,
+<a class="xref" href="#pivot_scaled_sprite">pivot_scaled_sprite</a>,
+<a class="xref" href="#pivot_scaled_sprite_v_flip">pivot_scaled_sprite_v_flip</a>,
+<a class="xref" href="#pivot_sprite">pivot_sprite</a>,
+<a class="xref" href="#pivot_sprite_v_flip">pivot_sprite_v_flip</a>,
+<a class="xref" href="#rotate_scaled_sprite_v_flip">rotate_scaled_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="rotate_sprite_v_flip">rotate_sprite_v_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y, fixed angle);</b><br>
+   Como rotate_sprite, pero también invierte la imágen verticalmente. Para
+   invertir la imagen horizontalmente, use esta rutina pero añada
+   itofix(128) al ángulo. Para invertir la imágen en ambos ejes, use
+   rotate_sprite() y añada itofix(128) a su ángulo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pivot_sprite_v_flip">pivot_sprite_v_flip</a>,
+<a class="xref" href="#pivot_scaled_sprite_v_flip">pivot_scaled_sprite_v_flip</a>,
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#rotate_scaled_sprite_v_flip">rotate_scaled_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="rotate_scaled_sprite">rotate_scaled_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                          fixed angle, fixed scale);</b><br>
+   Como rotate_sprite(), pero modifica el tamaño de la imagen a la vez que
+   la rota.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pivot_scaled_sprite">pivot_scaled_sprite</a>,
+<a class="xref" href="#pivot_scaled_sprite_v_flip">pivot_scaled_sprite_v_flip</a>,
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#rotate_scaled_sprite_v_flip">rotate_scaled_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="rotate_scaled_sprite_v_flip">rotate_scaled_sprite_v_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                                 fixed angle, fixed scale)</b><br>
+   Dibuja el sprite, de forma similar a rotate_scaled_sprite(), excepto que
+   primero invierte la imagen verticalmente.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#rotate_scaled_sprite">rotate_scaled_sprite</a>,
+<a class="xref" href="#rotate_sprite_v_flip">rotate_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="pivot_sprite">pivot_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                  int cx, int cy, fixed angle);</b><br>
+   Como rotate_sprite(), pero toma el punto del sprite dado por (cx, cy) como
+   (x, y) en el bitmap, y entonces lo rota sobre este punto.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#pivot_scaled_sprite">pivot_scaled_sprite</a>,
+<a class="xref" href="#pivot_sprite_v_flip">pivot_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="pivot_sprite_v_flip">pivot_sprite_v_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                         int cx, int cy, fixed angle);</b><br>
+   Como rotate_sprite_v_flip(), pero toma el punto del sprite dado por
+   (cx, cy) como (x, y) en el bitmap, y entonces lo rota sobre este punto.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pivot_sprite">pivot_sprite</a>,
+<a class="xref" href="#rotate_sprite_v_flip">rotate_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="pivot_scaled_sprite">pivot_scaled_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                         int cx, int cy, fixed angle, fixed scale));</b><br>
+   Como rotate_scaled_sprite(), pero toma el punto del sprite dado por
+   (cx, cy) como (x, y) en el bitmap, y entonces lo rota y escala sobre este
+   punto.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pivot_sprite">pivot_sprite</a>,
+<a class="xref" href="#pivot_scaled_sprite_v_flip">pivot_scaled_sprite_v_flip</a>,
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#rotate_scaled_sprite">rotate_scaled_sprite</a>.</font></blockquote>
+<b>void <a name="pivot_scaled_sprite_v_flip">pivot_scaled_sprite_v_flip</a>(BITMAP *bmp, BITMAP *sprite, int x, int y,</b>
+<b>                                 fixed angle, fixed scale)</b><br>
+   Como rotate_scaled_sprite_v_flip(), pero toma el punto del sprite dado
+   por (cx, cy) como (x, y) en el bitmap, y entonces lo rota y escala sobre
+   este punto.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#pivot_sprite">pivot_sprite</a>,
+<a class="xref" href="#pivot_scaled_sprite">pivot_scaled_sprite</a>,
+<a class="xref" href="#rotate_sprite">rotate_sprite</a>,
+<a class="xref" href="#rotate_scaled_sprite_v_flip">rotate_scaled_sprite_v_flip</a>,
+<a class="xref" href="#rotate_sprite_v_flip">rotate_sprite_v_flip</a>.</font></blockquote>
+<b>void <a name="stretch_sprite">stretch_sprite</a>(BITMAP *bmp, BITMAP *sprite, int x, int y, int w, int h);</b><br>
+   Dibuja un sprite en el bitmap en la posición especificada, cambiando el
+   tamaño al ancho y alto especificado. La diferencia entre stretch_sprite()
+   y stretch_blit() es que stretch_sprite() enmascara los pixels
+   transparentes, que son cero en modos de 256 colores, y rosa fucsia en
+   modos truecolor (rojo y azul al máximo, verde a cero).
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#draw_sprite">draw_sprite</a>,
+<a class="xref" href="#stretch_blit">stretch_blit</a>,
+<a class="xref" href="alleg008.html#bitmap_mask_color">bitmap_mask_color</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

@@ -1,0 +1,4525 @@
+<HTML>
+<HEAD>
+<!-- This HTML file has been created by texi2html 1.51
+     from flex-es.texi on 25 May 1999 -->
+
+<TITLE>Flex - un generador de analizadores léxicos</TITLE>
+</HEAD>
+<BODY>
+<H1>Flex, versión 2.5</H1>
+<H2>Un generador de analizadores léxicos rápidos.</H2>
+<H2>Edición 2.5, Abril 1995</H2>
+<ADDRESS>Vern Paxson</ADDRESS>
+<P>
+<P><HR><P>
+<H1>Table of Contents</H1>
+<UL>
+<LI><A NAME="TOC1" HREF="flex-es-2.5.html#SEC1">Introducción</A>
+<LI><A NAME="TOC2" HREF="flex-es-2.5.html#SEC2">Descripción</A>
+<LI><A NAME="TOC3" HREF="flex-es-2.5.html#SEC3">Algunos ejemplos simples</A>
+<LI><A NAME="TOC4" HREF="flex-es-2.5.html#SEC4">Formato del fichero de entrada</A>
+<LI><A NAME="TOC5" HREF="flex-es-2.5.html#SEC5">Patrones</A>
+<LI><A NAME="TOC6" HREF="flex-es-2.5.html#SEC6">Cómo se empareja la entrada</A>
+<LI><A NAME="TOC7" HREF="flex-es-2.5.html#SEC7">Acciones</A>
+<LI><A NAME="TOC8" HREF="flex-es-2.5.html#SEC8">El escáner generado</A>
+<LI><A NAME="TOC9" HREF="flex-es-2.5.html#SEC9">Condiciones de arranque</A>
+<LI><A NAME="TOC10" HREF="flex-es-2.5.html#SEC10">Múltiples buffers de entrada</A>
+<LI><A NAME="TOC11" HREF="flex-es-2.5.html#SEC11">Reglas de fin-de-fichero</A>
+<LI><A NAME="TOC12" HREF="flex-es-2.5.html#SEC12">Macros misceláneas</A>
+<LI><A NAME="TOC13" HREF="flex-es-2.5.html#SEC13">Valores disponibles al usuario</A>
+<LI><A NAME="TOC14" HREF="flex-es-2.5.html#SEC14">Interfaz con YACC</A>
+<LI><A NAME="TOC15" HREF="flex-es-2.5.html#SEC15">Invocando a Flex</A>
+<UL>
+<LI><A NAME="TOC16" HREF="flex-es-2.5.html#SEC16">Sinopsis</A>
+<LI><A NAME="TOC17" HREF="flex-es-2.5.html#SEC17">Opciones</A>
+</UL>
+<LI><A NAME="TOC18" HREF="flex-es-2.5.html#SEC18">Consideraciones de rendimiento</A>
+<LI><A NAME="TOC19" HREF="flex-es-2.5.html#SEC19">Generando escáneres en C++</A>
+<LI><A NAME="TOC20" HREF="flex-es-2.5.html#SEC20">Incompatibilidades con <CODE>lex</CODE> y POSIX</A>
+<LI><A NAME="TOC21" HREF="flex-es-2.5.html#SEC21">Diagnósticos</A>
+<LI><A NAME="TOC22" HREF="flex-es-2.5.html#SEC22">Ficheros</A>
+<LI><A NAME="TOC23" HREF="flex-es-2.5.html#SEC23">Deficiencias / Errores</A>
+<LI><A NAME="TOC24" HREF="flex-es-2.5.html#SEC24">Ver también</A>
+<LI><A NAME="TOC25" HREF="flex-es-2.5.html#SEC25">Autor</A>
+<LI><A NAME="TOC26" HREF="flex-es-2.5.html#SEC26">Índice</A>
+</UL>
+<P><HR><P>
+
+<P>
+@catcode`¿=@active@def¿{@questiondown{}}
+@catcode`¡=@active@def¡{@exclamdown{}}
+@catcode`á=@active@defá{'a}
+@catcode`é=@active@defé{'e}
+@catcode`í=@active@defí{'{@char16{}}} 
+@catcode`ó=@active@defó{'o}
+@catcode`ú=@active@defú{'u}
+@catcode`Á=@active@defÁ{'A}
+@catcode`É=@active@defÉ{'E}
+@catcode`Í=@active@defÍ{'I}
+@catcode`Ó=@active@defÓ{'O}
+@catcode`Ú=@active@defÚ{'U}
+@catcode`ü=@active@defü{@"u}
+@catcode`Ü=@active@defÜ{@"U}
+@catcode`ñ=@active@defñ{@~n}
+@catcode`Ñ=@active@defÑ{@~N}
+@catcode`ª=@active@defª{a.}
+
+</P>
+
+<P>
+@gdef@putwordChapter{Capítulo}
+@def@putwordInfo{Info}
+@gdef@putwordSee{Ver}
+@gdef@putwordsee{ver}
+@gdef@putwordfile{archivo}
+@gdef@putwordpage{página}
+@gdef@putwordsection{sección}
+@gdef@putwordSection{Sección}
+@gdef@putwordTableofContents{Tabla de Contenido}
+@gdef@putwordTOC{Tabla de Contenido}
+@gdef@putwordShortContents{Contenido Breve}
+@gdef@putwordAppendix{Apéndice}
+
+</P>
+
+<P>
+@def@ingles{0}                  
+@def@espanol{1}                 
+
+</P>
+<P>
+@language=@espanol
+
+</P>
+
+<P>
+@language=@ingles
+Copyright (C) 1990 The Regents of the University of California.
+All rights reserved.
+
+</P>
+<P>
+This code is derived from software contributed to Berkeley by
+Vern Paxson.
+
+</P>
+<P>
+The United States Government has rights in this work pursuant
+to contract no. DE-AC03-76SF00098 between the United States
+Department of Energy and the University of California.
+
+</P>
+<P>
+Redistribution and use in source and binary forms with or without
+modification are permitted provided that: (1) source distributions
+retain this entire copyright notice and comment, and (2)
+distributions including binaries display the following
+acknowledgement:  "This product includes software developed by the
+University of California, Berkeley and its contributors" in the
+documentation or other materials provided with the distribution and
+in all advertising materials mentioning features or use of this
+software.  Neither the name of the University nor the names of its
+contributors may be used to endorse or promote products derived
+from this software without specific prior written permission.
+
+</P>
+<P>
+THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.
+@language=@espanol
+
+</P>
+
+
+
+<H1><A NAME="SEC1" HREF="flex-es-2.5.html#TOC1">Introducción</A></H1>
+<P>
+<A NAME="IDX1"></A>
+<A NAME="IDX2"></A>
+
+</P>
+<P>
+Este manual describe <CODE>flex</CODE>,
+una herramienta para la generación de programas que realizan
+concordancia de patrones en texto.  El manual incluye a la vez
+secciones de tutorial y de referencia:
+
+</P>
+<DL COMPACT>
+
+<DT>Descripción
+<DD>
+una breve introducción a la herramienta
+
+<DT>Algunos Ejemplos Simples
+<DD>
+<DT>Formato del Fichero de Entrada
+<DD>
+<DT>Patrones
+<DD>
+las expresiones regulares extendidas que utiliza flex
+
+<DT>Cómo se Empareja la Entrada
+<DD>
+las reglas para determinar lo que ha concordado
+
+<DT>Acciones
+<DD>
+cómo especificar qué hacer cuando concuerde un patrón
+
+<DT>El Escáner Generado
+<DD>
+detalles respecto al escáner que produce flex;
+cómo controlar la fuente de entrada
+
+<DT>Condiciones de Arranque
+<DD>
+la introdución de contexto en sus escáneres, y
+conseguir "mini-escáneres"
+
+<DT>Múltiples Buffers de Entrada
+<DD>
+cómo manipular varias fuentes de entrada; cómo
+analizar cadenas en lugar de ficheros.
+
+<DT>Reglas de Fin-de-Fichero
+<DD>
+reglas especiales para reconocer el final de la entrada
+
+<DT>Macros Misceláneas
+<DD>
+un sumario de macros disponibles para las acciones
+
+<DT>Valores Disponibles para el Usuario
+<DD>
+un sumario de valores disponibles para las acciones
+
+<DT>Interfaz con Yacc
+<DD>
+conectando escáneres de flex junto con analizadores de yacc
+
+<DT>Opciones
+<DD>
+opciones de línea de comando de flex, y la directiva
+"%option"
+
+<DT>Consideraciones de Rendimiento
+<DD>
+cómo hacer que sus analizadores vayan tan rápido
+como sea posible
+
+<DT>Generando Escáneres en C++
+<DD>
+la facilidad (experimental) para generar analizadores
+léxicos como clases de C++
+
+<DT>Incompatibilidades con Lex y POSIX
+<DD>
+cómo flex difiere del lex de AT&#38;T y del lex estándar
+de POSIX 
+
+<DT>Diagnósticos
+<DD>
+esos mensajes de error producidos por flex (o por
+los escáneres que este genera) cuyo significado podría
+no ser evidente
+
+<DT>Ficheros
+<DD>
+los ficheros usados por flex
+
+<DT>Deficiencias / Errores
+<DD>
+problemas de flex conocidos
+
+<DT>Ver También
+<DD>
+otra documentación, herramientas relacionadas
+
+<DT>Autor
+<DD>
+incluye información de contacto
+</DL>
+
+
+
+<H1><A NAME="SEC2" HREF="flex-es-2.5.html#TOC2">Descripción</A></H1>
+<P>
+<A NAME="IDX3"></A>
+
+</P>
+<P>
+<CODE>flex</CODE> es una herramienta para generar <STRONG>escáneres</STRONG>: programas
+que reconocen patrones léxicos en un texto. <CODE>flex</CODE> lee los ficheros
+de entrada dados, o la entrada estándar si no se le ha indicado ningún
+nombre de fichero, con la descripción de un escáner a generar.  La
+descripción se encuentra en forma de parejas de expresiones regulares
+y código C, denominadas <STRONG>reglas</STRONG>. <CODE>flex</CODE> genera como salida un
+fichero fuente en C, <TT>`lex.yy.c'</TT>, que define una rutina <SAMP>`yylex()'</SAMP>.
+Este fichero se compila y se enlaza con la librería
+<SAMP>`-lfl'</SAMP> para producir un ejecutable.  Cuando se arranca el fichero
+ejecutable, este analiza su entrada en busca de casos de las expresiones
+regulares.  Siempre que encuentra uno, ejecuta el código C  correspondiente.
+
+</P>
+
+
+<H1><A NAME="SEC3" HREF="flex-es-2.5.html#TOC3">Algunos ejemplos simples</A></H1>
+<P>
+<A NAME="IDX4"></A>
+
+</P>
+<P>
+En primer lugar veremos algunos ejemplos simples para una toma de
+contacto con el uso de <CODE>flex</CODE>.  La siguiente entrada de <CODE>flex</CODE>
+especifica un escáner que siempre que encuentre la cadena "username" la
+reemplazará por el nombre de entrada al sistema del usuario:
+
+</P>
+
+<PRE>
+%%
+username    printf( "%s", getlogin() );
+</PRE>
+
+<P>
+Por defecto, cualquier texto que no reconozca el analizador léxico de
+<CODE>flex</CODE> se copia a la salida, así que el efecto neto de este escáner
+es copiar su fichero de entrada a la salida con cada aparición de
+"username" expandida. En esta entrada, hay solamente una regla.
+"username" es el <VAR>patrón</VAR> y el "printf" es la <VAR>acción</VAR>.
+El "%%" marca el comienzo de las reglas.
+
+</P>
+<P>
+Aquí hay otro ejemplo simple:
+
+</P>
+
+<PRE>
+        int num_lineas = 0, num_caracteres = 0;
+
+%%
+\n      ++num_lineas; ++num_caracteres;
+.       ++num_caracteres;
+
+%%
+main()
+        {
+        yylex();
+        printf( "# de líneas = %d, # de caracteres. = %d\n",
+                num_lineas, num_caracteres );
+        }
+</PRE>
+
+<P>
+Este analizador cuenta el número de caracteres y el número de líneas
+en su entrada (no produce otra salida que el informe final de la
+cuenta).  La primera línea declara dos variables globales,
+"num_lineas" y "num_caracteres", que son visibles al mismo tiempo
+dentro de <SAMP>`yylex()'</SAMP> y en la rutina <SAMP>`main()'</SAMP> declarada después
+del segundo "%%".  Hay dos reglas, una que empareja una línea nueva
+("\n") e incrementa la cuenta de líneas y la cuenta de caracteres, y la
+que empareja cualquier caracter que no sea una línea nueva (indicado por
+la expresión regular ".").
+
+</P>
+<P>
+Un ejemplo algo más complicado:
+
+</P>
+
+<PRE>
+
+/* escáner para un lenguaje de juguete al estilo de Pascal */
+
+%{
+/* se necesita esto para la llamada a atof() más abajo */
+#include &#60;math.h&#62;
+%}
+
+DIGITO   [0-9]
+ID       [a-z][a-z0-9]*
+
+%%
+
+{DIGITO}+   {
+            printf( "Un entero: %s (%d)\n", yytext,
+                    atoi( yytext ) );
+            }
+
+{DIGITO}+"."{DIGITO}*      {
+            printf( "Un real: %s (%g)\n", yytext,
+                    atof( yytext ) );
+            }
+
+if|then|begin|end|procedure|function        {
+            printf( "Una palabra clave: %s\n", yytext );
+            }
+
+{ID}        printf( "Un identificador: %s\n", yytext );
+
+"+"|"-"|"*"|"/"   printf( "Un operador: %s\n", yytext );
+
+"{"[^}\n]*"}"     /* se come una linea de comentarios */
+
+[ \t\n]+          /* se come los espacios en blanco */
+
+.           printf( "Caracter no reconocido: %s\n", yytext );
+
+%%
+
+main( argc, argv )
+int argc;
+char **argv;
+    {
+    ++argv, --argc;  /* se salta el nombre del programa */
+    if ( argc &#62; 0 )
+            yyin = fopen( argv[0], "r" );
+    else
+            yyin = stdin;
+    
+    yylex();
+    }
+</PRE>
+
+<P>
+Esto podría ser los comienzos de un escáner simple para un lenguaje como
+Pascal.  Este identifica diferentes tipos de <VAR>tokens</VAR> e informa a
+cerca de lo que ha visto.
+
+</P>
+<P>
+Los detalles de este ejemplo se explicarán en las secciones siguientes.
+
+</P>
+
+
+<H1><A NAME="SEC4" HREF="flex-es-2.5.html#TOC4">Formato del fichero de entrada</A></H1>
+<P>
+<A NAME="IDX5"></A>
+<A NAME="IDX6"></A>
+<A NAME="IDX7"></A>
+<A NAME="IDX8"></A>
+
+</P>
+<P>
+El fichero de entrada de <CODE>flex</CODE> está compuesto de tres secciones,
+separadas por una línea donde aparece únicamente un <SAMP>`%%'</SAMP> en esta:
+
+</P>
+
+<PRE>
+definiciones
+%%
+reglas
+%%
+código de usuario
+</PRE>
+
+<P>
+<A NAME="IDX9"></A>
+<A NAME="IDX10"></A>
+La sección de <STRONG>definiciones</STRONG> contiene declaraciones de definiciones
+de <STRONG>nombres</STRONG> sencillas para simplificar la especificación del
+escáner, y declaraciones de <STRONG>condiciones</STRONG> de arranque, que se
+explicarán en una sección posterior.
+Las definiciones de nombre tienen la forma:
+
+</P>
+
+<PRE>
+nombre definición
+</PRE>
+
+<P>
+El "nombre" es una palabra que comienza con una letra o un subrayado
+(<SAMP>`_'</SAMP>) seguido por cero o más letras, dígitos, <SAMP>`_'</SAMP>, o <SAMP>`-'</SAMP>
+(guión).
+La definición se considera que comienza en el primer caracter que no
+sea un espacio en blanco siguiendo al nombre y continuando hasta el
+final de la línea.
+Posteriormente se puede hacer referencia a la definición utilizando
+"{nombre}", que se expandirá a "(definición)".  Por ejemplo,
+
+</P>
+
+<PRE>
+DIGITO   [0-9]
+ID       [a-z][a-z0-9]*
+</PRE>
+
+<P>
+define "DIGITO" como una expresión regular que empareja un dígito
+sencillo, e "ID" como una expresión regular que empareja una letra
+seguida por cero o más letras o dígitos.
+Una referencia posterior a
+
+</P>
+
+<PRE>
+{DIGITO}+"."{DIGITO}*
+</PRE>
+
+<P>
+es idéntica a
+
+</P>
+
+<PRE>
+([0-9])+"."([0-9])*
+</PRE>
+
+<P>
+y empareja uno o más dígitos seguido por un <SAMP>`.'</SAMP> seguido por cero o más
+dígitos.
+
+</P>
+<P>
+<A NAME="IDX11"></A>
+<A NAME="IDX12"></A>
+La sección de <VAR>reglas</VAR> en la entrada de <CODE>flex</CODE> contiene una
+serie de reglas de la forma:
+
+</P>
+
+<PRE>
+patrón   acción
+</PRE>
+
+<P>
+donde el patrón debe estar sin sangrar y la acción debe comenzar en la
+misma línea.
+
+</P>
+<P>
+See section <A HREF="flex-es-2.5.html#SEC7">Acciones</A>, para una descripción más amplia sobre patrones y
+acciones.
+
+</P>
+<P>
+<A NAME="IDX13"></A>
+<A NAME="IDX14"></A>
+Finalmente, la sección de código de usuario simplemente se copia a
+<TT>`lex.yy.c'</TT> literalmente.  Esta sección se utiliza para rutinas de
+complemento que llaman al escáner o son llamadas por este.  La presencia
+de esta sección es opcional; Si se omite, el segundo <SAMP>`%%'</SAMP> en el
+fichero de entrada se podría omitir también.
+
+</P>
+<P>
+En las secciones de definiciones y reglas, cualquier texto
+<EM>sangrado</EM> o encerrado entre <SAMP>`%{'</SAMP> y <SAMP>`%}'</SAMP> se copia
+íntegramente a la salida (sin los %{}'s).  Los %{}'s deben aparecer
+sin sangrar en líneas ocupadas únicamente por estos.
+
+</P>
+<P>
+En la sección de reglas, cualquier texto o %{} sangrado que aparezca
+antes de la primera regla podría utilizarse para declarar variables que
+son locales a la rutina de análisis y (después de las declaraciones) al
+código que debe ejecutarse siempre que se entra a la rutina de análisis.
+Cualquier otro texto sangrado o %{} en la sección de reglas sigue
+copiándose a la salida, pero su significado no está bien definido y
+bien podría causar errores en tiempo de compilación (esta propiedad se
+presenta para conformidad con <CODE>POSIX</CODE>; para otras características
+similares) see section <A HREF="flex-es-2.5.html#SEC20">Incompatibilidades con <CODE>lex</CODE> y POSIX</A>)
+
+</P>
+<P>
+En la sección de definiciones (pero no en la sección de reglas),
+un comentario sin sangría (es decir, una línea comenzando con "/*")
+también se copia literalmente a la salida hasta el próximo "*/".
+
+</P>
+
+
+<H1><A NAME="SEC5" HREF="flex-es-2.5.html#TOC5">Patrones</A></H1>
+<P>
+<A NAME="IDX15"></A>
+<A NAME="IDX16"></A>
+
+</P>
+<P>
+Los patrones en la entrada se escriben utilizando un conjunto extendido
+de expresiones regulares.  Estas son:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`x'</SAMP>
+<DD>
+empareja el caracter <SAMP>`x'</SAMP>
+<DT><SAMP>`.'</SAMP>
+<DD>
+cualquier caracter (byte) excepto una línea nueva
+<A NAME="IDX17"></A>
+<DT><SAMP>`[xyz]'</SAMP>
+<DD>
+una "clase de caracteres"; en este caso, el patrón
+empareja una <SAMP>`x'</SAMP>, una <SAMP>`y'</SAMP>, o una <SAMP>`z'</SAMP>
+<A NAME="IDX18"></A>
+<DT><SAMP>`[abj-oZ]'</SAMP>
+<DD>
+una "clase de caracteres" con un rango; empareja
+una <SAMP>`a'</SAMP>, una <SAMP>`b'</SAMP>, cualquier letra desde la <SAMP>`j'</SAMP>
+hasta la <SAMP>`o'</SAMP>, o una <SAMP>`Z'</SAMP>
+<A NAME="IDX19"></A>
+<DT><SAMP>`[^A-Z]'</SAMP>
+<DD>
+una "clase de caracteres negada", es decir, cualquier
+caracter menos los que aparecen en la clase.  En 
+este caso, cualquier caracter EXCEPTO una letra
+mayúscula.
+<DT><SAMP>`[^A-Z\n]'</SAMP>
+<DD>
+cualquier caracter EXCEPTO una letra mayúscula o
+una línea nueva
+<DT><SAMP>`<VAR>r</VAR>*'</SAMP>
+<DD>
+cero o más <VAR>r</VAR>'s, donde <VAR>r</VAR> es cualquier expresión regular
+<DT><SAMP>`<VAR>r</VAR>+'</SAMP>
+<DD>
+una o más <VAR>r</VAR>'s
+<DT><SAMP>`<VAR>r</VAR>?'</SAMP>
+<DD>
+cero o una <VAR>r</VAR> (es decir, "una <VAR>r</VAR> opcional")
+<DT><SAMP>`<VAR>r</VAR>{2,5}'</SAMP>
+<DD>
+donde sea de dos a cinco <VAR>r</VAR>'s
+<DT><SAMP>`<VAR>r</VAR>{2,}'</SAMP>
+<DD>
+dos o más <VAR>r</VAR>'s
+<DT><SAMP>`<VAR>r</VAR>{4}'</SAMP>
+<DD>
+exactamente 4 <VAR>r</VAR>'s
+<DT><SAMP>`{nombre}'</SAMP>
+<DD>
+la expansión de la definición de "nombre"
+(ver más abajo)
+<A NAME="IDX20"></A>
+<DT><SAMP>`"[xyz]\"foo"'</SAMP>
+<DD>
+la cadena literal: [xyz]"foo
+<DT><SAMP>`\<VAR>x</VAR>'</SAMP>
+<DD>
+si <VAR>x</VAR> es una <SAMP>`a'</SAMP>, <SAMP>`b'</SAMP>, <SAMP>`f'</SAMP>, <SAMP>`n'</SAMP>, <SAMP>`r'</SAMP>, <SAMP>`t'</SAMP>, o <SAMP>`v'</SAMP>,
+entonces la interpretación ANSI-C de \<VAR>x</VAR>.
+En otro caso, un literal <SAMP>`<VAR>x</VAR>'</SAMP> (usado para
+indicar operadores tales como <SAMP>`*'</SAMP>)
+<DT><SAMP>`\0'</SAMP>
+<DD>
+un caracter NUL (código ASCII 0)
+<DT><SAMP>`\123'</SAMP>
+<DD>
+el caracter con valor octal 123
+<DT><SAMP>`\x2a'</SAMP>
+<DD>
+el caracter con valor hexadecimal <CODE>2a</CODE>
+<DT><SAMP>`(<VAR>r</VAR>)'</SAMP>
+<DD>
+empareja una <VAR>R</VAR>; los paréntesis se utilizan para
+anular la precedencia (ver más abajo)
+<P>
+<A NAME="IDX21"></A>
+<DT><SAMP>`<VAR>r</VAR><VAR>s</VAR>'</SAMP>
+<DD>
+la expresión regular <VAR>r</VAR> seguida por la expresión
+regular <VAR>s</VAR>; se denomina "concatenación"
+<P>
+<DT><SAMP>`<VAR>r</VAR>|<VAR>s</VAR>'</SAMP>
+<DD>
+bien una <VAR>r</VAR> o una <VAR>s</VAR>
+<P>
+<A NAME="IDX22"></A>
+<DT><SAMP>`<VAR>r</VAR>/<VAR>s</VAR>'</SAMP>
+<DD>
+una <VAR>r</VAR> pero sólo si va seguida por una <VAR>s</VAR>.  El
+texto emparejado por <VAR>s</VAR> se incluye cuando se
+determina si esta regla es el "emparejamiento
+más largo", pero se devuelve entonces a la
+entrada antes que se ejecute la acción.  Así
+que la acción sólo ve el texto emparejado
+por <VAR>r</VAR>.  Este tipo de patrones se llama
+"de contexto posterior".
+(Hay algunas combinaciones de <VAR>r</VAR>/<VAR>s</VAR> que flex
+no puede emparejar correctamente. See section <A HREF="flex-es-2.5.html#SEC23">Deficiencias / Errores</A>,
+las notas a cerca del "contexto posterior peligroso".)
+<DT><SAMP>`^<VAR>r</VAR>'</SAMP>
+<DD>
+una <VAR>r</VAR>, pero sólo al comienzo de una línea (es
+decir, justo al comienzo del análisis, o a la
+derecha después de que se haya analizado una
+línea nueva).
+<DT><SAMP>`<VAR>r</VAR>$'</SAMP>
+<DD>
+una <VAR>r</VAR>, pero sólo al final de una línea (es decir,
+justo antes de una línea nueva).  Equivalente
+a "<VAR>r</VAR>/\n".
+
+Fíjese que la noción de flex de una "línea nueva"
+es exáctamente lo que el compilador de C utilizado
+para compilar flex interprete como <SAMP>`\n'</SAMP>; en
+particular, en algunos sistemas DOS debe filtrar
+los \r's de la entrada used mismo, o explícitamente
+usar <VAR>r</VAR>/\r\n para "r$".
+<DT><SAMP>`&#60;<VAR>s</VAR>&#62;<VAR>r</VAR>'</SAMP>
+<DD>
+una <VAR>r</VAR>, pero sólo en la condición de arranque <VAR>s</VAR>
+(See section <A HREF="flex-es-2.5.html#SEC9">Condiciones de arranque</A>, para una discusión sobre las
+condiciones de arranque)
+<DT><SAMP>`&#60;<VAR>s1</VAR>,<VAR>s2</VAR>,<VAR>s3</VAR>&#62;<VAR>r</VAR>'</SAMP>
+<DD>
+lo mismo, pero en cualquiera de las condiciones
+de arranque <VAR>s1</VAR>, <VAR>s2</VAR>, o <VAR>s3</VAR>
+<DT><SAMP>`&#60;*&#62;<VAR>r</VAR>'</SAMP>
+<DD>
+una <VAR>r</VAR> en cualquier condición de arranque, incluso
+una exclusiva.
+<DT><SAMP>`&#60;&#60;EOF&#62;&#62;'</SAMP>
+<DD>
+un fin-de-fichero
+<DT><SAMP>`&#60;<VAR>s1</VAR>,<VAR>s2</VAR>&#62;&#60;&#60;EOF&#62;&#62;'</SAMP>
+<DD>
+un fin-de-fichero en una condición de arranque <VAR>s1</VAR> ó <VAR>s2</VAR>
+</DL>
+
+<P>
+Fíjese que dentro de una clase de caracteres, todos los operadores de
+expresiones regulares pierden su significado especial excepto el
+caracter de escape (<SAMP>`\'</SAMP>) y los operadores de clase de caracteres,
+<SAMP>`-'</SAMP>, <SAMP>`]'</SAMP>, y, al principio de la clase, <SAMP>`^'</SAMP>.
+
+</P>
+<P>
+<A NAME="IDX23"></A>
+Las expresiones regulares en el listado anterior están agrupadas de
+acuerdo a la precedencia, desde la precedencia más alta en la cabeza a
+la más baja al final.
+Aquellas agrupadas conjuntamente tienen la misma precedencia.  Por
+ejemplo,
+
+</P>
+
+<PRE>
+foo|bar*
+</PRE>
+
+<P>
+es lo mismo que
+
+</P>
+
+<PRE>
+(foo)|(ba(r*))
+</PRE>
+
+<P>
+ya que el operador <SAMP>`*'</SAMP> tiene mayor precedencia que la concatenación, y
+la concatenación más alta que el operador <SAMP>`|'</SAMP>.  Este patrón por lo tanto
+empareja <EM>bien</EM> la cadena "foo" <EM>o</EM> la cadena "ba" seguida de
+cero o más r's. 
+Para emparejar "foo" o, cero o más "bar"'s, use:
+
+</P>
+
+<PRE>
+foo|(bar)*
+</PRE>
+
+<P>
+y para emparejar cero o más "foo"'s o "bar"'s:
+
+</P>
+
+<PRE>
+(foo|bar)*
+</PRE>
+
+<P>
+Además de caracteres y rangos de caracteres, las clases de caracteres
+pueden también contener <STRONG>expresiones</STRONG> de clases de caracteres.
+Son expresiones encerradas entre los delimitadores <SAMP>`[:'</SAMP> y <SAMP>`:]'</SAMP>
+(que también deben aparecer entre el <SAMP>`['</SAMP> y el <SAMP>`]'</SAMP> de la clase de
+caracteres; además pueden darse otros elementos dentro de la clase de
+caracteres).
+Las expresiones válidas son:
+
+</P>
+
+<PRE>
+[:alnum:] [:alpha:] [:blank:]
+[:cntrl:] [:digit:] [:graph:]
+[:lower:] [:print:] [:punct:]
+[:space:] [:upper:] [:xdigit:]
+</PRE>
+
+<P>
+Todas estas expresiones designan un conjunto de caracteres
+equivalentes a la correspondiente función estándar <SAMP>`isXXX'</SAMP> de C.
+Por ejemplo, <SAMP>`[:alnum:]'</SAMP> designa aquellos caracteres para los
+cuales <SAMP>`isalnum()'</SAMP> devuelve verdadero --es decir, cualquier caracter
+alfabético o numérico.  Algunos sistemas no ofrecen <SAMP>`isblank()'</SAMP>,
+así que flex define <SAMP>`[:blank:]'</SAMP> como un espacio en blanco o un
+tabulador.
+
+</P>
+<P>
+Por ejemplo, las siguientes clases de caracteres son todas equivalentes:
+
+</P>
+
+<PRE>
+[[:alnum:]]
+[[:alpha:][:digit:]]
+[[:alpha:]0-9]
+[a-zA-Z0-9]
+</PRE>
+
+<P>
+Si su escáner ignora la distinción entre mayúsculas y minúsculas (la
+bandera <SAMP>`-i'</SAMP>), entonces <SAMP>`[:upper:]'</SAMP> y <SAMP>`[:lower:]'</SAMP> son
+equivalentes a <SAMP>`[:alpha:]'</SAMP>.
+
+</P>
+<P>
+Algunas notas sobre los patrones:
+
+</P>
+
+<UL>
+<LI>
+
+Una clase de caracteres negada tal como el ejemplo "[^A-Z]" anterior
+<EM>emparejará una línea nueva</EM> a menos que "\n" (o una secuencia de
+escape equivalente) sea uno de los caracteres presentes explícitamente
+en la clase de caracteres negada (p.ej., "[^A-Z\n]").  Esto es diferente
+a cómo muchas de las otras herramientas de expresiones regulares tratan
+las clases de caracteres negadas, pero desafortunadamente la
+inconsistencia está fervientemente enrraizada históricamente.
+Emparejar líneas nuevas significa que un patrón como [^"]* puede
+emparejar la entrada completa a menos que haya otra comilla en la
+entrada.
+
+<LI>
+
+Una regla puede tener lo más una instancia del contexto posterior (el
+operador <SAMP>`/'</SAMP> o el operador <SAMP>`$'</SAMP>).  La condición de arranque, los
+patrones <SAMP>`^'</SAMP>, y "&#60;&#60;EOF&#62;&#62;" pueden aparecer solamente al principio de un
+patrón, y, al igual que con <SAMP>`/'</SAMP> y <SAMP>`$'</SAMP>, no pueden agruparse dentro de
+paréntesis.  Un <SAMP>`^'</SAMP> que no aparezca al principio de una regla o un
+<SAMP>`$'</SAMP> 
+que no aparezca al final de una regla pierde sus propiedades especiales y
+es tratado como un caracter normal.
+
+Lo siguiente no está permitido:
+
+
+<PRE>
+foo/bar$
+&#60;sc1&#62;foo&#60;sc2&#62;bar
+</PRE>
+
+Fíjese que la primera regla se puede escribir como "foo/bar\n".
+
+En el siguiente ejemplo un <SAMP>`$'</SAMP> o un <SAMP>`^'</SAMP> es tratado como un caracter
+normal:
+
+
+<PRE>
+    foo|(bar$)
+    foo|^bar
+</PRE>
+
+Si lo que se desea es un "foo" o un "bar" seguido de una línea nueva,
+puede usarse lo siguiente (la acción especial <SAMP>`|'</SAMP> se explica en la
+section <A HREF="flex-es-2.5.html#SEC7">Acciones</A>.):
+
+
+<PRE>
+    foo      |
+    bar$     /* la acción va aquí */
+</PRE>
+
+Un truco parecido funcionará para emparejar un "foo" o, un "bar" al
+principio de una línea.
+</UL>
+
+
+
+<H1><A NAME="SEC6" HREF="flex-es-2.5.html#TOC6">Cómo se empareja la entrada</A></H1>
+<P>
+<A NAME="IDX24"></A>
+<A NAME="IDX25"></A>
+<A NAME="IDX26"></A>
+
+</P>
+<P>
+Cuando el escáner generado está funcionando, este analiza su entrada
+buscando cadenas que concuerden con cualquiera de sus patrones.  Si
+encuentra más de un emparejamiento, toma el que empareje más
+texto (para reglas de contexto posterior, se incluye la longitud de
+la parte posterior, incluso si se devuelve a la entrada).  Si encuentra
+dos o más emparejamientos de la misma longitud, se escoge la
+regla listada en primer lugar en el fichero de entrada de
+<CODE>flex</CODE>.
+
+</P>
+<P>
+Una vez que se determina el emparejamiento, el texto correspondiente
+al emparejamiento (denominado el <VAR>token</VAR>) está disponible en el
+puntero a caracter global <CODE>yytext</CODE>, y su longitud en la variable
+global entera <CODE>yyleng</CODE>.
+Entonces la <VAR>acción</VAR> correspondiente al patrón emparejado se ejecuta
+(See section <A HREF="flex-es-2.5.html#SEC7">Acciones</A>, para una descripción más detallada de las acciones), y
+entonces la entrada restante se analiza para otro emparejamiento.
+
+</P>
+<P>
+Si no se encuentra un emparejamiento, entonces se ejecuta la <STRONG>regla
+por defecto</STRONG>: el siguiente caracter en la entrada se considera
+reconocido y se copia a la salida estándar.  Así, la entrada válida más
+simple de <CODE>flex</CODE> es:
+
+</P>
+
+<PRE>
+%%
+</PRE>
+
+<P>
+que genera un escáner que simplemente copia su entrada (un caracter a
+la vez) a la salida.
+
+</P>
+<P>
+<A NAME="IDX27"></A>
+<A NAME="IDX28"></A>
+Fíjese que <CODE>yytext</CODE> se puede definir de dos maneras diferentes:
+bien como un <EM>puntero</EM> a caracter o como un <EM>array</EM> de
+caracteres.  Usted puede controlar la definición que usa <CODE>flex</CODE>
+incluyendo una de las directivas especiales <SAMP>`%pointer'</SAMP> o
+<SAMP>`%array'</SAMP> en la primera sección (definiciones) de su entrada de
+flex.  Por defecto es <SAMP>`%pointer'</SAMP>, a menos que use la opción de
+compatibilidad <SAMP>`-l'</SAMP>, en cuyo caso <CODE>yytext</CODE> será un array.
+
+</P>
+<P>
+La ventaja de usar <SAMP>`%pointer'</SAMP> es un análisis substancialmente más
+rápido y la ausencia de desbordamiento del buffer cuando se emparejen
+tokens muy grandes (a menos que se agote la memoria dinámica).  La
+desventaja es que se encuentra restringido en cómo sus acciones pueden
+modificar <CODE>yytext</CODE> (see section <A HREF="flex-es-2.5.html#SEC7">Acciones</A>), y las llamadas a la
+función <SAMP>`unput()'</SAMP> destruyen el contenido actual de <CODE>yytext</CODE>,
+que puede convertirse en un considerable quebradero de cabeza de
+portabilidad al cambiar entre diferentes versiones de <CODE>lex</CODE>.
+
+</P>
+<P>
+La ventaja de <SAMP>`%array'</SAMP> es que entoces puede modificar <CODE>yytext</CODE>
+todo lo que usted quiera, las llamadas a <SAMP>`unput()'</SAMP> no destruyen
+<CODE>yytext</CODE> (ver más abajo).  Además, los programas de <CODE>lex</CODE>
+existentes a veces acceden a <CODE>yytext</CODE> externamente utilizando
+declaraciones de la forma:
+
+<PRE>
+extern char yytext[];
+</PRE>
+
+<P>
+Esta definición es errónea cuando se utiliza <SAMP>`%pointer'</SAMP>, pero
+correcta para <SAMP>`%array'</SAMP>.
+
+</P>
+<P>
+<SAMP>`%array'</SAMP> define a <CODE>yytext</CODE> como un array de <CODE>YYLMAX</CODE>
+caracteres, que por defecto es un valor bastante grande.  Usted puede
+cambiar el tamaño símplemente definiendo con #define a <CODE>YYLMAX</CODE> con un
+valor diferente en la primera sección de su entrada de <CODE>flex</CODE>.
+Como se mencionó antes, con <SAMP>`%pointer'</SAMP> yytext crece dinámicamente
+para acomodar tokens grandes.  Aunque esto signifique que con
+<SAMP>`%pointer'</SAMP> su escáner puede acomodar tokens muy grandes (tales como
+emparejar bloques enteros de comentarios), tenga presente que cada vez
+que el escáner deba cambiar el tamaño de <CODE>yytext</CODE> también debe
+reiniciar el análisis del token entero desde el principio, así que
+emparejar tales tokens puede resultar lento.
+Ahora <CODE>yytext</CODE> <EM>no</EM> crece dinámicamente si una llamada a
+<SAMP>`unput()'</SAMP> hace que se deba devolver demasiado texto; en su lugar,
+se produce un error en tiempo de ejecución.
+
+</P>
+<P>
+También tenga en cuenta que no puede usar <SAMP>`%array'</SAMP> en los
+analizadores generados como clases de C++ (see section <A HREF="flex-es-2.5.html#SEC19">Generando escáneres en C++</A>).
+
+</P>
+
+
+<H1><A NAME="SEC7" HREF="flex-es-2.5.html#TOC7">Acciones</A></H1>
+<P>
+<A NAME="IDX29"></A>
+
+</P>
+<P>
+Cada patrón en una regla tiene una acción asociada, que puede
+ser cualquier sentencia en C.  El patrón finaliza en el primer caracter
+de espacio en blanco que no sea una secuencia de escape; lo que queda
+de la línea es su acción.  Si la acción está vacía, entonces cuando el
+patrón se empareje el token de entrada simplemente se descarta.  Por
+ejemplo, aquí está la especificación de un programa que borra todas
+las apariciones de "zap me" en su entrada:
+
+</P>
+
+<PRE>
+%%
+"zap me"
+</PRE>
+
+<P>
+(Este copiará el resto de caracteres de la entrada a la salida ya
+que serán emparejados por la regla por defecto.)
+
+</P>
+<P>
+Aquí hay un programa que comprime varios espacios en blanco y tabuladores a un
+solo espacio en blanco, y desecha los espacios que se encuentren al
+final de una línea:
+
+</P>
+
+<PRE>
+%%
+[ \t]+        putchar( ' ' );
+[ \t]+$       /* ignora este token */
+</PRE>
+
+<P>
+Si la acción contiene un <SAMP>`{'</SAMP>, entonces la acción abarca hasta que se
+encuentre el correspondiente <SAMP>`}'</SAMP>, y la acción podría entonces cruzar
+varias líneas. <CODE>flex</CODE>  es capaz de reconocer las cadenas y
+comentarios de C y no se dejará engañar por las llaves que encuentre
+dentro de estos, pero aun así también permite que las acciones comiencen
+con <SAMP>`%{'</SAMP> y considerará que la acción es todo el texto hasta el
+siguiente <SAMP>`%}'</SAMP> (sin tener en cuenta las llaves ordinarias dentro
+de la acción).
+
+</P>
+<P>
+Una acción que consista sólamente de una barra vertical (<SAMP>`|'</SAMP>) significa
+"lo mismo que la acción para la siguiente regla."  Vea más abajo para
+una ilustración.
+
+</P>
+<P>
+Las acciones pueden incluir código C arbitrario, incuyendo sentencias
+<CODE>return</CODE> para devolver un valor desde cualquier rutina llamada
+<SAMP>`yylex()'</SAMP>. Cada vez que se llama a <SAMP>`yylex()'</SAMP> esta continúa
+procesando tokens desde donde lo dejó la última vez hasta que o bien
+llegue al final del fichero o ejecute un return.
+
+</P>
+<P>
+Las acciones tienen libertad para modificar <CODE>yytext</CODE> excepto para
+alargarla (añadiendo caracteres al final--esto sobreescribirá más tarde
+caracteres en el flujo de entrada).  Sin embargo esto no se aplica
+cuando se utiliza <SAMP>`%array'</SAMP> (see section <A HREF="flex-es-2.5.html#SEC6">Cómo se empareja la entrada</A>); en ese caso, <CODE>yytext</CODE>
+podría modificarse libremente de cualquier manera.
+
+</P>
+<P>
+Las acciones tienen libertad para modificar <CODE>yyleng</CODE> excepto que
+estas no deberían hacerlo si la acción también incluye el uso de
+<SAMP>`yymore()'</SAMP> (ver más abajo).
+
+</P>
+<P>
+Hay un número de directivas especiales que pueden incluirse dentro de
+una acción:
+<A NAME="IDX30"></A>
+
+<UL>
+<LI>
+
+<CODE>ECHO</CODE>
+copia yytext a la salida del escáner.
+
+<A NAME="IDX31"></A>
+<LI>
+
+<CODE>BEGIN</CODE>
+seguido del nombre de la condición de arranque pone al escáner en la
+condición de arranque correspondiente (see section <A HREF="flex-es-2.5.html#SEC9">Condiciones de arranque</A>).
+
+<A NAME="IDX32"></A>
+<LI>
+
+<CODE>REJECT</CODE>
+ordena al escáner a que proceda con la "segunda mejor" regla que
+concuerde con la entrada (o un prefijo de la entrada).  La regla se escoge
+como se describió anteriormente en el section <A HREF="flex-es-2.5.html#SEC6">Cómo se empareja la entrada</A>, y
+<CODE>yytext</CODE> e <CODE>yyleng</CODE> se ajustan de forma apropiada.
+Podría ser una que empareje tanto texto como la regla escogida
+originalmente pero que viene más tarde en el fichero de entrada de
+<CODE>flex</CODE>, o una que empareje menos texto.
+Por ejemplo, lo que viene a continuación contará las palabras en la
+entrada y llamará a la rutina <CODE>especial()</CODE> siempre que vea "frob":
+
+<PRE>
+        int contador_palabras = 0;
+%%
+
+frob        especial(); REJECT;
+[^ \t\n]+   ++contador_palabras;
+</PRE>
+
+Sin el <CODE>REJECT</CODE>, cualquier número de "frob"'s en la entrada no
+serían contados como palabras, ya que el escáner normalmente ejecuta
+solo una acción por token.  Se permite el uso de múltiples
+<CODE>REJECT's</CODE>, cada uno buscando la siguiente mejor elección a la
+regla que actualmente esté activa.  Por ejemplo, cuando el siguiente
+escáner analice el token "abcd", este escribirá "abcdabcaba" a la
+salida:
+
+
+<PRE>
+%%
+a        |
+ab       |
+abc      |
+abcd     ECHO; REJECT;
+.|\n     /* se come caracteres sin emparejar */
+</PRE>
+
+(Las primeras tres reglas comparten la acción de la cuarta ya que
+estas usan la acción especial <SAMP>`|'</SAMP>.)  <CODE>REJECT</CODE> es una propiedad
+particularmente cara en términos de rendimiento del escáner; si se usa
+en <EM>cualquiera</EM> de las acciones del escáner esta ralentizará
+<EM>todo</EM> el proceso de emparejamiento del escáner.  Además,
+<CODE>REJECT</CODE> no puede usarse con las opciones <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>
+(see section <A HREF="flex-es-2.5.html#SEC17">Opciones</A> y section <A HREF="flex-es-2.5.html#SEC18">Consideraciones de rendimiento</A>.)
+
+Fíjese también que a diferencia de las otras acciones especiales,
+<CODE>REJECT</CODE> es una <EM>bifurcación</EM>; el código que la siga
+inmediatamente en la acción <EM>no</EM> será ejecutado.
+
+<LI>
+
+<SAMP>`yymore()'</SAMP> dice al escáner que la próxima vez que empareje una
+regla, el token correspondiente debe ser <EM>añadido</EM> tras el valor
+actual de <CODE>yytext</CODE> en lugar de reemplazarlo.  Por ejemplo, dada la
+entrada "mega-klugde" lo que viene a continuación escribirá
+"mega-mega-kludge" a la salida:
+
+
+<PRE>
+%%
+mega-    ECHO; yymore();
+kludge   ECHO;
+</PRE>
+
+El primer "mega-" se empareja y se repite a la salida.  Entonces se
+empareja "kludge", pero el "mega-" previo aún está esperando al inicio
+de <CODE>yytext</CODE> asi que el <SAMP>`ECHO'</SAMP> para la regla del "kludge"
+realmente escribirá "mega-kludge".
+</UL>
+
+<P>
+Dos notas respecto al uso de <SAMP>`yymore()'</SAMP>.  Primero, <SAMP>`yymore()'</SAMP>
+depende de que el valor de <CODE>yyleng</CODE> refleje correctamente el tamaño
+del token actual, así que no debe modificar <CODE>yyleng</CODE> si está
+utilizando <SAMP>`yymore()'</SAMP>.  Segundo, la presencia de <SAMP>`yymore()'</SAMP> en
+la acción del escáner implica una pequeña penalización de rendimiento en
+la velocidad de emparejamiento del escáner.
+
+</P>
+<P>
+<A NAME="IDX33"></A>
+
+<UL>
+<LI>
+
+<SAMP>`yyless(n)'</SAMP>
+devuelve todos excepto los primeros <VAR>n</VAR> caracteres del token actual
+de nuevo al flujo de entrada, donde serán reanalizados cuando el escáner
+busque el siguiente emparejamiento.  <CODE>yytext</CODE> e <CODE>yyleng</CODE> se
+ajustan de forma adecuada (p.ej., <CODE>yyleng</CODE> no será igual a
+<VAR>n</VAR>).  Por ejemplo, con la entrada "foobar" lo que viene a
+continuación escribirá "foobarbar":
+
+
+<PRE>
+%%
+foobar    ECHO; yyless(3);
+[a-z]+    ECHO;
+</PRE>
+
+Un argumento de 0 para <CODE>yyless</CODE> hará que la cadena de entrada
+actual sea analizada por completo de nuevo.  A menos que haya cambiado
+la manera en la que el escáner procese de ahora en adelante su entrada
+(utilizando <CODE>BEGIN</CODE>, por ejemplo), esto producirá un bucle sin
+fin.
+
+Fíjese que <CODE>yyless</CODE> es una macro y puede ser utilizada solamente en
+el fichero de entrada de flex, no desde otros ficheros fuente.
+
+<A NAME="IDX34"></A>
+<LI>
+
+<SAMP>`unput(c)'</SAMP> pone el caracter <CODE>c</CODE> de nuevo en el flujo de
+entrada.  Este será el próximo caracter analizado.  La siguiente acción
+tomará el token actual y hará que se vuelva a analizar pero encerrado
+entre paréntesis.
+
+
+<PRE>
+{
+int i;
+/* Copia yytext porque unput() desecha yytext */
+char *yycopia = strdup( yytext );
+unput( ')' );
+for ( i = yyleng - 1; i &#62;= 0; --i )
+    unput( yycopia[i] );
+unput( '(' );
+free( yycopia );
+}
+</PRE>
+
+Fíjese que ya que cada <SAMP>`unput()'</SAMP> pone el caracter dado de nuevo al
+<EM>principio</EM> del flujo de entrada, al devolver cadenas de caracteres
+se debe hacer de atrás hacia delante.
+
+Un problema potencial importante cuando se utiliza <SAMP>`unput()'</SAMP> es que
+si está usando <SAMP>`%pointer'</SAMP> (por defecto), una llamada a
+<SAMP>`unput()'</SAMP> <EM>destruye</EM> el contenido de <CODE>yytext</CODE>, comenzando
+con su caracter más a la derecha y devorando un caracter a la izquierda
+con cada llamada.  Si necesita que se preserve el valor de yytext
+después de una llamada a <SAMP>`unput()'</SAMP> (como en el ejemplo anterior),
+usted debe o bien copiarlo primero en cualquier lugar, o construir su
+escáner usando <SAMP>`%array'</SAMP> (see section <A HREF="flex-es-2.5.html#SEC6">Cómo se empareja la entrada</A>).
+
+Finalmente, note que no puede devolver <CODE>EOF</CODE> para intentar marcar
+el flujo de entrada con un fin-de-fichero.
+
+<A NAME="IDX35"></A>
+<LI>
+
+<SAMP>`input()'</SAMP> lee el próximo caracter del flujo de entrada.  Por
+ejemplo, lo que viene a continuación es una manera de comerse los
+comentarios en C:
+
+
+<PRE>
+%%
+"/*"        {
+            register int c;
+
+            for ( ; ; )
+                {
+                while ( (c = input()) != '*' &#38;&#38;
+                        c != EOF )
+                    ;    /* se come el texto del comentario */
+
+                if ( c == '*' )
+                    {
+                    while ( (c = input()) == '*' )
+                        ;
+                    if ( c == '/' )
+                        break;    /* encontró el final */
+                    }
+
+                if ( c == EOF )
+                    {
+                    error( "EOF en comentario" );
+                    break;
+                    }
+                }
+            }
+
+</PRE>
+
+(Fíjese que si el escáner se compila usando <SAMP>`C++'</SAMP>, entonces a
+<SAMP>`input()'</SAMP> se le hace referencia con <SAMP>`yyinput()'</SAMP>, para evitar
+una colisión de nombre con el flujo de <SAMP>`C++'</SAMP> por el nombre
+<CODE>input</CODE>.)
+
+<A NAME="IDX36"></A>
+<LI>YY_FLUSH_BUFFER
+
+vacía el buffer interno del escáner de manera que la próxima
+vez que el escáner intente emparejar un token, este primero rellenará el
+buffer usando <CODE>YY_INPUT</CODE> (see section <A HREF="flex-es-2.5.html#SEC8">El escáner generado</A>).
+Esta acción es un caso especial de la función más general
+<SAMP>`yy_flush_buffer()'</SAMP>, descrita más abajo en el section <A HREF="flex-es-2.5.html#SEC10">Múltiples buffers de entrada</A>.
+
+<A NAME="IDX37"></A>
+<LI>
+
+<SAMP>`yyterminate()'</SAMP> se puede utilizar en lugar de una sentencia de
+retorno en una acción. Esta hace que finalice el escáner y retorne un 0
+a quien haya llamado al escáner, indicando que "todo está hecho".  Por
+defecto, también se llama a <SAMP>`yyterminate()'</SAMP> cuando se encuentra un
+fin-de-fichero.  Esta es una macro y podría ser redefinida.
+</UL>
+
+
+
+<H1><A NAME="SEC8" HREF="flex-es-2.5.html#TOC8">El escáner generado</A></H1>
+<P>
+<A NAME="IDX38"></A>
+
+</P>
+<P>
+<A NAME="IDX39"></A>
+<A NAME="IDX40"></A>
+La salida de <CODE>flex</CODE> es el fichero <TT>`lex.yy.c'</TT>, que contiene la
+rutina de análisis <SAMP>`yylex()'</SAMP>, un número de tablas usadas por esta
+para emparejar tokens, y un número de rutinas auxiliares y macros.  Por
+defecto, <SAMP>`yylex()'</SAMP> se declara así
+
+</P>
+
+<PRE>
+int yylex()
+    {
+    ... aquí van varias definiciones y las acciones ...
+    }
+</PRE>
+
+<P>
+(Si su entorno acepta prototipos de funciones, entonces este será
+"int yylex( void )").  Esta definición podría modificarse definiendo
+la macro "YY_DECL".  Por ejemplo, podría utilizar:
+
+</P>
+
+<PRE>
+#define YY_DECL float lexscan( a, b ) float a, b;
+</PRE>
+
+<P>
+para darle a la rutina de análisis el nombre <CODE>lexscan</CODE>, que
+devuelve un real, y toma dos reales como argumentos.  Fíjese que si pone
+argumentos a la rutina de análisis usando una declaración de función
+no-prototipada/tipo-K&#38;R, debe hacer terminar la definición con un punto
+y coma (<SAMP>`;'</SAMP>).
+
+</P>
+<P>
+<A NAME="IDX41"></A>
+<A NAME="IDX42"></A>
+Siempre que se llame a <SAMP>`yylex()'</SAMP>, este analiza tokens desde el
+fichero de entrada global <CODE>yyin</CODE> (que por defecto es igual a
+stdin).  La función continúa hasta que alcance el final del fichero
+(punto en el que devuelve el valor 0) o una de sus acciones ejecute una
+sentencia <CODE>return</CODE>.
+
+</P>
+<P>
+<A NAME="IDX43"></A>
+Si el escáner alcanza un fin-de-fichero, entonces el comportamiento en
+las llamadas posteriores está indefinido a menos que o bien <CODE>yyin</CODE>
+apunte a un nuevo fichero de entrada (en cuyo caso el análisis continúa
+a partir de ese fichero), o se llame a <SAMP>`yyrestart()'</SAMP>.
+<SAMP>`yyrestart()'</SAMP> toma un argumento, un puntero <SAMP>`FILE *'</SAMP> (que
+puede ser nulo, si ha preparado a <CODE>YY_INPUT</CODE> para que analice una
+fuente distinta a <CODE>yyin</CODE>), e inicializa  <CODE>yyin</CODE> para que
+escanee ese fichero.  Esencialmente no hay diferencia entre la
+asignación a <CODE>yyin</CODE> de un nuevo fichero de entrada o el uso de
+<SAMP>`yyrestart()'</SAMP> para hacerlo; esto último está disponible por
+compatibilidad con versiones anteriores de <CODE>flex</CODE>, y porque puede
+utilizarse para conmutar ficheros de entrada en medio del análisis.
+También se puede utilizar para desechar el buffer de entrada actual,
+invocándola con un argumento igual a <CODE>yyin</CODE>; pero mejor es usar
+<CODE>YY_FLUSH_BUFFER</CODE> (see section <A HREF="flex-es-2.5.html#SEC7">Acciones</A>).  Fíjese que <SAMP>`yyrestart()'</SAMP>
+<EM>no</EM> reinicializa la condición de arranque a <CODE>INITIAL</CODE>
+(see section <A HREF="flex-es-2.5.html#SEC9">Condiciones de arranque</A>).
+
+</P>
+
+<P>
+Si <SAMP>`yylex()'</SAMP> para el análisis debido a la ejecución de una
+sentencia <CODE>return</CODE> en una de las acciones, el analizador podría ser
+llamado de nuevo y este reanudaría el análisis donde lo dejó.
+
+</P>
+<P>
+<A NAME="IDX44"></A>
+Por defecto (y por razones de eficiencia), el analizador usa lecturas
+por bloques en lugar de simples llamadas a <SAMP>`getc()'</SAMP> para leer
+caracteres desde <CODE>yyin</CODE>.  La manera en la que toma su entrada se
+puede controlar definienfo la macro <CODE>YY_INPUT</CODE>.  La secuencia de
+llamada para YY_INPUT es "YY_INPUT(buf,result,max_size)".  Su acción es
+poner hasta <VAR>max_size</VAR> caracteres en el array de caracteres
+<VAR>buf</VAR> y devolver en la variable entera <VAR>result</VAR> bien o el número
+de caracteres leídos o la constante YY_NULL (0 en sistemas Unix) para
+indicar EOF.  Por defecto YY_INPUT lee desde la variable global puntero
+a fichero "yyin".
+
+</P>
+<P>
+Una definición de ejemplo para YY_INPUT (en la sección de definiciones
+del fichero de entrada) es:
+
+</P>
+
+<PRE>
+%{
+#define YY_INPUT(buf,result,max_size) \
+    { \
+    int c = getchar(); \
+    result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \
+    }
+%}
+</PRE>
+
+<P>
+Esta definición cambiará el procesamiento de la entrada para que
+suceda un caracter a la vez.
+
+</P>
+<P>
+<A NAME="IDX45"></A>
+Cuando el analizador reciba una indicación de fin-de-fichero desde
+YY_INPUT, entonces esta comprueba la función <SAMP>`yywrap()'</SAMP>.  Si
+<SAMP>`yywrap()'</SAMP> devuelve falso (cero), entonces se asume que la función
+ha ido más allá y ha preparado <CODE>yyin</CODE> para que apunte a otro
+fichero de entrada, y el análisis continúa.  Si este retorna verdadero
+(no-cero), entonces el analizador termina, devolviendo un 0 a su
+invocador.  Fíjese que en cualquier caso, la condición de arranque
+permanece sin cambios; esta <EM>no</EM> vuelve a ser <CODE>INITIAL</CODE>.
+
+</P>
+<P>
+<A NAME="IDX46"></A>
+Si no proporciona su propia versión de <SAMP>`yywrap()'</SAMP>, entonces debe
+bien o usar <SAMP>`%option noyywrap'</SAMP> (en cuyo caso el analizador se
+comporta como si <SAMP>`yywrap()'</SAMP> devolviera un 1), o debe enlazar con
+<SAMP>`-lfl'</SAMP> para obtener la versión por defecto de la rutina, que
+siempre devuelve un 1.
+
+</P>
+<P>
+<A NAME="IDX47"></A>
+<A NAME="IDX48"></A>
+<A NAME="IDX49"></A>
+Hay disponibles tres rutinas para analizar desde buffers de memoria en
+lugar de desde ficheros: <SAMP>`yy_scan_string()'</SAMP>,
+<SAMP>`yy_scan_bytes()'</SAMP>, e <SAMP>`yy_scan_buffer()'</SAMP>.  Las trataremos en la
+section <A HREF="flex-es-2.5.html#SEC10">Múltiples buffers de entrada</A>.
+El analizador escribe su salida con <SAMP>`ECHO'</SAMP> a la variable global
+<CODE>yyout</CODE> (por defecto, stdout), que el usuario podría redefinir
+asignándole cualquier otro puntero a <CODE>FILE</CODE>.
+
+</P>
+
+
+<H1><A NAME="SEC9" HREF="flex-es-2.5.html#TOC9">Condiciones de arranque</A></H1>
+<P>
+<A NAME="IDX50"></A>
+<A NAME="IDX51"></A>
+<A NAME="IDX52"></A>
+
+</P>
+<P>
+<CODE>flex</CODE> dispone de un mecanismo para activar reglas
+condicionalmente. Cualquier regla cuyo patrón se prefije con "&#60;sc&#62;"
+únicamente estará activa cuando el analizador se encuentre en la
+condición de arranque llamada "sc".  Por ejemplo,
+
+</P>
+
+<PRE>
+&#60;STRING&#62;[^"]*        { /* se come el cuerpo de la cadena ... */
+            ...
+            }
+</PRE>
+
+<P>
+estará activa solamente cuando el analizador esté en la condición de
+arranque "STRING", y
+
+</P>
+
+<PRE>
+&#60;INITIAL,STRING,QUOTE&#62;\. { /* trata una secuencia de escape ... */
+            ...
+            }
+</PRE>
+
+<P>
+estará activa solamente cuando la condición de arranque actual sea
+o bien "INITIAL", "STRING", o "QUOTE".
+
+</P>
+<P>
+<A NAME="IDX53"></A>
+<A NAME="IDX54"></A>
+<A NAME="IDX55"></A>
+Las condiciones de arranque se declaran en la (primera) sección de
+definiciones de la entrada usando líneas sin sangrar comenzando con
+<SAMP>`%s'</SAMP> ó <SAMP>`%x'</SAMP> seguida por una lista de nombres.  Lo primero
+declara condiciones de arranque <EM>inclusivas</EM>, lo último condiciones
+de arranque <EM>exclusivas</EM>.
+Una condición de arranque se activa utilizando la acción
+<CODE>BEGIN</CODE>. Hasta que se ejecute la próxima acción <CODE>BEGIN</CODE>,
+las reglas con la condición de arranque dada estarán activas y las
+reglas con otras condiciones de arranque estarán inactivas.
+Si la condición de arranque es <EM>inclusiva</EM>, entonces las reglas sin
+condiciones de arranque también estarán activas. Si es <EM>exclusiva</EM>,
+entonces <EM>sólamente</EM> las reglas calificadas con la condición de
+arranque estarán activas. Un conjunto de reglas dependientes de la misma
+condición de arranque exclusiva describe un analizador que es
+independiente de cualquiera de las otras reglas en la entrada de <CODE>flex</CODE>.
+Debido a esto, las condiciones de arranque exclusivas hacen fácil la
+especificación de "mini-escáneres" que analizan porciones de la entrada
+que son sintácticamente diferentes al resto (p.ej., comentarios).
+
+</P>
+<P>
+Si la distinción entre condiciones de arranque inclusivas o exclusivas
+es aún un poco vaga, aquí hay un ejemplo simple que ilustra la
+conexión entre las dos.  El conjunto de reglas:
+
+</P>
+
+<PRE>
+%s ejemplo
+%%
+
+&#60;ejemplo&#62;foo   hacer_algo();
+
+bar            algo_mas();
+</PRE>
+
+<P>
+es equivalente a
+
+</P>
+
+<PRE>
+%x ejemplo
+%%
+
+&#60;ejemplo&#62;foo   hacer_algo();
+
+&#60;INITIAL,ejemplo&#62;bar    algo_mas();
+</PRE>
+
+<P>
+Sin el calificador <SAMP>`&#60;INITIAL,example&#62;'</SAMP>, el patrón <SAMP>`bar'</SAMP> en el
+segundo ejemplo no estará activo (es decir, no puede emparejarse) cuando
+se encuentre en la condición de arranque <SAMP>`example'</SAMP>.  Si hemos usado
+<SAMP>`&#60;example&#62;'</SAMP> para calificar <SAMP>`bar'</SAMP>, aunque, entonces este
+únicamente estará activo en <SAMP>`example'</SAMP> y no en <CODE>INITIAL</CODE>,
+mientras que en el primer ejemplo está activo en ambas, porque en el
+primer ejemplo la condición de arranque <SAMP>`example'</SAMP> es una condición
+de arranque <EM>inclusiva</EM> (<SAMP>`%s'</SAMP>).
+
+</P>
+<P>
+<A NAME="IDX56"></A>
+Fíjese también que el especificador especial de la condición de arranque
+<SAMP>`&#60;*&#62;'</SAMP> empareja todas las condiciones de arranque.  Así, el ejemplo
+anterior también pudo haberse escrito;
+
+</P>
+
+<PRE>
+%x ejemplo
+%%
+
+&#60;ejemplo&#62;foo   hacer_algo();
+
+&#60;*&#62;bar    algo_mas();
+</PRE>
+
+<P>
+La regla por defecto (hacer un
+<SAMP>`ECHO'</SAMP>
+con cualquier caracter sin emparejar) permanece activa en las
+condiciones de arranque.  Esta es equivalente a:
+
+</P>
+
+<PRE>
+&#60;*&#62;.|\n     ECHO;
+</PRE>
+
+<P>
+<SAMP>`BEGIN(0)'</SAMP> retorna al estado original donde solo las reglas sin
+condiciones de arranque están activas.  Este estado también puede
+referirse a la condición de arranque "INITIAL", así que
+<SAMP>`BEGIN(INITIAL)'</SAMP> es equivalente a <SAMP>`BEGIN(0)'</SAMP>.  (No se requieren
+los paréntesis alrededor del nombre de la condición de arranque pero se
+considera de buen estilo.)
+
+</P>
+<P>
+Las acciones <CODE>BEGIN</CODE> pueden darse también como código sangrado al
+comienzo de la sección de reglas.  Por ejemplo, lo que viene a
+continuación hará que el analizador entre en la condición de arranque
+"ESPECIAL" siempre que se llame a  <SAMP>`yylex()'</SAMP> y la variable global
+<CODE>entra_en_especial</CODE> sea verdadera:
+
+</P>
+
+<PRE>
+        int entra_en_especial;
+
+%x ESPECIAL
+%%
+        if ( entra_en_especial )
+            BEGIN(ESPECIAL);
+
+&#60;ESPECIAL&#62;blablabla
+...más reglas a continuación...
+</PRE>
+
+<P>
+Para ilustrar los usos de las condiciones de arranque, aquí hay un
+analizador que ofrece dos interpretaciones diferentes para una cadena
+como "123.456".  Por defecto este la tratará como tres tokens, el
+entero "123", un punto (<SAMP>`.'</SAMP>), y el entero "456".  Pero si la cadena
+viene precedida en la línea por la cadena "espera-reales" este la
+tratará como un único token, el número en coma flotante 123.456:
+
+</P>
+
+<PRE>
+%{
+#include &#60;math.h&#62;
+%}
+%s espera
+
+%%
+espera-reales        BEGIN(espera);
+
+&#60;espera&#62;[0-9]+"."[0-9]+      {
+            printf( "encontró un real, = %f\n",
+                    atof( yytext ) );
+            }
+&#60;espera&#62;\n           {
+            /* este es el final de la línea,
+             * así que necesitamos otro
+             * "espera-numero" antes de
+             * que volvamos a reconocer más
+             * números
+             */
+            BEGIN(INITIAL);
+            }
+
+[0-9]+      {
+            printf( "encontró un entero, = %d\n",
+                    atoi( yytext ) );
+            }
+
+"."         printf( "encontró un punto\n" );
+</PRE>
+
+<P>
+Aquí está un analizador que reconoce (y descarta) comentarios de C
+mientras mantiene una cuenta de la línea actual de entrada.
+
+</P>
+
+<PRE>
+%x comentario
+%%
+        int num_linea = 1;
+
+"/*"         BEGIN(comentario);
+
+&#60;comentario&#62;[^*\n]*       /* come todo lo que no sea '*' */
+&#60;comentario&#62;"*"+[^*/\n]*  /* come '*'s no seguidos por '/' */
+&#60;comentario&#62;\n            ++num_linea;
+&#60;comentario&#62;"*"+"/"       BEGIN(INITIAL);
+</PRE>
+
+<P>
+Este analizador se complica un poco para emparejar tanto texto
+como le sea posible en cada regla.  En general, cuando se intenta
+escribir un analizador de alta velocidad haga que cada regla empareje
+lo más que pueda, ya que esto es un buen logro.
+
+</P>
+<P>
+Fíjese que los nombres de las condiciones de arranque son realmente
+valores enteros y pueden ser almacenados como tales.  Así, lo anterior
+podría extenderse de la siguiente manera:
+
+</P>
+
+<PRE>
+%x comentario foo
+%%
+        int num_linea = 1;
+        int invocador_comentario;
+
+"/*"         {
+             invocador_comentario = INITIAL;
+             BEGIN(comentario);
+             }
+
+...
+
+&#60;foo&#62;"/*"    {
+             invocador_comentario = foo;
+             BEGIN(comentario);
+             }
+
+&#60;comentario&#62;[^*\n]*        /* se come cualquier cosa que no sea un '*' */
+&#60;comentario&#62;"*"+[^*/\n]*   /* se come '*'s que no continuen con '/' */
+&#60;comentario&#62;\n             ++num_linea;
+&#60;comentario&#62;"*"+"/"        BEGIN(invocador_comentario);
+</PRE>
+
+<P>
+<A NAME="IDX57"></A>
+Además, puede acceder a la condición de arranque actual usando la macro
+de valor entero <CODE>YY_START</CODE>.  Por ejemplo, las asignaciones
+anteriores a <CODE>invocador_comentario</CODE> podrían escribirse en su lugar
+como
+
+</P>
+
+<PRE>
+invocador_comentario = YY_START;
+</PRE>
+
+<P>
+<A NAME="IDX58"></A>
+Flex ofrece <CODE>YYSTATE</CODE> como un alias para <CODE>YY_START</CODE> (ya que es
+lo que usa <CODE>lex</CODE> de AT&#38;T).
+
+</P>
+<P>
+Fíjese que las condiciones de arranque no tienen su propio espacio de
+nombres; los %s's y %x's declaran nombres de la misma manera que con
+#define's.
+
+</P>
+<P>
+Finalmente, aquí hay un ejemplo de cómo emparejar cadenas entre
+comillas al estilo de C usando condiciones de arranque exclusivas,
+incluyendo secuencias de escape expandidas (pero sin incluir la
+comprobación de cadenas que son demasiado largas):
+
+</P>
+
+<PRE>
+%x str
+
+%%
+        char string_buf[MAX_STR_CONST];
+        char *string_buf_ptr;
+
+\"      string_buf_ptr = string_buf; BEGIN(str);
+
+&#60;str&#62;\"        { /* se vio la comilla que cierra - todo está hecho */
+        BEGIN(INITIAL);
+        *string_buf_ptr = '\0';
+        /* devuelve un tipo de token de cadena constante y
+         * el valor para el analizador sintáctico
+         */
+        }
+
+&#60;str&#62;\n        {
+        /* error - cadena constante sin finalizar */
+        /* genera un mensaje de error */
+        }
+
+&#60;str&#62;\\[0-7]{1,3} {
+        /* secuencia de escape en octal */
+        int resultado;
+
+        (void) sscanf( yytext + 1, "%o", &#38;resultado );
+
+        if ( resultado &#62; 0xff )
+                /* error, constante fuera de rango */
+
+        *string_buf_ptr++ = resultado;
+        }
+
+&#60;str&#62;\\[0-9]+ {
+        /* genera un error - secuencia de escape errónea;
+         * algo como '\48' o '\0777777'
+         */
+        }
+
+&#60;str&#62;\\n  *string_buf_ptr++ = '\n';
+&#60;str&#62;\\t  *string_buf_ptr++ = '\t';
+&#60;str&#62;\\r  *string_buf_ptr++ = '\r';
+&#60;str&#62;\\b  *string_buf_ptr++ = '\b';
+&#60;str&#62;\\f  *string_buf_ptr++ = '\f';
+
+&#60;str&#62;\\(.|\n)  *string_buf_ptr++ = yytext[1];
+
+&#60;str&#62;[^\\\n\"]+        {
+        char *yptr = yytext;
+
+        while ( *yptr )
+                *string_buf_ptr++ = *yptr++;
+
+        }
+</PRE>
+
+<P>
+A menudo, como en alguno de los ejemplos anteriores, uno acaba
+escribiendo un buen número de reglas todas precedidas por la(s) misma(s)
+condición(es) de arranque.  Flex hace esto un poco más fácil y claro
+introduciendo la noción de <STRONG>ámbito</STRONG> de la condición de arranque.  Un
+ámbito de condición de arranque comienza con:
+
+</P>
+
+<PRE>
+&#60;SCs&#62;{
+</PRE>
+
+<P>
+Donde <SAMP>`SCs'</SAMP> es una lista de una o más condiciones de arranque.
+Dentro del ámbito de la condición de arranque, cada regla
+automáticamente tiene el prefijo <SAMP>`&#60;SCs&#62;'</SAMP> aplicado a esta, hasta un
+<SAMP>`}'</SAMP> que corresponda con el <SAMP>`{'</SAMP> inicial.  Así, por ejemplo,
+
+</P>
+
+<PRE>
+&#60;ESC&#62;{
+    "\\n"   return '\n';
+    "\\r"   return '\r';
+    "\\f"   return '\f';
+    "\\0"   return '\0';
+}
+</PRE>
+
+<P>
+es equivalente a:
+
+</P>
+
+<PRE>
+&#60;ESC&#62;"\\n"  return '\n';
+&#60;ESC&#62;"\\r"  return '\r';
+&#60;ESC&#62;"\\f"  return '\f';
+&#60;ESC&#62;"\\0"  return '\0';
+</PRE>
+
+<P>
+Los ámbitos de las condiciones de arranque pueden anidarse.
+
+</P>
+<P>
+Están disponibles tres rutinas para manipular pilas de condiciones de
+arranque:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`void yy_push_state(int new_state)'</SAMP>
+<DD>
+<A NAME="IDX59"></A>
+ 
+empuja la condición de arranque actual al tope de la pila de las
+condiciones de arranque y cambia a <VAR>new_state</VAR> como si hubiera
+utilizado <SAMP>`BEGIN new_state'</SAMP> (recuerde que los nombres de las
+condiciones de arranque también son enteros).
+
+<A NAME="IDX60"></A>
+<DT><SAMP>`void yy_pop_state()'</SAMP>
+<DD>
+extrae el tope de la pila y cambia a este mediante un <CODE>BEGIN</CODE>.
+
+<A NAME="IDX61"></A>
+<DT><SAMP>`int yy_top_state()'</SAMP>
+<DD>
+devuelve el tope de la pila sin alterar el contenido de la pila.
+</DL>
+
+<P>
+La pila de las condiciones de arranque crece dinámicamente y por ello
+no tiene asociada ninguna limitación de tamaño.  Si la memoria se
+agota, se aborta la ejecución del programa.
+
+</P>
+<P>
+<A NAME="IDX62"></A>
+Para usar pilas de condiciones de arranque, su analizador debe incluir
+una directiva <SAMP>`%option stack'</SAMP> (see section <A HREF="flex-es-2.5.html#SEC17">Opciones</A>).
+
+</P>
+
+
+<H1><A NAME="SEC10" HREF="flex-es-2.5.html#TOC10">Múltiples buffers de entrada</A></H1>
+<P>
+<A NAME="IDX63"></A>
+<A NAME="IDX64"></A>
+<A NAME="IDX65"></A>
+
+</P>
+<P>
+Algunos analizadores (tales como aquellos que aceptan ficheros
+"incluidos") requieren la lectura de varios flujos de entrada.  Ya que
+los analizadores de <CODE>flex</CODE> hacen mucho uso de buffers, uno no puede
+controlar de dónde será leída la siguiente entrada escribiendo
+símplemente un <CODE>YY_INPUT</CODE> que sea sensible al contexto del
+análisis.  A <CODE>YY_INPUT</CODE> sólo se le llama cuando el analizador
+alcanza el final de su buffer, que podría ser bastante tiempo después de
+haber analizado una sentencia como un "include" que requiere el cambio
+de la fuente de entrada.
+
+</P>
+<P>
+<A NAME="IDX66"></A>
+Para solventar este tipo de problemas, <CODE>flex</CODE> provee un mecanismo
+para crear y conmutar entre varios buffers de entrada.  Un buffer de
+entrada se crea usando:
+
+</P>
+
+<PRE>
+YY_BUFFER_STATE yy_create_buffer( FILE *file, int size )
+</PRE>
+
+<P>
+<A NAME="IDX67"></A>
+que toma un puntero a <CODE>FILE</CODE> y un tamaño "size" y crea un buffer
+asociado con el fichero dado y lo suficientemente grande para mantener
+<VAR>size</VAR> caracteres (cuando dude, use <CODE>YY_BUF_SIZE</CODE> para el
+tamaño).  Este devuelve un handle <CODE>YY_BUFFER_STATE</CODE>, que podría
+pasarse a otras rutinas (ver más abajo).  El tipo de
+<CODE>YY_BUFFER_STATE</CODE> es un puntero a una estructura opaca
+<CODE>struct</CODE> <CODE>yy_buffer_state</CODE>, de manera que podría inicializar
+de forma segura variables <CODE>YY_BUFFER_STATE</CODE> a
+<SAMP>`((YY_BUFFER_STATE) 0)'</SAMP> si lo desea, y también hacer referencia a
+la estructura opaca para declarar correctamente buffers de entrada en
+otros ficheros fuente además de los de su analizador.  Fíjese que el
+puntero a <CODE>FILE</CODE> en la llamada a <CODE>yy_create_buffer</CODE> se usa
+solamente como el valor de <CODE>yyin</CODE> visto por <CODE>YY_INPUT</CODE>; si
+usted redefine <CODE>YY_INPUT</CODE> de manera que no use más a <CODE>yyin</CODE>,
+entonces puede pasar de forma segura un puntero <CODE>FILE</CODE> nulo a
+<CODE>yy_create_buffer</CODE>.  Se selecciona un buffer en particular a
+analizar utilizando:
+
+</P>
+<P>
+<A NAME="IDX68"></A>
+
+<PRE>
+void yy_switch_to_buffer( YY_BUFFER_STATE nuevo_buffer )
+</PRE>
+
+<P>
+conmuta el buffer de entrada del analizador de manera que los tokens
+posteriores provienen de <VAR>nuevo_buffer</VAR>.  Fíjese que
+<SAMP>`yy_switch_to_buffer()'</SAMP> podría usarlo yywrap() para arreglar las
+cosas para un análisis continuo, en lugar de abrir un nuevo fichero y
+que <CODE>yyin</CODE> apunte a este.  Fíjese también que cambiar las fuentes
+de entrada ya sea por medio de <SAMP>`yy_switch_to_buffer()'</SAMP> o de
+<SAMP>`yywrap()'</SAMP> <EM>no</EM> cambia la condición de arranque.
+
+</P>
+<P>
+<A NAME="IDX69"></A>
+
+<PRE>
+void yy_delete_buffer( YY_BUFFER_STATE buffer )
+</PRE>
+
+<P>
+se usa para recuperar el almacenamiento asociado a un buffer.  (El
+<CODE>buffer</CODE> puede ser nulo, en cuyo caso la rutina no hace nada.)
+Puede también limpiar el contenido actual de un buffer usando:
+
+</P>
+<P>
+<A NAME="IDX70"></A>
+
+<PRE>
+void yy_flush_buffer( YY_BUFFER_STATE buffer )
+</PRE>
+
+<P>
+Esta función descarta el contenido del buffer, de manera que la
+próxima vez que el analizador intente emparejar un token desde el
+buffer, este primero rellenará el buffer utilizando <CODE>YY_INPUT</CODE>.
+
+</P>
+<P>
+<A NAME="IDX71"></A>
+<SAMP>`yy_new_buffer()'</SAMP> es un alias de <SAMP>`yy_create_buffer()'</SAMP>, que se
+ofrece por compatibilidad con el uso en C++ de <CODE>new</CODE> y
+<CODE>delete</CODE> para crear y destruir objetos dinámicos.
+
+</P>
+<P>
+<A NAME="IDX72"></A>
+Finalmente, la macro <CODE>YY_CURRENT_BUFFER</CODE> retorna un handle
+<CODE>YY_BUFFER_STATE</CODE> al buffer actual.
+
+</P>
+<P>
+Aquí hay un ejemplo del uso de estas propiedades para escribir un
+analizador que expande ficheros incluidos (la propiedad <SAMP>`&#60;&#60;EOF&#62;&#62;'</SAMP>
+se comenta en el section <A HREF="flex-es-2.5.html#SEC11">Reglas de fin-de-fichero</A>):
+
+</P>
+
+<PRE>
+/* el estado "incl" se utiliza para obtener el nombre
+ * del fichero a incluir.
+ */
+%x incl
+
+%{
+#define MAX_INCLUDE_DEPTH 10
+YY_BUFFER_STATE include_stack[MAX_INCLUDE_DEPTH];
+int include_stack_ptr = 0;
+%}
+
+%%
+include             BEGIN(incl);
+
+[a-z]+              ECHO;
+[^a-z\n]*\n?        ECHO;
+
+&#60;incl&#62;[ \t]*      /* se come los espacios en blanco */
+&#60;incl&#62;[^ \t\n]+   { /* obtiene el nombre de fichero a incluir */
+        if ( include_stack_ptr &#62;= MAX_INCLUDE_DEPTH )
+            {
+            fprintf( stderr, "Demasiados include anidados" );
+            exit( 1 );
+            }
+
+        include_stack[include_stack_ptr++] =
+            YY_CURRENT_BUFFER;
+
+        yyin = fopen( yytext, "r" );
+
+        if ( ! yyin )
+            error( ... );
+
+        yy_switch_to_buffer(
+            yy_create_buffer( yyin, YY_BUF_SIZE ) );
+
+        BEGIN(INITIAL);
+        }
+
+&#60;&#60;EOF&#62;&#62; {
+        if ( --include_stack_ptr &#60; 0 )
+            {
+            yyterminate();
+            }
+
+        else
+            {
+            yy_delete_buffer( YY_CURRENT_BUFFER );
+            yy_switch_to_buffer(
+                 include_stack[include_stack_ptr] );
+            }
+        }
+</PRE>
+
+<P>
+Se dispone de tres rutinas para preparar buffers de entrada para el
+análisis de cadenas en memoria en lugar de archivos.  Todas estas
+crean un nuevo buffer de entrada para analizar la cadena, y devuelven
+el correspondiente handle <CODE>YY_BUFFER_STATE</CODE> (que usted debería
+borrar con <SAMP>`yy_delete_buffer()'</SAMP> cuando termine con él).  Estas
+también conmutan el nuevo buffer usando <SAMP>`yy_switch_to_buffer()'</SAMP>, de
+manera que la próxima llamada a <SAMP>`yylex()'</SAMP> comenzará analizando la
+cadena.
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`yy_scan_string(const char *str)'</SAMP>
+<DD>
+<A NAME="IDX73"></A>
+ 
+analiza una cadena terminada en nulo.
+
+<A NAME="IDX74"></A>
+<DT><SAMP>`yy_scan_bytes(const char *bytes, int len)'</SAMP>
+<DD>
+analiza <CODE>len</CODE> bytes (incluyendo posibles NUL's) comenzando desde el
+punto <VAR>bytes</VAR>.
+</DL>
+
+<P>
+Fíjese que ambas de estas funciones crean y analizan una <EM>copia</EM> de
+la cadena o bytes.  (Esto podría ser deseable, ya que <SAMP>`yylex()'</SAMP>
+modifica el contenido del buffer que está analizado.)  Usted puede
+evitar la copia utilizando:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`yy_scan_buffer(char *base, yy_size_t size)'</SAMP>
+<DD>
+<A NAME="IDX75"></A>
+ 
+que analiza in situ el buffer comenzando en <VAR>base</VAR>, que consiste de
+<VAR>size</VAR> bytes, donde los dos últimos bytes <EM>deben</EM> ser
+<CODE>YY_END_OF_BUFFER_CHAR</CODE> (ASCII NUL).  Estos dos últimos bytes no se
+analizan; así, el análisis consta de <SAMP>`base[0]'</SAMP> hasta
+<SAMP>`base[size-2]'</SAMP>, inclusive.
+
+Si se equivoca al disponer <VAR>base</VAR> de esta manera (es decir, olvidar
+los dos <CODE>YY_END_OF_BUFFER_CHAR</CODE> bytes finales), entonces
+<SAMP>`yy_scan_buffer()'</SAMP> devuelve un puntero nulo en lugar de crear un
+nuevo buffer de entrada.
+
+<A NAME="IDX76"></A>
+El tipo <CODE>yy_size_t</CODE> es un tipo entero con el que puede hacer una
+conversión a una expresión entera para reflejar el tamaño del buffer.
+</DL>
+
+
+
+<H1><A NAME="SEC11" HREF="flex-es-2.5.html#TOC11">Reglas de fin-de-fichero</A></H1>
+<P>
+<A NAME="IDX77"></A>
+<A NAME="IDX78"></A>
+<A NAME="IDX79"></A>
+
+</P>
+<P>
+La regla especial "&#60;&#60;EOF&#62;&#62;" indica las acciones que deben tomarse
+cuando se encuentre un fin-de-fichero e yywrap() retorne un valor
+distinto de cero
+(es decir, indica que no quedan ficheros por procesar).  La acción
+debe finalizar haciendo una de estas cuatro cosas:
+
+</P>
+
+<UL>
+<LI>
+
+asignando a <CODE>yyin</CODE> un nuevo fichero de entrada (en versiones
+anteriores de flex, después de hacer la asignación debía llamar a la
+acción especial <CODE>YY_NEW_FILE</CODE>; esto ya no es necesario);
+
+<LI>
+
+ejecutando una sentencia <CODE>return</CODE>;
+
+<LI>
+
+ejecutando la acción especial <SAMP>`yyterminate()'</SAMP>;
+
+<LI>
+
+o, conmutando a un nuevo buffer usando <SAMP>`yy_switch_to_buffer()'</SAMP> como
+se mostró en el ejemplo anterior. 
+</UL>
+
+<P>
+Las reglas &#60;&#60;EOF&#62;&#62; no deberían usarse con otros patrones; estas
+deberían calificarse con una lista de condiciones de arranque.  Si se
+da una regla &#60;&#60;EOF&#62;&#62; sin calificar, esta se aplica a <EM>todas</EM> las
+condiciones de arranque que no tengan ya acciones &#60;&#60;EOF&#62;&#62;.  Para
+especificar una regla &#60;&#60;EOF&#62;&#62; solamente para la condición de arranque
+inicial, use
+
+</P>
+
+<PRE>
+&#60;INITIAL&#62;&#60;&#60;EOF&#62;&#62;
+</PRE>
+
+<P>
+Estas reglas son útiles para atrapar cosas tales como comentarios sin
+final.  Un ejemplo:
+
+</P>
+
+<PRE>
+%x comilla
+%%
+
+...otras reglas que tengan que ver con comillas...
+
+&#60;comilla&#62;&#60;&#60;EOF&#62;&#62;   {
+         error( "comilla sin cerrar" );
+         yyterminate();
+         }
+&#60;&#60;EOF&#62;&#62;  {
+         if ( *++filelist )
+             yyin = fopen( *filelist, "r" );
+         else
+            yyterminate();
+         }
+</PRE>
+
+
+
+<H1><A NAME="SEC12" HREF="flex-es-2.5.html#TOC12">Macros misceláneas</A></H1>
+<P>
+<A NAME="IDX80"></A>
+
+</P>
+<P>
+<A NAME="IDX81"></A>
+La macro <CODE>YY_USER_ACTION</CODE> puede definirse para indicar una acción
+que siempre se ejecuta antes de la acción de la regla emparejada.  Por
+ejemplo, podría declararse con #define para que llame a una rutina que
+convierta yytext a minúsculas. Cuando se invoca a <CODE>YY_USER_ACTION</CODE>,
+la variable <CODE>yy_act</CODE> da el número de la regla emparejada (las
+reglas están numeradas comenzando en 1).  Suponga que quiere medir la
+frecuencia con la que sus reglas son emparejadas.  Lo que viene a
+continuación podría hacer este truco:
+
+</P>
+
+<PRE>
+#define YY_USER_ACTION ++ctr[yy_act]
+</PRE>
+
+<P>
+donde <CODE>ctr</CODE> en un vector que mantiene la cuenta para las diferentes
+reglas.  Fíjese que la macro <CODE>YY_NUM_RULES</CODE> da el número total de
+reglas (incluyendo la regla por defecto, incluso si usted usa
+<SAMP>`-s'</SAMP>), así que una declaración correcta para <CODE>ctr</CODE> es:
+
+</P>
+
+<PRE>
+int ctr[YY_NUM_RULES];
+</PRE>
+
+<P>
+<A NAME="IDX82"></A>
+La macro <CODE>YY_USER_INIT</CODE> podría definirse para indicar una acción
+que siempre se ejecuta antes del primer análisis (y antes de que se haga
+la inicialización interna del analizador).  Por ejemplo, este podría
+usarse para llamar a una rutina que lea una tabla de datos o abrir un
+fichero de registro.
+
+</P>
+<P>
+<A NAME="IDX83"></A>
+La macro <SAMP>`yy_set_interactive(is_interactive)'</SAMP> se puede usar para
+controlar si el buffer actual se considera <EM>interactivo</EM>.  Un
+buffer interactivo se procesa más lentamente, pero debe usarse cuando la
+fuente de entrada del analizador es realmente interactiva para evitar
+problemas debidos a la espera para el llenado de los buffers (ver el
+comentario de la bandera <SAMP>`-I'</SAMP> en la section <A HREF="flex-es-2.5.html#SEC17">Opciones</A>).  Un valor distinto de
+cero en la invocación de la macro marcará el buffer como interactivo, un
+valor de cero como no-interactivo.  Fíjese que el uso de esta macro no
+tiene en cuenta <SAMP>`%option always-interactive'</SAMP> o <SAMP>`%option
+never-interactive'</SAMP> (see section <A HREF="flex-es-2.5.html#SEC17">Opciones</A>).
+<SAMP>`yy_set_interactive()'</SAMP> debe invocarse antes del comienzo del
+análisis del buffer que es considerado (o no) interactivo.
+
+</P>
+<P>
+<A NAME="IDX84"></A>
+La macro <SAMP>`yy_set_bol(at_bol)'</SAMP> puede usarse para controlar si el
+contexto del buffer de análisis actual para el próximo emparejamiento de
+token se hace como si se encontrara al principio de una línea.  Un
+argumento de la macro distinto de cero hace activas a las reglas sujetas
+a <SAMP>`^'</SAMP>, mientras que un argumento igual a cero hacer inactivas a las
+reglas con <SAMP>`^'</SAMP>.
+
+</P>
+<P>
+<A NAME="IDX85"></A>
+La macro <SAMP>`YY_AT_BOL()'</SAMP> devuelve verdadero si el próximo token
+analizado a partir del buffer actual tendrá activas las reglas <SAMP>`^'</SAMP>, de
+otra manera falso.
+
+</P>
+<P>
+<A NAME="IDX86"></A>
+En el analizador generado, las acciones están recogidas en una gran
+sentencia switch y separadas usando <CODE>YY_BREAK</CODE>, que puede ser
+redefinida.  Por defecto, este es símplemente un "break", para separar
+la acción de cada regla de las reglas que le siguen.  Redefiniendo
+<CODE>YY_BREAK</CODE> permite, por ejemplo, a los usuarios de C++ que #define
+YY_BREAK no haga nada (¡mientras tengan cuidado para que cada regla
+finalice con un "break" o un "return"!) para evitar que sufran los
+avisos de sentencias inalcanzables cuando debido a que la acción de la
+regla finaliza con un "return", el <CODE>YY_BREAK</CODE> es inaccesible.
+
+</P>
+
+
+<H1><A NAME="SEC13" HREF="flex-es-2.5.html#TOC13">Valores disponibles al usuario</A></H1>
+<P>
+<A NAME="IDX87"></A>
+<A NAME="IDX88"></A>
+
+</P>
+<P>
+Esta sección resume los diferentes valores disponibles al usuario en
+las acciones de la regla.
+
+</P>
+
+<UL>
+<LI>
+
+<A NAME="IDX89"></A>
+ 
+<SAMP>`char *yytext'</SAMP>
+apunta al texto del token actual.  Este puede modificarse pero no
+alargarse (no puede añadir caracteres al final).
+
+Si aparece la directiva especial <SAMP>`%array'</SAMP> en la primera sección de
+la descripción del analizador, entonces <CODE>yytext</CODE> se declara en su
+lugar como <SAMP>`char yytext[YYLMAX]'</SAMP>, donde <CODE>YYLMAX</CODE> es la
+definicion de una macro que puede redefinir en la primera sección si no
+le gusta el valor por defecto (generalmente 8KB).  El uso de
+<SAMP>`%array'</SAMP> produce analizadores algo más lentos, pero el valor de
+<CODE>yytext</CODE> se vuelve inmune a las llamadas a <SAMP>`input()'</SAMP> y
+<SAMP>`unput()'</SAMP>, que potencialmente destruyen su valor cuando
+<CODE>yytext</CODE> es un puntero a caracter.  El opuesto de <SAMP>`%array'</SAMP> es
+<SAMP>`%pointer'</SAMP>, que se encuentra por defecto.
+
+Usted no puede utilizar <SAMP>`%array'</SAMP> cuando genera analizadores como
+clases de C++ (la bandera <SAMP>`-+'</SAMP>).
+
+<A NAME="IDX90"></A>
+<LI>
+
+<SAMP>`int yyleng'</SAMP> contiene la longitud del token actual.
+
+<A NAME="IDX91"></A>
+<LI>
+
+<SAMP>`FILE *yyin'</SAMP> es el fichero por el que <CODE>flex</CODE> lee por
+defecto.  Este podría redefinirse pero hacerlo solo tiene sentido antes
+de que el análisis comience o después de que se haya encontrado un EOF.
+Cambiándolo en medio del análisis tendrá resultados inesperados ya que
+<CODE>flex</CODE> utiliza buffers en su entrada; use <SAMP>`yyrestart()'</SAMP> en su
+lugar.  Una vez que el análisis termina debido a que se ha visto un
+fin-de-fichero, puede asignarle a <CODE>yyin</CODE> el nuevo fichero de
+entrada y entonces llamar al analizador de nuevo para continuar analizando.
+
+<A NAME="IDX92"></A>
+<LI>
+
+<SAMP>`void yyrestart( FILE *new_file )'</SAMP> podría ser llamada para que
+<CODE>yyin</CODE> apunte al nuevo fichero de entrada.  El cambio al nuevo
+fichero es inmediato (cualquier entrada contenida en el buffer
+previamente se pierde).  Fíjese que llamando a <SAMP>`yyrestart()'</SAMP> con
+<CODE>yyin</CODE> como argumento de esta manera elimina el buffer de entradda
+actual y continúa analizando el mismo fichero de entrada.
+
+<A NAME="IDX93"></A>
+<LI>
+
+<SAMP>`FILE *yyout'</SAMP> es el fichero sobre el que se hacen las acciones
+<SAMP>`ECHO'</SAMP>.  Este puede ser reasignado por el usuario.
+
+<A NAME="IDX94"></A>
+<LI>
+
+<CODE>YY_CURRENT_BUFFER</CODE> devuelve un handle <CODE>YY_BUFFER_STATE</CODE> al
+buffer actual.
+
+<A NAME="IDX95"></A>
+<LI>
+
+<CODE>YY_START</CODE> devuelve un valor entero correspondiente a la condición
+de arranque actual.  Posteriormente puede usar este valor con
+<CODE>BEGIN</CODE> para retornar a la condición de arranque.
+</UL>
+
+
+
+<H1><A NAME="SEC14" HREF="flex-es-2.5.html#TOC14">Interfaz con YACC</A></H1>
+<P>
+<A NAME="IDX96"></A>
+<A NAME="IDX97"></A>
+
+</P>
+<P>
+<A NAME="IDX98"></A>
+Uno de los usos principales de <CODE>flex</CODE> es como compañero del
+generador de analizadores sintácticos <CODE>yacc</CODE>.  Los analizadores de
+<CODE>yacc</CODE> esperan invocar a una rutina llamada <SAMP>`yylex()'</SAMP> para
+encontrar el próximo token de entrada.  La rutina se supone que devuelve
+el tipo del próximo token además de poner cualquier valor asociado en la
+variable global <CODE>yylval</CODE>.  Para usar <CODE>flex</CODE> con <CODE>yacc</CODE>,
+uno especifica la opción <SAMP>`-d'</SAMP> de <CODE>yacc</CODE> para intruirle a que
+genere el fichero <TT>`y.tab.h'</TT> que contiene las definiciones de todos
+los <SAMP>`%tokens'</SAMP> que aparecen en la entrada de <CODE>yacc</CODE>.  Entonces
+este archivo se incluye en el analizador de <CODE>flex</CODE>. Por ejemplo, si
+uno de los tokens es "TOK_NUMERO", parte del analizador podría parecerse a:
+
+</P>
+
+<PRE>
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[0-9]+        yylval = atoi( yytext ); return TOK_NUMERO;
+</PRE>
+
+
+
+<H1><A NAME="SEC15" HREF="flex-es-2.5.html#TOC15">Invocando a Flex</A></H1>
+
+
+
+<H2><A NAME="SEC16" HREF="flex-es-2.5.html#TOC16">Sinopsis</A></H2>
+
+
+<PRE>
+flex [-bcdfhilnpstvwBFILTV78+? -C[aefFmr] -osalida -Pprefijo -Sesqueleto]
+[--help --version] [<VAR>nombrefichero</VAR> ...]
+</PRE>
+
+
+
+<H2><A NAME="SEC17" HREF="flex-es-2.5.html#TOC17">Opciones</A></H2>
+<P>
+<A NAME="IDX99"></A>
+
+</P>
+<P>
+<CODE>flex</CODE> tiene las siguientes opciones:
+
+</P>
+<P>
+<A NAME="IDX100"></A>
+<A NAME="IDX101"></A>
+<DL COMPACT>
+
+<DT><SAMP>`-b'</SAMP>
+<DD>
+Genera información de retroceso en <TT>`lex.backup'</TT>.  Esta es una lista
+de estados del analizador que requieren retroceso y los caracteres de
+entrada con los que la hace.  Añadiendo reglas uno puede eliminar
+estados de retroceso.  Si <EM>todos</EM> los estados de retroceso se
+eliminan y se usa <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>, el analizador generado
+funcionará más rápido (ver la bandera <SAMP>`-p'</SAMP>).  Únicamente los
+usuarios que desean exprimir hasta el último ciclo de sus analizadores
+necesitan preocuparse de esta opción.  (see section <A HREF="flex-es-2.5.html#SEC18">Consideraciones de rendimiento</A>)
+
+<A NAME="IDX102"></A>
+<DT><SAMP>`-c'</SAMP>
+<DD>
+es una opción que no hace nada, incluída para cumplir con POSIX.
+
+<A NAME="IDX103"></A>
+<A NAME="IDX104"></A>
+<DT><SAMP>`-d'</SAMP>
+<DD>
+hace que el analizador generado se ejecute en modo de <STRONG>depuración</STRONG>.
+Siempre que se reconoce un patrón y la variable global
+<TT>`yy_flex_debug'</TT> no es cero (que por defecto no lo es), el
+analizador escribirá en <CODE>stderr</CODE> una línea de la forma:
+
+
+<PRE>
+--accepting rule at line 53 ("el texto emparejado")
+</PRE>
+
+El número de línea hace referencia al lugar de la regla en el fichero
+que define al analizador (es decir, el fichero que se le introdujo a
+flex).  Los mensajes también se generan cuando el analizador
+retrocede, acepta la regla por defecto, alcanza el final de su buffer
+de entrada (o encuentra un NUL; en este punto, los dos parecen lo
+mismo en lo que le concierne al analizador), o alcance el
+fin-de-fichero.
+
+<A NAME="IDX105"></A>
+<A NAME="IDX106"></A>
+<DT><SAMP>`-f'</SAMP>
+<DD>
+especifica un <EM>analizador rápido</EM>.  No se realiza una compresión de
+tablas y se evita el uso de stdio.  El resultado es grande pero rápido.  Esta
+opción es equivalente a <SAMP>`-Cfr'</SAMP> (ver más abajo).
+
+<A NAME="IDX107"></A>
+<DT><SAMP>`-h'</SAMP>
+<DD>
+genera un sumario de "ayuda" de las opciones de <CODE>flex</CODE> por
+<CODE>stdout</CODE> y entonces finaliza.  <SAMP>`-?'</SAMP> y <SAMP>`--help'</SAMP> son
+sinónimos de <SAMP>`-h'</SAMP>.
+
+<A NAME="IDX108"></A>
+<A NAME="IDX109"></A>
+<A NAME="IDX110"></A>
+<DT><SAMP>`-i'</SAMP>
+<DD>
+indica a <CODE>flex</CODE> que genere un analizador <EM>case-insensitive</EM>.
+Se ignorará si las letras en los patrones de entrada de <CODE>flex</CODE> son
+en mayúsculas o en minúsculas, y los tokens en la entrada serán
+emparejados sin tenerlo en cuenta.  El texto emparejado dado en
+<CODE>yytext</CODE> tendrá las mayúsculas y minúsculas preservadas (es decir,
+no se convertirán).
+
+<A NAME="IDX111"></A>
+<A NAME="IDX112"></A>
+<DT><SAMP>`-l'</SAMP>
+<DD>
+activa el modo de máxima compatibilidad con la implementación original
+de <CODE>lex</CODE> de AT&#38;T.  Fíjese que esto no significa una compatibilidad
+<EM>completa</EM>.  El uso de esta opción cuesta una cantidad considerable de
+rendimiento, y no puede usarse con las opciones <SAMP>`-+'</SAMP>, <SAMP>`-f'</SAMP>,
+<SAMP>`-F'</SAMP>, <SAMP>`-Cf'</SAMP>,
+ó <SAMP>`-CF'</SAMP>.  Para los detalles a cerca de la compatibilidad que se
+ofrece, vea la section <A HREF="flex-es-2.5.html#SEC20">Incompatibilidades con <CODE>lex</CODE> y POSIX</A>.
+Esta opción también hace que se defina el nombre
+<CODE>YY_FLEX_LEX_COMPAT</CODE> en el analizador generado.
+
+<A NAME="IDX113"></A>
+<DT><SAMP>`-n'</SAMP>
+<DD>
+es otra opción que no hace nada, incluída para cumplir con POSIX.
+
+<A NAME="IDX114"></A>
+<A NAME="IDX115"></A>
+<DT><SAMP>`-p'</SAMP>
+<DD>
+genera un informe de rendimiento en stderr.  El informe consta de
+comentarios que tratan de las propiedades del fichero de entrada de
+<CODE>flex</CODE> que provocarán pérdidas serias de rendimiento en el
+analizador resultante.  Si indica esta bandera dos veces, también
+obtendrá comentarios que tratan de las propiedades que producen pérdidas
+menores de rendimiento.
+
+Fíjese que el uso de <CODE>REJECT</CODE>, <SAMP>`%option yylineno'</SAMP>, y el
+contexto posterior variable (see section <A HREF="flex-es-2.5.html#SEC23">Deficiencias / Errores</A>) supone 
+una penalización substancial del rendimiento;  el uso de
+<SAMP>`yymore()'</SAMP>, el operador <SAMP>`^'</SAMP>, y la bandera <SAMP>`-I'</SAMP> supone
+penalizaciones del rendimiento menores.
+
+<A NAME="IDX116"></A>
+<DT><SAMP>`-s'</SAMP>
+<DD>
+hace que la <STRONG>regla por defecto</STRONG> (que la entrada sin emparejar del
+analizador se repita por <CODE>stdout</CODE>) se suprima.  Si el analizador
+encuentra entrada que no es reconocida por ninguna de sus reglas, este
+aborta con un error.  Esta opción es útil para encontrar agujeros en el
+conjunto de reglas del analizador.
+
+<A NAME="IDX117"></A>
+<A NAME="IDX118"></A>
+<DT><SAMP>`-t'</SAMP>
+<DD>
+indica a <CODE>flex</CODE> que escriba el analizador que genera a la salida
+estándar en lugar de en <TT>`lex.yy.c'</TT>.
+
+<A NAME="IDX119"></A>
+<A NAME="IDX120"></A>
+<DT><SAMP>`-v'</SAMP>
+<DD>
+especifica que <CODE>flex</CODE> debería escribir en <CODE>stderr</CODE> un sumario
+de estadísticas respecto al analizador que genera.  La mayoría de las
+estadísticas no tienen significado para el usuario casual de
+<CODE>flex</CODE>, pero la primera línea identifica la versión de <CODE>flex</CODE>
+(la misma que se informa con <SAMP>`-V'</SAMP>), y la próxima línea las banderas
+utilizadas cuando se genera el analizador, incluyendo aquellas que se
+encuentran activadas por defecto.
+
+<A NAME="IDX121"></A>
+<A NAME="IDX122"></A>
+<DT><SAMP>`-w'</SAMP>
+<DD>
+suprime los mensajes de aviso.
+
+<A NAME="IDX123"></A>
+<A NAME="IDX124"></A>
+<DT><SAMP>`-B'</SAMP>
+<DD>
+dice a <CODE>flex</CODE> que genere un analizador <EM>batch</EM>, que es lo opuesto al
+analizador  <EM>interactivo</EM> generador por <SAMP>`-I'</SAMP> (ver más abajo).
+En general, use <SAMP>`-B'</SAMP> cuando esté <EM>seguro</EM> de que su analizador
+nunca se usará de forma interactiva, y quiere con esto exprimir un
+<EM>poco</EM> más el rendimiento.  Si por el contrario su
+objetivo es exprimirlo <EM>mucho</EM> más, debería estar
+utilizando la opción <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP> (comentadas más abajo), que
+activa <SAMP>`-B'</SAMP> automáticamente de todas maneras.
+
+<A NAME="IDX125"></A>
+<A NAME="IDX126"></A>
+<DT><SAMP>`-F'</SAMP>
+<DD>
+especifica que se debe utilizar la representación de la tabla
+<STRONG>rápida</STRONG> (y elimina referencias a stdio).  Esta representación es
+aproximadamente tan rápida como la representación completa de la tabla
+<SAMP>`(-f)'</SAMP>, y para algunos conjuntos de patrones será considerablemente
+más pequeña (y para otros, mayor).  En general, si el conjunto de
+patrones contiene "palabras clave" y una regla "identificador"
+atrápalo-todo, como la del conjunto:
+
+
+<PRE>
+"case"    return TOK_CASE;
+"switch"  return TOK_SWITCH;
+...
+"default" return TOK_DEFAULT;
+[a-z]+    return TOK_ID;
+</PRE>
+
+entonces será mejor que utilice la representación de la tabla
+completa.  Si sólo está presente la regla "identificador" y utiliza
+una tabla hash o algo parecido para detectar palabras clave, mejor
+utilice <SAMP>`-F'</SAMP>.
+
+Esta opción es equivalente a <SAMP>`-CFr'</SAMP> (ver más abajo).  Esta opción
+no puede utilizarse con <SAMP>`-+'</SAMP>.
+
+<A NAME="IDX127"></A>
+<A NAME="IDX128"></A>
+<DT><SAMP>`-I'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> que genere un analizador <EM>interactivo</EM>.  Un
+analizador interactivo es uno que solo mira hacia delante  para decidir
+que token ha sido reconocido únicamente si debe hacerlo. Resulta que
+mirando siempre un caracter extra hacia delante, incluso si el
+analizador ya ha visto suficiente texto para eliminar la ambigüedad del
+token actual, se es un poco más rápido que mirando solamente cuando es
+necesario.  Pero los analizadores que siempre miran hacia delante
+producen un comportamiento interactivo malísimo; por ejemplo, cuando un
+usuario teclea una línea nueva, esta no se reconoce como un token de
+línea nueva hasta que introduzca <EM>otro</EM> token, que a menudo
+significa introducir otra línea completa.
+
+Los analizadores de <CODE>flex</CODE> por defecto son <EM>interactivos</EM> a
+menos que use la opción <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP> de compresión de tablas
+(ver más abajo).  Esto es debido a que si está buscando un rendimiento alto
+tendría que estar utilizando una de estas opciones, así que si no lo ha
+hecho <CODE>flex</CODE> asume que prefiere cambiar un poco de rendimiento en
+tiempo de ejecución en beneficio de un comportamiento iteractivo
+intuitivo.  Fíjese también que <EM>no puede</EM> utilizar <SAMP>`-I'</SAMP>
+conjuntamente con <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>.  Así, esta opción no se
+necesita realmente; está activa por defecto para todos esos casos en los
+que se permite.
+
+Usted puede forzar al analizador que <EM>no</EM> sea interactivo usando
+<SAMP>`-B'</SAMP> (ver más arriba).
+
+<A NAME="IDX129"></A>
+<DT><SAMP>`-L'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> que no genere directivas <SAMP>`#line'</SAMP>. Sin esta
+opción,  <CODE>flex</CODE> acribilla al analizador generado con directivas
+<SAMP>`#line'</SAMP> para que los mensajes de error en las acciones estén localizadas
+correctamente respecto al fichero original de <CODE>flex</CODE> (si los
+errores son debidos al código en el fichero de entrada), o a
+<TT>`lex.yy.c'</TT> (si los errores son fallos de <CODE>flex</CODE> --debería
+informar de este tipo de errores a la dirección de correo dada más abajo).
+
+<A NAME="IDX130"></A>
+<DT><SAMP>`-T'</SAMP>
+<DD>
+hace que <CODE>flex</CODE> se ejecute en modo de <CODE>traza</CODE>.  Este generará
+un montón de mensajes en <CODE>stderr</CODE> relativos a la forma de la
+entrada y el autómata finito no-determinista o determinista resultante.
+Esta opción generalmente es para usarla en el mantenimiento de <CODE>flex</CODE>.
+
+<A NAME="IDX131"></A>
+<DT><SAMP>`-V'</SAMP>
+<DD>
+imprime el número de la versión en <CODE>stdout</CODE> y
+sale. <SAMP>`--version'</SAMP> es un sinónimo de <SAMP>`-V'</SAMP>.
+
+<A NAME="IDX132"></A>
+<A NAME="IDX133"></A>
+<DT><SAMP>`-7'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> que genere un analizador de 7-bits, es decir, uno
+que sólo puede reconocer caracteres de 7-bits en su entrada.  La ventaja
+de usar <SAMP>`-7'</SAMP> es que las tablas del analizador pueden ser hasta la
+mitad del tamaño de aquellas generadas usando la opción <SAMP>`-8'</SAMP> (ver
+más abajo).  La desventaja es que tales analizadores a menudo se cuelgan
+o revientan si su entrada contiene caracteres de 8-bits.
+
+Fíjese, sin embargo, que a menos que genere su analizador utilizando
+las opciones de compresión de tablas <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>, el uso de
+<SAMP>`-7'</SAMP> ahorrará solamente una pequeña cantidad de espacio en la
+tabla, y hará su analizador considerablemente menos portable.  El
+comportamiento por defecto de <CODE>flex</CODE> es generar un analizador de
+8-bits a menos que use <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>, en cuyo caso <CODE>flex</CODE>
+por defecto genera analizadores de 7-bits a menos que su sistema siempre
+esté configurado para generar analizadores de 8-bits (a menudo este será el
+caso de los sistemas fuera de EEUU).  Puede decir si flex generó un
+analizador de 7 u 8 bits inspeccionando el sumario de banderas en la
+salida de <SAMP>`-v'</SAMP> como se describió anteriormente.
+
+Fíjese que si usa <SAMP>`-Cfe'</SAMP> ó <SAMP>`-CFe'</SAMP> (esas opciones de compresión
+de tablas, pero también el uso de clases de equivalencia como se
+comentará más abajo), flex genera aún por defecto un analizador de
+8-bits, ya que normalmente con estas opciones de compresión las tablas
+de 8-bits completas no son mucho más caras que las tablas de 7-bits.
+
+<A NAME="IDX134"></A>
+<A NAME="IDX135"></A>
+<DT><SAMP>`-8'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> que genere un analizador de 8-bits, es decir, uno
+que puede reconocer caracteres de 8-bits.  Esta bandera sólo es
+necesaria para analizadores generados usando <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>, ya
+que de otra manera flex por defecto genera un analizador de 8-bits de
+todas formas.
+
+Vea el comentario sobre <SAMP>`-7'</SAMP> más arriba a cerca del comportamiento
+por defecto de flex y la discusión entre los analizadores de 7-bits y
+8-bits.
+
+<A NAME="IDX136"></A>
+<A NAME="IDX137"></A>
+<DT><SAMP>`-+'</SAMP>
+<DD>
+especifica que quiere que flex genere un analizador como una clase de
+C++.  Vea la section <A HREF="flex-es-2.5.html#SEC19">Generando escáneres en C++</A>, para los
+detalles.
+
+<A NAME="IDX138"></A>
+<DT><SAMP>`-C[aefFmr]'</SAMP>
+<DD>
+controla el grado de compresión de la tabla y, más generalmente,
+el compromiso entre analizadores pequeños y analizadores rápidos.
+
+<A NAME="IDX139"></A>
+<A NAME="IDX140"></A>
+<DT><SAMP>`-Ca'</SAMP>
+<DD>
+("alinea") ordena a flex que negocie tablas más grandes en el
+analizador generado para un comportamiento más rápido porque los
+elementos de las tablas están mejor alineados para el acceso a
+memoria y computación.  En algunas arquitecturas RISC, la búsqueda y
+manipulación de palabras largas es más eficiente que con unidades más
+pequeñas tales como palabras cortas.  Esta opción puede doblar el
+tamaño de las tablas usadas en su analizador.
+
+<A NAME="IDX141"></A>
+<A NAME="IDX142"></A>
+<DT><SAMP>`-Ce'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> que construya <STRONG>clases de equivalencia</STRONG>, es
+decir, conjunto de caracteres que tienen identicas propiedades léxicas
+(por ejemplo, si la única aparición de dígitos en la entrada de
+<CODE>flex</CODE> es en la clase de caracteres "[0-9]" entonces los dígitos
+<SAMP>`0'</SAMP>, <SAMP>`1'</SAMP>, ..., <SAMP>`9'</SAMP> se pondrán todos en la misma clase de
+equivalencia).  Las clases de equivalencia normalmente ofrecen notables
+reducciones en los tamaños de los ficheros finales de tabla/objeto
+(típicamente un factor de 2-5) y son juiciosamente bastante baratos en
+cuanto al rendimiento (una localización en un vector por caracter
+analizado).
+
+<A NAME="IDX143"></A>
+<SAMP>`-Cf'</SAMP> especifica que se deben generar las tablas del analizador
+<EM>completas</EM> ---<CODE>flex</CODE> no debería comprimir las tablas tomando
+ventaja de las funciones de transición similares para diferentes estados.
+
+<A NAME="IDX144"></A>
+<SAMP>`-CF'</SAMP> especifica que debería usarse la representación del
+analizador rápido alternativo (descrito anteriormente en la bandera <SAMP>`-F'</SAMP>
+)  Esta opción no puede usarse con <SAMP>`-+'</SAMP>.
+
+<A NAME="IDX145"></A>
+<A NAME="IDX146"></A>
+<DT><SAMP>`-Cm'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> que construya <STRONG>clases de meta-equivalencias</STRONG>,
+que son conjuntos de clases de equivalencia (o caracteres, si las clases
+de equivalencia no se están usando) que comunmente se usan de forma
+conjunta.  Las clases de meta-equivalencias son a menudo un gran
+ahorro cuando se usan tablas comprimidas, pero tienen un impacto
+moderado en el rendimiento (uno o dos tests "if" y una localización en
+un array por caracter analizado).
+
+<A NAME="IDX147"></A>
+<A NAME="IDX148"></A>
+<SAMP>`-Cr'</SAMP> hace que el analizador generado <EM>elimine</EM> el uso de la
+librería de E/S estándar para la entrada.  En lugar de llamar a
+<SAMP>`fread()'</SAMP> o a <SAMP>`getc()'</SAMP>, el analizador utilizará la llamada al
+sistema <SAMP>`read()'</SAMP>, produciendo una ganancia en el rendimiento que
+varía de sistema en sistema, pero en general probablemente es
+insignificante a menos que también esté usando <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>.
+El uso de <SAMP>`-Cr'</SAMP> puede producir un comportamiento extraño si, por
+ejemplo, lee de <CODE>yyin</CODE> usando stdio antes de llamar al analizador
+(porque el analizador perderá cualquier texto que sus lecturas
+anteriores dejaron en el buffer de entrada de stdio).
+
+<SAMP>`-Cr'</SAMP> no tiene efecto si usted define <CODE>YY_INPUT</CODE>
+(see section <A HREF="flex-es-2.5.html#SEC8">El escáner generado</A>).
+
+Con solamente <SAMP>`-C'</SAMP> se especifica que las tablas del analizador deberían
+comprimirse pero no debería utilizarse ni las clases de equivalencia ni
+las clases de meta-equivalencias.
+
+Las opciones <SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP> y <SAMP>`-Cm'</SAMP>
+no tienen sentido juntas --no hay oportunidad para las clases de
+meta-equivalencias si la tabla no está siendo comprimida.  De otra
+forma las opciones podrían mezclarse líbremente, y son acumulativas.
+
+La configuración por defecto es <SAMP>`-Cem'</SAMP>, que especifica que <CODE>flex</CODE>
+debería generar clases de equivalencia y clases de meta-equivalencias.
+Esta configuración provee el mayor grado de compresión.  Puede
+llegarse a un compromiso entre analizadores de ejecución más rápida
+con el coste de tablas mayores siendo generalmente verdadero lo siguiente:
+
+
+<PRE>
+lo más lento y pequeño
+      -Cem
+      -Cm
+      -Ce
+      -C
+      -C{f,F}e
+      -C{f,F}
+      -C{f,F}a
+lo más rápido y grande
+</PRE>
+
+Fíjese que los analizadores con tablas más pequeñas normalmente se
+generan y compilan de la forma más rápida posible, así que durante el
+desarrollo usted normalmente querrá usar como viene por defecto,
+compresión máxima.
+
+<SAMP>`-Cfe'</SAMP> a menudo es un buen compromiso entre velocidad y tamaño para
+la producción de analizadores.
+
+<A NAME="IDX149"></A>
+<A NAME="IDX150"></A>
+<DT><SAMP>`-osalida'</SAMP>
+<DD>
+ordena a flex que escriba el analizador al fichero <TT>`salida'</TT> en
+lugar de a <TT>`lex.yy.c'</TT>.  Si combina <SAMP>`-o'</SAMP> con la opción
+<SAMP>`-t'</SAMP>, entonces el analizador se escribe en <CODE>stdout</CODE> pero sus
+directivas <SAMP>`#line'</SAMP> (vea la opción <SAMP>`-L'</SAMP> más arriba) hacen
+referencia al fichero <TT>`salida'</TT>.
+
+<A NAME="IDX151"></A>
+<A NAME="IDX152"></A>
+<DT><SAMP>`-Pprefijo'</SAMP>
+<DD>
+cambia el prefijo <SAMP>`yy'</SAMP> usado por defecto por <CODE>flex</CODE> para todas
+las variables visibles globalmente y nombres de funciones para que sea
+<VAR>prefijo</VAR>.  Por ejemplo, <SAMP>`-Pfoo'</SAMP> cambia el nombre de
+<CODE>yytext</CODE> a <TT>`footext'</TT>.  Este también cambia el nombre por
+defecto del fichero de salida de <TT>`lex.yy.c'</TT> a
+<TT>`lex.foo.c'</TT>. Aquí están todos los nombres afectados:
+
+
+<PRE>
+yy_create_buffer
+yy_delete_buffer
+yy_flex_debug
+yy_init_buffer
+yy_flush_buffer
+yy_load_buffer_state
+yy_switch_to_buffer
+yyin
+yyleng
+yylex
+yylineno
+yyout
+yyrestart
+yytext
+yywrap
+</PRE>
+
+(Si usted está utilizando un analizador en C++, entonces únicamente
+<CODE>yywrap</CODE> y <CODE>yyFlexLexer</CODE> se ven afectados.)  Dentro de su
+analizador, puede aún hacer referencia a las variables globales y
+funciones usando cualquier versión de su nombre; pero externamente,
+estas tienen el nombre modificado.
+
+Esta opción le deja enlazar fácilmente múltiples programas <CODE>flex</CODE>
+conjuntamente en el mismo ejecutable.  Fíjese, sin embargo, que usando
+esta opción también se renombra <SAMP>`yywrap()'</SAMP>, de manera que ahora
+<EM>debe</EM> o bien proveer su propia versión de la rutina (con el nombre
+apropiado) para su analizador, o usar <SAMP>`%option noyywrap'</SAMP>,
+ ya que enlazar con <SAMP>`-lfl'</SAMP> no podrá proveerle una por defecto.
+
+<A NAME="IDX153"></A>
+<DT><SAMP>`-Sfichero_esqueleto'</SAMP>
+<DD>
+ignora el fichero de esqueleteo por defecto con el que <CODE>flex</CODE>
+construye sus analizadores.  Usted probablemente nunca necesitará
+utilizar esta opción a menos que este haciendo mantenimiento o
+un desarrollo de <CODE>flex</CODE>.
+</DL>
+
+<P>
+<A NAME="IDX154"></A>
+<CODE>flex</CODE>
+también ofrece un mecanismo para controlar las opciones dentro de la
+propia especificación del analizador, en vez de a partir de la línea
+de comando.  Esto se hace incluyendo las directivas <SAMP>`%option'</SAMP>
+en la primera sección de la especificación del analizador.  Usted
+puede especificar varias opciones con una sola directiva <SAMP>`%option'</SAMP>,
+y varias directivas en la primera sección de su fichero de entrada de
+flex.
+
+</P>
+<P>
+La mayoría de las opciones vienen dadas simplemente como nombres,
+opcionalmente precedidos por la palabra "no" (sin intervenir un
+espacio) para negar su significado.  Las banderas de flex o su negación
+son equivalentes a un número:
+
+</P>
+<P>
+<A NAME="IDX155"></A>
+<A NAME="IDX156"></A>
+<A NAME="IDX157"></A>
+<A NAME="IDX158"></A>
+<A NAME="IDX159"></A>
+<A NAME="IDX160"></A>
+
+<PRE>
+7bit            opción -7
+8bit            opción -8
+align           opción -Ca
+backup          opción -b
+batch           opción -B
+c++             opción -+
+
+caseful o
+case-sensitive  opuesto de -i (por defecto)
+
+case-insensitive o
+caseless        opción -i
+
+debug           opción -d
+default         opuesto de la opción -s
+ecs             opción -Ce
+fast            opción -F
+full            opción -f
+interactive     opción -I
+lex-compat      opción -l
+meta-ecs        opción -Cm
+perf-report     opción -p
+read            opción -Cr
+stdout          opción -t
+verbose         opción -v
+warn            opuesto de la opción -w
+                (use "%option nowarn" para -w)
+
+array           equivalente a "%array"
+pointer         equivalente a "%pointer" (por defecto)
+</PRE>
+
+<P>
+Algunas directivas <SAMP>`%option'</SAMP> ofrecen propiedades que de otra manera
+no están disponibles:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`always-interactive'</SAMP>
+<DD>
+ordena a flex que genere un analizador que siempre considere su
+entrada como "interactiva".  Normalmente, sobre cada fichero de
+entrada nuevo el analizador llama a <SAMP>`isatty()'</SAMP>
+como intento para determinar si la entrada del analizador es
+interactiva y por lo tanto debería leer un caracter a la vez.  Cuando
+esta opción se utilice, sin embargo, entonces no se hace tal llamada.
+
+<DT><SAMP>`main'</SAMP>
+<DD>
+ordena a flex que facilite un programa <SAMP>`main()'</SAMP> por defecto para el
+analizador, que simplemente llame a <SAMP>`yylex()'</SAMP>.  Esta opción implica
+<CODE>noyywrap</CODE> (ver más abajo).
+
+<A NAME="IDX161"></A>
+<DT><SAMP>`never-interactive'</SAMP>
+<DD>
+ordena a flex que genere un analizador que nunca considere su
+entrada como "interactiva" (de nuevo, no se hace ninguna llamada a
+<SAMP>`isatty()'</SAMP>).  Esta es la opuesta a <SAMP>`always-interactive'</SAMP>.
+
+<A NAME="IDX162"></A>
+<DT><SAMP>`stack'</SAMP>
+<DD>
+activa el uso de pilas de condiciones de arranque (see section <A HREF="flex-es-2.5.html#SEC9">Condiciones de arranque</A>).
+
+<A NAME="IDX163"></A>
+<DT><SAMP>`stdinit'</SAMP>
+<DD>
+si se establece (es decir, <SAMP>`%option stdinit'</SAMP>) inicializa
+<CODE>yyin</CODE> e <CODE>yyout</CODE> a <CODE>stdin</CODE> y <CODE>stdout</CODE>, en lugar del
+que viene por defecto que es <CODE>nil</CODE>.  Algunos pogramas de <CODE>lex</CODE>
+existentes dependen de este comportamiento, incluso si no sigue el ANSI
+C, que no requiere que <CODE>stdin</CODE> y <CODE>stdout</CODE> sean constantes en
+tiempo de compilación.
+
+<A NAME="IDX164"></A>
+<DT><SAMP>`yylineno'</SAMP>
+<DD>
+ordena a <CODE>flex</CODE> a generar un analizador que mantenga el número de
+la línea actual leída desde su entrada en la variable global
+<CODE>yylineno</CODE>.  Esta opción viene implícita con <SAMP>`%option
+lex-compat'</SAMP>.
+
+<A NAME="IDX165"></A>
+<DT><SAMP>`yywrap'</SAMP>
+<DD>
+si no se establece (es decir, <SAMP>`%option noyywrap'</SAMP>), hace que el
+analizador no llame a <SAMP>`yywrap()'</SAMP> hasta el fin-de-fichero, pero
+simplemente asume que no hay más ficheros que analizar (hasta que el
+usuario haga apuntar <CODE>yyin</CODE> a un nuevo fichero y llame a
+<SAMP>`yylex()'</SAMP> otra vez).
+</DL>
+
+<P>
+<CODE>flex</CODE>
+analiza las acciones de sus reglas para determinar si utiliza las
+propiedades  <CODE>REJECT</CODE> o <SAMP>`yymore()'</SAMP>.  Las opciones
+<CODE>reject</CODE> e <CODE>yymore</CODE> están disponibles para ignorar sus
+decisiones siempre que use las opciones, o bien estableciendolas (p.ej.,
+<SAMP>`%option reject'</SAMP>) para indicar que la propiedad se utiliza
+realmente, o desactivándolas para indicar que no es utilizada (p.ej.,
+<SAMP>`%option noyymore'</SAMP>).
+
+</P>
+<P>
+Tres opciones toman valores delimitados por cadenas, separadas por <SAMP>`='</SAMP>:
+
+</P>
+<P>
+<A NAME="IDX166"></A>
+
+<PRE>
+%option outfile="ABC"
+</PRE>
+
+<P>
+es equivalente a <SAMP>`-oABC'</SAMP>, y
+
+</P>
+<P>
+<A NAME="IDX167"></A>
+
+<PRE>
+%option prefix="XYZ"
+</PRE>
+
+<P>
+es equivalente a <SAMP>`-PXYZ'</SAMP>.  Finalmente,
+
+</P>
+<P>
+<A NAME="IDX168"></A>
+
+<PRE>
+%option yyclass="foo"
+</PRE>
+
+<P>
+sólo se aplica cuando se genera un analizador en C++ (opción <SAMP>`-+'</SAMP>).
+Este informa a <CODE>flex</CODE> que ha derivado a <SAMP>`foo'</SAMP> como una
+subclase de <CODE>yyFlexLexer</CODE>, así que <CODE>flex</CODE> pondrá sus acciones
+en la función miembro <SAMP>`foo::yylex()'</SAMP> en lugar de
+<SAMP>`yyFlexLexer::yylex()'</SAMP>.  Este también genera una función miembro
+<SAMP>`yyFlexLexer::yylex()'</SAMP> que emite un error en tiempo de ejecución
+(invocando a <SAMP>`yyFlexLexer::LexerError()'</SAMP>) si es llamada.
+See section <A HREF="flex-es-2.5.html#SEC19">Generando escáneres en C++</A>, para información adicional.
+
+</P>
+<P>
+<A NAME="IDX169"></A>
+<A NAME="IDX170"></A>
+<A NAME="IDX171"></A>
+<A NAME="IDX172"></A>
+<A NAME="IDX173"></A>
+<A NAME="IDX174"></A>
+<A NAME="IDX175"></A>
+<A NAME="IDX176"></A>
+Están disponibles un número de opciones para los puristas de lint que
+desean suprimir la aparición de rutinas no necesarias en el analizador
+generado.  Cada una de la siguientes, si se desactivan (p.ej.,
+<SAMP>`%option nounput'</SAMP>), hace que la rutina correspondiente no aparezca
+en el analizador generado:
+
+</P>
+
+<PRE>
+input, unput
+yy_push_state, yy_pop_state, yy_top_state
+yy_scan_buffer, yy_scan_bytes, yy_scan_string
+</PRE>
+
+<P>
+(aunque <SAMP>`yy_push_state()'</SAMP> y sus amigas no aparecerán de todas
+manera a menos que use <SAMP>`%option stack'</SAMP>).
+
+</P>
+
+
+<H1><A NAME="SEC18" HREF="flex-es-2.5.html#TOC18">Consideraciones de rendimiento</A></H1>
+<P>
+<A NAME="IDX177"></A>
+
+</P>
+<P>
+El principal objetivo de diseño de <CODE>flex</CODE> es que genere
+analizadores de alto rendimiento.  Este ha sido optimizado para
+comportarse bien con conjuntos grandes de reglas.  Aparte de los efectos
+sobre la velocidad del analizador con las opciones de compresión de
+tablas <SAMP>`-C'</SAMP> anteriormente introducidas, hay un número de
+opciones/acciones que degradan el rendimiento.  Estas son, desde la más
+costosa a la menos:
+
+</P>
+
+<PRE>
+REJECT
+%option yylineno
+contexto posterior arbitrario
+
+conjunto de patrones que requieren retroceso
+%array
+%option interactive
+%option always-interactive
+
+<SAMP>`^'</SAMP> operador de comienzo de línea
+yymore()
+</PRE>
+
+<P>
+siendo las tres primeras bastante costosas y las dos últimas bastante
+económicas.  Fíjese también que <SAMP>`unput()'</SAMP> se implementa como una
+llamada de rutina que potencialmente hace bastante trabajo, mientras que
+<SAMP>`yyless()'</SAMP> es una macro bastante económica; así que si está
+devolviendo algún texto excedente que ha analizado, use <SAMP>`yyless()'</SAMP>.
+
+</P>
+<P>
+<CODE>REJECT</CODE> debería evitarse a cualquier precio cuando el rendimiento
+es importante.  Esta es una opción particularmente cara.
+
+</P>
+<P>
+<A NAME="IDX178"></A>
+Es lioso deshacerse del retroceso y a menudo podría ser una cantidad
+de trabajo enorme para un analizador complicado.  En principio, uno
+comienza utilizando la bandera <SAMP>`-b'</SAMP> para generar un archivo
+<TT>`lex.backup'</TT>.  Por ejemplo, sobre la entrada
+
+</P>
+
+<PRE>
+%%
+foo        return TOK_KEYWORD;
+foobar     return TOK_KEYWORD;
+</PRE>
+
+<P>
+el fichero tiene el siguiente aspecto:
+
+</P>
+
+<PRE>
+El estado #6 es no-aceptar -
+ números de línea asociados a la regla:
+       2       3
+ fin de transiciones: [ o ]
+ transiciones de bloqueo: fin de archivo (EOF) [ \001-n  p-\177 ]
+
+El estado #8 es no-aceptar -
+ números de línea asociados a la regla:
+       3
+ fin de transiciones: [ a ]
+ transiciones de bloqueo: fin de archivo (EOF) [ \001-`  b-\177 ]
+
+El estado #9 es no-aceptar -
+ números de línea asociados a la regla:
+       3
+ fin de transiciones: [ r ]
+ transiciones de bloqueo: fin de archivo (EOF) [ \001-q  s-\177 ]
+
+Las tablas comprimidas siempre implican un retroceso.
+</PRE>
+
+<P>
+<A NAME="IDX179"></A>
+Las primeras líneas nos dicen que hay un estado del analizador en el
+que se puede hacer una transición con una <SAMP>`o'</SAMP> pero no sobre cualquier
+otro caracter, y que en ese estado el texto recientemente analizado no
+empareja con ninguna regla.  El estado ocurre cuando se intenta
+emparejar las reglas encontradas en las líneas 2 y 3 en el fichero de
+entrada.  Si el analizador está en ese estado y entoces lee cualquier
+cosa que no sea una <SAMP>`o'</SAMP>, tendrá que retroceder para encontrar una
+regla que empareje.  Con un poco de análisis uno puede ver que
+este debe ser el estado en el que se está cuando se ha visto "fo".
+Cuando haya ocurrido, si se ve cualquier cosa que no sea una <SAMP>`o'</SAMP>, el
+analizador tendrá que retroceder para simplemente emparejar la <SAMP>`f'</SAMP>
+(por la regla por defecto).
+
+</P>
+<P>
+El comentario que tiene que ver con el Estado #8 indica que hay un
+problema cuando se analiza "foob".  En efecto, con cualquier caracter
+que no sea una <SAMP>`a'</SAMP>, el analizador tendrá que retroceder para aceptar
+"foo".  De forma similar, el comentario para el Estado #9 tiene que
+ver cuando se ha analizado "fooba" y no le sigue una <SAMP>`r'</SAMP>.
+
+</P>
+<P>
+El comentario final nos recuerda que no mecere la pena todo el trabajo
+para eliminar el retroceso de las reglas a menos que estemos usando
+<SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP>, y que no hay ninguna mejora del rendimiento
+haciéndolo con analizadores comprimidos.
+
+</P>
+<P>
+La manera de quitar los retrocesos es añadiendo reglas de "error":
+
+</P>
+
+<PRE>
+%%
+foo         return TOK_KEYWORD;
+foobar      return TOK_KEYWORD;
+
+fooba       |
+foob        |
+fo          {
+            /* falsa alarma, realmente no es una palabra clave */
+            return TOK_ID;
+            }
+</PRE>
+
+<P>
+<A NAME="IDX180"></A>
+<A NAME="IDX181"></A>
+La eliminación de retroceso en una lista de palabras clave también
+puede hacerse utilizando una regla "atrápalo-todo":
+
+</P>
+
+<PRE>
+%%
+foo         return TOK_KEYWORD;
+foobar      return TOK_KEYWORD;
+
+[a-z]+      return TOK_ID;
+</PRE>
+
+<P>
+Normalmente esta es la mejor solución cuando sea adecuada.
+
+</P>
+<P>
+Los mensajes sobre retrocesos tienden a aparecer en cascada.
+Con un conjunto complicado de reglas no es poco común obtener cientos
+de mensajes.  Si uno puede descifrarlos, sin embargo, a menudo sólo
+hay que tomar una docena de reglas o algo así para eliminar los
+retrocesos (ya que es fácil cometer una equivocación y tener una regla de
+error que reconozca un token válido.  Una posible característica
+futura de <CODE>flex</CODE> será añadir reglas automáticamente para eliminar
+el retroceso).
+
+</P>
+<P>
+Es importante tener en cuenta que se obtienen los beneficios de
+eliminar el retroceso sólo si elimina <EM>cada</EM> instancia del
+retroceso.  Dejar solamente una significa que no ha ganado absolutamente
+nada.
+
+</P>
+<P>
+<A NAME="IDX182"></A>
+El contexto posterior <VAR>variable</VAR> (donde la parte delantera y
+posterior no tienen una longitud fija) supone casi la misma pérdida de
+rendimiento que <CODE>REJECT</CODE> (es decir, substanciales).  Así que cuando
+sea posible una regla como esta:
+
+</P>
+
+<PRE>
+%%
+raton|rata/(gato|perro)   correr();
+</PRE>
+
+<P>
+es mejor escribirla así:
+
+</P>
+
+<PRE>
+%%
+raton/gato|perro          correr();
+rata/gato|perro           correr();
+</PRE>
+
+<P>
+o así
+
+</P>
+
+<PRE>
+%%
+raton|rata/gato           correr();
+raton|rata/perro          correr();
+</PRE>
+
+<P>
+Fíjese que aquí la acción especial <SAMP>`|'</SAMP> <EM>no</EM> ofrece ningún
+ahorro, y puede incluso hacer las cosas peor (see section <A HREF="flex-es-2.5.html#SEC23">Deficiencias / Errores</A>).
+
+</P>
+<P>
+Otro área donde el usuario puede incrementar el rendimiento del
+analizador (y una que es más fácil de implementar) surge del hecho que
+cuanto más tarde se empareje un token, más rápido irá el analizador.
+Esto es debido a que con tokens grandes el procesamiento de la mayoría
+de los caracteres de entrada tiene lugar en el (corto) bucle de
+análisis más interno, y no tiene que ir tan a menudo a hacer el
+trabajo de más para constituir el entorno del analizador (p.ej.,
+<CODE>yytext</CODE>) para la acción.  Recuerde el analizador para los
+comentarios en C:
+
+</P>
+
+<PRE>
+%x comentario
+%%
+        int num_linea = 1;
+
+"/*"         BEGIN(comentario);
+
+&#60;comentario&#62;[^*\n]*
+&#60;comentario&#62;"*"+[^*/\n]*
+&#60;comentario&#62;\n             ++num_linea;
+&#60;comentario&#62;"*"+"/"        BEGIN(INITIAL);
+</PRE>
+
+<P>
+Esto podría acelerarse escribiéndolo como:
+
+</P>
+
+<PRE>
+%x comentario
+%%
+        int num_linea = 1;
+
+"/*"         BEGIN(comentario);
+
+&#60;comentario&#62;[^*\n]*
+&#60;comentario&#62;[^*\n]*\n      ++num_linea;
+&#60;comentario&#62;"*"+[^*/\n]*
+&#60;comentario&#62;"*"+[^*/\n]*\n ++num_linea;
+&#60;comentario&#62;"*"+"/"        BEGIN(INITIAL);
+</PRE>
+
+<P>
+Ahora en lugar de que cada línea nueva requiera el procesamiento de
+otra regla, el reconocimiento de las líneas nuevas se "distribuye"
+sobre las otras reglas para mantener el texto reconocido tan largo
+como sea posible.  ¡Fíjese que el <EM>añadir</EM> reglas <EM>no</EM>
+ralentiza el analizador!  La velocidad del analizador es independiente
+del número de reglas o (dadas las consideraciones dadas al inicio
+de esta sección) cuán complicadas sean las reglas respecto a
+operadores tales como <SAMP>`*'</SAMP> y <SAMP>`|'</SAMP>.
+
+</P>
+<P>
+Un ejemplo final sobre la aceleración de un analizador: suponga que
+quiere analizar un fichero que contiene identificadores y
+palabras clave, una por línea y sin ningún caracter extraño, y
+reconocer todas las palabras clave.  Una primera aproximación natural
+es:
+
+</P>
+
+<PRE>
+%%
+asm      |
+auto     |
+break    |
+... etc ...
+volatile |
+while    /* es una palabra clave */
+
+.|\n     /* no es una palabra clave */
+</PRE>
+
+<P>
+Para eliminar el retroceso, introduzca una regla atrápalo-todo:
+
+</P>
+
+<PRE>
+%%
+asm      |
+auto     |
+break    |
+... etc ...
+volatile |
+while    /* es una palabra clave */
+
+[a-z]+   |
+.|\n     /* no es una palabra clave */
+</PRE>
+
+<P>
+Ahora, si se garantiza que hay exáctamente una palabra por línea,
+entonces podemos reducir el número total de emparejamientos por la
+mitad mezclando el reconocimiento de líneas nuevas con las de los
+otros tokens:
+
+</P>
+
+<PRE>
+%%
+asm\n    |
+auto\n   |
+break\n  |
+... etc ...
+volatile\n |
+while\n  /* es una palabra clave */
+
+[a-z]+\n |
+.|\n     /* no es una palabra clave */
+</PRE>
+
+<P>
+Uno tiene que ser cuidadoso aquí, ya que hemos reintroducido retroceso
+en el analizador.  En particular, aunque <EM>nosotros</EM> sepamos que ahí
+nunca habrán otros caracteres en el flujo de entrada que no sean letras
+o líneas nuevas, <CODE>flex</CODE> no puede figurarse eso, y planeará la
+posible necesidad de retroceder cuando haya analizado un token como
+"auto" y el próximo caracter sea algo distinto a una línea nueva o una
+letra.  Previamente este podría entonces emparejar la regla "auto" y
+estar todo hecho, pero ahora este no tiene una regla "auto", solamente
+una regla "auto\n".  Para eliminar la posibilidad de retroceso,
+podríamos o bien duplicar todas las reglas pero sin línea nueva al
+final, o, ya que nunca esperamos encontrar tal entrada y por lo tanto ni
+cómo es clasificada, podemos introducir una regla atrápalo-todo más,
+esta que no incluye una línea nueva:
+
+</P>
+
+<PRE>
+%%
+asm\n    |
+auto\n   |
+break\n  |
+... etc ...
+volatile\n |
+while\n  /* es una palabra clave */
+
+[a-z]+\n |
+[a-z]+   |
+.|\n     /* no es una palabra clave */
+</PRE>
+
+<P>
+Compilado con <SAMP>`-Cf'</SAMP>, esto es casi tan rápido como lo que uno puede
+obtener de un analizador de <CODE>flex</CODE> para este problema en particular.
+
+</P>
+<P>
+Una nota final: <CODE>flex</CODE> es lento cuando empareja NUL's,
+particularmente cuando un token contiene múltiples NUL's.  Es mejor
+escribir reglas que emparejen <EM>cortas</EM> cantidades de texto si se
+anticipa que el texto incluirá NUL's a menudo.
+
+</P>
+<P>
+Otra nota final en relación con el rendimiento: tal y como se mencionó
+en el section <A HREF="flex-es-2.5.html#SEC6">Cómo se empareja la entrada</A>, el reajuste dinámico de
+<CODE>yytext</CODE> para acomodar tokens enormes es un proceso lento porque
+ahora requiere que el token (inmenso) sea reanalizado desde el
+principio.  De esta manera si el rendimiento es vital, debería intentar
+emparejar "grandes" cantidades de texto pero no "inmensas" cantidades,
+donde el punto medio está en torno a los 8K caracteres/token.
+
+</P>
+
+
+<H1><A NAME="SEC19" HREF="flex-es-2.5.html#TOC19">Generando escáneres en C++</A></H1>
+<P>
+<A NAME="IDX183"></A>
+<A NAME="IDX184"></A>
+<A NAME="IDX185"></A>
+<A NAME="IDX186"></A>
+
+</P>
+<P>
+<CODE>flex</CODE> ofrece dos maneras distintas de generar analizadores para
+usar con C++.  La primera manera es simplemente compilar un analizador
+generado por <CODE>flex</CODE> usando un compilador de C++ en lugar de un
+compilador de C.  No debería encontrarse ante ningún error de
+compilación (por favor informe de cualquier error que encuentre a la
+dirección de correo electrónico dada en el section <A HREF="flex-es-2.5.html#SEC25">Autor</A>).
+Puede entonces usar código C++ en sus acciones de las reglas en lugar de
+código C. Fíjese que la fuente de entrada por defecto para su analizador
+permanece como <CODE>yyin</CODE>, y la repetición por defecto se hace aún a
+<CODE>yyout</CODE>.  Ambos permanecen como variables <SAMP>`FILE *'</SAMP> y no como
+<CODE>flujos</CODE> de C++.
+
+</P>
+<P>
+<A NAME="IDX187"></A>
+<A NAME="IDX188"></A>
+<A NAME="IDX189"></A>
+También puede utilizar <CODE>flex</CODE> para generar un analizador como una
+clase de C++, utilizando la opción <SAMP>`-+'</SAMP> (o, equivalentemente,
+<SAMP>`%option c++'</SAMP>), que se especifica automáticamente si el nombre del
+ejecutable de flex finaliza con un <SAMP>`+'</SAMP>, tal como <CODE>flex++</CODE>.  Cuando
+se usa esta opcióx, flex establece por defecto la generación del
+analizador al fichero <TT>`lex.yy.cc'</TT> en vez de <TT>`lex.yy.c'</TT>.
+El analizador generado incluye el fichero de cabecera
+<TT>`FlexLexer.h'</TT>, que define el interfaz con las dos clases de C++.
+
+</P>
+<P>
+La primera clase, <CODE>FlexLexer</CODE>, ofrece una clase base abstracta
+definiendo la interfaz a la clase del analizador general.  Este provee
+las siguientes funciones miembro:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`const char* YYText()'</SAMP>
+<DD>
+<A NAME="IDX190"></A>
+ 
+retorna el texto del token reconocido más recientemente, el equivalente a
+<CODE>yytext</CODE>.
+
+<A NAME="IDX191"></A>
+<DT><SAMP>`int YYLeng()'</SAMP>
+<DD>
+retorna la longitud del token reconocido más recientemente, el
+equivalente a <CODE>yyleng</CODE>.
+
+<A NAME="IDX192"></A>
+<DT><SAMP>`int lineno() const'</SAMP>
+<DD>
+retorna el número de línea de entrada actual (ver <SAMP>`%option
+yylineno'</SAMP>), ó 1 si no se usó <SAMP>`%option yylineno'</SAMP>.
+
+<A NAME="IDX193"></A>
+<DT><SAMP>`void set_debug( int flag )'</SAMP>
+<DD>
+activa la bandera de depuración para el analizador, equivalente a
+la asignación de <CODE>yy_flex_debug</CODE> (see section <A HREF="flex-es-2.5.html#SEC17">Opciones</A>).
+Fíjese que debe construir el analizador utilizando
+<SAMP>`%option debug'</SAMP> para incluir información de depuración en este.
+
+<A NAME="IDX194"></A>
+<DT><SAMP>`int debug() const'</SAMP>
+<DD>
+retorna el estado actual de la bandera de depuración.
+</DL>
+
+<P>
+También se proveen funciones miembro equivalentes a
+<SAMP>`yy_switch_to_buffer()'</SAMP>, <SAMP>`yy_create_buffer()'</SAMP> (aunque el
+primer argumento es un puntero a objeto <SAMP>`istream*'</SAMP> y no un
+<SAMP>`FILE*'</SAMP>), <SAMP>`yy_flush_buffer()'</SAMP>, <SAMP>`yy_delete_buffer()'</SAMP>, y
+<SAMP>`yyrestart()'</SAMP> (de nuevo, el primer argumento es un puntero a objeto
+<SAMP>`istream*'</SAMP>).
+
+</P>
+<P>
+La segunda clase definida en <TT>`FlexLexer.h'</TT> es <CODE>yyFlexLexer</CODE>,
+que se deriva de <CODE>FlexLexer</CODE>.  Esta define las siguientes funciones
+miembro adicionales:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`yyFlexLexer( istream* arg_yyin = 0, ostream* arg_yyout = 0 )'</SAMP>
+<DD>
+<A NAME="IDX195"></A>
+ 
+construye un objeto <CODE>yyFlexLexer</CODE> usando los flujos dados para la
+entrada y salida.  Si no se especifica, los flujos se establecen por
+defecto a <CODE>cin</CODE> y <CODE>cout</CODE>, respectivamente.
+
+<A NAME="IDX196"></A>
+<DT><SAMP>`virtual int yylex()'</SAMP>
+<DD>
+hace el mismo papel que <SAMP>`yylex()'</SAMP> en los analizadores de flex
+ordinarios: analiza el flujo de entrada, consumiendo tokens, hasta que
+la acción de una regla retorne un valor.  Si usted deriva una subclase
+<VAR>S</VAR> a partir de <CODE>yyFlexLexer</CODE> y quiere acceder a las funciones
+y variables miembro de <VAR>S</VAR> dentro de <SAMP>`yylex()'</SAMP>, entonces
+necesita utilizar <SAMP>`%option yyclass="S"'</SAMP> para informar a <CODE>flex</CODE>
+que estará utilizando esa subclase en lugar de <CODE>yyFlexLexer</CODE>.  Es
+este caso, en vez de generar <SAMP>`yyFlexLexer::yylex()'</SAMP>, <CODE>flex</CODE>
+genera <SAMP>`S::yylex()'</SAMP> (y también genera un substituto
+<SAMP>`yyFlexLexer::yylex()'</SAMP> que llama a <SAMP>`yyFlexLexer::LexerError()'</SAMP>
+si se invoca).
+
+<A NAME="IDX197"></A>
+<DT><SAMP>`virtual void switch_streams(istream* new_in = 0, ostream* new_out = 0)'</SAMP>
+<DD>
+reasigna <CODE>yyin</CODE> a <CODE>new_in</CODE> (si no es nulo) e <CODE>yyout</CODE> a
+<CODE>new_out</CODE> (idem), borrando el buffer de entrada anterior si se
+reasigna <CODE>yyin</CODE>.
+
+<A NAME="IDX198"></A>
+<DT><SAMP>`int yylex( istream* new_in, ostream* new_out = 0 )'</SAMP>
+<DD>
+primero conmuta el flujo de entrada via <SAMP>`switch_streams( new_in,
+new_out )'</SAMP> y entonces retorna el valor de <SAMP>`yylex()'</SAMP>.
+</DL>
+
+<P>
+Además, <CODE>yyFlexLexer</CODE> define las siguientes funciones virtuales
+protegidas que puede redefinir en clases derivadas para adaptar el
+analizador:
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`virtual int LexerInput( char* buf, int max_size )'</SAMP>
+<DD>
+<A NAME="IDX199"></A>
+ 
+lee hasta <SAMP>`max_size'</SAMP> caracteres en <VAR>buf</VAR> y devuelve el número
+de caracteres leídos.  Para indicar el fin-de-la-entrada, devuelve 0
+caracteres.  Fíjese que los analizadores "interactivos" (ver las
+banderas <SAMP>`-B'</SAMP> y <SAMP>`-I'</SAMP>) definen la macro <CODE>YY_INTERACTIVE</CODE>.
+Si usted redefine <CODE>LexerInput()</CODE> y necesita tomar acciones
+distintas dependiendo de si el analizador  está analizando una fuente de
+entrada interactivo o no, puede comprobar la presencia de este nombre
+mediante <SAMP>`#ifdef'</SAMP>.
+
+<A NAME="IDX200"></A>
+<DT><SAMP>`virtual void LexerOutput( const char* buf, int size )'</SAMP>
+<DD>
+escribe a la salida <VAR>size</VAR> caracteres desde el buffer <VAR>buf</VAR>,
+que, mientras termine en NUL, puede contener también NUL's "internos" si
+las reglas del analizador pueden emparejar texto con NUL's dentro de este.
+
+<A NAME="IDX201"></A>
+<DT><SAMP>`virtual void LexerError( const char* msg )'</SAMP>
+<DD>
+informa con un mensaje de error fatal.  La versión por defecto de esta
+función escribe el mensaje al flujo <CODE>cerr</CODE> y finaliza.
+</DL>
+
+<P>
+Fíjese que un objeto <CODE>yyFlexLexer</CODE> contiene su estado de análisis
+<EM>completo</EM>.  Así puede utilizar tales objetos para crear analizadore
+reentrantes.  Puede hacer varias instancias de la misma clase
+<CODE>yyFlexLexer</CODE>, y puede combinar varias clases de analizadores en
+C++ conjuntamente en el mismo programa usando la opción <SAMP>`-P'</SAMP>
+comentada anteriormente.
+
+</P>
+<P>
+Finalmente, note que la característica <SAMP>`%array'</SAMP> no está disponible
+en clases de analizadores en C++; debe utilizar <SAMP>`%pointer'</SAMP> (por
+defecto).
+
+</P>
+<P>
+Aquí hay un ejemplo de un analizador en C++ simple:
+
+</P>
+<P>
+<A NAME="IDX202"></A>
+<A NAME="IDX203"></A>
+
+<PRE>
+// Un ejemplo del uso de la clase analizador en C++ de flex.
+
+%{
+int mylineno = 0;
+%}
+
+string  \"[^\n"]+\"
+
+ws      [ \t]+
+
+alpha   [A-Za-z]
+dig     [0-9]
+name    ({alpha}|{dig}|\$)({alpha}|{dig}|[_.\-/$])*
+num1    [-+]?{dig}+\.?([eE][-+]?{dig}+)?
+num2    [-+]?{dig}*\.{dig}+([eE][-+]?{dig}+)?
+number  {num1}|{num2}
+
+%%
+
+{ws}    /* evita los espacios en blanco y tabuladores */
+
+"/*"    {
+        int c;
+
+        while((c = yyinput()) != 0)
+            {
+            if(c == '\n')
+                ++mylineno;
+
+            else if(c == '*')
+                {
+                if((c = yyinput()) == '/')
+                    break;
+                else
+                    unput(c);
+                }
+            }
+        }
+
+{number}  cout &#60;&#60; "número " &#60;&#60; YYText() &#60;&#60; '\n';
+
+\n        mylineno++;
+
+{name}    cout &#60;&#60; "nombre " &#60;&#60; YYText() &#60;&#60; '\n';
+
+{string}  cout &#60;&#60; "cadena " &#60;&#60; YYText() &#60;&#60; '\n';
+
+%%
+
+int main( int /* argc */, char** /* argv */ )
+    {
+    FlexLexer* lexer = new yyFlexLexer;
+    while(lexer-&#62;yylex() != 0)
+        ;
+    return 0;
+    }
+</PRE>
+
+<P>
+Si desea crear varias (diferentes) clases analizadoras, use la bandera
+<SAMP>`-P'</SAMP> (o la opción <SAMP>`prefix='</SAMP>) para renombrar cada
+<CODE>yyFlexLexer</CODE> a algún otro <CODE>xxFlexLexer</CODE>.  Entonces puede
+incluir <SAMP>`&#60;FlexLexer.h&#62;'</SAMP> en los otros ficheros fuente una vez por
+clase analizadora, primero renombrando <CODE>yyFlexLexer</CODE> como se
+presenta a continuación:
+
+</P>
+
+<PRE>
+#undef yyFlexLexer
+#define yyFlexLexer xxFlexLexer
+#include &#60;FlexLexer.h&#62;
+
+#undef yyFlexLexer
+#define yyFlexLexer zzFlexLexer
+#include &#60;FlexLexer.h&#62;
+</PRE>
+
+<P>
+si, por ejemplo, usted utilizó <SAMP>`%option prefix="xx"'</SAMP> para uno de
+sus analizadores y <SAMP>`%option prefix="zz"'</SAMP> para el otro.
+
+</P>
+<P>
+IMPORTANTE: la forma actual de la clase analizadora es
+<EM>experimental</EM> y podría cambiar considerablemente entre versiones
+principales.
+
+</P>
+
+
+<H1><A NAME="SEC20" HREF="flex-es-2.5.html#TOC20">Incompatibilidades con <CODE>lex</CODE> y POSIX</A></H1>
+<P>
+<A NAME="IDX204"></A>
+<A NAME="IDX205"></A>
+<A NAME="IDX206"></A>
+<A NAME="IDX207"></A>
+<A NAME="IDX208"></A>
+
+</P>
+<P>
+<CODE>flex</CODE> es una reescritura de la herramienta <CODE>lex</CODE> del Unix de
+AT&#38;T (aunque las dos implementaciones no comparten ningún código), con
+algunas extensiones e incompatibilidades, de las que ambas conciernen a
+aquellos que desean escribir analizadores aceptables por cualquier
+implementación.  Flex sigue completamente la especificación POSIX de
+<CODE>lex</CODE>, excepto que cuando se utiliza <SAMP>`%pointer'</SAMP> (por defecto),
+una llamada a <SAMP>`unput()'</SAMP> destruye el contenido de <CODE>yytext</CODE>, que
+va en contra de la especificación POSIX.
+
+</P>
+<P>
+En esta sección comentaremos todas las áreas conocidas de
+incompatibilidades entre flex, lex de AT&#38;T, y la especificación POSIX.
+
+</P>
+<P>
+La opción <SAMP>`-l'</SAMP> de <CODE>flex</CODE> activa la máxima compatibilidad con
+la implementación original de <CODE>lex</CODE> de AT&#38;T, con el coste de una
+mayor pérdida de rendimiento en el analizador generado.  Indicamos más
+abajo qué incompatibilidades pueden superarse usando la opción <SAMP>`-l'</SAMP>.
+
+</P>
+<P>
+<CODE>flex</CODE> es totalmente compatible con <CODE>lex</CODE> con las siguientes
+excepciones:
+
+</P>
+<P>
+<A NAME="IDX209"></A>
+
+<UL>
+<LI>
+
+La variable interna del analizador de <CODE>lex</CODE> sin documentar
+<CODE>yylineno</CODE> no se ofrece a menos que se use <SAMP>`-l'</SAMP> ó
+<SAMP>`%option yylineno'</SAMP>.  <CODE>yylineno</CODE> debería gestionarse por
+buffer, en lugar de por analizador (simple variable
+global).  <CODE>yylineno</CODE> no es parte de la especificación POSIX.
+
+<LI>
+
+La rutina <SAMP>`input()'</SAMP> no es redefinible, aunque podría invocarse para
+leer los caracteres que siguen a continuación de lo que haya sido
+reconocido por una regla.  Si <SAMP>`input()'</SAMP> se encuentra con un
+fin-de-fichero se realiza el procesamiento de <SAMP>`yywrap()'</SAMP> normal.
+<SAMP>`input()'</SAMP> retorna un fin-de-fichero "real" como <CODE>EOF</CODE>.
+
+La entrada en su lugar se controla definiendo la macro <CODE>YY_INPUT</CODE>.
+
+La restricción de <CODE>flex</CODE> de que <SAMP>`input()'</SAMP> no puede redefinirse
+va de acuerdo a la especificación POSIX, que simplemente no especifica
+ninguna manera de controlar la entrada del analizador que no sea
+haciendo una asignación inicial a <CODE>yyin</CODE>.
+
+<LI>
+
+La rutina <SAMP>`unput()'</SAMP> no es redefinible.  Esta restricción va de
+acuerdo a POSIX.
+
+<LI>
+
+Los analizadores de <CODE>flex</CODE> no son tan reentrantes como los
+analizadores de <CODE>lex</CODE>.  En particular, si tiene un analizador
+interactivo y un gestor de interrupción con long-jumps fuera del
+analizador, y el analizador a continuación se invoca de nuevo, podría
+obtener el siguiente mensaje:
+
+
+<PRE>
+fatal flex scanner internal error--end of buffer missed
+</PRE>
+
+Para volver al analizador, primero utilice
+
+
+<PRE>
+yyrestart( yyin );
+</PRE>
+
+Vea que esta llamada eliminará cualquier entrada en el buffer;
+normalmente esto no es un problema con un analizador interactivo.
+
+Dese cuenta también de que las clases analizadoras en C++ <EM>son</EM>
+reentrantes, así que si usar C++ es una opción para usted, debería
+utilizarla.  See section <A HREF="flex-es-2.5.html#SEC19">Generando escáneres en C++</A>, para los
+detalles.
+
+<LI>
+
+<SAMP>`output()'</SAMP> no se provee.  La salida desde la macro <SAMP>`ECHO'</SAMP> se
+hace al puntero de fichero <CODE>yyout</CODE> (por defecto a <CODE>stdout</CODE>).
+
+<SAMP>`output()'</SAMP> no es parte de la especificación POSIX.
+
+<LI>
+
+<CODE>lex</CODE> no acepta condiciones de arranque exclusivas (%x), aunque
+están en la especificación POSIX.
+
+<A NAME="IDX210"></A>
+<A NAME="IDX211"></A>
+<LI>
+
+Cuando se expanden las definiciones, <CODE>flex</CODE> las encierra entre
+paréntesis.  Con lex, lo siguiente:
+
+
+<PRE>
+NOMBRE    [A-Z][A-Z0-9]*
+%%
+foo{NOMBRE}?      printf( "Lo encontró\n" );
+%%
+</PRE>
+
+no reconocerá la cadena "foo" porque cuando la macro se expanda la
+regla es equivalente a "foo[A-Z][A-Z0-9]*?" y la precedencia es tal
+que el <SAMP>`?'</SAMP> se asocia con "[A-Z0-9]*".  Con <CODE>flex</CODE>, la regla se
+expandirá a "foo([A-Z][A-Z0-9]*)?" y así la cadena "foo" se reconocerá.
+
+Fíjese que si la definición comienza con <SAMP>`^'</SAMP> o finaliza con
+<SAMP>`$'</SAMP> entonces <EM>no</EM> se expande con paréntesis, para permitir que
+estos operadores aparezcan en las definiciones sin perder su significado
+especial.  Pero los operadores <SAMP>`&#60;s&#62;, /'</SAMP>, y <SAMP>`&#60;&#60;EOF&#62;&#62;'</SAMP> no pueden
+utilizarse en una definición de <CODE>flex</CODE>.
+
+El uso de <SAMP>`-l'</SAMP> produce en el comportamiendo de <CODE>lex</CODE> el no
+poner paréntesis alrededor de la definición.
+
+La especificación de POSIX dice que la definición debe ser encerrada
+entre paréntesis.
+
+<LI>
+
+Algunas implementaciones de <CODE>lex</CODE> permiten que la acción de una
+regla comience en una línea separada, si el patrón de la regla tiene
+espacios en blanco al final:
+
+
+<PRE>
+%%
+foo|bar&#60;espacio aquí&#62;
+  { foobar_action(); }
+</PRE>
+
+<CODE>flex</CODE>
+no dispone de esta propiedad.
+
+<LI>
+
+La opción <SAMP>`%r'</SAMP> de <CODE>lex</CODE> (generar un analizador Ratfor) no se
+ofrece.  No es parte de la especificación de POSIX.
+
+<LI>
+
+Después de una llamada a <SAMP>`unput()'</SAMP>, el contenido de <CODE>yytext</CODE>
+está indefinido hasta que se reconozca el próximo token, a menos que el
+analizador se haya construido usando <SAMP>`%array'</SAMP>.  Este no es el caso
+de <CODE>lex</CODE> o la especificación de POSIX.  La opción <SAMP>`-l'</SAMP>
+elimina esta incompatibilidad.
+
+<A NAME="IDX212"></A>
+<LI>
+
+La precedencia del operador <SAMP>`{}'</SAMP> (rango numérico) es diferente.
+<CODE>lex</CODE> interpreta "abc{1,3}" como "empareja uno, dos, o tres
+apariciones de  'abc'", mientras que <CODE>flex</CODE> lo interpreta como
+"empareja 'ab' seguida de una, dos o tres apariciones de 'c'".  Lo
+último va de acuerdo con la especificación de POSIX.
+
+<A NAME="IDX213"></A>
+<LI>
+
+La precedencia del operador <SAMP>`^'</SAMP> es diferente.  <CODE>lex</CODE>
+interpreta "^foo|bar" como "empareja bien 'foo' al principio de una
+línea, o 'bar' en cualquier lugar", mientras que <CODE>flex</CODE> lo
+interpreta como "empareja 'foo' o 'bar' si vienen al principio de una
+línea".  Lo último va de acuerdo con la especificación de POSIX. 
+
+<LI>
+
+Las declaraciones especiales del tamaño de las tablas tal como <SAMP>`%a'</SAMP>
+que reconoce <CODE>lex</CODE> no se requieren en los analizadores de
+<CODE>flex</CODE>; <CODE>flex</CODE> los ignora.
+
+<A NAME="IDX214"></A>
+<A NAME="IDX215"></A>
+<A NAME="IDX216"></A>
+<LI>
+
+El identificador FLEX_SCANNER se #define de manera que los analizadores
+podrían escribirse para ser procesados con <CODE>flex</CODE> o con <CODE>lex</CODE>.
+Los analizadores también incluyen <CODE>YY_FLEX_MAJOR_VERSION</CODE> y
+<CODE>YY_FLEX_MINOR_VERSION</CODE> indicando qué versión de <CODE>flex</CODE> generó
+el analizador (por ejemplo, para la versión 2.5, estas definiciones
+serán 2 y 5 respectivamente).
+</UL>
+
+<P>
+Las siguientes propiedades de <CODE>flex</CODE> no se incluyen en <CODE>lex</CODE>
+o la especificación POSIX:
+
+</P>
+
+<PRE>
+analizadores en C++
+%option
+ámbitos de condiciones de arranque
+pilas de condiciones de arranque
+analizadores interactivos/no-interactivos
+yy_scan_string() y sus amigas
+yyterminate()
+yy_set_interactive()
+yy_set_bol()
+YY_AT_BOL()
+&#60;&#60;EOF&#62;&#62;
+&#60;*&#62;
+YY_DECL
+YY_START
+YY_USER_ACTION
+YY_USER_INIT
+directivas #line
+%{}'s alrededor de acciones
+varias acciones en una línea
+</PRE>
+
+<P>
+más casi todas las banderas de flex.  La última propiedad en la lista se
+refiere al hecho de que con <CODE>flex</CODE> puede poner varias acciones en
+la misma línea, sepradas con punto y coma, mientras que con <CODE>lex</CODE>,
+lo siguiente
+
+</P>
+
+<PRE>
+foo    handle_foo(); ++num_foos_seen;
+</PRE>
+
+<P>
+se trunca (sorprendentemente) a
+
+</P>
+
+<PRE>
+foo    handle_foo();
+</PRE>
+
+<P>
+<CODE>flex</CODE> no trunca la acción.  Las acciones que no se encierran en
+llaves simplemente se terminan al final de la línea.
+
+</P>
+
+
+<H1><A NAME="SEC21" HREF="flex-es-2.5.html#TOC21">Diagnósticos</A></H1>
+<P>
+<A NAME="IDX217"></A>
+<A NAME="IDX218"></A>
+<A NAME="IDX219"></A>
+
+</P>
+<DL COMPACT>
+
+<DT><SAMP>`aviso, la regla no se puede aplicar'</SAMP>
+<DD>
+indica que la regla dada no puede emparejarse porque sigue a otras
+reglas que siempre emparejarán el mismo texto que el de esta.  Por
+ejemplo, en el siguiente ejemplo "foo" no puede emparejarse porque viene
+después de una regla "atrápalo-todo" para identificadores:
+
+
+<PRE>
+[a-z]+    obtuvo_identificador();
+foo       obtuvo_foo();
+</PRE>
+
+El uso de <CODE>REJECT</CODE> en un analizador suprime este aviso.
+
+<DT><SAMP>`aviso, se ha especificado la opción -s pero se puede aplicar la regla por defecto'</SAMP>
+<DD>
+significa que es posible (tal vez únicamente en una
+condición de arranque en particular) que la regla por defecto
+(emparejar cualquier caracter simple) sea la única que emparejará una
+entrada particular.  Ya que se indicó <SAMP>`-s'</SAMP>, presumiblemente esto no
+es lo que se pretendía.
+
+<DT><SAMP>`definición no definida reject_used_but_not_detected'</SAMP>
+<DD>
+<DT><SAMP>`definición no definida yymore_used_but_not_detected'</SAMP>
+<DD>
+Estos errores pueden suceder en tiempo de compilación.  Indican que el
+analizador usa <CODE>REJECT</CODE> o <SAMP>`yymore()'</SAMP> pero que <CODE>flex</CODE>
+falló en darse cuenta del hecho, queriendo decir que <CODE>flex</CODE>
+analizó las dos primeras secciones buscando apariciones de estas
+acciones y falló en encontrar alguna, pero que de algún modo se le han
+colado (por medio de un archivo #include, por ejemplo).  Use
+<SAMP>`%option reject'</SAMP> ó <SAMP>`%option yymore'</SAMP> para indicar a flex que
+realmente usa esta funcionalidad.
+
+<DT><SAMP>`flex scanner jammed'</SAMP>
+<DD>
+un analizador compilado con <SAMP>`-s'</SAMP> ha encontrado una cadena de
+entrada que no fue reconocida por niguna de sus reglas.  Este error
+puede suceder también debido a problemas internos.
+
+<A NAME="IDX220"></A>
+<A NAME="IDX221"></A>
+<DT><SAMP>`token too large, exceeds YYLMAX'</SAMP>
+<DD>
+su analizador usa <SAMP>`%array'</SAMP> y una de sus reglas reconoció una cadena
+más grande que la constante <CODE>YYLMAX</CODE> (8K bytes por defecto).  Usted
+puede incrementar el valor haciendo un #define <CODE>YYLMAX</CODE> en la
+sección de definiciones de su entrada de <CODE>flex</CODE>.
+
+<DT><SAMP>`el analizador requiere la opción -8 para poder usar el carácter '<VAR>x</VAR>''</SAMP>
+<DD>
+La especificación de su analizador incluye el reconocimiento del
+caracter de 8-bits <VAR>x</VAR> y no ha especificado la bandera -8, y su
+analizador por defecto está a 7-bits porque ha usado las opciones
+<SAMP>`-Cf'</SAMP> ó <SAMP>`-CF'</SAMP> de compresión de tablas.  See section <A HREF="flex-es-2.5.html#SEC17">Opciones</A>, el
+comentario de la bandera <SAMP>`-7'</SAMP> para los detalles.
+
+<DT><SAMP>`flex scanner push-back overflow'</SAMP>
+<DD>
+usted utilizó <SAMP>`unput()'</SAMP> para devolver tanto texto que el buffer del
+analizador no pudo mantener el texto devuelto y el token actual en
+<CODE>yytext</CODE>.  Idealmente el analizador debería ajustar dinámicamente
+el buffer en este caso, pero actualmente no lo hace.
+
+<DT><SAMP>`input buffer overflow, can't enlarge buffer because scanner uses REJECT'</SAMP>
+<DD>
+el analizador estaba intentando reconocer un token extremadamente largo
+y necesitó expandir el buffer de entrada.  Esto no funciona con
+analizadores que usan <CODE>REJECT</CODE>.
+
+<DT><SAMP>`fatal flex scanner internal error--end of buffer missed'</SAMP>
+<DD>
+Esto puede suceder en un analizador que se reintroduce después de que un
+long-jump haya saltado fuera (o sobre) el registro de activación del
+analizador.  Antes de reintroducir el analizador, use:
+
+
+<PRE>
+yyrestart( yyin );
+</PRE>
+
+o, como se comentó en el section <A HREF="flex-es-2.5.html#SEC19">Generando escáneres en C++</A>, cambie y use el analizador como clase
+de C++.
+
+<DT><SAMP>`too many start conditions in &#60;&#62; construct!'</SAMP>
+<DD>
+ha listado más condiciones de arranque en una construcción &#60;&#62; que las
+que existen (así que tuvo que haber listado al menos una de ellas dos
+veces).
+</DL>
+
+
+
+<H1><A NAME="SEC22" HREF="flex-es-2.5.html#TOC22">Ficheros</A></H1>
+<P>
+<A NAME="IDX222"></A>
+
+</P>
+<P>
+<A NAME="IDX223"></A>
+<DL COMPACT>
+
+<DT><TT>`-lfl'</TT>
+<DD>
+librería con la que los analizadores deben enlazarse.
+
+<A NAME="IDX224"></A>
+<DT><TT>`lex.yy.c'</TT>
+<DD>
+analizador generado (llamado <TT>`lexyy.c'</TT> en algunos sistemas).
+
+<A NAME="IDX225"></A>
+<DT><TT>`lex.yy.cc'</TT>
+<DD>
+clase generada en C++ con el analizador, cuando se utiliza <SAMP>`-+'</SAMP>.
+
+<A NAME="IDX226"></A>
+<DT><TT>`&#60;FlexLexer.h&#62;'</TT>
+<DD>
+fichero de cabecera definiendo la clase base del analizador en C++,
+<CODE>FlexLexer</CODE>, y su clase derivada, <CODE>yyFlexLexer</CODE>.
+
+<A NAME="IDX227"></A>
+<DT><TT>`flex.skl'</TT>
+<DD>
+esqueleto del analizador.  Este fichero se utiliza únicamente cuando
+se construye flex, no cuando flex se ejecuta.
+
+<A NAME="IDX228"></A>
+<DT><TT>`lex.backup'</TT>
+<DD>
+información de los retrocesos para la bandera <SAMP>`-b'</SAMP> (llamada
+<TT>`lex.bck'</TT> en algunos sistemas).
+</DL>
+
+
+
+<H1><A NAME="SEC23" HREF="flex-es-2.5.html#TOC23">Deficiencias / Errores</A></H1>
+<P>
+<A NAME="IDX229"></A>
+<A NAME="IDX230"></A>
+
+</P>
+<P>
+<A NAME="IDX231"></A>
+Algunos patrones de contexto posterior no pueden reconocerse
+correctamente y generan mensajes de aviso ("contexto posterior
+peligroso").  Estos son patrones donde el final de la primera parte
+de la regla reconoce el comienzo de la segunda parte, tal como
+"zx*/xy*", donde el 'x*' reconoce la <SAMP>`x'</SAMP> al comienzo del contexto
+posterior. (Fíjese que el borrador de POSIX establece que el texto
+reconocido por tales patrones no está definido.)
+
+</P>
+<P>
+Para algunas reglas de contexto posterior, partes que son de hecho de
+longitud fija no se reconocen como tales, resultando en la pérdida de
+rendimiento mencionada anteriormente.  En particular, las partes que
+usan <SAMP>`|'</SAMP> o {n} (tales como "foo{3}") siempre se consideran de
+longitud variable. 
+
+</P>
+<P>
+La combinación de contexto posterior con la acción especial <SAMP>`|'</SAMP> puede
+producir que el contexto posterior <EM>fijo</EM> se convierta en contexto
+posterior <EM>variable</EM> que es más caro.  Por ejemplo, en lo que viene
+a continuación:
+
+</P>
+
+<PRE>
+%%
+abc      |
+xyz/def
+</PRE>
+
+<P>
+El uso de <SAMP>`unput()'</SAMP> invalida yytext e yyleng, a menos que se use la
+directiva <SAMP>`%array'</SAMP> o la opción <SAMP>`-l'</SAMP>.
+
+</P>
+<P>
+La concordancia de patrones de NUL's es substancialmente más lento
+que el reconocimiento de otros caracteres.
+
+</P>
+<P>
+El ajuste dinámico del buffer de entrada es lento, ya que conlleva el
+reanálisis de todo el texto reconocido hasta entonces por el
+(generalmente enorme) token actual.
+
+</P>
+<P>
+Debido al uso simultáneo de buffers de entrada y lecturas por
+adelantado, no puede entremezclar llamadas a rutinas de &#60;stdio.h&#62;,
+tales como, por ejemplo, <SAMP>`getchar()'</SAMP>, con reglas de <CODE>flex</CODE> y
+esperar que funcione.  Llame a <SAMP>`input()'</SAMP> en su lugar.
+
+</P>
+<P>
+La totalidad de las entradas de la tabla listada por la bandera
+<SAMP>`-v'</SAMP> excluye el número de entradas en la tabla necesarias para
+determinar  qué regla ha sido emparejada.  El número de entradas es
+igual al número de estados del DFA si el analizador no usa  <CODE>REJECT</CODE>,
+y algo mayor que el número de estados si se usa.
+
+</P>
+<P>
+<CODE>REJECT</CODE> no puede usarse con las opciones <SAMP>`-f'</SAMP> ó <SAMP>`-F'</SAMP>.
+
+</P>
+<P>
+El algoritmo interno de <CODE>flex</CODE> necesita documentación.
+
+</P>
+
+
+<H1><A NAME="SEC24" HREF="flex-es-2.5.html#TOC24">Ver también</A></H1>
+<P>
+<A NAME="IDX232"></A>
+
+</P>
+<P>
+<CODE>lex</CODE>(1), <CODE>yacc</CODE>(1), <CODE>sed</CODE>(1), <CODE>awk</CODE>(1).
+
+</P>
+<P>
+John Levine, Tony Mason, and Doug Brown: Lex &#38; Yacc,
+O'Reilly and Associates.  Esté seguro de obtener la 2ª edición.
+
+</P>
+<P>
+M. E. Lesk and E. Schmidt, LEX - Lexical Analyzer Generator
+
+</P>
+<P>
+Alfred Aho, Ravi Sethi and Jeffrey Ullman: Compilers: Principles,
+Techniques and Tools; Addison-Wesley (1986) --Edición en castellano:
+Compiladores: Principios, Técnicas y Herramientas,
+Addison-Wesley Iberoamericana, S.A. (1990).  Describe las técnicas de
+concordancia de patrones usadas por <CODE>flex</CODE>
+(autómata finito determinista).
+
+</P>
+
+
+<H1><A NAME="SEC25" HREF="flex-es-2.5.html#TOC25">Autor</A></H1>
+<P>
+<A NAME="IDX233"></A>
+
+</P>
+<P>
+Vern Paxson, con la ayuda de muchas ideas e inspiración de
+Van Jacobson.  Versión original por Jef Poskanzer.  La representación
+de tablas rápidas es una implementación parcial de un diseño hecho por
+Van Jacobson.  La implementación fue hecha por Kevin Gong y Vern Paxson.
+
+</P>
+<P>
+Agradecimientos a los muchos <CODE>flex</CODE> beta-testers, feedbackers, y
+contribuidores, especialmente a Francois Pinard, Casey Leedom, Robert
+Abramovitz, Stan Adermann, Terry Allen, David Barker-Plummer, John
+Basrai, Neal Becker, Nelson H.F. Beebe, <SAMP>`benson@odi.com'</SAMP>, Karl
+Berry, Peter A. Bigot, Simon Blanchard, Keith Bostic, Frederic Brehm,
+Ian Brockbank, Kin Cho, Nick Christopher, Brian Clapper, J.T. Conklin,
+Jason Coughlin, Bill Cox, Nick Cropper, Dave Curtis, Scott David
+Daniels, Chris G. Demetriou, Theo Deraadt,
+Mike Donahue, Chuck Doucette, Tom Epperly, Leo Eskin,
+Chris Faylor, Chris Flatters, Jon Forrest, Jeffrey Friedl,
+Joe Gayda, Kaveh R. Ghazi, Wolfgang Glunz,
+Eric Goldman, Christopher M. Gould, Ulrich Grepel, Peer Griebel,
+Jan Hajic, Charles Hemphill, NORO Hideo,
+Jarkko Hietaniemi, Scott Hofmann,
+Jeff Honig, Dana Hudes, Eric Hughes, John Interrante,
+Ceriel Jacobs, Michal Jaegermann, Sakari Jalovaara, Jeffrey R. Jones,
+Henry Juengst, Klaus Kaempf, Jonathan I. Kamens, Terrence O Kane,
+Amir Katz, <SAMP>`ken@ken.hilco.com'</SAMP>, Kevin B. Kenny,
+Steve Kirsch, Winfried Koenig, Marq Kole, Ronald Lamprecht,
+Greg Lee, Rohan Lenard, Craig Leres, John Levine, Steve Liddle,
+David Loffredo, Mike Long,
+Mohamed el Lozy, Brian Madsen, Malte, Joe Marshall,
+Bengt Martensson, Chris Metcalf,
+Luke Mewburn, Jim Meyering, R. Alexander Milowski, Erik Naggum,
+G.T. Nicol, Landon Noll, James Nordby, Marc Nozell,
+Richard Ohnemus, Karsten Pahnke,
+Sven Panne, Roland Pesch, Walter Pelissero, Gaumond
+Pierre, Esmond Pitt, Jef Poskanzer, Joe Rahmeh, Jarmo Raiha,
+Frederic Raimbault, Pat Rankin, Rick Richardson,
+Kevin Rodgers, Kai Uwe Rommel, Jim Roskind, Alberto Santini,
+Andreas Scherer, Darrell Schiebel, Raf Schietekat,
+Doug Schmidt, Philippe Schnoebelen, Andreas Schwab,
+Larry Schwimmer, Alex Siegel, Eckehard Stolz, Jan-Erik Strvmquist,
+Mike Stump, Paul Stuart, Dave Tallman, Ian Lance Taylor,
+Chris Thewalt, Richard M. Timoney, Jodi Tsai,
+Paul Tuinenga, Gary Weik, Frank Whaley, Gerhard Wilhelms, Kent Williams, Ken
+Yap, Ron Zellar, Nathan Zelle, David Zuhn,
+y aquellos cuyos nombres han caído bajo mis escasas dotes de
+archivador de correo pero cuyas contribuciones son apreciadas todas
+por igual.
+
+</P>
+<P>
+Agradecimientos a Keith Bostic, Jon Forrest, Noah Friedman,
+John Gilmore, Craig Leres, John Levine, Bob Mulcahy, G.T.
+Nicol, Francois Pinard, Rich Salz, y a Richard Stallman por la ayuda con
+diversos quebraderos de cabeza con la distribución.
+
+</P>
+<P>
+Agradecimientos a Esmond Pitt y Earle Horton por el soporte de
+caracteres de 8-bits; a Benson Margulies y a Fred Burke por el soporte
+de C++; a Kent Williams y a Tom Epperly por el soporte de la clase de
+C++; a Ove Ewerlid por el soporte de NUL's; y a Eric Hughes por el
+soporte de múltiples buffers.
+
+</P>
+<P>
+Este trabajo fue hecho principalmente cuando yo estaba con el Grupo de
+Sistemas de Tiempo Real en el Lawrence Berkeley Laboratory en
+Berkeley, CA.  Muchas gracias a todos allí por el apoyo que recibí.
+
+</P>
+<P>
+Enviar comentarios a @email{vern@ee.lbl.gov, Vern Paxson}.
+
+</P>
+<P>
+Sobre esta traducción enviar comentarios a @email{alu1415@csi.ull.es, 
+Adrián Pérez Jorge}.
+
+</P>
+
+
+<H1><A NAME="SEC26" HREF="flex-es-2.5.html#TOC26">Índice</A></H1>
+
+<P>
+<H2>&#60;</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX56">&#60;*&#62;</A>
+<LI><A HREF="flex-es-2.5.html#IDX79">&#60;&#60;EOF&#62;&#62;</A>
+</DIR>
+<H2>a</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX29">acciones</A>
+<LI><A HREF="flex-es-2.5.html#IDX51">arranque, condiciones de</A>
+<LI><A HREF="flex-es-2.5.html#IDX233">autores</A>
+</DIR>
+<H2>b</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX31">BEGIN</A>
+<LI><A HREF="flex-es-2.5.html#IDX65">buffers de entrada, múltiples</A>
+</DIR>
+<H2>c</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX185">C++, generación de escáneres en</A>
+<LI><A HREF="flex-es-2.5.html#IDX20">cadenas literales</A>
+<LI><A HREF="flex-es-2.5.html#IDX203">clase analizador, ejemplo de uso</A>
+<LI><A HREF="flex-es-2.5.html#IDX17">clase de caracteres</A>
+<LI><A HREF="flex-es-2.5.html#IDX19">clase de caracteres negada</A>
+<LI><A HREF="flex-es-2.5.html#IDX186">clases de C++, generadores como</A>
+<LI><A HREF="flex-es-2.5.html#IDX21">concatenación</A>
+<LI><A HREF="flex-es-2.5.html#IDX50">condiciones de arranque</A>
+<LI><A HREF="flex-es-2.5.html#IDX22">contexto posterior</A>
+<LI><A HREF="flex-es-2.5.html#IDX231">contexto posterior peligroso</A>
+<LI><A HREF="flex-es-2.5.html#IDX182">contexto posterior variable</A>
+<LI><A HREF="flex-es-2.5.html#IDX52">contexto, introducción de</A>
+<LI><A HREF="flex-es-2.5.html#IDX14">código, sección de</A>
+</DIR>
+<H2>d</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX194">debug</A>
+<LI><A HREF="flex-es-2.5.html#IDX229">deficiencias</A>
+<LI><A HREF="flex-es-2.5.html#IDX211">definiciones, expansión de</A>
+<LI><A HREF="flex-es-2.5.html#IDX10">definiciones, seccion de</A>
+<LI><A HREF="flex-es-2.5.html#IDX220">desbordamiento del buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX3">descripción</A>
+<LI><A HREF="flex-es-2.5.html#IDX217">diagnósticos</A>
+</DIR>
+<H2>e</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX30">ECHO</A>
+<LI><A HREF="flex-es-2.5.html#IDX202">ejemplo, uso de la clase analizador</A>
+<LI><A HREF="flex-es-2.5.html#IDX4">ejemplos simples</A>
+<LI><A HREF="flex-es-2.5.html#IDX181">eliminación del retroceso</A>
+<LI><A HREF="flex-es-2.5.html#IDX24">emparejamiento de la entrada</A>
+<LI><A HREF="flex-es-2.5.html#IDX7">entrada de flex, formato de la</A>
+<LI><A HREF="flex-es-2.5.html#IDX42">entrada, control de la fuente de</A>
+<LI><A HREF="flex-es-2.5.html#IDX25">entrada, emparejamiento de la</A>
+<LI><A HREF="flex-es-2.5.html#IDX63">entrada, múltiples buffers de</A>
+<LI><A HREF="flex-es-2.5.html#IDX219">error, mensajes de</A>
+<LI><A HREF="flex-es-2.5.html#IDX230">errores</A>
+<LI><A HREF="flex-es-2.5.html#IDX38">escáner generado</A>
+<LI><A HREF="flex-es-2.5.html#IDX183">escáneres en C++, generación de</A>
+<LI><A HREF="flex-es-2.5.html#IDX210">expansión de definiciones</A>
+<LI><A HREF="flex-es-2.5.html#IDX16">expresiones regulares</A>
+</DIR>
+<H2>f</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX6">fichero de entrada de flex</A>
+<LI><A HREF="flex-es-2.5.html#IDX222">ficheros</A>
+<LI><A HREF="flex-es-2.5.html#IDX77">fin-de-fichero, reglas de</A>
+<LI><A HREF="flex-es-2.5.html#IDX2">flex, introducción</A>
+<LI><A HREF="flex-es-2.5.html#IDX214">FLEX_SCANNER</A>
+<LI><A HREF="flex-es-2.5.html#IDX5">formato del fichero</A>
+<LI><A HREF="flex-es-2.5.html#IDX41">fuente de entrada, control de la</A>
+</DIR>
+<H2>g</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX184">generación de escáneres en C++</A>
+</DIR>
+<H2>i</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX204">incompatibilidades</A>
+<LI><A HREF="flex-es-2.5.html#IDX35">input</A>
+<LI><A HREF="flex-es-2.5.html#IDX96">interfaz con yacc</A>
+<LI><A HREF="flex-es-2.5.html#IDX1">introducción</A>
+</DIR>
+<H2>l</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX205">lex de AT&#38;T</A>
+<LI><A HREF="flex-es-2.5.html#IDX206">lex de POSIX</A>
+<LI><A HREF="flex-es-2.5.html#IDX208">lex, incompatibilidades</A>
+<LI><A HREF="flex-es-2.5.html#IDX39">lex.yy.c</A>
+<LI><A HREF="flex-es-2.5.html#IDX201">LexerError</A>
+<LI><A HREF="flex-es-2.5.html#IDX199">LexerInput</A>
+<LI><A HREF="flex-es-2.5.html#IDX200">LexerOutput</A>
+<LI><A HREF="flex-es-2.5.html#IDX192">lineno</A>
+</DIR>
+<H2>m</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX80">macros misceláneas</A>
+<LI><A HREF="flex-es-2.5.html#IDX218">mensajes de error</A>
+<LI><A HREF="flex-es-2.5.html#IDX55">mini-escáneres</A>
+<LI><A HREF="flex-es-2.5.html#IDX64">múltiples buffers de entrada</A>
+</DIR>
+<H2>o</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX99">opciones</A>
+<LI><A HREF="flex-es-2.5.html#IDX213">operador ^, precedencia</A>
+<LI><A HREF="flex-es-2.5.html#IDX212">operador {}, precedencia del</A>
+</DIR>
+<H2>p</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX15">patrones</A>
+<LI><A HREF="flex-es-2.5.html#IDX207">POSIX, incompatibilidades</A>
+<LI><A HREF="flex-es-2.5.html#IDX23">precedencia</A>
+</DIR>
+<H2>r</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX18">rango de caracteres</A>
+<LI><A HREF="flex-es-2.5.html#IDX26">reconocimiento de la entrada</A>
+<LI><A HREF="flex-es-2.5.html#IDX232">referencias</A>
+<LI><A HREF="flex-es-2.5.html#IDX78">reglas de fin-de-fichero</A>
+<LI><A HREF="flex-es-2.5.html#IDX12">reglas, sección de</A>
+<LI><A HREF="flex-es-2.5.html#IDX32">REJECT</A>
+<LI><A HREF="flex-es-2.5.html#IDX177">rendimiento, consideraciones</A>
+<LI><A HREF="flex-es-2.5.html#IDX179">retroceso</A>
+<LI><A HREF="flex-es-2.5.html#IDX180">retroceso, eliminación</A>
+</DIR>
+<H2>s</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX9">seccion de definiciones</A>
+<LI><A HREF="flex-es-2.5.html#IDX8">secciones</A>
+<LI><A HREF="flex-es-2.5.html#IDX13">sección de código</A>
+<LI><A HREF="flex-es-2.5.html#IDX11">sección de reglas</A>
+<LI><A HREF="flex-es-2.5.html#IDX193">set_debug</A>
+<LI><A HREF="flex-es-2.5.html#IDX197">switch_streams</A>
+</DIR>
+<H2>t</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX221">tokens demasiado largos</A>
+</DIR>
+<H2>u</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX34">unput</A>
+</DIR>
+<H2>v</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX87">valores disponibles</A>
+<LI><A HREF="flex-es-2.5.html#IDX88">variables disponibles</A>
+</DIR>
+<H2>y</H2>
+<DIR>
+<LI><A HREF="flex-es-2.5.html#IDX97">yacc, interfaz con</A>
+<LI><A HREF="flex-es-2.5.html#IDX85">YY_AT_BOL</A>
+<LI><A HREF="flex-es-2.5.html#IDX86">YY_BREAK</A>
+<LI><A HREF="flex-es-2.5.html#IDX66">yy_create_buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX72">YY_CURRENT_BUFFER</A>, <A HREF="flex-es-2.5.html#IDX94">YY_CURRENT_BUFFER</A>
+<LI><A HREF="flex-es-2.5.html#IDX69">yy_delete_buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX215">YY_FLEX_MAJOR_VERSION</A>
+<LI><A HREF="flex-es-2.5.html#IDX216">YY_FLEX_MINOR_VERSION</A>
+<LI><A HREF="flex-es-2.5.html#IDX70">yy_flush_buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX36">YY_FLUSH_BUFFER</A>
+<LI><A HREF="flex-es-2.5.html#IDX44">YY_INPUT</A>
+<LI><A HREF="flex-es-2.5.html#IDX71">yy_new_buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX60">yy_pop_state</A>
+<LI><A HREF="flex-es-2.5.html#IDX59">yy_push_state</A>
+<LI><A HREF="flex-es-2.5.html#IDX92">yy_restart</A>
+<LI><A HREF="flex-es-2.5.html#IDX49">yy_scan_buffer</A>, <A HREF="flex-es-2.5.html#IDX75">yy_scan_buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX48">yy_scan_bytes</A>, <A HREF="flex-es-2.5.html#IDX74">yy_scan_bytes</A>
+<LI><A HREF="flex-es-2.5.html#IDX47">yy_scan_string</A>, <A HREF="flex-es-2.5.html#IDX73">yy_scan_string</A>
+<LI><A HREF="flex-es-2.5.html#IDX84">yy_set_bol</A>
+<LI><A HREF="flex-es-2.5.html#IDX83">yy_set_interactive</A>
+<LI><A HREF="flex-es-2.5.html#IDX57">YY_START</A>, <A HREF="flex-es-2.5.html#IDX95">YY_START</A>
+<LI><A HREF="flex-es-2.5.html#IDX68">yy_switch_to_buffer</A>
+<LI><A HREF="flex-es-2.5.html#IDX61">yy_top_state</A>
+<LI><A HREF="flex-es-2.5.html#IDX81">YY_USER_ACTION</A>
+<LI><A HREF="flex-es-2.5.html#IDX82">YY_USER_INIT</A>
+<LI><A HREF="flex-es-2.5.html#IDX195">yyFlexLexer</A>
+<LI><A HREF="flex-es-2.5.html#IDX91">yyin</A>
+<LI><A HREF="flex-es-2.5.html#IDX90">yyleng</A>
+<LI><A HREF="flex-es-2.5.html#IDX191">YYLeng</A>
+<LI><A HREF="flex-es-2.5.html#IDX33">yyless</A>
+<LI><A HREF="flex-es-2.5.html#IDX40">yylex</A>, <A HREF="flex-es-2.5.html#IDX196">yylex</A>, <A HREF="flex-es-2.5.html#IDX198">yylex</A>
+<LI><A HREF="flex-es-2.5.html#IDX209">yylineno</A>
+<LI><A HREF="flex-es-2.5.html#IDX93">yyout</A>
+<LI><A HREF="flex-es-2.5.html#IDX43">yyrestart</A>
+<LI><A HREF="flex-es-2.5.html#IDX58">YYSTATE</A>
+<LI><A HREF="flex-es-2.5.html#IDX37">yyterminate</A>
+<LI><A HREF="flex-es-2.5.html#IDX190">YYText</A>
+<LI><A HREF="flex-es-2.5.html#IDX89">yytext</A>
+<LI><A HREF="flex-es-2.5.html#IDX45">yywrap</A>
+</DIR>
+
+</P>
+<P><HR><P>
+This document was generated on 25 May 1999 using the
+<A HREF="http://wwwcn.cern.ch/dci/texi2html/">texi2html</A>
+translator version 1.51.</P>
+</BODY>
+</HTML>

@@ -1,0 +1,180 @@
+<html><head><title>09 Rutinas de paleta</title><body>
+<h1><a name="09 Rutinas de paleta">09 Rutinas de paleta</a></h1>
+<p>
+<ul><h4>
+<li><a href="#vsync">vsync</a>
+<li><a href="#set_color">set_color</a>
+<li><a href="#_set_color">_set_color</a>
+<li><a href="#set_palette">set_palette</a>
+<li><a href="#set_palette_range">set_palette_range</a>
+<li><a href="#get_color">get_color</a>
+<li><a href="#get_palette">get_palette</a>
+<li><a href="#get_palette_range">get_palette_range</a>
+<li><a href="#fade_interpolate">fade_interpolate</a>
+<li><a href="#fade_from_range">fade_from_range</a>
+<li><a href="#fade_in_range">fade_in_range</a>
+<li><a href="#fade_out_range">fade_out_range</a>
+<li><a href="#fade_from">fade_from</a>
+<li><a href="#fade_in">fade_in</a>
+<li><a href="#fade_out">fade_out</a>
+<li><a href="#select_palette">select_palette</a>
+<li><a href="#unselect_palette">unselect_palette</a>
+<li><a href="#generate_332_palette">generate_332_palette</a>
+<li><a href="#generate_optimized_palette">generate_optimized_palette</a>
+<li><a href="#black_palette">black_palette</a>
+<li><a href="#desktop_palette">desktop_palette</a>
+</h4></ul>
+<p><br><br>
+<p>
+Todas las funciones de dibujo de Allegro usan parámetros en enteros para
+representar colores. En las resoluciones truecolor estos números codifican
+el color directamente como una colección de bits rojos, verdes y azules,
+pero en el modo normal de 256 colores, los valores son tratados como índices
+de la paleta actual, que es una tabla que contiene las intensidades de rojo,
+verde y azul de cada uno de los 256 colores posibles.
+<p>
+La paleta se almacena con estructuras RGB, que contienen intensidades de
+rojo, verde y azul en el formato hardware de la VGA, que van de 0 a 63, y
+son definidas así:
+<p><pre>
+typedef struct RGB
+{
+   unsigned char r, g, b;
+} RGB;
+<p></pre>
+Por ejemplo:
+<p><pre>
+   RGB negro  = { 0,  0,  0  };
+   RGB blanco = { 63, 63, 63 };
+   RGB verde  = { 0,  63, 0  };
+   RGB gris   = { 32, 32, 32 };
+<p></pre>
+El tipo PALETTE es definido como un array de 256 estructuras RGB.
+<p>
+Puede notar que gran parte del código de Allegro escribe 'palette' como
+'pallete'. Esto es porque los ficheros de cabecera de mi viejo compilador
+Mark Williams del Atari lo escribían con dos l's, y estoy acostumbrado a
+eso. Allegro aceptará sin problemas ambas escrituras, debido a algunos
+#defines en allegro.h.
+<p>
+<b>void <a name="vsync">vsync</a>();</b><br>
+   Espera a que empiece un retrazo vertical. El retrazo ocurre cuando el
+   rayo de electrones de su monitor ha llegado a la parte inferior de la
+   pantalla y está volviendo arriba para hacer otro barrido. Durante este
+   corto periodo de tiempo la tarjeta de vídeo no manda datos al monitor,
+   por lo que puede hacer cosas que de otra forma no podría, como alterar
+   la paleta sin causar parpadeo (nieve). Sin embargo Allegro esperará
+   automáticamente el retrazo vertical antes de alterar la paleta o hacer
+   scroll por hardware, por lo que normalmente no debe preocuparse por esta
+   función.
+<p>
+<b>void <a name="set_color">set_color</a>(int index, RGB *p);</b><br>
+   Cambia la entrada de la paleta especificada al triplete RGB dado. A
+   diferencia de otras funciones de paleta, esto no hace sincronización con
+   el retrazo, por lo que debería llamar vsync() antes para evitar
+   problemas de nieve.
+<p>
+<b>void <a name="_set_color">_set_color</a>(int index, RGB *p);</b><br>
+   Esta es una versión inline de set_color(), que puede usar en la función
+   callback del simulador de retrazo vertical. Sólo debería ser usada en
+   VGA modo 13h y modo-X, porque algunos de las recientes SVGAs no son
+   compatibles con la VGA (set_color() y set_palette() usarán llamadas VESA
+   en estas tarjetas, pero _set_color() no sabrá nada de eso).
+<p>
+<b>void <a name="set_palette">set_palette</a>(PALETTE p);</b><br>
+   Ajusta la paleta entera de 256 colores. Debe pasar un array de 256
+   estructuras RGB. A diferencia de set_color(), no hace falta llamar
+   vsync() antes de esta función.
+<p>
+<b>void <a name="set_palette_range">set_palette_range</a>(PALETTE p, int from, int to, int vsync);</b><br>
+   Ajusta las entradas de la paleta desde from hasta to (inclusivos: pase 0
+   y 255 para ajustar la paleta entera). Si vsync está activado, espera un
+   retrazo vertical, de otro modo cambia los colores inmediatamente.
+<p>
+<b>void <a name="get_color">get_color</a>(int index, RGB *p);</b><br>
+   Recupera la entrada de la paleta especificada.
+<p>
+<b>void <a name="get_palette">get_palette</a>(PALETTE p);</b><br>
+   Recupera la paleta entera de 256 colores. Debe proveer un array de 256
+   estructuras RGB para almacenar ahí los colores.
+<p>
+<b>void <a name="get_palette_range">get_palette_range</a>(PALETTE p, int from, int to);</b><br>
+   Recupera las entradas de la paleta desde from hasta to (inclusivos: pase
+   0 y 255 para recuperar la paleta entera).
+<p>
+<b>void <a name="fade_interpolate">fade_interpolate</a>(PALETTE source, dest, output, int pos, int from, to);</b><br>
+   Calcula una paleta temporal en un sitio entre source y dest,
+   devolviéndola en el parámetro output. La posición entre los dos extremos
+   es especificada por el valor pos: 0 devuelve una copia exacta de source,
+   64 devuelve dest, 32 devuelve una paleta a medio camino entre las dos,
+   etc. Esta rutina sólo afecta a los colores desde from hasta to
+   (inclusivos: pase 0 y 255 para interpolar la paleta entera).
+<p>
+<b>void <a name="fade_from_range">fade_from_range</a>(PALETTE source, dest, int speed, int from, to);</b><br>
+   Funde gradualmente una parte de la paleta desde la paleta source hasta la
+   paleta dest. La velocidad va de 1 (lento) a 64 (instantáneo). Esta rutina
+   sólo afecta los colores desde from hasta to (inclusivos: pase 0 y 255
+   para fundir la paleta entera).
+<p>
+<b>void <a name="fade_in_range">fade_in_range</a>(PALETTE p, int speed, int from, to);</b><br>
+   Funde gradualmente una parte de la paleta desde una pantalla negra hasta
+   la paleta especificada. La velocidad va de 1 (lento) a 64 (instantáneo).
+   Esta rutina sólo afecta los colores desde from hasta to (inclusivos: pase
+   0 y 255 para fundir la paleta entera).
+<p>
+<b>void <a name="fade_out_range">fade_out_range</a>(int speed, int from, to);</b><br>
+   Funde gradualmente una parte de la paleta desde la paleta actual hasta
+   una pantalla negra. La velocidad va de 1 (lento) a 64 (instantáneo). Esta
+   rutina sólo afecta los colores desde from hasta to (inclusivos: pase 0 y
+   255 para fundir la paleta entera).
+<p>
+<b>void <a name="fade_from">fade_from</a>(PALETTE source, PALETTE dest, int speed);</b><br>
+   Funde gradualmente desde la paleta source hasta la paleta dest. La
+   velocidad va de 1 (lento) a 64 (instantáneo).
+<p>
+<b>void <a name="fade_in">fade_in</a>(PALETTE p, int speed);</b><br>
+   Funde gradualmente desde una pantalla negra a la paleta especificada. La
+   velocidad va de 1 (lento) a 64 (instantáneo).
+<p>
+<b>void <a name="fade_out">fade_out</a>(int speed);</b><br>
+   Funde gradualmente la paleta actual hasta una pantalla negra. La
+   velocidad va de 1 (lento) a 64 (instantáneo).
+<p>
+<b>void <a name="select_palette">select_palette</a>(PALLETE p);</b><br>
+   Rutina fea que puede usar en algunas situaciones peculiares cuando
+   necesita convertir entre formatos de imagen con paleta a truecolor.
+   Ajusta la tabla de la paleta interna de la misma forma que la función
+   set_palette(), para que la conversión use la paleta especificada, pero
+   sin afectar de ningún modo al hardware de visualización. La paleta
+   antigua es almacenada en un buffer interno, y puede ser recuperada
+   llamando unselect_palette().
+<p>
+<b>void <a name="unselect_palette">unselect_palette</a>();</b><br>
+   Recupera la tabla de la paleta que estaba en uso antes de la última
+   llamada a select_palette().
+<p>
+<b>void <a name="generate_332_palette">generate_332_palette</a>(PALETTE pal);</b><br>
+   Construye una paleta truecolor falsa, usando tres bits para el rojo y el
+   verde y dos para el azul. La función load_bitmap() devuelve esto si el
+   fichero no contiene ninguna paleta (ej: cuando lees un bitmap truecolor).
+<p>
+<b>int <a name="generate_optimized_palette">generate_optimized_palette</a>(BITMAP *bmp, PALETTE pal, char rsvd[256]);</b><br>
+   Genera una paleta de 256 colores óptima para hacer una versión reducida
+   de la imagen truecolor especificada. El parámetro rsvd apunta a una tabla
+   qué indica qué colores puede usar la función: cero significa que el color
+   es libre, no-cero significa que está reservado para su uso. Si rsvd es
+   NULL, entonces la función usara la paleta entera.
+<p>
+<b>extern PALETTE <a name="black_palette">black_palette</a>;</b><br>
+   Una paleta que contiene colores negros sólidos, usada por las rutinas de
+   fundidos.
+<p>
+<b>extern PALETTE <a name="desktop_palette">desktop_palette</a>;</b><br>
+   La paleta usada por el escritorio de baja resolución del Atari ST. No
+   estoy seguro por qué esto sigue aquí, excepto porque los programas
+   grabber y test la usan. Es probablemente el único código heredado del
+   Atari que queda en Allegro, y sería una pena quitarlo :-)
+<p>
+<br>
+<br>
+<p><hr><p><a href="allegro.html">Volver al Indice</a><p>

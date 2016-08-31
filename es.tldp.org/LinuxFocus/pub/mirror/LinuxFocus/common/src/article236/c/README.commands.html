@@ -1,0 +1,74 @@
+<pre>
+Author: Guido Socher &lt;guido@linuxfocus.org&gt;
+Copyright: GPL
+
+To "talk" to the Linux LCD panel you need to:
+1) initialize the serial line 
+   ttydevinit /dev/ttyS0      (for com1)
+2) open 2 xterm windows. In one you type
+  cat /dev/ttyS0
+   in the other you type
+  cat &gt; /dev/ttyS0
+  Now you can type commands e.g l=11 and you can see
+  the answers from the microcontroller in the first xterm window.
+  
+
+Linux LCD panel command language
+---------------------------------
+
+The file describes the command language that the Linux LCD panel
+understands. Although this is human readable and ASCII based, the
+software on the controller is not checking for all kind of
+syntax errors. The is not enough ram on the AVR to implement a full
+blown parser. The commands are primarily designed as a machine
+to machine language where typing and syntax errors will not occur.
+
+valid command are:
+l)
+   l=10 led 1 off
+   l=11 led 1 on
+   l=00 led 0 off
+   l=01 led 0 on
+b) 
+   b=1 send info about button press. The messages at button press
+   are #0 for button 0 and #1 for button 1
+   b=0 stop sending info about button press.
+   b=? print b:1 if button info is on or b:0 if it is off.
+d)
+   d=somestring send a string of max 20 character to the lcd
+   display.
+D)
+   D=somestring same as d=somestring but clear the display first
+g) 
+   g=yx go to position y,x on the display. E.g g=010 will go
+   to line 0 (y) and character position 10 (x)
+c)
+   lcd control commands
+     c=c clear display
+     c=h home
+     c=r one right
+     c=l one left
+     c=b blink cursor
+     c=n normal cursor
+a)
+   a=0 read the data from ADC-0 (ADC=Analog to Digital Converter).
+w) 
+   Watchdog commands
+    w=1 enable watch dog
+    w=2 enable watch dog, and set timeout to 110 (~30 minutes)
+        at every D= or d= command (autokick watchdog)
+    w=0 disable watch dog
+    w=? show whether wd is on or off and if there was a timeout
+        before. (off=0, on=1, on and autokick=2, off and prev. timeout=3) 
+    w=s get current time out
+s)
+   Set the watch dog timeout (kick the watch dog).
+   You need to call this command periodically if the watch dog
+   is on (except if w=2).
+   s=255 will set the watch dog to 255. The watchdog counts down
+   by one unit approx. very 16 sec. The value range for s is 1-255.
+
+   The watch dog will toggle the relai only once. After that it is
+   off again. This it to avoid that the watch dog hits during a file
+   system check.
+

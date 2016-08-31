@@ -1,0 +1,324 @@
+<HTML
+><HEAD
+><TITLE
+>Interacción de nntpd con C News</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="NNTP y elDemonio nntpd"
+HREF="x-087-2-nntp.html"><LINK
+REL="PREVIOUS"
+TITLE="Autorización NNTP"
+HREF="x-087-2-nntp.authorize.html"><LINK
+REL="NEXT"
+TITLE="Noticias de Internet"
+HREF="x-087-2-inn.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nntp.authorize.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 22. NNTP y elDemonio nntpd</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-inn.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NNTP.INTERACT">22.5. Interacción de nntpd con C News</H1
+><P
+>&#13;
+Cuando <B
+CLASS="COMMAND"
+>nntpd</B
+> recibe un artículo, tiene que enviárselo 
+a un nuevo subsistema. Dependiendo de si se recibió como resultado de una
+orden <B
+CLASS="COMMAND"
+>IHAVE</B
+> o <B
+CLASS="COMMAND"
+>POST</B
+>, el
+artículo pasa a manejarlo <B
+CLASS="COMMAND"
+>rnews</B
+> o <B
+CLASS="COMMAND"
+>inews</B
+>
+respectivamente. En vez de invocar a <B
+CLASS="COMMAND"
+>rnews</B
+>, también puede
+configurarlo (durante la compilación) para que procese por lotes los artículos
+entrantes y mueva los lotes resultantes a
+<TT
+CLASS="FILENAME"
+>/var/spool/news/in.coming</TT
+>, donde se les deja para que
+<B
+CLASS="COMMAND"
+>relaynews</B
+> los recoja la próxima vez que se ejecute la cola.</P
+><P
+>&#13;
+<B
+CLASS="COMMAND"
+>nntpd</B
+> tiene que poder acceder al fichero
+<TT
+CLASS="FILENAME"
+>history</TT
+> para poder ejercer de manera adecuada el protocolo
+ihave/sendme. Tiene que asegurarse, durante la compilación, de que la ruta
+a ese fichero es la correcta. Si usa C News, asegúrese de que C News y
+<B
+CLASS="COMMAND"
+>nntpd</B
+> están de acuerdo en el formato a usar en el fichero
+history. C News usa funciones de marcado <TT
+CLASS="FILENAME"
+>dbm</TT
+> para acceder
+a él; de todas maneras, existen implementaciones diferentes y ligeramente
+incompatibles de la biblioteca <TT
+CLASS="FILENAME"
+>dbm</TT
+>. Si C News se ha enlazado
+con una biblioteca <TT
+CLASS="FILENAME"
+>dbm</TT
+> diferente a la que tenga en su 
+<TT
+CLASS="FILENAME"
+>libc</TT
+> estándar, tendrá que enlazar 
+<B
+CLASS="COMMAND"
+>nntpd</B
+> con esa misma biblioteca.</P
+><P
+>&#13;El desacuerdo entre<B
+CLASS="COMMAND"
+>nntpd</B
+> y C news produce a menudo
+mensajes de error en el fichero de registro del sistema que <B
+CLASS="COMMAND"
+>nntpd</B
+> 
+no puede abrir adecuadamente, o quizá vea artículos duplicados recibiéndose
+por NNTP. Una buena prueba para corregir errores en la transferencia de noticias
+es tomar un artículo de la cola, conectar por telnet al puerto 
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>nntp</B
+></SPAN
+> y ofrecérselo a <B
+CLASS="COMMAND"
+>nntpd</B
+> 
+como se muestra en el ejemplo siguiente. Evidentemente, tendrá que sustituir 
+<TT
+CLASS="REPLACEABLE"
+><I
+>msg@id</I
+></TT
+>con el ID de mensaje de un artículo con el que quiera suministrar a <B
+CLASS="COMMAND"
+>nntpd</B
+>:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>telnet localhost nntp</B
+></TT
+>
+    Trying 127.0.0.1...
+    Connected to localhost
+    Escape characters is '^ ]'.
+    201 vstout NNTP[auth] server version 1.5.11t (16 November 1991) ready at
+    Sun Feb 6 16:02:32 1194 (no posting)
+    <TT
+CLASS="USERINPUT"
+><B
+>IHAVE</B
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>msg@id</I
+></TT
+>
+    435 Got it.
+    <TT
+CLASS="USERINPUT"
+><B
+>QUIT</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+><P
+>Esta conversación muestra la reacción adecuada de <B
+CLASS="COMMAND"
+>nntpd</B
+>;
+el mensaje <TT
+CLASS="LITERAL"
+>Got it</TT
+> le dice que ya tiene el artículo. Si
+en vez de eso obtiene el mensaje <B
+CLASS="COMMAND"
+>335 Ok</B
+>, la búsqueda 
+en el fichero history falló por alguna razón. Termine la conversación con
+Ctrl-D. Puede mirar qué ha ido mal comprobando el fichero de registro del
+sistema; <B
+CLASS="COMMAND"
+>nntpd</B
+> anota todo tipo de mensajes gracias a 
+la propiedad <SPAN
+CLASS="SYSTEMITEM"
+>daemon</SPAN
+> de 
+<B
+CLASS="COMMAND"
+>syslog</B
+>. Una biblioteca<TT
+CLASS="FILENAME"
+>dbm</TT
+> incompatible
+se manifiesta normalmente en un mensaje quejándose de que
+<TT
+CLASS="FUNCTION"
+>dbminit</TT
+> falló.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nntp.authorize.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-inn.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Autorización NNTP</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nntp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Noticias de Internet</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

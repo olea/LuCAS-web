@@ -1,0 +1,141 @@
+<HTML>
+<HEAD>
+<TITLE>``Infobia''- Como. : Conexiones sin mediar Infov&iacute;a.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Infobia-Como-3.html">Anterior</A>
+<A HREF="Infobia-Como-5.html">Siguiente</A>
+<A HREF="Infobia-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="sininfovia"></A> <A NAME="s4">4. Conexiones sin mediar Infov&iacute;a.</A></H2>
+
+
+<P>En el caso de que tengamos acceso directo a un servidor, los scripts y
+ficheros necesarios ser&iacute;an los siguientes: </P>
+<P>
+<OL>
+<LI>Script <CODE>/usr/local/bin/infovia</CODE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+
+LOCKDIR=/var/spool/uucp
+DEVICE=modem
+NUMERO=numero_del_Proveedor
+
+if [ -f $LOCKDIR/LCK..$DEVICE ]
+then
+  echo /dev/$DEVICE &quot;El modem esta ocupado.&quot;
+  exit 1
+fi
+
+/usr/lib/ppp/fix-cua $DEVICE
+(
+    stty 38400 -tostop crtscts
+
+    if /usr/lib/ppp/chat ABORT &quot;NO CARRIER&quot; ABORT BUSY &quot;&quot; ATZ0 OK ATDT$NUMERO CONNECT &quot;&quot;
+    then
+      pppd /dev/$DEVICE 38400 crtscts modem lock mtu 1500 defaultroute noipdefault user id@dominio
+      sleep 10
+      route add default ppp0
+      exit 0
+    else
+        echo &quot;La llamada PPP ha fallado.&quot; 1&gt;&2
+        exit 1
+    fi
+) &lt; /dev/$DEVICE &gt; /dev/$DEVICE
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+en donde:
+<UL>
+<LI>En la variable <CODE>NUMERO=</CODE> deber&aacute; reflejar el n&uacute;mero de su Proveedor.</LI>
+<LI>En <CODE>id@dominio</CODE> tendr&aacute; que poner su direcci&oacute;n <EM>email</EM> sin el 
+<CODE>.es</CODE> del dominio perteneciente a Espa&ntilde;a.</LI>
+</UL>
+
+
+Este script ha de ser ejecutable, por lo que tenemos que otorgarle
+permisos de ejecuci&oacute;n, con una orden como por ejemplo: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod 750 /usr/local/bin/infovia
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+A decir verdad, este script lo puede colocar donde quiera, si bien
+<CODE>/usr/local/bin/infovia</CODE> ser&iacute;a la situaci&oacute;n m&aacute;s ``est&aacute;ndar''. 
+</LI>
+<LI>Fichero <CODE>/etc/ppp/pap-secrets</CODE>
+
+<BLOCKQUOTE><CODE>
+<PRE>
+id@dominio            *                  su_password
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+nuevamente, se aplica lo dicho en la secci&oacute;n 
+<A HREF="Infobia-Como-3.html#metodoB">M&eacute;todo ``B''</A>. 
+</LI>
+<LI>Fichero <CODE>/etc/resolv.conf</CODE> <BR>
+aqu&iacute; se aplica lo mismo que en la secci&oacute;n 
+<A HREF="Infobia-Como-3.html#metodoA">M&eacute;todo ``A''</A> punto n&uacute;mero 1. 
+</LI>
+<LI>A partir de aqu&iacute;, se aplica lo mismo que en la secci&oacute;n 
+<A HREF="Infobia-Como-3.html#metodoA">M&eacute;todo ``A''</A>, punto 5, a excepci&oacute;n de que por
+supuesto, no ha de ejecutarse pppd, ya que lo hacemos ejecutando el script
+<CODE>/usr/local/bin/infovia</CODE>. 
+  </LI>
+<LI><B>ATENCI&Oacute;N usuarios de RedHat</B> <BR>
+Si el sistema LiNUX que tiene instalado pertenece a una distribuci&oacute;n
+RedHat, deber&aacute; tener en cuenta lo siguiente: 
+
+<UL>
+<LI>En el script <CODE>/usr/local/bin/infovia</CODE> deber&aacute; modificarse las l&iacute;neas
+13 y 17, por:
+
+<BLOCKQUOTE><CODE>
+<PRE>
+[...]
+/usr/lib/ppp/fix-cua $DEVICE  --&gt;  /usr/sbin/fix-cua $DEVICE
+[...]
+if /usr/lib/ppp/chat...  --&gt; if /usr/sbin/chat...
+[...]
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ya que la localizaci&oacute;n de dichos ficheros en RedHat est&aacute; en esos directorios.
+</LI>
+<LI>Para ciertos programas que hacen uso del m&oacute;dem, como el <CODE>binkley</CODE>, y
+otros, resulta inocuo y muy conveniente crear el enlace o <EM>symlink</EM>
+siguiente: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ln -s /var/spool /usr
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+</UL>
+
+</LI>
+</OL>
+</P>
+<P>Para obtener una visi&oacute;n m&aacute;s completa y detallada en lo que a <CODE>ppp</CODE> se
+refiere, recomiendo hacerse con la traducci&oacute;n del <B>PPP-Como</B>, realizada
+por Rafael Agundo, <CODE>
+<A HREF="mailto:ragundo@bitmailer.net">ragundo@bitmailer.net</A></CODE>. En la secci&oacute;n 
+<A HREF="Infobia-Como-8.html#Grupos">Insflug</A> se detallan los servidores donde obtenerlo.</P>
+
+<HR>
+<A HREF="Infobia-Como-3.html">Anterior</A>
+<A HREF="Infobia-Como-5.html">Siguiente</A>
+<A HREF="Infobia-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

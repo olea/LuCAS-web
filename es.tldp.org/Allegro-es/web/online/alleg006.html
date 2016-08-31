@@ -1,0 +1,287 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 06 Rutinas de Joystick
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="06 Rutinas de Joystick">06 Rutinas de Joystick</a></h1>
+
+<ul>
+<li><a href="#calibrate_joystick">calibrate_joystick</a>
+<li><a href="#calibrate_joystick_name">calibrate_joystick_name</a>
+<li><a href="#initialise_joystick">initialise_joystick</a>
+<li><a href="#install_joystick">install_joystick</a>
+<li><a href="#joy">joy</a>
+<li><a href="#load_joystick_data">load_joystick_data</a>
+<li><a href="#num_joysticks">num_joysticks</a>
+<li><a href="#poll_joystick">poll_joystick</a>
+<li><a href="#remove_joystick">remove_joystick</a>
+<li><a href="#save_joystick_data">save_joystick_data</a>
+</ul>
+
+<p><br>
+<b>int <a name="install_joystick">install_joystick</a>(int type);</b><br>
+   Inicializa el joystick y calibra el valor de la posición central. El
+   parámetro typo debería ser, normalmente, JOY_TYPE_AUTODETECT, o mirar la
+   documentación específica de la plataforma para tener una lista de los
+   drivers disponibles. Debe llamar a esta rutina antes de usar cualquier
+   otra función del joystick, y se debería asegurar que el joystick está en
+   la posición central en ese momento. Devuelve cero si no ha habido
+   problemas. Tan pronto como haya instalado el módulo de joystick, ya será
+   capaz de leer el estado de los botones y la información digital(on/off) de
+   la dirección, que puede ser suficiente para algunos juegos. Si quiere
+   obtener una entrada totalmente analógica necesitará usar las funciones de
+   calibrate_joystick() para medir el rango exacto de las entradas: lea más
+   abajo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#calibrate_joystick_name">calibrate_joystick_name</a>,
+<a class="xref" href="#poll_joystick">poll_joystick</a>,
+<a class="xref" href="alleg002.html#Variables de configuración estándar">Variables de configuración estándar</a>,
+<a class="xref" href="alleg033.html#JOY_TYPE_*/DOS">JOY_TYPE_*/DOS</a>,
+<a class="xref" href="#remove_joystick">remove_joystick</a>,
+<a class="xref" href="#load_joystick_data">load_joystick_data</a>,
+<a class="xref" href="#calibrate_joystick">calibrate_joystick</a>.</font></blockquote>
+<b>void <a name="remove_joystick">remove_joystick</a>();</b><br>
+   Quita el controlador de joystick. Normalmente no necesita llamar a esta
+   rutina, porque allegro_exit() lo hará por usted.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="alleg000.html#allegro_exit">allegro_exit</a>.</font></blockquote>
+<b>int <a name="poll_joystick">poll_joystick</a>();</b><br>
+   El joystick no funciona por interrupciones, así que necesitará llamar a
+   esta función una y otra vez para actualizar los valores globales de
+   posición. Devuelve cero con éxito o un número negativo si hubo problemas
+   (normalmente porque no había driver de joystick instalado).
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="#joy">joy</a>,
+<a class="xref" href="#num_joysticks">num_joysticks</a>.</font></blockquote>
+<b>extern int <a name="num_joysticks">num_joysticks</a>;</b><br>
+   Variables globales que indican el número de joysticks activos. Los
+   controlador actuales soportan un máximo de cuatro dispositivos.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="#joy">joy</a>.</font></blockquote>
+<b>extern JOYSTICK_INFO <a name="joy">joy</a>[n];</b><br>
+   Array global de información de estado del joystick, que es actualizado
+   por la función poll_joystick(). Sólo el primer elemento num_joysticks
+   tendrá información útil. La estructura JOYSTICK_INFO está definida así:
+<blockquote class="code"><pre>
+      typedef struct JOYSTICK_INFO
+      {
+         int flags;                       - estado de este joystick
+         int num_sticks;                  - ¿cuántos joysticks activos?
+         int num_buttons;                 - ¿cuántos botones?
+         JOYSTICK_STICK_INFO stick[n];    - información de estado del stick
+         JOYSTICK_BUTTON_INFO button[n];  - información de estado de los
+                                            botones
+      } JOYSTICK_INFO;
+</pre></blockquote>
+   El estado de los botones es almacenado en la estructura:
+<blockquote class="code"><pre>
+      typedef struct JOYSTICK_BUTTON_INFO
+      {
+         int b;                           - estado del botón on/off
+         char *name;                      - descripción de este botón
+      } JOYSTICK_BUTTON_INFO;
+</pre></blockquote>
+   Puede enseñar los nombres de los botones como parte de una pantalla de
+   configuración en la que el usuario elige qué función desempeñará cada
+   botón en su juego, pero en situaciones simples puede asumir con
+   seguridad que los dos primeros elementos del array button serán siempre
+   los controles principales de disparo.
+
+<p>
+   Cada joystick proveerá una o más entradas stick, de varios tipos. Estas
+   pueden ser controles digitales que tienen siempre un valor específico
+   (ej. un gamepad, el sombrero del Flightstick Pro o Wingman Extreme, o un
+   joystick normal que todavía no ha sido calibrado), o pueden ser entradas
+   analógicas con un rango suave de movimiento. Las palancas pueden tener un
+   número diferente de ejes, por ejemplo un controlador direccional normal
+   tiene dos, pero el mando de gases del Flightstick Pro sólo tiene un eje,
+   y es posible que el sistema pueda ser expandido en el futuro para
+   soportar controladores 3d. La entrada de la palanca está descrita por la
+   estructura:
+<blockquote class="code"><pre>
+      typedef struct JOYSTICK_STICK_INFO
+      {
+         int flags;                       - variable de estado
+         int num_axis;                    - ¿cuántos ejes tenemos?
+         JOYSTICK_AXIS_INFO axis[n];      - información de estado del eje
+         char *name;                      - descripción de este stick
+      } JOYSTICK_STICK_INFO;
+</pre></blockquote>
+   Un solo joystick puede proveer diferentes entradas de joystick, pero
+   puede asumir con seguridad que el primer elemento del array stick será
+   el controlador principal de dirección.
+
+<p>
+   La información sobre los ejes del mando está almacenada en la
+   subestructura:
+<blockquote class="code"><pre>
+      typedef struct JOYSTICK_AXIS_INFO
+      {
+         int pos;                         - posición analógica del eje
+         int d1, d2;                      - posición digital del eje
+         char *name;                      - descripción de este eje
+      } JOYSTICK_AXIS_INFO;
+</pre></blockquote>
+   Esto le da tanto entrada digital en el campo pos (que va de -128 a 128 o
+   de 0 a 255, dependiendo del tipo de control) como valores digitales en los
+   campos d1 y d2. Por ejemplo, cuando describe la posición del eje X, el
+   campo pos contendrá la posición horizontal de joystick, d1 será activado
+   si mueve a la izquierda, y d2 será activado si mueve a la derecha. Allegro
+   rellenará todos estos valores sin importar el tipo de joystick que esté
+   conectado, emulando el campo pos para joysticks digitales poniéndolo a las
+   posiciones mínima, central y máxima, y emulando los valores d1 y d2 con
+   joysticks analógicos comparando la posición actual con el punto central.
+
+<p>
+   La variable flags de la estructura joystick puede ser cualquier
+   combinación de los siguientes bits:
+
+<p>
+   <b>JOYFLAG_DIGITAL</b><br>
+      Este control tiene entrada digital.
+
+<p>
+   <b>JOYFLAG_ANALOGUE</b><br>
+      Este control tiene entrada analógica.
+
+<p>
+   <b>JOYFLAG_CALIB_DIGITAL</b><br>
+      Este control será capaz de proveer entrada digital una vez sea
+      calibrado, pero ahora no lo hace.
+
+<p>
+   <b>JOYFLAG_CALIB_ANALOGUE</b><br>
+      Este control será capaz de proveer entrada analógica una vez sea
+      calibrado, pero ahora no lo hace.
+
+<p>
+   <b>JOYFLAG_CALIBRATE</b><br>
+      Indica que este control debe ser calibrado. Muchos dispositivos
+      requieren múltiples pasos de calibración, por lo que puede llamar la
+      función calibrate_joystick() desde un bucle hasta que este bit
+      desaparezca.
+
+<p>
+   <b>JOYFLAG_SIGNED</b><br>
+      Indica que la posición analógica está en formato con signo, que va de
+      -128 a 128. Este es el caso de todos los controles direccionales 2d.
+
+<p>
+   <b>JOYFLAG_UNSIGNED</b><br>
+      Indica que la posición analógica está en formato sin signo, que va de
+      0 a 255. Este es el caso de todos los mandos de gases 1d.
+
+<p>
+   Nota para la gente que escribe diferente: en caso que no quiera escribir
+   "analogue", hay varios #defines en allegro/joystick.h que le permitirán
+   escribir "analog" sin problemas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#calibrate_joystick_name">calibrate_joystick_name</a>,
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="#poll_joystick">poll_joystick</a>,
+<a class="xref" href="#num_joysticks">num_joysticks</a>,
+<a class="xref" href="#calibrate_joystick">calibrate_joystick</a>.</font></blockquote>
+<b>char *<a name="calibrate_joystick_name">calibrate_joystick_name</a>(int n);</b><br>
+   Devuelve una descripción textual del siguiente tipo de calibración que
+   será hecha en el joystick especificado, o NULL si no hace falta más
+   calibración.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="#calibrate_joystick">calibrate_joystick</a>,
+<a class="xref" href="#joy">joy</a>,
+<a class="xref" href="#num_joysticks">num_joysticks</a>.</font></blockquote>
+<b>int <a name="calibrate_joystick">calibrate_joystick</a>(int n);</b><br>
+   La mayoría de los joysticks deben ser calibrados antes de poder ser
+   usados de forma analógica. Esta función realiza la siguiente operación en
+   la serie de calibración para el stick especificado, asumiendo que el
+   joystick ha sido posicionado de la forma descrita por la llamada previa a
+   calibrate_joystick_name(), devolviendo cero con éxito. Por ejemplo, una
+   rutina simple para calibrar los joysticks podría ser así:
+<blockquote class="code"><pre>
+      int i;
+
+      for (i=0; i&lt;;num_joysticks; i++) {
+         while (joy[i].flags &amp; JOYFLAG_CALIBRATE) {
+            char *msg = calibrate_joystick_name(i);
+            printf("%s, y pulsa una tecla\n", msg);
+            readkey();
+            if (calibrate_joystick(i) != 0) {
+               printf("¡oops!\n");
+               exit(1);
+            }
+         }
+      }
+</pre></blockquote>
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="#calibrate_joystick_name">calibrate_joystick_name</a>,
+<a class="xref" href="#joy">joy</a>,
+<a class="xref" href="#num_joysticks">num_joysticks</a>.</font></blockquote>
+<b>int <a name="save_joystick_data">save_joystick_data</a>(const char *filename);</b><br>
+   Después de todos los dolores de cabeza al calibrar el joystick, no
+   querrá que el pobre usuario tenga que repetir el proceso cada vez que
+   ejecuta su programa. Llame esta función para salvar los datos de
+   calibración del joystick en un fichero de configuración especificado, que
+   puede ser leído por load_joystick_data(). Pase NULL como filename para
+   escribir los datos en el fichero de configuración seleccionado
+   actualmente. Devuelve cero si no hubo problemas.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#load_joystick_data">load_joystick_data</a>,
+<a class="xref" href="alleg002.html#set_config_file">set_config_file</a>.</font></blockquote>
+<b>int <a name="load_joystick_data">load_joystick_data</a>(const char *filename);</b><br>
+   Recupera los datos de calibrado previamente almacenados por
+   save_joystick_data() o la utilidad setup. Esto ajusta todos los aspectos
+   del código de joystick: ni si quiera debe llamar initialise_joystick()
+   si está usando esta función. Pasa NULL como filename para leer los datos
+   del fichero de configuración seleccionado actualmente. Devuelve cero si
+   no hubo problemas: si falla, el estado del joystick queda indefinido y
+   debe reiniciarlo desde el comienzo.
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>,
+<a class="xref" href="#save_joystick_data">save_joystick_data</a>,
+<a class="xref" href="alleg002.html#set_config_file">set_config_file</a>.</font></blockquote>
+<b>int <a name="initialise_joystick">initialise_joystick</a>();</b><br>
+   Deprecado. Use install_joystick() en su lugar.
+
+
+
+
+<blockquote class="xref"><font size="-1" face="helvetica,verdana"><em><b>Relacionado con:</b></em>
+<a class="xref" href="#install_joystick">install_joystick</a>.</font></blockquote>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

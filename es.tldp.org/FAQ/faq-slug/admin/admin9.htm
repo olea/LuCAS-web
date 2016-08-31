@@ -1,0 +1,109 @@
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.02b7 [en] (X11; I; Linux 2.0.29 i586) [Netscape]">
+</HEAD>
+<BODY>
+<FONT SIZE=+2><B>CDWRITE</B></FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>PREG></FONT>
+<BR><FONT SIZE=+2>Que paquetes hay disponibles para grabar CD's.</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>RESP></FONT>
+<BR><FONT SIZE=+2>Los paquetes debian son: mkisofs Permite crear un filesystem
+formato iso9660 desde un directorio de tu disco duro. Basicamente, permite
+crear un fichero cuyo formato interno es el de un sistema de archivos iso9660.
+cdwrite. Permite, a partir de un fichero creado con el formato anterior,
+la escritura de un cd-rom (imagino que utilizara llamadas ioctl(2) especiales
+para la grabaci&oacute;n del cd-rom). Hay otros como el cdrecord y otro
+que no recuerdo que es par xwindows. Estan saliendo varios.</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>PREG></FONT>
+<BR><FONT SIZE=+2>Una vez construido un fichero imagen con mkisofs con
+idea de meterlo a una CD, ?Como puedo ver lo que hay dentro de ese fichero?
+Me gustar&iacute;a ver que ha hecho con los links simb&oacute;licos y todo
+eso antes de pasar a quemar la CD&nbsp; ?Hay algo capaz de hacer esto?</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>RESP></FONT>
+<BR><FONT SIZE=+2>Hay una opci&oacute;n del nucleo llamada loopdevice que
+te permite asociar un dispositivo (/dev/loop?) a un fichero. Usando esto
+puedes asignar el dispositivo a tu fichero imagen, y luego montarlo como
+si fuera un CD normal. Asegurate de que tienes el soporte de loopback en
+el nucleo. Luego asignas el interfaz loopback al fichero. Las ultimas versiones
+del mount permiten hacerlo directamente. Mirate la man del mount, y si
+tu versi&oacute;n no lo permite mirate el comando losetup. mount -t iso9660
+-o loop nombre-fichero directorio-donde-lo-montas</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>PREG></FONT>
+<BR><FONT SIZE=+2>Si en lugar de hacer un fichero imagen gordo hago varios
+mas pequeqos (no tengo 600M de disco :) y los voy metiendo a la CD ?Como
+quedaran? ?Genera un subdirectorio para cada uno o mezcla los ficheros?
+?Tiene uno que preocuparse de regenerar la estructura de directorios o
+lo hace el software el solito?</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>RESP></FONT>
+<BR><FONT SIZE=+2>Tendr&iacute;as que grabar en varias sesiones. La multisesi&oacute;n
+desperdicia espacio del CD pero si no hay ma remedio, prueba con cdrecord.
+http://www.fokus.gmd.de/nthp/employees/schilling/schilling/cdrecord.html
+(tambien disponible el paquete "deb") Existe un mini howto CD-Writing bastante
+bueno sobre todos estos temas. Para simplificar las tareas de duplicacion
+de CD's podr&iacute;a utilizarse un shell-script para ello se usara un
+dispositivo SCSI de tipo generico teniendo cuidado de no elegir uno equivocado.
+En nuestro ejemplo usaremos /dev/sgXX. y asumiremos que tenemos all&iacute;
+la grabadora de CD): En cualquier caso no debe utilizarse sin m&aacute;s.
+Nadie se hace responsable de lo que pueda ocurrir. Solo es la base para
+que cada cual haga el suyo.</FONT>
+<BR><FONT SIZE=+2></FONT>&nbsp;<FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>------------------------------8&lt;-------------------------------------</FONT>
+<BR><FONT SIZE=+2>#</FONT>
+<BR><FONT SIZE=+2># LOAD CD</FONT>
+<BR><FONT SIZE=+2># mkisofs -r -K -o cd_image private_collection/</FONT>
+<BR><FONT SIZE=+2># `---------' `-----------------'</FONT>
+<BR><FONT SIZE=+2># | |</FONT>
+<BR><FONT SIZE=+2># write output to take directory as "input"</FONT>
+<BR><FONT SIZE=+2>#</FONT>
+<BR><FONT SIZE=+2># TEST CD</FONT>
+<BR><FONT SIZE=+2># mount -t iso9660 -o ro,loop=/dev/loop0 cd_image /cdrom</FONT>
+<BR><FONT SIZE=+2>#</FONT>
+<BR><FONT SIZE=+2># TEST DEVICE</FONT>
+<BR><FONT SIZE=+2># SCSI ID=?? --> /dev/sgXX</FONT>
+<BR><FONT SIZE=+2># cdwrite --eject --device /dev/sgXX</FONT>
+<BR><FONT SIZE=+2>#</FONT>
+<BR><FONT SIZE=+2># WRITE CD</FONT>
+<BR><FONT SIZE=+2># cdwrite --device /dev/sgd cd_image</FONT>
+<BR><FONT SIZE=+2>#</FONT>
+<BR><FONT SIZE=+2>df</FONT>
+<BR><FONT SIZE=+2>echo "Atencion se va a borrar todo el contenido de /tmp"</FONT>
+<BR><FONT SIZE=+2>rm -fR /tmp</FONT>
+<BR><FONT SIZE=+2>read</FONT>
+<BR><FONT SIZE=+2>mount /dev/cdrom</FONT>
+<BR><FONT SIZE=+2>sleep 7</FONT>
+<BR><FONT SIZE=+2>echo "Pulse enter para cargar TODO el CD en /tmp/CD.img"</FONT>
+<BR><FONT SIZE=+2>read</FONT>
+<BR><FONT SIZE=+2>mkisofs -r -K -o /tmp/CD.img /mount/cdrom</FONT>
+<BR><FONT SIZE=+2>umount /dev/cdrom</FONT>
+<BR><FONT SIZE=+2>echo "Pulse enter para comprobar la imagen. (Se montara
+en /mount/CD)"</FONT>
+<BR><FONT SIZE=+2>read</FONT>
+<BR><FONT SIZE=+2>mkdir /mount/CD 2> /dev/null</FONT>
+<BR><FONT SIZE=+2>mount -t iso9660 -o ro,loop=/dev/loop0 /tmp/CD.img /mount/CD</FONT>
+<BR><FONT SIZE=+2>ll /mount/CD</FONT>
+<BR><FONT SIZE=+2>umount /tmp/CD.img</FONT>
+<BR><FONT SIZE=+2>echo "Para grabar el CD utilice el comando:</FONT>
+<BR><FONT SIZE=+2>echo " cdwrite --device /dev/sgXX /tmp/CD.img "</FONT>
+<BR><FONT SIZE=+2>------------------------------8&lt;-------------------------------------</FONT>
+<BR><FONT SIZE=+2></FONT>&nbsp;<FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>OJO es fundamental identificar correctamente el dispositivo
+SCSI correcto ya que podriamos perder todda la informacion de un disco
+duro SCSI.</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>Para asegurarse es mejor probar primero una operacion
+de tipo eject. Si nos equivocamos de dispositivo mandando un eject creo
+que no pasa nada.</FONT><FONT SIZE=+2></FONT>
+
+<P><FONT SIZE=+2>&nbsp;<A HREF="admin.htm">Vuelta al Indice de Faq Admin</A></FONT>
+<BR>&nbsp;
+</BODY>
+</HTML>

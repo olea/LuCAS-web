@@ -1,0 +1,439 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Guía del Hacker de Allegro
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<center><h1><b>
+<p>
+La Guía del Hacker de Allegro
+</b></h1></center>
+<hr>
+<i>
+<p><br>
+Esta es una guía sobre ciertas partes internas de Allegro, para gente que
+esté interesada en modificarlas. Este documento está lejos de ser completo,
+y puede no ser correcto al 100%. Recuerde que en caso de duda, el código
+fuente es siempre la referencia definitiva. Serán bien aceptadas sugerencias
+sobre qué incluír en este documento: hay demasiado código como para que
+pueda describirlo con todo lujo de detalles, por lo que quiero concentrarme
+en las cosas que más confunden a la gente...
+</i>
+
+
+<p><br>
+<h1><a name="Contenido">Contenido</a></h1>
+
+<p>
+<ul>
+<li><a href="#Estilo de código.">Estilo de código.</a>
+<li><a href="#Proceso de Construcción">Proceso de Construcción</a>
+<li><a href="#Ficheros de Cabecera">Ficheros de Cabecera</a>
+<li><a href="#Definiciones">Definiciones</a>
+<li><a href="#Soporte Unicode">Soporte Unicode</a>
+<li><a href="#Rutinas de Ensamblador">Rutinas de Ensamblador</a>
+<li><a href="#Otras Cosas">Otras Cosas</a>
+</ul>
+
+
+
+<p><br>
+<h1><a name="Estilo de código.">Estilo de código.</a></h1>
+
+<p>
+No voy a ser un fascista sobre esto, pero hace la vida más sencilla si todo
+el código usa un formato consistente. Si va a escribir y mantener más de
+un fichero de código fuente completo, creo que es libre para hacer lo que
+usted quiera, pero para pequeñas contribuciones, posiblemente reformatearé
+su código para que encaje con mi estilo actual. Obviamente me ahorrará
+tiempo si usted escribe el código con éste estilo, y aquí viene la
+descripción:
+
+<p>
+Estilo Allegro básico: K&amp;R, con 3 espacios de tabulado visual. Sin embargo,
+en disco los tabuladores serán de 8 espacios, por lo que una línea que
+estuviese tabulada 12 espacios, sería salvada en un fichero como 12
+carácteres de espacio o 1 tabulador y 4 espacios, no 4 tabuladores. Si su
+editor de textos no puede entender la diferencia entre tabuladores internos
+de 3 espacios y externos de 8 espacios, sería buena idea que consiguiese un
+editor de textos mejor, o que usase el programa indent para conseguir este
+efecto. El fichero indent.pro incluído con la distribución de Allegro casi
+consigue formatear el texto con este estilo, pero no lo consigue siempre, y
+algunas cosas tienen que ser retocadas a mano.
+
+<p>
+Los defines de preprocesador y los nombres de las estructuras están
+EN_MAYUSCULAS. Las funciones y las variables están en_minúsculas. Los
+NombresConMayúsculasMezcladas son malvados y no deberían ser usados.
+Esa estúpida notación m_pHúngara es _realmente_ malvada, y ni si quiera
+debería pensar en ella.
+
+<p>
+Todos los símbolos deberían ser declarados como static, a no ser que sea
+imposible hacerlo, en cuyo caso deberían ser prefijados con un subrayado.
+
+<p>
+Las funciones se verían así:
+<blockquote class="code"><pre>
+/* foobar:
+ *  Descripción de lo que hace.
+ */
+void foobar(int foo, int bar)
+{
+   /* hace algo útil */
+}
+</pre></blockquote>
+Tres líneas en blanco entre funciones.
+
+<p>
+Los condiciones se verían así:
+<blockquote class="code"><pre>
+   if (foo) {
+      /* cosas */
+   }
+   else {
+      /* cosas */
+   }
+</pre></blockquote>
+La única situación en la que algo está en la misma línea tras una llave de
+cerrado es el caso de un bucle do/while, ejemplo:
+<blockquote class="code"><pre>
+   do {
+      /* cosas */
+   } while (foo);
+</pre></blockquote>
+Los case se verían así:
+<blockquote class="code"><pre>
+   switch (foo) {
+
+      case bar:
+    /* cosas */
+    break;
+
+      default:
+    /* cosas */
+    break;
+   }
+</pre></blockquote>
+Ejemplo de dónde poner espacios:
+<blockquote class="code"><pre>
+   char *p;
+   if (condicion) { }
+   for (x=0; x&lt;10; x++) { }
+   funcion(foo, bar);
+   (BITMAP *)data[id].dat;
+</pre></blockquote>
+Tódos los ficheros de código fuente deben empezar con la cabecera estándar:
+<blockquote class="code"><pre>
+/*         ______   ___    ___
+ *        /\  _  \ /\_ \  /\_ \
+ *        \ \ \L\ \\//\ \ \//\ \      __     __   _ __   ___
+ *         \ \  __ \ \ \ \  \ \ \   /'__`\ /'_ `\/\`'__\/ __`\
+ *          \ \ \/\ \ \_\ \_ \_\ \_/\  __//\ \L\ \ \ \//\ \L\ \
+ *           \ \_\ \_\/\____\/\____\ \____\ \____ \ \_\\ \____/
+ *            \/_/\/_/\/____/\/____/\/____/\/___L\ \/_/ \/___/
+ *                                           /\____/
+ *                                           \_/__/
+ *
+ *      Breve descripción de qué hace este fichero.
+ *
+ *      Por Autor.
+ *
+ *      Cosas chachis añadidas por Alguien Más.
+ *
+ *      Fallo estúpido corregido por Tercera Persona.
+ *
+ *      Lea en readme.txt la información de copyright.
+ */
+</pre></blockquote>
+Los créditos de autor deben ser añadidos en orden cronológico, y las
+direcciones de email no deben ser incluidas: esa información se puede
+encontrar en el fichero principal de créditos, y si sólo existe en un lugar,
+es más fácil actualizarla cuando alguien cambie de email.
+
+<p>
+Las personas sólo deben ser incluídas en la cabecera del código fuente si han
+hecho alguna contribución significativa (las correcciones de una línea no
+cuentan), pero sin importar el tamaño de la contribución, deben ser añadidos
+al fichero docs/thanks._tx. Este fichero es ordenado alfabéticamente por
+nombre. Si la persona ya está en el fichero, hay que actualizar el texto
+para describir el nuevo cambio, en caso contrario habrá que crear una nueva
+entrada para el contribuyente. Además, cualquier cosa mayor que una
+modificación minúscula debe ser añadida al fichero docs/changes._tx, que
+crece desde arriba en orden cronológico inverso. Este fichero debe describir
+brevemente tanto la naturaleza de la modificación como la persona que hizo
+esta modificación.
+
+
+
+<p><br>
+<h1><a name="Proceso de Construcción">Proceso de Construcción</a></h1>
+
+<p>
+Esto es muy diferente dependiendo de si está usando autoconf o un makefile
+fijo. Sin embargo, para la mayoría de las plataformas, el script de
+corrección (ej. fixdjgpp.bat), creará un pequeño makefile, que define
+MAKEFILE_INC  al make de otro fichero (ej. makefile.dj), y entonces incluye
+makefile.all. Este contiene un montón de reglas genéricas, e incluye el
+fichero nombrado en MAKEFILE_INC para proveer información adicional
+específica de cada plataforma. Los ficheros fuente actuales están listados en
+el fichero makefile.lst.
+
+<p>
+Hay tres versiones de la biblioteca de funciones: alleg (versión final), alld
+(depuración), y allp (profiling). Los ficheros objeto van en
+obj/compilador/version/, donde versión es alleg, alld, o allp. Los ficheros
+.lib van en lib/compilador/. Algunas cosas generadas (asmdefs.inc, mmxtest.s,
+etc), van en el directorio raíz obj/compilador/. Las dependencias son
+generadas con "make depend", y van en obj/compilador/version/makefile.dep,
+que es incluído por makefile.all.
+
+<p>
+Cuando ejecuta "make clean", esto solamente borra los ficheros generados por
+el usuario, como los ficheros objeto. "make distclean" le deja con la
+distribución original, e incluye deshacerse de los ejecutables de test y la
+propia biblioteca de funciones. Para obtener la máxima higiene personal,
+ejecute "make veryclean", lo que eliminará absolutamente todos los ficheros
+generados. Tras esta operación, tendrá que ejecutar "make depend" para poder
+reconstruir la biblioteca de funciones, y también "fixdll.bat" si está
+trabajando con la plataforma Windows.
+
+<p>
+Para pasar líneas de comando largas a los enlazadores de MSVC y Watcom, el
+programa runner.exe es compilado usando gcc, para que les pueda pasar un
+número decente de parámetros. Este programa salva los parámetros en un
+fichero temporal, y entonces invoca al programa usando el fichero con los
+argumentos como entrada.
+
+<p>
+Por ahora todos los makefiles usan gcc para generar las depependencias,
+porque es má fácil que conseguir que MSVC o Watcom faciliten la información
+correcta.
+
+<p>
+El símbolo LIBRARY_VERSION, definido al comienzo de makefile.ver, es usado
+para incluír el número de versión en cosas como el nombre de fichero de la
+DLL.
+
+
+
+<p><br>
+<h1><a name="Ficheros de Cabecera">Ficheros de Cabecera</a></h1>
+
+<p>
+allegro.h vive en el directorio include/. Este incluye otros ficheros de
+cabecera que existen en el árbol de subdirectorios include/allegro/. La razón
+de este método ligeramente extraño es que allegro.h puede incluir cosas como
+"allegro/internal/alconfig.h", lo cual funcionará tanto si compilamos
+Allegro, como si copiamos allegro.h al directorio include del sistema y los
+otros ficheros de cabecera en include_sistema/allegro/. Esto evita inundar
+los directorios de sistema con cientos de ficheros de cabecera, y a la vez
+permite a un programa incluir solamente &lt;allegro.h&gt;, y hace posible el
+acceso a las cabeceras internas mediante #include &lt;allegro/include/aintern.h&gt;.
+
+<p>
+allegro.h incluye alconfig.h, el cual detecta la plataforma actual e incluye
+un fichero de cabecera adicional para este compilador (aldjgpp.h, almsvc.h,
+alwatcom.h, etc).  Ese fichero de cabecera adicional define un grupo de
+macros que describen el sistema, emula lo que sea necesario para hacer que el
+código compile adecuadamente, y opcionalmente define ALLEGRO_EXTRA_HEADER y
+ALLEGRO_INTERNAL_HEADER si va a necesitar otros ficheros de cabecera
+específicos de la plataforma.
+
+<p>
+Tras incluir el fichero de cabecera de plataforma, el resto de alconfig.h
+define un montón de macros genéricas de ayuda a sus valores por defecto,
+pero sólo si el fichero de cabecera de plataforma no las ha sustituido por
+algo específico.
+
+<p>
+allegro.h contiene definiciones de estructuras y prototipos de funciones. Al
+final del fichero, incluye alinline.h, el cual define todas las rutinas
+inline y los wrappers vtable, junto con versiones en C de las rutinas
+matemáticas de punto fijo si no hay versión de éstas en ensamblador en línea.
+Si el código de ensamblador en línea está soportado, incluye al386gcc.h,
+al386vc.h, o al386wat.h.
+
+<p>
+Si ALLEGRO_EXTRA_HEADER está
+definido, allegro.h lo incluye al final. Este define suele incluir aldos.h,
+alwin.h, etc, que definen cosas específicas para cada plataforma, como
+valores ID para los drivers hardware. A diferencia de los ficheros de
+plataforma incluidos al principio de allegro.h, éstos son específicos para
+cada SO en vez de para cada compilador, por lo que el mismo fichero alwin.h
+puede ser usado tanto con MSVC como con MinGW32. Describen funciones de la
+biblioteca relacionadas con la plataforma, mientras los ficheros de cabecera
+previos describían la sintaxis básica del lenguaje.
+
+<p>
+aintern.h es como internal.h en versiones previas de Allegro, y define
+rutinas compartidas entre múltiples ficheros de código fuente, pero que
+generalmente no queremos que sean usadas por programas de usuario. Para
+definiciones internas específicas de cada plataforma tenemos aintdos.h,
+aintwin.h, etc. Esto ficheros de cabecera no son incluidos directamente por
+allegro.h, pero pueden ser incluidos por los programas de usuario valientes ó
+estúpidos :-)
+
+<p>
+En plataformas que tienen rutinas API específicas y no portables, éstas
+deberían ir en un fichero de cabecera especial en la raíz del directorio
+include, ej: winalleg.h. Este puede ser incluido por programas de usuario que
+quieran acceder a estas rutinas, a la vez que se les indica claramente que al
+incluir este fichero de cabecera están escribiendo código no portable.
+
+
+
+<p><br>
+<h1><a name="Definiciones">Definiciones</a></h1>
+
+<p>
+Todos los prototipos de funciones de cabecera deben usar la macro AL_FUNC().
+Las rutinas en línea usan la macro AL_INLINE(). Las variables globales usan
+AL_VAR() o AL_ARRAY(). Los punteros globales a funciones usan AL_FUNCPTR().
+Los punteros a funciones que se pasan como parámetros a otras rutinas o que
+están almacenados en una estructura usan AL_METHOD(). Esto puede parecer
+innecesario, pero da mucha flexibilidad para añadir a una DLL especificadores
+de importación/exportación, marcadores de convención de llamada como __cdecl,
+e incluso transformar los nombres de los símbolos en algunos compiladores. Si
+olvida usar estas macros, su código no funcionará en algunas plataformas.
+
+<p>
+Esto sólo es aplicable a ficheros de cabecera: puede escribir código C normal
+en el código fuente.
+
+<p>
+El símbolo ALLEGRO_SRC es definido al compilar código fuente de la
+biblioteca. Si quiere incluir una función en línea en su código fuente, use
+la macro INLINE. Para declarar arrays de tamaño cero en una estructura, use
+int x[ZERO_SIZE]. Para usar enteros de 64 bits, declare la variable como
+LONG_LONG (esto no está definido en todas las plataformas). Para realizar
+operaciones con nombres de ficheros, compruebe las macros ALLEGRO_LFN,
+OTHER_PATH_SEPARATOR, y DEVICE_SEPARATOR. Lea los ficheros de cabecera para
+ver los detalles.
+
+
+
+<p><br>
+<h1><a name="Soporte Unicode">Soporte Unicode</a></h1>
+
+<p>
+No asuma que las cadenas de caracteres son ASCII. No lo son. Si asume que si
+lo son, su código puede funcionar mientras la gente que lo use esté tratando
+con datos UTF-8, pero fallará horriblemente en cuanto alguien intente usarlo
+con cadenas Unicode de 16 bits, o código GB Chino, o algún otro formato MIME
+extraño, etc. En cuanto vea un char * en alguna parte, debe considerar que
+esto realmente contendrá el texto en el formato actualmente seleccionado, por
+lo que debe ser extremadamente cuidadoso manipulando cadenas de texto. ¡No lo
+olvide y nunca use una rutina libc con ellas!
+
+<p>
+Use las funciones Unicode para manipular todo el texto: lea los detalles en
+la documentación. Cuando reserve memoria para su cadena, asuma que cada
+carácter ocupa como mucho cuatro bytes: esto le dará espacio de sobra para
+los formatos de codificación actuales.
+
+<p>
+Si quiere especificar una cadena constante, use la función
+uconvert_ascii("mi texto", buf) para obtener una copia de "mi texto" en el
+formato de codificación actual. Si buf es NULL, se usará un buffer interno
+estático, pero el texto convertido será sobreescrito por la siguiente
+llamada a cualquier rutina de conversión de formato, por lo que no debería
+pasar el texto a otras funciones de la biblioteca. Normalmente debería
+proveer usted el espacio de conversión, reservando buf como un objeto
+temporal en la pila.
+
+<p>
+Para convertir en sentido contrario (ej. antes de pasar una cadena de texto
+de Allegro a una rutina de SO que espera datos ASCII), llama a
+uconvert_toascii(mitexto, buf).
+
+<p>
+Para cualquier mensaje que pueda ser visto por el usuario, puede llamar
+get_config_text("mi cadena ascii") en vez de uconvert_ascii(). Esto retornará
+un puntero a memoria persistente (por lo que puede contar con la cadena
+indefinidamente), tras convertirla al formato de codificación actual. Esta
+función es genial porque le evita la molestia de reservar memoria para los
+datos convertidos, y porque permite que la cadena sea reemplazada por las
+traducciones de language.dat. Debe tener la seguridad de pasar siempre
+cadenas constantes a get_config_text(), en vez de texto generado o datos de
+otras cadenas variables de texto: esto es para que el script findtext.sh
+pueda encontrar fácilmente las cadenas que necesiten ser traducidas.
+
+<p>
+Los drivers de hardware deben inicializar su nombre y los campos desc a la
+cadena global empty_string, y almacenar un nombre de driver ASCII en el campo
+ascii_name. El código de soporte traducirá y convertirá automáticamente este
+valor, almacenando el resultado en los campos name y desc. Para la mayoría de
+los drivers esto será suficiente, pero si desea proporcionar una descripción
+más detallada, es problema de su driver ajustar ese dato desde la rutina de
+inicialización, y encargarse de todas las conversiones necesarias.
+
+
+
+<p><br>
+<h1><a name="Rutinas de Ensamblador">Rutinas de Ensamblador</a></h1>
+
+<p>
+Los desplazamientos de estructuras están definidos en asmdef.inc, el cual es
+generado por asmdef.c. Esto permite usar al código en ensamblador nombres
+legibles por un humano para los miembros de una estructura, y ajustarlos
+automáticamente cuando se modifique la estructura para añadir más valores,
+por lo que siempre siempre se ajustarán al formato interno de las
+estructuras de C.
+
+<p>
+El código en ensamblador debe usar la macro FUNC(nombre) para declarar el
+comienzo de una rutina, y GLOBL(nombre) cuando se quiera acceder a un
+símbolo externo (ejemplo: una variable o función de C). Esto es para
+manejar las transformaciones de nombres de un modo portable (COFF requiere
+un subrayado como prefijo, ELF no lo necesita).
+
+<p>
+Puede modificar %ds y %es en ensamblador, siempre y cuando recupere sus
+valores. Si USE_FS y FSEG están definidos, también puede modificar %fs, de
+otro modo esto no es requerido, y puede usar sin problemas el acceso con
+nearptr para todo.
+
+<p>
+No asuma que los códigos de operación MMX estén soportados: no todas las
+versiones de ensamblador los conocen. Compruebe la macro ALLEGRO_MX, y
+sustituya su código MMX en caso de que estas instrucciones no estén
+disponibles.
+
+
+
+<p><br>
+<h1><a name="Otras Cosas">Otras Cosas</a></h1>
+
+<p>
+Cualquier rutina portable que se ejecute en un temporizador o una función
+callback de entrada debe estar fijando (lock) todo el código y datos que
+toque. Esto se hace poniendo END_OF_FUNCTION(x) o END_OF_STATIC_FUNCTION(x)
+tras toda definición de función (no obstante, esto no es requerido si
+declara la función como INLINE), y llamando a LOCK_FUNCTION() en alguna
+parte del código de inicialización. Use LOCK_VARIABLE para fijar variables
+globales, y LOCK_DATA para fijar memoria dinámica reservada.
+
+<p>
+Cualquier módulo que necesite código de desinicialización debería registrar
+una función de salida llamando _add_exit_func(). Esto se asegurará de que
+todo se cierre grácilmente sin importar si el usuario llama allegro_exit(),
+la función main() llega al final, o el programa muere repentinamente debido
+a un error de ejecución. Debe llamar _remove_exit_func() desde su rutina
+de desinicialización, o se encontrará atascado en un bucle infinito.
+
+
+</body>
+</html>

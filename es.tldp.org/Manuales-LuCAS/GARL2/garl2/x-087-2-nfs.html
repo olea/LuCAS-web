@@ -1,0 +1,447 @@
+<HTML
+><HEAD
+><TITLE
+>El Sistema de Ficherosde Red</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="Usando NIS con Soporte de Contraseñas
+Ocultas"
+HREF="x-087-2-nis.shadow.html"><LINK
+REL="NEXT"
+TITLE="Preparando  NFS"
+HREF="x-087-2-nfs.nfsd.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.shadow.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nfs.nfsd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="X-087-2-NFS">Capítulo 14. El Sistema de Ficherosde Red</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Tabla de contenidos</B
+></DT
+><DT
+>14.1. <A
+HREF="x-087-2-nfs.nfsd.html"
+>Preparando  NFS</A
+></DT
+><DT
+>14.2. <A
+HREF="x-087-2-nfs.mountd.html"
+>Montando un Volumen NFS</A
+></DT
+><DT
+>14.3. <A
+HREF="x-087-2-nfs.daemons.html"
+>Los Demonios NFS</A
+></DT
+><DT
+>14.4. <A
+HREF="x-087-2-nfs.exports.html"
+>El Fichero exports</A
+></DT
+><DT
+>14.5. <A
+HREF="x-087-2-nfs.kernelv2.html"
+>Soporte para NFSv2 Basado en Núcleo</A
+></DT
+><DT
+>14.6. <A
+HREF="x-087-2-nfs.kernelv3.html"
+>Soporte para NFSv2 Basado en Núcleo</A
+></DT
+></DL
+></DIV
+><P
+>  
+El Sistema de Ficheros de Red (NFS, por sus siglas en inglés) 
+es probablemente el servicio de red más prominente que usa RPC. 
+Permite acceder a ficheros en anfitriones remotos exactamente en la 
+misma manera que se accedería si fueran locales. Una mezcla de soporte
+en el núcleo y demonios en espacio de usuario en el lado 
+del cliente, junto con un servidor NFS en el lado del servidor, hace esto 
+posible. Este acceso a los ficheros es completamente transparente 
+al cliente y funciona con varias clases de servidores y arquitecturas 
+anfitrionas.  </P
+><P
+>  
+NFS ofrece varias características útiles:  
+  
+<P
+></P
+></P><UL
+><LI
+><P
+>  
+Los datos accedidos por todos los usuarios pueden mantenerse en un anfitrión 
+central, con los clientes montando este directorio en tiempo de arranque. Por ejemplo, 
+se puede mantener todas la cuentas de usuario en un anfitrión y hacer que 
+todos los anfitriones de la red monten el directorio <TT
+CLASS="FILENAME"
+>/home</TT
+> 
+desde ese anfitrión. Si se instala NFS junto a NIS, los usuarios pueden entrar 
+en cualquier sistema y trabajar en un conjunto de ficheros.  </P
+></LI
+><LI
+><P
+>  
+La información que consume grandes cantidades de disco puede mantenerse en un 
+único anfitrión. Por ejemplo, todos los ficheros y programas relativos a LaTeX y 
+METAFONT pueden  almacenarse y mantenerse en un lugar...</P
+></LI
+><LI
+><P
+>  
+Los datos administrativos pueden almacenarse en un único anfitrión. No hay necesidad 
+de  usar <B
+CLASS="COMMAND"
+>rcp</B
+> para instalar el mismo fichero estúpido
+en 20 máquinas diferentes.</P
+></LI
+></UL
+><P>  </P
+><P
+>  
+No es demasiado difícil preparar el funcionamiento básico de NFS en el cliente y  
+el servidor; este capítulo le dice cómo.  </P
+><P
+>  
+Linux NFS es principalmente obra de Rick Sladkey, quien escribió el código 
+del núcleo de NFS y gran parte del servidor de NFS.<A
+NAME="X-087-2-FNNF01"
+HREF="#FTN.X-087-2-FNNF01"
+>[1]</A
+> Lo último se deriva del servidor NFS de espacio de usuario <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>unfsd </B
+></SPAN
+>, originalmente escrito por Mark Shand, y el servidor NFS Harris <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>hnfs</B
+></SPAN
+>, escrito por Donald Becker.  
+  </P
+><P
+>  
+  
+Echemos un vistazo a cómo funciona NFS. Primero, un cliente intenta montar 
+un directorio de un anfitrión remoto en un directorio local justo de la misma 
+manera que si fuese un dispositivo físico.  Sin embargo, la sintaxis 
+usada para especificar el directorio remoto es diferente. Por ejemplo, 
+para montar <TT
+CLASS="FILENAME"
+>/home</TT
+> desde el anfitrión 
+<SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+> en 
+<TT
+CLASS="FILENAME"
+>/users</TT
+> en <SPAN
+CLASS="SYSTEMITEM"
+>vale</SPAN
+>, 
+el administrador escribe la  siguiente orden en 
+<SPAN
+CLASS="SYSTEMITEM"
+>vale</SPAN
+>:<A
+NAME="X-087-2-FNNF02"
+HREF="#FTN.X-087-2-FNNF02"
+>[2]</A
+>  
+  
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>      
+    # <TT
+CLASS="USERINPUT"
+><B
+>mount -t nfs vlager:/home /users</B
+></TT
+>  </PRE
+></TD
+></TR
+></TABLE
+>  </P
+><P
+>  
+   
+<B
+CLASS="COMMAND"
+>mount</B
+> tratará de conectar con el demonio remoto sobre 
+<B
+CLASS="COMMAND"
+>rpc.mountd</B
+> de <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+> vía RPC. 
+El servidor verificará si <SPAN
+CLASS="SYSTEMITEM"
+>vale</SPAN
+> tiene permiso 
+para montar el directorio en cuestión, en cuyo caso, devuelve un descriptor de fichero. 
+Este descriptor será usado en todas las peticiones subsecuentes que se hagan sobre los 
+ficheros bajo <TT
+CLASS="FILENAME"
+>/users</TT
+>.  </P
+><P
+>  
+  
+  
+  
+  
+Cuando alguien accede a un fichero sobre NFS, el núcleo manda una llamada de RPC  
+a <B
+CLASS="COMMAND"
+>rpc.nfsd</B
+> (el demonio de NFS) en la máquina servidor. Esta 
+llamada toma el descriptor de fichero, el nombre del fichero a acceder y los 
+identificadores de usuario y grupo del usuario como parámetros. Éstos se usan 
+en la determinación de los derechos de acceso al fichero especificado. Para prevenir 
+que usuarios no autorizados lean o modifiquen ficheros, los identificadores de usuario 
+y grupo deben ser iguales en ambos anfitriones...  </P
+><P
+>  
+En la mayoría de las implementaciones de  Unix, la funcionalidad NFS de cliente y servidor
+se implementan como demonios a nivel de núcleo que arrancan desde el espacio de usuario al 
+arrancar la máquina. Éstos son los <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Demonios NFS</I
+></SPAN
+>   
+(<B
+CLASS="COMMAND"
+>rpc.nfsd</B
+>&thinsp;) en el anfitrión servidor, y <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Block I/O Daemon</I
+></SPAN
+>  
+(<B
+CLASS="COMMAND"
+>biod</B
+>&thinsp;) en el anfitrión cliente. Para mejorar el rendimiento, 
+<B
+CLASS="COMMAND"
+>biod </B
+> realiza la E/S usando prelectura y postescritura asíncrona; también, 
+varios demonios <B
+CLASS="COMMAND"
+>rpc.nfsd </B
+> usualmente se ejecutan concurrentemente.  </P
+><P
+>  
+  
+  
+La implementación actual de NFS de Linux es un poco diferente del NFS clásico en la que el código 
+de servidor se ejecuta enteramente en espacio de usuario, así que ejecutar múltiples copias 
+simultáneamente es más complicado. La implementación actual de<B
+CLASS="COMMAND"
+>rpc.nfsd </B
+> ofrece 
+una característica experimental que permite soporte limitado para múltiples servidores. Olaf Kirch 
+desarrolló el soporte para servidor NFS basado en el núcleo ofrecido en la versión 2.2 del núcleo 
+de Linux. Su desempeño es significativamente mejor que la de la implementación en el entorno de 
+usuario existente. Lo describiremos más adelante en este capítulo.  </P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNF01"
+HREF="x-087-2-nfs.html#X-087-2-FNNF01"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>  
+Puede contactar a Rick en <SPAN
+CLASS="SYSTEMITEM"
+>jrs@world.std.com</SPAN
+>.  </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNNF02"
+HREF="x-087-2-nfs.html#X-087-2-FNNF02"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Actualmente, usted puede omitir el argumento <TT
+CLASS="LITERAL"
+>&ndash;t nfs</TT
+> porque 
+la orden <B
+CLASS="COMMAND"
+>mount</B
+> interpreta por los dos puntos que esto especifica 
+un volumen NFS. </P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.shadow.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nfs.nfsd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Usando NIS con Soporte de Contraseñas
+Ocultas</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Preparando  NFS</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

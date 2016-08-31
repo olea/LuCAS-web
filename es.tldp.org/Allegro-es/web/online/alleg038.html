@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 38 Diferencias entre plataformas
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="38 Diferencias entre plataformas">38 Diferencias entre plataformas</a></h1>
+
+<p>
+Aquí tiene un rápido resumen de las cosas que pueden causar problemas cuando
+mueva su código de una plataforma a otra (puede encontrar una versión
+detallada de esto en la sección docs de la página web de Allegro).
+
+<p>
+Las versiones Windows y Unix requieren que escriba END_OF_MAIN() tras su
+función main(), lo que transforma mágicamente su main() de estilo ANSI C en
+un WinMain() de estilo Windows, y permite que el código Unix obtenga una
+copia de sus parámetros argv[].
+
+<p>
+En muchas plataformas Allegro funcionará lentamente si espera que bloquee
+automáticamente los bitmaps cuando dibuje sobre ellos. Para mejorar el
+rendimiento, necesita llamar usted mismo acquire_bitmap() y
+release_bitmap(), e intentar minimizar el número de bloqueos.
+
+<p>
+La versión Windows puede perder el contenido de la memoria de vídeo si el
+usuario cambia de tarea a otro programa, por lo que deberá tratar eso.
+
+<p>
+Ninguna de las plataformas actuales necesitan input polling, pero es posible
+que esto sea necesario en el futuro, por lo que si quiere asegurar al 100% la
+portabilidad de su programa, debería llamar poll_mouse() y poll_keyboard() en
+los lugares apropiados.
+
+<p>
+Allegro define un número estándar de macros que pueden ser usadas para
+verificar los atributos de la plataforma actual, o para aislarle de algunas
+diferencias entre sistemas:
+
+<p>
+<b>ALLEGRO_PLATFORM_STR</b><br>
+   Cadena de texto que contiene el nombre de la plataforma actual.
+
+<p>
+<b>ALLEGRO_DOS</b><br>
+<b>ALLEGRO_DJGPP</b><br>
+<b>ALLEGRO_WATCOM</b><br>
+<b>ALLEGRO_WINDOWS</b><br>
+<b>ALLEGRO_MSVC</b><br>
+<b>ALLEGRO_MINGW32</b><br>
+<b>ALLEGRO_BCC32</b><br>
+<b>ALLEGRO_UNIX</b><br>
+<b>ALLEGRO_LINUX</b><br>
+<b>ALLEGRO_BEOS</b><br>
+<b>ALLEGRO_QNX</b><br>
+<b>ALLEGRO_GCC</b><br>
+   Definidos si está compilando en el sistema relevante. A menudo serán
+   aplicables varias, ej: DOS+Watcom, o Windows+GCC+MinGW32.
+
+<p>
+<b>ALLEGRO_I386</b><br>
+<b>ALLEGRO_BIG_ENDIAN</b><br>
+<b>ALLEGRO_LITTLE_ENDIAN</b><br>
+   Definidos si está compilando para el procesador del tipo relevante.
+
+<p>
+<b>ALLEGRO_VRAM_SINGLE_SURFACE</b><br>
+   Definido si la pantalla es una sola superficie grande partida en múltiples
+   sub-bitmaps de vídeo (ej: DOS), en vez de cada bitmap sea una entidad
+   totalmente única (ej. Windows).
+
+<p>
+<b>ALLEGRO_CONSOLE_OK</b><br>
+   Definido cuando no está en modo gráfico, y hay una consola en modo texto a
+   la cual puede mandar mensajes con printf(), salida estándar que puede ser
+   capturada y redirigida por el usuario incluso cuando está en modo gráfico.
+   Si este define está ausente, está ejecutando su programa en un entorno
+   como Windows, el cual no tiene salida estándar.
+
+<p>
+<b>ALLEGRO_LFN</b><br>
+   Distinto de cero si hay soporte para ficheros de nombres largos, o cero si
+   está limitado al formato 8.3 (en la versión DJGPP esto es una variable
+   dependiente del entorno durante la ejecución).
+
+<p>
+<b>INLINE</b><br>
+   Use esto en lugar de la palabra reservada modificadora de función "inline"
+   y su código funcionará correctamente en cualquiera de los compiladores
+   soportados.
+
+<p>
+<b>ZERO_SIZE</b><br>
+   Use esto para declarar arrays de tamaño cero, ej: "char *line[ZERO_SIZE]"
+   dentro de la estructura BITMAP. Algunos compiladores esperan un cero en
+   ese lugar, mientras que otros no quieren tener nada dentro de [], por lo
+   que esta macro permite que el mismo código funcione bien de cualquier
+   modo.
+
+<p>
+<b>LONG_LONG</b><br>
+   Definido a lo que quiera que represente un entero "long long" de 64 bits
+   para el compilador actual, o no definido si no está soportado.
+
+<p>
+<b>OTHER_PATH_SEPARATOR</b><br>
+   Definido a un carácter separador de ruta distinto de la barra para
+   plataformas que lo usen (ej: antibarra bajo DOS y Windows), o definido a
+   la barra normal si no hay otro separador de carácter.
+
+<p>
+<b>DEVICE_SEPARATOR</b><br>
+   Definido al carácter que separa el nombre de fichero del dispositivo (dos
+   puntos para DOS y Windows), o cero si no hay dispositivos explícitos en
+   las rutas (ej: Unix).
+
+<p>
+<b>USE_CONSOLE</b><br>
+   Si define esto antes de incluir los ficheros de cabecera de Allegro, la
+   versión Windows hará que su programa se compile como una aplicación de
+   consola en vez del programa normal en modo gráfico.
+
+<p>
+<b>END_OF_MAIN()</b><br>
+   Al poner esto tras su función main() permitirá que los programas Windows
+   funcionen con una rutina main() regular, para que no tenga que cambiar
+   todo para usar WinMain().
+
+
+
+<p><br>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>

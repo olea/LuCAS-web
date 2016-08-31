@@ -1,0 +1,2177 @@
+<BASE HREF="http://www.fie.us.es/~ramon/articulos/seminario-1.html">
+
+<HTML>
+<HEAD>
+<Title>Comunicaci&oacute;n entre Procesos UNIX.</Title>
+</HEAD>
+<BODY>
+<CENTER>
+<H1>DOCTORADO EN INFORM&Aacute;TICA</H1>
+<H2>PROGRAMACI&Oacute;N DE SISTEMAS UNIX:<br>
+COMUNICACI&Oacute;N ENTRE PROCESOS</H2>
+<H2><ADDRESS><A HREF=http://www.fie.us.es/~ramon/>RAM&Oacute;N M. G&Oacute;MEZ LABRADOR</A></ADDRESS></H2>
+<H3>JUNIO 1.996</H3>
+</CENTER>
+<HR SIZE=3>
+<H2>&Iacute;NDICE.</H2>
+<OL>
+    <LI><H3><A HREF=#1>PROCESOS.</A></H3>
+    <OL>
+	<LI><A HREF=#11>Conceptos generales.</A>
+	<LI><A HREF=#12>Ejecuci&oacute;n de comandos.</A>
+	<OL>
+	    <LI><A HREF=#121>Subrutina <EM>system</EM>.</A>
+	    <LI><A HREF=#122>Subrutinas <EM>exec</EM>.</A>
+	</OL>
+	<LI><A HREF=#13>Creaci&oacute;n de procesos.</A>
+	<OL>
+	    <LI><A HREF=#131>Subrutina <EM>fork</EM>.</A>
+	    <LI><A HREF=#132>Subrutinas <EM>wait</EM> y <EM>waitpid</EM>.</A>
+	</OL>
+	<LI><A HREF=#14>Terminaci&oacute;n de un proceso.</A>
+	<OL>
+	    <LI><A HREF=#141>Subrutina <EM>exit</EM>.</A>
+	    <LI><A HREF=#142>Subrutina <EM>atexit</EM>.</A>
+	</OL>
+     </OL><P>
+    <LI><H3><A HREF=#2>SE&Ntilde;ALES.</A></H3>
+     <OL>
+	<LI><A HREF=#21>Conceptos generales.</A>
+	<LI><A HREF=#22>Lista de las se&ntilde;ales m&aacute;s importantes.</A>
+	<LI><A HREF=#23>Capturar se&ntilde;ales.</A>
+	<OL>
+	    <LI><A HREF=#231>Subrutina <EM>signal</EM>:</A>
+	    <LI><A HREF=#232>Subrutina <EM>sigaction</EM>:</A>
+	    <LI><A HREF=#233>Subrutina <EM>kill</EM>:</A>
+	</OL>
+	<LI><A HREF=#24>Alarmas y temporizadores.</A>
+	<OL>
+	    <LI><A HREF=#241>Subrutinas <EM>alarm</EM> y <EM>ualarm</EM>:</A>
+	</OL>
+	<LI><A HREF=#25>Tratamiento de errores.</A>
+	<OL>
+	    <LI><A HREF=#251>Lista de errores m&aacute;s importantes.</A>
+	    <LI><A HREF=#252>Subrutina <EM>perror</EM>:</A>
+	</OL>
+     </OL><P>
+     <LI><H3><A HREF=#3><EM>PIPES</EM> (TUBER&Iacute;AS).</A></H3>
+     <OL>
+	<LI><A HREF=#31>Conceptos generales.</A>
+	<LI><A HREF=#32>Redirecci&oacute;n.</A>
+	<OL>
+	    <LI><A HREF=#321>Subrutinas <EM>dup</EM> y <EM>dup2</EM>:</A>
+	    <LI><A HREF=#322>Subrutina <EM>fcntl</EM>:</A>
+	</OL>
+	<LI><A HREF=#33>Comunicaci&oacute;n entre procesos emparentados.</A>
+	<OL>
+	    <LI><A HREF=#331>Subrutina <EM>pipe</EM></A>
+	</OL>
+	<LI><A HREF=#34>Comunicaci&oacute;n entre procesos no emparentados.</A>
+	<OL>
+	    <LI><A HREF=#341>Subrutina <EM>mkfifo</EM>:</A>
+	</OL>
+     </OL>
+</OL>
+<HR>
+<H2>Lista de programas.</H2>
+<UL>
+    <LI><A HREF=#system>system.c - Listar los procesos del usuario usando system.</A>
+    <LI><A HREF=#exec>exec.c - Listar los procesos del usuario usando exec.</A>
+
+    <LI><A HREF=#fork>fork.c - Ejecuci&oacute;n conjunta de procesos padre e hijo.</A>
+    <LI><A HREF=#forkhuerf>fork_huerf.c  - Ejemplo de proceso hu&eacute;rfano.</A>
+    <LI><A HREF=#waitpid>waitpid.c - Esperar la terminaci&oacute;n de un proceso hijo.</A>
+    <LI><A HREF=#atexit>atexic.c - Ejecuci&oacute;n de una rutina al salir de un programa.</A>
+    <LI><A HREF=#signal>signal.c - Contar el n&uacute;mero de CTRL-C en 15 segundos.</A>
+    <LI><A HREF=#kill>kill.c - Ejecuci&oacute;n con tiempo de espera usando kill.</A>
+    <LI><A HREF=#alarm>alarm.c - Esperar una alarma.</A>
+
+    <LI><A HREF=#dup2>dup2.c - Redirecci&oacute;n usando dup2.</A>
+    <LI><A HREF=#pipe>pipe.c - Tuber&iacute;a sin nombre entre procesos padre e hijo.</A>
+    <LI><A HREF=#pipeconec>pipe_conec.c - Tuber&iacute;a entre 2 comandos usando pipe.</A>
+    <LI><A HREF=#lectorfifo>lector_fifo.c - Tuberia con nombre usando mkfifo.</A>
+    <LI><A HREF=#escritorfifo>escritor_fifo.c - Tuberia con nombre usando mkfifo.</A>
+    <LI><A HREF=#fifo>fifo - Carga los procesos lector y escritor en 2<EM SUP>o</EM> plano.</A>
+</UL>
+<HR SIZE=3>
+<A NAME=1>
+<H2>1. PROCESOS.</H2>
+</A>
+<A NAME=11>
+<H3>1,1. Conceptos generales.</H3>
+</A>
+<DL>
+    <DT><STRONG>Proceso:</STRONG>
+	<DD>programa o comando en ejecuci&oacute;n.
+	<DD>Caracter&iacute;sticas:
+	    <UL>
+		<LI>Un proceso consta de c&oacute;digo, datos y pila.
+		<LI>Los procesos existen en una jerarqu&iacute;a de &aacute;rbol (varios Hijos, un s&oacute;lo padre).
+		<LI>El sistema asigna un identificador de proceso (PID) &uacute;nico al iniciar el proceso.
+		<LI>El planificador de tareas asigna un tiempo compartido para el proceso seg&uacute;n su prioridad (s&oacute;lo <EM>root</EM> puede cambiar prioridades).
+	    </UL><P>
+    <DT><STRONG>Ejecuci&oacute;n en 1<EM SUP>er</EM> plano:</STRONG>
+	<DD>proceso iniciado por el usuario o interactivo.<P>
+    <DT><STRONG>Ejecuci&oacute;n en 2<EM SUP>o</EM> plano:</STRONG>
+	<DD>proceso no interactivo que no necesita ser iniciado por el usuario.<P>
+    <DT><STRONG>Demonio:</STRONG>
+	<DD>proceso en 2<EM SUP>o</EM> plano siempre disponible, que da servicio a varias tareas (debe ser propiedad del usuario <EM>root</EM>).<P>
+    <DT><STRONG>Proceso zombi:</STRONG>
+	<DD>proceso parado que queda en la tabla de procesos hasta que termine su padre. Este hecho se produce cuando el proceso padre no recoge el c&oacute;digo de salida del proceso hijo.<P>
+    <DT><STRONG>Proceso hu&eacute;rfano:</STRONG>
+	<DD>proceso en ejecuci&oacute;n cuyo padre ha finalizado. El nuevo identificador de proceso padre (PPID) coincide con el identificador del proceso <STRONG>init</STRONG> (1).
+</DL><P>
+<HR>
+<A NAME=12>
+<H3>1,2. Ejecuci&oacute;n de comandos.</H3>
+</A>
+<A NAME=121>
+<H4>1,2,1. Subrutina <EM>system</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Llamada a un int&eacute;rprete para ejecutar un comando.
+	<DD>El proceso espera a que finalice la ejecuci&oacute;n de la subrutina y devuelve la salida del programa ejecutado.
+<P>
+    <DT>- Formato:
+	<DD><CODE> #include &lt;stdlib.h&gt;
+	<DD>int system (cadena)
+	<DD>const char *cadena;</CODE>
+<P>
+    <DT>- Par&aacute;metro:
+	<DD>cadena - Comando a ejecutar.
+<P>
+    <DT>- Devuelve:
+	<DD>Estado de salida del programa ejecutado. -1 o 127 en caso de error.
+<P>
+    <DT>- Comentarios:
+	<DD>a) Se crea un proceso hijo (<STRONG>fork</STRONG>) y se lanza (<STRONG>exec</STRONG>) <STRONG>/usr/bin/bsh</STRONG>, que interpreta el comando a ejecutar.
+	<DD>b) Si la llamada se hace con camino seguro, la orden <STRONG>exec</STRONG> ejecuta el int&eacute;rprete <STRONG>/usr/bin/tsh</STRONG>.
+	<DD>c) Se ignoran las se&ntilde;ales <STRONG>SIGINT</STRONG> y <STRONG>SIGQUIT</STRONG> y se bloquea la se&ntilde;al <STRONG>SIGCHLD</STRONG>.
+	<DD>d) La salida de <STRONG>system</STRONG> no afecta a la salida de los procesos hijos del proceso ejecutor.
+</DL>
+<HR><P>
+<A NAME=system>
+- Ejemplo:<P>
+</A>
+<STRONG><PRE>
+/* system.c - Listar los procesos del usuario usando system. */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main ()
+    {
+    int  salida;	/* Salida del comando */
+    char comando[100];	/* Comando a ejecutar */
+
+    printf ("Ejemplo de system.\n");
+    sprintf (comando, "/bin/ps -fu %s", getenv ("USER"));
+    salida = system (comando);
+    printf ("Salida del comando: %d\n", salida);
+    exit (salida);
+    }
+
+</PRE></STRONG>
+<PRE>
+
+Ejemplo de system.
+    USER     PID    PPID     TTY  CMD
+   ramon    3638       1   hft/0  -ksh
+   ramon   10089   10600   hfp/0  /bin/ps -fu ramon
+   ramon   10600   11623   hft/0  bsh bsh bsh
+   ramon   11623    3638   hft/0  system.e
+Salida del comando: 0
+
+</PRE>
+Suponiendo que no existe el comando MUSHO y sustituyendo la ejecuci&oacute;n de <STRONG>system</STRONG> por la siguiente l&iacute;nea, se obtiene la salida mostrada a continuaci&oacute;n.<BR>
+<STRONG><PRE>
+
+salida = system ("MUSHO BETI");
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de system.
+bsh: MUSHO: no encontrado.
+Salida del comando: 256
+
+</PRE>
+<HR>
+<A NAME=122>
+<H4>1,2,2. Subrutinas <EM>exec</EM>>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Ejecuta un nuevo programa en el mismo proceso.
+	<DD>Se crea un proceso imagen sustituyendo el programa actual por el nuevo.
+<P>
+    <DT>- Formatos:
+	<DD><CODE>#include &lt;unistd.h&gt;
+	<DD>int execl (camino, arg0 [, arg1, ...] , 0)
+	<DD>const char *camino, *arg0, *arg1, ...;<P>
+	<DD>int execle (camino, arg0 [, arg1, ...] , 0, p_entorno)
+	<DD>const char *camino, *arg0, *arg1, ...;
+	<DD>char *const p_entorno[];<P>
+	<DD>int execlp (fichero, arg0 [, arg1, ...] , 0)
+	<DD>const char *fichero, *arg0, *arg1, ...;<P>
+	<DD>int execv (camino, val_args)
+	<DD>const char *camino;
+	<DD>char *const val_args[];<P>
+	<DD>int execve (camino, val_arg, p_entorno)
+	<DD>const char *camino;
+	<DD>char *const val_args[], *p_entorno[];<P>
+	<DD>int execvp (fichero, val_args)
+	<DD>const char *fichero;
+	<DD>char *const val_args[];<P>
+	<DD>int exect (camino, val_arg, p_entorno)
+	<DD>char *camino, *val_args, *p_entorno[];</CODE>
+<P>
+    <DT>- Sufijos:
+	<DD>L - usa lista de par&aacute;metros, el &uacute;ltimo debe ser 0.
+	<DD>V - usa matriz de par&aacute;metros generada previamente, el &uacute;ltimo debe ser 0.
+	<DD>T - trazado del programa con <STRONG>ptrace</STRONG> (en desuso).
+	<DD>E - usa la matriz de variables de entorno.
+	<DD>P - b&uacute;squeda utilizando la variable <STRONG>PATH</STRONG>.
+<P>
+    <DT>- Par&aacute;metros:
+	<DD>camino - Camino completo del fichero ejecutable.
+	<DD>fichero - Nombre del fichero ejecutable.
+	<DD>arg<EM>N</EM> - Argumento N-&eacute;simo.
+	<DD>val_args - Puntero a la matriz de argumentos.
+	<DD>p_entorno - Puntero a la matriz del entorno.
+<P>
+    <DT>- Devuelve:
+	<DD>-1, en caso de error.
+<P>
+    <DT>- Comentarios:
+	<DD>a) La rutina principal (<STRONG>main</STRONG>) de un programa C ejecutable recibe los siguientes par&aacute;metros:
+	<DD><CODE>int main (cont_args, val_args, p_entorno)
+	<DD>int  cont_args;	/* Contador de argumentos. */
+	<DD>char *val_args;	/* Puntero a la matriz de argumentos. */
+	<DD>char *p_entorno;	/* Puntero a la matriz del entorno. */</CODE>
+</DL>
+Las variables <EM>val_args</EM> y <EM>p_entorno</EM> son similares a las utilizadas en las subrutinas <STRONG>exec</STRONG>.<P>
+<DL>
+	<DD>b) Esta rutina principal llama a una subrutina de iniciaci&oacute;n que construye la variable de entrono. Dicha variable global es accesible desde el programa declar&aacute;ndola de la siguiente manera:
+	<DD><STRONG>extern char **environ;</STRONG>
+	<DD>Las subrutinas <STRONG>exec</STRONG> que no usan el par&aacute;metro <EM>p_entorno</EM> utilizan la variable <STRONG>environ</STRONG>.<P>
+	<DD>c) Los descriptores de ficheros abiertos se pasan al nuevo proceso imagen, excepto los que tengan activo el bit <STRONG>FD_CLOEXEC</STRONG> (ver <A HREF=#322><STRONG>fcntl</STRONG></A>).<P>
+	<DD>d) Las se&ntilde;ales capturadas se reasignan a sus acciones por defecto; las ignoradas, contin&uacute;an siendo ignoradas (ver <A HREF=#232><STRONG>sigaction</STRONG></A>).<P>
+	<DD>e) Si el nuevo proceso imagen tiene activo el bit <STRONG>SUID</STRONG>, la identificaci&oacute;n efectiva de usuario (EUID) del nuevo proceso toma el valor del identificador del propietario. Idem, si tiene activo el bit <STRONG>SGID</STRONG>.<P>
+	<DD>f)  Los identificadores reales de usuario y de grupo (RUID y RGID) mantienen el valor que ten&iacute;an en el proceso llamador.<P>
+	<DD>g) El p&aacute;rrafo anterior puede aplicarse a ficheros remotos (previa traducci&oacute;n de los identificadores).<P>
+	<DD>h) El p&aacute;rrafo e) no afecta a las <EM>shell-scripts</EM>.<P>
+	<DD>i) El proceso nuevo mantiene las siguientes caracter&iacute;sticas del proceso llamador:
+	<UL>
+	    <LI>Identificadores de proceso (PID), de proceso padre (PPID) y de grupo de procesos (PGID).
+	    <LI>Valores de prioridad (<STRONG>nice</STRONG>), de TTY y del bit de trazado.
+	    <LI>Directorio actual y directorio ra&iacute;z.
+	    <LI>M&aacute;scara de ficheros, limites de longitud de ficheros, l&iacute;mites de recursos.
+	    <LI>Tiempos para activar alarmas y subrutinas <STRONG>times</STRONG>.
+	    <LI>Identificador de usuario de conexi&oacute;n.
+	</UL>
+</DL><P>
+<HR><P>
+<A NAME=exec>
+- Ejemplo:<P>
+</A>
+<STRONG><PRE>
+/* exec.c - Listar los procesos del usuario usando exec. */
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main ()
+    {
+    int  salida;/* Salida del comando */
+
+    printf ("Ejemplo de exec.\n");
+    execl ("/bin/ps", "ps", "-fu", getenv ("USER"), 0);
+    printf ("Salida del comando: %d\n", salida);<p>
+    exit (salida);
+    }
+
+</PRE></STRONG>
+<PRE>
+
+Ejemplo de system.
+    USER     PID    PPID     TTY  CMD
+   ramon    3638       1   hft/0  -ksh
+   ramon   10739    3638   hft/0  /bin/ps -fu ramon
+
+</PRE>
+Suponiendo que no existe el comando <STRONG>MUSHO</STRONG> y sustituyendo la  ejecuci&oacute;n de <STRONG>execl</STRONG> por la siguiente l&iacute;nea, se obtiene la salida mostrada a continuaci&oacute;n.
+<STRONG><PRE>
+
+salida = execl ("MUSHO", "BETI", 0);
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de exec.
+Salida del comando: -1
+
+</PRE>
+<HR>
+<A NAME=13>
+<H3>1,3. Creaci&oacute;n de procesos.</H3>
+</A>
+<A NAME=131>
+<H4>1,3,1. Subrutina <EM>fork</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Crea un nuevo proceso (hijo), copia casi exacta del proceso generador (padre).
+<P>
+   <DT>- Formato:
+	<DD><CODE> #include &lt;unistd.h&gt;
+	<DD>pid_t fork ();</CODE>
+<P>
+    <DT>- Devuelve:
+	<DD>0 al proceso hijo y PID del hijo al proceso padre (-1, si error).
+<P>
+    <DT>- Comentarios:
+	<DD>a) La versi&oacute;n BSD (en la librer&iacute;a <STRONG>libbsd.a</STRONG>) es:
+	<DD><CODE>int vfork ();</CODE><P>
+	<DD>b) Atributos que hereda el proceso hijo.
+	<UL>
+	<LI>Entorno.
+	<LI>Bit <STRONG>FD_CLOEXEC</STRONG> para cada descriptor de fichero.
+	<LI>Se&ntilde;ales capturadas.
+	<LI>SUID y SGID.
+	<LI>Estado de privilegios y prioridades.
+	<LI>Librer&iacute;as compartidas y segmentos de memoria compartida.
+	<LI>PGID y TTYGID.
+	<LI>Directorio actual y directorio ra&iacute;z.
+	<LI>M&aacute;scara y l&iacute;mites de medida para ficheros.
+	<LI>Eventos y estado de auditor&iacute;a.
+	<LI>Estado de depuraci&oacute;n.
+	</UL><P>
+	<DD>c) Atributos diferenciadores entre padre e hijo:
+	<UL>
+	<LI>PID &uacute;nico.
+	<LI>PPID distintos (el PPID del hijo coincide con el PID del padre).
+	<LI>El proceso hijo tiene su propia copia de los descriptores de fichero del padre, pero comparte con &eacute;ste un puntero a fichero para cada descriptor del proceso padre.
+	<LI>Bloqueos de proceso, texto y datos no se heredan.
+	<LI>Las subrutinas <STRONG> times</STRONG> se ponen a 0.
+	<LI>Las alarmas pendientes toman su valor inicial.
+	<LI>Se eliminan las se&ntilde;ales pendientes para el proceso hijo.
+	</UL>
+</DL><P>
+<hr><p>
+<A NAME=fork>
+- Ejemplos:<p>
+</A>
+<STRONG><PRE>
+/* fork.c - Ejecuci&oacute;n conjunta de procesos padre e hijo */
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+main ()
+    {
+    printf ("Ejemplo de fork.\n");<p>
+    printf ("Inicio del proceso padre. PID=%d\n", getpid ());<p>
+    if (fork() == 0)<p>
+	{	/* Proceso hijo */
+	printf ("Inicio proceso hijo. PID=%d, PPID=%d\n",
+	getpid (), getppid ());
+	sleep (1);
+	}
+    else
+	{	/* Proceso padre */
+	printf ("Continuaci&oacute;n del padre. PID=%d\n", getpid ());
+	sleep (1);
+	}
+    printf ("Fin del proceso %d\n", getpid ());
+    exit (0);
+    }
+
+</STRONG></PRE>
+<PRE>
+Ejemplo de fork.
+Inicio proceso padre. PID=8153
+Inicio proceso hijo. PID=6618, PPID=8153
+Continuaci&oacute;n proceso padre. PID=8153
+Fin del proceso 6618
+Fin del proceso 8153
+
+</PRE>
+<HR><P>
+<A NAME=forkhuerf>
+- Ejemplo:<P>
+</A>
+<STRONG><PRE>
+/* fork_huerf.c  - Ejemplo de proceso hu&eacute;rfano *
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+main ()
+    {
+    printf ("Ejemplo de proceso hu&eacute;rfano.\n");
+    printf ("Inicio del proceso padre. PID=%d\n", getpid ());
+    if (fork () == 0)
+	{
+	printf ("Inicio proceso hijo. PID=%d, PPID=%d\n",
+	getpid (), getppid ());
+	sleep (1);
+	printf ("El proceso queda hu&eacute;rfano. PID=%d PPID=%d\n",
+	getpid (), getppid ());
+	}
+    else
+	printf ("Concinuaci&oacute;n del padre. PID=%d\n", getpid ());
+    printf ("Fin del proceso %d\n", getpid ());
+    exit (0);
+    }
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de proceso hu&eacute;rfano.
+Inicio proceso padre. PID=11330
+Inicio proceso hijo. PID=6467, PPID=11330
+Continuaci&oacute;n proceso padre. PID=11330
+Fin del proceso 11330
+<EM>$punto indicativo&gt;</EM> El proceso queda hu&eacute;rfano. PID=6467, PPID=1
+Fin del proceso 6467
+
+</PRE>
+Notas:
+<UL>
+    <LI>En el ejemplo, el proceso padre no espera la finalizaci&oacute;n del proceso hijo y termina antes que &eacute;ste.
+    <LI>Cuando un proceso queda hu&eacute;rfano, el proceso de iniciaci&oacute;n (<STRONG>init</STRONG>) se convierte en su padre.
+    <LI>Una vez que finaliza el proceso padre, se devuelve el control al int&eacute;rprete de comandos, de ah&iacute; que aparezca el mensaje del &quot;punto indicativo&quot;. El proceso hijo no deber&aacute; mandar mensajes a la consola, como ocurre en este ejemplo.
+</UL><P>
+<hr>
+<A NAME=132>
+<H4>1,3,2. Subrutinas <EM>wait</EM> y <EM>waitpid</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Espera a que pare o termine un proceso hijo, permitiendo obtener sus estados de salida.
+	<DD>Una se&ntilde;al no bloqueada o no ignorada puede reactivar el proceso padre.
+<P>
+    <DT>- Formato:
+	<DD><CODE>#include &lt;sys/wait.h&gt;
+	<DD>pid_t wait (estados)
+	<DD>int *estados;<P>
+	<DD>pid_t wait ((void *) 0);<P>
+	<DD>pid_t waitpid (PID, estados, opciones)
+	<DD>pid_t PID;
+	<DD>int *estados, opciones;</CODE>
+<P>
+    <DT>- Par&aacute;metros:<
+	<DD>PID - PID del proceso o grupo de proceso. Sus valores son:
+	<UL>
+	    <LI>-1: <STRONG>waitpid</STRONG> act&uacute;a igual que <STRONG>wait</STRONG>, esperando cualquier hijo.
+	    <LI>&gt;0: PID de un proceso hijo determinado.
+	    <LI>0: para cualquier hijo con el mismo grupo de procesos que el padre.
+	    <LI>&lt;-1: para cualquier hijo cuyo grupo de proceso sea igaul al valor absoluto de PID.
+	</UL>
+	<DD>opciones - M&aacute;scara de opciones. Sus bits son:
+	<UL>
+	    <LI><STRONG>WNOHANG</STRONG>: evita la suspensi&oacute;n del padre mientras est&eacute; esperando a alg&uacute;n hijo.
+	    <LI><STRONG>WUNTRACED</STRONG>: el padre obtiene informaci&oacute;n adicional si el hijo recibe alguna de las se&ntilde;ales <STRONG>SIGTTIN, SIGTTOU, SIGSSTP o SIGTSTOP </STRONG>.
+	</UL>
+	<DD>estados - Puntero a una tabla con los estados de salida de los procesos.
+<P>
+    <DT>- Devuelve:<p>
+	<DD>0, si no ha terminado ning&uacute;n proceso.
+<P>
+    <DT>- Macros:
+	<DD><CODE>WIFSTOPPED (estado)	/* !=0, si <EM>estado</EM> es de un hijo parado */
+	<DD>pid_t estado;<P>
+	<DD>int WSTOPSIG (estado)	/* N&uacute; de se&ntilde;al que ha causado la parada */
+	<DD>pid_t estado;<P>
+	<DD>WIFEXITED (estado)		/* !=0, si <EM>estado</EM> es de salida normal */
+	<DD>pid_t estado;<P>
+	<DD>int WEXITSTATUS (estado)	/* 8 bits bajos del estado de salida */
+	<DD>pid_t estado;<P>
+	<DD>WIFSIGNALED (estado)	/* !=0, si <EM>estado</EM> es de salida anormal */
+	<DD>pid_t estado;<P>
+	<DD>int WTERMSIG (estado)	/* N&uacute; de sa&ntilde;al que ha causado la slida  */
+	<DD>pid_t estado;</CODE>
+<P>
+    <DT>- Cometarios:
+	<DD>a) Estas subrutinas pueden verse afectadas por la se&ntilde;al <STRONG>SIGCHLD</STRONG> (ver <A HREF=#232><STRONG>sigaction</STRONG></A>).
+	<DD>b) La subrutina <STRONG>wait</STRONG> espera la terminaci&oacute;n de cualquier proceso hijo.
+</DL><P>
+<hr><p>
+<A NAME=waitpid>
+- Ejemplos:<p>
+</A>
+<STRONG><PRE>
+/* waitpid.c - Esperar la terminaci&oacute;n de un proceso hijo */
+#include &lt;stdio.h&gt;
+#include &lt;signal.h&gt;
+#include &lt;sys/wait.h&gt;
+
+main ()
+    {
+    pid_t id_padre;	/* PID del proceso padre */
+    pid_t id_hijo;	/* PID del proceso hijo */
+    int   estado;	/* Estado de salida */
+
+    printf ("Ejemplo de waitpid.\n");
+    printf ("Inicio proceso padre. PID=%d\n", getpid ());
+    id_padre = getpid ();
+    if ((id_hijo = fork ()) == 0)
+        {		/* Proceso hijo */
+        printf ("Inicio proceso hijo. PID=%d, PPID=%d\n",
+        getpid (), id_padre);
+        sleep (3);
+        printf ("Salida proceso hijo. PID=%d\n", getpid ());
+        exit (getpid () &gt; id_padre);        /* 1, si PID > PPID */
+        }
+    else
+        {
+        signal (SIGINT, SIG_IGN);        /* Ignorar CTRL-C */
+        while (waitpid (id_hijo, &estado, 0) != id_hijo);
+        if (WIFSIGNALED (estado))
+            printf ("El proceso hijo ha recibido la se&ntilde;al %d\n", WTERMSIG (estado));
+        if (WIFEXITED (estado))
+           {
+           printf ("Estado de salida del proceso hijo: %d\n", WEXITSTATUS (estado));
+           if (WEXITSTATUS (estado) == 1)
+               printf ("PID hijo &gt; PID padre.\n");
+           else
+               printf ("PID padre &gt; PID hijo.\n");
+           }
+        printf ("Fin del proceso %d\n", getpid ());
+        exit (0);
+    }
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de waitpid.
+Inicio proceso padre. PID=24213
+Inicio proceso hijo. PID=31638, PPID=24213
+Fin proceso hijo. PID=31638
+Estado de salida del proceso hijo: 1
+PID hijo &gt; PID padre
+Fin del proceso 24213
+
+</PRE>
+La salida siguiente muestra el efecto de generar una se&ntilde;al de interrupci&oacute;n pulsando [CTRL][C]. Dicha se&ntilde;al provoca la terminaci&oacute;n autom&aacute;tica del proceso hijo, mientras que el proceso padre la ignora (ver <A HREF=#231><STRONG>signal</STRONG></A>).<P>
+<PRE>
+Ejemplo de waitpid.
+Inicio proceso padre. PID=7240
+Inicio proceso hijo. PID=5705, PPID=7240
+^CEl proceso hijo ha recibido la se&ntilde;al: 2
+Fin del proceso 7240
+</PRE><P>
+<hr>
+<A NAME=14>
+<H3>1,4. Terminaci&oacute;n de un proceso.</H3>
+</A>
+<A NAME=141>
+<H4>1,4,1. Subrutina <EM>exit</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Termina la ejecuci&oacute;n de un proceso.
+<p>
+    <DT>- Formato:
+	<DD><CODE>#include &lt;stdlib.h&gt;
+	<DD>void exit (estado)
+	<DD>int estado;</CODE>
+<p>
+    <DT>- Par&aacute;metro:
+	<DD>Estado de salida del proceso.
+<p>
+    <DT>- Comentarios:
+	<DD>a) El proceso de salida de un proceso es el siguiente:
+	<UL>
+	    <LI>Llamada a la funci&oacute;n <STRONG>_cleanup</STRONG> para limpiar las &aacute;reas de E/S.
+	    <LI>Llamada a la subrutina especificada en la subrutina <STRONG>atexit</STRONG>.
+	    <LI>Llamada a la subrutina <STRONG>_exit</STRONG> para finalizar el proceso.
+	</UL><P>
+	<DD>b) Si <STRONG>_cleanup</STRONG> no puede cancelar las peticiones de E/S as&iacute;ncrona, la aplicaci&oacute;n se bloquea hasta que se completen dichas peticiones.<p>
+	<DD>c) Se cierran todos los descriptores de fichero.<p>
+	<DD>d) Si el proceso padre est&aacute; en espera (ver <A HREF=#132><STRONG>wait</STRONG></A>), se devuelve el valor de los 8 bits menos significativos del estado de salida.<p>
+	<DD>e) Se env&iacute;a una se&ntilde;al <STRONG>SIGCHLD</STRONG> al proceso padre. La acci&oacute;n por defecto es ignorar esta se&ntilde;al. Si no se ignora, el proceso hijo puede quedar como proceso zombi.<p>
+	<DD>f) La salida de un proceso no provoca la terminaci&oacute;n de sus hijos. El PPID de los hijos ser&aacute; el PPID del proceso <STRONG>init</STRONG> (1).<p>
+	<DD>g) Se eliminan los bloqueos de ficheros (ver <A HREF=#322><STRONG>fcntl</STRONG></A>).<p>
+	<DD>h) Si para un proceso perteneciente a un grupo hu&eacute;rfano, se env&iacute;an las se&ntilde;ales <STRONG>SIGHUP</STRONG> y <STRONG>SIGCONT</STRONG> a cada proceso del grupo de procesos hu&eacute;rfanos.
+</DL><P>
+<hr><p>
+<A NAME=142>
+<H4>1,4,2. Subrutina <EM>atexit</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Ejecuta una determinada funci&oacute;n antes de la terminaci&oacute;n del proceso.
+<p>
+    <DT>- Formato:
+	<DD><CODE> #include &lt;sys/limits.h&gt;
+	<DD>int atexit (funci&oacute;n)
+	<DD>void (*funci&oacute;n) (void);</CODE>
+<p>
+    <DT>- Par&aacute;metro:
+	<DD>Puntero a la funci&oacute;n llamada.
+<p>
+    <DT>- Devuelve:
+	<DD>0: si no hay errores.
+<p>
+    <DT>- Comentarios:
+	<DD>a) La <EM>funci&oacute;n</EM> se ejecuta si se ha completado con &eacute;xito la subrutina <STRONG>_cleanup</STRONG>.
+</DL><P>
+<hr><p>
+<A NAME=atexit>
+- Ejemplo:
+</A>
+<STRONG><PRE>
+/* atexic.c - Ejecuci&oacute;n de una rutina al salir de un programa */
+#include &lt;stdio.h&gt;
+#include &lt;sys/limits.h&gt;
+
+int bucle=0;		/* Contador de vueltas del bucle */
+
+void salida ();		/* Prototipo de la funci&oacute;n de salida */
+
+int main ()
+   {
+   int n;
+
+   atexit (salida);
+   printf ("Ejemplo de atexit.\n");
+   for (bucle=1; bucle&lt;255; bucle++)
+	{
+	n=rand ();
+	printf ("%d-%d\t", bucle, n);
+	if (n &gt; 30000)
+	   exit (1);
+	}
+   exit (0);
+   }
+
+void salida ()
+     {
+     printf ("El bucle ha dado %d vueltas.\n");
+     printf ("Hasta luega Lucas.\n");
+     }
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de atexit.
+1-16838	2-5758	3-10113	4-17515	5-31051
+El bucle ha dado 5 vueltas.
+Hasta luego Lucas.
+
+</PRE>
+<hr><P>
+<A NAME=2>
+<H2>2. SE&Ntilde;ALES.</H2>
+</A>
+<A NAME=21>
+<H3>2,1. Conceptos generales.</H3>
+</A>
+<DL>
+    <DT><STRONG>Se&ntilde;al:</STRONG>
+	<DD>Evento que debe ser procesado y que puede interrumpir el flujo normal de un programa.<p>
+    <DT><STRONG>Capturar una se&ntilde;al:</STRONG>
+	<DD>Una se&ntilde;al puede asociarse con una funci&oacute;n que procesa el evento que ha ocurrido.<p>
+    <DT><STRONG>Ignorar una se&ntilde;al:</STRONG>
+	<DD>El evento no interrumpe el flujo del programa. Las se&ntilde;ales <STRONG>SIGINT</STRONG> y <STRONG>SIGSTOP</STRONG> no pueden ser ignoradas (ver <A HREF=#22>tabla de se&ntilde;ales</A>).<p>
+    <DT><STRONG>Acci&oacute;n por defecto:</STRONG>
+	<DD> Proceso suministrado por el sistema para capturar la se&ntilde;al (ver <A HREF=#22>tabla de se&ntilde;ales</A>).<p>
+    <DT><STRONG>Alarma:</STRONG>
+	<DD> Se&ntilde;al que es activada por los temporizadores del sistema.<p>
+    <DT><STRONG>Error:</STRONG>
+	<DD> Fallo o acci&oacute;n equivocada que puede provocar la terminaci&oacute;n del proceso.<p>
+    <DT><STRONG>Error cr&iacute;tico:</STRONG>
+	<DD> Error que provoca la salida inmediata del programa.
+</DL><P>
+<hr>
+<A NAME=22>
+<H3>2,2. Lista de las se&ntilde;ales m&aacute;s importantes.</H3>
+</A>
+
+<Table border=5>
+  <Tr>
+    <TH ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+	N&uacute;m.
+    <TH ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+	Nombre
+    <TH ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+	Comentarios
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      1
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGHUP
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Colgar. Generada al desconectar el terminar.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      2
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGINT
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Interrupci&oacute;n. Generada por teclado.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      3
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGQUIT<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Salir. Generada por teclado.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      4
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGILL<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Instrucci&oacute;n ilegal. No se puede recapturar.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      5
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGTRAP<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Trazado. No se puede recapturar.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      6
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGABRT<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Abortar proceso.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      8
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGFPE<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Excepci&oacute;n aritm&eacute;tica, de coma flotante o divisi&oacute;n por cero.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      9
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGKILL<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Matar proceso. No puede capturarse, ni ignorarse.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      10
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGBUS<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Error en el bus.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      11
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGSEGV<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Violaci&oacute;n de segmentaci&oacute;n.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      12
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGSYS<em sup>1</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Argumento err&oacute;neo en llamada al sistema.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      13
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGPIPE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Escritura en una tuber&iacute;a que otro proceso no lee.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      14
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGALRM
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Alarma de reloj.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      15
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGTERM
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Terminaci&oacute;n del programa.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      16
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGURG<em sup>2</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Urgencia en canal de E/S.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      17
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGSTOP<em sup>3</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Parada de proceso. No puede capturarse, ni ignorarse.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      18
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGTSTP<em sup>3</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Parada interactiva. Generada por teclado.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      19
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGCONT<em sup>4</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Continuaci&oacute;n. Generada por teclado.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      20
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGCHLD<em sup>2</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Parada o salida de proceso hijo.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      21
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGTTIN<em sup>3</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Un proceso en 2<EM SUP>o</EM> plano intenta leer del terminal.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      22
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGTTOU<em sup>3</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Un proceso en 2<EM SUP>o</EM> plano intenta escribir en el terminal.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      23
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGIO<em sup>2</em>
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Operaci&oacute;n de E/S posible o completada.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      24
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGXCPU
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Tiempo de UCP excedido.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      25
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGXFSZ
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Excedido el l&iacute;mite de tama&ntilde;o de fichero.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      30
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGUSR1
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Definida por el usuario n&uacute;mero 1.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      31
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGUSR2
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Definida por el usuario n&uacute;mero 2.
+    </Td>
+  </Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      34
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGVTALRM
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Alarma de tiempo virtual.
+    </Td>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      36
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      SIGPRE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Excepci&oacute;n programada. Definida por el usuario.
+    </Td>
+  </Tr>
+</Table>
+<p>
+Notas sobre la acci&oacute;n por defecto para la se&ntilde;al.
+<OL>
+    <LI>Generar un fichero <STRONG>core</STRONG>.
+    <LI>Ignorar la se&ntilde;al.
+    <LI>Parar el proceso que recibe la se&ntilde;al.
+    <LI>Reiniciar o continuar el proceso que recibe la se&ntilde;al.
+</OL>
+Las se&ntilde;ales comprendidas entre la  37 y la 58 (ambas inclusive) est&aacute;n reservadas por el sistema.<p>
+El rango de se&ntilde;ales en el UNIX de Berkeley (BSD) es de 1 a 31.<P>
+<hr><p>
+<A NAME=23>
+<H3>2,3. Capturar se&ntilde;ales.</H3>
+</A>
+<A NAME=231>
+<H4>2,3,1. Subrutina <EM>signal</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Asocia una acci&oacute;n determinada con una se&ntilde;al.
+<p>
+    <DT>- Formato:
+	<DD><CODE>#include &lt;signal.h&gt;
+	<DD>void (*signal (se&ntilde;al, acci&oacute;n)) ()
+	<DD>int se&ntilde;al;
+	<DD>void (*acc&oacute;n) ();</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>se&ntilde;al: N&uacute;mero de se&ntilde;al, excepto <STRONG>SIGKILL</STRONG>.
+	<DD>acci&oacute;n: Puntero a la rutina asociada con la se&ntilde;al o uno de los valores:
+	<UL>
+	    <LI><STRONG>SIG_DFL</STRONG>: acci&oacute;n por defecto para dicha se&ntilde;al.
+	    <LI><STRONG>SIG_IGN</STRONG>: ignorar la se&ntilde;al,
+	</UL>
+<p>
+    <DT>- Devuelve:
+	<DD>Valor de la acci&oacute;n anteriormente asociada; -1, en caso de error.
+<p>
+    <DT>- Comentarios:
+	<DD>a) Existe una versi&oacute;n de la subrutina <STRONG> signal</STRONG> compatible con el UNIX de Berkeley (BSD).
+	<DD>b) No se permiten m&aacute;scaras de bloqueo de se&ntilde;ales y se activa el bit <STRONG>SA_OLDSTYLE</STRONG> (ver <A HREF=232>><STRONG>sigaction</STRONG></A>).
+</DL><P>
+<hr><p>
+<A NAME=signal>
+- Ejemplo:<p>
+</A>
+<STRONG><PRE>
+/* signal.c - Contar el n&uacute;mero de CTRL-C en 15 segundos */
+#include &lt;stdlib.h&gt;
+#include &lt;signal.h&gt;
+
+int numcortes=0;	/* Contador de CTRL-C */
+int enbucle=1;		/* Controlador de salida del bucle de espera */
+
+void alarma ();		/* Captura la se&ntilde;al de alarma SIGALRM */
+void cortar ();		/* Captura la se&ntilde;al de interrupci&oacute;n SIGINT */
+
+int main ()
+    {
+    signal (SIGINT, cortar);
+    signal (SIGALRM, alarma);
+    printf ("Ejemplo de signal.\n");
+    printf ("Pulsa varias veces CTRL-C durante 15 segundos.\n");
+    alarm (15);
+    while (bucle);
+    signal (SIGINT, SIG_IGN);
+    printf ("Has intentado cortar %d veces.\n", numcortes);
+    printf ("Hasta luego Lucas.\n");
+    exit (0);
+    }
+
+void alarma ()
+     {
+     signal (SIGALRM, SIG_IGN);
+     bucle=0;		/* Salir del bucle */
+     printf ("&#161;Alarma!\n");
+     }
+
+void cortar ()
+     {
+     signal (SIGINT, SIG_IGN);
+     printf ("Has pulsado CTRL-C\n");
+     numcortes++;
+     signal (SIGINT, cortar);
+     }
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de signal.
+Pulsa CTRL-C varias veces durante 15 segundo.
+<EM>^C</EM>Has pulsado CTRL-C
+<EM>^C</EM>Has pulsado CTRL-C
+<EM>^C</EM>Has pulsado CTRL-C
+<EM>^C</EM>Has pulsado CTRL-C
+<EM>^C</EM>Has pulsado CTRL-C
+&#161;Alarma!
+Has intentado cortar 5 veces.
+Hasta luego Lucas.
+</PRE><P>
+<hr><p>
+<A NAME=232>
+<H4>2,3,2. Subrutina <EM>sigaction</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Especifica la acci&oacute;n a realizar cuando un proceso recibe una se&ntilde;al.
+<p>
+    <DT>- Formato:
+	<DD><CODE>#include &lt;signal.h&gt;
+	<DD>int sigaction (se&ntilde;al, acci&oacute;n, acci&oacute;n_salida) ()
+	<DD>int se&ntilde;al;
+	<DD>struct sigaction *acc&oacute;n, *acci&oacute;n_salida;</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>se&ntilde;al: N&uacute;mero de se&ntilde;al, excepto <STRONG>SIGKILL</STRONG>.
+	<DD>acci&oacute;n: Acci&oacute;n especificada cuando se recibe la se&ntilde;al.
+	<DD>acci&oacute;n_salida: Acci&oacute;n a realizar cuando termine la funci&oacute;n <STRONG>sigaction</STRONG>.
+<p>
+    <DT>- Campos de la estructura <STRONG>sigaction</STRONG>:
+	<DD><CODE>void (*sa_handler) ();</CODE> Puntero a la rutina asociada con la se&ntilde;al o uno de los valores:
+	<UL>
+	    <LI><STRONG>SIG_DFL</STRONG>: acci&oacute;n por defecto para dicha se&ntilde;al.
+	    <LI><STRONG>SIG_IGN</STRONG>: ignorar la se&ntilde;al.
+	</UL>
+	<DD><CODE>sigset_t sa_mask;</CODE> Especifica la m&aacute;scara de las se&ntilde;ales que ser&aacute;n bloqueadas durante la captura de la se&ntilde;al especificada.
+	<DD><CODE>int sa_flags;</CODE>
+	<UL>
+	    <LI><STRONG>SA_ONSTACK</STRONG>: La captura de la se&ntilde;al se realiza en una pila de se&ntilde;ales en vez de en la pila del proceso.
+	    <LI><STRONG>SA_OLDSTYLE</STRONG>: El par&aacute;metro <EM>se&ntilde;al</EM> se asocia con la aci&oacute;n por defecto (<STRONG>SIG_DFL</STRONG>) antes de llamar a la rutina de captura (no recomendable, la se&ntilde;al puede recurrir).
+	    <LI><STRONG>SA_NOCLDSTOP</STRONG>: Evita que el proceso padre reciba una se&ntilde;al <STRONG>SIGCHLD</STRONG> cuando para el proceso hijo.
+	</UL>
+<p>
+    <DT>- Devuelve:
+	<DD>0, si es correcta; -1, en caso de error.
+<p>
+    <DT>- Comentarios:
+	<DD>a) Las siguientes funciones pueden ser llamadas sin problemas desde una rutina de captura de se&ntilde;ales:
+	<DD><CODE><TABLE>
+	    <TR>
+		<TD>_exit	<TD>access	<TD>alarm
+		<TD>chdir	<TD>chmod	<TD>chown
+	    <TR>
+		<TD>close	<TD>creat	<TD>dup
+		<TD>dup2	<TD>exec	<TD>fcntl
+	    <TR>
+		<TD>fork	<TD>fstat	<TD>getegid
+		<TD>geteuid	<TD>getgid	<TD>getgroups
+	    <TR>
+		<TD>getpgrp	<TD>getpid	<TD>getppid
+		<TD>getuid	<TD>kill	<TD>link
+	    <TR>
+		<TD>lseek	<TD>mkdir	<TD>mkfifo
+		<TD>open	<TD>pause	<TD>pipe
+	    <TR>
+		<TD>readx	<TD>rename	<TD>rmdir
+		<TD>setgid	<TD>setpgrp	<TD>setuid
+	    <TR>
+		<TD>sigaction	<TD>sigaddset	<TD>sigdelset
+		<TD>sigfillset	<TD>sigismember	<TD>signal
+	    <TR>
+		<TD>sigpending	<TD>sigprocmask	<TD>sigsuspend
+		<TD>sleep	<TD>statx	<TD>tcdrain
+	    <TR>
+		<TD>tcflow	<TD>tcflush	<TD>tcgetattr
+		<TD>tcgetpgrp	<TD>tcsendbreak	<TD>tcsetattr
+	    <TR>
+		<TD>tcsetpgrp	<TD>time	<TD>times
+		<TD>umask	<TD>uname	<TD>unlink
+	    <TR>
+		<TD>ustat	<TD>utime	<TD>write
+	</TABLE></CODE>
+<p>
+	<DD>b) Una vez que una <EM>acci&oacute;n</EM> est&aacute; instalada para una <EM>se&ntilde;al</EM>, contin&uacute;a hasta que haya otra llamada a <STRONG>sigaction</STRONG> o se llame a la subrutina <STRONG>exec</STRONG>, excepto si se ha activado el bit <STRONG>SA_OLDSTYLE</STRONG>.<p>
+	<DD>c) Las se&ntilde;ales <STRONG>SIGKILL</STRONG> y <STRONG>SIGSTOP</STRONG> no pueden ser ignoradas.
+</DL><P>
+<hr><p>
+<A NAME=233>
+<H4>2,3,3. Subrutina <EM>kill</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Env&iacute;a una se&ntilde;al a un proceso.
+<p>
+    <DT>- Formato:
+	<DD><CODE> #include &lt;signal.h&gt;
+	<DD>int kill (proceso, se&ntilde;al)
+	<DD>pid_t proceso;
+	<DD>int se&ntilde;al;</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>proceso: Identificador del proceso o del grupo de procesos que recibir&aacute; la se&ntilde;al. Puede tomar los siguientes valores:
+	<UL>
+	    <LI>&gt;0: Identificador de un &uacute;nico proceso.
+	    <LI>0: Procesos cuyo identificador del grupo de procesos sea igual al PID del proceso actual.
+	    <LI>&lt;-1: Procesos cuyo identificador del grupo de procesos sea igaul al valor absoluto de <EM>proceso</EM>.
+	</UL>
+	<DD>se&ntilde;al: N&uacute;mero de se&ntilde;al enviada.
+<p>
+    <DT>- Devuelve:
+	<DD>0, si se ha completado correctamente; -1, en caso de error.
+<p>
+    <DT>- Comentarios:
+	<DD>a) La subrutina <STRONG>raise</STRONG> env&iacute;a una se&ntilde;al al proceso actual.
+	<DD><CODE>#include &lt;sys/signal.h&gt;
+	<DD>int raise (se&ntilde;al)
+	<DD>int se&ntilde;al;</CODE>
+	<DD>Este c&oacute;digo es equivalente al mostrado a continuaci&oacute;n:
+	<DD><CODE> error = kill (getpid (), se&ntilde;al);</CODE><P>
+	<DD>b) La subrutina <STRONG>killpg</STRONG> env&iacute;a una se&ntilde;al a un grupo de procesos. Esta subrutina es compatible con el UNIX de Berkeley (librer&iacute;a <STRONG>libbsd.a</STRONG>).
+	<DD><CODE>#include &lt;signal.h&gt;
+	<DD>int killpg (int grupo_procesos, int se&ntilde;al);</CODE>
+	<DD>El c&oacute;digo anterior equivale al mostrado a continuaci&oacute;n:
+	<DD><PRE>if (grupo_procesos &lt; 0)
+   {
+   errno = ESRCH;
+   return (-1);
+   }
+return (kill(-grupo_procesos, se&ntilde;al));</PRE><P>
+	<DD>c) Para enviar una se&ntilde;al a otro proceso deben coincidir el identificador de usuario (UID) real o efactivo de ambos procesos, o que el proceso emisor tenga prioridad de usuario <EM>root</EM>.
+</DL><P>
+<hr><p>
+<A NAME=kill>
+- Ejemplo:<p>
+</A>
+<STRONG><PRE>
+/* kill.c - Ejecuci&oacute;n con tiempo de espera usando kill */
+#include &lt;stdlib.h&gt;
+#include &lt;signal.h&gt;
+
+int espera;		/* Tiempo de espera */
+
+void hijo ();		/* Controlador de fin de proceso hijo */
+
+int main (int contargs, char *args[]);
+    {
+    pid_t pid;
+
+    if (contargs &lt; 3)
+       {
+       printf ("Formato: %s segundos comando [opciones].\n", args[0]);
+       exit (1);
+       }
+    printf ("Ejemplo de kill.\n");
+    printf ("Ejecuci&oacute;n con tiempo de espera.\n");
+    signal (SIGCHLD, hijo);
+    pid = fork ();
+    if (pid == 0)
+       {
+       execvp (args[2]; &amp;args[2]);
+       perror (args[0]);
+       }
+    else
+        {
+        espera = atoi (args[1]);
+        sleep (espera);
+        printf ("El hijo %d ha excedido el tiempo de %d s.\n",
+		pid, espera);
+        signal (SIGCHLD, SIG_IGN);
+        kill (pid, SIGINT);
+        }
+    exit (1);
+    }
+
+void espera ()
+     {
+     int id_hijo, est_hijo;
+
+     id_hijo = wait (&amp;est_hijo);
+     printf ("El hijo %d ha terminado antes de %d s.\n",
+		id_hijo, espera);
+     exit (0);
+     }
+
+</PRE></STRONG>
+<PRE>
+<EM>$ kill.e 3 wc kill.c</EM>
+Ejemplo de kill.
+Ejecuci&oacute;n de un comando con tiempo de espera.
+45 132 1065 kill.c
+El hijo 10489 ha terminado antes de 3 s.
+
+<EM>$ kill.e 3 sleep 5</EM>
+Ejemplo de kill.
+Ejecuci&oacute;n de un comando con tiempo de espera.
+El hijo 10851 ha excedido el tiempo de espera de 3 s.
+</PRE><P>
+<hr><p>
+<A NAME=24>
+<H3>2,4. Alarmas y temporizadores.</H3>
+</A>
+<A NAME=241>
+<H4>2,4,1. Subrutinas <EM>alarm</EM> y <EM>ualarm</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Genera alarmas de reloj (se&ntilde;al <STRONG>SIGALRM</STRONG>) para el proceso actual.
+<p>
+    <DT>- Formato
+	<DD><CODE>#include &lt;unistd.h&gt;
+	<DD>unsigned int alarm (segundos)
+	<DD>unsigned int segundos;<P>
+	<DD>unsigned int ualarm (valor, intervalo)
+	<DD>unsigned int valor, intervalo;</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>segundos: N&uacute;mero de segundos para enviar al proceso la se&ntilde;al <STRONG>SIGALRM</STRONG>.
+	<DD>valor: N&uacute;mero de se&ntilde;ales generadas.
+	<DD>intervalo: Intervalo (en ms.) entre las se&ntilde;ales.
+<p>
+    <DT>- Devuelve:
+	<DD><STRONG>alarm</STRONG> devuelve el n&uacute;mero de segundos que restan para generar la se&ntilde;al.
+	<DD><STRONG>ualarm</STRONG> devuelve el n&uacute;mero de microsegundos que restan hasta la pr&oacute;xima se&ntilde;al.
+<p>
+    <DT>- Comentarios:
+	<DD>a) S&oacute;lo puede generarse una &uacute;nica alarma (no son aplilables).
+	<DD>b) El par&aacute;metro <EM>intervalo</EM> no puede ser menor que 10 para un usuario sin privilegios.
+	<DD>c) Estas 2 subrutinas son compatibles con las primeras versiones del AIX, con UNIX System V y con UNIX de Berkeley (BSD). En AIX, se han programado como llamadas a la subrutina <STRONG>incinterval</STRONG>.
+</DL><P>
+<hr><p>
+<A NAME=alarm>
+- Ejemplo:<p>
+</A>
+<STRONG><PRE>
+/* alarm.c - Esperar una alarma */
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+int main ()
+    {
+    printf ("Una alarma en 3 segundos.\n");
+    alarm (3);
+    printf ("Esperando...\n");
+    while (1);
+    printf ("Esta l&iacute;nea no se ejecutar&aacute; nunca.\n");
+    exit (0);
+    }
+
+</PRE></STRONG>
+<PRE>
+Una alarma en 3 segundos.
+Esperando...
+Alarm clock
+</PRE><P>
+<hr>
+<A NAME=25>
+<H3>2,5. Tratamiento de errores.</H3>
+</A>
+<A NAME=251>
+<H4>2,5,1. Lista de errores m&aacute;s importantes.</H4>
+</A>
+<Table border=5>
+  <Tr>
+    <TH ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+	N&uacute;m.
+    <TH ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+	Nombre
+    <TH ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+	Descripci&oacute;n
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      1
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EPERM
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Operaci&oacute;n no permitida.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      2
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENOENT
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      El archivo o directorio no existe.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      3
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ESRCH
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      El proceso no existe.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      4
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EINTR
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Llamada al sistema interrumpida.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      5
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EIO
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Error de E/S.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      6
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENXIO
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      No existe dispositivo o direcci&oacute;n.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      7
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      E2BIG
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Lista de argumentos demasiado larga.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      8
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENOEXEC
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Error en formato de ejecuci&oacute;n.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      9
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EBADF
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Descriptor de fichero err&oacute;neo.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      10
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ECHILD
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      No existe el proceso hijo.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      11
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EGAIN
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Recurso no disponible temporalmente.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      12
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENOMEM
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      No hay suficiente espacio de memoria.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      13
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EACCES
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Permiso denegado.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      14
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EFAULT
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Direcci&oacute;n de memoria err&oacute;nea.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      15
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENOTBLK
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Se necesita un fichero de bloques.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      16
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EBUSY
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Recurso ocupado.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      17
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EEXIST
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Fichero existente.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      18
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EXDEV
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Enlace impropio.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      19
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENODEV
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Dispositivo inexistente.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      20
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENOTDIR
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      No es un directorio.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      21
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EISDIR
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Es un directorio.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      22
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EINVAL
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Argumento no v&aacute;lido.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      23
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENFILE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Demasiados ficheros abiertos en el sistema.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      24
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EMFILE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Demasiados ficheros abiertos.
+    </Td>
+  </Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      26
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ETXBUSY
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Fichero de texto ocupado.
+    </Td>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      27
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EFBIG
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Fichero demasiado largo.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      28
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ENOSPC
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      No queda espacio en el dispositivo.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      29
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ESPIPE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      B&uacute;squeda no v&aacute;lida.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      30
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EROFS
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Fichero s&oacute;lo de lectura.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      32
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EPIPE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Tuber&iacute;a rota.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      33
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EDOM
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Error de dominio matem&aacute;tico.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      34
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ERANGE
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Resultado fuera de rango.
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      78
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      ETIMEDOUT
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Excedido tiempo de conexi&oacute;n (NFS).
+    </Td>
+  </Tr>
+  <Tr>
+    <Td ColSpan=1 RowSpan=1 Align=Right Valign=Top>
+      88
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      EDQUOT
+    </Td>
+    <Td ColSpan=1 RowSpan=1 Align=Left Valign=Top>
+      Cuota de disco excedida.
+    </Td>
+  </Tr>
+</Table>
+<p>
+Nota: No se tratan aqu&iacute; los errores relativos a comunicaciones, ni a <EM>sockets</EM>.<P>
+<hr>
+<A NAME=252>
+<H4>2,5,2. Subrutina <EM>perror</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Escribe un mensaje explicando un error.
+<p>
+    <DT>- Formato:
+	<DD><CODE> #include &lt;errno.h&gt;
+	<DD>void perror (cadne)
+	<DD>char *cadena;</CODE>
+<p>
+    <DT>- Par&aacute;metro:
+	<DD>Cadena de caracteres que explica el error.
+<p>
+    <DT>- Variables globales de <STRONG>errno.h</STRONG>:
+	<DD><CODE>extern int errno;</CODE> N&uacute;mero de error.
+	<DD><CODE>extern char *sys_errlist[];</CODE> Tabla con la descripci&oacute;n de los errores del sistema.
+<p>
+    <DT>- Comentarios:
+	<DD>a) Se imprime en la salida normal con un formato equivalente a la siguiente orden:
+	<DD><CODE>printf ("%s: %s\n", <EM>cadena</EM>, sys_errlist[errno]);</CODE>
+</DL><P>
+<hr><p>
+<A NAME=3>
+<H2>3. <EM>PIPES</EM> (TUBER&Iacute;AS).</H2>
+</A>
+<A NAME=31>
+<H3>3,1. Conceptos generales.</H3>
+</A>
+<DL>
+    <DT><STRONG>Descriptor de fichero:</STRONG>
+	<DD>N&uacute;mero entero positivo usado por un proceso para identificar un fichero abierto. Esta traducci&oacute;n se realiza mediante una tabla de descriptores de fichero, ubicado en la zona de datos del proceso.<p>
+    <DT><STRONG>Descriptores reservados:</STRONG>
+	<UL>
+	    <LI>0: entrada normal (<STRONG>stdin</STRONG>).
+	    <LI>1: salida normal (<STRONG>stdout</STRONG>).
+	    <LI>2: salida de error (<STRONG>stderr</STRONG>).
+	</UL><P>
+    <DT><STRONG>Redirecci&oacute;n:</STRONG>
+	<DD>Establecer copias del descriptor de ficheros de un archivo para encauzar las operaciones de E/S hacia otro fichero.<p>
+    <DT><STRONG>Tuber&iacute;a:</STRONG>
+	<DD>Mecanismo de intercomunicaci&oacute;n entre procesos que permite que 2 o m&aacute;s procesos env&iacute;en informaci&oacute;n a cualquier otro.<p>
+    <DT><STRONG>Tuber&iacute;a sin nombre:</STRONG>
+	<DD>Enlace de comunicaci&oacute;n unidireccional, capaz de almacenar su entrada (hasta 4 KB en BSD o hasta 40 KB en System V).<p>
+    <DT><STRONG>Tuber&iacute;as nombradas (FIFO):</STRONG>
+	<DD>Permiten una comunicaci&oacute;n menos restringida, ya que las colas FIFO existen en el sistema de archivos hasta que son borradas.
+	<DD>Caracter&iacute;sticas:
+	<UL>
+	    <LI>Permite comunicar procesos no emparentados.
+	    <LI>Tiene una entrada en el sistema de archivos.
+	    <LI>Usa una pol&iacute;tica de colas "primero en llegar, primero en servirse".
+	    <LI>S&oacute;lo disponible en UNIX System V.
+	</UL>
+</DL><P>
+<hr>
+<A NAME=32>
+<H3>3,2. Redirecci&oacute;n.</H3>
+<A NAME=321>
+<H4>3,2,1. Subrutinas <EM>dup</EM> y <EM>dup2</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Duplica un descriptor de fichero.
+<p>
+    <DT>- Formatos:
+	<DD><CODE>#include &lt;unistd.h&gt;
+	<DD>#include &lt;fcntl.h&gt;
+	<DD>#include &lt;sys/types&gt;
+	<DD>int dup (desc_abierto)
+	<DD>int desc_abierto;<P>
+	<DD>int dup2 (desc_abierto, desc_nuevo)
+	<DD>int desc_abierto, desc_nuevo;</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>desc_abierto: Descriptor de fichero abierto.
+	<DD>desc_nuevo: Nuevo descriptor de fichero devuelto por <STRONG>dup2</STRONG>.
+<p>
+    <DT>- Devuelve:
+	<DD><STRONG>dup</STRONG> devuelve el menor descriptor de fichero que est&eacute; libre.
+	<DD><STRONG>dup2</STRONG> devuelve el valor de <EM>desc_nuevo</EM>.
+	<DD>Ambas subrutinas devuelven el valor -1 en caso de error.
+<p>
+    <DT>- Comentarios:
+	<DD>a) Las subrutinas <STRONG>dup</STRONG> y <STRONG>dup2</STRONG> son equivalentes a la subrutina <STRONG>fcntl</STRONG> de la siguiente forma:
+	<TABLE>
+	   <TR><TH>dup:		<TD><CODE>fcntl (<EM>desc_abierto</EM>, F_DUPFD, 0);</CODE>
+	   <TR><TH>dup2:	<TD><CODE>close (<EM>desc_nuevo</EM>);
+		fcntl (<EM>desc_abierto</EM>, F_DUPFD, <EM>desc_nuevo</EM>);</CODE>
+	</TABLE><P>
+	<DD>b) Puede redirigirse hacia un fichero cualquier descriptor especial.
+</DL><P>
+<hr><p>
+<A NAME=dup2>
+- Ejemplo:<p>
+</A>
+<STRONG><PRE>
+/* dup2.c - Redirecci&oacute;n usando dup2 */
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+
+int main (int contargs, char *args[])
+    {
+    int desc_fich;
+
+    if contargs &lt; 3)
+       {
+       printf ("Formato: %s fichero comando [opciones].\n", args[0]);
+       exit (1);
+       }
+    printf ("Ejemplo de redirecci&oacute;n.\n");
+    desc_fich = open (args[1], O_CREAT|O_TRUNC|O_WRONLY, 0);
+    dup2 (desc_fich, 1);		/* Redirige la salida normal */
+    close (desc_fich);
+    execvp (args[2], &amp;args[2];	/* Ejecuta comando */
+    exit (1);
+    }
+
+</PRE></STRONG>
+<PRE>
+<EM>$ dup2.e dup2.sal ls *.c</EM>
+Ejemplo de redirecci&oacute;n.
+
+<EM>$ chmod 600 dup2.sal; cat dup2.sal</EM>
+alarm.c		atexit.c	dup2.c		escritor_fifo.c
+exec.c		fork.c		fork_huerf.c	kill.c
+lector_fifo.c	pipe.c		pipe_conec.c	signal.c
+system.c	waitpid.c
+</PRE><P>
+<hr>
+<A NAME=322>
+<H4>3,2,2. Subrutina <EM>fcntl</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Realiza operaciones de control sobre ficheros abiertos, tales como:
+	<UL>
+	    <LI>duplicar el descriptor,
+	    <LI>poner o leer caracter&iacute;sticas del descriptor,
+	    <LI>poner o leer estado del fichero,
+	    <LI>gestionar bloqueos de registros,
+	    <LI>gestionar la propiedad de la E/S as&iacute;ncrona,
+	    <LI>cerrar varios ficheros.
+	</UL>
+<p>
+    <DT>- Formato:
+	<DD><CODE> #include &lt;unistd.h&gt;
+	<DD>#include &lt;fcntl.h&gt;
+	<DD>#include &lt;sys/types&gt;
+	<DD>int fcntl (descriptor, comando, argumento)
+	<DD>int descriptor, comando, argumento);</CODE>
+<P>
+    <DT>- Par&aacute;metros:
+	<DD>descriptor: Descriptor del fichero.
+	<DD>comando: Operaci&oacute;n ha realizar.
+	<DD>argumento: Par&aacute;metro del <EM>comando</EM>.
+<p>
+    <DT>- Devuelve:
+	<DD>Valor devuelto por el <EM>comando</EM>; -1, en caso de error.
+<p>
+    <DT>- Operaciones:
+	<DD><TABLE>
+		<TR><TH ALIGN=LEFT VALIGN=TOP>F_DUPFD:
+		<TD>Obtener el menor descriptor de fichero disponible que sea mayor que el par&aacute;metro <EM>descriptor.</EM> Mantiene el mismo puntero y las mismas caracter&iacute;sticas del fichero original.
+	<TR><TH ALIGN=LEFT>F_GETFD:
+		<TD>Obtener caracter&iacute;sticas del <EM>descriptor</EM>.
+	<TR><TH ALIGN=LEFT>F_SETFD:
+		<TD>Poner caracter&iacute;sticas del <EM>descriptor</EM>.
+	<TR><TH ALIGN=LEFT>F_GETFL:
+		<TD>Obtener estado del fichero.
+	<TR><TH ALIGN=LEFT>F_SETFL:
+		<TD>Poner estado del fichero.
+	<TR><TH ALIGN=LEFT>F_GETLK:
+		<TD>Obtener informaci&oacute;n de bloqueo.
+	<TR><TH ALIGN=LEFT>F_SETLK:	
+		<TD>Poner bloqueo.
+	<TR><TH ALIGN=LEFT>F_SETLKW:
+		<TD>Poner bloqueo en una zona bloqueada.
+	<TR><TH ALIGN=LEFT VALIGN=TOP>F_GETOWN:
+		<TD>Obtener PID (&gt;0) o PGID (&lt;0) del proceso que recibe las se&ntilde;ales <STRONG>SIGIO</STRONG> o <STRONG>SIGURG</STRONG>.
+	<TR><TH ALIGN=LEFT VALIGN=TOP>F_SETOWN:
+		<TD>Poner PID (&gt;0) o PGID (&lt;0) del proceso gestor de la E/S as&iacute;ncrona.
+	<TR><TH ALIGN=LEFT VALIGN=TOP>F_CLOSEM:
+		<TD>Cierra todos los descriptores desde <EM>descriptor</EM> hasta el valor m&aacute;ximo (<STRONG>OPEN_MAX</STRONG>).
+	</TABLE>
+<p>
+    <DT>- Caracter&iacute;sticas del descriptor de ficheros:<p>
+	<DD><STRONG>FD_CLOEXEC</STRONG>: Indica si el <EM>descriptor</EM> se cerrar&aacute; ante una funci&oacute;n <STRONG>exec</STRONG>.
+<p>
+    <DT>- Estados del modo de acceso al fichero:
+	<DD><TABLE>
+	<TR><TH ALIGN=LEFT>O_RDONLY:	<TD>Abierto s&oacute;lo para lectura.
+	<TR><TH ALIGN=LEFT>O_RDWR:	<TD>Abierto para lectura y escritura.
+	<TR><TH ALIGN=LEFT>O_WRONLY:	<TD>Abierto s&oacute;lo para escritura.
+	</TABLE>
+<p>
+    <DT>- Bloqueos:
+	<DD><TABLE>
+	<TR><TH ALIGN=LEFT>F_RDLCK:	<TD>Bloqueo de lectura (compartido).
+	<TR><TH ALING=LEFT>F_WRLCK:	<TD>Bloqueo de escritura (exclusivo).
+	<TR><TH ALING=LEFT>F_UNLCK:	<TD>Sin bloqueo.
+	</TABLE>
+<p>
+    <DT>- Comentarios:
+	<DD>a) Un bloqueo de lectura evita que otros procesos activen bloqueos de lectura en cualquier zona del &aacute;rea protegida. S&iacute; se permiten otros bloqueos de lectura en toda el &aacute;rea o en partes de ella.<P>
+	<DD>b) Un bloqueo de escritura evita que otros procesos bloqueen dicha zona.<P>
+	<DD>c) Los "abrazos mortales" en un sistema distribuido no siempre son detectables. El programa deber&aacute; usar temporizadores para poder liberar sus bloqueos.
+</DL><P>
+<hr>
+<A NAME=33>
+<H3>3,3. Comunicaci&oacute;n entre procesos emparentados.</H3>
+</A>
+<A NAME=331>
+<H4>3,3,1. Subrutina <EM>pipe</EM></H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Crea un canal de comunicaci&oacute;n entre procesos emparentados.
+<p>
+    <DT>- Formato:
+	<DD><CODE> #include &lt;unistd.h&gt;
+	<DD>int pipe (descriptores)
+	<DD>int descriptores[2];</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>Tabla que recibir&aacute; los descriptores de entrada y de salida de la tuber&iacute;a.
+<p>
+    <DT>- Devuelve:
+	<DD>0, si se ha completado correctamente; -1, en caso de error.
+ <p>
+    <DT>- Comentarios:
+	<DD>a) <EM>descriptores</EM>[0] se abre para lectura y <EM>descriptores</EM>[1], para escritura.
+	<DD>b) La operaci&oacute;n de lectura en <EM>descriptores</EM>[0] accede a los datos escritos en <EM>descriptores</EM>[1] como en una cola FIFO (primero en llegar, primero en servirse),
+</DL><P>
+<hr><p>
+<A NAME=pipe>
+- Ejemplos:<p>
+</A>
+<STRONG><PRE>
+/* pipe.c - Tuber&iacute;a sin nombre entre procesos padre e hijo */
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#define LEER		0
+#define ESCRIBIR	1
+
+int main ()
+    {
+    int descr[2];	/* Descriptores de E y S de la turber&iacute;a */
+    int  bytesleidos;
+    char mensaje[100],
+	*frase="Veremos si la transferecia es buena.";
+
+    printf ("Ejemplo de tuber&#205;a entre padre e hijo.\n");
+    pipe (descr);
+    if (fork () == 0)
+       {
+       close (descr[LEER]);
+       write (descr[ESCRIBIR], frase, strlen(frase));
+       close (descr[ESCRIBIR]);
+       }
+    else
+       {
+       close (descr[ESCRIBIR]);
+       bytesleidos = read (descr[LEER], mensaje, 100);
+       printf ("Bytes leidos: %d\n");
+       printf ("Mensaje: %s\n", bytesleidos, mensaje);
+       close (descr[LEER]);
+       }
+    }
+
+</PRE></STRONG>
+<PRE>
+Ejemplo de tuber&iacute;a entre padre e hijo.
+Bytes le&iacute;dos: 36
+Mensaje: Veremos si la transferencia es buena.
+</PRE><P>
+<hr><P>
+<A NAME=pipeconec> </A>
+<STRONG><PRE>
+/* pipe_conec.c - Tuber&iacute;a entre 2 comandos usando pipe. */
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+#define LEER		0
+#define ESCRIBIR	1
+
+int main (int contargs, char *args[])
+    {
+    int descr[2];	/* Descriptores de E y S de la turber&iacute;a */
+
+    if (contargs != 3)
+       {
+       printf ("Formato: %s comando_ent comando_sal.\n", args[0]);
+       exit (1);
+       }
+    pipe (descr);
+    if (fork () == 0)
+       {
+       close (descr[LEER]);
+       dup2 (descr[ESCRIBIR], 1);
+       close (descr[ESCRIBIR]);
+       execlp (args[1], args[1], NULL);
+       perror (args[0]);
+       }
+    else
+       {
+       close (descr[ESCRIBIR]);
+       dup2 (descr[LEER], 0);
+       close (descr[LEER]);
+       execlp (args[2], args[2], NULL);
+       perror (args[0]);
+       }
+    }
+
+</PRE></STRONG>
+<PRE>
+<EM>$ pipe_conec.e ls wc</EM>
+37 37 354
+</PRE><P>
+<hr>
+<A NAME=34>
+<H3>3,4. Comunicaci&oacute;n entre procesos no emparentados.</H3>
+</A>
+<A NAME=341>
+<H4>3,4,1. Subrutina <EM>mkfifo</EM>:</H4>
+</A>
+<DL>
+    <DT>- Descripci&oacute;n:
+	<DD>Crea un canal FIFO de comunicaciones entre procesos que no necesitan estar emparentados.
+<p>
+    <DT>- Formato:
+	<DD><CODE>#include &lt;sys/mode.h&gt;
+	<DD>int mkfifo (camino, modo)
+	<DD>const char *camino;
+	<DD>int modo;</CODE>
+<p>
+    <DT>- Par&aacute;metros:
+	<DD>camino: Camino completo del fichero FIFO.
+	<DD>modo: Tipo de fichero y permisos de acceso.
+<p>
+    <DT>- Devuelve:
+	<DD>0, si se ha completado correctamente; -1, en caso de error.
+<p>
+    <DT>- Comentarios:
+	<DD>a) La subrutina <STRONG>mkfifo</STRONG> es un interfaz de la rutina <STRONG>mknod</STRONG> para crear colas FIFO, las cuales no necesitan privilegios especiales del sistema.
+	<DD>b) El comando <STRONG>ls -al</STRONG> identifica una tuber&iacute;a nombrada con el car&aacute;cter descriptor <STRONG>p</STRONG>
+</DL><P>
+<hr><p>
+<A NAME=lectorfifo>
+- Ejemplos:<p>
+</A>
+<STRONG><PRE>
+/* lector_fifo.c - Tuberia con nombre usando mkfifo */
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mode.h&gt;
+
+int linea (int df, char *cad);
+
+int main ()
+    {
+    int descr;
+    char cadena[100];
+
+    unlink ("tuberia");
+    mkfifo ("tuberia", 0);
+    chmod ("tuberia", 460);
+    descr = open ("tuberia", O_RDONLY);
+    while (linea (descr, cadena))
+         printf ("%s\n", cadena);
+    close (descr);
+    pritnf ("Fin del lector.\n");
+    }
+
+int linea (int df, char *cad)
+    {
+    int n;
+
+    do
+      {
+      n = read (df, cad, 1);
+      }
+    while (n &gt; 0 &amp;&amp; *cad++ != NULL);
+    return (n &gt; 0);
+    }
+
+<P><hr><p>
+<A NAME=escritorfifo> </A>
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/mode.h&gt;
+
+int main ()
+    {
+    int descr, longmens, i;
+    char mensaje[100];
+
+    sprintf (mensaje, "Un saludo desde el proceso %d", getpid ());
+    longmens = strlen (mensaje) + 1;
+    do
+      {		/* intentar la conexion */
+      descr = open ("tuberia", O_WRONLY);
+      if (descr == -1) sleep (1);
+      }
+    while (descr == -1);
+    for (i=0; i&lt;3; i++)
+        {
+        write (descr, mensaje, longmens);
+        sleep (3);
+        }
+    close (descr);
+    printf "Fin del escritor %d\n", getpid ());
+    }
+
+<P><hr><p>
+<A NAME=fifo> </A>
+#!/bin/ksh
+# fifo - Carga los procesos lector y escritor en 2<EM SUP>o</EM> plano.
+lector_fifo.e &amp;
+escritor_fifo.e &amp;
+escritor_fifo.e &amp;
+
+</PRE></STRONG>
+<PRE>
+<EM>$ fifo</EM>
+$Un saludo desde el proceso 11996
+Un saludo desde el proceso 10971
+Un saludo desde el proceso 11996
+Un saludo desde el proceso 10971
+Un saludo desde el proceso 11996
+Un saludo desde el proceso 10971
+Fin del escritor 10971
+Fin del escritor 11996
+Fin del lector
+
+</PRE>
+<HR SIZE=5>
+<A HREF=http://www.fie.us.es/info/informatica.html#artic>
+	<IMG BORDER=0 SRC=/otromenu3.gif ALT="<- Inform&aacute;tica."></A>
+<A HREF=http://www.fie.us.es/~ramon/>
+	<IMG BORDER=0 SRC=/icons/atras.gif ALT="<-"> -M&oacute;n en la Telara&ntilde;a.</A>
+</BODY>
+</HTML>

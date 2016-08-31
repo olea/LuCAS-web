@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE> Instalaci&oacute;n de Oracle 8.0.5 para Linux: Preinstalaci&oacute;n </TITLE>
+ <LINK HREF="Instalacion-Oracle-Mini-Como-4.html" REL=next>
+ <LINK HREF="Instalacion-Oracle-Mini-Como-2.html" REL=previous>
+ <LINK HREF="Instalacion-Oracle-Mini-Como.html#toc3" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Instalacion-Oracle-Mini-Como-4.html">Página siguiente</A>
+<A HREF="Instalacion-Oracle-Mini-Como-2.html">Página anterior</A>
+<A HREF="Instalacion-Oracle-Mini-Como.html#toc3">Índice general</A>
+<HR>
+<H2><A NAME="s3">3. Preinstalaci&oacute;n </A></H2>
+
+<P>
+<P>Esta es la parte principal para que funcione todo. Aqu&iacute; crear&aacute; todos los
+pilares para que pueda usted instalar Oracle.
+<P>
+<H2><A NAME="ss3.1">3.1 Requerimientos t&eacute;cnicos.</A>
+</H2>
+
+<P>
+<P>En el apartado hardware:
+<P>
+<UL>
+<LI>32 MB de RAM, en caso de que haga cargas elevadas se requerir&aacute; incluso
+128 MB</LI>
+<LI>SWAP, aproximadamente el triple de la memoria RAM instalada</LI>
+<LI>400 MB de disco duro para la instalaci&oacute;n</LI>
+<LI>Al menos unas 150 MB de disco duro por defecto por cada base de datos
+Oracle crear&aacute; alguna base de datos por defecto</LI>
+</UL>
+<P>En el apartado software:
+<P>
+<UL>
+<LI>Al menos el Kernel <CODE>2.0.34</CODE> </LI>
+<LI>GLIBC <CODE>2.0.7</CODE>, incluida en Red Hat 5.2 y superiores o Debian 2.0</LI>
+<LI>JDBC JDK <CODE>1.0.2</CODE> &oacute; <CODE>1.1.1</CODE></LI>
+<LI>ProC/C++ gcc <CODE>2.7.2.3</CODE> o superior</LI>
+<LI>Tcl8.0</LI>
+</UL>
+<P>
+<H2><A NAME="ss3.2">3.2 Configuraci&oacute;n del Kernel</A>
+</H2>
+
+<P>
+<P>Debe editar dos ficheros para configurar los par&aacute;metros referentes a la memoria
+compartida y a las se&ntilde;ales. No es imprescindible pero si conveniente para poder
+tener un buen entorno de trabajo que soporte cargas elevadas.  El primero ser&iacute;a
+<CODE>/usr/src/linux/include/asm-i386/shmparam.h</CODE> Ajustaremos:
+<P>
+<UL>
+<LI>SHMMAX      -&gt;   0xFFFFFFFF</LI>
+<LI>SHMMIN      -&gt;   1</LI>
+<LI>SHMMNI      -&gt;   100</LI>
+<LI>SHMSEG      -&gt;   10</LI>
+</UL>
+<P>El segundo ser&iacute;a <CODE>/usr/src/linux/include/linux/sem.h</CODE>
+<P>
+<UL>
+<LI>SEMMNS      -&gt;   200</LI>
+<LI>SEMMNI      -&gt;   70</LI>
+</UL>
+<P>Acto seguido recompilar&aacute; el Kernel del nuevo.
+<P>
+<H2><A NAME="ss3.3">3.3 Crear el usuario y el grupo DBA</A>
+</H2>
+
+<P>
+<P>El objetivo es crear un usuario, aqu&iacute; llamado <CODE>oracle</CODE>, que actuar&aacute; de
+administrador de la Base de datos dentro del grupo de usuarios <CODE>DBA</CODE>
+(Database Administrator).
+<P>Para ello tiene dos m&eacute;todos.
+<P>
+<H3>Primer m&eacute;todo</H3>
+
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@root]# groupadd dba
+[root@root]# useradd oracle -g dba
+[root@root]# passwd oracle
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Segundo m&eacute;todo</H3>
+
+<P>
+<P>Cree el usuario de esta forma.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@root]# adduser oracle
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Edite el fichero <CODE>/etc/group</CODE>. En la l&iacute;nea que lea:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+oracle:x:[numero]:
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Reescr&iacute;bala as&iacute;:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+dba:x:[numero]:oracle
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.4">3.4 Puntos de montaje</A>
+</H2>
+
+<P>
+<P>Cree una serie de subdirectorios. El primero ser&aacute; para la propia instalaci&oacute;n de
+Oracle (<CODE>/usr/oracle</CODE>) y los tres siguientes para la instalaci&oacute;n de las
+bases de datos (<CODE>/u01</CODE>, <CODE>/u02</CODE> y <CODE>/u03</CODE>). Lo recomendable
+es que estos subdirectorios puedan ser particiones diferentes para aprovechar
+mejores ventajas tanto a seguridad, etc.  Aproveche la ocasi&oacute;n para crear un
+subdirectorio local para almacenar algunos scripts.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@root]# mkdir /usr/oracle
+[root@root]# mkdir /u01
+[root@root]# mkdir /u02
+[root@root]# mkdir /u03
+[root@root]# mkdir /usr/local/bin
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Despu&eacute;s de crearlo, le har&aacute; pertenecientes al usuario <CODE>oracle</CODE> y del
+grupo <CODE>dba</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@root]# chown -R oracle:dba /usr/oracle
+[root@root]# chown -R oracle:dba /u01
+[root@root]# chown -R oracle:dba /u02
+[root@root]# chown -R oracle:dba /u03
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss3.5">3.5 Definici&oacute;n de las variables de entorno</A>
+</H2>
+
+<P>
+<P>Para empezar asigne una m&aacute;scara al usuario <CODE>oracle</CODE> para asegurarse que
+los usuarios de grupo y el resto s&oacute;lo tienen permiso de lectura y ejecuci&oacute;n,
+pero no de escritura.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+[root@root]# umask 022 oracle
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>A&ntilde;ada las dem&aacute;s variables de entorno al fichero profile. Depende un poco si
+estamos usando bash y otros factores deber&aacute; editar
+<CODE>/etc/profile</CODE>,<CODE>/home/oracle/.profile</CODE> o
+<CODE>/home/oracle/.bash_profile</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+export ORACLE_BASE=/usr/oracle/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/8.0.5
+export ORACLE_SID=ora8
+export ORA_NLS33=$ORACLE_HOME/ocommon/nls/admin/data
+export PATH=$PATH:$ORACLE_HOME/bin
+export ORACLE_OWNER=oracle
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+export ORACLE_TERM=vt220
+export TMPDIR=/var/tmp
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="Instalacion-Oracle-Mini-Como-4.html">Página siguiente</A>
+<A HREF="Instalacion-Oracle-Mini-Como-2.html">Página anterior</A>
+<A HREF="Instalacion-Oracle-Mini-Como.html#toc3">Índice general</A>
+</BODY>
+</HTML>

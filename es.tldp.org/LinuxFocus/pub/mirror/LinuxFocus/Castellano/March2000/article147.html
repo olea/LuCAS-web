@@ -1,0 +1,346 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_1.3">
+ <!-- lfparser can be obtained from http://www.linuxfocus.org/developer/Guido/lfparser.html -->
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>System Administration : Usando el ProxyPass de Apache para acceder a servidores que est&aacute;n detr&aacute;s de un host enmascarado.</TITLE>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff"  text="#000000" alink="#336633" link="#336633" vlink="#336633">
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 CELLSPACING=0 CELLPADDING=5 WIDTH="30%" >
+<TR>
+<TD><IMG SRC="../../common/images/Atif-Ghaffar.jpg" ALT="[Photo of the Author]" HEIGHT=120 WIDTH=115>
+<BR>por  <A HREF="mailto:aghaffar@developer.ch">Atif Ghaffar</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>
+Vivo en Suiza y trabajo como webmaster 
+y administrador de unix. Mis pasiones incluyen Linux, Unix, Perl, Apache
+y software GPL. Podeis saber m&aacute;s sobre mi en mi
+<A HREF="http://www.developer.ch/~aghaffar">p&aacute;gina web</A></P>
+<P><FONT COLOR="#336633">Contenidos</FONT>:
+<UL>
+  <LI><A HREF="#lfindex0">El problema con el enmascaramiento IP</A></LI>
+  <LI><A HREF="#lfindex1">Apache al rescate: ProxyPass</A></LI>
+  <LI><A HREF="#lfindex2">Ejemplo en el mundo real</A></LI>
+  <LI><A HREF="#lfindex3">Mapeando Servidores Virtuales </A></LI>
+  <LI><A HREF="#lfindex4">Advertencia</A></LI>
+  <LI><A HREF="#lfindex5">Recursos adicionales</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=147&lang=es">Talkback form for this article</A></LI>
+</UL>
+</P>
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Usando el ProxyPass de Apache para acceder a servidores que est&aacute;n detr&aacute;s de un host enmascarado.</H2>
+ <IMG SRC="../../common/images/illustration129.gif" ALT="[Illustration]" HSPACE=10 HEIGHT=140 WIDTH=400><P><FONT COLOR="#336633">Resumen</FONT>:
+<P>
+<P ALIGN="JUSTIFY">
+Tengo en casa una 
+peque&ntilde;a red con Linux usando enmascaramiento IP y 
+un cortafuegos (de aca en adelante lo llamaremos firewall). Aunque todas 
+las m&aacute;quinas en mi red pueden acceder a toda la informacion que est&aacute; en 
+internet, &uacute;nicamente la m&aacute;quina que est&aacute; haciendo el enmascarado de IP 
+se puede acceder desde internet. En mi &uacute;ltimo
+<A  HREF="../January2000/article129.html">
+art&iacute;culo sobre Apache</A>, mostr&eacute; c&oacute;mo reciclar 
+direcciones IP. En &eacute;ste art&iacute;culo mostrar&eacute; c&oacute;mo hacer 
+que un webserver detras de su firewall pueda ser accedido a trav&eacute;s de 
+internet, sin cambiar ninguna de las reglas de su firewall ni 
+comprometiendo la seguridad de su red. En este art&iacute;culo veremos como 
+usar la sentencia ProxyPass de Apache para lograr esto. Al p&uacute;blico que 
+apunto con este art&iacute;culo es a los administradores de sistema o 
+cualquiera que est&aacute; construyendo una red local peque&ntilde;a o mediana 
+en su hogar o trabajo. </P></P><HR size="2" noshade><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>El problema con el enmascaramiento IP</H2>
+
+<P>
+Por un largo periodo en mi LAN, el router (la 
+m&aacute;quina que estaba haciendo el trabajo de enmascaramiento y de firewall) 
+ estaba tambi&eacute;n como servidor web, servidor de mail, de ftp, de 
+DNS y todo lo dem&aacute;s que se puedan imaginar. Un d&iacute;a tuve la necesidad que 
+una de las m&aacute;quinas detras del firewall brindase contenidos web y que 
+puedan ser vistos desde internet. Tambi&eacute;n quer&iacute;a tener en l&iacute;nea algunos 
+documentos desde una m&aacute;quina SGI IRIX que estaba detr&aacute;s de la red (un 
+servidor de v&iacute;deo que ofrec&iacute;a imagenes en l&iacute;nea). Esta m&aacute;quina ten&iacute;a 
+acceso total a internet, pero los usuarios de internet que quer&iacute;an 
+accederlo no lo pod&iacute;an hacer.  Aunque no ten&iacute;a ninguna
+intenci&oacute;n de conectar a la red la m&aacute;quina IRIX, era necesario que 
+la gente se conectase a &eacute;sta. En el trabajo me enfrentaba con el 
+mismo problema con una red y un firewall similar. Cada vez que alguien 
+quer&iacute;a un servidor web para desarrollo que sea accesible desde internet, 
+para uso &uacute;nicamente de prueba, hab&iacute;a que cambiar las reglas del firewall 
+y hab&iacute;a que darle a esa m&aacute;quina una direccion IP externa y comprometer 
+la seguridad de la red. </P>
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Apache al rescate: ProxyPass</H2>
+
+
+<P ALIGN="JUSTIFY">Despu&eacute;s de considerar varias soluciones, 
+implement&eacute; una que inclu&iacute;a al Apache y su sentencia 
+ProxyPass. ProxyPass requiere que el mod_proxy est&eacute; compilado o cargado 
+como m&oacute;dulo con su servidor Apache. A continuaci&oacute;n tenemos la definici&oacute;n 
+del ProxyPass tal y como viene en el manual de Apache.</P>
+
+<P>
+<STRONG>ProxyPass</STRONG></P>
+<P>
+<STRONG>Syntax:</STRONG> ProxyPass <EM>&lt;path&gt; &lt;url&gt;</EM><BR>
+<STRONG>Default:</STRONG> <EM>None</EM><BR>
+<STRONG>Context:</STRONG> server config, virtual host<BR>
+<STRONG>Override:</STRONG> <EM>Not applicable</EM><BR>
+<STRONG>Status:</STRONG> Base<BR>
+<STRONG>Module:</STRONG> mod_proxy<BR>
+<STRONG>Compatibility:</STRONG> ProxyPass est&aacute; disponible unicamente en 
+Apache 1.1 y sucesivas versiones.</P>
+
+<P>Esta sentencia permite mapear en el servidor local a servidores 
+remotos; el servidor local no act&uacute;a como un proxy en un sentido 
+conveniente, pero aparece como un espejo del servidor remoto. 
+&lt;path&gt; es el nombre de la direccion local virtual; &lt;url&gt; es 
+la direccion URL del servidor remoto. </P>
+
+<P>Supongamos que el servidor local tiene la siguiente direccion: 
+<SAMP>http://wibble.org/</SAMP>; entonces
+<PRE>
+   ProxyPass /mirror/foo/ http://foo.com/
+</PRE>
+dar&iacute;a como resultado un pedido local 
+para &lt;<SAMP>http://wibble.org/mirror/foo/bar</SAMP>
+&gt; para ser convertido internamenet a un 
+pedido proxy a &lt;<SAMP>http://foo.com/bar</SAMP>&gt;.
+</P>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Ejemplo en el mundo real</H2>
+
+
+<P>
+Mapeando el servidor de v;ideo interno al servidor web externo. <BR>
+<B>Red interna</B>: hometranet.home 192.168.1.0/255.255.255.0 <BR>
+(En el teatro de internet, intranet, extranet, llam&eacute; a mi red 
+hogare&ntilde;a hometranet)<BR>
+<B>Red externa</B>: developer.ch 193.192.254.50
+</P>
+
+<P>
+Servidor de v&iacute;deo (interno) corriendo en el host 
+<B>cam.hometranet.home</B> dando servicios de v&iacute;deo en l&iacute;nea desde  
+<B>http://cam.hometranet.home:5555/cams/sony/video</B> y fotos desde la 
+camara en <B>http://cam.hometranet.home:5555/cams/sony/image</B> <BR>
+Yo quer&iacute;a ver Ios resultados de estas direcciones cuando visitase 
+<B>http://mozilla.developer.ch/video</B> <BR>
+y <B>http://mozilla.developer.ch/image</B> <BR>
+Esto se puede llevar a cabo sencillamente usando la sentencia 
+<I>ProxyPass</I> de Apache simplemente agregando las siguientes l&iacute;neas 
+en httpd.conf o srm.conf</P>
+<CODE>
+ProxyPass /image http://cam.hometranet.home:5555/cams/sony/image<BR>
+ProxyPass /video http://cam.hometranet.home:5555/cams/sony/video<BR>
+</CODE>
+Ahora, despu&eacute;s de reiniciar el servidor 
+web (si mod_proxy est&aacute; disponible), 
+http://mozilla.developer.ch/image
+responde al servidor web de la camara. <BR>
+Para el usuario que visita el site es totalmente transparente, y casi* 
+no se compromete a la seguridad de la red mediante este metodo. <BR>
+<B><I>*</B>Uso la palabra casi porque no hay seguridad total en internet 
+ :-)</I> </P>
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Mapeando Servidores Virtuales </H2>
+
+
+<P>
+El truco de proxypass puede ser usado para mapear un host virtual 
+entero a una m&aacute;quina completamente diferente.
+Por ejemplo: <BR>
+docs.sun.developer.ch mapeado a solsparc.hometranet.home</P>
+<PRE>
+NameVirtualHost 193.192.254.50
+&lt;VirtualHost 193.192.254.50&gt;
+     ServerName sun.docs.developer.ch
+     ProxyPass / http://solsparc.hometranet.home/
+     TransferLog /net/www/logs/sun.docs.access
+     ErrorLog    /net/www/logs/sun.docs.errror
+&lt;/VirtualServer&gt;</PRE>
+<P>tambi&eacute;n se puede derivar a hosts por 
+su direcci&oacute;n IP </P>
+<PRE>
+&lt;VirtualHost 193.192.254.50&gt;
+     ServerName sun.docs.developer.ch
+     ProxyPass / http://192.168.1.7/
+     TransferLog /net/www/logs/sun.docs.access
+     ErrorLog    /net/www/logs/sun.docs.errror
+&lt;/VirtualServer&gt;</PRE>
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Advertencia</H2>
+
+<P>Dado que su principal servidor web est&aacute; haciendo pedidos al 
+servidor web interno a petici&oacute;n de sus usuarios, no se puede hacer ningun 
+logeo razonable al host al que se apunta, en cambio se tienen que cargar 
+todos los pedidos al host original.
+En el caso anterior yo cargu&eacute; todas las entradas al host principal 
+sun.docs.developer.ch en lugar de de hacerlo a solsparc.hometranet.home <BR>
+<B>Resultados de cargarlo en sun.docs.developer.ch (resultado 
+incorrecto)</B> </P>
+<PRE>
+197.0.22.3 - - [05/Nov/1999:22:09:04 +0100] "GET /index.html HTTP/1.0" 
+304 -
+187.0.45.67 - - [05/Nov/1999:22:09:04 +0100] "GET /navi.html HTTP/1.0" 
+304 -
+177.0.5.45 - - [05/Nov/1999:22:09:04 +0100] "GET /entrees.html HTTP/1.0" 
+304 -
+227.0.9.67 - - [05/Nov/1999:22:09:15 +0100] "GET /complets.html 
+HTTP/1.0" 304 -
+137.0.7.23 - - [05/Nov/1999:22:09:19 +0100] "GET /menu_poisson.html 
+HTTP/1.0" 200 841
+193.192.245.73 - - [05/Nov/1999:22:09:25 +0100] "GET /volailles.html 
+HTTP/1.0" 304 -
+192.167.0.1 - - [05/Nov/1999:22:09:44 +0100] "GET /agneau.html HTTP/1.0" 
+304 -                                                            </PRE>
+<B><P>Resultados de cargarlo en 
+solsparc.hometranet.home</B> </P>
+<PRE>
+192.168.1.1 - - [05/Nov/1999:22:09:04 +0100] "GET /index.html HTTP/1.0" 
+304 -
+192.168.1.1 - - [05/Nov/1999:22:09:04 +0100] "GET /navi.html HTTP/1.0" 
+304 -
+192.168.1.1 - - [05/Nov/1999:22:09:04 +0100] "GET /entrees.html 
+HTTP/1.0" 304 -
+192.168.1.1 - - [05/Nov/1999:22:09:15 +0100] "GET /complets.html 
+HTTP/1.0" 304 -
+192.168.1.1 - - [05/Nov/1999:22:09:19 +0100] "GET /menu_poisson.html 
+HTTP/1.0" 200 841
+192.168.1.1 - - [05/Nov/1999:22:09:25 +0100] "GET /volailles.html 
+HTTP/1.0" 304 -
+192.168.1.1 - - [05/Nov/1999:22:09:44 +0100] "GET /agneau.html HTTP/1.0" 
+304 -
+192.168.1.1 - - [05/Nov/1999:22:09:56 +0100] "GET /desserts_ind.html 
+HTTP/1.0" 304 -
+192.168.1.1 - - [05/Nov/1999:22:10:00 +0100] "GET /cocktails.html 
+HTTP/1.0" 304 -
+192.168.1.1 - - [05/Nov/1999:22:10:10 +0100] "GET /cgi-bin/commande.cgi 
+HTTP/1.0" 200 2146       =20
+</PRE>
+<P>Lo mismo se aplica a ACLs( listas de 
+control de acceso) basadas en nombres o IP.<BR>
+Si se quieren bloquear algunos host/direcciones de IP o se quiere dar 
+acceso a ciertas direcciones de IP a &aacute;reas especiales, esto se 
+debe hacer en el servidor principal (el que est&aacute; disponible para acceso 
+remoto) en lugar de de al servidor local. <BR>
+Mas a&uacute;n, no se puede restringir usuarios bas&aacute;ndonos en 
+Directories. <BR>
+Igualmente se puede usar las sentencias Location o Files o FilesMatch. 
+<BR>
+El siguiente ejemplo trata algunas de &eacute;stas sentencias. 
+<PRE>
+&lt;VirtualHost 193.192.254.50&gt;
+     ServerName sun.docs.developer.ch
+     #esta regla permite usuarios del dominio good.host.com unicamente
+     &lt;Location /private&gt;
+          order deny,allow
+          deny from all
+          allow from good.host.com
+     &lt;/Location&gt;
+     #Esta regla prohibe el ayudante del Browser de Microsoft.
+     BrowserMatch MSIE uncool_browser
+     &lt;Location /coolpages&gt;
+         order allow,deny
+         allow from all
+         deny from env=3Duncool_browser
+     &lt;/Location&gt;
+     #Esta regla permite unicamente usuariosque se encuentran en el 
+archivo passwd.httpd
+     &lt;Location /coolpages&gt;
+         AuthName "only for registered users"
+         AuthType Basic
+         AuthUserFile "/etc/httpd/passwd.httpd"
+         &lt;Limit GET&gt;
+              require valid-user
+         &lt;/Limit&gt;
+     &lt;/Location&gt;
+
+     ProxyPass / http://192.168.1.7/
+     TransferLog /net/www/logs/sun.docs.access
+     ErrorLog    /net/www/logs/sun.docs.errror
+&lt;/VirtualServer&gt;</PRE>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Recursos adicionales</H2>
+
+<DL>
+<DT>[Documentacion de Apache mod_proxy]</DT>
+<DD><A 
+HREF="http://www.apache.org/docs/mod/mod_proxy.html"> 
+http://www.apache.org/docs/mod/mod_proxy.html</A></DD>
+<DT>[Soporte para el Host Virtual basado en nombres de Apache (Apache 
+name-based Virtual Host)]</DT>
+<DD><A HREF="http://www.apache.org/docs/vhosts/name-based.html">
+http://www.apache.org/docs/vhosts/name-based.html</A></DD>
+<DT>[Documentacion del Virtual Host de Apache] </DT>
+<DD><A HREF="http://www.apache.org/docs/vhosts/index.html">
+http://www.apache.org/docs/vhosts/index.html</A></DD>
+</DL>
+
+
+
+<A NAME="talkback">&nbsp;</a>
+<h2>Talkback form for this article</h2>
+Every article has its own talkback page. On this page you can submit a comment or look at comments from other readers:
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=147&lang=es"><b>&nbsp;go to talkback page&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#777777">
+<A HREF="../../common/lfteam.html"><FONT COLOR="#FFFFFF">Contactar con el equipo de LinuFocus</FONT></A>
+<BR><FONT COLOR="#FFFFFF">&copy; Atif Ghaffar <BR>LinuxFocus 2000</FONT>
+<BR><a href="http://linuxfocus.linuxbox.com/cgi-bin/lfcomment?lang=es&article=article147.html" target="_TOP"><FONT COLOR="#FFFFFF">Click here to report a fault or send a comment to Linuxfocus</FONT></A><BR></TD>
+<TD BGCOLOR="#777777"><!-- TRANSLATION INFO -->
+<font size=2>Translation information:</font><TABLE>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:aghaffar@developer.ch"><FONT COLOR="#FFFFFF">Atif Ghaffar</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:mbuil@infovia.com.ar"><FONT COLOR="#FFFFFF">Marcelo E. Buil</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2000-03-25, generated by lfparser version 1.3</font></p></BODY></HTML>

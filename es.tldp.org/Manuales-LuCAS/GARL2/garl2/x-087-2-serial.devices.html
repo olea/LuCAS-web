@@ -1,0 +1,501 @@
+<HTML
+><HEAD
+><TITLE
+>Acceso a Dispositivos Serie</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Configuración del Hardware Serie"
+HREF="x-087-2-serial.html"><LINK
+REL="PREVIOUS"
+TITLE="Introducción a los Dispositivos Serie"
+HREF="x-087-2-serial.ttys.html"><LINK
+REL="NEXT"
+TITLE="Hardware Serie"
+HREF="x-087-2-serial.hardware.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-serial.ttys.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 4. Configuración del Hardware Serie</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-serial.hardware.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-SERIAL.DEVICES">4.3. Acceso a Dispositivos Serie</H1
+><P
+>Como todo dispositivo en un sistema Unix, los puertos serie son accesibles
+a través de ficheros especiales de dispositivo, localizados en el directorio
+<TT
+CLASS="FILENAME"
+>/dev</TT
+>. Hay dos tipos de ficheros de dispositivo
+relacionados con manejadores serie, y hay un fichero de dispositivo de cada
+tipo para cada puerto. El dispositivo tendrá un comportamiento levemente
+distinto, según cuál de sus ficheros de dispositivo empleemos. Cubriremos
+estas diferencias porque ayudará a entender algunos aspectos de
+configuración y algunos consejos que puede encontrar respecto a
+dispositivos serie, pero en la práctica, sólo necesita utilizar uno de ellos. Quizá
+en un futuro desaparezca alguno de estos tipos.</P
+><P
+>&#13;
+
+
+
+
+La más importante de las dos clases de dispositivos serie tiene un
+número mayor de 4, y sus ficheros especiales de dispositivo se llaman
+<TT
+CLASS="FILENAME"
+>ttyS0</TT
+>, <TT
+CLASS="FILENAME"
+>ttyS1</TT
+>, etc.
+La otra variedad tiene un número mayor de 5, y fue diseñada para emplearse
+en llamadas salientes a través de un puerto; sus ficheros especiales de
+dispositivo son <TT
+CLASS="FILENAME"
+>cua0</TT
+>, <TT
+CLASS="FILENAME"
+>cua1</TT
+>, etc.
+En el mundo Unix, las cuentas comienzan generalmente en cero, mientras
+que los profanos tienden a comenzar por uno. Esto genera una
+pequeña confusión ya que <TT
+CLASS="LITERAL"
+>COM1:</TT
+> se representa por
+<TT
+CLASS="FILENAME"
+>/dev/ttyS0</TT
+>, <TT
+CLASS="LITERAL"
+>COM2:</TT
+> por
+<TT
+CLASS="FILENAME"
+>/dev/ttyS1</TT
+>, etc. Un usuario cualquiera familiarizado con hardware
+del estilo del IBM PC sabe que <TT
+CLASS="LITERAL"
+>COM3:</TT
+> y mayores nunca llegaron
+a ser estándar, de todos modos.</P
+><P
+>Los dispositivos <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>cua</I
+></SPAN
+>, o &ldquo;llamada salientes,&rdquo;
+fueron creados para solucionar el problema de evitar conflictos en dispositivos
+serie para módems que tienen que aceptar tanto conexiones entrantes como
+conexiones salientes. Desafortunadamente, han creado sus propios problemas
+y probablemente dejarán de ser utilizados. Echemos un vistazo al asunto.</P
+><P
+>GNU/Linux, igual que Unix, permite que un dispositivo, u otro fichero cualquiera,
+sea abierto por más de un proceso de forma simultánea. Por desgracia,
+esto es raramente útil para dispositivos tty, ya que ambos procesos
+interferirán entre sí. Pero, por suerte, se diseñó un mecanismo que permite
+a un proceso comprobar si un dispositivo tty está en uso por otro proceso
+antes de tratar de abrirlo. Este mecanismo usa lo que denominamos
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ficheros de bloqueo</I
+></SPAN
+>. La idea es que cuando un proceso trata
+de abrir un dispositivo tty, ha de comprobar la existencia de un fichero en
+un lugar especial, llamado de forma parecida al dispositivo tty. Si este fichero
+no existe, el proceso lo crea y abre el dispositivo tty. Si el fichero, por contra,
+ya existe, el proceso asume que hay otro proceso que ya ha abierto el
+dispositivo tty y toma la decisión adecuada. Un último truco para que este
+sistema de manejo funcionara adecuadamente es escribir el identificador (pid)
+del proceso que ha creado el fichero de bloqueo en el propio fichero de
+bloqueo; seguiremos con este punto un poco más abajo.</P
+><P
+>El mecanismo de ficheros de bloqueo funciona perfectamente en los casos en
+que tenemos una localización bien definida para estos ficheros de bloqueo,
+y todos los programas saben dónde buscarlos. Sin embargo, este no ha sido
+siempre el caso de GNU/Linux. No fue hasta que se definió el Estándar de Sistema
+de Ficheros de Linux (Linux Filesystem Standard) cuando comenzaron a
+trabajar correctamente los ficheros de bloqueo <TT
+CLASS="FILENAME"
+>tty</TT
+>.
+Llegó a haber cuatro, e incluso más lugares elegidos por los programadores para
+almacenar los ficheros de bloqueo:
+<TT
+CLASS="FILENAME"
+>/usr/spool/locks/</TT
+>,
+<TT
+CLASS="FILENAME"
+>/var/spool/locks/</TT
+>,
+<TT
+CLASS="FILENAME"
+>/var/lock/</TT
+> y
+<TT
+CLASS="FILENAME"
+>/usr/lock/</TT
+>. La confusión trajo el caos. Los programas
+abrían ficheros de bloqueo en lugares distintos para controlar un mismo
+dispositivo tty; la situación era similar a no usar ficheros de bloqueo en absoluto.</P
+><P
+>Los dispositivos <TT
+CLASS="FILENAME"
+>cua</TT
+> fueron creados para solventar este
+problema. En lugar de confiar a los ficheros de bloqueo la prevención de
+conflictos entre procesos que pretendían usar dispositivos serie, se decidió
+que el núcleo podría suministrar un método sencillo de arbitrar quién debía
+obtener acceso. Si el dispositivo <TT
+CLASS="FILENAME"
+>ttyS</TT
+> estaba abierto,
+un intento de abrir el <TT
+CLASS="FILENAME"
+>cua</TT
+> resultaría en un error que
+podría ser interpretado por el programa como que el dispositivo ya estaba en uso.
+Si el <TT
+CLASS="FILENAME"
+>cua</TT
+> estaba previamente abierto y se trataba de
+abrir el <TT
+CLASS="FILENAME"
+>ttyS</TT
+>, la petición crearía un bloqueo; es decir,
+se pondría en espera hasta que el dispositivo <TT
+CLASS="FILENAME"
+>cua</TT
+> fuera
+cerrado por el otro proceso. Esta solución era adecuada para casos como un
+módem único configurado para recibir accesos entrantes y que, en ocasiones,
+se quisiera emplear para accesos salientes. Pero no era suficiente para ámbitos
+en los que varios programas tratan de realizar llamadas salientes desde el mismo
+dispositivo. La única forma de remediar este problema era ¡usar ficheros de
+bloqueo! De vuelta al problema inicial.</P
+><P
+>Basta decir que el Estándar de Sistema de Ficheros de Linux llegó al rescate y
+ahora es obligatorio almacenar los ficheros de bloqueo en el directorio
+<TT
+CLASS="FILENAME"
+>/var/lock</TT
+>, y que, por acuerdo, el nombre del fichero
+de bloqueo correspondiente al dispositivo <TT
+CLASS="FILENAME"
+>ttyS1</TT
+>, por
+ejemplo, es <TT
+CLASS="FILENAME"
+>LCK..ttyS1</TT
+>. Los ficheros de bloqueo
+<TT
+CLASS="FILENAME"
+>cua</TT
+> también deberían ir en este directorio, pero
+el uso de dispositivos <TT
+CLASS="FILENAME"
+>cua</TT
+> queda desaconsejado</P
+><P
+>Los dispositivos <TT
+CLASS="FILENAME"
+>cua</TT
+> seguirán existiendo por un
+tiempo, para conservar la compatibilidad con software antiguo, pero
+con el tiempo serán retirados. Si usted se pregunta cuáles debe usar,
+quédese con los dispositivos <TT
+CLASS="FILENAME"
+>ttyS</TT
+>, y asegúrese de
+que su sistema cumpla con el estándar Linux FSSTND (Estándar de Sistema
+de Ficheros de Linux), o, como mínimo, que todos los programas que
+accedan a dispositivos serie estén de acuerdo en la localización de los
+ficheros de bloqueo. Gran parte del software que trata con dispositivos tty
+serie proporciona opciones de compilación para especificar la localización de
+ficheros de bloqueo. Es probable que aparecerá como una variable llamada
+<TT
+CLASS="LITERAL"
+>LOCKDIR</TT
+> en el <TT
+CLASS="FILENAME"
+>Makefile</TT
+> o en
+algún fichero de configuración de cabecera. Si usted mismo compila el
+software, la mejor opción es modificar esto de acuerdo al lugar definido en
+el FSSTND. Si usa usted binarios precompilados y no está seguro de dónde
+escribirá el programa sus ficheros de bloqueo, quizá esta orden pueda
+proporcionarle alguna pista:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <B
+CLASS="COMMAND"
+>strings</B
+> <TT
+CLASS="FILENAME"
+>binaryfile</TT
+> | <B
+CLASS="COMMAND"
+>grep</B
+> lock</PRE
+></TD
+></TR
+></TABLE
+>
+Si el lugar encontrado no es compatible con el resto de su sistema, puede
+tratar de crear un enlace simbólico desde el directorio de bloqueo que
+pretende usar el binario hacia <TT
+CLASS="FILENAME"
+>/var/lock</TT
+>. No es
+una solución muy elegante, pero funcionará.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-SERIAL.DEVICEFILES">4.3.1. Los Ficheros Especiales De Dispositivos Serie</H2
+><P
+>&#13;
+Los números menores son idénticos para ambos tipos de dispositivos serie.
+Si tiene usted su módem conectado en un puerto desde COM1: a COM4:,
+su número menor será el número de puerto COM más 63. Si emplea usted
+hardware serie especial, como controladores de múltiples puertos serie de
+gran rendimiento, probablemente necesite crear ficheros especiales de
+dispositivo para él; probablemente no emplee el manejador estándar de
+dispositivo. El Serial-HOWTO debe poder ayudarle a encontrar los detalles
+específicos.</P
+><P
+>Supongamos que su módem está en COM2:. Su número menor será 65,
+y su número mayor será 4 para usos normales. Debería existir un dispositivo
+llamado <TT
+CLASS="FILENAME"
+>ttyS1</TT
+> que tiene estos números. Liste los
+ttys serie del directorio <TT
+CLASS="FILENAME"
+>/dev</TT
+>. La quinta y sexta
+columna muestran respectivamente el número mayor y el número menor:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    $ <TT
+CLASS="USERINPUT"
+><B
+>ls -l /dev/ttyS*</B
+></TT
+>
+    0 crw-rw----   1 uucp     dialout    4,  64 Oct 13  1997 /dev/ttyS0
+    0 crw-rw----   1 uucp     dialout    4,  65 Jan 26 21:55 /dev/ttyS1
+    0 crw-rw----   1 uucp     dialout    4,  66 Oct 13  1997 /dev/ttyS2
+    0 crw-rw----   1 uucp     dialout    4,  67 Oct 13  1997 /dev/ttyS3</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Si no hay ningún dispositivo con número mayor 4 y número menor 65,
+necesitará crear uno. Pase a modo superusuario y escriba:</P
+><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>mknod -m 666 /dev/ttyS1 c 4 65</B
+></TT
+>
+    # <TT
+CLASS="USERINPUT"
+><B
+>chown uucp.dialout /dev/ttyS1</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+Según la distribución de GNU/Linux, se emplean estrategias sutilmente distintas
+para determinar quién debe ser propietario de los dispositivos serie. A veces
+son propiedad de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>root</I
+></SPAN
+>, y en otros casos
+pertenecen a otro usuario, como <TT
+CLASS="USERINPUT"
+><B
+>uucp</B
+></TT
+> en
+nuestro ejemplo. Las distribuciones más modernas tienen un grupo especial
+para dispositivos que realizan llamadas salientes, y todo usuario que pueda
+emplearlos estará añadido a este grupo.</P
+><P
+>&#13;Hay quien sugiere crear <TT
+CLASS="FILENAME"
+>/dev/modem</TT
+> como un enlace
+simbólico al dispositivo de módem para que los usuarios ocasionales no tengan
+que recordar el menos intuitivo <TT
+CLASS="FILENAME"
+>ttyS1</TT
+>. Pero no se puede
+utilizar <TT
+CLASS="FILENAME"
+>modem</TT
+> en un programa y el fichero real de dispositivo
+en otro. Sus ficheros de bloqueo tendrían nombres diferentes, y esto haría fallar
+al mecanismo de bloqueo.</P
+><P
+>&#13;</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-serial.ttys.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-serial.hardware.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Introducción a los Dispositivos Serie</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-serial.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Hardware Serie</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

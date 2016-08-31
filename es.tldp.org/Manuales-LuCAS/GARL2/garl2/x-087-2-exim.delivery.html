@@ -1,0 +1,797 @@
+<HTML
+><HEAD
+><TITLE
+>Encaminamiento y envío de mensajes</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Poner Eximen marcha"
+HREF="x-087-2-exim.html"><LINK
+REL="PREVIOUS"
+TITLE="Otras opciones de configuración"
+HREF="x-087-2-exim.options.html"><LINK
+REL="NEXT"
+TITLE='Protegerse contra el "spam"'
+HREF="x16541.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-exim.options.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 19. Poner Eximen marcha</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x16541.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-EXIM.DELIVERY">19.6. Encaminamiento y envío de mensajes</H1
+><P
+>Exim divide el envío de correo en tres tareas diferentes: el encaminado,
+el direccionamiento y el transporte. Hay un número de módulos de código para
+para cada tarea, siendo cada uno configurable por separado. En el fichero de
+configuración normalmente se instalan un número de diferentes encaminadores,
+direccionadores y transportes.</P
+><P
+>&#13;Los encaminadores resuelven direcciones remotas, determinando a qué anfitrión
+debería enviarse un mensaje y qué transporte debería usarse. En los anfitriones
+conectados a Internet a menudo hay un solo encaminador, que lleva a cabo la
+resolución buscando el dominio en el DNS. De forma alternativa,
+puede haber un encaminador que se encargue de las direcciones destinadas a
+los anfitriones de una LAN local, y un segundo para enviar cualquier otra 
+dirección a un 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>anfitrión inteligente</I
+></SPAN
+>&thinsp;; por ejemplo, el servidor
+de correo de un PSI.</P
+><P
+>&#13;Las direcciones locales se envían a los direccionadores, de los que suele haber
+una gran cantidad, que se encargan de la gestión de los "alias" y de los
+reenvíos así como de la identificación de los buzones locales.
+Las listas de correo pueden gestionarse mediante direccionadores de "aliasing"
+o de reenvío. Si una dirección se renombra o se reenvía, cada dirección
+generada la gestionan los encaminadores o los direccionadores, según sea
+necesario, de manera independiente. El caso más común, de lejos, será el 
+envío a un buzón, pero los mensajes también pueden enviarse a una
+orden o adjuntarse a un fichero diferente al buzón predeterminado.</P
+><P
+>&#13;Un transporte es responsable de implementar un método de envío; por 
+ejemplo, enviar el mensaje mediante una conexión SMTP o añadirlo a un buzón
+específico. Los encaminadores y los direccionadores eligen qué transporte usar
+para cada dirección receptoras. Si un transporte falla, Exim genera un mensaje
+de rebote o pospone el envío para intentar realizarlo más tarde.</P
+><P
+>Con Exim goza de una gran libertad para configurar estas tareas. Hay 
+disponibles controladores para cada una de ellas, entre los que
+puede escoger aquellos que necesite. Sólo tiene que describírselos a Exim 
+en diferentes secciones de su fichero de configuración. Primero se definen 
+los transportes, seguidos de los direccionadores y después los encaminadores. 
+No hay nada integrado de manera predeterminada, aunque Exim se distribuye con 
+un fichero de configuración predeterminada que cubre casos sencillos. Si quiere
+cambiar la política de encaminado de Exim o modificar un transporte, lo más
+sencillo será partir del fichero de configuración predeterminada para realizar
+los cambios en vez de intentar crear una configuración completa desde cero.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-EXIM.ROUTING">19.6.1. Mensajes de Encaminamiento</H2
+><P
+>&#13;
+Cuando se da una dirección de envío, Exim comprueba primero si el dominio
+es uno de los que se maneja en el anfitrión con una lista en la opción de
+configuración <TT
+CLASS="LITERAL"
+>local_domains</TT
+>. Si no se ha configurado
+esta opción, se usa el nombre del anfitrión local como el único dominio local.
+Si el dominio es local, la dirección la manejan los direccionadores.
+De otro modo, se pasa a los encaminadores para que averigüen a qué anfitrión
+reenviar el mensaje.<A
+NAME="X-087-2-FNEX05"
+HREF="#FTN.X-087-2-FNEX05"
+>[1]</A
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-EXIM.DIRECTORS">19.6.2. Enviar mensajes a direcciones 
+locales</H2
+><P
+>&#13;
+De manera más común, una dirección local es simplemente el nombre de "login" 
+de un usuario, en cuyo caso el mensaje se envía al buzón del usuario,
+<TT
+CLASS="FILENAME"
+>/var/spool/mail</TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>nombre-de-usuario</I
+></TT
+>.
+Otros casos incluyen los alias, los nombres de listas de correo y los reenvíos
+del usuario. En estos casos, la dirección local se expande en una nueva lista
+de direcciones que pueden ser a su vez locales o remotas.</P
+><P
+>Aparte de estas direcciones &ldquo;normales&rdquo;, Exim puede manejar
+otro tipo de destinos para los mensajes locales, como nombres de ficheros
+y órdenes de "pipe". Cuando se envía a un fichero, Exim adjunta el mensaje
+creando ese fichero si es necesario. Los destinos de fichero y "pipe" no
+son direcciones propiamente dichas por lo que no puede enviar correo a,
+pongamos por caso, <SPAN
+CLASS="SYSTEMITEM"
+>/etc/passwd@vbrew.com</SPAN
+> y esperar que
+se sobreescriba el fichero de las contraseñas; los envíos a un fichero
+específico sólo son válidos si vienen de fichero de reenvío o de alias. 
+Tenga en cuenta, no obstante, que
+<SPAN
+CLASS="SYSTEMITEM"
+>/etc/passwd@vbrew.com</SPAN
+> es una
+dirección de correo sintácticamente válida, pero si Exim la recibe buscaría
+(típicamente) un usuario cuyo "login" fuese <SPAN
+CLASS="SYSTEMITEM"
+>/etc/passwd</SPAN
+>, y al no encontrar ninguno el
+mensaje rebotaría.</P
+><P
+>&#13;
+ 
+En una lista de alias o en un fichero de reenvío, un 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>nombre de fichero</I
+></SPAN
+> es cualquier cosa que comience con una 
+barra (/&thinsp;)y que no pueda entenderse como una dirección de correo 
+plenamente cualificada. Por ejemplo, <TT
+CLASS="FILENAME"
+>/tmp/junk</TT
+> en un
+fichero de reenvío o de alias es interpreta como un nombre de fichero, pero
+<SPAN
+CLASS="SYSTEMITEM"
+>/tmp/junk@vbrew.com</SPAN
+>
+es una dirección de correo, aunque no parece muy útil. De todas maneras, 
+pueden verse direcciones válidas de este tipo cuando se envía correo por
+medio de pasarelas X.400 porque las direcciones X.400 comienzan con una barra.</P
+><P
+>&#13;
+De manera similar, una <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>orden de "pipe"</I
+></SPAN
+> puede ser una
+orden de Unix precedida por el símbolo (|), a menos que esta cadena pueda
+entenderse como una dirección de correo con dominio válida. A menos que haya
+cambiado la configuración, Exim no usa consola alguna para ejecutar la orden;
+sino que la divide en un nombre de orden y en sus variables y las ejecuta
+directamente. El mensaje se emplea como entrada estándar para esa orden.</P
+><P
+>Por ejemplo, para conducir una lista de correo a un grupo de noticias local,
+puede usar un guión de shell de nombre <B
+CLASS="COMMAND"
+>gateit</B
+>, e instalar
+un alias local que envíe todos los mensajes de esta lista al guión usando
+<TT
+CLASS="LITERAL"
+>|gateit</TT
+>. Si la línea de órdenes contiene una coma, ella
+y el símbolo de "pipe" precedente deben entrecomillarse.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN16416">19.6.2.1. Usuarios locales</H3
+><P
+>&#13;
+Una dirección local denota comúnmente un buzón de usuario. Éste normalmente
+se encuentra en <TT
+CLASS="FILENAME"
+>/var/spool/mail</TT
+> y tiene el nombre del
+usuario, quien también es el propietario del fichero. Si no existe, Exim lo
+crea.</P
+><P
+>En algunas configuraciones, el grupo se cambia al grupo del usuario y el
+modo es 0600. En estos casos, los procesos de envío se ejecutan como un
+usuario, y el usuario puede borrar el buzón completamente. En otras
+configuraciones, el grupo del buzón es <SPAN
+CLASS="SYSTEMITEM"
+>mail</SPAN
+>, y tiene el modo 660; los procesos de envío
+se ejecutan bajo un uid y un grupo del sistema <SPAN
+CLASS="SYSTEMITEM"
+>mail</SPAN
+>, y los usuarios no pueden borrar sus
+buzones, aunque sí pueden vaciarlos.</P
+><P
+>Tenga en cuenta que aunque <TT
+CLASS="FILENAME"
+>/var/spool/mail</TT
+> es 
+habitualmente el lugar estándar en el que colocar los ficheros de los
+buzones, algunos programas de correo pueden compilarse para usar rutas
+diferentes, por ejemplo, <TT
+CLASS="FILENAME"
+>/usr/spool/mail</TT
+>. Si el envío
+a los usuarios de su anfitrión falla de manera consistente, debería ver si
+le sirve de algo crear un enlace simbólico a 
+<TT
+CLASS="FILENAME"
+>/var/spool/mail</TT
+>.</P
+><P
+>Las direcciones <SPAN
+CLASS="SYSTEMITEM"
+>MAILER-DAEMON</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>postmaster</SPAN
+> deberían aparecer
+normalmente en su fichero de alias, expandiéndose en la dirección
+de correo del administrador del sistema.  
+<SPAN
+CLASS="SYSTEMITEM"
+>MAILER-DAEMON</SPAN
+> lo usa Exim como 
+dirección del remitente en los mensajes de rebote. También se recomienda
+que <SPAN
+CLASS="SYSTEMITEM"
+>root</SPAN
+> se instale como un alias para el
+administrador, especialmente cuando los envíos se ejecutan bajo permisos
+de los usuarios receptores para evitar que no se ejecute ningún envío como
+<SPAN
+CLASS="SYSTEMITEM"
+>root</SPAN
+>.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN16438">19.6.2.2. Reenvío</H3
+><P
+>&#13;
+
+Los usuarios pueden redirigir su correo a direcciones alternativas creando
+un fichero <TT
+CLASS="FILENAME"
+>.forward</TT
+> en sus directorios home. Éste contiene
+una lista de receptores separados por comas y/o nuevas líneas.
+Se leen e interpetan todas las líneas del fichero. Puede usarse cualquier
+tipo de dirección. Un ejemplo práctico de un fichero 
+<TT
+CLASS="FILENAME"
+>.forward</TT
+> para las vacaciones podría ser:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    janet, "|vacation"</PRE
+></TD
+></TR
+></TABLE
+>
+
+En otras descripciones de ficheros <TT
+CLASS="FILENAME"
+>.forward</TT
+>, puede
+ver el nombre de usuario al comienzo precedido por una barra invertida.
+Esto era necesarios en algunos MTAs antiguos para detener la búsqueda de
+<TT
+CLASS="FILENAME"
+>.forward</TT
+> para un nombre nuevo, lo que podía conducir
+a un bucle infinito.
+La barra invertida no es necesaria en Exim, que evita automáticamente bucles
+de este tipo.<A
+NAME="AEN16455"
+HREF="#FTN.AEN16455"
+>[2]</A
+>
+De todos modos, se permite una barra invertida y, de hecho, supone una
+diferencia en configuraciones en las que se manejan muchos dominios de 
+una vez. Sin la barra invertida, un nombre de usuario no cualificado se
+cualifica con un dominio predeterminado; con una barra invertida se
+preserva el dominio entrante.</P
+><P
+>La primera dirección del fichero .forward envía el mensaje entrante al
+buzón de <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>janet</B
+></SPAN
+>, mientras que la orden
+<B
+CLASS="COMMAND"
+>vacation</B
+> devuelve una breve notificación al remitente. 
+<A
+NAME="X-087-2-FNEX07"
+HREF="#FTN.X-087-2-FNEX07"
+>[3]</A
+></P
+><P
+>&#13;
+Además de soportar ficheros de reenvío &ldquo;tradicionales&rdquo;,
+Exim puede configurarse para que soporte ficheros más complejos conocidos 
+como <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>filtros</I
+></SPAN
+>.  En vez de ser simplemente una lista
+con direcciones de reenvío, un fichero de filtro puede contener pruebas
+sobre el contenido de los mensajes entrantes de manera que, por ejemplo,
+pueda hacerse que se reenvíen únicamente aquellos mensajes cuyo título
+contenga la palabra &ldquo;urgente.&rdquo; Los administradores de sistemas
+deben decidir si permitirán o no esta flexibilidad a los usuarios.</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN16471">19.6.3. Ficheros de alias</H2
+><P
+>&#13;
+
+
+
+
+Exim es capaz de gestionar ficheros de alias compatibles con los ficheros
+de alias del <B
+CLASS="COMMAND"
+>sendmail</B
+> de Berkeley. Las entradas del fichero
+de alias pueden tener la siguiente forma:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="REPLACEABLE"
+><I
+>alias</I
+></TT
+>: <TT
+CLASS="REPLACEABLE"
+><I
+>receptores</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>receptores</I
+></TT
+> es una lista de direcciones separadas
+por comas que se sustituirán por el alias. La lista de receptores puede
+continuarse en nuevas líneas si la línea siguiente comienza con un espacio
+en blanco.</P
+><P
+>Una propiedad especial permite a Exim gestionar listas de correo que se
+hayan especificado separadamente en el fichero de alias: si especifica
+<TT
+CLASS="LITERAL"
+>:include:</TT
+><TT
+CLASS="REPLACEABLE"
+><I
+>nombre de fichero</I
+></TT
+> 
+como un receptor, Exim lee el fichero especificado y sustituye su
+contenido como una lista de receptores. Más adelante en este capítulo
+en <A
+HREF="x-087-2-exim.delivery.html#X-087-2-EXIM.DIRECTOR.MAILING-LISTS"
+>Sección 19.6.4</A
+>se muestra una
+manera alternativa de gestionar listas de correo.&rdquo;</P
+><P
+>&#13;El principal fichero de alias es <TT
+CLASS="FILENAME"
+>/etc/aliases</TT
+>. Si
+hace que cualquiera o que cualquier grupo pueda modificar este fichero,
+Exim rechazará usarlo y pospondrá los envíos locales. Puede controlar la
+prueba que realiza con los permisos del fichero poniendo <TT
+CLASS="OPTION"
+>modemask</TT
+> en el direccionador <TT
+CLASS="FILENAME"
+>system_aliases</TT
+>.</P
+><P
+>Esto es un fichero <TT
+CLASS="FILENAME"
+>aliases</TT
+> de ejemplo:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # vbrew.com fichero /etc/aliases 
+    hostmaster: janet
+    postmaster: janet
+    usenet: phil
+    # La lista de correo de desarrollo.
+    development: joe, sue, mark, biff,
+            /var/mail/log/development
+    owner-development: joe
+    # Los anuncios de interés general se envían a todo
+    # el equipo
+    announce: :include: /etc/Exim/staff,
+            /var/mail/log/announce
+    owner-announce: root
+    # la lista de correo ppp se traslada a un grupo local de noticias
+    ppp-list: "|/usr/local/bin/gateit local.lists.ppp"</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Cuando hay nombres de ficheros y órdenes por "pipe" en un fichero
+de alias, como aquí, Exim necesita que le digan bajo qué usuario 
+ha de ejecutar los envíos. La opción <TT
+CLASS="OPTION"
+>user</TT
+> (y 
+posiblemente <TT
+CLASS="OPTION"
+>group</TT
+>, también debe proporcionarse en
+el fichero de configuración de Exim, ya sea en el direccionador que 
+maneja los alias o en los transportes a los que dirige estos elementos.</P
+><P
+>Si ocurre un error al enviarse a una dirección generada a partir del
+fichero <TT
+CLASS="FILENAME"
+>aliases</TT
+>, Exim enviará un mensaje de rebote
+al remitente del mensaje, como es habitual, pero esto quizá no resulte
+apropiado. Puede usar la opción <TT
+CLASS="OPTION"
+>errors_to</TT
+> para especificar
+que los mensajes de rebote se envíen a otro usuario: por ejemplo, al
+administrador del correo.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-EXIM.DIRECTOR.MAILING-LISTS">19.6.4. Listas de correo</H2
+><P
+>&#13; 
+
+En vez de con el fichero <TT
+CLASS="FILENAME"
+>aliases</TT
+>, las listas de correo
+también pueden gestionarse mediante un direccionador 
+<TT
+CLASS="FILENAME"
+>forwardfile</TT
+>. Las listas se mantienen en un único
+directorio como <TT
+CLASS="FILENAME"
+>/etc/exim/lists/</TT
+>, y un fichero
+<TT
+CLASS="FILENAME"
+>lists/nag-bugs</TT
+> describe una lista de correo llamada
+<SPAN
+CLASS="SYSTEMITEM"
+>nag-bugs</SPAN
+>. Esto debería contener
+las direcciones de los miembros separadas por comas o por nuevas líneas.
+Las líneas que comienzan con una almohadilla (<TT
+CLASS="LITERAL"
+>#</TT
+>) se
+tratan como comentarios. Un sencillo direccionador para usar esos datos
+sería como sigue:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    lists:
+      driver = forwardfile
+      file = /etc/exim/lists/${local_part}
+      no_check_local_user
+      errors_to = ${local_part}-request</PRE
+></TD
+></TR
+></TABLE
+>
+
+Cuando se ejecuta este direccionador, los valores de las opciones 
+<TT
+CLASS="OPTION"
+>file</TT
+> y <TT
+CLASS="OPTION"
+>errors_to</TT
+> se 
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>expanden</I
+></SPAN
+>. 
+La expansión hace que ciertas partes de las cadenas que comienzan con
+un símbolo del dólar se sustituyan cada vez que se usa la cadena. El 
+tipo de expansión más sencillo es la inserción del valor de una de las
+variables de Exim, y esto es lo que está sucediendo aquí. La subcadena 
+<TT
+CLASS="LITERAL"
+>${local_&thinsp;part}</TT
+> sustituye el valor de 
+<TT
+CLASS="LITERAL"
+>$local_&thinsp;part</TT
+>, que es la parte local de las
+direcciones que se estén procesando.</P
+><P
+>Para cada lista de correo, debería existir un usuario (o un alias o una
+lista de correo) llamado <TT
+CLASS="REPLACEABLE"
+><I
+>listname-request</I
+></TT
+>; 
+se informa a esta dirección de cualquier error al resolver una dirección
+o al enviar un mensaje a un miembro de la lista.</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNEX05"
+HREF="x-087-2-exim.delivery.html#X-087-2-FNEX05"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> Esto es una simplificación. Los direccionadores
+son capaces de pasar direcciones a los transportes para que las envíen a 
+anfitriones remotos, y de manera similar, los encaminadores son capaces de pasar
+direcciones a los transportes locales para que escriban el mensaje en un
+fichero o en un "pipe". Los encaminadores también pueden pasar direcciones
+a los direccionadores en algunas circunstancias.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN16455"
+HREF="x-087-2-exim.delivery.html#AEN16455"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Un direccionador se salta si la dirección que se va a procesar es una que
+ya haya procesado previamente durante la generación de la dirección actual.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNEX07"
+HREF="x-087-2-exim.delivery.html#X-087-2-FNEX07"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Por favor, si elige usar un programa para sus ausencias, ¡asegúrese de 
+que no responde a los mensaje enviados desde 
+listas de correo! Resulta muy molesto descubrir que alguien se ha ido
+de vacaciones y encontrar un mensaje de ausencia por cada mensaje que
+hayan recibido. Para los administradores de listas de correo: esto es un
+buen ejemplo de por qué es una mala práctica forzar el campo
+<TT
+CLASS="LITERAL"
+>Responder a:</TT
+> de los mensajes de una lista de correo 
+para que contenga la dirección de envío a esa misma lista de correo.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.options.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x16541.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Otras opciones de configuración</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-exim.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Protegerse contra el "spam"</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

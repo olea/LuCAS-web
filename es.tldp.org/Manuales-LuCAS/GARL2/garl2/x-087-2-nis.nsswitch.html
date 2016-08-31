@@ -1,0 +1,492 @@
+<HTML
+><HEAD
+><TITLE
+>Escogiendo los Mapas Correctos</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Sistema de Información de Red (NIS)"
+HREF="x-087-2-nis.html"><LINK
+REL="PREVIOUS"
+TITLE="Configurando un Cliente NIS con la libc de GNU"
+HREF="x-087-2-nis.yp.html"><LINK
+REL="NEXT"
+TITLE="Utilizando los Mapas passwd y group"
+HREF="x-087-2-nis.passwd.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.yp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 13. El Sistema de Información de Red (NIS)</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-nis.passwd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-NIS.NSSWITCH">13.7. Escogiendo los Mapas Correctos</H1
+><P
+>&#13;
+Habiéndose asegurado de que puede acceder al servidor NIS, debe decidir qué
+ficheros de configuración reemplazar o aumentar con los mapas NIS. Normalmente
+querrá usar mapas NIS para las funciones de búsqueda de nodo y de contraseña. La
+primera es especialmente útil si carece de servicio BIND. La búsqueda de
+contraseña permite a todos los usuarios ingresar en sus cuentas desde cualquier
+sistema del dominio NIS; normalmente esto implica compartir un directorio
+<TT
+CLASS="FILENAME"
+>/home</TT
+> central entre todos los nodos vía NFS. El mapa de
+contraseñas se explica con detalle en la siguiente sección.</P
+><P
+>Otros mapas, como el <TT
+CLASS="FILENAME"
+>services.byname</TT
+>, no proporcionan
+ganancias tan dramáticas, pero sí le ahorran algo de trabajo de edición. El mapa
+<TT
+CLASS="FILENAME"
+>services.byname</TT
+> cobra valor si instala alguna aplicación de
+red que utilice un servicio que no esté en el fichero estándar
+<TT
+CLASS="FILENAME"
+>services</TT
+>.</P
+><P
+>Generalmente querrá tener donde elegir cuando una función de búsqueda utilice
+los ficheros locales, cuando consulte a un servidor NIS y cuando utilice otros
+servidores como el DNS. La libc de GNU le permite configurar el orden en el que
+una función accede a estos servicios. Esto se controla a través del fichero
+<TT
+CLASS="FILENAME"
+>/etc/nsswitch.conf</TT
+>, que quiere decir <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Conmutador de
+Servicio de Nombres</I
+></SPAN
+> (Name Service Switch), aunque por supuesto no
+está limitado al servicio de nombres. El fichero contiene una línea nombrando el
+servicio a usar para cada una de las funciones de búsqueda de datos soportadas
+por la libc de GNU.</P
+><P
+>&#13;El orden correcto de los servicios depende del tipo de datos que ofrece cada
+servicio. No es probable que el mapa <TT
+CLASS="FILENAME"
+>services.byname</TT
+>
+contenga entradas diferentes a las del fichero local
+<TT
+CLASS="FILENAME"
+>services</TT
+>; sólo contendrá entradas adicionales. Por tanto,
+parece razonable consultar primero a los ficheros locales y usar NIS sólo si el
+nombre del servicio no se encuentra. Por otra parte, la información del nombre
+de nodo puede cambiar frecuentemente, por lo que el servidor DNS o NIS siempre
+debe tener la información más precisa posible, mientras que el fichero local
+<TT
+CLASS="FILENAME"
+>hosts</TT
+> sólo se conserva como copia de seguridad por si DNS o
+NIS fallan. Por tanto, para los nombres de nodo, normalmente querrá que el
+fichero local se lea en último lugar.</P
+><P
+> 
+ 
+ 
+El siguiente ejemplo muestra cómo forzar a <TT
+CLASS="FUNCTION"
+>gethostbyname</TT
+> y
+<TT
+CLASS="FUNCTION"
+>gethostbyaddr</TT
+> que busquen en NIS y DNS antes de buscar en
+el fichero <TT
+CLASS="FILENAME"
+>hosts</TT
+>, y cómo hacer que la función
+<TT
+CLASS="FUNCTION"
+>getservbyname</TT
+> busque en los ficheros locales antes de
+consultar a NIS. Estas funciones de resolución probarán con cada uno de los
+servicios listados en orden; si una búsqueda tiene éxito, se devuelve el
+resultado; si no, probarán con el siguiente servicio de la lista. La
+configuración para estas prioridades es:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # pequeño ejemplo de /etc/nsswitch.conf
+    #
+    hosts:     nis dns files 
+    services:  files nis</PRE
+></TD
+></TR
+></TABLE
+><P
+>Lo siguiente es una lista completa de los servicios y lugares que pueden
+utilizarse en una entrada del fichero <TT
+CLASS="FILENAME"
+>nsswitch.conf</TT
+>. Los
+verdaderos mapas, ficheros, servidores y objetos consultados dependen del nombre
+de la entrada. Lo siguiente puede aparecer a la derecha de los dos puntos:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>nis</SPAN
+></DT
+><DD
+><P
+>Utilizar el servidor NIS del dominio actual. La situación del servidor
+consultado se configura en el fichero <TT
+CLASS="FILENAME"
+>yp.conf</TT
+>, como se
+muestra en la sección anterior. Para la entrada
+<SPAN
+CLASS="SYSTEMITEM"
+>hosts</SPAN
+>, se consultan los mapas
+<TT
+CLASS="FILENAME"
+>hosts.byname</TT
+> y <TT
+CLASS="FILENAME"
+>hosts.byaddr</TT
+>.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>nisplus</SPAN
+> o
+<SPAN
+CLASS="SYSTEMITEM"
+>nis+</SPAN
+></DT
+><DD
+><P
+>Utilizar el servidor NIS+ de este dominio. La situación del servidor se obtiene
+a partir del fichero <TT
+CLASS="FILENAME"
+>/etc/nis.conf</TT
+>.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>dns</SPAN
+></DT
+><DD
+><P
+>Utilizar el servidor de nombres DNS. Este tipo de servicio sólo es útil con la
+entrada <SPAN
+CLASS="SYSTEMITEM"
+>hosts</SPAN
+>. Los servidores de nombres
+consultados todavía están determinados por el fichero estándar
+<TT
+CLASS="FILENAME"
+>resolv.conf</TT
+>.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>files</SPAN
+></DT
+><DD
+><P
+>Utilizar el fichero local, como el fichero <TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> para
+la entrada <SPAN
+CLASS="SYSTEMITEM"
+>hosts</SPAN
+>.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>compat</SPAN
+></DT
+><DD
+><P
+>Ser compatible con formatos de fichero antiguos. Esta opción puede utilizarse
+cuando se use NYS o la glibc 2.x para hacer búsquedas NIS o NIS+. Como estas
+versiones normalmente no saben interpretar las entradas antiguas de NIS en los
+ficheros <TT
+CLASS="FILENAME"
+>passwd</TT
+> y <TT
+CLASS="FILENAME"
+>group</TT
+>, la opción
+<SPAN
+CLASS="SYSTEMITEM"
+>compat</SPAN
+> les permite funcionar con esos
+formatos.</P
+></DD
+><DT
+><SPAN
+CLASS="SYSTEMITEM"
+>db</SPAN
+></DT
+><DD
+><P
+>Buscar la información en los ficheros DBM situados en el directorio
+<TT
+CLASS="FILENAME"
+>/var/db</TT
+>. Para ese fichero se utiliza el nombre de mapa NIS
+correspondiente.</P
+></DD
+></DL
+></DIV
+><P
+>Actualmente, el soporte de NIS de la libc de GNU proporciona las siguientes
+bases de datos de <TT
+CLASS="FILENAME"
+>nsswitch.conf</TT
+>:
+<SPAN
+CLASS="SYSTEMITEM"
+>aliases</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>ethers.group</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>hosts</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>netgroup</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>network</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>passwd</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>protocols</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>publickey</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>rpc</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>services</SPAN
+>, y
+<SPAN
+CLASS="SYSTEMITEM"
+>shadow</SPAN
+>.
+Es probable que se añandan más entradas.</P
+><P
+>El <A
+HREF="x-087-2-nis.nsswitch.html#X-087-2-NIS.FIG.SWITCH"
+>Ejemplo 13-2</A
+> muestra un ejemplo más completo que
+introduce otra característica del fichero <TT
+CLASS="FILENAME"
+>nsswitch.conf</TT
+>.
+La palabra clave
+<SPAN
+CLASS="SYSTEMITEM"
+>[NOTFOUND=return]</SPAN
+> especificada en la
+entrada <SPAN
+CLASS="SYSTEMITEM"
+>hosts</SPAN
+> le dice al cliente NIS que
+devuelva si el elemento deseado no pudo encontrarse en la base de datos de NIS o
+DNS. Esto es, el cliente NIS continuará buscando en los ficheros locales
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>sólo</I
+></SPAN
+> si las llamadas a los servidores NIS y DNS fallan por
+alguna razón. Por tanto, cuando el servidor NIS no responda se utilizarán los
+ficheros locales sólo en tiempo de ejecución y como copia de seguridad.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-NIS.FIG.SWITCH"><P
+><B
+>Ejemplo 13-2. Fichero nsswitch.conf de Ejemplo</B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # /etc/nsswitch.conf
+    #
+    hosts:      nis dns [NOTFOUND=return] files
+    networks:   nis [NOTFOUND=return] files
+    services:   files nis
+    protocols:  files nis
+    rpc:        files nis</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>La libc de GNU proporciona otras acciones descritas en la página del manual
+<TT
+CLASS="FILENAME"
+>nsswitch</TT
+>.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.yp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.passwd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Configurando un Cliente NIS con la libc de GNU</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-nis.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Utilizando los Mapas passwd y group</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

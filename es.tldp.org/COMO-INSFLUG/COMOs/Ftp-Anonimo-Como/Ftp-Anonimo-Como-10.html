@@ -1,0 +1,273 @@
+<HTML>
+<HEAD>
+<TITLE>Ftp An&oacute;nimo COMO: Accesos.</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Ftp-Anonimo-Como-9.html">Anterior</A>
+<A HREF="Ftp-Anonimo-Como-11.html">Siguiente</A>
+<A HREF="Ftp-Anonimo-Como.html#toc10">Indice</A>
+<HR>
+<H2><A NAME="accesos"></A> <A NAME="s10">10. Accesos.</A></H2>
+
+
+<P>Podemos configurar los accesos: en primer lugar, es posible especificar un
+n&uacute;mero m&aacute;ximo de intentos de conexi&oacute;n (logins) fallidos permitidos por 
+el servidor como
+seguridad, aunque en el caso del ftp an&oacute;nimo no ser&iacute;a fundamental. Para
+ello escribiremos la l&iacute;nea siguiente en el archivo <CODE>ftpaccess</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        
+loginfails X
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Donde X es el n&uacute;mero de intentos.</P>
+<P>Por otro lado podemos restringir el dominio de acceso, que puede ser local
+a la m&aacute;quina, remoto a la m&aacute;quina o los dos. Se indica bajo unas l&iacute;neas de
+este tipo: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+class  local   real,guest,anonymous *.my.domain 192.168.0.0
+class  remote  real,guest,anonymous *
+class   all    real,guest,anonymous *
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<OL>
+<LI>La primera permite un acceso local para los usuarios reales,
+invitados y an&oacute;nimos para el dominio indicado, en este caso
+<CODE>*.my.domain 192.168.0.0</CODE>. 
+</LI>
+<LI>La segunda permite un acceso remoto para toda la red (<CODE>*</CODE>) para
+los usuarios reales de la m&aacute;quina servidora, los invitados y el an&oacute;nimo.
+</LI>
+<LI>La tercera permite un acceso total para los mismos usuarios y para
+toda la red. </LI>
+</OL>
+</P>
+<P>Podemos restringir tambi&eacute;n el n&uacute;mero m&aacute;ximo de usuarios que pueden acceder
+simult&aacute;neamente. Esto es necesario para no sobrecargar la m&aacute;quina, la
+l&iacute;nea telef&oacute;nica, la red,...  Tenemos una restricci&oacute;n para cada tipo de
+acceso, un ejemplo ser&iacute;a: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+limit  local   20      Any   /etc/wu-ftpd-academ/msg.toomany
+limit  remote  100     Any   /etc/wu-ftpd-academ/msg.toomany
+limit   all    10      Any   /etc/wu-ftpd-academ/msg.toomany
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>As&iacute; limitamos el acceso local a 20 usuarios, el remoto a 100 y el total a
+10, hay que tener en cuenta que las l&iacute;neas local y remota estaban
+comentadas. Si por alg&uacute;n motivo intenta entrar un usuario m&aacute;s al sistema y
+sobrepasa este valor, se le mostrar&aacute; el mensaje escrito en nuestro caso en
+<CODE>/etc/wu-ftpd-academ/msg.toomany</CODE>. Como el lector supondr&aacute;, todo
+esto es modificable.</P>
+
+<H2><A NAME="modificacionarchivos"></A> <A NAME="ss10.1">10.1 Modificaci&oacute;n de archivos.</A></H2>
+
+
+<P>Un tema importante es permitir o no la modificaci&oacute;n de las propiedades de
+los archivos. Por ello el archivo <CODE>ftpaccess</CODE> dispone de unas l&iacute;neas
+para ello:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#accion       yes/no     usuario
+#--------------------------------
+rename          no      anonymous    # rename permission?
+delete          no      anonymous    # delete permission?
+overwrite       no      anonymous    # overwrite permission?
+chmod           no      anonymous    # chmod permission?
+umask           no      anonymous    # umask permission?
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>En este caso, todos los permisos para el usuario anonymous est&aacute;n
+desactivadas. </P>
+
+
+<H2><A NAME="Archivosnobajables"></A> <A NAME="ss10.2">10.2 Archivos no bajables.</A></H2>
+
+
+<P>Existir&aacute;n archivos que no deseamos que sean obtenibles, como pudieran ser
+<CODE>/etc/passwd</CODE> y <CODE>/etc/group</CODE>, del directorio del ftp (en
+nuestro caso (<CODE>/home/ftp/etc/passwd</CODE> y
+<CODE>/home/ftp/etc/group</CODE>). Para ello tendr&iacute;amos la siguiente l&iacute;nea en
+el archivo <CODE>ftpaccess</CODE>:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# estos ficheros no son bajables
+noretrieve /etc/passwd /etc/group
+noretrieve core
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La primera l&iacute;nea es un comentario, la segunda hace lo explicado
+anteriormente, mientras que la tercera no permite la bajada de archivos
+<CODE>core</CODE> del ftp. Esto es debido a que los <CODE>core</CODE> son volcados
+de memoria y pueden contener informaci&oacute;n valiosa.</P>
+
+
+<H2><A NAME="Subidasalservidor"></A> <A NAME="ss10.3">10.3 Subidas al servidor.</A></H2>
+
+
+<P>Antes se ha indicado como preparar un directorio para las subidas al
+servidor de ftp (directorio <CODE>incoming</CODE>). Pero en este archivo vamos a
+poner unas l&iacute;neas muy especiales:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+upload  /home/ftp   *               no
+upload  /home/ftp   /pub/incoming   yes     ftp     daemon  0666 nodirs
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La primera l&iacute;nea indica que las subidas a <CODE>/home/ftp</CODE>, en
+cualquiera de sus directorios, no est&aacute;n permitidas.</P>
+<P>La segunda indica espec&iacute;ficamente que las subidas a
+<CODE>/home/ftp/pub/incoming</CODE> est&aacute;n permitidas, pero no se pueden crear
+directorios y el permiso de los ficheros ser&aacute; <CODE>0666</CODE> (modo <CODE>0666</CODE>).</P>
+<P>El directorio <CODE>incoming</CODE> puede ser un problema muy grande, en muchos sitios
+se recomienda un sistema de archivos propio, puesto que si se llena el del
+sistema por exceso de <I>uploads</I> de ftp, tendr&iacute;amos grandes problemas. </P>
+<P>Con todo esto, todo el ftp estar&aacute; perfectamente configurado, pero aun as&iacute;,
+existen m&aacute;s opciones, como indicar alias escribiendo : </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        alias   incoming:       /pub/incoming
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El usuario al poner <CODE>cd incoming</CODE> pasara autom&aacute;ticamente a
+<CODE>/pub/incoming</CODE>, pero b&aacute;sicamente este archivo ya estar&iacute;a perfecto. </P>
+
+
+<H2><A NAME="ftpconversions"></A> <A NAME="ss10.4">10.4 El archivo <CODE>ftpconversions</CODE>.</A></H2>
+
+
+<P>Este archivo es muy &uacute;til para bajar archivos que no est&aacute;n comprimidos o
+empaquetados. En casos como el <I>wu-ftpd</I> es muy conveniente poner comandos
+como <CODE>gzip</CODE>, <CODE>gnutar</CODE>, <CODE>compress</CODE>,... compilados y enlazados 
+de forma est&aacute;tica,
+en el directorio <CODE>/home/ftp/bin</CODE> con los permisos correspondientes
+(<CODE>111</CODE>) para permitir bajadas de archivos a la vez que los comprimimos. 
+Su aspecto es el siguiente:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ :.Z:  :  :/bin/compress -d -c %s:T_REG|T_ASCII:O_UNCOMPRESS:UNCOMPRESS
+ :   : :.Z:/bin/compress -c %s:T_REG:O_COMPRESS:COMPRESS
+ :.gz: :  :/bin/gzip -cd %s:T_REG|T_ASCII:O_UNCOMPRESS:GUNZIP
+ :   : :.gz:/bin/gzip -9 -c %s:T_REG:O_COMPRESS:GZIP
+ :   : :.tar:/bin/tar -c -h -f - %s:T_REG|T_DIR:O_TAR:TAR
+ :   : :.tar.Z:/bin/tar -c -h -Z -f - %s:T_REG|T_DIR:O_COMPRESS|O_TAR:TAR+COMPRE
+ :   : :.tar.gz:/bin/tar -c -h -z -f - %s:T_REG|T_DIR:O_COMPRESS|O_TAR:TAR+GZIP
+ :   : :.tgz:/bin/tar -c -h -z -f - %s:T_REG|T_DIR:O_COMPRESS|O_TAR:TAR+GZIP
+ :   : :.ltar:/bin/tar -c -f - %s:T_REG|T_DIR:O_TAR:TAR
+ :   : :.ltar.Z:/bin/tar -c -Z -f - %s:T_REG|T_DIR:O_COMPRESS|O_TAR:TAR+COMPRESS
+ :   : :.ltar.gz:/bin/tar -c -z -f - %s:T_REG|T_DIR:O_COMPRESS|O_TAR:TAR+GZIP
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ejemplo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        
+-r--r--r--   1 root     root       795509 Jan 20  1998 tel2308a
+-r--r--r--   1 root     root       797901 Jan 20  1998 tel2308b
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Son los ficheros a bajar del servidor. Como se ve, no est&aacute;n en forma
+comprimida ni empaquetada, pero queremos bajarlo como <CODE>tar.Z</CODE>. Esto a
+priori se presenta como un problema, puesto que son dos comandos en uno,
+por ello podemos usar un programa que nos permita pipes (<CODE>|</CODE>) en
+nuestro ftpd. Con el siguiente, copiado al directorio <CODE>bin</CODE> de nuestro
+ftp, despu&eacute;s de compilarlo, el problema esta casi resuelto: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+     /* pipe.c: ejecuta dos comandos en una pipe */
+     /* codigo escrito por Gary Mills */
+
+     #define NULL (char *)0
+     #define MAXA 16
+
+     main(argc, argv) int argc; char *argv[]; {
+     char *av1[MAXA], *av2[MAXA];
+     int i, n, p[2], cpid;
+
+     i = 0; n = 0;
+     while ( ++i &lt; argc && n &lt; MAXA ) {
+     if ( *argv[i] == '|' && *(argv[i]+1) == '\0' ) break;
+     av1[n++] = argv[i];
+     }
+     if ( n == 0 ) uexit();
+     av1[n] = NULL;
+     n = 0;
+     while ( ++i &lt; argc && n &lt; MAXA )
+     av2[n++] = argv[i];
+     if ( n == 0 ) uexit();
+     av2[n] = NULL;
+     if ( pipe(p) != 0 ) exit(1);
+     if ( ( cpid = fork() ) == (-1) ) exit(1);
+     else if ( cpid == 0 ) {
+     (void)close(p[0]);
+     (void)close(1);
+     (void)dup(p[1]);
+     (void)close(p[1]);
+     (void)execv(av1[0], av1);
+     _exit(127);
+     }
+     else {
+     (void)close(p[1]);
+     (void)close(0);
+     (void)dup(p[0]);
+     (void)close(p[0]);
+     (void)execv(av2[0], av2);
+     _exit(127);
+     }
+     /*NOTREACHED*/
+     }
+     uexit() {
+     (void)write(2, &quot;Modo de uso: pipe  | \n&quot;, 34);
+     exit(1);
+     }
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El programa lo tenemos, el problema es indicarle al ftpd que lo use. Para
+ello pondremos esta l&iacute;nea en el archivo <CODE>ftpconversions</CODE>: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+        
+ :  :  :.tar.Z:/bin/pipe /bin/tar cf - %s | /bin/compress -c:T_REG|T_DIR:O_COMPRESS|O_TAR:TAR+COMPRESS
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>ATENCION: La l&iacute;nea puede estar partida !!! 
+Espero que se entienda, si hay dudas, por favor ind&iacute;quemelas.</P>
+<P>De esta forma, el comando para obtener un <CODE>.tar.Z</CODE> es llamando a
+<CODE>bin/pipe</CODE> que a su vez llama a <CODE>bin/tar</CODE> y a
+<CODE>bin/compress</CODE> (con sus opciones correspondientes). Este comando se
+puede ampliar para otros comandos como pueden ser <CODE>gzip</CODE> o <CODE>zip</CODE>
+junto con el <CODE>tar</CODE>.</P>
+<P>La variedad solo tiene l&iacute;mite con las combinaciones de compresores.</P>
+
+
+<HR>
+<A HREF="Ftp-Anonimo-Como-9.html">Anterior</A>
+<A HREF="Ftp-Anonimo-Como-11.html">Siguiente</A>
+<A HREF="Ftp-Anonimo-Como.html#toc10">Indice</A>
+</BODY>
+</HTML>

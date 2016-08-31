@@ -1,0 +1,564 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//ES">
+<HTML>
+<HEAD>
+ <META http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+ <META NAME="GENERATOR" CONTENT="lfparser_2.9">
+ <META NAME="LFCATEGORY" CONTENT="System Administration">
+ <TITLE>lf150, System Administration: Construcci&oacute;n autom&aacute;tica de un DHCP</TITLE>
+<!-- stylesheet added by lfparser: --> 
+<style type="text/css">
+<!--
+ pre { font-familiy:monospace,Courier }
+-->
+</style>
+ 
+</HEAD>
+<BODY bgcolor="#ffffff" text="#000000">
+ <!-- this is generated html code. NEVER use this file for your
+ translation work. Instead get the file with the same article number
+ and .meta.shtml in its name. Translate this meta file and then
+ use lfparser program to generate the final article -->
+ <!-- lfparser can be obtained from http://main.linuxfocus.org/~guido/dev/lfparser.html -->
+
+<!-- 2pdaIgnoreStart -->
+<MAP name="top">
+  <AREA shape="rect" coords="367,9,418,30" alt="Hogar" href="../">
+  <AREA shape="rect" coords="423,9,457,30" alt="Mapa" href="../map.html">
+  <AREA shape="rect" coords="463,9,508,30" alt="Indice" href="../indice.html">
+  <AREA shape="rect" coords="514,9,558,30" alt="Busqueda" href="../Search/">
+</MAP>
+<MAP name="bottom">
+  <AREA shape="rect" coords="78,0,163,15" alt="Noticias" href="../News/">
+  <AREA shape="rect" coords="189,0,284,15" alt="Arca" href="../Archives/">
+  <AREA shape="rect" coords="319,0,395,15" alt="Enlaces" href="../Links/">
+  <AREA shape="rect" coords="436,0,523,15" alt="Sobre LF" href="../aboutus.html">
+</MAP>
+<!-- IMAGE HEADER -->
+<CENTER>
+  <IMG src="../../common/images/Topbar-es.gif" width="600" height="40" border="0" alt="[Top bar]" ismap usemap="#top" ><BR>
+  <IMG src="../../common/images/Bottombar-es.gif" width="600" height="21" border="0" alt="[Bottom bar]" ismap usemap="#bottom">
+</CENTER>
+<!-- SSI_INFO -->
+
+<!--#include virtual="../../dynahead.shtml" -->
+<!-- 2pdaIgnoreStop -->
+
+<!-- SHORT BIO ABOUT THE AUTHOR -->
+<TABLE ALIGN=LEFT BORDER=0 hspace=4 vspace=4 WIDTH="30%" >
+<TR>
+<TD>
+
+<!-- 2pdaIgnoreStart -->
+<!-- PALM DOC -->
+<TABLE BORDER=0 hspace=4 vspace=4> <TR> <TD>
+<font size=1> <img src="../../common/images/2doc.gif" width=34 align=left border=0 height=22 alt="convert to palm"><a href="http://cgi.linuxfocus.org/cgi-bin/2ztxt">Convert to GutenPalm</a><br>or <a href="http://cgi.linuxfocus.org/cgi-bin/2pda">to PalmDoc</a></font>
+</TD> </TR> </TABLE>
+<!-- END PALM DOC -->
+<!-- 2pdaIgnoreStop -->
+<br>
+<IMG SRC="../../common/images/EricS.jpg" ALT="[Foto del autor]"
+HEIGHT=130 WIDTH=100>
+<BR>por  <A HREF="mailto:erics@rycks.com">Eric SEIGNE</A>
+<BR><BR>
+<I>Sobre el autor:</I><BR>
+<P>Eric trabaja para el mundo del software libre. Su pan de cada d&iacute;a es
+programar aplicaciones dedicadas al acceso a bases de datos en la web con
+herramientas como PostGreSQL, MySQL y PHP3.</P><BR><BR>
+<BR><i>Contenidos</i>:
+<UL>
+  <LI><A HREF="#lfindex0">Introducci&oacute;n</A></LI>
+  <LI><A HREF="#lfindex1">Construcci&oacute;n de un DHCP en blanco</A></LI>
+  <LI><A HREF="#lfindex2">Seguridad en la configuraci&oacute;n DHCP</A></LI>
+  <LI><A HREF="#lfindex3">Construcci&oacute;n autom&aacute;tica del DNS</A></LI>
+  <LI><A HREF="#lfindex4">Entorno de Red</A></LI>
+  <LI><A HREF="#lfindex5">Bugs y limitaciones</A></LI>
+  <LI><A HREF="#lfindex6">Referencias</A></LI>
+  <LI><A HREF="#lfindex7">&iquest;D&oacute;nde encontrar la &uacute;ltima versi&oacute;n de este documento?</A></LI>
+  <LI><A HREF="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=150&lang=es">Formulario de "talkback" para este art&iacute;culo</A></LI>
+</UL>
+
+</TD></TR></TABLE>
+<!-- HEAD OF THE ARTICLE -->
+<H2>Construcci&oacute;n autom&aacute;tica de un DHCP</H2>
+ <IMG SRC="../../common/images/illustration-dhcp.jpg"
+ALT="[Ilustraci&oacute;n]" HSPACE=10 HEIGHT=96 WIDTH=96>
+<!-- ABSTRACT OF THE ARTICLE -->
+<P><i>Resumen</i>:
+<P>
+<P><FONT FACE="Helvetica,Arial">
+Este art&iacute;culo explica como configurar de forma sencilla DHCP en una
+red.</FONT></P><BR></P>
+<HR size="2" noshade align="right"><BR>
+<!-- BODY OF THE ARTICLE -->
+
+
+<A NAME="lfindex0">&nbsp;</A>
+<H2>Introducci&oacute;n</H2>
+
+
+<P>El objetivo del art&iacute;culo es presentar:
+<UL>
+<LI>un servidor DHCP est&aacute;tico (listo para detectar nuevos invitados en
+la red tales como gente que conecta su port&aacute;til y prueba jugar a a
+juegos piratas)
+<LI>una p&eacute;rdida de tiempo m&iacute;nima.
+</UL>
+El servidor utilizado en este art&iacute;culo es el ISC DHCPd de Paul Vixie.
+
+<A NAME="lfindex1">&nbsp;</A>
+<H2>Construcci&oacute;n de un DHCP en blanco</H2>
+
+
+<P>Nuestro primer paso es crear un fichero de configuraci&oacute;n en blanco que
+sea capaz de aceptar a todos los clientes en la red.
+<BR>Usar&eacute; aqu&iacute; la configuraci&oacute;n de red de la Slash Party #2
+para la que prob&eacute; a configurar un servidor Linux.
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;fichero dhcpd.conf&gt;
+default-lease-time 86400;
+max-lease-time 604800;
+get-lease-hostnames true;
+option subnet-mask 255.255.255.0;
+option domain-name "slach2-100.party";
+option domain-name-servers 192.168.12.1;
+option interface-mtu 1500;
+
+subnet 192.168.12.0 netmask 255.255.255.0
+        # gateway por defecto
+        option routers 192.168.12.1;
+        option broadcast-address 192.168.12.255;
+        range 192.168.12.50 192.168.12.200;
+
+&lt;/fichero&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>Una vez el servidor DHCP est&aacute; funcionando (despu&eacute;s de usar dhcp
+start o un comando similar, seg&uacute;n la distribuci&oacute;n de Linux), se pueden
+iniciar estaciones cliente en la red. Deben estar configuradas  para obtener
+autom&aacute;ticamente una direcci&oacute;n IP.
+
+<BR>Tan pronto como los clientes pidan una direcci&oacute;n al servidor DHCP, se
+a&ntilde;adir&aacute; un bloque como este al fichero dhcpd.leases:
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;bloque de atributos de un cliente dhcp>
+lease 192.168.12.58
+        starts 2 1999/08/24 06:28:48;
+        ends 3 1999/08/25 06:28:48;
+        hardware ethernet 00:10:5a:2e:56:a7;
+        uid 01:00:10:5a:2e:56:a7;
+        client-hostname "KLUSTER";
+
+&lt;/bloque&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>As&iacute; pues, una vez que todos los clientes han obtenido una direcci&oacute;n
+IP del servidor, el fichero dhcpd.leases tendr&aacute; el siguiente aspecto:
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;fichero dhcpd.leases&gt;
+lease 192.168.12.58
+        starts 2 1999/08/24 06:28:48;
+        ends 3 1999/08/25 06:28:48;
+        hardware ethernet 00:10:5a:2e:56:a7;
+        uid 01:00:10:5a:2e:56:a7;
+        client-hostname "KLUSTER";
+
+lease 192.168.12.53
+        starts 2 1999/08/24 05:42:22;
+        ends 3 1999/08/25 05:42:22;
+        hardware ethernet 00:80:ad:97:e1:76;
+        uid 01:00:80:ad:97:e1:76;
+        client-hostname "ceddz";
+
+lease 192.168.12.54
+        starts 2 1999/08/24 03:07:26;
+        ends 3 1999/08/25 03:07:26;
+        hardware ethernet 00:80:ad:97:e1:7d;
+        uid 01:00:80:ad:97:e1:7d;
+        client-hostname "SDS";
+
+lease 192.168.12.67
+        starts 2 1999/08/24 02:52:19;
+        ends 3 1999/08/25 02:52:19;
+        hardware ethernet 00:50:04:45:e1:65;
+        uid 01:00:50:04:45:e1:65;
+        client-hostname "HOMER";
+
+lease 192.168.12.64
+        starts 2 1999/08/24 01:26:05;
+        ends 3 1999/08/25 01:26:05;
+        hardware ethernet 00:80:ad:97:e2:1c;
+        uid 01:00:80:ad:97:e2:1c;
+        client-hostname "chAwArmA";
+
+lease 192.168.12.59
+        starts 2 1999/08/24 01:14:06;
+        ends 3 1999/08/25 01:14:06;
+        hardware ethernet 00:00:21:2c:30:e7;
+        uid 01:00:00:21:2c:30:e7;
+        client-hostname "WOOKIE";
+
+&lt;/fichero&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<A NAME="lfindex2">&nbsp;</A>
+<H2>Seguridad en la configuraci&oacute;n DHCP</H2>
+
+
+<P>A continuaci&oacute;n, es necesario convertir nuestro DHCP "abierto" en uno
+est&aacute;tico y m&aacute;s seguro. Esto lo haremos usando el fichero dhcp.lease que
+acabamos de crear y convirti&eacute;ndolo en lo que he llamado un dhcp
+est&aacute;tico.
+
+<P>&iquest;Cu&aacute;l es la diferencia entre un DHCP est&aacute;tico y uno abierto? En lo
+que nos concierne, un DHCP abierto permite a cualquier ordenador conectado a la red
+obtener una direcci&oacute;n IP y el resto de par&aacute;metros de la red. Esto es un
+gran agujero en la seguridad, ya que cualquier pirata no autorizado puede conectarse
+f&iacute;sicamente a la red y obtener par&aacute;metros de red correctos <tt>:(</tt> Para
+contrarrestar tales ataques, usaremos el DHCP est&aacute;tico. Cada direcci&oacute;n
+IP s&oacute;lo se da a clientes que tengan el Mac correspondiente al adaptador ethernet
+asociado. De esta manera es f&aacute;cil detectar una intrusi&oacute;n.
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;fichero dhcpd.conf&gt;
+default-lease-time 86400;
+max-lease-time 604800;
+get-lease-hostnames true;
+option subnet-mask 255.255.255.0;
+option domain-name "slach2-100.party";
+option domain-name-servers 192.168.12.1;
+option lpr-servers 192.168.12.1;
+option interface-mtu 1500;
+
+subnet 192.168.12.0 netmask 255.255.255.0
+        # gateway por defecto
+        option routers 192.168.12.1;
+        option broadcast-address 192.168.12.255;
+	# Those not in the dhcp
+	# will get ip between .10 et .50
+        range 192.168.12.10 192.168.12.50;
+
+
+host
+        hardware ethernet 00:10:5a:2e:56:a7;
+        fixed-address "kluster.slach2-100.party";
+
+host
+        hardware ethernet 00:80:ad:97:e1:76;
+        fixed-address "ceddz.slach2-100.party";
+host
+        hardware ethernet 00:80:ad:97:e1:7d;
+        fixed-address "sds.slach2-100.party";
+
+host
+        hardware ethernet 00:40:95:49:0b:a5;
+        fixed-address "saigneur.slach2-100.party";
+
+host
+        hardware ethernet 00:50:04:45:e1:65;
+        fixed-address "homer.slach2-100.party";
+
+&lt;/file&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>ATENCI&Oacute;N: Si no tienes un servidor DNS, el fichero dhcp.conf debe usar
+direcciones IP y no nombres de m&aacute;quinas.
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;extracto de dhcpd.conf sin dns&gt;
+host
+        hardware ethernet 00:40:95:49:0b:a5;
+        fixed-address "192.168.12.57";
+
+host
+        hardware ethernet 00:50:04:45:e1:65;
+        fixed-address "192.168.12.67";
+
+&lt;/extracto&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>He escrito un peque&ntilde;o <A HREF="../../common/article150/dhcp-auto_pl.txt">script de
+perl</A> que convierte el fichero dhcpd.leases en un fichero de
+configuraci&oacute;n de dhcp est&aacute;tico.
+
+<A NAME="lfindex3">&nbsp;</A>
+<H2>Construcci&oacute;n autom&aacute;tica del DNS</H2>
+
+
+<P>&iquest;Por qu&eacute; parar a medio camino cuando podemos configurar el servidor DNS al
+mismo tiempo?
+
+<P>El mismo script de perl, con la opci&oacute;n -dns, crear&aacute; los ficheros
+named.$domaine.ajouter y named.$domaine.rev.ajouter que deber&iacute;as comprobar
+antes de a&ntilde;adirlos a tus propios ficheros de configuraci&oacute;n del dns.
+
+<P>Adem&aacute;s, es necesario rellenar el fichero named.conf con par&aacute;metros
+de tu propio dominio. Por ejemplo:
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;a&ntilde;adir al fichero named.conf&gt;
+zone "slach2-100.party"
+        type master;
+        file "named.slach2-100";
+;
+
+zone "12.168.192.in-addr.arpa"
+        type master;
+        file "named.slach2-100.rev";
+;
+&lt;/a&ntilde;adir&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>Ya tienes un dhcp funcionando,
+y la configuraci&oacute;n del dns. ¡¡¡ Felic&iacute;tate !!!
+
+<A NAME="lfindex4">&nbsp;</A>
+<H2>Entorno de Red</H2>
+
+
+<P>Disponible por el mismo precio (mejor incluso cuando es gratis :), la
+configuraci&oacute;n del &quot;Entorno de red&quot; de las m&aacute;quinas con
+windows. Esta es la historia, con un peque&ntilde;o dibujo y sus explicaciones:
+
+<P>En Slach 2 (una demo party), instal&eacute; dos redes, una era de 10 Mbits y la
+otra de 100 Mbits  (en aquel tiempo, para usuarios privilegiados...). El principal
+problema fue que ambas redes no pod&iacute;an "ver" a la otra a trav&eacute;s del
+"Entorno de Red" de windows.
+
+<P>La soluci&oacute;n es WINS. WINS permite declarar, en la red, un servidor que
+mantiene una lista de enlaces entre IPs y nombre de varios dominios. Es una especie
+de master para las redes R1 y R2.
+
+<P>Es pues necesario configurar un servidor WINS y a los clientes para que lo usen y
+crear un gateway IP entre ambas redes.
+
+<P>Samba soporta perfectamente WINS :)
+
+<P>Esquema:
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+-------------------
+I                 I
+I      Red R1     I
+I                 I
+I  192.168.0.0    I
+I  255.255.255.0  I
+-------+-----------
+       |
+  -----|-----
+ eth0: 192.168.0.1
+
+     Servidor
+     Linux
+
+ eth1: 192.168.100.1
+  -----|-----
+       |
+-------+-----------
+I                 I
+I     Red R2      I
+I                 I
+I  192.168.100.0  I
+I  255.255.255.0  I
+-------------------
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>Se modifica dhcpd.conf para que autoconfigure a los clientes para usar nuestro
+servidor wins :). &iexcl;Sin dhcp, hubiera sido necesario configurar cada cliente
+individualmente para activar su acceso al servidor wins!
+
+<P>AVISO: NO OLVIDES A&Ntilde;ADIR LAS SIGUIENTES L&Iacute;NEAS A TU FICHERO
+DHCPD.CONF PARA QUE TU SERVIDOR WINS SEA USADO POR LOS CLIENTES
+
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;fichero dhcpd.conf&gt;
+[...]
+option routers 192.168.0.1;
+option netbios-name-servers 192.168.0.1;
+option netbios-dd-server 192.168.0.1;
+option netbios-node-type 8;
+[...]
+&lt;/fichero&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>Para tener el servidor wins funcionando, tengo funcionando Samba, configurado
+como sigue:
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+&lt;fichero smb.conf&gt;
+; validated with samba 2.0.5
+[global]
+   workgroup = rycks.com
+   server string = Linux Box
+   comment = Linux Box
+   netbios name = pantoufle
+   volume = pantoufle
+   guest only = yes
+
+   guest account = nobody
+   log file = /var/log/samba-log.%m
+   max log size = 50
+
+   share modes = yes
+   security = share
+   socket options = TCP_NODELAY
+   os level = 33
+
+   ; Configured as network master
+   domain master = yes
+   local master = yes
+   preferred master = yes
+
+   ; Activate wins support
+   wins support = yes
+   wins proxy = yes
+
+ ; FTP sharing
+ [ftp]
+   path = /home/ftp/pub
+   public = yes
+   printable = no
+   guest ok = yes
+
+&lt;/fichero&gt;
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<P>Es necesario reiniciar los servidores, dhcp, samba y dns si se hacen
+modificaciones. Reinicia tambi&eacute;n los clientes dhcp para que se den cuenta de
+la nueva configuraci&oacute;n. Busca los grupos en la "otra" red en el "Entorno de
+Red".
+
+<BR>Dado el usual retraso que windows necesita para a&ntilde;adir las nuevas
+m&aacute;quinas en el "entorno de red", sugiero que busques un ordenador usando su
+nombre. Prueba a encontrar un ordenador de la red en la que est&aacute;s, y luego
+otro de la "otra" red.
+
+<P>Si puedes "ver" m&aacute;quinas de fuera, pero no puedes acceder a ellas,
+necesitas configurar el gateway para que act&uacute;e como un gateway real entre
+ambas redes.
+
+<BR>Para m&aacute;s informaci&oacute;n sobre ello, m&iacute;rate el ipchains.
+
+<P>Normalmente es necesario usar algo similar a:
+<CENTER><TABLE BORDER=0 BGCOLOR="#99B8F6" >
+<TR>
+<TD><PRE>
+#Reiniciar cadenas
+ipchains -F
+#Activar masquerading
+ipchains -A forward -i eth0 -j MASQ
+</PRE></TD>
+</TR>
+</TABLE></CENTER>
+
+<A NAME="lfindex5">&nbsp;</A>
+<H2>Bugs y limitaciones</H2>
+
+
+<P>Ves con cuidado, si el servidor dhcp se usa en dos &aacute;reas a la vez, solo
+habr&aacute; un fichero dns a la salida del programa... Ser&aacute; necesario
+ordenarlo a mano.
+
+<P>Espero que este documento sea &uacute;til. No dudes en contactar conmigo para cualquier
+comentario o pregunta.
+
+<A NAME="lfindex6">&nbsp;</A>
+<H2>Referencias</H2>
+
+
+<P>Para un an&aacute;lisis m&aacute;s profundo de las diferentes partes, consulta:
+<UL>
+<LI>DNS-HOWTO de <a href="http://www.linuxdoc.org/">www.linuxdoc.org</a>
+<LI>DHCP Mini HOWTO de <a href="http://www.linuxdoc.org/">www.linuxdoc.org</a>
+<LI><A HREF="http://fr.samba.org/samba/docs/">Documentaci&oacute;n de Samba</A>
+</UL>
+
+<A NAME="lfindex7">&nbsp;</A>
+<H2>&iquest;D&oacute;nde encontrar la &uacute;ltima versi&oacute;n de este documento?</H2>
+
+<P>Las actualizaciones son frecuentes, mira en la siguiente direcci&oacute;n para la
+&uacute;ltima versi&oacute;n en franc&eacute;s:
+<A HREF="http://www.rycks.com/erics/linux/">http://www.rycks.com/erics/linux/</A>
+
+
+
+<!-- 2pdaIgnoreStart -->
+<A NAME="talkback">&nbsp;</a>
+<h2>Formulario de "talkback" para este art&iacute;culo</h2>
+Cada art&iacute;culo tiene su propia p&aacute;gina de "talkback". A trav&eacute;s de esa p&aacute;gina puedes enviar un comentario o consultar los comentarios de otros lectores
+<center>
+<table border="0"  CELLSPACING="2" CELLPADDING="1">
+ <tr BGCOLOR="#C2C2C2"><td align=center>
+  <table border="3"  CELLSPACING="2" CELLPADDING="1">
+   <tr BGCOLOR="#C2C2C2"><td align=center>
+    <A href="http://cgi.linuxfocus.org/cgi-bin/lftalkback?anum=150&lang=es"><b>&nbsp;Ir a la p&aacute;gina de "talkback"&nbsp;</b></a>
+   </td></tr></table>
+</td></tr></table>
+</center>
+
+<HR size="2" noshade>
+<!-- ARTICLE FOOT -->
+<CENTER><TABLE WIDTH="95%">
+<TR><TD ALIGN=CENTER BGCOLOR="#9999AA">
+<A HREF="../../common/lfteam.html">Contactar con el equipo de LinuFocus</A>
+<BR><FONT COLOR="#FFFFFF">&copy; Eric SEIGNE, <a href="../../common/copy.html">FDL</a> <BR><a href="http://www.linuxfocus.org">LinuxFocus.org</a></FONT>
+<BR><a href="http://cgi.linuxfocus.org/cgi-bin/lfcomment?lang=es&article=article150.html" target="_TOP">Pinchar aqu&iacute; para informar de alg&uacute;n problema o enviar comentarios a LinuxFocus</A><BR></TD>
+<TD BGCOLOR="#9999AA"><!-- TRANSLATION INFO -->
+<font size=2>Informaci&oacute;n sobre la traducci&oacute;n:</font><TABLE>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>--</font></td>
+    <td><font size=2><a href="mailto:erics@rycks.com"><FONT COLOR="#FFFFFF">Eric SEIGNE</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>fr</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>en</font></td>
+    <td><font size=2><a href="mailto:johnperr@linuxfocus.org"><FONT COLOR="#FFFFFF">John Perr</FONT></a></font></td>
+</tr>
+<tr><td><font size=2>en</font></td>
+    <td><font size=2>-&gt;</font></td>
+    <td><font size=2>es</font></td>
+    <td><font size=2><a href="mailto:hlastras@jazzfree.com"><FONT COLOR="#FFFFFF">Hugo Lastras Membrive</FONT></a></font></td>
+</tr>
+</TABLE></TD>
+</TR></TABLE></CENTER>
+<p><font size=1>2001-03-30, generated by lfparser version 2.9</font></p>
+<!-- 2pdaIgnoreStop -->
+</BODY>
+</HTML>

@@ -1,0 +1,313 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt COMO: Secuencias de escape ANSI: colores y movimientos del cursor</TITLE>
+ <LINK HREF="Bash-Prompt-Como-6.html" REL=next>
+ <LINK HREF="Bash-Prompt-Como-4.html" REL=previous>
+ <LINK HREF="Bash-Prompt-Como.html#toc5" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bash-Prompt-Como-6.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-4.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc5">Índice general</A>
+<HR>
+<H2><A NAME="s5">5. Secuencias de escape ANSI: colores y movimientos del cursor</A></H2>
+
+<H2><A NAME="ss5.1">5.1 Colores</A>
+</H2>
+
+<P>
+<P>Como se mencion&oacute; antes, las secuencias escape de caracteres no imprimibles
+tienen que encerrarse entre <CODE>\[\033[</CODE> y <CODE>\]</CODE>. Para las
+secuencias de escape de color, tambi&eacute;n deben aparecer, seguidos adem&aacute;s de
+una <CODE>m</CODE> min&uacute;scula.
+<P>Si se prueba uno de los prompts siguientes en una <CODE>xterm</CODE> y resulta que
+no se ven los colores nombrados, compruebe su <CODE>~/.Xdefaults</CODE> (y
+posiblemente sus hermanos) y busque l&iacute;neas como <CODE>XTerm*Foreground:
+BlanchedAlmond</CODE>. Esto puede comentarse colocando un <CODE>!</CODE> delante. Por
+supuesto, depende de qu&eacute; emulador de terminal est&eacute; usando. Este es el
+lugar m&aacute;s probable en el que los colores de su terminal pueden ser
+redefinidos. 
+<P>Para incluir texto azul en el prompt
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       PS1="\[\033[34m\][\$(date +%H%M)][\u@\h:\w]$ "
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El problema con este prompt es que el color azul que comienza con el
+c&oacute;digo 34 no se retorna nunca al color habitual, por lo que cualquier
+texto que se teclee despu&eacute;s del prompt ser&aacute; del mismo color que el prompt.
+Este es tambi&eacute;n un azul oscuro, as&iacute; que combinarlo con el c&oacute;digo de
+negrita puede resultar &uacute;til:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       PS1="\[\033[1;34m\][\$(date +%H%M)][\u@\h:\w]$\[\033[0m\] "
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Ahora el prompt es azul claro, y termina cambiando el color de nuevo a
+«nada» (el color que se ten&iacute;a previamente de primer plano) 
+<P>Aqu&iacute; est&aacute; el resto de equivalencias de colores:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       Negro       0;30     Gris oscuro    1;30
+       Azul        0;34     Azul claro     1;34
+       Verde       0;32     Verde claro    1;32
+       Cyan        0;36     Cyan claro     1;36
+       Rojo        0;31     Rojo claro     1;31
+       Purpura     0;35     Purpura claro  1;35
+       Marron      0;33     Amarillo       1;33
+       Gris claro  0;37     blanco         1;37
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Tambi&eacute;n se pueden poner colores de fondo, usando 44 para fondo azul, 41
+para fondo rojo, etc. No hay colores de fondo 'negrita'; se pueden usar
+combinaciones, como texto rojo claro sobre fondo azul
+<CODE>\[\033[44;1;31m\]</CODE>, aunque parece que funciona mejor poner los colores
+separadamente (es decir, <CODE>\[\033[44m\]\[\033[1;31m\])</CODE>. Otros c&oacute;digos
+disponibles incluyen 4: subrayado, 5: parpadeante, 7: inverso y 8: oculto.
+<P>Nota: mucha gente (yo incluido), tienen fuertes objeciones al uso del
+atributo «parpadeo». Afortunadamente no funciona en ning&uacute;n emulador de
+terminal que yo conozca - pero si que funciona en la consola. Y si alguien
+se preguntaba (como yo hice) «¿para qu&eacute; sirve el atributo oculto?», yo he
+visto usarlo en un ejemplo de shell script (no en un prompt) que permit&iacute;a
+introducir un password sin ser reflejado en la pantalla.
+<P>Basado en el prompt <I>elite2</I> del paquete <CODE>bashprompt</CODE> (que he
+modificado para funcionar mejor en una consola est&aacute;ndar, en lugar de con
+los tipos especiales de <CODE>xterm</CODE> necesarios para ver correctamente el
+original), este es un prompt que he usado mucho:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  function elite
+  {
+
+  local GRAY="\[\033[1;30m\]"
+  local LIGHT_GRAY="\[\033[0;37m\]"
+  local CYAN="\[\033[0;36m\]"
+  local LIGHT_CYAN="\[\033[1;36m\]"
+
+  case $TERM in
+      xterm*)
+          local TITLEBAR='\[\033]0;\u@\h:\w\007\]'
+          ;;
+      *)
+          local TITLEBAR=""
+          ;;
+  esac
+
+  local GRAD1=$(tty|cut -d/ -f3)
+  PS1="$TITLEBAR\
+  $GRAY-$CYAN-$LIGHT_CYAN(\
+  $CYAN\u$GRAY@$CYAN\h\
+  $LIGHT_CYAN)$CYAN-$LIGHT_CYAN(\
+  $CYAN\#$GRAY/$CYAN$GRAD1\
+  $LIGHT_CYAN)$CYAN-$LIGHT_CYAN(\
+  $CYAN\$(date +%H%M)$GRAY/$CYAN\$(date +%d-%b-%y)\
+  $LIGHT_CYAN)$CYAN-$GRAY-\
+  $LIGHT_GRAY\n\
+  $GRAY-$CYAN-$LIGHT_CYAN(\
+  $CYAN\$$GRAY:$CYAN\w\
+  $LIGHT_CYAN)$CYAN-$GRAY-$LIGHT_GRAY "
+  PS2="$LIGHT_CYAN-$CYAN-$GRAY-$LIGHT_GRAY "
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Defino los colores como variables temporales del shell en favor de la
+legibilidad. Es m&aacute;s f&aacute;cil trabajar as&iacute;. La variable <CODE>GRAD1</CODE> es una
+comprobaci&oacute;n para determinar en qu&eacute; terminal se est&aacute;. Como la prueba para
+saber si se est&aacute; en una <CODE>xterm</CODE>, solo es necesario llevarla a cabo una
+vez. El prompt es similar a esto, excepto el color
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       --(giles@nikola)-(75/ttyp7)-(1908/12-Oct-98)--
+       --($:~/tmp)--
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Para recordar qu&eacute; colores hay disponibles, uso el siguiente script que
+saca todos los colores por pantalla: 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+  #
+  # Este fichero saca por pantalla un monton de codigos de color
+  # para demostrar que hay disponible. Cada linea es un color con
+  # fondo negro y gris, con el codigo en medio. Funciona sobre
+  # fondos blancos, negros y verdes (2 dic. 98)
+  #
+  echo "  Sobre gris claro:        Sobre negro:"
+  echo -e "\033[47m\033[1;37m  Blanco        \033[0m\
+   1;37m \
+  \033[40m\033[1;37m  Blanco        \033[0m"
+  echo -e "\033[47m\033[37m  Gris Claro    \033[0m\
+     37m \
+  \033[40m\033[37m  Gris Claro    \033[0m"
+  echo -e "\033[47m\033[1;30m  Gris          \033[0m\
+   1;30m \
+  \033[40m\033[1;30m  Gris          \033[0m"
+  echo -e "\033[47m\033[30m  Negro         \033[0m\
+     30m \
+  \033[40m\033[30m  Negro         \033[0m"
+  echo -e "\033[47m\033[31m  Rojo          \033[0m\
+     31m \
+  \033[40m\033[31m  Rojo          \033[0m"
+  echo -e "\033[47m\033[1;31m  Rojo Claro    \033[0m\
+   1;31m \
+  \033[40m\033[1;31m  Rojo Claro    \033[0m"
+  echo -e "\033[47m\033[32m  Verde         \033[0m\
+     32m \
+  \033[40m\033[32m  Verde         \033[0m"
+  echo -e "\033[47m\033[1;32m  Verde Claro   \033[0m\
+   1;32m \
+  \033[40m\033[1;32m  Verde Claro   \033[0m"
+  echo -e "\033[47m\033[33m  Marr&oacute;n        \033[0m\
+     33m \
+  \033[40m\033[33m  Marron        \033[0m"
+  echo -e "\033[47m\033[1;33m  Amarillo      \033[0m\
+   1;33m \
+  \033[40m\033[1;33m  Amarillo      \033[0m"
+  echo -e "\033[47m\033[34m  Azul          \033[0m\
+     34m \
+  \033[40m\033[34m  Azul          \033[0m"
+  echo -e "\033[47m\033[1;34m  Azul Claro    \033[0m\
+   1;34m \
+  \033[40m\033[1;34m  Azul Claro    \033[0m"
+  echo -e "\033[47m\033[35m  P&uacute;rpura       \033[0m\
+     35m \
+  \033[40m\033[35m  Purpura       \033[0m"
+  echo -e "\033[47m\033[1;35m  Rosa          \033[0m\
+   1;35m \
+  \033[40m\033[1;35m  Rosa          \033[0m"
+  echo -e "\033[47m\033[36m  Cyan          \033[0m\
+     36m \
+  \033[40m\033[36m  Cyan          \033[0m"
+  echo -e "\033[47m\033[1;36m  Cyan Claro    \033[0m\
+   1;36m \
+  \033[40m\033[1;36m  Cyan Claro    \033[0m"
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss5.2">5.2 Movimiento del cursor</A>
+</H2>
+
+<P>
+<P>Las secuencias de escape ANSI permiten mover el cursor por la pantalla a
+voluntad. Esto es m&aacute;s &uacute;til para interfaces de usuario a pantalla completa
+generados por shell scripts, pero tambi&eacute;n se pueden usar en prompts. Las
+secuencias de escape de movimientos son las siguientes:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       - Posicionar el cursor:
+         \033[&lt;L>;&lt;C>H
+         pone el cursor en la linea L, columna C.
+       - Mover el cursor arriba N lineas:
+         \033[&lt;N>A
+       - Mover el cursor abajo N lineas:
+         \033[&lt;N>B
+       - Mover el cursor hacia adelante N columnas:
+         \033[&lt;N>C
+       - Mover el cursor hacia atras N columnas:
+         \033[&lt;N>D
+       - Guardar la posicion del cursor:
+         \033[s
+       - Restaurar la posicion del cursor:
+         \033[u
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Los dos &uacute;ltimos c&oacute;digos no est&aacute;n presentes en muchos emuladores de
+terminal. Los &uacute;nicos que conozco que los soportan son <CODE>xterm</CODE> y
+<CODE>nxterm</CODE>, a pesar de que la mayor&iacute;a de los emuladores de terminal est&aacute;n
+basados en el c&oacute;digo de <CODE>xterm</CODE>. Por lo que yo s&eacute;, ni <CODE>rxvt</CODE>,
+<CODE>kvt</CODE> ni <CODE>xiterm</CODE> ni <CODE>Eterm</CODE> no soportan esto. La consola s&iacute; lo
+soporta. 
+<P>Pruebe a poner la siguiente l&iacute;nea de c&oacute;digo en el prompt (est&aacute; m&aacute;s claro
+lo que hace si el prompt est&aacute; bastantes l&iacute;neas m&aacute;s abajo que el tope
+superior de la terminal) 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ 
+echo -en "\033[7A\033[1;35m BASH \033[7B\033[6D" 
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Esto deber&iacute;a mover el cursor 7 l&iacute;neas hacia arriba de la pantalla,
+escribir la palabra <CODE>BASH</CODE>, y volver a su sitio habitual en el prompt. 
+Esto no es un prompt, es solo una demostraci&oacute;n de movimiento del cursor
+por la pantalla, usando color para enfatizar lo que se ha hecho. 
+<P>Salve lo siguiente en un fichero llamado <CODE>clock</CODE>:  
+<BLOCKQUOTE>N.del T.:<BR>
+  para que funcione bien, he tenido que poner <CODE>let
+prompt_x=$COLUMNS-7</CODE>, en lugar de la l&iacute;nea original</BLOCKQUOTE>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+
+  function prompt_command {
+  let prompt_x=$COLUMNS-5
+  }
+
+  PROMPT_COMMAND=prompt_command
+
+  function clock {
+  local       BLUE="\[\033[0;34m\]"
+  local        RED="\[\033[0;31m\]"
+  local  LIGHT_RED="\[\033[1;31m\]"
+  local      WHITE="\[\033[1;37m\]"
+  local  NO_COLOUR="\[\033[0m\]"
+  case $TERM in
+      xterm*)
+          TITLEBAR='\[\033]0;\u@\h:\w\007\]'
+          ;;
+      *)
+          TITLEBAR=""
+          ;;
+  esac
+
+  PS1="${TITLEBAR}\
+  \[\033[s\033[1;\$(echo -n \${prompt_x})H\]\
+  $BLUE[$LIGHT_RED\$(date +%H%M)$BLUE]\[\033[u\033[1A\]
+  $BLUE[$LIGHT_RED\u@\h:\w$BLUE]\
+  $WHITE\$$NO_COLOUR "
+  PS2='> '
+  PS4='+ '
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Este prompt es bastante sencillo, excepto por el hecho de que mantiene un
+reloj en la esquina superior derecha de la pantalla (incluso aunque se
+var&iacute;e de tama&ntilde;o el terminal). Esto NO funcionar&aacute; en los emuladores de
+terminal que he mencionado que no aceptan guardar y recuperar la posici&oacute;n
+del cursor. Si se intenta ejecutar este prompt en cualquiera de esos
+terminales, el reloj aparecer&aacute; correctamente, pero el prompt quedar&aacute;
+encajado en la segunda l&iacute;nea del terminal.
+<P>V&eacute;ase la secci&oacute;n 
+<A HREF="Bash-Prompt-Como-10.html#Prompt con Reloj Elegante e In&uacute;til">Prompt con Reloj Elegante e In&uacute;til</A> para un uso m&aacute;s extensivo de estos c&oacute;digos.
+<P>
+<H2><A NAME="ss5.3">5.3 Movimiento del cursor con <CODE>tput</CODE></A>
+</H2>
+
+<P>
+<P>Como ocurre con muchas cosas en unix, hay m&aacute;s de una forma de conseguir
+los mismos objetivos. Una utilidad llamada <CODE>tput</CODE> puede tambi&eacute;n usarse
+para mover el cursor por la pantalla, o devolver informaci&oacute;n acerca del
+estado del terminal. <CODE>tput</CODE> es menos flexible que las secuencias de
+escape ANSI para el posicionamiento del cursor: s&oacute;lo se puede mover el
+cursor a una posici&oacute;n absoluta, no se puede mover con relaci&oacute;n a la
+posici&oacute;n actual. Yo no uso <CODE>tput</CODE>, as&iacute; que no voy a explicarlo en
+detalle. Consulte la p&aacute;gina del manual y sabr&aacute; tanto como yo de <CODE>tput</CODE>. 
+<P>
+<P>
+<HR>
+<A HREF="Bash-Prompt-Como-6.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-4.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc5">Índice general</A>
+</BODY>
+</HTML>

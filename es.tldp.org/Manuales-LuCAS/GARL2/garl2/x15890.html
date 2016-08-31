@@ -1,0 +1,316 @@
+<HTML
+><HEAD
+><TITLE
+>Ejecución de Sendmail</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Sendmail"
+HREF="x-087-2-sendmail.html"><LINK
+REL="PREVIOUS"
+TITLE="Probando la Configuración"
+HREF="x15824.html"><LINK
+REL="NEXT"
+TITLE="Pistas y Trucos"
+HREF="x15932.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x15824.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 18. Sendmail</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x15932.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN15890">18.10. Ejecución de Sendmail</H1
+><P
+>&#13;El demonio <B
+CLASS="COMMAND"
+>sendmail</B
+> puede ejecutarse de dos formas. Una manera es ejecutarlo
+desde el demonio <B
+CLASS="COMMAND"
+>inetd</B
+> y la otra, más usual, es ejecutar <B
+CLASS="COMMAND"
+>sendmail</B
+> 
+como un demonio en solitario. También es común para los programas de transporte invocar <B
+CLASS="COMMAND"
+>sendmail</B
+> como una orden de usuario para aceptar el envío del correo generado localmente.</P
+><P
+>Cuando se ejecuta  <B
+CLASS="COMMAND"
+>sendmail</B
+> de modo solitario, se pone la instrucción
+en un fichero <TT
+CLASS="FILENAME"
+>rc</TT
+>para que se inicie en tiempo de arranque. La sintaxis
+usada es normalmente:
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    /usr/sbin/sendmail -bd -q10m</PRE
+></TD
+></TR
+></TABLE
+>
+
+El argumento  <TT
+CLASS="LITERAL"
+>-bd</TT
+> le dice a  <B
+CLASS="COMMAND"
+>sendmail</B
+> que se ejecute
+como un demonio. Se bifurcará y se ejecutará en segundo plano. El argumento
+<TT
+CLASS="LITERAL"
+>-q10m</TT
+> le indica a  <B
+CLASS="COMMAND"
+>sendmail</B
+>
+que verifique su cola cada diez minutos. Puede escoger un tiempo diferente para verificar la cola.</P
+><P
+>Para ejecutar <B
+CLASS="COMMAND"
+>sendmail</B
+> desde el demonio de red  <B
+CLASS="COMMAND"
+>inetd</B
+> 
+podría usar una entrada como ésta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    smtp  stream  tcp nowait  nobody  /usr/sbin/sendmail -bs</PRE
+></TD
+></TR
+></TABLE
+>
+
+El argumento  <TT
+CLASS="LITERAL"
+>-bs</TT
+> aquí le dice a  <B
+CLASS="COMMAND"
+>sendmail</B
+>
+que utilice el protocolo SMTP en  stdin/stdout, que se requiere para utilizarlo con
+<B
+CLASS="COMMAND"
+>inetd</B
+>.</P
+><P
+>La orden <B
+CLASS="COMMAND"
+>runq</B
+> es usualmente un enlace simbólico al binario de 
+<B
+CLASS="COMMAND"
+>sendmail</B
+> y es una forma más conveniente que:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>sendmail -q</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Cuando <B
+CLASS="COMMAND"
+>sendmail</B
+> se invoca de esta manera, procesa cualquier correo
+esperando en la cola para ser transmitido. Cuando se ejecuta <B
+CLASS="COMMAND"
+>sendmail</B
+>
+desde <B
+CLASS="COMMAND"
+>inetd</B
+> debe crear un trabajo  en <B
+CLASS="COMMAND"
+>cron</B
+> que ejecute
+la orden  <B
+CLASS="COMMAND"
+>runq</B
+> periódicamente para asegurarse que el correo se sirve 
+periódicamente.</P
+><P
+>Una tabla de <B
+CLASS="COMMAND"
+>cron</B
+> útil sería similar a :
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # Ejecutar la entrega de correo cada quince minutos
+    0,15,30,45     *     *     *     *     /usr/bin/runq</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>En muchas instalaciones <B
+CLASS="COMMAND"
+>sendmail</B
+> procesa la cola
+cada 15 minutos como se muestra en nuestra tabla <TT
+CLASS="FILENAME"
+>crontab</TT
+> de ejemplo,
+intentando transmitir cualquier mensaje allí.</P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x15824.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x15932.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Probando la Configuración</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-sendmail.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Pistas y Trucos</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

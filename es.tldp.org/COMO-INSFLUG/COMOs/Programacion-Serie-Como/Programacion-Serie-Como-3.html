@@ -1,0 +1,453 @@
+<HTML>
+<HEAD>
+<TITLE>C&Oacute;MO Programar el puerto serie en Linux: Programas Ejemplo</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Programacion-Serie-Como-2.html">Anterior</A>
+<A HREF="Programacion-Serie-Como-4.html">Siguiente</A>
+<A HREF="Programacion-Serie-Como.html#toc3">Indice</A>
+<HR>
+<H2><A NAME="s3">3. Programas Ejemplo</A></H2>
+
+
+<P>Todos los ejemplos provienen de <CODE>miniterm.c</CODE>. El buffer est&aacute;
+limitado a 255 caracteres, como la longitud m&aacute;xima de cadena para el
+proceso de entrada can&oacute;nica.  (<CODE>&lt;linux/limits.h&gt;</CODE> o
+<CODE>&lt;posix1_lim.h&gt;</CODE>).</P>
+<P>Vea los comentarios que hay en el c&oacute;digo para una explicaci&oacute;n del uso de
+los diferentes modos de entrada. Espero que el c&oacute;digo sea comprensible. El
+ejemplo de entrada can&oacute;nica est&aacute; mejor comentado, el resto de los ejemplos
+est&aacute;n comentados s&oacute;lo donde difieren del ejemplo de entrada can&oacute;nica para
+remarcar las diferencias.</P>
+<P>Las descripciones no son completas, por eso le invito a experimentar con
+los ejemplos para obtener mejores soluciones para su aplicaci&oacute;n.</P>
+<P>¡No olvide dar los permisos apropiados a los puertos serie: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod a+rw /dev/ttyS1 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H2><A NAME="ss3.1">3.1 Proceso de Entrada Can&oacute;nico</A></H2>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;stdio.h&gt;
+
+/* la tasa de baudios esta definida en  &lt;asm/termbits.h&gt;, que esta 
+   incluida &lt;termios.h&gt; */
+
+#define BAUDRATE B38400
+
+/* cambie esta definicion por el puerto correcto  */
+#define MODEMDEVICE &quot;/dev/ttyS1&quot;
+
+#define _POSIX_SOURCE 1 /* fuentes cumple POSIX  */
+
+#define FALSE 0
+#define TRUE 1
+
+volatile int STOP=FALSE;
+
+main()
+{
+   int fd,c, res;
+   struct termios oldtio,newtio;
+   char buf[255];
+
+/* 
+      Abre el dispositivo modem para lectura y escritura y no como controlador
+      tty porque no queremos que nos mate si el ruido de la linea envia 
+      un CTRL-C.
+*/
+
+   fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY );
+   if (fd &lt;0) {  perror(MODEMDEVICE); exit(-1);  }
+
+   tcgetattr(fd,&oldtio); /* almacenamos la configuracion actual del puerto */
+
+   bzero(newtio, sizeof(newtio)); /* limpiamos struct para recibir los
+                                        nuevos parametros del puerto */
+
+/*
+      BAUDRATE: Fija la tasa bps. Podria tambien usar cfsetispeed y cfsetospeed.
+      CRTSCTS : control de flujo de salida por hardware (usado solo si el cable 
+      tiene todas las lineas necesarias Vea sect. 7 de Serial-HOWTO)
+      CS8     : 8n1 (8bit,no paridad,1 bit de parada)
+      CLOCAL  : conexion local, sin control de modem
+      CREAD   : activa recepcion de caracteres
+*/
+
+   newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+
+/*
+      IGNPAR  : ignora los bytes con error de paridad
+      ICRNL   : mapea CR a NL (en otro caso una entrada CR del otro ordenador 
+      no terminaria la entrada) en otro caso hace un dispositivo en bruto 
+      (sin otro proceso de entrada)
+*/
+
+   newtio.c_iflag = IGNPAR | ICRNL;
+
+/*
+      Salida en bruto.
+*/
+   newtio.c_oflag = 0;
+
+/*
+      ICANON  : activa entrada canonica
+      desactiva todas las funcionalidades del eco, y no envia segnales al
+      programa
+      llamador
+*/
+
+   newtio.c_lflag = ICANON;
+
+/* 
+      inicializa todos los caracteres de control
+      los valores por defecto se pueden encontrar en /usr/include/termios.h, 
+      y vienen dadas en los comentarios, pero no los necesitamos aqui
+*/
+
+   newtio.c_cc[VINTR]    = 0;     /* Ctrl-c */
+   newtio.c_cc[VQUIT]    = 0;     /* Ctrl-\ */
+   newtio.c_cc[VERASE]   = 0;     /* del */
+   newtio.c_cc[VKILL]    = 0;     /* @ */
+   newtio.c_cc[VEOF]     = 4;     /* Ctrl-d */
+   newtio.c_cc[VTIME]    = 0;     /* temporizador entre caracter, no usado */
+   newtio.c_cc[VMIN]     = 1;     /* bloqu.lectura hasta llegada de caracter. 1 */
+   newtio.c_cc[VSWTC]    = 0;     /* '\0' */
+   newtio.c_cc[VSTART]   = 0;     /* Ctrl-q */
+   newtio.c_cc[VSTOP]    = 0;     /* Ctrl-s */
+   newtio.c_cc[VSUSP]    = 0;     /* Ctrl-z */
+   newtio.c_cc[VEOL]     = 0;     /* '\0' */
+   newtio.c_cc[VREPRINT] = 0;     /* Ctrl-r */
+   newtio.c_cc[VDISCARD] = 0;     /* Ctrl-u */
+   newtio.c_cc[VWERASE]  = 0;     /* Ctrl-w */
+   newtio.c_cc[VLNEXT]   = 0;     /* Ctrl-v */
+   newtio.c_cc[VEOL2]    = 0;     /* '\0' */
+
+/* 
+      ahora limpiamos la linea del modem y activamos la configuracion del
+      puerto
+*/
+
+   tcflush(fd, TCIFLUSH);
+   tcsetattr(fd,TCSANOW,&newtio);
+
+/*
+      configuracion del terminal realizada, ahora manejamos las entradas.
+      En este ejemplo, al introducir una  'z' al inicio de linea terminara el 
+      programa.  
+*/
+
+   while (STOP==FALSE) {     /* bucle hasta condicion de terminar */
+
+/* 
+   bloque de ejecucion de programa hasta que llega un caracter de fin de
+   linea, incluso si llegan mas de 255 caracteres.
+   Si el numero de caracteres leidos es menor que el numero de caracteres 
+   disponibles, las siguientes lecturas devolveran los caracteres restantes.
+   'res' tomara el valor del numero actual de caracteres leidos.
+*/
+
+                          res = read(fd,buf,255);
+                          buf[res]=0;             /* envio de fin de cadena, a fin de poder usar printf */
+                          printf(&quot;:%s:%d\n&quot;, buf, res);
+                          if (buf[0]=='z') STOP=TRUE;
+                       }
+
+/* restaura la anterior configuracion del puerto  */
+
+   tcsetattr(fd,TCSANOW,&oldtio);
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss3.2">3.2 Proceso de Entrada NO Can&oacute;nico</A></H2>
+
+
+<P>En el modo de proceso de entrada no can&oacute;nico, la entrada no est&aacute;
+ensamblada en l&iacute;neas y el procesamiento de la entrada (<CODE>erase, kill,
+delete</CODE>, etc.) no ocurre. Dos par&aacute;metros controlan el comportamiento de
+este modo:  <CODE>c_cc[VTIME]</CODE> fija el temporizador de car&aacute;cter, y fija
+el n&uacute;mero m&iacute;nimo de caracteres a recibir antes de satisfacer la lectura. </P>
+<P>Si MIN &gt; 0 y TIME = 0, MIN fija el n&uacute;mero de caracteres a recibir antes
+de que la lectura est&eacute; realizada. Como TIME es cero, el temporizador no se
+usa. </P>
+<P>Si MIN = 0 y TIME &gt; 0, TIME indica un tiempo de espera. La lectura se
+realizar&aacute; si es le&iacute;do un s&oacute;lo car&aacute;cter, o si se excede TIME (t =TIME
+*0.1 s). Si TIME se excede, no se devuelve ning&uacute;n car&aacute;cter. </P>
+<P>Si MIN &gt; 0 y TIME &gt; 0, TIME indica un temporizador entre caracteres. 
+La lectura se realizar&aacute; si se reciben MIN caracteres o el tiempo entre dos
+caracteres excede TIME. El temporizador se reinicia cada vez que se recibe
+un car&aacute;cter y s&oacute;lo se hace activo una vez que se ha recibido el primer
+car&aacute;cter.</P>
+<P>Si MIN = 0 y TIME = 0, la lectura se realizar&aacute; inmediatamente. Devolver&aacute;
+el n&uacute;mero de caracteres disponibles en el momento, o el n&uacute;mero de
+caracteres solicitados. De acuerdo con Antonino (ver contribuciones),
+podr&iacute;a poner un <CODE>fcntl(fd, F_SETFL, FNDELAY);</CODE> antes de leer para
+obtener el mismo resultado.</P>
+<P>Modificando <CODE>newtio.c_cc[VTIME]</CODE> y <CODE>newtio.c_cc[VMIN]</CODE> se
+pueden comprobar todos los modos descritos arriba. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;termios.h&gt;
+#include &lt;stdio.h&gt;
+
+#define BAUDRATE B38400
+#define MODEMDEVICE &quot;/dev/ttyS1&quot;
+#define _POSIX_SOURCE 1 /* fuentes cumple POSIX */
+#define FALSE 0
+#define TRUE 1
+
+volatile int STOP=FALSE;
+
+main()
+{
+   int fd,c, res;
+   struct termios oldtio,newtio;
+   char buf[255];
+
+   fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY );
+   if (fd &lt;0) {  perror(MODEMDEVICE); exit(-1);  }
+
+   tcgetattr(fd,&oldtio); /* salva configuracion actual del puerto  */
+
+   bzero(newtio, sizeof(newtio));
+   newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+   newtio.c_iflag = IGNPAR;
+   newtio.c_oflag = 0;
+
+/* pone el modo entrada (no-canonico, sin eco,...) */
+
+   newtio.c_lflag = 0;
+
+   newtio.c_cc[VTIME]    = 0;   /* temporizador entre caracter, no usado */
+   newtio.c_cc[VMIN]     = 5;   /* bloquea lectura hasta recibir 5 chars  */
+
+   tcflush(fd, TCIFLUSH);
+   tcsetattr(fd,TCSANOW,&newtio);
+
+
+   while (STOP==FALSE) {                            /* bucle para entrada */
+                          res = read(fd,buf,255);   /* devuelve tras introducir 5 */
+                          buf[res]=0;               /* asi podemos printf... */
+                          printf(&quot;:%s:%d\n&quot;, buf, res);
+                          if (buf[0]=='z') STOP=TRUE;
+                       }
+   tcsetattr(fd,TCSANOW,&oldtio);
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss3.3">3.3 Entrada As&iacute;ncrona</A></H2>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;termios.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;sys/signal.h&gt;
+#include &lt;sys/types.h&gt;
+
+#define BAUDRATE B38400
+#define MODEMDEVICE &quot;/dev/ttyS1&quot;
+#define _POSIX_SOURCE 1 /* fuentes cumple POSIX  */
+#define FALSE 0
+#define TRUE 1
+
+volatile int STOP=FALSE;
+
+void signal_handler_IO (int status);   /* definicion del manejador de segnal */
+int wait_flag=TRUE;                    /* TRUE mientras no segnal recibida */
+
+main()
+{
+   int fd,c, res;
+   struct termios oldtio,newtio;
+   struct sigaction saio;           /* definicion de accion de segnal  */
+   char buf[255];
+
+/* abre el dispositivo en modo no bloqueo (read volvera inmediatamente) */
+
+      fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY | O_NONBLOCK);
+   if (fd &lt;0) {  perror(MODEMDEVICE); exit(-1);  }
+
+/* instala el manejador de segnal antes de hacer asincrono el dispositivo */
+
+   saio.sa_handler = signal_handler_IO;
+   saio.sa_mask = 0;
+   saio.sa_flags = 0;
+   saio.sa_restorer = NULL;
+   sigaction(SIGIO,&saio,NULL);
+
+/* permite al proceso recibir SIGIO */
+
+      fcntl(fd, F_SETOWN, getpid());
+
+/* Hace el descriptor de archivo asincrono (la pagina del manual dice solo
+      O_APPEND y O_NONBLOCK, funcionara con  F_SETFL...) */
+
+   fcntl(fd, F_SETFL, FASYNC);
+   tcgetattr(fd,&oldtio); /* salvamos conf. actual del puerto */
+
+/* 
+      fija la nueva configuracion del puerto para procesos de entrada canonica
+*/
+
+   newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;
+   newtio.c_iflag = IGNPAR | ICRNL;
+   newtio.c_oflag = 0;
+   newtio.c_lflag = ICANON;
+   newtio.c_cc[VMIN]=1;
+   newtio.c_cc[VTIME]=0;
+   tcflush(fd, TCIFLUSH);
+   tcsetattr(fd,TCSANOW,&newtio);
+
+/* bucle de espera para entrada. Normalmente se haria algo util aqui  */
+
+   while (STOP==FALSE) {
+                          printf(&quot;.\n&quot;);usleep(100000);
+
+/* 
+tras recibir SIGIO, wait_flag = FALSE, la entrada esta disponible y puede ser leida
+ */
+
+                if (wait_flag==FALSE) {
+                                   res = read(fd,buf,255);
+                                   buf[res]=0;
+                                   printf(&quot;:%s:%d\n&quot;, buf, res);
+                                   if (res==1) STOP=TRUE; /* para el bucle si solo entra un CR */
+                                   wait_flag = TRUE;      /* espera una nueva entrada */
+                                }
+                       }
+/* restaura la configuracion original del puerto  */
+      tcsetattr(fd,TCSANOW,&oldtio);
+}
+
+ 
+/***************************************************************************
+* manipulacion de segnales. pone wait_flag a FALSE, para indicar al bucle  *
+* anterior que los caracteres han sido recibidos                           *
+***************************************************************************/
+
+void signal_handler_IO (int status)
+{
+   printf(&quot;recibida segnal SIGIO.\n&quot;);
+   wait_flag = FALSE;
+}
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<H2><A NAME="ss3.4">3.4 Espera de Entradas de Origen M&uacute;ltiple.</A></H2>
+
+
+<P>Esta secci&oacute;n est&aacute; al m&iacute;nimo. S&oacute;lo intenta ser un indicaci&oacute;n, y por tanto
+el ejemplo de c&oacute;digo es peque&ntilde;o. Esto no s&oacute;lo funcionar&aacute; con puertos
+serie, sino que tambi&eacute;n lo har&aacute; con cualquier conjunto de descriptores de
+archivo. </P>
+<P>La llamada <CODE>select</CODE> y las macros asociadas usan un <CODE>fd_set</CODE>. 
+Esto es una tabla de bits, que tiene una entrada de bit para cada n&uacute;mero
+de descriptor de archivo v&aacute;lido.  <CODE>select</CODE> aceptar&aacute; un
+<CODE>fd_set</CODE> con los bits fijados para los descriptores de archivos
+relevantes y devuelve un <CODE>fd_set</CODE>, en el cual los bits para el
+descriptor del archivo est&aacute;n fijados donde ocurre una entrada, salida o
+excepci&oacute;n. Todas la manipulaciones de <CODE>fd_set</CODE> se llevan a cabo
+mediante las macros proporcionadas. Ver tambi&eacute;n la p&aacute;gina del manual
+<CODE>select(2)</CODE>. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#include &lt;sys/time.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+
+main()
+{
+   int    fd1, fd2;  /* origenes de entrada  1 y 2 */
+   fd_set readfs;    /* descriptor de archivo */
+   int    maxfd;     /* mixmum file desciptor used */
+   int    loop=1;    /* bucle mientras TRUE */
+
+/* 
+   open_input_source abre un dispositivo, fija el puerto correctamente
+   y devuelve un descriptor de archivo
+*/
+
+   fd1 = open_input_source(&quot;/dev/ttyS1&quot;);   /* COM2 */
+   if (fd1&lt;0) exit(0);
+   fd2 = open_input_source(&quot;/dev/ttyS2&quot;);   /* COM3 */
+   if (fd2&lt;0) exit(0);
+   maxfd = MAX (fd1, fd2)+1;  /* entrada maxima de bits (fd) a probar */
+
+/* bucle para entrada */
+      while (loop) {
+                      FD_SET(fd1, &readfs);  /* comprobacion origen 1  */
+                      FD_SET(fd2, &readfs);  /* comprobacion origen 2 */
+
+/* bloqueo hasta que la entrada esta disponible  */
+                         select(maxfd, &readfs, NULL, NULL, NULL);
+                      if (FD_ISSET(fd1))         /* entrada de origen 1 esta disponible */
+                         handle_input_from_source1();
+                      if (FD_ISSET(fd2))         /* entrada de origen 2 esta disponible */
+                         handle_input_from_source2();
+                   }
+
+}   
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El ejemplo dado bloquea indefinidamente hasta que una entrada de una de
+las fuentes est&aacute; disponible. Si necesita un temporizador para la entrada,
+s&oacute;lo sustituya la llamada <CODE>select</CODE> por:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+int res;
+struct timeval Timeout;
+
+/* fija el valor del temporizador en el bucle de entrada  */
+Timeout.tv_usec = 0;  /* milisegundos */
+Timeout.tv_sec  = 1;  /* segundos */
+res = select(maxfd, &readfs, NULL, NULL, &Timeout);
+if (res==0)
+/* numero de descriptores de archivo con input = 0, temporizador sobrepasado */ 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Este ejemplo concluye el tiempo de espera tras un segundo. Si este tiempo
+transcurre, <CODE>select</CODE> devolver&aacute; 0, pero tenga cuidado porque
+<CODE>Timeout</CODE> se decrementa por el tiempo actualmente esperado para la
+entrada por <CODE>select</CODE>. Si el valor de retardo es cero, <CODE>select</CODE>
+volver&aacute; inmediatamente.</P>
+
+
+
+<HR>
+<A HREF="Programacion-Serie-Como-2.html">Anterior</A>
+<A HREF="Programacion-Serie-Como-4.html">Siguiente</A>
+<A HREF="Programacion-Serie-Como.html#toc3">Indice</A>
+</BODY>
+</HTML>

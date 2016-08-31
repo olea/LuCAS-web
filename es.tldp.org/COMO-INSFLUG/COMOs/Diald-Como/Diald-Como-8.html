@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Diald Como: Conexi&oacute;n mediante modem y PPP de un proxy/firewall a un ISP</TITLE>
+ <LINK HREF="Diald-Como-9.html" REL=next>
+ <LINK HREF="Diald-Como-7.html" REL=previous>
+ <LINK HREF="Diald-Como.html#toc8" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Diald-Como-9.html">Página siguiente</A>
+<A HREF="Diald-Como-7.html">Página anterior</A>
+<A HREF="Diald-Como.html#toc8">Índice general</A>
+<HR>
+<H2><A NAME="s8">8. Conexi&oacute;n mediante modem y PPP de un proxy/firewall a un ISP</A></H2>
+
+<P>
+<P>El asunto de conectar una red a internet de modo que uno de los equipos
+trabaje como un servidor de conexi&oacute;n compartida con tareas de proxy/cache
+de p&aacute;ginas web y cortafuegos (firewall) de seguridad entre la red interna
+y externa es un asunto complejo que escapa al objetivo de este documento y
+que ya han tratado de forma fant&aacute;stica otros documentos «Como»
+similares a este. Al final de este documento se pueden encontrar referencias y
+enlaces.
+<P>Aqu&iacute; tan solo se va a tratar de configurar <EM>Diald</EM> suponiendo que
+el equipo ya hace IP-Masquerading, tiene un proxy como <EM>Squid</EM> o
+similar trabajando, una conexi&oacute;n con un ISP configurada correctamente y
+que la seguridad de acceso a puertos TCP/UDP ha sido revisada (fichero
+<CODE>/etc/inetd.conf</CODE> y algunos otros como <CODE>securetty</CODE>,
+<CODE>host.allow</CODE>, etc).
+<P>B&aacute;sicamente, se trata de reconfigurar las reglas de
+enmascaramiento/filtrado/acceso cada vez que cambia el conjunto de
+interfaces del equipo, es decir, cuando se establece el interface ppp0 y
+cuando deja de existir. Un buen sitio para hacer esto son los scripts de
+ip-up e ip-down de <EM>pppd</EM>.
+<P>
+<H2><A NAME="ss8.1">8.1 Ejemplo para Debian 2.1</A>
+</H2>
+
+<P>
+<P>En Debian, basta con montar el paquete <EM>ipmasq</EM> y durante su
+configuraci&oacute;n indicar que se desea que se cambien las reglas de forma
+sincronizada con <EM>pppd</EM>. De esta manera, se crean scripts en los
+directorios <CODE>/etc/ppp/ip-up.d</CODE> y <CODE>/etc/ppp/ip-down.d</CODE> que
+llaman a <CODE>/sbin/ipmasq</CODE>, un script que analiza las interfaces
+actuales y hace una configuraci&oacute;n sencilla valida en muchos casos, aunque
+se puede personalizar con facilidad revisando los ficheros de reglas de
+<CODE>/etc/ipmasq/rules</CODE>.
+<P>Tan solo es necesario realizar una correcci&oacute;n tras la instalaci&oacute;n de este
+paquete. Se trata de cambiar el orden de ejecuci&oacute;n del script de
+lanzamiento de <EM>ipmasq</EM> durante el arranque del equipo, eliminandolo
+del directorio <CODE>/etc/rcS.d</CODE> y poniendolo para que se ejecute
+despues de <CODE>S20diald</CODE> en <CODE>/etc/rc2.d</CODE> de modo que ya exista la
+interface <CODE>sl0</CODE>. <CODE>S90ipmasq</CODE> es un lugar valido para el enlace
+simb&oacute;lico a <CODE>/etc/init.d/ipmasq</CODE>.
+<P>En Debian no es necesario preocuparse de la version del kernel, ya que el
+script <CODE>/sbin/ipmasq</CODE> usa <CODE>ipfwadm</CODE> o <CODE>ipchains</CODE>
+seg&uacute;n corresponda.
+<P>
+<H2><A NAME="ss8.2">8.2 Ejemplo para Suse 6.1</A>
+</H2>
+
+<P>
+<P>Este ejemplo se debe a Mr Cornish Rex, <CODE>
+<A HREF="mailto:troll@tnet.com.au">troll@tnet.com.au</A></CODE>.
+<P>Los comandos de control de ip-masp y routing que se presentan a
+continuaci&oacute;n son para kernels de la versi&oacute;n 2.2, mediante ipchains, pero
+no son v&aacute;lidos para kernels de las versiones 2.0. Para estos ultimos
+habr&iacute;a que traducir dichos comandos a su equivalente en el antiguo comando
+ipmasq.
+<P>Adem&aacute;s, vamos a suponer que la interface ethernet del equipo tiene la
+direcci&oacute;n 192.168.1.1 con m&aacute;scara de 16 bits, es decir, 255.255.0.0.
+<P>El fichero <CODE>/etc/ppp/ip-up</CODE> ser&iacute;a valido de la siguiente forma:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# $1 = Interface
+# $2 = Tty device
+# $3 = speed
+# $4 = local ip
+# $5 = remote ip
+# $6 = ipparam
+/sbin/ipchains -F input
+/sbin/ipchains -P input DENY
+/sbin/ipchains -A input -j ACCEPT -i eth0 -s 192.168.0.0/16 -d 0.0.0.0/0
+/sbin/ipchains -A input -j DENY -p udp -i $1 -s 0.0.0.0/0 -d $4/32 0:52 -l
+/sbin/ipchains -A input -j DENY -p udp -i $1 -s 0.0.0.0/0 -d $4/32 54:1023 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 0:112 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 114:1023 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 6000:6010 -l
+/sbin/ipchains -A input -j DENY -p icmp --icmp-type echo-request \
+-i $1 -s 0.0.0.0/0 -l
+/sbin/ipchains -A input -j DENY -p icmp -f -i $1 -s 0.0.0.0/0 -l
+/sbin/ipchains -A input -j DENY -p udp -i $1 -s 0.0.0.0/0 -d $4/32 5555 -l
+/sbin/ipchains -A input -j DENY -p udp -i $1 -s 0.0.0.0/0 -d $4/32 8000 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 8000 -l
+/sbin/ipchains -A input -j DENY -p udp -i $1 -s 0.0.0.0/0 -d $4/32 6667 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 6667 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 4557 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 4559 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 4001 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 2005 -l
+/sbin/ipchains -A input -j DENY -p tcp -i $1 -s 0.0.0.0/0 -d $4/32 6711 -l
+/sbin/ipchains -A input -j DENY -i $1 -s 192.168.0.0/16 -d 0.0.0.0/0 -l
+/sbin/ipchains -A input -j ACCEPT -i $1 -s 0.0.0.0/0 -d $4/32
+/sbin/ipchains -A input -j ACCEPT -i lo -s 0.0.0.0/0 -d 0.0.0.0/0
+/sbin/ipchains -A input -j DENY -s 0.0.0.0/0 -d 0.0.0.0/0 -l
+
+/sbin/ipchains -F output
+/sbin/ipchains -P output DENY
+/sbin/ipchains -A output -j ACCEPT -i eth0 -s 0.0.0.0/0 -d 192.168.0.0/16
+/sbin/ipchains -A output -j DENY -i $1 -s 192.168.0.0/16 -d 0.0.0.0/0 -l
+/sbin/ipchains -A output -j ACCEPT -i $1 -s $4/32 -d 0.0.0.0/0
+/sbin/ipchains -A output -j ACCEPT -i lo -s 0.0.0.0/0 -d 0.0.0.0/0
+/sbin/ipchains -A output -j DENY -s 0.0.0.0/0 -d 0.0.0.0/0
+
+/sbin/ipchains -F forward
+/sbin/ipchains -P forward DENY
+/sbin/ipchains -M -S 120 120 120
+/sbin/ipchains -A forward -j MASQ -s 192.168.1.0/24 
+/sbin/ipchains -A forward -j DENY -s 0.0.0.0/0 -d 0.0.0.0/0
+
+exit 0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>El fichero <CODE>/etc/ppp/ip-down</CODE> ser&iacute;a valido de la siguiente forma:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# $1 = Interface
+# $2 = Tty device
+# $3 = Speed
+# $4 = Local ip
+# $5 = Remote ip
+/sbin/ipchains -F input
+/sbin/ipchains -F output
+/sbin/ipchains -F forward
+/sbin/ipchains-restore &lt; /etc/ppp/orig.chains
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Y el fichero que aparece al final del script anterior, orig.chains, es el
+siguiente (el estado original de la configuraci&oacute;n de ipchains):
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# orig.chains
+# creado con: ipchains-save > orig.chains
+:input ACCEPT
+:forward ACCEPT
+:output ACCEPT
+-A input -s 0.0.0.0/0.0.0.0 -d 192.168.1.1/255.255.255.255
+-A output -s 192.168.1.1/255.255.255.255 -d 0.0.0.0/0.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss8.3">8.3 Ejemplo para Slackware 3.6</A>
+</H2>
+
+<P>
+<P>Este ejemplo se debe a Hoo Kok Mun, <CODE>
+<A HREF="mailto:hkmun@pacific.net.sg">hkmun@pacific.net.sg</A></CODE>.
+<P>Este es el ejemplo m&aacute;s sencillo que he visto, aunque perfectamente
+funcional. Desde el principio establece la norma de enmascaramiento, antes
+de que exista la interface <CODE>sl0</CODE>, y no cambia cuando se establece
+<CODE>ppp0</CODE>. Si son necesarias medidas de seguridad, probablemente quede un
+poco limitado.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#/etc/rc.d/rc.local
+/sbin/ipfwadm -F -p deny
+/sbin/ipfwadm  -F -a m -S 192.168.0.0/24 -D 0.0.0.0/0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Como se puede ver, es para kernels de la versi&oacute;n 2.0.
+<P>
+<HR>
+<A HREF="Diald-Como-9.html">Página siguiente</A>
+<A HREF="Diald-Como-7.html">Página anterior</A>
+<A HREF="Diald-Como.html#toc8">Índice general</A>
+</BODY>
+</HTML>

@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Diald Como: Conexi&oacute;n mediante modem y PPP de un puesto aislado a varios ISPs no simult&aacute;neamente</TITLE>
+ <LINK HREF="Diald-Como-8.html" REL=next>
+ <LINK HREF="Diald-Como-6.html" REL=previous>
+ <LINK HREF="Diald-Como.html#toc7" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Diald-Como-8.html">Página siguiente</A>
+<A HREF="Diald-Como-6.html">Página anterior</A>
+<A HREF="Diald-Como.html#toc7">Índice general</A>
+<HR>
+<H2><A NAME="s7">7. Conexi&oacute;n mediante modem y PPP de un puesto aislado a varios ISPs no simult&aacute;neamente</A></H2>
+
+<P>
+<P>En muchas ocasiones, un ordenador aislado no se conecta solo a una red, si
+no que es com&uacute;n acceder a diferentes redes o a Internet mediante
+diferentes proveedores de acceso. En estos casos, modificar los ficheros
+de configuraci&oacute;n cada vez que se desea acceder a un sitio diferente puede
+resultar inc&oacute;modo.
+<P>La soluci&oacute;n propuesta aqu&iacute; consiste en mantener diferentes juegos de
+ficheros de configuraci&oacute;n para cada conexi&oacute;n a un proveedor diferente y
+se incluyen algunos archivos de comandos para automatizar el cambio de uno
+a otro.
+<P>
+<H2><A NAME="ss7.1">7.1 Nota sobre la entrega de correo mediante un servidor de reenv&iacute;o (relay host)</A>
+</H2>
+
+<P>
+<P>Tanto si su correo electr&oacute;nico usa un Agente de Transferencia de Mensajes local
+con un servidor SMTP de reenv&iacute;o (relay host) para la entrega de todos los
+mensajes, como si usa un cliente de correo que directamente entregue los
+mensajes al servidor SMTP de su proveedor de acceso, el cambio de acceso
+de un proveedor a otro precisar&aacute; la reconfiguraci&oacute;n de este servidor de
+relay, ya que los proveedores de acceso normalmente comprueban el origen
+de las conexiones que reciben y s&oacute;lo aceptan mensajes si el buz&oacute;n del
+destinatario est&aacute; en uno de los dominios que gestiona directamente este
+servidor de relay o si la direcci&oacute;n IP del cliente que inicia la conexi&oacute;n
+pertenece a una de las direcciones que este proveedor asigna a sus
+clientes, para evitar que cualquiera pueda usar este servidor
+<CODE>smtp</CODE> para objetivos no muy limpios (spam, an&oacute;nimos, enmascaramiento
+del origen, etc.).
+<P>En los ejemplos que se ponen a continuaci&oacute;n se mostrara c&oacute;mo hacer este
+cambio en los ficheros de configuraci&oacute;n de <EM>Smail</EM> suponiendo una
+sencilla configuraci&oacute;n en la que todos los mensajes con destino fuera del
+equipo local se entregan a un servidor <CODE>smtp</CODE> de reenv&iacute;o (relay host). Si
+usted usa otro agente de transferencia de mensajes (MTA) en su sistema puede
+enviarme los cambios que tuvo que hacer en dicho MTA para incluirlos
+aqu&iacute;. Igualmente si usa un cliente de correo que entrega directamente los
+mensajes a un servidor smtp ajeno a su sistema (Kmail, Netscape, etc.).
+<P>
+<H2><A NAME="ss7.2">7.2 Archivos de comandos para automatizar la creaci&oacute;n de las multiples conexiones y su intercambio</A>
+</H2>
+
+<H3>Puesta en marcha</H3>
+
+<P>
+<P>En primer lugar, se crea un subdirectorio de <CODE>/etc/diald</CODE> llamado
+<CODE>providers</CODE> donde se almacenar&aacute;n los archivos de comandos para
+automatizar el cambio y los subdirectorios con los juegos de ficheros de
+configuraci&oacute;n para cada uno de los proveedores.
+<P>Con el archivo de comandos siguiente se crea este directorio y se
+introducen en el los ficheros de configuraci&oacute;n de <EM>Diald</EM>,
+<EM>chat</EM>, <EM>pppd</EM> y <EM>Smail</EM> con los que se est&eacute; trabajando
+actualmente, y que ser&aacute;n tomados como base para las siguientes
+configuraciones.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#Fichero /etc/diald/providers/setupdialdmultiprovider
+mkdir /etc/diald/providers
+mkdir /etc/diald/providers/setup
+cp /etc/ppp/pap-secrets /etc/diald/providers/setup
+cp /etc/ppp/chap-secrets /etc/diald/providers/setup
+cp /etc/resolv.conf /etc/diald/providers/setup
+cp /etc/diald/diald.options /etc/diald/providers/setup
+cp /etc/diald/standard.filter /etc/diald/providers/setup
+cp /etc/diald/personal.filter /etc/diald/providers/setup
+cp /etc/diald/diald.connect /etc/diald/providers/setup
+cp /etc/chatscripts/provider /etc/diald/providers/setup
+cp /etc/diald/ip-up /etc/diald/providers/setup
+cp /etc/diald/ip-down /etc/diald/providers/setup
+cp /etc/smail/routers /etc/diald/providers/setup
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H3>Nuevo proveedor</H3>
+
+<P>
+<P>Con el archivo de comandos siguiente se copia la configuraci&oacute;n original
+que se estaba utilizando cuando se ejecut&oacute;
+<CODE>setupdialdmultiprovider</CODE> para prepararla para un nuevo proveedor o
+una nueva red. Este archivo de comandos
+(<CODE>/etc/diald/providers/newdialdprovider</CODE>) se lanza con un
+par&aacute;metro, el nombre del proveedor o el nombre de la red a la que
+accedemos.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#Fichero /etc/diald/providers/newdialdprovider
+mkdir /etc/diald/providers/$1
+cp /etc/diald/providers/setup/* /etc/diald/providers/$1
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Ahora ser&aacute; necesario modificar como corresponda los ficheros que se
+encuentran en el nuevo directorio
+<CODE>/etc/diald/providers/nombreproveedor</CODE>, siendo
+<CODE>nombreproveedor</CODE> el par&aacute;metro que se le ha pasado a
+<CODE>newdialdprovider</CODE>.
+<P>
+<H3>Cambio de uno a otro</H3>
+
+<P>
+<P>Para finalizar, con este archivo de comandos se realizan los cambios
+oportunos para acceder a un proveedor o red u otro. Se utilizan enlaces
+simb&oacute;licos para evitar tener archivos duplicados. As&iacute; mismo, mediante
+enlaces simb&oacute;licos, en caso de necesitar hacer alg&uacute;n cambio, por ejemplo,
+en el fichero <CODE>/etc/resolv.conf</CODE>, modificando directamente este
+fichero quedar&aacute; modificado el fichero al que apunta el enlace,
+<CODE>/etc/diald/providers/nombreproveedor/resolv.conf</CODE>.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+#Fichero /etc/diald/providers/setdialdprovider
+/etc/init.d/diald stop
+#espera para dejar tiempo a que Diald finalice.
+sleep 4
+ln -sf /etc/diald/providers/$1/pap-secrets /etc/ppp
+ln -sf /etc/diald/providers/$1/chap-secrets /etc/ppp
+ln -sf /etc/diald/providers/$1/resolv.conf /etc
+ln -sf /etc/diald/providers/$1/diald.options /etc/diald
+ln -sf /etc/diald/providers/$1/standard.filter /etc/diald
+ln -sf /etc/diald/providers/$1/personal.filter /etc/diald
+ln -sf /etc/diald/providers/$1/diald.connect /etc/diald
+ln -sf /etc/diald/providers/$1/provider /etc/chatscripts
+ln -sf /etc/diald/providers/$1/ip-up /etc/diald
+ln -sf /etc/diald/providers/$1/ip-down /etc/diald
+ln -sf /etc/diald/providers/$1/routers /etc/smail
+/etc/init.d/diald start
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="Diald-Como-8.html">Página siguiente</A>
+<A HREF="Diald-Como-6.html">Página anterior</A>
+<A HREF="Diald-Como.html#toc7">Índice general</A>
+</BODY>
+</HTML>

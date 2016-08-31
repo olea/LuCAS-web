@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Bash Prompt COMO: Prompt din&aacute;mico con color seg&uacute;n la carga del sistema</TITLE>
+ <LINK HREF="Bash-Prompt-Como-10.html" REL=next>
+ <LINK HREF="Bash-Prompt-Como-8.html" REL=previous>
+ <LINK HREF="Bash-Prompt-Como.html#toc9" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="Bash-Prompt-Como-10.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-8.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc9">Índice general</A>
+<HR>
+<H2><A NAME="s9">9. Prompt din&aacute;mico con color seg&uacute;n la carga del sistema</A></H2>
+
+<H2><A NAME="ss9.1">9.1 Un ejemplo de «prueba de concepto»</A>
+</H2>
+
+<P>
+<P>Esto es una «prueba de concepto» m&aacute;s que un prompt bonito: cambio de
+colores en el prompt din&aacute;micamente. En este ejemplo, el color del nombre
+del host cambia dependiendo de la carga (a modo de aviso). 
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  #!/bin/bash
+  #   "hostloadcolour" - 17 Octubre 98, by Giles
+  #
+  #   La idea aqui es cambiar el color del nombre del host en el prompt
+  #   dependiendo de un valor de carga que sirve de umbral.
+
+  # THRESHOLD_LOAD es el valor de la carga en un minuto
+  # (multiplicado por 100) al cual se desea que el prompt
+  # cambie de COLOUR_LOW a COLOUR_HIGH
+
+  THRESHOLD_LOAD=200
+  COLOUR_LOW='1;34'
+            # light blue
+  COLOUR_HIGH='1;31'
+             # light red
+
+  function prompt_command {
+  ONE=$(uptime | sed -e "s/.*load average: \(.*\...\), \(.*\...\), \(.*\...\)/\1/" -e "s/ //g")
+  # Aparentemente "scale" en bc no se aplica a las multiplicaciones
+  # pero si a las divisiones
+  ONEHUNDRED=$(echo -e "scale=0 \n $ONE/0.01 \nquit \n" | bc)
+  if [ $ONEHUNDRED -gt $THRESHOLD_LOAD ]
+  then
+      HOST_COLOUR=$COLOUR_HIGH
+          # Light Red
+  else
+      HOST_COLOUR=$COLOUR_LOW
+          # Light Blue
+  fi
+  }
+
+  function hostloadcolour {
+
+  PROMPT_COMMAND=prompt_command
+  PS1="[$(date +%H%M)][\u@\[\033[\$(echo -n \$HOST_COLOUR)m\]\h\[\033[0;37m\]:\w]$ "
+  }
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Mediante su editor favorito, salve esto en un fichero llamado
+<CODE>hostloadcolour</CODE>. Si tiene instalado el paquete <CODE>Bash Prompt</CODE>,
+funcionar&aacute; como un tema. Si no lo tiene, escriba <CODE>source
+hostloadcolour</CODE> seguido de <CODE>hostloadcolour</CODE>. De cualquiera de las dos
+formas, <CODE>prompt_commad</CODE> se convierte en una funci&oacute;n del entorno. Si
+examina el c&oacute;digo, notar&aacute; que los colores (<CODE>$COLOUR_HIGH y
+$COLOUR_LOW</CODE>) se ponen mediante un c&oacute;digo parcial de color, es decir,
+<CODE>1;34</CODE> en lugar de <CODE>\[\033[1;34m\]</CODE>, cosa que hubiera preferido,
+pero no he sido capaz de que funcione con el c&oacute;digo completo. Le
+agradecer&iacute;a que me avisara si lo consigue. 
+<P>
+<HR>
+<A HREF="Bash-Prompt-Como-10.html">Página siguiente</A>
+<A HREF="Bash-Prompt-Como-8.html">Página anterior</A>
+<A HREF="Bash-Prompt-Como.html#toc9">Índice general</A>
+</BODY>
+</HTML>

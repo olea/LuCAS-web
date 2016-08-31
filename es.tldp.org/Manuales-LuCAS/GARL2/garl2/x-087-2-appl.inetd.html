@@ -1,0 +1,731 @@
+<HTML
+><HEAD
+><TITLE
+>El Super Servidor inetd </TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Características Importantesde Redes"
+HREF="x-087-2-appl.html"><LINK
+REL="PREVIOUS"
+TITLE="Características Importantesde Redes"
+HREF="x-087-2-appl.html"><LINK
+REL="NEXT"
+TITLE="La Facilidad de Control de Acceso tcpd "
+HREF="x-087-2-appl.tcpd.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-appl.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 12. Características Importantesde Redes</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-appl.tcpd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-APPL.INETD">12.1. El Super Servidor inetd</H1
+><P
+>Los programas que proporcionan servicios de aplicación a través de la red se llaman
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>demonios</I
+></SPAN
+><A
+NAME="AEN10042"
+HREF="#FTN.AEN10042"
+>[1]</A
+>. 
+Un demonio es un programa que abre un puerto, comúnmente un puerto de algún 
+servicio bien conocido, y espera conexiones entrantes en él. Si ocurre una, 
+el demonio crea un proceso hijo que acepta la conexión, mientras que el 
+proceso padre continúa escuchando más peticiones. Este mecanismo funciona 
+bien, pero tiene unas pocas desventajas; al menos una instancia de cada 
+posible servicio que se quiera proporcionar, debe estar activa en memoria 
+a todas horas. Además, la rutina software que hacen la escucha y la gestión 
+del puerto tiene que ser replicada en cada uno de los demonios de red.</P
+><P
+>Para superar estas ineficiencias, muchas instalaciones Unix ejecutan un 
+demonio de red especial, el cual debe ser considerado como un &ldquo;super servidor.&rdquo; Este
+demonio crea sockets en nombre de cada uno de los servicios y escucha en todos ellos
+simultáneamente. Cuando una conexión entrante es recibida en cualquiera de esos sockets, 
+el super servidor acepta la conexión y replica el servicio especificado para ese puerto, 
+pasando el socket a gestionarse a través del proceso hijo. El servidor entonces, vuelve a la escucha.</P
+><P
+>&#13;
+ startup
+El super servidor más común se llama <B
+CLASS="COMMAND"
+>inetd</B
+>, el Demonio de Internet<A
+NAME="AEN10053"
+HREF="#FTN.AEN10053"
+>[2]</A
+>. Se inicia en tiempo de arranque del sistema 
+y toma la lista de servicios que ha de gestionar de un fichero de inicialización llamado 
+<TT
+CLASS="FILENAME"
+>/etc/inetd.conf</TT
+>. Además de estos servidores, hay un número de servicios 
+triviales realizados por <B
+CLASS="COMMAND"
+>inetd</B
+> llamados <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>servicios 
+internos</I
+></SPAN
+>. Se incluyen <B
+CLASS="COMMAND"
+>chargen</B
+>, el cuál simplemente genera una 
+cadena de caracteres, y <B
+CLASS="COMMAND"
+>daytime</B
+>, el cuál devuelve la idea del sistema 
+de la hora del día.</P
+><P
+>Una entrada en este fichero consiste en una sola línea compuesta de los siguientes campos:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="REPLACEABLE"
+><I
+>servicio</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>tipo</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>protocolo</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>espera</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>usuario</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>servidor</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>línea_de_órdenes</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Cada uno de los campos se describe en la siguiente lista:</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>servicio</I
+></TT
+></DT
+><DD
+><P
+>Da el nombre del servicio. El nombre del servicio tiene que ser traducido a un número de puerto buscándolo en
+el fichero <TT
+CLASS="FILENAME"
+>/etc/services</TT
+>. Este fichero se describirá más tarde en este capítulo, en la sección &ldquo;
+<A
+HREF="x-087-2-appl.services.html"
+>Sección 12.3</A
+>.&rdquo;</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>tipo</I
+></TT
+></DT
+><DD
+><P
+>Especifica la clase de socket, o un socket de flujo &ldquo;<SPAN
+CLASS="SYSTEMITEM"
+>stream</SPAN
+>&rdquo;
+(para protocolos orientados a la conexión) o un socket de datagrama 
+&ldquo;<SPAN
+CLASS="SYSTEMITEM"
+>dgram</SPAN
+>&rdquo; (para protocolos orientados a datagramas).
+Los servicios basados en TCP deberían entonces utilizar siempre sockets de flujo,
+<SPAN
+CLASS="SYSTEMITEM"
+>stream</SPAN
+>, mientras que servicios basados en UDP
+deberían utilizar sockets de datagramas, <SPAN
+CLASS="SYSTEMITEM"
+>dgram</SPAN
+>.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>protocolo</I
+></TT
+></DT
+><DD
+><P
+>Nombra el protocolo de transporte usado por el servicio. 
+Debe ser un nombre válido de protocolo que se encuentre en el fichero <TT
+CLASS="FILENAME"
+>protocols</TT
+>, 
+expuesto más adelante.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>espera</I
+></TT
+></DT
+><DD
+><P
+>Esta opción se aplica sólo a sockets <SPAN
+CLASS="SYSTEMITEM"
+>dgram</SPAN
+>.
+Puede ser <SPAN
+CLASS="SYSTEMITEM"
+>wait</SPAN
+><A
+NAME="AEN10100"
+HREF="#FTN.AEN10100"
+>[3]</A
+> o
+<SPAN
+CLASS="SYSTEMITEM"
+>nowait</SPAN
+><A
+NAME="AEN10103"
+HREF="#FTN.AEN10103"
+>[4]</A
+>. Si se especifica
+<SPAN
+CLASS="SYSTEMITEM"
+>wait</SPAN
+>,
+<B
+CLASS="COMMAND"
+>inetd</B
+> ejecuta sólo un servidor para el puerto especificado. 
+El otro modo, continúa escuchando inmediatamente en el puerto después de ejecutar el servicio.</P
+><P
+>Esto es usado para servidores &ldquo;de hilo único&rdquo;<A
+NAME="AEN10108"
+HREF="#FTN.AEN10108"
+>[5]</A
+> que leen todos
+los datagramas entrantes hasta que no llegan más, y después terminan. Muchos servidores RPC
+son de este tipo y tienen que ser especificados como
+<SPAN
+CLASS="SYSTEMITEM"
+>wait</SPAN
+>. El tipo opuesto,
+&ldquo;multi-hilo&rdquo;, <A
+NAME="AEN10111"
+HREF="#FTN.AEN10111"
+>[6]</A
+>
+permite la ejecución concurrente de un número ilimitado de instancias. Estos servidores deben especificarse como 
+<SPAN
+CLASS="SYSTEMITEM"
+>nowait</SPAN
+>.</P
+><P
+>Los sockets de flujo, &ldquo;<SPAN
+CLASS="SYSTEMITEM"
+>stream</SPAN
+>&rdquo;, deben usar siempre
+<SPAN
+CLASS="SYSTEMITEM"
+>nowait</SPAN
+>.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>usuario</I
+></TT
+></DT
+><DD
+><P
+>Esto es el identificador de registro del usuario<A
+NAME="AEN10122"
+HREF="#FTN.AEN10122"
+>[7]</A
+> que 
+será propietario del procesos mientras se esté ejecutando.
+Éste será muchas veces el usuario 
+<SPAN
+CLASS="SYSTEMITEM"
+>root</SPAN
+>, 
+pero algunos servicios pueden usar cuentas distintas. Es una buena
+idea aplicar el principio del mínimo privilegio aquí, lo que 
+significa que usted no debe ejecutar órdenes bajo cuentas 
+privilegiadas si el programa no requiere esto para su correcto 
+funcionamiento. Por ejemplo, el servidor de noticias NNTP 
+ejecutado como <SPAN
+CLASS="SYSTEMITEM"
+>news</SPAN
+>, 
+mientras sirve noticias puede ser un  riesgo de seguridad 
+(como <B
+CLASS="COMMAND"
+>tftp</B
+> o <B
+CLASS="COMMAND"
+>finger</B
+>)
+que son muchas veces ejecutados como <SPAN
+CLASS="SYSTEMITEM"
+>nobody</SPAN
+>.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>servidor</I
+></TT
+></DT
+><DD
+><P
+>Proporciona el camino completo del programa servidor a ser ejecutado. Los servicios internos 
+se marcan con la palabra clave
+<SPAN
+CLASS="SYSTEMITEM"
+>internal</SPAN
+>.</P
+></DD
+><DT
+><TT
+CLASS="REPLACEABLE"
+><I
+>línea_de_órdenes</I
+></TT
+></DT
+><DD
+><P
+>Esta es la línea de órdenes que se va a pasar al servidor. Comienza con el nombre del servidor a 
+ejecutar y puede incluir cualquier argumento que se le necesiten pasar. Si está  
+usando encapsulación TCP <A
+NAME="AEN10140"
+HREF="#FTN.AEN10140"
+>[8]</A
+>, especificará el camino completo al servidor aquí.
+Si no, entonces especificará el nombre del servidor como quiera que aparezca en un listado de procesos. Hablaremos 
+acerca de encapsulación TCP brevemente.</P
+><P
+>Este campo está vacío para los servicios internos.</P
+></DD
+></DL
+></DIV
+><P
+>&#13;
+Un ejemplo del fichero <TT
+CLASS="FILENAME"
+>inetd.conf</TT
+> se expone en
+<A
+HREF="x-087-2-appl.inetd.html#X-087-2-APPL.FIG.INETD.CONF"
+>Ejemplo 12-1</A
+>. El servicio <B
+CLASS="COMMAND"
+>finger</B
+>
+está comentado así que no está disponible. Esto se hace a menudo por razones de seguridad, 
+porque puede ser usado por atacantes para obtener nombres y otros detalles 
+de los usuarios de su sistema.</P
+><DIV
+CLASS="EXAMPLE"
+><A
+NAME="X-087-2-APPL.FIG.INETD.CONF"><P
+><B
+>Ejemplo 12-1. Un ejemplo del fichero /etc/inetd.conf </B
+></P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # 
+    # inetd services
+    ftp      stream tcp nowait root  /usr/sbin/ftpd    in.ftpd -l
+    telnet   stream tcp nowait root  /usr/sbin/telnetd in.telnetd -b/etc/issue
+    #finger  stream tcp nowait bin   /usr/sbin/fingerd in.fingerd
+    #tftp    dgram  udp wait  nobody /usr/sbin/tftpd   in.tftpd
+    #tftp    dgram  udp wait  nobody /usr/sbin/tftpd   in.tftpd /boot/diskless
+    #login   stream tcp nowait root  /usr/sbin/rlogind in.rlogind
+    #shell   stream tcp nowait root  /usr/sbin/rshd    in.rshd
+    #exec    stream tcp nowait root  /usr/sbin/rexecd  in.rexecd
+    #
+    #       inetd internal services
+    #
+    daytime  stream tcp nowait root internal
+    daytime  dgram  udp nowait root internal
+    time     stream tcp nowait root internal
+    time     dgram  udp nowait root internal
+    echo     stream tcp nowait root internal
+    echo     dgram  udp nowait root internal
+    discard  stream tcp nowait root internal
+    discard  dgram  udp nowait root internal
+    chargen  stream tcp nowait root internal
+    chargen  dgram  udp nowait root internal</PRE
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>&#13; 
+El demonio <B
+CLASS="COMMAND"
+>tftp</B
+> se muestra comentado también.
+<B
+CLASS="COMMAND"
+>tftp</B
+> implementa el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Trivial File Transfer
+Protocol</I
+></SPAN
+> (TFTP), el cual permite transferir cualquier fichero con permisos de lectura 
+globales desde su sistema sin verificación de contraseña.
+Esto es especialmente perjudicial para el fichero <TT
+CLASS="FILENAME"
+>/etc/passwd</TT
+>, e incluso más cuando
+no usan claves &ldquo;shadow&rdquo;.</P
+><P
+>TFTP se usa normalmente por clientes sin disco duro y por Terminales X para descargar 
+su código desde un servidor de arranque. 
+Si necesita ejecutar <B
+CLASS="COMMAND"
+>tftpd</B
+> por esta razón, asegúrese de limitar su alcance a 
+aquellos directorios desde los cuáles los clientes obtendrán los ficheros; deberá añadir esos nombres 
+de directorio a la línea de órdenes de <B
+CLASS="COMMAND"
+>tftpd</B
+>. Esto se muestra en la segunda 
+línea de <B
+CLASS="COMMAND"
+>tftp</B
+> en el ejemplo.
+
+ &#13;</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10042"
+HREF="x-087-2-appl.inetd.html#AEN10042"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>daemons</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10053"
+HREF="x-087-2-appl.inetd.html#AEN10053"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Internet Daemon en inglés, N. del T.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10100"
+HREF="x-087-2-appl.inetd.html#AEN10100"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>espera</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10103"
+HREF="x-087-2-appl.inetd.html#AEN10103"
+>[4]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>no espera</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10108"
+HREF="x-087-2-appl.inetd.html#AEN10108"
+>[5]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>single-threaded</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10111"
+HREF="x-087-2-appl.inetd.html#AEN10111"
+>[6]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>multi-threaded</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10122"
+HREF="x-087-2-appl.inetd.html#AEN10122"
+>[7]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>login ID</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10140"
+HREF="x-087-2-appl.inetd.html#AEN10140"
+>[8]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>TCP wrapper</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.tcpd.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Características Importantesde Redes</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>La Facilidad de Control de Acceso tcpd</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

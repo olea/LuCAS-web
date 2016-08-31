@@ -1,0 +1,358 @@
+<HTML
+><HEAD
+><TITLE
+>Ejecutando pppd</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="El Protocolo Punto-a-Punto"
+HREF="x-087-2-ppp.html"><LINK
+REL="PREVIOUS"
+TITLE="PPP en Linux"
+HREF="x6610.html"><LINK
+REL="NEXT"
+TITLE="Usando los Ficheros de Opciones"
+HREF="x-087-2-ppp.options.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x6610.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 8. El Protocolo Punto-a-Punto</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-ppp.options.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN6661">8.2. Ejecutando pppd</H1
+><P
+>&#13;
+
+
+Cuando quiere conectarse a Internet a través de un enlace PPP, tiene que
+configurar las capacidades básicas de red como el dispositivo de bucle local (loopback) y el
+sistema de resolución de direcciones. Las dos han sido explicadas en
+<A
+HREF="x-087-2-iface.html"
+>Capítulo 5</A
+>, y <A
+HREF="x-087-2-resolv.html"
+>Capítulo 6</A
+>.
+Usted puede configurar simplemente el servidor de nombres de su proveedor de
+servicios de Internet en el fichero <TT
+CLASS="FILENAME"
+>/etc/resolv.conf</TT
+>,
+pero esto supondrá que cada consulta DNS será enviada a través de su enlace
+serie. Esta situación no es óptima; mientras más cerca se encuentre de su
+servidor de nombres, más rápida será la búsqueda. Una solución alternativa
+es configurar una estación en su red que dé servicio de servidor de nombres
+en modo sólo-cachéo. Esto significa que la primera vez que realice una consulta
+DNS de un nodo en particular, su consulta será enviada a través de
+su línea serie, pero el resto de las consultas a esta misma máquina, serán
+directamente resueltas por su servidor de nombres local de una forma
+mucho más rápida. Esta configuración está descrita en el Capítulo 6, en
+<A
+HREF="x-087-2-resolv.named.html#X-087-2-RESOLV.NAMED-CACHINGONLY"
+>Sección 6.3.4</A
+>.&rdquo;</P
+><P
+>Como ejemplo introductorio de como establecer una conexión PPP con 
+<B
+CLASS="COMMAND"
+>pppd</B
+>, suponga que está de nuevo en <SPAN
+CLASS="SYSTEMITEM"
+>vlager</SPAN
+>. Ya ha llamado al servidor PPP, c3po, y
+entrado en la cuenta del usuario <SPAN
+CLASS="SYSTEMITEM"
+>ppp</SPAN
+>.
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+> ya ha lanzado su controlador PPP.
+Después de salir del programa de comunicaciones que utilizó para llamar,
+ejecute la siguiente orden, sustituyendo el nombre del dispositivo serie que
+usted usa por el <TT
+CLASS="LITERAL"
+>ttyS3</TT
+> mostrado aquí:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # <TT
+CLASS="USERINPUT"
+><B
+>pppd /dev/ttyS3 38400 crtscts defaultroute</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;
+Esto cambiará la línea serie <TT
+CLASS="FILENAME"
+>ttyS3</TT
+> al modo PPP y
+establecerá un enlace IP con <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>.
+La velocidad de transferencia utilizada en el puerto de serie será de 38400bps.
+La opción <SPAN
+CLASS="SYSTEMITEM"
+>crtscts</SPAN
+> activa el control de
+flujo por hardware en el puerto, que es una obligación para velocidades
+superiores a los 9600 bps.</P
+><P
+>Lo primero que hace  <B
+CLASS="COMMAND"
+>pppd</B
+> tras ejecutarse es negociar
+varias características para el enlace con el extremo remoto utilizando  LCP.
+Normalmente, el conjunto de opciones que intenta negociar <B
+CLASS="COMMAND"
+>pppd</B
+>
+funcionará, así que no nos meteremos más con este asunto. Digamos que parte de 
+esta negociación envuelve la solicitud o asignación de las direcciones IP en 
+ambos extremos del enlace. </P
+><P
+>Hasta ahora, también hemos asumido que
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>
+no necesita ninguna autentificación de nosotros, así que la fase de configuración
+habrá sido completada con éxito.</P
+><P
+>&#13;
+
+<B
+CLASS="COMMAND"
+>pppd</B
+> negociará entonces los parámetros IP con su
+compañero usando IPCP, el protocolo de control IP. Al no especificar dirección
+IP alguna, el <B
+CLASS="COMMAND"
+>pppd</B
+> intentará usar la dirección que se
+obtiene al resolver el nombre del ordenador local. Decididas las direcciones,
+cada <B
+CLASS="COMMAND"
+>pppd</B
+> comunicará su dirección al otro extremo.	</P
+><P
+>Normalmente no habrá ningún problema con esta configuración predeterminada.
+Incluso si su máquina esta en una Ethernet, puede utilizar la misma dirección
+IP tanto para la Ethernet como para el interfaz PPP. No obstante, 
+<B
+CLASS="COMMAND"
+>pppd</B
+> le permite utilizar una dirección diferente, o incluso
+pedir a su compañero que utilice alguna dirección específica. Estas opciones
+serán discutidas más adelante en la sección <A
+HREF="x-087-2-ipconfig.options.html"
+>Sección 8.5</A
+>&rdquo;.</P
+><P
+>Tras pasar por la fase de configuración IPCP,  <B
+CLASS="COMMAND"
+>pppd</B
+>
+configurará la red de su ordenador para utilizar el enlace PPP. En primer
+lugar, configurará el interfaz de red PPP como un enlace punto-a-punto,
+utilizando  <TT
+CLASS="FILENAME"
+>ppp0</TT
+> para el primer enlace PPP que esté
+activo, <TT
+CLASS="FILENAME"
+>ppp1</TT
+> para el segundo, y así sucesivamente.
+A continuación preparará una entrada de la tabla de encaminamiento que apunte
+al ordenador del otro extremo del enlace. En el ejemplo anterior, el
+<B
+CLASS="COMMAND"
+>pppd</B
+> hará que el encaminamiento de red predeterminado apunte a
+<SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>, debido a que lo especificamos
+con la opción <SPAN
+CLASS="SYSTEMITEM"
+>defaultroute</SPAN
+>.<A
+NAME="X-087-2-FNPP05"
+HREF="#FTN.X-087-2-FNPP05"
+>[1]</A
+> Esto provoca que
+todos los datagramas dirigidos a ordenadores que no estén en su red sean
+enviados a <SPAN
+CLASS="SYSTEMITEM"
+>c3po</SPAN
+>; esto es debido a
+que es el único camino por el que se puede llegar a esas máquinas. Hay un
+variado número de formas de encaminamiento que acepta el <B
+CLASS="COMMAND"
+>pppd</B
+>,
+y las cubriremos en mayor detalle más adelante.</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNPP05"
+HREF="x6661.html#X-087-2-FNPP05"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> El encaminamineto predeterminado es instalado solamente
+si no hay ninguno establecido previamente.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x6610.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.options.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>PPP en Linux</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-ppp.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Usando los Ficheros de Opciones</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

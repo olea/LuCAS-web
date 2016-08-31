@@ -1,0 +1,447 @@
+<HTML>
+<HEAD>
+<TITLE>Samba COMO: Compartiendo Una Impresora Windows Con M&aacute;quinas Linux</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Samba-Como-8.html">Anterior</A>
+<A HREF="Samba-Como-10.html">Siguiente</A>
+<A HREF="Samba-Como.html#toc9">Indice</A>
+<HR>
+<H2><A NAME="s9">9. Compartiendo Una Impresora Windows Con M&aacute;quinas Linux</A></H2>
+
+
+<P>Para compartir una impresora en una m&aacute;quina Windows, debes hacer lo siguiente:</P>
+<P>a) Debes tener las entradas adecuadas en <CODE>/etc/printcap</CODE> y deben 
+corresponderse a la estructura de directorios local (el directorio de spool, 
+etc)</P>
+<P>b) Debes tener el script <CODE>/usr/bin/smbprint</CODE>. Viene con las fuentes de 
+<I>Samba</I>, pero no con la distribuci&oacute;n de ejecutables del <I>Samba</I>. M&aacute;s abajo 
+comentamos una copia ligeramente modificada.</P>
+<P>c) Si quieres convertir ficheros ASCII a PostScript, debes tener el 'nenscript'
+o su equivalente. <CODE>nenscript</CODE> es un conversor de PostScript y habitualmente
+est&aacute; instalado en <CODE>/usr/bin</CODE>.</P>
+<P>d) Puedes desear que las impresiones de <I>Samba</I> sean m&aacute;s sencillas teniendo un 
+<I>front end</I> f&aacute;cil de usar. M&aacute;s abajo tienes un sencillo script en <I>perl</I> 
+para manejar ASCII, PostScript o PostScript generado.</P>
+<P>La entrada para <CODE>/etc/printcap</CODE> que tenemos debajo es para una 
+impresora HP 5MP en un host Windows NT. Las entradas son las siguientes:</P>
+<P>
+<HR>
+<PRE>
+
+        cm - comentario
+        lp - nombre del dispositivo a abrir para salida
+        sd - el directorio de spool de la impresora (en la m&aacute;quina local)
+        af - el fichero de cuentas
+        mx - el tamano maximo del fichero (cero es ilimitado)
+        if - nombre del fichero de entrada (script)
+
+</PRE>
+<HR>
+</P>
+<P>Para m&aacute;s informaci&oacute;n, lee el <I>COMO Imprimir (Printing HOWTO)</I> o la p&aacute;gina del
+man de <CODE>printcap</CODE>.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+
+# /etc/printcap
+#
+# //zimmerman/oreilly via smbprint
+#
+lp:\
+        :cm=HP 5MP PostScript OReilly en zimmerman:\
+        :lp=/dev/lp1:\
+        :sd=/var/spool/lpd/lp:\
+        :af=/var/spool/lpd/lp/acct:\
+        :mx#0:\
+        :if=/usr/bin/smbprint:
+
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Aseg&uacute;rate de que los directorios de <I>spool</I> y cuentas existe y se puede 
+escribir en ellos. Asegura tambi&eacute;n que la l&iacute;nea '<CODE>if</CODE>' tiene el path 
+adecuado para el script <CODE>smbprint</CODE> (que damos debajo) y que <I>apunta</I> al 
+dispositivo adecuado. (el fichero <CODE>/dev</CODE> especial).</P>
+<P>Lo siguiente es el propio script <CODE>smbprint</CODE>. Normalmente est&aacute; en <CODE>/usr/bin</CODE> y es atribuible a Andrew Tridgell, la persona que cre&oacute; el <I>Samba</I> (que yo 
+sepa). Viene con la distribuci&oacute;n de las fuentes del <I>Samba</I>, pero est&aacute; ausente de
+algunas distribuciones de ejecutables, por lo que lo he recreado aqu&iacute;.</P>
+<P>Te podr&iacute;a interesar mirarlo con cuidado. Hay algunas peque&ntilde;as alteraciones que 
+han demostrado ser &uacute;tiles.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+
+#!/bin/sh -x
+
+# Este script es un filtro de entrada para la impresion de printcap en
+# una maquina unix. Usa el programa smbclient para imprimir un fichero
+# en el servidor y servicio basados en smb especificados.
+# Por ejemplo, puedes tener una entrada en printcap como esta
+#
+# smb:lp=/dev/null:sd=/usr/spool/smb:sh:if=/usr/local/samba/smbprint
+#
+# que creara una impresora unix llamada &quot;smb&quot; que imprimira a traves de
+# este script. Necesitarras crear el directorio de spool /usr/spool/smb
+# con los permisos y pertenencias apropiados para tu sistema.
+
+# Ahora preparalos con el servidor y servicio en que quieras imprimir
+# En este ejemplo tengo un PC WfWg llamado &quot;lapland&quot; que tiene una
+# impresora exportada llamada &quot;printer&quot; sin password.
+
+#
+# Script alterado por hamilton@ecnz.co.nz (Michael Hamilton)
+# para que servicio, servidor y clave puedan ser leidos desde un
+# fichero /usr/var/spool/lpd/PRINTNAME/.config
+#
+# Para que esto funcione la entrada en /etc/printcap debe incluir un
+# fichero de cuentas (af=...):
+#
+#   cdcolour:\
+#       :cm=CD IBM Colorjet on 6th:\
+#       :sd=/var/spool/lpd/cdcolour:\
+#       :af=/var/spool/lpd/cdcolour/acct:\
+#       :if=/usr/local/etc/smbprint:\
+#       :mx=0:\
+#       :lp=/dev/null:
+#
+# El fichero /usr/var/spool/lpd/PRINTNAME/.config deberia contener:
+#   servidor=SERVIDOR_PC
+#   servicio=NOMBRE_IMP
+#   clave=&quot;clave&quot;
+#
+# Ej.
+#   servidor=PAULS_PC
+#   servicio=CJET_371
+#   clave=&quot;&quot;
+
+#
+# Fichero de registro para correcciones, cambiar a /dev/null si se quiere
+#
+fichreg=/tmp/smb-print.log
+# fichreg=/dev/null
+
+
+#
+# El ultimo parametro para el filtro es el nombre del fichero de
+# cuentas
+#
+dir_spool=/var/spool/lpd/lp
+fich_config=$dir_spool/.config
+
+# Deberia leer las siguientes variables activadas en el fichero de
+# configuracion:
+#   servidor
+#   servicio
+#   clave
+#   usuario
+eval `cat $fich_config`
+
+#
+# Algo de ayuda en la correccion de errores. Cambia el &gt;&gt; por &gt; si
+# quieres salvar algo de espacio.
+#
+echo &quot;servidor $servidor, servicio $servicio&quot; &gt;&gt; $fichreg
+
+(
+# NOTA: Puede que quieras anadir la linea `echo translate' si quieres CR/LF
+# automatico cuando imprimes.
+        echo translate
+        echo &quot;print -&quot;
+        cat
+) | /usr/bin/smbclient &quot;\\\\$servidor\\$servicio&quot; $clave -U $usuario -N -P &gt;&gt; $fichreg
+
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La mayor&iacute;a de las distribuciones de Linux vienen con el <CODE>nenscript</CODE> para convertir
+los documentos ASCII a Postscript. El siguiente script <CODE>perl</CODE> hace la vida m&aacute;s 
+f&aacute;cil dando un interfaz sencillo para que linux imprima a trav&eacute;s de smbprint.</P>
+<P>
+<HR>
+<PRE>
+
+Forma de uso: print [-a|c|p] &lt;nombre_fichero&gt;
+              -a imprime &lt;nombre_fichero&gt; como ASCII
+              -c imprime &lt;nombre_fichero&gt; formateado como codigo fuente
+              -p imprime &lt;nombre_fichero&gt; como Postscript
+      Si no se pasa ningun parametro, print intenta
+      averiguar el tipo de fichero e imprimirlo
+      adecuadamente.
+
+</PRE>
+<HR>
+</P>
+<P><CODE>smbprint</CODE> tiende a truncar las l&iacute;neas demasiado largas cuando imprime 
+ficheros ASCII. Este rompe las l&iacute;neas largas donde haya un espacio en blanco 
+(en lugar de en mitad de una palabra), si es posible.</P>
+<P>El formateado de c&oacute;digo fuente se hace con <CODE>nenscript</CODE>. Coge un fichero ASCII
+y lo formatea en 2 columnas con una cabecera mu' mona (fecha, nombre de fichero
+, etc). Adem&aacute;s enumera las l&iacute;neas. Us&aacute;ndolo como ejemplo, se pueden lograr otros
+tipos de formateado.</P>
+<P>Los documentos Postscript tambi&eacute;n se imprimen correctamente, por lo que pasan directamente.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+
+#!/usr/bin/perl
+
+# Script:   print
+# Autores:  Brad Marshall, David Wood
+#           Plugged In Communications
+# Fecha:    960808
+# Cambios:  Ricardo Javier Cardenes Medina
+# Razon:        Traduccion de comentarios y codigo a espanol para
+#               mayor comprension.
+# Fecha:    961109 (Sab 9 de Noviembre de 1996)
+#
+# Script para imprimir a Oreilly que esta actualmente en zimmerman.
+# Proposito: Toma ficheros de varios tipos como parametros y
+# los procesa apropiadamente para mandarlos al script de impresion de Samba.
+#
+# Tipos soportados actualmente:
+# 
+# ASCII      - Asegura que las lineas con mas de $largo_linea caracteres seran
+#              divididas aprovechando los espacios en blanco.
+# PostScript - No hace nada.
+# Codigo     - Lo formatea en PostScript (usando nenscript) para una mejor
+#              presentacion (fuente, etc...).
+#
+
+# Maxima longitud permitida para cada linea de texto ASCII.
+$largo_linea = 76;
+
+# Path y nombre del script 'print' de Samba.
+$prog_print = &quot;/usr/bin/smbprint&quot;;
+
+# Path y nombre del nenscript (el convertidor ASCII--&gt;PostScript)
+$nenscript = &quot;/usr/bin/nenscript&quot;;
+
+unless ( -f $prog_print ) {
+        die &quot;¡No encuentro $prog_print!&quot;;
+}
+unless ( -f $nenscript ) {
+        die &quot;¡No encuentro $nenscript!&quot;;
+}
+
+&InterpLinCom(@ARGV);
+
+# DBG
+print &quot;El tipo de fichero es $tipofich\n&quot;;
+
+if ($tipofich eq &quot;ASCII&quot;) {
+        &Rompe($largo_linea);
+} elsif ($tipofich eq &quot;codigo&quot;) {
+        &FormateaCodigo;
+} elsif ($tipofich eq &quot;postscript&quot;) {
+        &CreaTabla;
+} else {
+        print &quot;Lo siento..tipo de fichero desconocido.\n&quot;;
+        exit 0;
+}
+# Enviar el array a smbprint
+open(IMPRESORA, &quot;|$prog_print&quot;) || die &quot;¡No puedo abrir $prog_print: $!\n&quot;;
+foreach $linea (@newlines) {
+        print IMPRESORA $linea;
+}
+# Enviar un avance de linea extra en caso de que el fichero tenga una
+# ultima linea incompleta.
+print IMPRESORA &quot;\n&quot;;
+close(IMPRESORA);
+print &quot;Terminado\n&quot;;
+exit 0;
+
+# --------------------------------------------------- #
+#         Todo lo de debajo es una subrutina          #
+# --------------------------------------------------- #
+
+sub InterpLinCom {
+        # Interpreta la linea de comando, averiguando el tipo de fichero
+
+        # Toma $par y $fich como parametro (si existe) y nombre del
+        # fichero.
+        if ($#_ &lt; 0) {
+                &FormaUso;
+        }
+        # DBG
+        #       foreach $elemento (@_) {
+        #               print &quot;*$elemento* \n&quot;;
+        #       }
+
+        $par = shift(@_);
+        if ($par =~ /\-./) {
+                $com = $par;
+        # DBG
+        #       print &quot;\Encontrado $com.\n&quot;;
+
+                $fich = shift(@_);
+        } else {
+                $fich = $par;
+        }
+        
+        # Defining the file type
+        unless ($com) {
+                # No tenemos par&aacute;metro
+
+                if ($fich =~ /\.ps$/) {
+                        $tipofich = &quot;postscript&quot;;
+                } elsif ($fich =~ /\.java$|\.c$|\.h$|\.pl$|\.sh$|\.csh$|\.m4$|\.inc$|\.html$|\.htm$/) {
+                        $tipofich = &quot;codigo&quot;;
+                } else {
+                        $tipofich = &quot;ASCII&quot;;
+                }
+
+                # Procesa $fich buscando el tipo y devuelve $tipofich
+        } else {
+                # Tenemos el tipo en $par
+                if ($com =~ /^-p$/) {
+                        $tipofich = &quot;postscript&quot;;
+                } elsif ($com =~ /^-c$/) {
+                        $tipofich = &quot;codigo&quot;;
+                } elsif ($com =~ /^-a$/) {
+                        $tipofich = &quot;ASCII&quot;
+                }
+        }
+}
+
+sub FormaUso {
+        print &quot;
+Forma de uso: print [-a|c|p] &lt;nombre_fichero&gt;
+              -a imprime &lt;nombre_fichero&gt; como ASCII
+              -c imprime &lt;nombre_fichero&gt; formateado como codigo fuente
+              -p imprime &lt;nombre_fichero&gt; como Postscript
+      Si no se pasa ningun parametro, print intenta
+      averiguar el tipo de fichero e imprimirlo
+      adecuadamente.\n
+&quot;;
+        exit(0);
+}
+
+sub Rompe {
+        # Crea una tabla con las lineas del fichero, donde cada linea es
+        # menor que el numero de caracteres especificado, y las rompe
+        # solo en los espacios en blanco
+
+        # Toma el numero de caracteres a los que limitar la linea.
+        $limite = pop(@_);
+
+        # DBG
+        #print &quot;Entrando en la subrutina Rompe\n&quot;;
+        #print &quot;El limite de caracteres es $limit\n&quot;;
+
+        # Lee en el fichero, lo interpreta y pone en la tabla.
+        open(FICHERO, &quot;&lt;$fich&quot;) || die &quot;¡No puedo abrir $fich: $!\n&quot;;
+        while(&lt;FICHERO&gt;) {
+                $linea = $_;
+                
+                # DBG
+                #print &quot;La linea es:\n$linea\n&quot;;
+
+                # Rompe la linea si se pasa del limite.
+                while ( length($linea) &gt; $limite ) {
+                        
+                        # DBG
+                        #print &quot;Rompiendo...&quot;;
+
+                        # Toma los primeros $limite +1 caracteres.
+                        $cacho = substr($linea,0,$limite +1);
+
+                        # DBG
+                        #print &quot;La linea parcial es:\n$cacho\n&quot;;
+
+                        # Mira a ver si el ultimo caracter es un espacio.
+                        $ultimo_car = substr($cacho,-1, 1);
+                        if ( &quot; &quot; eq $ultimo_car ) {
+                            # Si lo es, imprime el resto.
+
+                            # DBG
+                            #print &quot;El ultimo caracter era un espacio\n&quot;;
+
+                            substr($linea,0,$limite + 1) = &quot;&quot;;
+                            substr($cacho,-1,1) = &quot;&quot;;
+                            push(@newlines,&quot;$cacho\n&quot;);
+                        } else {
+                             # Si no lo es, busca el ultimo espacio en la
+                             # sub-linea e imprime hasta alli.
+
+                            # DBG
+                            #print &quot;El ultimo caracter no era un espacio\n&quot;;
+
+                             # Borra el ultimo caracter que pasa de $limite
+                             substr($cacho,-1,1) = &quot;&quot;;
+                             # Da la vuelta a la linea para hacer mas
+                             # sencillo buscar el espacio.
+                             $cachoreves = reverse($cacho);
+                             $indice = index($revpart,&quot; &quot;);
+                             if ( $indice &gt; 0 ) {
+                               substr($linea,0,$limite-$indice) = &quot;&quot;;
+                               push(@newlines,substr($cacho,0,$limite-$indice) 
+                                   . &quot;\n&quot;);
+                             } else {
+                                 # No hay espacios en la linea, por lo que
+                                 # se imprime hasta $limite.
+                               substr($linea,0,$limite) = &quot;&quot;;
+                               push(@newlines,substr($cacho,0,$limite) 
+                                   . &quot;\n&quot;);
+                             }
+                        }
+                }
+                push(@newlines,$linea);
+        }
+        close(FICHERO);
+}
+
+sub FormateaCodigo {
+        # Llama a la subrutina Rompe cuando filtra a traves de nenscript
+        &Rompe($largo_linea);
+        
+        # Manda los resultados a traves de nenscript para crear un
+        # fichero Postscript que de una forma decente a nuestro codigo
+        # fuente para imprimirlo (fuente Courier, numero de lineas, ...).
+        # E imprime todo esto a un fichero temporal.
+        $fichtmp = &quot;/tmp/nenscript$$&quot;;
+        open(FICHERO, &quot;|$nenscript -2G -i$fich -N -p$fichtmpfich -r&quot;) || 
+                die &quot;¡No pude abrir nenscript: $!\n&quot;;
+        foreach $linea (@newlines) {
+                print FICHERO $linea;
+        }
+        close(FICHERO);
+        
+        # Vuelca el fichero temporal en una tabla para que pueda
+        # ser pasado al script de impresion de Samba.
+        @newlines = (&quot;&quot;);
+        open(FICHERO, &quot;&lt;$fichtmp&quot;) || die &quot;¡No puedo abrir $fichtmp: $!\n&quot;;
+        while(&lt;FICHERO&gt;) {
+                push(@newlines,$_);
+        }
+        close(FICHERO);
+        system(&quot;rm $fichtmp&quot;);
+}
+
+sub CreaTabla {
+        # Crear la tabla para postscript
+        open(FICHERO, &quot;&lt;$fich&quot;) || die &quot;¡No puedo abrir $fich: $!\n&quot;;
+        while(&lt;FICHERO&gt;) {
+                push(@newlines,$_);
+        }
+        close(FICHERO);
+}
+
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+<HR>
+<A HREF="Samba-Como-8.html">Anterior</A>
+<A HREF="Samba-Como-10.html">Siguiente</A>
+<A HREF="Samba-Como.html#toc9">Indice</A>
+</BODY>
+</HTML>

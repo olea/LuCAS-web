@@ -1,0 +1,262 @@
+<HTML>
+<HEAD>
+<TITLE>Cortafuegos COMO: Instalaci&oacute;n del Servidor Proxy</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Cortafuegos-Como-4.html">Anterior</A>
+<A HREF="Cortafuegos-Como-6.html">Siguiente</A>
+<A HREF="Cortafuegos-Como.html#toc5">Indice</A>
+<HR>
+<H2><A NAME="s5">5. Instalaci&oacute;n del Servidor Proxy</A></H2>
+
+
+<P>El servidor proxy requiere software adicional. &Eacute;ste se puede conseguir en: </P>
+<P><CODE>
+<A HREF="ftp://sunsite.unc.edu/pub/LiNUX/system/Network/misc/socks-Linux-src.tgz">ftp://sunsite.unc.edu/pub/LiNUX/system/Network/misc/socks-Linux-src.tgz</A></CODE></P>
+<P>Solamente hay un ejemplo de fichero de configuraci&oacute;n en ese directorio, se
+llama <CODE>"socks-conf"</CODE>. Debemos descomprimir y desempaquetar los
+ficheros en un directorio de nuestro ordenador, y seguir las instrucciones
+de c&oacute;mo compilarlo. Yo tuve un par de problemas compil&aacute;ndolo. Hay que
+asegurarse de que los Makefiles son correctos. Algunos lo son y algunos
+no. </P>
+<P>Algo importante que hay que advertir es que hay que a&ntilde;adir el servidor
+proxy al <CODE>/etc/inetd.conf</CODE>. Se debe a&ntilde;adir la linea: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+socks   stream  tcp     nowait  nobody  /usr/local/etc/sockd    sockd
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>para decir a <CODE>inetd</CODE> que arranque el servidor cuando se le pida.</P>
+
+<H2><A NAME="ss5.1">5.1 Configuraci&oacute;n del Servidor Proxy</A></H2>
+
+
+<P>El programa <CODE>socks</CODE> necesita dos ficheros de configuraci&oacute;n distintos. 
+Uno en el que se le dice qu&eacute; accesos est&aacute;n permitidos, y otro para dirigir
+las peticiones al servidor proxy apropiado. El fichero de control de
+acceso debe residir en el servidor. El fichero de rutado debe residir en
+todas las m&aacute;quinas &Uacute;n*x. Las m&aacute;quinas DOS y, presumiblemente, las
+Macintosh encaminar&aacute;n por s&iacute; mismas. </P>
+
+
+<H2><A NAME="ss5.2">5.2 El Fichero de Control de Acceso</A></H2>
+
+
+<P>Con socks4.2 Beta, el fichero de acceso se llama <CODE>"sockd.conf"</CODE>.
+Deber&iacute;a contener dos tipos de l&iacute;neas: las de permiso, que contienen
+"permit" y las de prohibici&oacute;n, que contienen "deny". Cada linea tendr&aacute;
+tres palabras: </P>
+<P>
+<UL>
+<LI>El identificador (permit/deny)</LI>
+<LI>La direcci&oacute;n IP</LI>
+<LI>El modificador de direcci&oacute;n</LI>
+</UL>
+</P>
+<P>El identificador es o permit (permitir) o deny (denegar). Deber&iacute;a haber
+uno de cada. </P>
+<P>La direcci&oacute;n IP se compone de cuatro octetos seg&uacute;n la t&iacute;pica notaci&oacute;n de
+puntos: p.ej. 192.168.2.0 . </P>
+<P>El modificador de direcci&oacute;n es tambi&eacute;n un n&uacute;mero de cuatro octetos.
+Funciona como una m&aacute;scara de red. Hay que verlo como 32 bits (unos o
+ceros). Si el bit es uno, el bit correspondiente de la direcci&oacute;n que se
+comprueba debe coincidir con el bit correspondiente del campo de direcci&oacute;n
+IP. </P>
+<P>Por ejemplo, si la l&iacute;nea es:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+permit 192.168.2.23 255.255.255.255
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>entonces, admitir&aacute; s&oacute;lo direcciones IP en las que coincidan todos los bits
+de 193.168.2.23, esto es, s&oacute;lo ella misma. La l&iacute;nea: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+permit 192.168.2.0 255.255.255.0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>admitir&aacute; todas las direcciones desde la 192.168.2.0 hasta la
+192.168.2.255, la subred de clase C completa. No se deber&iacute;a tener la
+l&iacute;nea: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+permit 192.168.2.0 0.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>dado que permitir&iacute;a cualquier direcci&oacute;n.</P>
+<P>As&iacute; que, primero, permitimos todas las direcciones que queramos permitir,
+y despu&eacute;s prohibimos el resto. Para permitir a cualquiera del rango
+192.168.2.xxx, las l&iacute;neas: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+permit 192.168.2.0 255.255.255.0
+deny 0.0.0.0 0.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>funcionar&aacute;n perfectamente. Observa los primeros <CODE>"0.0.0.0"</CODE> en la
+linea de prohibici&oacute;n. Con un modificador de 0.0.0.0, el campo de la
+direcci&oacute;n IP no importa. Se suele poner todo ceros porque es f&aacute;cil de
+teclear. </P>
+<P>Se puede poner m&aacute;s de una l&iacute;nea de cada clase.</P>
+<P>Tambi&eacute;n se puede autorizar o denegar el acceso a determinados usuarios. 
+Se consigue gracias a la autentificaci&oacute;n del protocolo <EM>ident</EM>. No
+todos los sistemas soportan <EM>ident</EM> (incluyendo al Trumpet Winsock)
+de modo que no profundizar&eacute; en ello. La documentaci&oacute;n que viene con socks
+trata este tema adecuadamente. </P>
+
+
+<H2><A NAME="ss5.3">5.3 El Fichero de rutado</A></H2>
+
+
+<P>El fichero de rutado de socks tiene el desafortunado nombre de
+<B>"socks.conf"</B>. Y digo que es desafortunado porque se parece tanto
+al del fichero de control de acceso que es f&aacute;cil confundirlos. </P>
+<P>El fichero de rutado tiene la funci&oacute;n de decir a los clientes de socks
+cu&aacute;ndo usar socks y cu&aacute;ndo no. Por ejemplo, en nuestra red la m&aacute;quina
+192.168.2.3 no necesita usar socks para comunicarse con la 192.168.2.1 (el
+cortafuegos), ya que tiene una conexi&oacute;n directa v&iacute;a Ethernet. La
+127.0.0.1, direcci&oacute;n de "vuelta atr&aacute;s" (que representa a una m&aacute;quina ante
+ella misma), est&aacute; definida autom&aacute;ticamente. Est&aacute; claro que no se necesita
+usar socks para hablar con uno mismo. </P>
+<P>Hay tres tipos de entradas:</P>
+<P>
+<UL>
+<LI>deny</LI>
+<LI>direct</LI>
+<LI>sockd</LI>
+</UL>
+</P>
+<P>Deny (denegar) le dice a socks que peticiones debe rechazar. Esta entrada
+tiene los mismos tres campos que en <CODE>sockd.conf</CODE>, identificador,
+direcci&oacute;n, y modificador. Generalmente, dado que esto tambi&eacute;n es manejado
+por el fichero de control de acceso <CODE>sockd.conf</CODE>, el modificador se
+pone a 0.0.0.0 . Si uno quiere impedirse a si mismo conectar con un
+determinado sitio, se puede hacer poni&eacute;ndolo aqu&iacute;. </P>
+<P>La entrada <CODE>direct</CODE> dice para qu&eacute; direcciones <EM>no</EM> se debe usar
+socks.  &Eacute;stas son todas las direcciones a las que se puede llegar sin usar
+el servidor proxy. De nuevo hay tres campos: identificador, direcci&oacute;n, y
+modificador. Nuestro ejemplo tendr&iacute;a: </P>
+<P><CODE>direct 192.168.2.0 255.255.255.0</CODE></P>
+<P>Con lo que ir&iacute;a directamente a cualquier m&aacute;quina de la red protegida.</P>
+<P>La entrada <CODE>sockd</CODE> dice cu&aacute;l es la m&aacute;quina en la que corre el servidor
+de socks. La sintaxis es: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+sockd @=&lt;lista de servidores&gt; &lt;direccion IP&gt; &lt;modificador&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Observemos la entrada <CODE>@=</CODE>. &Eacute;sta permite poner las direcciones IP de
+una lista de servidores proxy. En nuestro ejemplo s&oacute;lo usamos un servidor
+proxy, pero se puede tener muchos para admitir una carga mayor y conseguir
+redundancia frente a fallos.</P>
+<P>La direcci&oacute;n IP y el modificador funcionan como en los otros ejemplos. 
+Especifican a qu&eacute; direcciones se va a trav&eacute;s de los servidores. </P>
+
+
+<H2><A NAME="ss5.4">5.4 El Servicio de Nombres tras el Cortafuegos</A></H2>
+
+
+<P>Instalar un Servicio de Nombres detr&aacute;s de un cortafuegos es relativamente
+simple. No hay m&aacute;s que instalar el servidor de DNS en la m&aacute;quina que hace
+de cortafuegos. Luego se hace que todas las m&aacute;quinas tras el cortafuegos
+usen este servidor de DNS. </P>
+
+
+<H2><A NAME="ss5.5">5.5 Trabajar con un Servidor Proxy</A></H2>
+
+
+
+<H3>UnixPara que las aplicaciones funcionen con el servidor proxy, hay que"sockificarlas". Ser&aacute; necesario tener dos telnets distintos, uno para lacomunicaci&oacute;n directa, y uno para la comunicaci&oacute;n a trav&eacute;s del servidorproxy. Socks viene con instrucciones de c&oacute;mo sockificar un programa, as&iacute;como con un par de programas ya sockificados. Si se usa la vers&iacute;onsockificada para conectar con alg&uacute;n sitio al que se tiene acceso directo,socks cambiar&aacute; autom&aacute;ticamente a la versi&oacute;n para acceso directo (lanormal). Por esta raz&oacute;n deberemos cambiar el nombre a todos los programasde la red protegida y sustituirlos por los sockificados. As&iacute; "finger"pasar&aacute; a ser "finger.orig", "telnet" a "telnet.orig", etc... . Se debe dara conocer a socks todo esto en el fichero include/socks.h . Algunos programas gestionan el rutado y el sockificado ellos mismos. &Eacute;stees el caso de <EM>Netscape</EM>. Se puede usar un servidor proxy con<EM>Netscape</EM> simplemente poniendo la direcci&oacute;n del servidor(192.168.2.1 en nuestro caso) en el campo <B>SOCKs</B> del <B>menuProxys</B>.  Todas las aplicaciones necesitar&aacute;n alg&uacute;n retoqueindependientemente de c&oacute;mo manejen la existencia de servidores proxy. </H3>
+
+<H3>MS G&uuml;indous con el Trumpet Winsock</H3>
+
+
+<P>El Trumpet Winsock lleva incorporada la gesti&oacute;n de servidores proxy.  En
+el men&uacute; "setup" se debe poner la direcci&oacute;n IP del servidor y las
+direcciones de todos los ordenadores a los que se llega directamente.  &Eacute;l
+se encargar&aacute; a partir de entonces de todos los paquetes de salida. </P>
+
+
+<H2><A NAME="ss5.6">5.6 C&oacute;mo conseguir que el Servidor Proxy funcione con UDP</A></H2>
+
+
+<P>El paquete socks s&oacute;lo funciona con <EM>TCP</EM>, no con <EM>UDP</EM>. Esto
+le quita un poco de utilidad. Muchos programas interesantes, (como talk o
+archie)  usan UDP. Existe un paquete dise&ntilde;ado para funcionar como un
+servidor proxy para paquetes de UDP que se llama UDPrelay. El autor es Tom
+Fitzgerald 
+<A HREF="mailto:fitz@wang.com">fitz@wang.com</A>.
+Desgraciadamente, en el momento de escribir estas l&iacute;neas, no es compatible
+con LiNUX. </P>
+
+
+<H2><A NAME="ss5.7">5.7 Inconvenientes de los Servidores Proxy</A></H2>
+
+
+<P>Un servidor proxy es ante todo un <EM>dispositivo de seguridad</EM>.
+Usarlo para aumentar el n&uacute;mero de m&aacute;quinas con acceso a la Internet cuando
+se tienen pocas direcciones IP tiene muchos inconvenientes. Un servidor
+proxy permite un mayor acceso desde dentro de la red protegida al
+exterior, pero mantiene el interior completamente inaccesible desde el
+exterior. Esto significa que no habr&aacute; conexiones archie, ni talk, ni env&iacute;o
+directo de correo a los ordenadores de dentro. Estos inconvenientes pueden
+parecer peque&ntilde;os, pero consideremos los siguientes casos:  </P>
+<P>
+<UL>
+<LI>Te has dejado un informe que est&aacute;s haciendo en tu ordenador que est&aacute;
+dentro de la red protegida por el cortafuegos. Est&aacute;s en casa y decides
+cambiar algo. No puedes. No puedes llegar a tu ordenador dado que est&aacute;
+tras el cortafuegos. Intentas entrar en el <CODE>cortafuegos</CODE> primero,
+pero como todo el mundo tiene acceso al exterior gracias al servidor
+proxy, no te han abierto cuenta en &eacute;l. 
+</LI>
+<LI>Tu hija va a la universidad. Quieres enviarle correo. Tienes algunas
+cosas privadas que comentar con ella, por lo que preferir&iacute;as que el correo
+llegara directamente a tu m&aacute;quina.  Conf&iacute;as plenamente en el administrador
+de tu sistema, pero, a&uacute;n as&iacute;, es correo privado. 
+</LI>
+<LI>La incapacidad de manejar paquetes UDP es un gran inconveniente de
+los servidores proxy. Imagino que no por mucho tiempo. </LI>
+</UL>
+</P>
+<P>El FTP crea otro problema con los servidores proxy. Cuando se hace un
+<CODE>ls</CODE>, o un <CODE>get</CODE>, el servidor de FTP establece una conexi&oacute;n
+con la m&aacute;quina cliente y manda la informaci&oacute;n por ella. Un servidor proxy
+no lo permitir&aacute;, as&iacute; que el FTP no funciona especialmente bien. </P>
+<P>Adem&aacute;s, un servidor proxy es lento. Debido a la gran sobrecarga, casi
+cualquier otro medio de lograr acceso ser&aacute; m&aacute;s r&aacute;pido. </P>
+<P>Resumiendo, si tienes suficientes direcciones IP y no te preocupa la
+seguridad, no uses cortafuegos ni servidores proxy. Si no tienes
+suficientes direcciones IP, pero tampoco te preocupa la seguridad,
+seguramente deber&iacute;as considerar los "emuladores de IP" como Term, Slirp, o
+TIA. </P>
+<P>Term se puede conseguir en <CODE>
+<A HREF="ftp://sunsite.unc.edu">ftp://sunsite.unc.edu</A></CODE>, Slirp en <CODE>
+<A HREF="ftp://blitzen.canberra.edu.au/pub/slirp">ftp://blitzen.canberra.edu.au/pub/slirp</A></CODE>, y TIA en
+<CODE>
+<A HREF="ftp://marketplace.com">ftp://marketplace.com</A></CODE>. </P>
+<P>Van m&aacute;s r&aacute;pido, permiten mejores conexiones, y proveen un mayor nivel de
+acceso a la red interior desde la Internet. Los servidores proxy est&aacute;n
+bien para las redes que tienen muchos ordenadores que quieren conectar con
+la Internet al vuelo, y en las que se quiere poco trabajo de mantenimiento
+tras la instalaci&oacute;n.</P>
+
+
+<HR>
+<A HREF="Cortafuegos-Como-4.html">Anterior</A>
+<A HREF="Cortafuegos-Como-6.html">Siguiente</A>
+<A HREF="Cortafuegos-Como.html#toc5">Indice</A>
+</BODY>
+</HTML>

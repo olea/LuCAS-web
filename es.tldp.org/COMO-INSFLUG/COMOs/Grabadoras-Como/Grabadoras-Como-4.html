@@ -1,0 +1,122 @@
+<HTML>
+<HEAD>
+<TITLE>Grabadoras de CD - Como: Nomenclatura de dispositivos SCSI</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Grabadoras-Como-3.html">Anterior</A>
+<A HREF="Grabadoras-Como-5.html">Siguiente</A>
+<A HREF="Grabadoras-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. Nomenclatura de dispositivos SCSI</A></H2>
+
+
+<P>Este es un tema para el que convendr&iacute;a que leyera el <I>SCSI-Howto</I>, pero
+como no hay disponible traducci&oacute;n, har&eacute; una breve introducci&oacute;n, necesaria
+para poder especificar par&aacute;metros necesarios al software que usaremos.</P>
+<P>B&aacute;sicamente, para lo que necesitamos, hemos de saber de la existencia de
+los dispositivos de bloque, <CODE>/dev/scdX</CODE> o <CODE>/dev/srX</CODE>, y los
+dispositivos gen&eacute;ricos, <CODE>/dev/sgX</CODE>: </P>
+
+<H2><A NAME="gener"></A> <A NAME="ss4.1">4.1 Dispositivos gen&eacute;ricos </A> </H2>
+
+
+<P>En lo que a nosotros ata&ntilde;e, tanto para extraer audio, como para grabar
+bajo Linux, el kernel ha de tener activado <CODE>Generic SCSI Support</CODE>, que
+proporciona la interfaz <I>ASPI</I> necesaria. </P>
+<P>Pero, ¿de qu&eacute; manera determina Linux c&oacute;mo ha de tratar un mismo
+dispositivo? dependiendo de a qu&eacute; fichero de dispositivo le hagamos
+referencia; si es un fichero de dispositivo de bloques, lo tratar&aacute; como
+tal, y si es gen&eacute;rico, utilizar&aacute; comandos <I>ASPI</I>.</P>
+<P>El dispositivo gen&eacute;rico de cada unidad conectada al bus SCSI se determina
+mediante su ID SCSI, haga <CODE>cat /proc/scsi/scsi</CODE> para ver un listado
+de los disponibles en su sistema, por ejemplo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Attached devices:
+Host: scsi0 Channel: 00 Id: 00 Lun: 00
+  Vendor: QUANTUM  Model: FIREBALL1280S    Rev: 630G
+  Type:   Direct-Access                    ANSI SCSI revision: 02
+Host: scsi0 Channel: 00 Id: 01 Lun: 00
+  Vendor: QUANTUM  Model: FIREBALL ST4.3S  Rev: 0F0C
+  Type:   Direct-Access                    ANSI SCSI revision: 02
+Host: scsi0 Channel: 00 Id: 02 Lun: 00
+  Vendor: PIONEER  Model: CD-ROM DR-U06S   Rev: 1.05
+  Type:   CD-ROM                           ANSI SCSI revision: 02  
+Host: scsi0 Channel: 00 Id: 04 Lun: 00
+  Vendor: YAMAHA   Model: CDR102           Rev: 1.01
+  Type:   WORM                             ANSI SCSI revision: 02  
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Lo que nos interesa es la l&iacute;nea <CODE>Host: scsi0 Channel: XX Id: XX Lun: XX</CODE> de cada dispositivo; concretamente <CODE>Id:</CODE>.</P>
+<P>El sistema asigna <I>din&aacute;micamente</I> dispositivos <CODE>sgX</CODE> por orden de ID 
+a los <B>presentes en ese mismo instante</B>; en el ejemplo anterior:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+00 ---&gt; /dev/sga
+01 ---&gt; /dev/sgb 
+02 ---&gt; /dev/sgc
+04 ---&gt; /dev/sgd
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>cuando decimos <I>din&aacute;micamente</I>, nos referimos a que si por ejemplo, tiene
+una unidad externa magneto &oacute;ptica, un zip, o similar, en el ID 03, la enciende,
+y hace que el kernel reescanee el bus, los dispositivos ahora ser&iacute;an:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+00 ---&gt; /dev/sga
+01 ---&gt; /dev/sgb
+02 ---&gt; /dev/sgc
+03 ---&gt; /dev/sgd
+04 ---&gt; /dev/sge
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ahora, la grabadora ser&iacute;a <CODE>/dev/sge</CODE> en lugar de <CODE>/dev/sgd</CODE>
+como antes.</P>
+<P>Con lo que queremos decir que hay que tener <B>mucho cuidado</B> con 
+la adici&oacute;n de 
+dispositivos SCSI «al vuelo» y el uso de los <CODE>sgX</CODE>.</P>
+
+
+<H2><A NAME="bloque"></A> <A NAME="ss4.2">4.2 Dispositivos de bloque </A></H2>
+
+
+<P>En el caso concreto que nos ocupa, nos interesan los dispositivos ROM: 
+<CODE>/dev/scdX</CODE> o la nomenclatura nueva, <CODE>/dev/srX</CODE>.</P>
+<P>Aqu&iacute; el primer fichero de dispositivo corresponder&aacute; al primer CDROM SCSI
+(incluyendo grabadoras) SCSI disponible en el sistema, <CODE>/dev/sr0</CODE>,
+<CODE>/dev/sr1</CODE> ser&aacute; el segundo, etc; da igual el ID SCSI que tenga, o
+en el bus SCSI que est&eacute;. </P>
+
+
+<H2><A NAME="notacion"></A> <A NAME="ss4.3">4.3 Notaci&oacute;n <I>est&aacute;ndar</I> </A></H2>
+
+
+<P>En entornos *nix existe cierta notaci&oacute;n para identificar dispositivos
+SCSI:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Numero_Bus_SCSI,ID_SCSI_dispositivo,LUN_dispositivo
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El <I>LUN</I> es un par&aacute;metro que siempre va a ser <CODE>0</CODE>, menos en el caso
+improbable de que Vd disponga de un cargador de CDs, o un robot cambiador
+de magneto-&oacute;pticos o de cintas.</P>
+<P>Por tanto, un dispositivo que tuviese el ID <CODE>4</CODE> en la primera
+controladora SCSI del sistema ser&iacute;a el dispositivo SCSI del sistema
+<CODE>0,4,0</CODE>. </P>
+
+
+<HR>
+<A HREF="Grabadoras-Como-3.html">Anterior</A>
+<A HREF="Grabadoras-Como-5.html">Siguiente</A>
+<A HREF="Grabadoras-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

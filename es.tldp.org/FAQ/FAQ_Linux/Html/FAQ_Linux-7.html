@@ -1,0 +1,685 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>FAQ sobre Linux para principiantes - es.comp.os.linux: Administracion</TITLE>
+ <LINK HREF="FAQ_Linux-8.html" REL=next>
+ <LINK HREF="FAQ_Linux-6.html" REL=previous>
+ <LINK HREF="FAQ_Linux.html#toc7" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="FAQ_Linux-8.html">Next</A>
+<A HREF="FAQ_Linux-6.html">Previous</A>
+<A HREF="FAQ_Linux.html#toc7">Contents</A>
+<HR>
+<H2><A NAME="s7">7. Administracion</A></H2>
+
+<H2><A NAME="ss7.1">7.1 ¿Puedo trabajar normalmente como root?</A>
+</H2>
+
+<P>Un consejo, solo utilizar la cuenta de root (administrador) para tareas de administracion. Para trabajar normalmente con el sistema NO hacerlo como root, ya que se tiene acceso completo a todo el sistema y es facil de estropear cosas si no se sabe lo que se hace.
+<P>Aqui teneis un ejemplo que le ocurrio al autor de esta seccion trabajando como root: 
+<BLOCKQUOTE>
+Sólo utilizo la cuenta de root para administración del sistema, pero un día estuve demasiado tiempo trabajando con ella para intentar empaquetar un rpm, resulta que lo instalé mal y creé el directorio <CODE>/usr/src/redhat/usr/src/redhat/SRC/</CODE>, claro eso no era lo que quería, así que tecleé:
+<PRE>
+  root@asimovI src]$ cd ..
+  root@asimovI /]$ rm -rf *
+</PRE>
+
+Yo pensaba que estaba dentro del segundo src, pero estaba en el primero, menos mal que me di de cuenta pronto y pulsé <CODE>Ctrl+c</CODE> para abortar el comando de borrado mientras se estaba borrando el directorio <CODE>X11R6</CODE>, así que no corrompí por completo el sistema, sólo tuve que volver a instalar algunos paquetes. Pero ¿y si no me doy cuenta?, pues que no podría haber hecho nada ya que hubiese borrado todo el contenido de <CODE>/usr</CODE> no existirían librerias, comandos, etc, teniendo que haber instalado el sistema operativo de nuevo. 
+</BLOCKQUOTE>
+<P>Despues de este ejemplo, volvemos a recomendar lo que dijimos al principio, utilizar la cuenta de root solo en los casos necesarios y siempre teniéndole un respeto al poder que da. Estar seguros al 100% de lo que haceis como root, para no estropear el sistema. Una buena costumbre es nunca hacer login con root, sino trabajar como un usuario normal y cuando se necesite ser root hacer un <CODE>su</CODE>, y tan pronto como deje de ser necesario tener el privilegio hacer un <CODE>exit</CODE>, para volver a trabajar como usuario normal.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.2">7.2 ¿Cómo abro/cierro una nueva cuenta?</A>
+</H2>
+
+<P>Aquí veremos como abrir y cerrar una cuenta de usuario.
+<P><B>Abrir una nueva cuenta</B>.
+<P>El abrir una nueva cuenta, no es más que añadir una entrada en el archivo<CODE>/etc/passwd</CODE> del sistema. Una entrada en este archivo tiene la siguiente forma:
+<PRE>
+  &lt;user>:&lt;encrip>:&lt;UID>:&lt;GID>:&lt;informacion>:&lt;home>:&lt;shell>
+
+  user:        Es el nombre de usuario.
+  encrip:      Es la clave encriptada.
+  UID:         Es el número UID con el que nos identificará el kernel.
+  GID:         El numero de grupo principal GID al que pertenecemos.
+  información: Información varia, tal como nombre completo del usuario, 
+               número de teléfono, e-mail, etc.
+  home:        Es el directorio home del usuario, es decir, el directorio al que 
+               accedemos justo después de hacer entrar en el sistema.
+  shell:       Es el shell que se abrirá para ejecutar las órdenes que de el usuario.
+</PRE>
+
+Hay utilidades que hacen que añadir cuentas de usuario sea más fácil. Entre ellas están el comando <CODE>adduser</CODE> o <CODE>useradd</CODE> y <CODE>passwd</CODE>. Lo pasos para crear un usuario son:
+<PRE>
+  [root@asimovI /root] adduser mario
+  [root@asimovI /root] passwd mario
+</PRE>
+
+Para más información hacer <CODE>man adduser</CODE>, sobre todo si se quiere poner caducidad a las claves. 
+<P>Hay otras utilidades más vistosas y fáciles de usar e intuitivas ya que son bajo X-Windows, un ejemplo de éstas son en el <CODE>contol-panel</CODE> de redhat, el YaST en SuSE, el gestor de usuarios de Kde, etc.
+<P>Hay que aclarar que si el campo de la clave encriptada del fichero <CODE>/etc/passwd</CODE> no contiene ningun valor, no sera necesario la utilizacion de una clave para entrar en el sistema. Esto es totalmente desaconsejable por los problemas de seguridad que puede crear.
+<P> 
+Sin embargo es útil, por ejemplo, cuando nos olvidamos de la clave de root, la solución es arrancar con un disket de rescate, luego montar la partición de linux, y borrar la clave encriptada de la entrada de root en el fichero 
+<CODE>/etc/passwd</CODE>. Luego reiniciamos el equipo, entramos como root y ejecutamos <CODE>passwd root</CODE> para poner la nueva contraseña.
+<P><B>Borrar una cuenta de usuario</B>.
+<P>El comando a utilizar es <CODE>userdel</CODE> el cual tiene la siguiente sintaxis:
+<PRE>
+  userdel [-r][login]
+</PRE>
+
+Este comando borra el usuario <EM>login</EM>, y si se añade la opción <CODE>-r</CODE> también borra su directorio de usuario.
+<P>Para borrar una cuenta de usuario tambien se pueden utilizar las utilidades gráficas que comentamos antes, de una forma muy intuitiva.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.3">7.3 Tengo un ejecutable que no quiere ejecutarse.</A>
+</H2>
+
+<P>A todos nos a ocurrido alguna vez, que al intentar ejecutar un comando/programa hemos obtenido como respuesta <CODE>command not found</CODE>.
+<P>Esto significa que el shell no encontro el comando que queriamos ejecutar. Las causas mas comunes suelen ser:
+<UL>
+<LI>El ejecutable no está en un subdirectorio incluido en el $(PATH)./  <BR> 
+La solucion es escribir el ejecutable con la ruta completa o moverte al directorio de éste y escribir <CODE>./programa</CODE>, donde programa es el nombre del ejecutable.
+</LI>
+<LI>El comando/programa que habeis escrito no existe
+</LI>
+<LI>Faltan variables de entorno.  <BR> 
+Busca ficheros de documentacion del programa, o prueba <CODE>comando --help</CODE>, para ver si hace falta añadir variables de entorno, para el uso del mismo.</LI>
+</UL>
+
+Otra respuesta que podemos obtener al intentar ejecutar un comando/programa es <CODE>Permission denied</CODE>. 
+<P>El error es bien claro, el ejecutable existe pero no tenemos permiso para ejecutarlo, comprueba que lo podemos ejecutar, es decir, tiene una x en el grupo al que pertenezcamos: dueño, grupo, u otros. Mas informacion sobre permisos en la subseccion 
+<A HREF="#permisos">¿Cómo se cambian los permisos de ficheros y directorios?</A>. 
+<P>Por ultimo, podemos obtener un error en el que se nos informa que cierta librería no se encuentra.
+<P>Ejecuta el comando:
+<PRE>
+  [asimov@asimovI bin] ldd comando
+</PRE>
+
+Esto mostrará todas las librerías compartidas que el comando/programa utiliza/necesita para funcionar. 
+<P>Si no tenemos algunas, las tenemos que instalar, pero si las tenemos tenemos que comprobar que <CODE>/sbin/ld</CODE> (el cargador de librerías dinámicas) sabe donde están, para ello hemos de añadir una entrada en el fichero <CODE>/etc/ld.so.conf</CODE> que consiste en poner el directorio donde esta la libreria, luego ejecutamos <CODE>/sbin/ldconfig -D</CODE> para cerciorarnos que la lee.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.4">7.4 ¿Cómo dar formato a un diskett en Linux?</A>
+</H2>
+
+<P>El formato de diskettes en Linux depende del tipo de formato
+que se le desee dar al diskette (tipo MSDOS, tipo FAT32/VFAT,
+tipo Ext2 de Linux, minix, etc.). En general simplemente hay
+que usar uno de los comandos mkfs disponibles, que creara el
+sistema de ficheros pertinente:
+<P>Para formatear diskettes en formato Linux-ext2
+<PRE>
+  mkfs.ext2 [opciones] /dev/fd0
+</PRE>
+
+o bien su equivalente:
+<PRE>
+  mke2fs [opciones] /dev/fd0
+</PRE>
+
+El usuario que formate deberá tener permiso de escritura para la
+disketera (normalmente <CODE>/dev/fd0</CODE>). Para eso debe estar en el grupo
+de usuarios floppy o que <CODE>/dev/fd0</CODE> tenga permisos 666 (para todo el
+mundo).
+<P>Para formatear diskettes en formato msdos
+<PRE>
+  mkfs.msdos [opciones] /dev/fd0
+</PRE>
+
+o bien:
+<PRE>
+  mkdosfs [opciones] /dev/fd0
+</PRE>
+
+Otro comando disponible si tenemos instaladas las mtools es mformat:
+<PRE>
+  mformat a:
+</PRE>
+
+Este ultimo comando formateara el diskett en formato ms-dos.
+<P>Por último, existen otros programas como fdformat o superformat (ver paquete fdutils) que tambien sirven para dar formato a diskettes.
+<P><B>NOTA</B>: Formatos del tipo ext2 y ms-dos son los que se utilizan mas usualmente en linux. Hay que aclarar que un diskett con formato ext2 <EM>No sera posible leerlo</EM> bajo ms-dos o Windows, solamente bajo Linux. Un diskett con formato ms-dos podra ser leido indistintamente por ms-dos, windows o Linux (si tenemos soporte en el kernel para trabajar con este formato).
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.5">7.5 ¿Cómo puedo montar y desmontar unidades en Linux?</A>
+</H2>
+
+<P>Montar un sistema de ficheros/dispositivo a nivel usuario no es más que hacerlo disponible en el árbol de directorios de nuestro sistema. Como ya sabeis, en Linux vemos todos los sistemas de ficheros/dispositivos en un sólo árbol de directorios, no existen letras a:, c:, etc., así nos da igual que el contenido de un directorio sea un sistema de ficheros msdos, vfat, ext2, otro que está en una máquina remota, etc. Esta abstracción tiene un inconveniente, hay que montarlo, es decir, indicarle al kernel de Linux que a través del directorio XXXX, accedemos al sistema de ficheros/dispositivo yyy. Esto se hace con el comando mount (<CODE>man mount</CODE>, para detalles).
+<P>Montar un sistemas de ficheros/dispositivo a nivel kernel, no es más que rellenar unas tablas de registro. Es decir, ver si el sistema de ficheros está soportado, es decir, si existe la tabla de funciones con las que manejarlo. Luego registrar estas funciones y enlazar el directorio al sistema de ficheros. Esto es más bien lo que hace la llamada al sistema mount, la cual es llamada mediante el comando del mismo nombre.
+<P>Los parametros necesarios para montar un sistema de ficheros son:
+<UL>
+<LI><EM>Tipo de sistema de ficheros</EM>: Es necesario indicarle el tipo de sistemas de ficheros a registrar. Así sabrá que funciones utilizar.
+</LI>
+<LI><EM>Tipo de acceso</EM>: Si es de sólo lectura, sólo escritura o ambos.
+</LI>
+<LI><EM>Dispositivo</EM>: Indicar el dispositivo sobre el que está físicamente el sistema de ficheros,( p.e.: <CODE>/dev/hda1, /dev/hdb, /dev/sda1</CODE>,..., none si es el <CODE>/proc</CODE>, ya que se realiza sobre la memoria).
+</LI>
+<LI><EM>Directorio</EM>: Indica el directorio sobre el que se va a montar, es decir, el directorio mediante el cual accederemos al sistema de archivos.</LI>
+</UL>
+<P>Ejemplo: Montar el cdrom en el directorio /dev/cdrom.
+<PRE>
+  mount -t &lt;sistema de ficheros> &lt;Dispositivo> &lt;Directorio>
+  mount -t iso9660 /dev/hdb /mnt/cdrom
+</PRE>
+
+Supongo que ya comprendereis el inconveniente de esto: Cada vez que se quiere acceder a un cdrom se ha de ejecutar el comando anterior, en vez de teclear <CODE>d:</CODE> (como en otros sistemas operativos). Pero la versatilidad y la flexibilidad que ofrece hace que no se tenga en cuenta ese inconveniente (como usuario accedo dentro de un directorio sin que me pase por la cabeza que ese fichero está al otro lado del planeta utilizando para ello el protocolo nfs). 
+<P>Existen otras formas de reducir la línea de comandos, para ello (entre otras cosas) existe el fichero <EM>fstab</EM>. En él se indican los sistemas de ficheros sobre los que trabajamos normalmente: el sistema de ficheros en el que tenemos los directorios de linux, el /proc, la partición dos, el cdrom, y el floppy.
+<P>El fichero <EM>/etc/fstab</EM> funciona de la siguiente manera:
+<P>Partimos de un ejemplo de contenido de <CODE>/etc/fstab</CODE>:
+<PRE>
+  # &lt;device> &lt;mountpoint> &lt;filesystemtype> &lt;options>                        &lt;dump> &lt;fsckorder>
+
+  /dev/hda2  /            ext2             defaults                            1       1
+  /dev/hda3  /usr         ext2             defaults                            1       2
+  /dev/sda1  /home        ext2             defaults                            1       2
+  /dev/hdb   /mnt/cdrom   iso9660          user,noexec,nodev,nosuid,ro,noauto  0       0
+  /dev/fd0   /mnt/floppy  vfat             user,noexec,nodev,nosuid,rw,noauto  0       0
+  none       /proc        proc             defaults                            0       0
+  /dev/hda4  swap         swap             defaults                            0       0
+  /dev/hda1  /mnt/dos     vfat             exec,dev,suid,rw,auto               0       0                      
+</PRE>
+
+Con la informacion contenida en este fichero, el sistema haria lo siguiente al arrancar el sistema:
+<UL>
+<LI>La particion <CODE>/dev/hda1</CODE> se montaria en el subdirectorio <CODE>/mnt/dos</CODE></LI>
+<LI>La particion <CODE>/dev/hda2</CODE> se montaria en el subdirectorio <CODE>/</CODE></LI>
+<LI>La particion <CODE>/dev/hda3</CODE> se montaria en el subdirectorio <CODE>/usr</CODE></LI>
+<LI>La particion <CODE>/dev/hda4</CODE> se montaria en el subdirectorio como <CODE>swap</CODE></LI>
+<LI>La particion <CODE>/dev/sda1</CODE> se montaria en el subdirectorio <CODE>/home</CODE></LI>
+<LI><CODE>Proc</CODE> se montaria en el subdirectorio <CODE>/proc</CODE></LI>
+<LI>El sistema tendria informacion sobre como montar un disket <CODE>/dev/fd0</CODE> y un CD-Rom <CODE>/dev/hdb</CODE>, aunque no los monta automaticamente al arrancar por haber definido la opcion <CODE>noauto</CODE>.</LI>
+</UL>
+
+Veamos la explicación de los parametros usados en <CODE>/etc/fstab</CODE>:
+<P>En la columna de dispositivo se indica el dispositivo/particion a montar, en la punto de montaje se indica el directoria mediante el cual vamos a acceder al sistema de archivos. En la columna de tipo de sistema de ficheros se indica el sistema de ficheros que se usara sobre el dispositivo. 
+<P>Las opciones significan lo siguiente:
+<UL>
+<LI><EM>user,nouser</EM>: permite/no permite a un usuario ordinario montar el sistema de ficheros. 
+</LI>
+<LI><EM>suid,nosuid</EM>: Se requiere / no se requiere tener privilegios de superusuario .
+</LI>
+<LI><EM>auto/noauto</EM>: Indica que sí/no se monta cuando hacemos mount -a.
+</LI>
+<LI><EM>defaults</EM>: Aplica las opciones rw,suid,dev,exec,auto,nouser,async.
+</LI>
+<LI><EM>exec</EM>: Permite la ejecución de binarios.
+</LI>
+<LI><EM>ro,rw</EM>: Montar sólo lectura, lectura-escritura.</LI>
+</UL>
+<P>El fichero <CODE>/etc/fstab</CODE> de nuestro ejemplo nos permitiría hacer lo siguiente para montar un diskett o CD-Rom:
+<PRE>
+  mount /mnt/cdrom 
+  mount /mnt/floppy
+</PRE>
+
+Cuando dejamos de utilizar un sistema de ficheros, tenemos que darlo de baja (desmontarlo), para eliminar todas las referencias del kernel a él. El comando utilizado para esto es <CODE>umount</CODE>. 
+<P>Para desmontar un sistema de ficheros/dispositivo:
+<PRE>
+  umount &lt;directorio|dispositvo>
+</PRE>
+
+ej:
+<PRE>
+  umount /mnt/floppy  
+  umount /dev/fd0 
+</PRE>
+
+<B>NOTA</B>: Es necesario ejecutar el comando <CODE>umount</CODE> cada vez que cambiemos un diskett, ya que no siempre cuando se escribe en un dispositivo, se realiza automáticamente un volcado al dispositivo (por eso se pueden perder datos si se apaga el ordenador a lo bruto). Además si cambiamos el disket sin hacer umount, el kernel piensa que hay el sistema de ficheros anterior y cuando guarda alguna información lo hace con referencia al retirado, perdiéndose todo. 
+<P>Este es un punto a tener en cuenta con el uso de disketts, ya que el mecanismo para retirar un diskett es mecanico, no existe posibilidad de impedir por medio de software que alguien saque un diskett de la disquetera. No ocurre lo mismo con el CD-Rom, ya que el sistema bloqueara la posibilidad de extraerlo cuando este montado.
+<P>
+<P>
+<H2><A NAME="ss7.6">7.6 ¿Cómo se crea un diskette de arranque para Linux?</A>
+</H2>
+
+<P>Solo tenemos que ejecutar los siguientes comandos con un
+diskette vacío dentro de la diskettera:
+<PRE>
+  [sromero@localhost]$ /sbin/mke2fs /dev/fd0
+  [sromero@localhost]$ [ -d /fd ] || mkdir /fd
+  [sromero@localhost]$ mount /dev/fd0 /fd
+  [sromero@localhost]$ cp /boot/boot.b /fd
+  [sromero@localhost]$ cp /vmlinuz /fd
+  [sromero@localhost]$ echo image=/fd/vmlinuz label=linux | /sbin/lilo -C - -b /dev/fd0 -i /fd/boot.b -c -m /fd/map
+  [sromero@localhost]$ umount /fd
+  [sromero@localhost]$rmdir /fd
+</PRE>
+
+Lo que hacen estos comandos es:
+<PRE>
+  /sbin/mke2fs /dev/fd0    -> Formatea el diskette con formato ext2
+  [ -d /fd ] || mkdir /fd  -> Si no existe el directorio /fd lo crea
+  mount /dev/fd0 /fd       -> monta el diskette en dicho directorio.
+  cp /boot/boot.b /fd
+  cp /vmlinuz /fd          -> Copia el kernel de Linux y el archivo
+                              de boot al diskette. Si nuestro kernel no
+                              se llama vmlinuz (por ej bzImage o zImage)
+                              o no está en el raíz debemos cambiar esto.
+  echo image=...           -> Activa el kernel en el diskette.
+  umount /fd               -> Desmontamos el disco
+  rmdir /fd                -> Borramos el dir /fd
+</PRE>
+
+Si alguno de los paths o nombres cambia los deberemos cambiar dentro del diskette.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.7">7.7 ¿Cómo se utilizan los empaquetadores-des/compresores?</A>
+</H2>
+
+<P>Los ficheros tar no son ficheros comprimidos, sino empaquetados.
+Tar es un empaquetador, es decir, es algo parecido a un compresor
+como arj o zip, pero sin compresión. Se dedica a incluir todos los
+ficheros juntos en el mismo archivo, preservando las estructuras
+de directorios y permisos de los mismos. Como veremos, lo podremos
+comprimir gracias al programa GZip.
+<P>Hay 2 operaciones básicas con tar: empaquetado y desempaquetado.
+Si estamos en un directorio y queremos empaquetar todos los ficheros
+de este directorio y los que cuelgan de él, basta con ejecutar
+la orden:
+<PRE>
+  tar -cvf fichero.tar *
+
+  c = compress  (más bien, empaquetar)
+  v = verbose   (para que nos diga lo que hace)
+  f = file      (empaquetar en un fichero)
+  *             (empaquetar todos los ficheros, podría haber sido *.doc, etc.)
+</PRE>
+
+Si disponemos de un fichero .tar y queremos desempaquetarlo:
+<PRE>
+  tar -xvf fichero.tar
+               
+  x = eXtract   (desempaquetar).
+</PRE>
+
+También es posible listar los contenidos de un fichero .tar antes
+de desempaquetarlo, mediante la orden tar tvf fichero.tar .
+<P>Por otra parte, el ficheros con extensión gz son ficheros
+comprimidos.
+A diferencia de arj o zip, el contenido de un fichero GZ es un solo
+fichero, es decir, cuando comprimimos fichero.txt con este compresor
+(llamado gzip) obtenemos un fichero.txt.gz de tamaño mucho menor. Con
+GZ no es posible empaquetar ficheros, es decir, la compresión se
+realiza a un sólo fichero.
+<P>Para comprimir un fichero con gz, se utiliza el comando:
+<PRE>
+  gzip fichero
+</PRE>
+
+Para descomprimirlo:
+<PRE>
+  gunzip fichero.gz
+</PRE>
+
+La combinación de tar y gz es lo que permite el tener multiples
+ficheros comprimidos en un sólo archivo. Es decir, si empaquetamos
+un directorio con tar y luego comprimimos ese archivo tar con gz,
+obtenemos un tar.gz comprimido con múltiples ficheros.
+<P>La compresión y descompresión es posible hacerla en 2 pasos (primero
+tar y luego usar gz) o bien usar el flag -z de tar para ello:
+<P>Compresión:
+<PRE>
+  tar -cvzf fichero.tar.gz *
+</PRE>
+
+Descompresion:
+<PRE>
+  tar -xvzf fichero.tar.gz
+</PRE>
+
+Otro formato que se ha puesto de moda es bzip2, con el mismo
+sistema de funcionamiento que Gzip, y cuyos nombres de ejecutable
+son <CODE>bzip2</CODE> (comprimir) y <CODE>bunzip2</CODE> (descomprimir). Este compresor
+obtiene mejor compresión que Gzip y su funcionamiento es igual
+de sencillo, aunque tarda mas en comprimir y utiliza mas recursos.
+<P>Estos compresores/descompresores/empaquetadores son una gran
+y libre alternativa a formatos comerciales como <CODE>zip, arj</CODE> y <CODE>rar</CODE>,
+tambien disponibles para Linux (comandos zip, unzip, rar y unarj).
+<P>Para descomprimir ficheros arj mediante unarj, simplemente
+hace falta ejecutar el comando <CODE>unarj x fichero.arj</CODE>. El compresor
+es shareware y se debe obtener en la Web de sus programadores.
+<P>Zip es el programa destinado a hacer Linux capaz de leer y
+escribir los ficheros en formato .zip (generados por <CODE>pkzip o
+winzip</CODE>): Para ello tenemos los comandos zip e unzip, que nos
+permitiran comprimir y descomprimir ficheros sueltos, directorios
+completos, directorios con recursividad, etc:
+<P>Para comprimir todos los ficheros de un directorio en un zip:
+<PRE>
+  zip fichero.zip *
+</PRE>
+
+Para comprimir este directorio y todos los que cuelguen del mismo:
+<PRE>
+  zip -r fichero.zip *
+</PRE>
+
+La descompresión se realiza mediante unzip:
+<PRE>
+  unzip fichero.zip
+</PRE>
+
+El programa rar también es un buen compresor que podemos encontrar
+en diferentes formatos (rpm, deb, tar.gz) en Internet. Su uso es
+identico a la versión MSDOS:
+<P>Comprimir:     
+<PRE>
+  rar a fichero.rar *
+</PRE>
+
+Descomprimir:  
+<PRE>
+  rar x fichero
+</PRE>
+ 
+Para más información sobre cualquiera de los des/compresores basta
+con consultar la página man del mismo, mediante "man <EM>comando</EM>".
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.8">7.8 ¿Cómo instalo, desinstalo o actualizo paquetes rpm?</A>
+</H2>
+
+<P>Los paquetes rpm son archivos que llevan incluidos dentro de ellos
+todos los ficheros que componen un determinado programa. Internamente
+están comprimidos, pero nosotros sólo debemos pensar en ellos en
+términos de Instalación, Actualización, Borrado y Consultas. Dentro
+del rpm van los ficheros del programa a instalar, su descripcion,
+a que directorios van a ir instalados, scripts de auto-configuración
+en algunos casos, etc.
+<P>La sintaxis de rpm es <CODE>rpm -accion nombre_del_paquete</CODE>
+<P>Acciones:
+<PRE>
+  rpm -i  archivo   (instalar)
+  rpm -e  paquete   (desinstalar)
+  rpm -u  paquete   (actualizar)
+  rpm -qi paquete   (pedir info)
+</PRE>
+
+Ejemplos:
+<PRE>
+  rpm -i  Par-1.50-1.i386.rpm
+  rpm -e  Par
+  rpm -u  Par
+  rpm -qi Par
+</PRE>
+
+Supongamos el fichero <CODE>programa-1.0.rpm</CODE> que no tenemos instalado
+y que acabamos de bajar de Internet. Procedemos a su instalación:
+<PRE>
+  rpm -i programa-1.0.rpm
+</PRE>
+
+Tras eso el programa estará instalado en nuestro Linux y podremos
+ejecutarlo y usarlo normalmente. Tal vez nuestro problema es que
+no sabemos como se llama el ejecutable y los demás ficheros de
+configuración que le acompañan. Para solucionar eso hacemos una
+consulta (query) del paquete ya instalado:
+<PRE>
+  rpm -ql programa
+</PRE>
+
+La acción -ql significa "query list", y nos mostrará en pantalla
+la lista de ficheros instalados de este programa y sus directorios
+destinos. Si por ejemplo deseamos ver sólo los fichero sean instalados
+en los directorios bin (los ejecutables) podemos hacer uso de grep,
+la herramienta de Linux que sólo nos mostrará aquellas líneas que
+contengan una cadena determinada:
+<PRE>
+  rpm -ql programa | grep bin
+</PRE>
+
+Esto nos mostrará sólo los ficheros de "programa" que hayan sido
+instalados en directorios bin.
+<P>Si queremos saber que hace un paquete instalado, podemos verlo con
+la opción "query info" (-qi):
+<PRE>
+  rpm -qi programa
+</PRE>
+
+Como ejemplo, veamos la salida para el paquete fetchmail de Linux:
+<PRE>
+  Name        : fetchmail               Relocations: (not relocateable)
+  Version     : 5.0.0                   Vendor: Red Hat Software
+  Release     : 1
+  Install date: dom 30 may 1999 16:00:12 CEST
+  Group       : Applications/Internet
+  Size        : 565413
+  Packager    : Red Hat Software http://developer.redhat.com/bugzilla
+  Summary     : A remote mail retrieval and forwarding utility.
+  Description :
+  Fetchmail is a remote mail retrieval and forwarding utility intended
+  for use over on-demand TCP/IP links, like SLIP or PPP connections.
+  Fetchmail supports every remote-mail protocol currently in use on the
+  Internet (POP2, POP3, RPOP, APOP, KPOP, all IMAPs, ESMTP ETRN) for
+  retrieval.  Then Fetchmail forwards the mail through SMTP, so you can
+  read it through your normal mail client.
+</PRE>
+
+Si el programa no nos gusta, la deinstalación es muy sencilla:
+<PRE>
+  rpm -e programa
+</PRE>
+
+Obviamente, no tenemos porqué instalar los programas para ver su
+contenido o información. Los podremos ver antes de la instalación
+insertando un comando p antes de la acción:
+<PRE>
+  rpm -qpi fichero.rpm
+  rpm -qpl fichero.rpm
+</PRE>
+
+Si queremos ver la lista de RPMs instalados disponemos del
+comando "query all" (-qa):
+<PRE>
+  rpm -qa
+</PRE>
+
+Para verlo en formato pausado, podemos usar una tubería:
+<PRE>
+  rpm -qa | less
+</PRE>
+
+Es posible que tras un tiempo obtengamos la versión 2.0 del
+programa que ya disponemos instalado. En esto caso hay 2
+opciones: bien eliminar el programa anterior (-e) e instalar
+este nuevo (-i), o, simplemente, actualizar el programa a la
+versión 2.0 con el comando -U (de Update):
+<PRE>
+  rpm -U programa-2.0.rpm
+</PRE>
+
+Por último, si al tratar de instalar un paquete rpm aparece
+el siguiente error:
+<PRE>
+  Data type X not supprted
+</PRE>
+
+Esto es debido a que nuestra versión de rpm es muy antigua,
+al menos más que el rpm que estamos tratando de instalar, y
+que este tiene algún tipo de compresión o elemento que nuestro
+rpm no entiende. Bastará entonces con actualizar nuestro
+ejecutable del RPM.
+<P>Cabe decir que también existen front-ends al programa rpm, es
+decir, programas en modo gráfico (o texto) que realizan las
+acciones del programa RPM mediante pulsaciones nuestras del
+ratón. Es el front-end el que se encarga de pasarle a RPM los
+parámetros correctos para que se realice la acción pedida por
+el usuario. Entre estos programas tenemos glint, gnorpm,
+purp, kpackage, xrpm, etc.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.9">7.9 ¿Cómo instalo paquetes .deb de debian?</A>
+</H2>
+
+<P>Al igual que el formato RPM, los .DEB encapsulan todos los ficheros
+y scripts vinculados a un determinado programa pero para la
+distribución Debian. Además de disponer de herramientas de instalación como
+dselect, se incluye la posibilidad de instalación manual mediante las
+diferentes opciones del programa <CODE>dpkg</CODE>:
+<P>Instalación de paquetes deb:   
+<PRE>
+  dpkg -i nombre_del_paquete.deb
+</PRE>
+
+Para hacer consultas:
+<PRE>
+  dpkg -s nombre_del_paquete (admite comodines)
+</PRE>
+
+Para desinstalar:  
+<PRE>
+   
+  dpkg -r nombre_del_paquete
+</PRE>
+
+El resto de opciones de dpkg puede verse con <CODE>man dpkg</CODE>.
+<P>
+<P>
+<P>
+<H2><A NAME="ss7.10">7.10 ¿Cómo se convierten paquetes entre RPM, DEB y TGZ con alien?</A>
+</H2>
+
+<P> 
+Alien es un programa que permite convertir un paquete
+binario entre los formatos rpm (Redhat, Suse), deb (Debian)
+y tgz (Slackware):
+<P>Conversion a .DEB:
+<PRE>
+ 
+  alien --to-deb paquete.elquesea
+</PRE>
+
+Conversion a .RPM:
+<PRE>
+ 
+  alien --to-rpm paquete.elquesea
+</PRE>
+
+Conversion a .TGZ:
+<PRE>
+ 
+  alien --to-tgz paquete.elquesea
+</PRE>
+
+Existen otros flags (como -i) que permiten directamente tras la
+conversión realizar la instalación del paquete generado. Alien
+realiza la conversión descomprimiendo el paquete original y
+generando el nuevo paquete, diciéndonos el lugar del árbol de
+directorios donde dejará el paquete recién generado, según la
+distribución (por ejemplo, en Redhat en <CODE>/usr/src/redhat/RPMS/</CODE>).
+<P>
+<P>
+<P>
+<H2><A NAME="permisos"></A> <A NAME="ss7.11">7.11 ¿Cómo se cambian los permisos de ficheros y directorios?</A>
+</H2>
+
+<P>Lo primero que hay que decir es, que para conseguir toda la informacion sobre los comandos involucrados en el tema de permisos podeis consultar<CODE> man chmod, man chown</CODE> y <CODE>man chgrp</CODE> 
+<P><B>Informacion de un fichero/directorio</B>
+<P>Cuando obtienes informacion sobre un fichero/directorio, existen diferentes campos que te dicen que clase de permisos el fichero/directorio tiene.
+<PRE>
+  Ej:
+
+  [user@localhost]# ls -l
+  -rwxr-x---   1 pepito depart1     4348 Nov 24 16:19 test
+</PRE>
+
+En la <EM>primera columna</EM> se pueden ver una serie de letras <CODE>-rwxr-x---</CODE>, estas letras nos dicen quien en el sistema, y que clases de permisos tiene el fichero <CODE>test</CODE>.
+<P>Estas letras estan agrupadas en tres grupos con tres posiciones cada uno, mas una primera posicion que nos dice de que clase de archivo se
+trata (los mas normales (d) directorios, o (-) archivos de datos). En nuestro ejemplo la primera posicion es (-) con lo cual el archivo test, es un archivo de datos (binario/ejecutable en este caso).
+<P>El primer grupo de tres (rwx en nuestro caso) nos dice que clase de permisos tiene el dueño del fichero (u)(user/owner)).  <BR> 
+El segundo grupo de tres (r-x en nuestro caso) nos dice que clase de permisos tiene el grupo del fichero (g)(group).  <BR> 
+Y el ultimo grupo de tres (--- en nuestro caso) nos dice que clase de permisos tienen todos los demas usuarios del sistema sobre este fichero(o)(others). <BR> 
+<PRE>
+  r :significa permiso para leer 
+  w :significa permiso para escribir  
+  x :significa permiso para ejecutar  
+</PRE>
+
+La <EM>segunda columna</EM> <CODE>pepito</CODE>, nos dice quien es el dueño del fichero,(pepito en este caso). <BR> 
+La <EM>tercera columna</EM> <CODE>depart1</CODE>, nos dice cual es el grupo del fichero (depart1 en este caso). <BR> 
+La <EM>cuarta columna</EM> <CODE>4348</CODE>, nos dice el tamaño del fichero. <BR> 
+La <EM>quinta columna</EM> <CODE>Nov 24 16:19</CODE>, nos dice cual es la fecha y hora de la ultima modificacion. <BR> 
+La <EM>sexta columna</EM> <CODE>test</CODE>, nos dice cual es el nombre del fichero/directorio. <BR> 
+<P>Asi pues, el fichero <CODE>test</CODE> de nuestro ejemplo tiene los siguientes permisos:
+<P><EM>pepito</EM> puede leer, escribir/modificar, y ejecutar el fichero test.  <BR>  
+<EM>depart1</EM> puede leer, y ejecutar pero no escribir/modificar.  <BR>  
+Los <EM>demas usuarios</EM> no pueden hacer nada, ni leerlo, ni escribir/modificar, ni ejecutarlo.  <BR>  
+<P>
+<P><B>Como cambiar los permisos/dueño/grupo de un fichero/directorio?</B>:
+<P>Para cambiar el dueño del fichero: <CODE>chown <EM>usuario</EM> <EM>fichero</EM> </CODE>  <BR>  
+Para cambiar el grupo del fichero: <CODE>chgrp <EM>usuario</EM> <EM>fichero</EM></CODE>  <BR>  
+Para cambiar los permisos se utiliza el comando: <CODE>chmod <EM>permisos</EM> <EM>fichero</EM></CODE>  <BR>  
+<P>Los permisos se pueden especificar de diferentes maneras, una serie de ejemplos, es lo mejor para comprenderlo:
+<PRE>
+  chmod ugo+rwx test (da permisos rwx a todos, user,group,others)
+  chmod ugo-x test (quita permiso x (ejecucion) a todos, user,group,others) 
+  chmod o-rwx test (quita permisos rwx a others) 
+  chmod u=rwx,g=rx test (da permisos rwx a user, rx a group y ninguno a others) 
+</PRE>
+
+Asi podrias continuar con todas las posibles combinaciones de letras, es cuestion de usar la imaginacion ;-)
+<P>Existe otro metodo que utiliza numeros, en vez de letras para asignar permisos, la siguiente tabla nos puede ayudar un poco a comprender esta manera:
+<P>
+<PRE>
+  r w x  VALOR DECIMAL
+
+  0 0 0  0 (000 binario es 0 en decimal)
+  0 0 1  1  .........
+  0 1 0  2  .........
+  0 1 1  3  .........
+  1 0 0  4 (100 binario es 4 en decimal)
+  1 0 1  5  .........
+  1 1 0  6  .........
+  1 1 1  7 (111 binario es 7 en decimal)
+</PRE>
+<P>1 significa activado y 0 desactivado, o sea 101 activa <CODE>r</CODE> y <CODE>x</CODE>, y desactiva <CODE>w</CODE>.
+<P>Sabiendo esto solo tenemos que usar el valor decimal, un ejemplo aclarara esto.
+<PRE>
+  chmod 750 test 
+
+  da permisos rwx al usuario (7=111)  
+  da permisos r-x al grupo (5=101)  
+  da permisos --- a los demas (0=000)  
+</PRE>
+<P>
+<P>
+<H2><A NAME="ss7.12">7.12 ¿Cómo apago mi equipo?</A>
+</H2>
+
+<P>Para apagar el equipo tienes que hacerte superusuario y hacer:
+<PRE>
+  [asimovI@localdomain root]#  shutdown -t3 -h now 
+</PRE>
+<P>Esto pararía todos los procesos en curso, haría <CODE>sync</CODE>, entraría en el runlevel 0, y desmontaría todas las particiones. El proceso de parada llegaría cuando se observa <CODE>system halted</CODE>, y si la fuente lo permite y se compiló el kernel con esa opción, el ordenador se apaga automaticamente sin necesidad de pulsar el boton de apagado.
+<P>La opción h viene de <CODE>halt</CODE> (parar), y hace que se mantenga parado después de todo el proceso de apagado. La opción <CODE>now</CODE> indica que lo haga ahora, esta opción se puede sustituir por un número los minutos a esperar antes de realizar el <CODE>shutdown</CODE>.
+<P>Para reiniciar  el equipo tienes que hacerte superusuario y hacer:
+<PRE>
+  [asimovI@localdomain root]#  shutdown -t3 -r now  
+</PRE>
+
+Pues como habías imaginado hace lo mismo que la anterior pero en vez de ponerse en <CODE>system halted</CODE> se pone en <CODE>system reboot</CODE> y reinicia. 
+<P>Existe otro método que consiste el accionar tres teclas, sí, esas que tanto hay que usar en otros sistemas operativos ( aunque cada vez menos ya que apenas los usamos), las CAS (Ctrl+Alt+Supr). Pues bien, en el proceso de arranque de Linux, cuando lee la <CODE>/etc/inittab</CODE> existe una entrada que asocia estas tres teclas a un comando. Si lo ves verás que lo asocia al comando anterior.
+<PRE>
+  # Trap CTRL-ALT-DELETE
+  ca::ctrlaltdel:/sbin/shutdown -t3 -r now
+</PRE>
+
+Un consejo:
+<P>En los métodos anteriores es necesario ser superusuario ya que el comando <CODE>shutdown</CODE> lo requiere. Cosa lógica ya que sino cualquier usuario de la máquina lo podría echar abajo. Esto hace bastante incómodo el apagarlo, por lo que un consejo práctico es ir a la <CODE>/etc/inittab</CODE> y cambiar la <CODE>-r</CODE> por la <CODE>-h</CODE> del comando que se une a las CAS, esto asociará el apagar el sistema a las tres teclas y no al reiniciarlo. Con esto ya no es necesario hacerse superusuario, sino estar sentado delante del ordenador a apagar.
+<P>Nota: En los kerneles 2.2.x hay que modificar una línea en el <CODE>/etc/rc.d/*halt</CODE>. En dónde llame al halt, hay que añadirle la opción -p. Si no lo que hace es reboot.
+<P>
+<P>
+<P>
+<HR>
+<A HREF="FAQ_Linux-8.html">Next</A>
+<A HREF="FAQ_Linux-6.html">Previous</A>
+<A HREF="FAQ_Linux.html#toc7">Contents</A>
+</BODY>
+</HTML>

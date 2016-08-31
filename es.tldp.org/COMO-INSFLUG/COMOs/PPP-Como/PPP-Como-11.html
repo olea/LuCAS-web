@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux PPP C&oacute;mo: Utilizaci&oacute;n de PPP y de privilegios de root</TITLE>
+ <LINK HREF="PPP-Como-12.html" REL=next>
+ <LINK HREF="PPP-Como-10.html" REL=previous>
+ <LINK HREF="PPP-Como.html#toc11" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="PPP-Como-12.html">Página siguiente</A>
+<A HREF="PPP-Como-10.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc11">Índice general</A>
+<HR>
+<H2><A NAME="root"></A> <A NAME="s11">11. Utilizaci&oacute;n de PPP y de privilegios de root</A></H2>
+
+<P>Debido a que PPP necesita configurar dispositivos de red, cambiar la tabla
+de encaminamiento del n&uacute;cleo y m&aacute;s cosas, requiere privilegios de root que
+permitan hacer todo esto.
+<P>
+<P> Si un usuario distinto del root va a establecer conexiones PPP, el
+programa PPP deber&iacute;a ser setuid root :-
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-rwsr-xr-x   1 root     root        95225 Jul 11 00:27  /usr/sbin/pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Si /usr/sbin/pppd no est&aacute; configurado de esta manera, entonces, <B>como
+root</B> ejecute esta orden:-
+<P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod u+s /usr/sbin/pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<P>Lo que esto hace es que pppd se ejecute con privilegios de root <B>incluso</B>
+si el programa es ejecutado por un usuario normal. Esto permite al usuario
+normal ejecutar pppd con los privilegios necesarios para establecer las
+interfaces de red y la tabla de encaminamiento del n&uacute;cleo.
+<P>
+<P>Programas que se ejecutan con 'set uid root' son agujeros de seguridad en
+potencia, por lo que debe ser extremadamente cuidadoso a la hora de hacer
+programas 'suid root'. Un n&uacute;mero contado de programas (incluyendo pppd) han
+sido escritos cuidadosamente para minimizar el peligro de ejecutarse con
+suid root, por lo que debe sentirse seguro con &eacute;ste (pero sin garant&iacute;as).
+<P>
+<P>Dependiendo de c&oacute;mo desee que funcione su sistema - espec&iacute;ficamente, si
+desea que CUALQUIER usuario sea capaz de iniciar un enlace PPP, deber&iacute;a
+hacer sus scripts de ppp-on/off de lectura y ejecuci&oacute;n p&uacute;blica. (Esto est&aacute;
+probablemente bien si su PC es utilizado SOLO por usted).
+<P>
+<P>Sin embargo, si NO desea que cualquiera pueda arrancar una conexi&oacute;n PPP (por
+ejemplo, sus hijos tienen cuentas en su PC Linux y no desea que se conecten
+a Internet sin su supervisi&oacute;n), necesitar&aacute; establecer un grupo PPP (como
+root, edite /etc/group) y :-
+<UL>
+<LI>Haga pppd suid root, con due&ntilde;o root y grupo PPP, con los permisos para
+"otros" vac&iacute;os. Deber&iacute;a ser como
+<BLOCKQUOTE><CODE>
+<PRE>
+-rwsr-x---   1 root     PPP        95225 Jul 11 00:27 /usr/sbin/pppd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+ </LI>
+<LI>Haga que los scripts ppp-on/off de due&ntilde;o root y grupo PPP
+</LI>
+<LI>De al grupo PPP permiso de lectura y ejecuci&oacute;n de los scripts ppp-on/off
+<BLOCKQUOTE><CODE>
+<PRE>
+  -rwxr-x---   1 root     PPP           587 Mar 14  1995 /usr/sbin/ppp-on
+  -rwxr-x---   1 root     PPP           631 Mar 14  1995 /usr/sbin/ppp-off
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Anule los derechos de acceso de los dem&aacute;s a ppp-on/off.
+</LI>
+<LI>a&ntilde;ada los usuarios que podr&aacute;n usar PPP al grupo PPP en /etc/group</LI>
+</UL>
+<P>
+<P>Incluso si hace esto, los usuarios normales NO podr&aacute;n desconectar la
+conexi&oacute;n v&iacute;a software. Ejecutar <CODE>ppp-off</CODE> requiere privilegios de root.
+Sin embargo, un usuario puede simplemente apagar el m&oacute;dem (o desconectar el
+cable telef&oacute;nico en el caso de un m&oacute;dem interno).
+<P>
+<P>Un m&eacute;todo alternativo (y mejor) para hacer esto es utilizar el programa
+<CODE>sudo</CODE>. Este ofrece m&aacute;s seguridad y le permitir&aacute; configurar todo para que
+cualquier usuario (autorizado) pueda activar desactivar la conexi&oacute;n
+utilizando los scripts. Utilizar <CODE>sudo</CODE> permitir&aacute; a un usuario autorizado
+activar/desactivar el enlace PPP de manera limpia y segura.
+<P>
+<HR>
+<A HREF="PPP-Como-12.html">Página siguiente</A>
+<A HREF="PPP-Como-10.html">Página anterior</A>
+<A HREF="PPP-Como.html#toc11">Índice general</A>
+</BODY>
+</HTML>

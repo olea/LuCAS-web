@@ -1,0 +1,188 @@
+
+<!-- LS-120,1 -->
+<!-- Juan Pedro Paredes, juampe@mx4.redestb.es -->
+<!-- 0.2,1999-01-05 -->
+
+<!doctype linuxdoc system>
+
+<article>
+<title>LS-120 Mini Como
+<author>Juan Pedro Paredes <tt><htmlurl url="mailto:juampe@mx4.redestb.es"
+name="juampe@mx4.redestb.es"></tt>
+<date>v 0.2, Jueves 01 julio de 1999
+
+<abstract>
+Esto es una adaptación y traducción de un documento de PARIDE
+aprovechando una traduccion que hice aun colega espero que sea util y al
+menos exacto pue no tengo un bicho de estos. 
+
+Es muy simple por lo que el tema del paride es mucho mas amplio de lo que aqui 
+relato pero creo que vale para ir tirando
+Distribuir bajo licencia GPL vigente de la FSF
+Cualquier contribución, corrección o actualización es bienvenida
+</abstract>
+
+<toc>
+
+<sect>Agradecimientos
+<p>
+<htmlurl url="http://www.torque.net/parport/paride.html" name="http://www.torque.net/parport/paride.html">
+
+<sect>Dedicatoria
+<p>
+Juan Antonio Pérez Pérez <htmlurl url="jjaapp@mixmail.com" name="jjaapp@mixmail.com"> quien me animo
+ 
+<sect>Introducción
+<p>
+
+Muchos dispositivos protables y externos utilizan el puerto paralelo como
+interfaz a los PC, tales como discos duros portables, CD-ROM ,LS-120 y otros
+tipos de dispositivos. 
+Otros dispositivos (normalmente escaneres) actuan como si fueran modelos 
+internos pero con un adaptador de puero paralelo. Algunos (mas complejos) usan 
+SCSI pero normalmente ISA o IDE.
+
+El subsistema IDE de puerto paralelo de Linux soporta:   
+
+<itemize>
+<item>MicroSolutions backpack CD-ROM
+<item>MicroSolutions backpack PD/CD
+<item>MicroSolutions backpack hard-drives
+<item>SyQuest EZ-135, EZ-230 & SparQ drives
+<item>Avatar Shark
+<item>Imation Superdisk LS-120
+<item>FreeCom Power CD
+<item>FreeCom Traveller CD
+<item>Maxell SuperDisk LS-120
+<item>Hewlett-Packard 5GB tape drive
+<item>Hewlett-Packard 7100 and 7200 CD-RW drives
+</itemize>
+       
+Así como la mayoria de los productos clonados en el mercado.
+
+De todo esto te interesa:
+<itemize>
+<item>MicroSolutions backpack PD/CD
+</itemize>
+
+Para soportar es subsistema paride (IDE en puerto paralelo) se necesitan
+cuatro pasos (Compilar el kernel 2.2.X con el soporte paride para LS-120):
+<enum>
+<item>Soporte <ref id="parport" name="PARPORT">.
+<item>Soporte <ref id="paride" name="PARIDE">.
+<item>Soporte de <ref id="protocolo" name="protocolo">.
+<item>Soporte de <ref id="driver" name="driver">.
+</enum>
+
+<sect1>Soporte PARPORT<label id="parport">
+<p>
+Soporte de puerto paralelo compartido PARPORT (quita esto como ultimo recurso 
+pero te quedas sin impresora):
+<verb>
+	En General setup
+		<*> Parallel port support
+		<*>    PC-style hardware
+</verb>
+
+<sect1>Soporte PARIDE<label id="paride">
+<p>
+El modulo base paride proporciona un registro y algunas funciones para acceder
+al puerto paralelo (no es necesario realmente PARPORT pero este habilita la
+compartición por otros dispositivos pej: impresora):
+<verb>
+	En Block devices
+		<*> Parallel port IDE device support
+</verb>		
+
+<sect1>Protocolo<label id="protocolo">
+<p>
+Protocolo usado:
+<verb>
+        En lock devices, Parallel IDE protocol modules
+                <*>     MicroSolutions backpack protocol
+</verb>		
+
+<sect1>Drivers<label id="driver">
+<p>
+Drivers de alto nivel para este dispositivo
+pf disco ATAPI
+<verb>   
+	En Block devices, Parallel IDE high-level drivers
+		<*>   Parallel port ATAPI disks
+</verb>		
+
+<sect>A probar...
+<p>
+Bueno nbasta de teoria vamos a la practica. ¡Es hora del 'try and error'!
+
+<sect1>Ajuste del driver
+<p>
+Compila el kernel y reinicia te saldra algo como:
+<verb>
+paride: bpck registered as protocol 0
+</verb>
+		
+Bien para la LS-120 has de usar /dev/pf*, crea el dispositivo:
+<verb>
+mknod /dev/pf0 b 47 0
+</verb>
+Si tienes problemas prueba a darle opciones al kernel en el boot
+<verb>
+LILO: linux pf.drive0=0x378,1
+</verb>
+Si decides hacerlo como modulos (mas recomendable si tienes que hacer pruebas
+try & out):
+<verb>
+juampe:~# insmod paride
+juampe:~# insmod bpck
+paride: bpck registered as protocol 0
+juampe:~# insmod pf drive0=0x378,1 verbose=1
+</verb>
+El parámetro drive0 indica el puerto del puerto paralelo y el chain.
+
+O si usas PARPORT:
+<verb>
+juampe:~# insmod parport
+juampe:~# insmod paride
+paride: version 1.0 installed
+juampe:~# insmod bpck
+paride: bpck registered as protocol 0
+juampe:~# insmod pf drive0=0x378,1
+pf: pf version 1.0, major 47
+pf0: Sharing parport1 at 0x378
+pf0: 3M noseque .....LS-120 ....nosecuanto
+ pf0: pf0
+</verb>
+
+<sect1>Montando que es gerundio
+<p>
+
+Como estos discos LS-120 no tienen tabla de particion no se pueden particionar 
+vamos como si fuera un floppy pero de 120 M:
+
+<descrip>
+<tag/Formateo/ 
+mkfs -t tipo(vfat,ext2,minix...) /dev/pf0
+<tag/Montado/ 
+md /pfloppy
+
+mount -t tipo(vfat,ext2,minix...) /dev/pf0 /pfloppy
+</descrip>
+
+<sect>Problemática
+<p>
+
+Si tienes algun problema con el puerto paralelo adapta el puerto de la BIOS 
+(CMOS) o adapta tu configuración a tu BIOS (CMOS).
+Como último recurso no compartas el puerto paralelo PARPORT
+
+Para una lista de correo en inglés se recomienda:
+
+linux-parport-request@torque.net
+		
+con el comando:
+
+subscribe
+		
+en el cuerpo del mensaje (body).
+</article>

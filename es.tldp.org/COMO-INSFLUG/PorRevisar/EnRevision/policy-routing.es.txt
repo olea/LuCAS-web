@@ -1,0 +1,268 @@
+Policy based routing MICRO-HOWTO
+Horacio J. Peña, horape@compendium.com.ar
+v0.02 29/Nov/1998
+
+1. Prologo y disclaimer.
+
+Esto es un intento de recopilar alguna información acerca de cómo
+usar las nuevas capacidades de ruteo avanzado que tienen los
+kernels 2.1 de Linux. El motivo por el que escribo esto es que
+cada vez que pedí ayuda en alguna lista, en vez de conseguir
+respuestas recibí montones de moils diciendo "Pareces saber
+bastante de iproute, ¿me lo explicas?" Así que, para evitar
+escribir montones y montones de mensajes diciendo lo mismo
+("No, no te lo explico" ;-), escribo esto para mandarles la
+URL.
+
+Aclaración: NO SE NADA SEGURO DE POLICY ROUTING. Todo este
+documento está basado en adivinanzas y prueba y error. NO LEÍ EL
+CÓDIGO (lo intenté, pero me perdí en seguida, prometo volver a
+intentar algún día que esté despierto). TODO LO QUE HAGAS BASANDOTE
+EN LO QUE SE DICE AQUI ES TU RESPONSABILIDAD. Yo no fuí. No me
+vieron. No pueden probarlo....
+
+Estaré encantado de recibir todo tipo de sugerencias, sean correcciones
+técnicas, agregados, ideas de qué falta o está poco explicado, etc.
+
+Este micro HOWTO probablemente desaparezca cuando alguien que sepa
+de lo que habla escriba el capítulo que corresponde en el NET-3
+HOWTO.
+
+Supondremos que el lector sabe lo suficiente de tcp/ip y del
+sistema standard de ruteo. Si no es así por favor lea antes
+el NET3-HOWTO y el NAG. (No vendría nada mal una hojeada al 1er
+volumen del libro de Comer también...)
+
+2. Programas necesitados.
+
+Se necesita un kernel 2.1.x reciente (por mi parte el par de routers
+sobre el que se basa toda la red del ISP donde trabajo están corriendo
+el 2.1.119 desde hace unas semanas y mi máquina de desarrollo anda
+sobre el 2.1.129 sin problemas) Hay que compilarlo con soporte para
+policy routing. (en Net Options, depende de IP: advanced router)
+
+También se necesita el paquete iproute2. Se puede bajar de
+ftp.inr.ac.ru:/ip-routing (hay muchas cosas interesantes ahí, recomiendo
+echar un vistazo), pero como es bastante delicado para compilar trata
+de usar el paquete que viene con tu distro. (Debian lo tiene seguro,
+ni idea de las otras)
+
+Aunque -por ahora- no se mencionan en este documento las ipchains
+también son interesantes para cualquiera que vaya a instalar un
+router. Pueden bajarse de http://www.adelaide.net.au/~rustcorp/.
+Vienen con un HOWTO excelente que vale la pena leerlo aunque sea
+por el ASCII art :-)
+
+3. Conceptos básicos.
+
+En el sistema tradicional de ruteo había una sola tabla de rutas.
+Ahora, en cambio hay una tabla de reglas que apuntan a múltiples
+tablas de rutas. Las reglas permiten decidir el ruteo basandose
+no solo en la dirección de destino, sino en la de origen, en el
+TOS, o el dispositivo en que se originaron.
+
+4. Reglas.
+
+La tabla de reglas se maneja con la orden "ip rule". Veamos la
+sintaxis:
+
+Usage: ip rule [ list | add | del ] SELECTOR ACTION
+SELECTOR := [ from PREFIX ] [ to PREFIX ] [ tos TOS ]
+            [ dev STRING ] [ pref NUMBER ]
+ACTION := [ table TABLE_ID ] [ nat ADDRESS ]
+          [ prohibit | reject | unreachable ]
+TABLE_ID := [ local | main | default | NUMBER ]
+
+(Todavía no pude jugar con NAT, y no entiendo que hacen
+"[ prohibit | reject | unreachable ]" aquí (afaik, eso es trabajo
+del firewall), así que por ahora la única ACCION que consideraremos
+es "table lookup")
+
+4.1. Listado de reglas.
+
+Para ver el sistema de reglas utilizamos la órden "ip rule list",
+que puede abreviarse como "ip ru ls".
+
+Veamos su respuesta:
+
+0:      from all lookup local
+32766:  from all lookup main
+32767:  from all lookup default
+
+(por default)
+
+0:      from all lookup local
+2000:   from all lookup 2
+3000:   from all lookup 3
+3500:   from all tos 04 lookup 32
+4000:   from 192.168.0.14 lookup 4
+4000:   from 192.168.0.3 lookup 4
+4000:   from 192.168.0.121 lookup 4
+4000:   from 192.168.0.30 lookup 4
+32000:  from all lookup 32
+32766:  from all lookup main
+32767:  from all lookup default
+
+(En mi router principal)
+
+El número de la izquierda indica la preferencia. Cuando un paquete
+llega al sistema es comparado con el "SELECTOR" de cada regla en
+orden de preferencia (no se que pasa con reglas de igual preferencia),
+si "matchea", entonces se procede según la ACCION.
+
+4.2. Agregar una regla.
+
+La órden para agregar una regla es "ip ru add SELECTOR ACTION". Algunos
+ejemplos:
+
+4.2.1. Ruteo según TOS
+
+ip ru add tos 4 pref 3500 table 32
+
+genera la regla
+
+3500:   from all tos 04 lookup 32
+
+O sea, todos los paquetes con TOS 4 (Máxima confiabilidad) usarán la
+tabla de ruteos 32.
+
+4.2.2. Ruteo según origen.
+
+Probablemente la capacidad más usada de policy routing es decidir las
+rutas en base al origen de los paquetes.
+
+ip ru add from 10.20.30.40 table 5
+
+genera la regla
+
+1:	from 10.20.30.40 lookup 5
+
+(la preferencia puede variar)
+
+O sea, todo paquete que venga de la IP 10.20.30.40 usará la tabla de
+rutas 5.
+
+4.3. Borrar reglas.
+
+Igual sintaxis que para agregar, pero usando "ip ru del".
+
+5. Tablas de ruteo.
+
+Las tablas de rutas se manejan con "ip route" ("ip ro")
+
+La sintaxis es muy similar a la del viejo y querido "route":
+
+Usage: ip route list SELECTOR
+       ip route { change | del | add | append | replace | monitor } ROUTE
+SELECTOR := [ root PREFIX ] [ match PREFIX ] [ exact PREFIX ]
+            [ table TABLE_ID ] [ proto RTPROTO ]
+            [ type TYPE ] [ scope SCOPE ]
+ROUTE := NODE_SPEC [ INFO_SPEC ]
+NODE_SPEC := [ TYPE ] PREFIX [ tos TOS ]
+             [ table TABLE_ID ] [ proto RTPROTO ]
+             [ type TYPE ] [ scope SCOPE ]
+INFO_SPEC := NH OPTIONS FLAGS [ nexthop NH ]...
+NH := [ via ADDRESS ] [ dev STRING ] [ weight NUMBER ] NHFLAGS
+OPTIONS := FLAGS [ mtu NUMBER ] [ rtt NUMBER ] [ window NUMBER ]
+TYPE := [ unicast | local | broadcast | multicast | throw |
+          unreachable | prohibit | blackhole | nat ]
+TABLE_ID := [ local | main | default | all | NUMBER ]
+SCOPE := [ host | link | global | NUMBER ]
+NHFLAGS := [ onlink | pervasive ]
+RTPROTO := [ kernel | boot | static | NUMBER ]
+
+¡Olé! Parece bastante más complejo que route... ;-)
+
+Sí, pero por ahora usémoslo como a route...
+
+5.1. Listado de tablas de ruteo.
+
+ip ro ls [table N]
+
+La salida será similar a:
+
+192.168.0.0/24 dev eth1  scope link
+10.10.0.0./16 via 192.168.0.5 dev eth1
+default via 192.168.0.15 dev eth1
+
+5.2. Agregar rutas.
+
+ip ro add destination/dstmsk [dev DEV] [via GATEWAY] [table TABLE]
+
+Ejemplos:
+
+ip ro add 192.168.0.0/24 dev eth1 table 3
+ip ro add 0.0.0.0/0 via 200.16.189.211 table 32
+
+5.3. Borrar rutas.
+
+ip ro del destination/dstmsk [dev DEV] [via GATEWAY] [table TABLE]
+
+ip ro del 192.168.0.0/24 dev eth1 table 3
+ip ro del 0.0.0.0/0 table 32
+
+6. Más info.
+
+	La documentación existente acerca del tema es practicamente nula.
+Aquí hay una lista de lo que pude encontrar:
+
+	- La documentación de iproute2. Es VIEJA. No hay que hacerle
+caso a los detalles. Es interesante para tener una idea general. (este
+HOWTO está basado principalmente en lo que pude adivinar de ahí)
+	- Los mensajes de "usage" de "ip" más un poco de imaginación
+pueden ser muy útiles.
+	- Use the Source, Luke! Y cuando lo entiendas vuelve y explícanos.
+
+7. Wishlist.
+
+Mi primer deseo es que alguien lea esto. El segundo es que alguien
+lo corrija. :-)
+
+Un poco mas en serio, algunas cosas que tengo en mente para las
+próximas versiones:
+
+	- Más texto, más explicaciones. Esto está demasiado espartano.
+	- Ejemplos con escenarios reales.
+	- Tengo que leer los RFCs que correspondan (primero tengo que
+averiguar cuáles son :-) y las fuentes, así empiezo a entender cómo
+funciona esto realmente.
+	- NAT (parece fácil, esta semana voy a jugar un poco con este tema)
+	- Expandirlo para cubrir otras cosas piolas que tienen los kernels
+nuevos acerca de ruteo. (CBQ, por ejemplo)
+	- SGMLización e integración a INSFLUG.
+
+8. Agradecimientos, legalismos...
+
+8.1. Agradecimientos.
+
+	A Linus, _Anarchy_, Alexey, Paul, David, etc. por el genial
+trabajo que han hecho en mi stack TCP/IP preferido. :-)
+	A Arne Kuhlmann, JOshua, Enrique I.R., y Lindsay Allen, que
+me convencieron de escribir esto.
+	A la banda de Uninet, la Dra. MJ, Mapi, el pukka, pask, mmag,
+ciberio (este es el más peligroso de todos)... por su paciencia
+aguantandome todos los días.
+	A PuntoAr, que me paga por hacer lo que me gusta.
+	A Ysaac, por linux-qmd. :-)
+
+8.2 Legalismos.
+
+	Este documento está licenciado bajo GPL. Aparte de eso, si
+usas estas características avanzadas de ruteo porfa comunícate conmigo.
+
+   This document is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or (at
+   your option) any later version.
+
+   This document is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the:
+
+   Free Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
+   USA.
+

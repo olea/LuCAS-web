@@ -1,0 +1,709 @@
+<HTML
+><HEAD
+><TITLE
+>La Facilidad de Control de Acceso tcpd </TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Características Importantesde Redes"
+HREF="x-087-2-appl.html"><LINK
+REL="PREVIOUS"
+TITLE="El Super Servidor inetd "
+HREF="x-087-2-appl.inetd.html"><LINK
+REL="NEXT"
+TITLE="Los Ficheros de Servicios Y Protocolos"
+HREF="x-087-2-appl.services.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-appl.inetd.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 12. Características Importantesde Redes</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-appl.services.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-APPL.TCPD">12.2. La Facilidad de Control de Acceso tcpd</H1
+><P
+>Debido a que abrir un computador al acceso de red implica muchos riesgos de seguridad,
+las aplicaciones están diseñadas para protegerse contra algunos tipos de ataques. 
+Algunas características de seguridad, sin embargo, pueden tener fallos (más drásticamente
+demostrados por el gusano de Internet  RTM, que explotaba un agujero en algunos programas,
+incluyendo  versiones antiguas del demonio de correo Sendmail), o no
+distinguen entre hosts seguros cuyas peticiones de un servicio particular deberán ser
+aceptadas y hosts inseguros cuyas peticiones deberán ser rechazadas. Ya hemos
+visto brevemente los servicios <B
+CLASS="COMMAND"
+>finger</B
+> y <B
+CLASS="COMMAND"
+>tftp</B
+>.
+Los administradores de red deberían querer limitar el acceso de estos servicios a
+&ldquo;hosts de confianza&rdquo; únicamente, lo que es imposible con la configuración usual, 
+por la que <B
+CLASS="COMMAND"
+>inetd</B
+> ofrece este servicio o a todos los clientes o a ninguno.</P
+><P
+>Una herramienta útil para gestionar el  acceso de hosts específicos es <B
+CLASS="COMMAND"
+>tcpd</B
+>,
+a menudo llamado el demonio &ldquo;encapsulador <A
+NAME="AEN10211"
+HREF="#FTN.AEN10211"
+>[1]</A
+>.&rdquo;<A
+NAME="X-087-2-FNFE01"
+HREF="#FTN.X-087-2-FNFE01"
+>[2]</A
+>
+Para los servicios TCP quiera monitorizar o proteger, se invoca en vez del programa servidor. <B
+CLASS="COMMAND"
+>tcpd</B
+> verifica
+si el host remoto tiene permitido usar ese servicio, y sólo si esto  tiene  éxito ejecutará el programa servidor real. 
+<B
+CLASS="COMMAND"
+>tcpd</B
+> también deja registradas las peticiones en el demonio
+<B
+CLASS="COMMAND"
+>syslog</B
+> . Nótese que no funciona para servicios basados en
+UDP.</P
+><P
+> 
+Por ejemplo, para encapsular el demonio <B
+CLASS="COMMAND"
+>finger</B
+>,  debe cambiar 
+la correspondiente línea en  <TT
+CLASS="FILENAME"
+>inetd.conf</TT
+> de esta forma:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # demonio finger desencapsulado
+    finger    stream tcp nowait bin    /usr/sbin/fingerd in.fingerd</PRE
+></TD
+></TR
+></TABLE
+>
+
+a esta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    # demonio finger encapsulado
+    finger  stream  tcp     nowait  root    /usr/sbin/tcpd   in.fingerd</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>&#13;Sin añadir ningún control de acceso, al cliente le parecerá 
+como la configuración usual de  <B
+CLASS="COMMAND"
+>finger</B
+>, 
+excepto que todas las peticiones son registradas en la 
+facilidad <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>auth</I
+></SPAN
+> de <B
+CLASS="COMMAND"
+>syslog</B
+>.</P
+><P
+> 
+ 
+Dos ficheros llamados <TT
+CLASS="FILENAME"
+>/etc/hosts.allow</TT
+> y
+<TT
+CLASS="FILENAME"
+>/etc/hosts.deny</TT
+> implementan el control de acceso.
+Contienen entradas que permiten y deniegan acceso a ciertos servicios y hosts.
+Cuando <B
+CLASS="COMMAND"
+>tcpd</B
+> gestiona una petición para un servicio como
+<B
+CLASS="COMMAND"
+>finger</B
+> desde un host cliente llamado
+<SPAN
+CLASS="SYSTEMITEM"
+>biff.foobar.com</SPAN
+>, se busca en
+<TT
+CLASS="FILENAME"
+>hosts.allow</TT
+> y <TT
+CLASS="FILENAME"
+>hosts.deny</TT
+>
+(en este orden) una entrada que coincida tanto con el servicio como con el host cliente.
+Si se encuentra la entrada correspondiente en <TT
+CLASS="FILENAME"
+>hosts.allow</TT
+>, 
+se autoriza el acceso y <B
+CLASS="COMMAND"
+>tcpd</B
+> no consulta el fichero <TT
+CLASS="FILENAME"
+>hosts.deny</TT
+>. 
+Si no se encuentra una coincidencia en el fichero <TT
+CLASS="FILENAME"
+>hosts.allow</TT
+>, pero se encuentra 
+en el <TT
+CLASS="FILENAME"
+>hosts.deny</TT
+>, la petición es rechazada cerrando la conexión. 
+La petición es aceptada si no hay correspondencias en ninguno de los ficheros.</P
+><P
+>Las entradas en los ficheros de acceso tienen un aspecto como este:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="REPLACEABLE"
+><I
+>lista_de_servicios</I
+></TT
+>: <TT
+CLASS="REPLACEABLE"
+><I
+>lista_de_hosts</I
+></TT
+> [:<TT
+CLASS="REPLACEABLE"
+><I
+>órdenes_de_shell</I
+></TT
+>]</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>lista_de_servicios</I
+></TT
+> es una lista de nombres de servicio de
+<TT
+CLASS="FILENAME"
+>/etc/services</TT
+>, o la palabra clave
+<SPAN
+CLASS="SYSTEMITEM"
+>ALL</SPAN
+>. Para hacer coincidir a todos los servicios excepto 
+<B
+CLASS="COMMAND"
+>finger</B
+> y <B
+CLASS="COMMAND"
+>tftp</B
+>, se usa
+<SPAN
+CLASS="SYSTEMITEM"
+>ALL</SPAN
+>
+<SPAN
+CLASS="SYSTEMITEM"
+>EXCEPT</SPAN
+>
+<TT
+CLASS="LITERAL"
+>finger, tftp</TT
+>.</P
+><P
+><TT
+CLASS="REPLACEABLE"
+><I
+>lista_de_hosts</I
+></TT
+> es una lista de nombres de hosts, direcciones IP,
+o las palabras clave <SPAN
+CLASS="SYSTEMITEM"
+>ALL</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>LOCAL</SPAN
+>,
+<SPAN
+CLASS="SYSTEMITEM"
+>UNKNOWN</SPAN
+> o
+<SPAN
+CLASS="SYSTEMITEM"
+>PARANOID</SPAN
+>.
+<SPAN
+CLASS="SYSTEMITEM"
+>ALL</SPAN
+> coincide con cualquier host, mientras que
+<SPAN
+CLASS="SYSTEMITEM"
+>LOCAL</SPAN
+> coincide con nombres de host que no contienen un punto.<A
+NAME="X-087-2-FNFE02"
+HREF="#FTN.X-087-2-FNFE02"
+>[3]</A
+>
+
+<SPAN
+CLASS="SYSTEMITEM"
+>UNKNOWN</SPAN
+> coincide con cualquier host cuya búsqueda de nombre
+o dirección falle. <SPAN
+CLASS="SYSTEMITEM"
+>PARANOID</SPAN
+>
+coincide con cualquier host cuyo nombre de host no se resuelva de vuelta a su dirección IP.
+<A
+NAME="X-087-2-FNFE03"
+HREF="#FTN.X-087-2-FNFE03"
+>[4]</A
+>
+
+Un nombre que empice por un punto hace coincidir todos los hosts cuyo dominio es igual a este 
+nombre. Por ejemplo, <SPAN
+CLASS="SYSTEMITEM"
+>.foobar.com</SPAN
+> coincide
+<SPAN
+CLASS="SYSTEMITEM"
+>biff.foobar.com</SPAN
+>, pero no
+<SPAN
+CLASS="SYSTEMITEM"
+>nurks.fredsville.com</SPAN
+>. Un patrón que 
+termine con un punto coincide con  cualquier host cuya dirección IP comience con el patrón proporcionado,
+así que <SPAN
+CLASS="SYSTEMITEM"
+>172.16.</SPAN
+> coincide con 
+<SPAN
+CLASS="SYSTEMITEM"
+>172.16.32.0</SPAN
+>, pero no con 
+<SPAN
+CLASS="SYSTEMITEM"
+>172.15.9.1</SPAN
+>. Un patrón de la forma
+<TT
+CLASS="LITERAL"
+><TT
+CLASS="REPLACEABLE"
+><I
+>n.n.n.n</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>m.m.m.m</I
+></TT
+></TT
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+></I
+></SPAN
+> es tratado como una dirección IP y la máscara de red, así que podemos
+especificar nuestro ejemplo anterior como
+<SPAN
+CLASS="SYSTEMITEM"
+>172.16.0.0/255.255.0.0</SPAN
+> en su lugar.
+Finalmente, cualquier patrón que empiece por el carácter &ldquo;/&rdquo; permite especificar
+un fichero que se presume que contiene una lista de nombres de host o patrones de direcciones IP, 
+con cualquiera de los cuáles se permite la coincidencia. Así que  un patrón que se parezca a
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>/var/access/trustedhosts</I
+></SPAN
+> causaría que el demonio 
+<B
+CLASS="COMMAND"
+>tcpd</B
+> lea este fichero, verificando si alguna de sus líneas
+coincide con el host que está conectándose.</P
+><P
+>Para denegar acceso a los servicios <B
+CLASS="COMMAND"
+>finger</B
+> y <B
+CLASS="COMMAND"
+>tftp</B
+>
+a todos menos al los hosts locales, ponga lo siguiente en
+<TT
+CLASS="FILENAME"
+>/etc/hosts.deny</TT
+> y deje vacío
+<TT
+CLASS="FILENAME"
+>/etc/hosts.allow</TT
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    in.tftpd, in.fingerd: ALL EXCEPT LOCAL, <TT
+CLASS="REPLACEABLE"
+><I
+>.su.dominio</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El campo opcional <TT
+CLASS="REPLACEABLE"
+><I
+>orden_de_shell</I
+></TT
+> puede contener una orden
+del intérprete de órdenes <A
+NAME="AEN10305"
+HREF="#FTN.AEN10305"
+>[5]</A
+> para ser invocada 
+cuando la entrada coincida. Esto es útil para establecer trampas que puedan exponer 
+a los atacantes potenciales. El siguiente ejemplo crea un fichero de registros 
+que lista al usuario y al host que se conecta, y si el host no es
+<SPAN
+CLASS="bold"
+><B
+CLASS="EMPHASIS"
+>vlager.vbrew.com</B
+></SPAN
+> se concatenará la salida
+de un <B
+CLASS="COMMAND"
+>finger</B
+> a ese host:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    in.ftpd: ALL EXCEPT LOCAL, .vbrew.com : \
+          echo "request from %d@%h:" &#62;&#62; /var/log/finger.log; \
+          if [ %h != "vlager.vbrew.com:" ]; then \ 
+              finger -l @%h &#62;&#62; /var/log/finger.log \
+          fi</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Los argumentos  <SPAN
+CLASS="SYSTEMITEM"
+>%h</SPAN
+> y
+<SPAN
+CLASS="SYSTEMITEM"
+>%d</SPAN
+> son expandidos por 
+<B
+CLASS="COMMAND"
+>tcpd</B
+> como el nombre del host del cliente y el nombre del servicio,
+respectivamente. Por favor dirígase a la página de manual <TT
+CLASS="FILENAME"
+>hosts_access(5)</TT
+>
+para más detalles.
+
+&#13;</P
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10211"
+HREF="x-087-2-appl.tcpd.html#AEN10211"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>wrapper en inglés</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNFE01"
+HREF="x-087-2-appl.tcpd.html#X-087-2-FNFE01"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>escrito por Wietse Venema,
+<SPAN
+CLASS="SYSTEMITEM"
+>wietse@wzv.win.tue.nl</SPAN
+>.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNFE02"
+HREF="x-087-2-appl.tcpd.html#X-087-2-FNFE02"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Habitualmente sólo los nombres de hosts locales obtenidos a través de búsquedas en  
+<TT
+CLASS="FILENAME"
+>/etc/hosts</TT
+> no contienen puntos.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNFE03"
+HREF="x-087-2-appl.tcpd.html#X-087-2-FNFE03"
+>[4]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Mientras este nombre sugiere una medida extrema, la palabra clave <SPAN
+CLASS="SYSTEMITEM"
+>PARANOID</SPAN
+> 
+es buena por omisión, y le protege contra hosts maliciosos que pretenden hacerse pasar por lo que no son.
+No todos los <B
+CLASS="COMMAND"
+>tcpd</B
+> se proporcionan con la palabra clave
+<SPAN
+CLASS="SYSTEMITEM"
+>PARANOID</SPAN
+> compilada; si el suyo no la tiene, necesitará recompilar
+<B
+CLASS="COMMAND"
+>tcpd</B
+> para usarla.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN10305"
+HREF="x-087-2-appl.tcpd.html#AEN10305"
+>[5]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>shell</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.inetd.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.services.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>El Super Servidor inetd</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-appl.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Los Ficheros de Servicios Y Protocolos</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

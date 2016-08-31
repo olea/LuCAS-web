@@ -1,0 +1,204 @@
+#! /usr/bin/perl
+# $Id: dict2docbook,v 1.1 2000/06/21 07:57:48 villate Exp $
+#
+# dict2docbook - program to create an sgml version of the orca glossary,
+#                conforming to the DocBook DTD.
+# Copyright (C) Jaime Villate <villate@fe.up.pt>, 2000
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+# Jaime Villate, Faculdade de Engenharia, Rua dos Bragas, 4050-123 Porto
+# Portugal
+#
+# The ORCA project <http://quark.fe.up.pt/orca/> 
+
+=head1 NAME 
+
+dict2docbook - Creates a SGML (DocBook) version of glosario.dict
+
+=head1 SYNOPSIS
+
+S<dict2docbook filename>
+
+=head1 DESCRIPTION
+
+This programs reads the glosario.dict text file and creates a SGML
+version of it, conforming to the DocBook DTD.
+
+=head1 AUTHOR
+
+Jaime Villate E<lt>villate@fe.up.ptE<gt>.
+
+=cut
+use strict vars;
+use vars qw($info $short $url $author $version $first $letter);
+
+sub usage
+{
+    print "Usage: dict2docbook <filename.dict>\n";
+    exit;
+}
+
+my $keyw = '';
+my $text = '';
+my $word = '';
+my $item = 0;
+usage() if ($#ARGV != 0);
+my $filehandle = $ARGV[0];
+usage() if ($filehandle =~ /^\-/);
+(my $sgmlname = $filehandle) =~ s/\.dict/\.sgml/;
+
+open(DICT, "< $filehandle");
+open(SGML,"> $sgmlname");
+while (<DICT>)
+{
+    if (/^([^0\#\s])/)
+    {
+	chop;
+	$word = $_;
+	$first = uc($1);
+	if ($item == 0)
+	{
+	    preamble();
+	    $item = 1;
+	    $letter = $first;
+	    print SGML "<GlossDiv>\n<Title>$letter</Title>\n";
+	}
+	else
+	{
+	    print SGML "<GlossEntry>\n<GlossTerm>$keyw</GlossTerm>\n";
+	    print SGML "<GlossDef>\n<para>\n$text</para>\n</GlossDef>\n";
+	    print SGML "</GlossEntry>\n";
+	    if ($first ne $letter)
+	    {
+		$letter = $first;
+		print SGML "</GlossDiv>\n\n";
+		print SGML "<GlossDiv>\n<Title>$letter</Title>\n";
+	    }
+	}
+	$keyw = $word;
+	$text = '';
+    }
+    else
+    {
+	$text .= $_ if (/\S/); 
+    }
+    if ($item == 0)
+    {
+	$author  = $1, next if (/^\s*Autor:(.*)$/);
+	$version = $1, next if (/^\s*(Versión.*)$/);
+    }
+}
+close DICT;
+if($keyw =~ /^[^0\#]/)
+{
+    print SGML "<GlossEntry>\n<GlossTerm>$keyw</GlossTerm>\n";
+    print SGML "<GlossDef>\n<para>\n$text</para>\n</GlossDef>\n";
+    print SGML "</GlossEntry>\n</GlossDiv>";
+}
+print SGML "</Glossary>\n\n<Chapter>\n<Title>Bibliografía";
+print SGML "</Title>\n<OrderedList>\n<ListItem>\n  <para>\n";
+open (BIB, '<fuentes');
+$item = 1;
+while (<BIB>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	if ($item == 0)
+	{
+	    $item = 1;
+	    print SGML "  </para>\n</ListItem>\n<ListItem>\n  <para>\n";
+	}
+	print SGML "    $text";
+    }
+    else
+    {
+	$item = 0;
+    }
+}
+close BIB;
+print SGML "  </para>\n</ListItem>\n</OrderedList></Chapter>\n\n";
+print SGML "<Chapter>\n<Title>Colaboradores</Title>\n<ItemizedList>\n";
+
+open (COL, '<colaboradores');
+while (<COL>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	print SGML "  <ListItem>\n    <para>$text</para>\n  </ListItem>\n";
+    }
+}
+close COL;
+print SGML "</ItemizedList>\n</Chapter>\n</Book>\n";
+close SGML;
+exit;
+
+sub preamble
+{
+    $author = fmturl($author);
+    print SGML <<"EndPreamble";
+<!DOCTYPE Book PUBLIC "-//Davenport//DTD DocBook V3.0//EN">
+<Book lang="es">
+  <bookinfo>
+    <date>$version</date>
+    <title>ORCA - Glosario de Informática Inglés- Español</title>
+    <AuthorGroup>
+    <Author>
+      <FirstName>Jaime</FirstName>
+      <Surname>Villate</Surname>
+    </Author>
+    </AuthorGroup>
+    <Copyright>
+      <Year>2000</Year>
+      <Holder>Jaime E. Villate. Este documento es libre. Puede copiarlo,
+	  distribuirlo y/o modificarlo bajo los términos de la Licencia
+	  GNU Para Documentación Libre, versión 1.1 o cualquier versión
+          posterior publicada por la Free Software Foundation.
+      </Holder>
+    </Copyright>
+  </bookinfo>
+
+<Preface>
+<Title>Prefacio</Title>
+<para>
+EndPreamble
+
+open (PRE, '<Prefacio');
+while (<PRE>)
+{
+    if (/\S/)
+    {
+	$text = fmturl($_);
+	print SGML $text;
+    }
+    else
+    {
+	print SGML "</para>\n<para>\n";
+    }
+}
+print SGML "</para>\n";
+close PRE;
+
+    print SGML "<Glossary>\n";
+}
+
+sub fmturl {
+    (my $line) = @_;
+    $line =~ s/[\<\(]?([\w\.]+\@[\w\.]+)[\>\)]?/<ulink url=\"mailto:$1\">$1<\/ulink>/g;
+    $line =~ s/[\<\(]?(h?[tf]tp:\/\/[\w\/\.\~\%]+)[\>\)]?/<ulink url=\"$1\">$1<\/ulink>/g;
+    return $line;
+}

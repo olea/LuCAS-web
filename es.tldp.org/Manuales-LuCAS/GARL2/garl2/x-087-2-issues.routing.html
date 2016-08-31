@@ -1,0 +1,1013 @@
+<HTML
+><HEAD
+><TITLE
+>Encaminamiento IP</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cuestiones sobre redes TCP/IP"
+HREF="x-087-2-issues.html"><LINK
+REL="PREVIOUS"
+TITLE="Resolución de direcciones"
+HREF="x-087-2-issues.arp.html"><LINK
+REL="NEXT"
+TITLE="El Internet Control Message Protocol"
+HREF="x-087-2-issues.icmp.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-issues.arp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 2. Cuestiones sobre redes TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-issues.icmp.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-ISSUES.ROUTING">2.4. Encaminamiento IP</H1
+><P
+>Ahora nos ocuparemos del problema de encontrar el puesto al que se envían los
+datagramas basándose en la dirección IP. La diferentes partes de las
+direcciones se manejan de forma distinta; es su trabajo configurar los
+ficheros que indican como se trata cada parte.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-ISSUES.ROUTING.NETWORKS">2.4.1. Redes IP</H2
+><P
+>Cuando escribe una carta a alguien, normalmente pone una dirección completa en
+el sobre especificando el país, la provincia  y el código postal. Después la echa
+al buzón, la oficina de correos la hará llegar a su destino: se enviará al
+país indicado, donde el servicio nacional la enviará a la provincia y la región
+adecuada. La ventaja de este esquema jerarquizado es obvia: mande donde mande
+la carta, la oficina de correos local apenas debe conocer a qué dirección
+remitir la carta, es más, a la oficina no le importa por dónde viajará esta
+siempre que llegue al país de destino.</P
+><P
+>Las redes IP están estructuradas de forma similar. Toda Internet consiste en
+varias redes, denominadas <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>sistemas autónomos</I
+></SPAN
+>. Cada
+sistema realiza un encaminamiento interno entre los puestos que lo forman, por
+lo que la tarea de remitir un datagrama se reduce a encontrar un camino a la
+red del puesto de destino. Tan pronto como el datagrama se entrega a
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>cualquier</I
+></SPAN
+> puesto en esa red particular, el resto del
+proceso se realiza exclusivamente en la misma red.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-ISSUES.ROUTING.SUBNETS">2.4.2. Subredes</H2
+><P
+>Esta estructura se refleja dividiendo la dirección IP en la parte del puesto y
+la de red, como se explicó anteriormente. Por defecto, la red de destino se
+obtiene a partir de la parte de red de la dirección IP. De este modo, los
+puestos con números idénticos de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>red</I
+></SPAN
+> IP deben encontrarse
+en la misma red.<A
+NAME="X-087-2-FNIS03"
+HREF="#FTN.X-087-2-FNIS03"
+>[1]</A
+>&#13;</P
+><P
+>También tiene sentido proporcionar un esquema similar
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>dentro</I
+></SPAN
+> de la red, ya que ésta puede constar de un grupo
+de cientos de redes más reducidas, con las unidades más pequeñas haciendo de
+redes físicas como Ethernets. Por lo tanto, IP permite subdividir una red IP
+en varias <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>subredes</I
+></SPAN
+>.</P
+><P
+>&#13;
+Una subred se responsabiliza de enviar datagramas a un cierto rango de
+direcciones IP. Esto es una extensión del concepto de dividir campos de bits,
+como en las clases A, B, y C. De cualquier forma, la parte de red se extiende
+ahora para incluir algunos bits de la parte del puesto. El número de bits que
+se interpreta como el número de subred viene dado por la llamada
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>máscara de subred</I
+></SPAN
+> o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>máscara de red</I
+></SPAN
+>.
+Este es también un número de 32 bits, que especifica la máscara de bit para la
+parte de red de la dirección IP.</P
+><P
+>&#13;La red del campus de la Groucho Marx University es un ejemplo de este tipo de
+redes. Tiene un número de red de clase B
+<SPAN
+CLASS="SYSTEMITEM"
+>149.76.0.0</SPAN
+>, y su máscara de red es
+<SPAN
+CLASS="SYSTEMITEM"
+>255.255.0.0</SPAN
+>.</P
+><P
+>Internamente, la red del campus de la GMU consta de varias redes más pequeñas,
+como son las LANs de varios departamentos. De modo que el rango de direcciones
+IP se divide en 254 subredes: desde <SPAN
+CLASS="SYSTEMITEM"
+>149.76.1.0</SPAN
+> hasta <SPAN
+CLASS="SYSTEMITEM"
+>149.76.254.0</SPAN
+>. Por ejemplo, al departamento de
+Física Teórica se le ha asignado <SPAN
+CLASS="SYSTEMITEM"
+>149.76.12.0</SPAN
+>. La dorsal del campus es una red por
+derecho propio, y se le ha asignado <SPAN
+CLASS="SYSTEMITEM"
+>149.76.1.0</SPAN
+>. Estas subredes comparten el mismo
+número de red, mientras que el tercer octeto se usa para distinguirlas entre
+sí. Utilizarán así una máscara de subred de <SPAN
+CLASS="SYSTEMITEM"
+>255.255.255.0</SPAN
+>.</P
+><P
+><A
+HREF="x-087-2-issues.routing.html#X-087-2-ISSUES.FIG.SUBNET"
+>Figura 2-1</A
+> muestra como <SPAN
+CLASS="SYSTEMITEM"
+>149.76.12.4</SPAN
+>, la dirección de <SPAN
+CLASS="SYSTEMITEM"
+>quark</SPAN
+>, se interpreta de forma distinta cuando la
+dirección viene dada como una red de clase B ordinaria y cuando se usa como
+subred.
+&#62;&#62;&#62;&#62;&#62;&#62;&#62; 1.7</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-ISSUES.FIG.SUBNET"><P
+><B
+>Figura 2-1. División de una red de clase B en subredes</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0201.jpg"></P
+></DIV
+></DIV
+><P
+>&#13;Es dificil notar que la técnica de generar subredes es únicamente una
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>división interna</I
+></SPAN
+> de la red. Las subredes se generan por
+el propietario de la red (o el administrador). Frecuentemente, las subredes se
+crean para reflejar límites determinados, ya sean físicos (entre dos
+Ethernets), administrativos (entre dos departamentos), o geográficos (entre
+dos ubicaciones distintas), y la autoridad de cada subred se delega a alguna
+persona de contacto. De todos modos, la estructura afecta solo al
+funcionamiento interno de la red y es completamente invisible para el mundo
+exterior.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-ISSUES.ROUTING.GATEWAY">2.4.3. Pasarelas</H2
+><P
+>La división en subredes no solo es un beneficio para la administración; es
+frecuentemente una consecuencia natural de límites de hardware. El alcance de
+un puesto en una red física determinada, tal como una Ethernet, es muy
+limitado: solo se puede comunicar con puestos de la red donde él mismo se
+encuentra. Solo se puede acceder a los demás puestos a través de máquinas con
+una utilidad especial denominadas <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>pasarelas</I
+></SPAN
+>. Una pasarela
+es un puesto que está conectado simultáneamente a dos o más redes físicas y
+está configurado para intercambiar paquetes entre ellas.</P
+><P
+><A
+HREF="x-087-2-issues.routing.html#X-087-2-ISSUES.FIG.IP"
+>Figura 2-2</A
+> muestra parte de la topología de red en
+la Groucho Marx University (GMU). Los puestos que están en dos subredes al
+mismo tiempo se muestran con ambas direcciones.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-ISSUES.FIG.IP"><P
+><B
+>Figura 2-2. Parte de la topología de red de la Groucho Marx University</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0202.jpg"></P
+></DIV
+></DIV
+><P
+>Redes físicas diferentes deben pertenecer a redes IP distintas para que IP sea
+capaz de reconocer si un puesto está en una red local o no. Por ejemplo, el
+número de red <SPAN
+CLASS="SYSTEMITEM"
+>149.76.4.0</SPAN
+> se reserva
+para los puestos en la LAN de matemáticas. Cuando se manda un datagrama a
+<SPAN
+CLASS="SYSTEMITEM"
+>quark</SPAN
+>, el software de red en
+<SPAN
+CLASS="SYSTEMITEM"
+>erdos</SPAN
+> entiende inmediatamente por la
+dirección IP <SPAN
+CLASS="SYSTEMITEM"
+>149.76.12.4</SPAN
+> que el
+puesto de destino está en una red física diferente, y por lo tanto sólo puede
+ser alcanzado a través de una pasarela (<SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+> por defecto).</P
+><P
+><SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+> está conectada a dos subredes
+distintas: el departamento de Matemáticas y la dorsal del campus. Accede a
+cada una a través de una interfaz diferente, <TT
+CLASS="FILENAME"
+>eth0</TT
+> y
+<TT
+CLASS="FILENAME"
+>fddi0</TT
+>, respectivamente. Ahora bien, ¿que dirección IP se
+le debe asignar?. ¿Debemos darle una en la subred <SPAN
+CLASS="SYSTEMITEM"
+>149.76.1.0</SPAN
+>, o en la <SPAN
+CLASS="SYSTEMITEM"
+>149.76.4.0</SPAN
+>?</P
+><P
+>La respuesta es: &ldquo;ambas.&rdquo; <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+> tiene asignadas la dirección <SPAN
+CLASS="SYSTEMITEM"
+>149.76.1.1</SPAN
+> para su uso en la red <SPAN
+CLASS="SYSTEMITEM"
+>149.76.1.0</SPAN
+> y la dirección <SPAN
+CLASS="SYSTEMITEM"
+>149.76.4.1</SPAN
+> para la red <SPAN
+CLASS="SYSTEMITEM"
+>149.76.4.0</SPAN
+>. Una pasarela debe tener asignada una
+dirección IP para cada red a la que pertenezca. Estas
+direcciones&mdash;junto con la correspondiente máscara de red&mdash;están
+vinculadas a la interfaz por la que se accede a la subred. De modo que el
+esquema de interfaces y direcciones de <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+> sería este:</P
+><DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN1885"><P
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Interfaz</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Dirección</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Máscara de red</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>eth0</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.4.1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>fddi0</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.1.1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>lo</TT
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>127.0.0.1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.0.0.0</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+><P
+>La última entrada define la interfaz loopback <TT
+CLASS="FILENAME"
+>lo</TT
+>, de la
+que hablamos anteriormente.</P
+><P
+>&#13;Generalmente, se puede ignorar la sutil diferencia entre destinar una
+dirección a un puesto o a su interfaz. En el caso de puestos que están solos en
+una red, como <SPAN
+CLASS="SYSTEMITEM"
+>erdos</SPAN
+>, normalmente nos
+referiremos al puesto con "esta o aquella" dirección IP, aunque estrictamente
+hablando, sea la interfaz Ethernet la que tenga esa dirección IP. La
+distinción sólo es realmente importante en el caso de referirse a una
+pasarela.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-ISSUES.ROUTING.TABLE">2.4.4. Tabla de encaminamiento</H2
+><P
+>Ahora nos centraremos en como IP elige qué pasarela usar para enviar un
+datagrama a una red remota.</P
+><P
+>Hemos visto que <SPAN
+CLASS="SYSTEMITEM"
+>erdos</SPAN
+>, cuando envía
+un datagrama a <SPAN
+CLASS="SYSTEMITEM"
+>quark</SPAN
+>, comprueba la
+dirección de destino y encuentra que ésta no está en la red local. <SPAN
+CLASS="SYSTEMITEM"
+>erdos</SPAN
+> por lo tanto envía el datagrama a la
+pasarela por defecto <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+>, que se
+enfrenta ahora al mismo problema. <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+> reconoce que <SPAN
+CLASS="SYSTEMITEM"
+>quark</SPAN
+> no está en ninguna de las redes a las que
+está conectada directamente, de modo que todavía tiene que encontrar otra
+pasarela a través de la cual remitirlo. La elección correcta debería ser
+<SPAN
+CLASS="SYSTEMITEM"
+>niels</SPAN
+>, la pasarela del departamento
+de Físicas. Por lo tanto <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+>
+necesita información para asociar una red de destino con una pasarela
+adecuada.</P
+><P
+>Para esta tarea, IP usa una tabla que asocia redes con las pasarelas por las
+que estas pueden ser alcanzadas. Generalmente, debe incluirse también una
+entrada que abarque todo (el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>encaminamiento por
+defecto</I
+></SPAN
+>); esta es la pasarela asociada a la red <SPAN
+CLASS="SYSTEMITEM"
+>0.0.0.0</SPAN
+>. Todas las direcciones de destino se
+corresponden con este encaminamiento, ya que no se requiere ninguno de los 32
+bits para ajustarse a él, y por tanto los paquetes dirigidos a una red
+desconocida se envíarán al encaminamiento por defecto. En <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+>, la tabla podría ser algo como esto:</P
+><DIV
+CLASS="INFORMALTABLE"
+><A
+NAME="AEN1937"><P
+></P
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Red</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Mascara de red</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Pasarela</TH
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+>Interfaz</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.1.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>fddi0</TT
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.2.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.1.2</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>fddi0</TT
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.3.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.1.3</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>fddi0</TT
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.4.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>-</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>eth0</TT
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.5.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>255.255.255.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.1.5</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>fddi0</TT
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>&hellip;</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>&hellip;</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>&hellip;</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>&hellip;</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0.0.0.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>0.0.0.0</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+>149.76.1.2</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><TT
+CLASS="FILENAME"
+>fddi0</TT
+></TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+></DIV
+><P
+>Si es necesario usar un encaminamiento a una red a la que <SPAN
+CLASS="SYSTEMITEM"
+>sophus</SPAN
+> está conectada directamente, no se
+necesita una pasarela; en ese caso la columna de la pasarela contiene un
+guión.</P
+><P
+>&#13;El proceso que se sigue para identificar si una dirección de destino
+determinada corresponde con un encaminamiento es una operación matemática. Es
+bastante simple, pero requiere conocimientos de aritmética binaria y lógica:
+Un encaminamiento corresponde a un destino si la dirección de red operada
+lógicamente por medio de AND con la máscara de red es precisamente la
+dirección de destino operada lógicamente por medio de AND con la máscara de
+red. </P
+><P
+>Traducción: un encaminamiento corresponde si el número de bits de la dirección
+de red especificada por la máscara de red (empezando por el bit más a la
+izquierda, el orden más alto del byte uno de la dirección) corresponde al
+mismo número de bits en la dirección de destino.</P
+><P
+>Cuando la implementación de IP busca el mejor encaminamiento hasta un destino,
+puede que encuentre varias entradas que correspondan a la dirección del
+objetivo. Por ejemplo, sabemos que el encaminamiento por defecto corresponde
+a todos los destinos, pero los datagramas destinados a redes unidas localmente
+también corresponderán a su encaminamiento local. ¿Cómo IP decide que
+encaminamiento usar? Es aquí donde la máscara de red representa un papel
+importante. Mientras que los dos enrutamientos corresponden al destino, uno
+de ellos tiene una máscara de red mayor que la del otro. Se dijo anteriormente
+que la máscara de red se usa para dividir los espacios de las direcciones en
+redes más pequeñas. Cuanto mayor es una máscara de red, mejor especifica la
+correspondencia a la dirección de un objetivo; cuando se envían datagramas,
+siempre se debería elegir el enrutamiento que tenga la mayor máscara de red.
+El encaminamiento por defecto tiene una máscara de red de cero bits, y en la
+configuración mostrada anteriormente, las redes enlazadas localmente tienen
+una máscara de red de 24 bits. Si un datagrama corresponde a una de estas
+redes, será enrutado al dispositivo apropiado en vez de seguir el
+encaminamiento por defecto porque el enrutamiento de la red local corresponde
+a un mayor número de bits. Los únicos datagramas que se encaminan a través del
+encaminamiento por defecto son aquellos que no corresponden a ningún otro
+enrutamiento.</P
+><P
+>&#13;
+
+
+Se puede construir tablas de encaminamiento siguiendo distintos métodos. En el
+caso de LANs pequeñas, normalmente lo más eficiente es construirlas a mano y
+nutrirlas de IP usando el comando <B
+CLASS="COMMAND"
+>route</B
+> en el momento del
+arranque (vease <A
+HREF="x-087-2-iface.html"
+>Capítulo 5</A
+>). Para redes mayores, se
+construyen y ajustan en tiempo de ejecución por los <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>demonios de
+encaminamiento</I
+></SPAN
+>; estos demonios corren en puestos centrales de la red
+e intercambian información de enrutamiento para calcular caminos
+&ldquo;óptimos&rdquo; entre los miembros de la red.</P
+><P
+>&#13;
+
+
+
+
+Dependiendo del tamaño de la red, se necesitará usar diferentes protocolos de
+encaminamiento. Para enrutar dentro de sistemas autónomos (tales como el
+campus de Groucho Marx) se usan los <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>protocolos de encaminamiento
+interno</I
+></SPAN
+>. El más importante de éstos es el <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Routing
+Information Protocol</I
+></SPAN
+> (RIP), que es implementado por el demonio BSD
+<B
+CLASS="COMMAND"
+>routed</B
+>. Para enrutar entre sistemas autónomos se tienen que
+usar <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>protocolos de encaminamiento externo</I
+></SPAN
+> como
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>External Gateway Protocol</I
+></SPAN
+> (EGP) o <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Border
+Gateway Protocol</I
+></SPAN
+> (BGP); estos protocolos, incluido RIP, han sido
+implementados en el demonio <B
+CLASS="COMMAND"
+>gated</B
+> de la Universidad de
+Cornell.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-ISSUES.ROUTING.METRIC">2.4.5. Métrica de encaminamiento</H2
+><P
+>Hay que contar con los encaminamientos dinámicos para elegir la mejor ruta
+hasta nuestro puesto o red de destino basándonos en el número de
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>saltos</I
+></SPAN
+>. Los saltos son las pasarelas que un datagrama
+debe atravesar antes de llegar al puesto o la red. Cuanto más corta sea una
+ruta en mejor consideración la tendrá RIP. Las rutas muy largas con 16 saltos
+o más son consideradas como inusable y son descartadas.</P
+><P
+>RIP controla la información interna de encaminamiento de su red local, pero
+tiene que ejecutar <B
+CLASS="COMMAND"
+>gated</B
+> en todos los puestos. En el
+momento del arranque, <B
+CLASS="COMMAND"
+>gated</B
+> comprueba todas las interfaces
+de red activas. Si hay más de una interfaz activa (sin contar la interfaz
+loopback), asume que el puesto está intercambiando paquetes entre varias redes
+e intercambia y emite activamente información de encaminamiento. De cualquier
+forma, las actualizaciones de RIP solo se recibirán pasivamente y se pondrá al
+día la tabla de encaminamiento local.</P
+><P
+>Cuando se transmite información según la tabla de encaminamiento local,
+<B
+CLASS="COMMAND"
+>gated</B
+> calcula la longitud de la ruta atendiendo al llamado
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>valor métrico</I
+></SPAN
+> asociado a la entrada de la tabla de
+encaminamiento. Este valor métrico lo decide el administrador del sistema
+cuando configura el encaminamiento, y debe reflejar el valor actual de la
+ruta.<A
+NAME="X-087-2-FNIS05"
+HREF="#FTN.X-087-2-FNIS05"
+>[2]</A
+> Por tanto, la métrica de la ruta a una subred a la que el puesto
+está directamente conectada debe ser siempre cero, mientras que una ruta que
+vaya a través de dos pasarelas debe tener una métrica de dos. De todos modos,
+no deberá preocuparse por las métricas si no usa <B
+CLASS="COMMAND"
+>RIP</B
+> o
+<B
+CLASS="COMMAND"
+>gated</B
+>.&#13;</P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNIS03"
+HREF="x-087-2-issues.routing.html#X-087-2-FNIS03"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Los sistemas autónomos son ligeramente más generales. En ellos se puede
+comprender más de una red IP.</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FNIS05"
+HREF="x-087-2-issues.routing.html#X-087-2-FNIS05"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> El valor de una ruta puede
+imaginarse, en casos simples, como el número de saltos requeridos para
+alcanzar el destino. Aunque calcular apropiadamente los valores de las rutas
+en diseños de redes complejas puede ser una gran dificultad.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-issues.arp.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-issues.icmp.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Resolución de direcciones</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-issues.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>El Internet Control Message Protocol</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

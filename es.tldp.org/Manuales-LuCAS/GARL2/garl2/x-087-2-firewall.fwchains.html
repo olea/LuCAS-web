@@ -1,0 +1,1819 @@
+<HTML
+><HEAD
+><TITLE
+>Cortafuegos 'IP Chains' (núcleos 2.2)</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
+REL="HOME"
+TITLE="Guía de Administración de Redes con Linux"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Cortafuegos de TCP/IP"
+HREF="x-087-2-firewall.html"><LINK
+REL="PREVIOUS"
+TITLE="El cortafuegos original de IP (núcleos 2.0)"
+HREF="x-087-2-firewall.original.html"><LINK
+REL="NEXT"
+TITLE="Netfilter e 'IP Tables' (Núcleos 2.4)"
+HREF="x-087-2-firewall.future.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="publicacoes.css"></HEAD
+><BODY
+CLASS="SECT1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Guía de Administración de Redes con Linux</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.original.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Capítulo 9. Cortafuegos de TCP/IP</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="x-087-2-firewall.future.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="X-087-2-FIREWALL.FWCHAINS">9.7. Cortafuegos 'IP Chains' (núcleos 2.2)</H1
+><P
+>La mayoría de los aspectos de GNU/Linux evolucionan para satisfacer
+las cada vez mayores demandas de sus usuarios; el cortafuegos de IP
+no es una excepción. La implementación del cortafuegos de IP
+tradicional resulta suficiente para la mayoría de las aplicaciones,
+pero puede resultar engorroso y poco eficiente para configurar
+en entornos complejos. Para resolver este problema, se desarrolló 
+un nuevo método de configuración del cortafuegos de IP así como 
+nuevas características relacionadas. Este nuevo método fue denominado 
+&ldquo;Cortafuegos 'IP Chains'<A
+NAME="X-087-2-FW-TFN16"
+HREF="#FTN.X-087-2-FW-TFN16"
+>[1]</A
+>&rdquo;
+y fue liberado por vez primera para uso general
+en el núcleo 2.2.0.</P
+><P
+>&#13;
+El soporte del cortafuegos 'IP Chains' fue desarrollado por
+Paul Russell y Michael Neuling<A
+NAME="X-087-2-FN05"
+HREF="#FTN.X-087-2-FN05"
+>[2]</A
+>.
+
+
+Paul es el autor del documento sobre 'IP Chains' IPCHAINS-HOWTO.</P
+><P
+>El cortafuegos 'IP Chains' le permite desarrollar clases de
+reglas de cortafuegos a las que puede entonces añadir y quitar
+'hosts' o redes. Una consecuencia colateral del encadenamiento
+de reglas de cortafuegos es que puede mejorar el rendiminento
+del cortafuegos en aquellas configuraciones en las que haya
+montones de reglas.</P
+><P
+>El cortafuegos 'IP Chains' está soportado por las series de núcleos
+2.2 y también se encuentran disponibles como un parche
+para la series de núcleos 2.0.*. El HOWTO
+describe dónde obtener el parche y proporciona montones de
+pistas útiles sobre cómo utilizar de forma efectiva la
+utilidad de configuración <B
+CLASS="COMMAND"
+>ipchains</B
+>.</P
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.USINGIPCHAINS">9.7.1. Uso de ipchains</H2
+><P
+>&#13;
+Existen dos formas de emplear la utilidad 
+<B
+CLASS="COMMAND"
+>ipchains</B
+>.
+La primera forma consiste en utilizar el guión de "shell"
+<B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+>,
+que es básicamente un sustituto de la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>
+y que llama por debajo al programa <B
+CLASS="COMMAND"
+>ipchains</B
+>. Si esto es
+lo que desea, no siga leyendo y relea las secciones previas que
+describen  <B
+CLASS="COMMAND"
+>ipchains</B
+>,
+poniendo <B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+> en su lugar.
+Esto funcionará, pero no se garantiza que el guión se mantenga
+en un futuro, y en ese caso no dispondrá de las características
+avanzadas que el cortafuegos 'IP Chains' vaya a ofrecer.</P
+><P
+>La segunda forma de utilizar <B
+CLASS="COMMAND"
+>ipchains</B
+> consiste en
+aprender su nueva sintaxis y modificar cualquier configuración 
+existente que exija utilizar la nueva sintaxis en lugar de la antigua.
+Con algunas consideraciones cuidadosas, se dará cuenta de
+que puede optimizar su configuración a la vez que realiza la
+conversión. La sintaxis de <B
+CLASS="COMMAND"
+>ipchains</B
+> es más
+fácil de aprender que la de <B
+CLASS="COMMAND"
+>ipfwadm</B
+>, por lo que
+resultará una buena opción.</P
+><P
+>La orden <B
+CLASS="COMMAND"
+>ipfwadm</B
+> manipulaba tres conjuntos
+de reglas para el propósito de configurar el cortafuegos.
+Con el cortafuegos 'IP Chains', podrá crear un número
+arbitrario de conjuntos de reglas, cada una enlazada con otra,
+pero siguen estando presentes siempre tres conjuntos
+de reglas relacionadas con la función del cortafuegos.
+Los conjuntos de reglas estándares son los directos equivalentes
+de los utilizados con <B
+CLASS="COMMAND"
+>ipfwadm</B
+>, exceptuando
+el hecho de que ahora tiene nombre: 
+<TT
+CLASS="LITERAL"
+>input</TT
+>, <TT
+CLASS="LITERAL"
+>forward</TT
+>  y
+<TT
+CLASS="LITERAL"
+>output</TT
+>.</P
+><P
+>Veamos primero la sintaxis general de la orden
+<B
+CLASS="COMMAND"
+>ipchains</B
+>, después se verá como utilizar
+<B
+CLASS="COMMAND"
+>ipchains</B
+> en lugar de <B
+CLASS="COMMAND"
+>ipfwadm</B
+>
+sin preocuparse acerca de sus características avanzadas de encadenamiento.
+Se hará reutilizando nuestros ejemplos anteriores</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.SYNTAX">9.7.2. Sintaxis de la orden ipchains</H2
+><P
+>&#13;La sintaxis de la orden <B
+CLASS="COMMAND"
+>ipchains</B
+> es bastante
+directa. Se contemplarán los ejemplos más importantes. La sintaxis
+general de la mayoría de las órdenes  de <B
+CLASS="COMMAND"
+>ipchains</B
+> es:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <B
+CLASS="COMMAND"
+>ipchains</B
+> <TT
+CLASS="REPLACEABLE"
+><I
+>orden</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>especificación_de_regla</I
+></TT
+> <TT
+CLASS="REPLACEABLE"
+><I
+>opciones</I
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>&#13;</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.COMMANDS">9.7.2.1. Órdenes</H3
+><P
+>Existen diversas formas de manipular las reglas y conjuntos
+de reglas con la orden <B
+CLASS="COMMAND"
+>ipchains</B
+>. Las
+relevantes para la funcionalidad de cortafuegos de IP son:
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-A cadena</DT
+><DD
+><P
+>Añade una o más reglas al final de la cadena especificada. Si se
+proporciona un nombre de 'host' como origen o destino que se resuelve
+a más de una dirección IP, entonces se añade una regla por cada una
+de las direcciones.</P
+></DD
+><DT
+>-I cadena numero_de_regla</DT
+><DD
+><P
+>Inserta una o más reglas al principio de la cadena
+especificada. De nuevo, si se proporciona un nombre de 'host',
+se añade una regla por cada dirección que se resuelva.</P
+></DD
+><DT
+>-D cadena</DT
+><DD
+><P
+>Elimina una o más reglas de la cadena especificada que coincida con la
+especificación de regla.</P
+></DD
+><DT
+>-D cadena número_de_regla</DT
+><DD
+><P
+>Elimina la regla ubicada en la 
+posición <TT
+CLASS="REPLACEABLE"
+><I
+>número_de_regla</I
+></TT
+> de la cadena
+especificada. Las posiciones de reglas comienzan por uno
+en la primera regla de la cadena.</P
+></DD
+><DT
+>-R cadena número_de_regla</DT
+><DD
+><P
+>Reemplaza  la regla ubicada en la
+posición <TT
+CLASS="REPLACEABLE"
+><I
+>número_de_regla</I
+></TT
+> de la cadena
+especificada por la especificación de regla proporcionada.</P
+></DD
+><DT
+>-C cadena</DT
+><DD
+><P
+>Comprueba el datagrama que se describe con la especificación
+de la regla contra la cadena especificada. Esta orden devuelve
+un mensaje que describe cómo se procesará el datagrama por
+la cadena. Esto resulta muy útil para  comprobar
+la configuración del cortafuegos, por lo que se verán
+más detalles un poco más adelante.</P
+></DD
+><DT
+>-L [cadena]</DT
+><DD
+><P
+>Muestra las reglas de la cadena especificada, o de todas las 
+cadenas si no se especifica ninguna.</P
+></DD
+><DT
+>-F [cadena]</DT
+><DD
+><P
+>Elimina todas las reglas de la cadena especificada, o de todas
+las cadenas si no se especifica ninguna.</P
+></DD
+><DT
+>-Z [cadena]</DT
+><DD
+><P
+>Establece a cero los contadores de datagramas y bytes de la
+cadena especificada, o de todas las cadenas si no se especifica
+ninguna.</P
+></DD
+><DT
+>-N cadena</DT
+><DD
+><P
+>Crea una nueva cadena con el nombre especificado. No puede existir
+una cadena con el mismo nombre. Así es como se crean las cadenas
+de usuario.</P
+></DD
+><DT
+>-X [cadena]</DT
+><DD
+><P
+>Elimina la cadena de usuario especificada, o todas
+las cadenas de usuario especificadas si no se especifica
+ninguna cadena. Para que esta orden tenga éxito, no deben existir
+referencias de ninguna otra cadena de reglas a la cadena especificada.</P
+></DD
+><DT
+>-P política_de_cadena</DT
+><DD
+><P
+>Establece la política por defecto de la cadena especificada a la
+política especificada. Las políticas de cortafuegos válidas son
+<TT
+CLASS="LITERAL"
+>ACCEPT</TT
+>,
+<TT
+CLASS="LITERAL"
+>DENY</TT
+>,
+<TT
+CLASS="LITERAL"
+>REJECT</TT
+>,
+<TT
+CLASS="LITERAL"
+>REDIR</TT
+>, o
+<TT
+CLASS="LITERAL"
+>RETURN</TT
+>. <TT
+CLASS="LITERAL"
+>ACCEPT</TT
+>,
+<TT
+CLASS="LITERAL"
+>DENY</TT
+>, y <TT
+CLASS="LITERAL"
+>REJECT</TT
+>
+tienen los mismo significados que las políticas correspondientes de la
+implentación tradicional del cortafuegos de IP.
+<TT
+CLASS="LITERAL"
+>REDIR</TT
+> especifica que se debe
+redirigir de forma transparente el datagrama a un puerto del
+'host' del cortafuegos. 
+La política
+<TT
+CLASS="LITERAL"
+>RETURN</TT
+>
+causa que el código del cortafuegos de IP vuelva a la
+cadena de cortafuegos que hizo la llamada a la que contiene esta
+regla y que continúe empezando por la regla situada tras la regla que hizo
+la llamada.</P
+></DD
+></DL
+></DIV
+><P>&#13;</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.RULESPEC">9.7.2.2. Parámetros de especificación de las reglas</H3
+><P
+>Ciertos parámetros de
+<B
+CLASS="COMMAND"
+>ipchains</B
+> crean una especificación de reglas
+al determinar qué tipos de paquetes coinciden.
+Si se omite algunos de esos parámetros de la especificación
+de una regla, se asumen sus valores por omisión.</P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-p [!]protocolo</DT
+><DD
+><P
+>Especifica el protocolo del datagrama que buscar coincidencias coná con esta regla.
+Los protocolos válidos son:
+<TT
+CLASS="LITERAL"
+>tcp</TT
+>, <TT
+CLASS="LITERAL"
+>udp</TT
+>,
+<TT
+CLASS="LITERAL"
+>icmp</TT
+>, o <TT
+CLASS="LITERAL"
+>todos</TT
+>.
+También puede especificarse un número de protocolo para buscar coincidencias con
+con otros protocolos.
+Por ejemplo, se puede utilizar el
+<TT
+CLASS="LITERAL"
+>4</TT
+> para buscar coincidencias con
+el protocolo de encapsulamiento
+<TT
+CLASS="LITERAL"
+>ipip</TT
+>. Si se proporciona el signo
+<TT
+CLASS="LITERAL"
+>!</TT
+>, entonces la regla es negativa
+y el datagrama buscar coincidencias coná con cualquier protocolo que
+no sea el especificado.
+Si no se especifica este parámetro, se asumirá por omisión el
+valor
+<TT
+CLASS="LITERAL"
+>all</TT
+>.</P
+></DD
+><DT
+>-s [!]dirección[/máscara] [!] [puerto]</DT
+><DD
+><P
+>Especifica la dirección de origen y el puerto del datagrama
+que buscar coincidencias coná con este regla. La dirección puede proporcionarse
+como un nombre de 'host', un nombre de red o una dirección de IP.
+El argumento opcional <TT
+CLASS="LITERAL"
+>máscara</TT
+> es la
+máscara de red que se utilizará y puede ser proporcionada en
+la forma tradicional (e.g.,/255.255.255.0)
+o en la forma moderna (e.g., /24). El argumento opcional
+<TT
+CLASS="LITERAL"
+>puerto</TT
+>
+especifica el puerto de TCP o UDP, o el tipo de datagrama de ICMP
+que buscar coincidencias coná. Se puede proporcionar una especificación de
+puerto sólamente si se ha proporcionado el párametro
+<TT
+CLASS="OPTION"
+>-p</TT
+> con uno de los protocolos
+<TT
+CLASS="LITERAL"
+>tcp</TT
+>, <TT
+CLASS="LITERAL"
+>udp</TT
+>, o
+<TT
+CLASS="LITERAL"
+>icmp</TT
+>. Se puede
+especificar los puertos en la forma de un rango,
+especificando los límites inferior y superior con el signo <TT
+CLASS="LITERAL"
+>:</TT
+>
+como delimitador. Por ejemplo,
+<TT
+CLASS="LITERAL"
+>20:25</TT
+> describe todos los puertos que van desde el
+20 hasta el 25 incluyendo ambos. De nuevo,
+el signo <TT
+CLASS="LITERAL"
+>!</TT
+> puede utilizarse para negar los valores.</P
+></DD
+><DT
+>-d [!]dirección[/máscara] [!] [puerto]</DT
+><DD
+><P
+>Especificar la dirección y el puerto de destino del datagrama que
+buscar coincidencias coná con esta regla. La codificación de este parámetro es la
+misma que la del parámetro
+<TT
+CLASS="OPTION"
+>-s</TT
+>.</P
+></DD
+><DT
+>-j blanco</DT
+><DD
+><P
+>Especifica la acción que se tomará cuando se coincida con esta regla.
+Puede pensarse en este parámetro como con el significado de
+&ldquo;salta a.&rdquo; 
+Los blancos válidos son en principio las políticas
+<TT
+CLASS="LITERAL"
+>ACCEPT</TT
+>, <TT
+CLASS="LITERAL"
+>DENY</TT
+>, <TT
+CLASS="LITERAL"
+>REJECT</TT
+>,
+<TT
+CLASS="LITERAL"
+>REDIR</TT
+>, y <TT
+CLASS="LITERAL"
+>RETURN</TT
+>.
+Se describieron sus significados más arriba. Sin embargo,
+también puede proporcionarse el nombre de una cadena 
+de usuario, y será por donde el proceso continuará.
+Si se omite este parámetro, no se tomará ninguna acción sobre
+los datagramas coincidentes con la regla exceptuando la actualización de
+los contadores de datagrams y de bytes.</P
+></DD
+><DT
+>-i [!]nombre_de_interfaz</DT
+><DD
+><P
+>Especifica la interfaz por la que se recibió  o va a transmitirse el datagrama.
+De nuevo, el signo
+<TT
+CLASS="LITERAL"
+>!</TT
+> invierte el resultado de la coincidencia.
+Si el nombre de la interfaz acaba con un signo
+<TT
+CLASS="LITERAL"
+>+</TT
+> entonces cualquier interfaz que comience con
+la cadena proporcionada buscar coincidencias coná. Por ejemplo,
+<TT
+CLASS="LITERAL"
+>-i ppp+</TT
+> buscar coincidencias coná con cualquier dispositivo de
+red de PPP y
+<TT
+CLASS="LITERAL"
+>-i ! eth+</TT
+> con todas las interfaces excepto
+las correspondientes a dispositivos de Ethernet.</P
+></DD
+><DT
+>[!] -f</DT
+><DD
+><P
+>Especifica que esta regla se aplica a todo excepto al primer fragmento
+del un datagrama fragmentado.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.OPTIONS">9.7.2.3. Opciones</H3
+><P
+>Las siguientes opciones de
+<B
+CLASS="COMMAND"
+>ipchains</B
+> son más generales por naturaleza propia.
+Algunas de ellas controlan características bastante esotéricas
+del 'software' de 'IP Chains':
+
+<P
+></P
+></P><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>-b</DT
+><DD
+><P
+>Fuerza a que la orden genere dos reglas. Una ajusta el
+parámetro proporcionado y la otra regla añadida coincide
+con los parámetros en el sentido contrario.</P
+></DD
+><DT
+>-v</DT
+><DD
+><P
+>Causa que <B
+CLASS="COMMAND"
+>ipchains</B
+> sea más explícito en
+su salida. Proporcionará más información.</P
+></DD
+><DT
+>-n</DT
+><DD
+><P
+>Causa que 
+<B
+CLASS="COMMAND"
+>ipchains</B
+> muestre las direcciones de IP y los números
+de puertos en forma de números sin intentar resoverlos contra sus
+correspondientes nombres.</P
+></DD
+><DT
+>-l</DT
+><DD
+><P
+>Habilita el registro del núcleo de los datagramas coincidentes.
+Cualquier datagrama que coincida con la regla será registrado
+por el núcleo utilizando su función
+<TT
+CLASS="FUNCTION"
+>printk</TT
+>,
+con lo que este registro será gestionado habitualmente por el programa
+<B
+CLASS="COMMAND"
+>sysklogd</B
+> y escrito a un fichero de registro. 
+Esto resulta muy útil para hacer visibles datagramas poco usuales.</P
+></DD
+><DT
+>-o[tamaño_máximo]</DT
+><DD
+><P
+>Causa que el 'software' de 'IP Chains' copie cualquier datagrama
+coincidente con la regla al dispositivo
+&ldquo;netlink&rdquo; del espacio de usuarios.
+El argumento de tamaño_máximo limita el número de bytes que se pasarán
+desde cada datagrama al dispositivo netlink.
+Esta opción resulta de la mayor utilidad para los desarrolladores
+de 'software', pero puede que sea aprovechada por paquetes
+de 'software' en el futuro.</P
+></DD
+><DT
+>-m valor_de_marca</DT
+><DD
+><P
+>Causa que los datagramas coincidentes sean
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>marcados</I
+></SPAN
+> con un valor. Los valores de las marcas
+son números de 32 bits sin signo. En las implementaciones actuales esto
+no hace nada, pero en algún momento en el futuro puede que sirvan para
+determinar cómo otro 'software', como un código de encaminamiento,
+tratará al datagrama. Si un valor de una marca comienza con el signo
+<TT
+CLASS="LITERAL"
+>+</TT
+> o con el signo
+<TT
+CLASS="LITERAL"
+>-</TT
+>, el valor se añade o se substrae del valor actual
+de la marca.</P
+></DD
+><DT
+>-t máscara_and máscara_xor</DT
+><DD
+><P
+>Le permite manipular los bits del
+&ldquo;tipo de servicio&rdquo; de la cabecera de IP de cualquier
+datagrama que coincida con esta regla. Los bits de tipo de servicio son
+utilizados por los encaminadores inteligentes para gestionar la prioridad
+de los datagramas antes de reenviarlos. El software de encaminamiento
+de GNU/Linux es capaz de realizar este tipo de asignación de prioridades.
+La
+<TT
+CLASS="REPLACEABLE"
+><I
+>máscara_and</I
+></TT
+> y la
+<TT
+CLASS="REPLACEABLE"
+><I
+>máscara_xor</I
+></TT
+>
+representar máscaras de bits con las que se realizarán respectivamente
+un AND lógico o un OR lógico con los bits del tipo de servicio del 
+datagrama. Esto constituye una característica avanzada que se discute con más
+detalle en el IPCHAINS-HOWTO.</P
+></DD
+><DT
+>-x</DT
+><DD
+><P
+>Fuerza que los números de salida de
+<B
+CLASS="COMMAND"
+>ipchains</B
+> aparezcan con sus valores exactos
+sin ninguna aproximación.</P
+></DD
+><DT
+>-y</DT
+><DD
+><P
+>Causa que la regla coincida con cualquier datagrama de TCP
+cuyo bit SYN valga 1 y los bits ACK y FIN lleven un valor de 0.
+Esto se utiliza para filtrar las peticiones de conexión de TCP.</P
+></DD
+></DL
+></DIV
+><P>&#13;</P
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.SIMPLEEXAMPLE.AGAIN">9.7.3. Nuestro ejemplo simple revisado</H2
+><P
+>Vamos de nuevo a suponer que se dispone de una red en nuestra organización
+y que se utiliza una máquina cortafuegos basada en GNU/Linux para permitir
+a nuestros usuarios el acceso a servidores de WWW en Internet, y para
+impedir cualquier otro tipo de tráfico. </P
+><P
+>r
+Si nuestra red tiene una máscara de red de 24 bits (clase C) y
+tiene como dirección 172.16.1.0, 
+podrían utilizarse las siguientes reglas de
+<B
+CLASS="COMMAND"
+>ipchains</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -F forward</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -P forward DENY</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 0/0 80 -d 172.16.1.0/24 -p tcp -y -j DENY</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 172.16.1.0/24 -d 0/0 80 -p tcp -b -j ACCEPT</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>La primera de las órdenes borra todas las reglas del conjunto de reglas
+<TT
+CLASS="LITERAL"
+>forward</TT
+> y el segundo
+establece la política predeterminada del conjunto de reglas
+<TT
+CLASS="LITERAL"
+>forward</TT
+>
+a <TT
+CLASS="LITERAL"
+>DENY</TT
+>. 
+Por último, la tercera y cuartas órdenes establecen el filtrado
+específico que se desea. La cuarta orden permite que pasen los datagramas
+que provengan de o vayan a los servidores web de fuera de nuestra
+red, y la tercera red impide las conexiones entrantes de TCP con
+un puerto de origen igual a 80.</P
+><P
+>Si ahora se desea añadir reglas que permitan el modo pasivo sólo
+como modo de acceso a los servidores de FTP de fuera de nuestra
+red, se añadirían estas reglas:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 0/0 20 -d 172.16.1.0/24 -p tcp -y -j DENY</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 172.16.1.0/24 -d 0/0 20 -p tcp -b -j ACCEPT</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 0/0 21 -d 172.16.1.0/24 -p tcp -y -j DENY</B
+></TT
+>
+    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -A forward -s 172.16.1.0/24 -d 0/0 21 -p tcp -b -j ACCEPT</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.LISTING.AGAIN">9.7.4. Listado de nuestras reglas con ipchains</H2
+><P
+>&#13;Para mostrar nuestras reglas con
+<B
+CLASS="COMMAND"
+>ipchains</B
+>, se utiliza su argumento 
+<TT
+CLASS="OPTION"
+>-L</TT
+>. 
+De igual forma que con <B
+CLASS="COMMAND"
+>ipfwadm</B
+>, existen
+argumentos que controlan el grado de detalle de la salida. En su forma
+simple, <B
+CLASS="COMMAND"
+>ipchains</B
+> produce una salida que se parece a ésta:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="PROMPT"
+>#</TT
+> <TT
+CLASS="USERINPUT"
+><B
+>ipchains -L -n</B
+></TT
+>
+    Chain input (policy ACCEPT):
+    Chain forward (policy DENY):
+    target     prot opt     source              destination         ports
+    DENY       tcp  -y----  0.0.0.0/0           172.16.1.0/24       80 -&#62;   *
+    ACCEPT     tcp  ------  172.16.1.0/24       0.0.0.0/0           * -&#62;   80
+    ACCEPT     tcp  ------  0.0.0.0/0           172.16.1.0/24       80 -&#62;   *
+    ACCEPT     tcp  ------  172.16.1.0/24       0.0.0.0/0           * -&#62;   20
+    ACCEPT     tcp  ------  0.0.0.0/0           172.16.1.0/24       20 -&#62;   *
+    ACCEPT     tcp  ------  172.16.1.0/24       0.0.0.0/0           * -&#62;   21
+    ACCEPT     tcp  ------  0.0.0.0/0           172.16.1.0/24       21 -&#62;   *
+    
+    Chain output (policy ACCEPT):</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Si no se proporciona el nombre de la cadena que se desea mostrar,
+<B
+CLASS="COMMAND"
+>ipchains</B
+> mostrará todas las reglas de todas
+las cadenas.
+El argumento <TT
+CLASS="LITERAL"
+>-n</TT
+> de nuestro ejemplo le dice a
+<B
+CLASS="COMMAND"
+>ipchains</B
+>
+que no intente convertir ninguna dirección ni puerto en nombres.
+La información que presenta debería ser auto-explicativa.</P
+><P
+>Un formato de salida más explícito, que se invoca con la opción
+<TT
+CLASS="OPTION"
+>-u</TT
+>, proporciona mucho más detalle. 
+Esta salida añade campos para los contadores de bytes y de datagramas,
+el tipo de servicio, los identificadores
+<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>AND</I
+></SPAN
+> y <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>XOR</I
+></SPAN
+>, 
+el nombre de la interfaz, la marca, y el tamaño de la salida.</P
+><P
+>Todas las reglas creadas con 
+<B
+CLASS="COMMAND"
+>ipchains</B
+>
+tienen contadores de datagramas y bytes asociadas con ellas.
+Así es cómo se implementa la auditoría de IP y se discutirá 
+con detalle en
+<A
+HREF="x-087-2-accounting.html"
+>Capítulo 10</A
+>.
+Por defecto, estos contadores se presentan de forma aproximada
+utilizando los sufijos
+<TT
+CLASS="LITERAL"
+>K</TT
+> y
+<TT
+CLASS="LITERAL"
+>M</TT
+>, que representan las unidades de mil
+y de millón, respectivamente.
+Si se proporciona el argumento <TT
+CLASS="LITERAL"
+>-x</TT
+>, 
+entonces se muestran los contadores en su forma completa y expandida.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINSYAY">9.7.5. Uso avanzado de las cadenas</H2
+><P
+>Usted ya sabe que la orden
+<B
+CLASS="COMMAND"
+>ipchains</B
+>
+sustituye a la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> con una sintaxis de línea de órdenes
+más simple y con algunas mejoras interesantes, pero sin duda alguna,
+usted desea saber dónde y por qué se deben utilizar las cadenas de
+usuario.
+Probablemente, también desee saber cómo utilizar los guiones de soporte
+que acompañan a la orden 
+<B
+CLASS="COMMAND"
+>ipchains</B
+> en su paquete de 'software'.
+Se investigarán a continuación estas materias y se dará respuesta a esas
+cuestiones.</P
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN8542">9.7.5.1. Cadenas de usuario</H3
+><P
+>&#13;
+Los tres conjuntos de reglas del código del cortafuegos de IP
+tradicional proporcionan un mecanismo para construir configuraciones
+de cortafuegos que eran bastante simples de entender y de
+gestionar en el caso de pequeñas redes con requisitos
+simples en cuanto a funcionalidad de cortafuegos. Cuando
+los requisitos de configuración no son tan simples, aparecen
+numerosos problemas. En primer lugar, las redes muy grandes
+requieren con frecuencia un número mucho mayor de reglas
+de cortafuegos que el pequeño que hemos visto hasta ahora;
+de forma inevitable, aparecen necesidades que requieren que se
+añadan reglas de cortafuegos para cubrir escenarios con casos
+especiales. Cuando el número de reglas empieza a crecer,
+el rendimiento del cortafuegos disminuye más y más según
+más y más comprobaciones tienen que realizarse sobre cada
+datagrama y la facilidad de gestión se convierte en un
+asunto importante. En segundo lugar, no es posible habilitar
+y deshabilitar conjuntos de reglas atómicamente; en cambio,
+usted se encontrará inevitablemente expuesto a ataques mientras
+se encuentre en medio de una reconstrucción de sus conjuntos
+de reglas.&#13;</P
+><P
+>El diseño del cortafuegos 'IP Chains' ayuda a soliviantar estos problemas
+al permitir al administrador de la red crear conjuntos arbitrarios de
+reglas de cortafuegos que se pueden enlazar con los tres conjuntos
+de reglas predefinidas. Se puede utilizar la opción
+<TT
+CLASS="OPTION"
+>-N</TT
+> de <B
+CLASS="COMMAND"
+>ipchains</B
+> para crear
+una nueva cadena con el nombre de ocho caracteres o menos que nos plazca.
+(Probablemente sea buena idea restringir el nombre a uno formado
+por minúsculas solamente). La opción
+<TT
+CLASS="OPTION"
+>-j</TT
+>
+configura la acción que se tomará cuando el datagrama coincida 
+con la especificación
+de la regla.
+La opción
+<TT
+CLASS="OPTION"
+>-j</TT
+> especifica que si un datagrama coincide con una regla,
+entonces deben realizarse más comprobaciones contra una cadena
+definida por usuario. Se ilustrará esto con un diagrama.</P
+><P
+>Considérese las siguientes órdenes de
+<B
+CLASS="COMMAND"
+>ipchains</B
+>:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    ipchains -P input DENY
+    ipchains -N tcpin
+    ipchains -A tcpin -s ! 172.16.0.0/16
+    ipchains -A tcpin -p tcp -d 172.16.0.0/16 ssh -j ACCEPT
+    ipchains -A tcpin -p tcp -d 172.16.0.0/16 www -j ACCEPT
+    ipchains -A input -p tcp -j tcpin
+    ipchains -A input -p all</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>Se establece la política por defecto de la cadena de entrada a
+<TT
+CLASS="LITERAL"
+>deny</TT
+>. La segunda orden
+crea una cadena de usuario denominada
+&ldquo;tcpin.&rdquo; La tercera orden añade una regla
+a la cadena
+<TT
+CLASS="LITERAL"
+>tcpin</TT
+>
+que coincide con cualquier datagrama cuyo origen esté fuera de nuestra
+red; la regla no representa ninguna acción. Esta regla es una regla
+de auditoría que se discutirá con más detalle en
+<A
+HREF="x-087-2-accounting.html"
+>Capítulo 10</A
+>. Las dos reglas
+siguientes coinciden con cualquier datagrama destinado
+a nuestra red local tanto al puerto de
+<TT
+CLASS="LITERAL"
+>ssh</TT
+> como al de <TT
+CLASS="LITERAL"
+>www</TT
+>; los datagramas
+que coincidan con estas reglas son aceptados. La
+magia de <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ipchains</I
+></SPAN
+> empieza en la regla siguiente.
+Obliga al 'software' del cortafuegos a que compruebe
+cualquier datagrama del protocolo de TCP contra la cadena
+de usuario <TT
+CLASS="LITERAL"
+>tcpin</TT
+>.
+Por último, se añade una regla a la cadena
+<TT
+CLASS="LITERAL"
+>input</TT
+> que coincide con cualquier datagrama;
+esto es otra regla de auditoría.
+Todo esto producirá la cadenas de cortafuegos mostradas en
+la Figure 9-4.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS"><P
+><B
+>Figura 9-4. Un conjunto simple de reglas de una cadena de IP</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0904.jpg"></P
+></DIV
+></DIV
+><P
+>Nuestras cadenas
+<TT
+CLASS="LITERAL"
+>input</TT
+> y <TT
+CLASS="LITERAL"
+>tcpin</TT
+> están pobladas
+con nuestras reglas. El procesamiento de los datagramas siempre
+comienza por una de las cadenas predefinidas... Veamos cómo
+entran en juego las cadenas de usuario siguiendo el
+camino de procesamiento de los diferentes tipos de datagramas.</P
+><P
+>Primero, veamos qué pasa cuando se recibe un datagrama de UDP para uno de nuestros
+'hosts'. La
+<A
+HREF="x-087-2-firewall.fwchains.html#X-087-2-FIREWALL.IPCHAINS.UDP"
+>Figura 9-5</A
+> ilustra el flujo
+por las reglas.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.UDP"><P
+><B
+>Figura 9-5.  La secuencia de reglas de comprobación de un datagrama de UDP recibido
+	</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0905.jpg"></P
+></DIV
+></DIV
+><P
+>El datagrama se recibe por la cadena
+<TT
+CLASS="LITERAL"
+>input</TT
+> y cae dentro de las dos reglas porque
+coinciden con los protocolos de ICMP y TCP, respectivamente.
+Coincide con la tercera regla en la cadena,
+pero no se especifica ningún blanco por lo que los contadores
+de datagramas y bytes se actualizan pero se toma ninguna otra
+acción. El datagrama alcanza el final de la cadena
+<TT
+CLASS="LITERAL"
+>input</TT
+>,
+se encuentra con la política predeterminada de la cadena
+<TT
+CLASS="LITERAL"
+>input</TT
+> y no se acepta.</P
+><P
+>Para ver a nuestra cadena de usuario en acción,
+considérese qué pasa cuando se recibe un datagrama de TCP
+destinado al puerto
+<TT
+CLASS="LITERAL"
+>ssh</TT
+> de uno de nuestros 'hosts'. La secuencia
+se muestra en la
+<A
+HREF="x-087-2-firewall.fwchains.html#X-087-2-FIREWALL.IPCHAINS.TCP.SSH"
+>Figura 9-6</A
+>.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.TCP.SSH"><P
+><B
+>Figura 9-6. Flujo de reglas para un datagrama de TCP recibido para ssh</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0906.jpg"></P
+></DIV
+></DIV
+><P
+>Esta vez, la segunda regla de la cadena
+<TT
+CLASS="LITERAL"
+>input</TT
+> coincide y especifica como blanco
+la cadena
+<TT
+CLASS="LITERAL"
+>tcpin</TT
+>, nuestra cadena de usuario.
+Especificar una cadena de usuario como blanco causa que se
+compruebe el datagrama contra las reglas de esa cadena, por lo que
+la siguiente regla que se comprobará será la primera regla de la
+cadena
+<TT
+CLASS="LITERAL"
+>tcpin</TT
+>. 
+La primera regla coincide con cualquier datagrama que tenga una
+dirección de origen fuera de nuestra red local y no especifica
+ningún blanco, por lo que también es una regla de auditoría
+y la comprobación pasa a la siguiente regla. La segunda
+regla de nuestra cadena <TT
+CLASS="LITERAL"
+>tcpin</TT
+> sí que coincide
+y especifica un blanco de
+<TT
+CLASS="LITERAL"
+>ACCEPT</TT
+>. 
+Se ha llegado a un blanco tal que no se realiza más procesamiento.
+El datagrama se acepta.</P
+><P
+>Por último, veamos lo que pasa cuando se
+alcanza el final de una cadena de usuario. Para ver esto,
+se representará el flujo de un datagrama de TCP destinado
+a un puerto distinto de los dos que estamos manejando
+específicamente, como se muestra en la
+<A
+HREF="x-087-2-firewall.fwchains.html#X-087-2-FIREWALL.IPCHAINS.TCP.OTHER"
+>Figura 9-7</A
+>.</P
+><DIV
+CLASS="FIGURE"
+><A
+NAME="X-087-2-FIREWALL.IPCHAINS.TCP.OTHER"><P
+><B
+>Figura 9-7. Flujo de reglas para un datagra de TCP recibido para telnet</B
+></P
+><DIV
+CLASS="MEDIAOBJECT"
+><P
+><IMG
+SRC="lag2_0907.jpg"></P
+></DIV
+></DIV
+><P
+>Las cadenas de usuario no tienen políticas por defecto. Cuando se han
+comprobado todas
+las reglas de una cadena de usuario , y ninguna coincide,
+el código del cortafuegos actúa como si estuviera presente una regla de
+<TT
+CLASS="LITERAL"
+>RETURN</TT
+>, por lo que si no es esto lo que usted
+desea, debe asegurarse de proporcionar una regla al final de
+la cadena de usuario que tome la acción que desee.
+En nuestro ejemplo, la comprobación vuelve a la regla del conjunto
+de reglas
+<TT
+CLASS="LITERAL"
+>input</TT
+> situando inmediatamente después de
+la que nos movió a la cadena de usuario.
+En algún momento, se alcanza el final de la cadena
+<TT
+CLASS="LITERAL"
+>input</TT
+>, que tiene una política predeterminada
+y no se acepta el datagrama.</P
+><P
+>Este ejemplo era muy simple, pero sirve de ilustración. Un uso más práctico
+de 'IP chains' sería mucho más complejo. Un ejemplo un poco más sofisticado
+es el proporcionado con la siguiente lista de órdenes:</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
+>    #
+    # Establece la política de reenvío por defecto a REJECT
+    ipchains -P forward REJECT
+    #
+    # crea nuestras cadenas de usuario
+    ipchains -N sshin
+    ipchains -N sshout
+    ipchains -N wwwin
+    ipchains -N wwwout
+    #
+    # Se asegura de que se rechazarán las conexiones provenientes por el camino incorrecto.
+    ipchains -A wwwin -p tcp -s 172.16.0.0/16 -y -j REJECT
+    ipchains -A wwwout -p tcp -d 172.16.0.0/16 -y -j REJECT
+    ipchains -A sshin -p tcp -s 172.16.0.0/16 -y -j REJECT
+    ipchains -A sshout -p tcp -d 172.16.0.0/16 -y -j REJECT
+    #
+    # se asegura que lo que alcance el final de una cadena de usuario se rechaza
+    ipchains -A sshin -j REJECT
+    ipchains -A sshout -j REJECT
+    ipchains -A wwwin -j REJECT
+    ipchains -A wwwout -j REJECT
+    #
+    # dirige los servicios de www y ssh a las cadenas de usuario relevantes
+    ipchains -A forward -p tcp -d 172.16.0.0/16 ssh -b -j sshin
+    ipchains -A forward -p tcp -s 172.16.0.0/16 -d 0/0 ssh -b -j sshout
+    ipchains -A forward -p tcp -d 172.16.0.0/16 www -b -j wwwin
+    ipchains -A forward -p tcp -s 172.16.0.0/16 -d 0/0 www -b -j wwwout
+    #
+    # Inserta nuestras reglas para buscar coincidencias con los 'hosts' en la segunda posición de
+    # nuestras cadenas de usuario.
+    ipchains -I wwwin 2 -d 172.16.1.2 -b -j ACCEPT
+    ipchains -I wwwout 2 -s 172.16.1.0/24 -b -j ACCEPT
+    ipchains -I sshin 2 -d 172.16.1.4 -b -j ACCEPT 
+    ipchains -I sshout 2 -s 172.16.1.4 -b -j ACCEPT
+    ipchains -I sshout 2 -s 172.16.1.6 -b -j ACCEPT
+    #</PRE
+></TD
+></TR
+></TABLE
+><P
+>En este ejemplo, se ha utilizado una selección de cadenas
+de usuario tanto para simplificar la gestión de la configuración
+de nuestro cortafuegos como para mejorar su eficiencia en
+comparación a una solución que involucrara sólo las cadenas
+predefinidas.</P
+><P
+>Nuestro ejemplo crea cadenas de usuario para cada uno de los
+servicios de
+<TT
+CLASS="LITERAL"
+>ssh</TT
+> y <TT
+CLASS="LITERAL"
+>www</TT
+> en cada
+sentido de la conexión. La cadena denominada
+<TT
+CLASS="LITERAL"
+>wwwout</TT
+> es donde se colocan las reglas
+para los 'hosts' que tienen permisos para realizar 
+conexiones de World Wide Web salientes, y
+<TT
+CLASS="LITERAL"
+>sshin</TT
+> es donde se definen las reglas
+para los 'hosts' a los que se desea permitir las conexiones entrantes
+de ssh. Se asume que tenemos los requisitos de permitir
+o denegar a 'hosts' individuales de nuestra red la capacidad
+de empezar o recibir conexiones de
+<TT
+CLASS="LITERAL"
+>ssh</TT
+> y <TT
+CLASS="LITERAL"
+>www</TT
+>. 
+La simplificación existe porque las cadenas de usuario nos permiten
+de forma clara agrupar las reglas para los permisos de entradas y
+salidas a los 'hosts' en vez de tenerlas todas revueltas. La mejora
+en la eficiencia se debe a que se ha reducido el número medio de
+comprobaciones requeridas sobre cualquier datagrama antes de que
+se encuentre un blanco. La ganancia de eficiencia aumenta conforme
+se añaden más 'hosts' Si no se hubiera utilizado cadenas de usuario,
+se tendría que buscar por la lista completa de reglas para determinar
+qué acción se toma con cada datagrama que se recibe.
+Incluso si se asume que cada una de las reglas de nuestra lista
+coincide con una proporción igual del número total de datagramas
+procesados, aún así estaríamos buscando en la mitad de la lista
+en promedio. Las cadenas de usuario nos permiten evitar la
+comprobación de números
+grandes de reglas si el datagrama que se comprueba no coincide
+con la regla simple en la cadena predeterminada a la que ha saltado.</P
+></DIV
+><DIV
+CLASS="SECT3"
+><H3
+CLASS="SECT3"
+><A
+NAME="AEN8632">9.7.5.2. Los guiones de soporte de ipchains</H3
+><P
+>&#13;El paquete de 'software' de
+<B
+CLASS="COMMAND"
+>ipchains</B
+> se proporciona con tres guiones de soporte.
+El primero de ellos ya se ha discutido brevemente, mientras que los
+dos restantes proporcian un método sencillo y conveniente de
+guardar y recuperar la configuración de su cortafuegos.</P
+><P
+>&#13;El guión
+<B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+> emula la sintaxis
+de la línea de órdenes de la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+>, pero utiliza la orden
+<B
+CLASS="COMMAND"
+>ipchains</B
+> para construir las reglas del cortafuegos.
+Esto es una forma conveniente de realizar la migración de la configuración
+existente
+de su cortafuegos o una alternativa al aprendizaje de la sintaxis
+de
+<B
+CLASS="COMMAND"
+>ipchains</B
+>. El guión 
+<B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+>
+se comporta de forma diferente de la orden
+<B
+CLASS="COMMAND"
+>ipfwadm</B
+> en dos cosas: en primer lugar,
+porque la orden
+<B
+CLASS="COMMAND"
+>ipchains</B
+> no soporta la especificación de una
+interfaz por su dirección, el guión
+<B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+> acepta el argumento
+<TT
+CLASS="OPTION"
+>-V</TT
+> pero intenta convertirlo en el equivalente en
+<B
+CLASS="COMMAND"
+>ipchains</B
+> de
+<TT
+CLASS="OPTION"
+>-W</TT
+> buscando el nombre del interfaz configurado
+por la dirección proporcionada. El guión
+<B
+CLASS="COMMAND"
+>ipfwadm-wrapper</B
+> le dará siempre un aviso
+cuando utilice la opción
+<TT
+CLASS="OPTION"
+>-V</TT
+> con el propósito de recordarle todo esto.
+En segundo lugar, las reglas de auditoría de los fragmentos
+no se traducen adecuadamente.</P
+><P
+>&#13;
+
+Los guiones <B
+CLASS="COMMAND"
+>ipchains-save</B
+> e <B
+CLASS="COMMAND"
+>ipchains-restore</B
+>
+convierten la tarea de construir y modificar la configuración del
+cortafuegos en una tarea mucho más simple.
+La orden
+<B
+CLASS="COMMAND"
+>ipchains-save</B
+> lee la configuración actual y la escribe
+de forma simplificada por la salida estándar. La orden
+<B
+CLASS="COMMAND"
+>ipchains-restore</B
+> 
+lee datos con el formato de la salida de la orden
+<B
+CLASS="COMMAND"
+>ipchains-save</B
+> y configura el
+cortafuegos de IP con esas reglas.
+La ventaja de utilizar estos guiones en vez de modificar directamente
+el guión de configuración de su cortafuegos y probar la nueva configuración
+consiste en la capacidad de construir dinámicamente su configuración una vez y
+entonces guardarla. Entonces usted puede recuperar esa configuración,
+modificarla, y volverla a guardar si así lo desea.</P
+><P
+>Para utilizar los guiones, se introduciría algo como:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+><B
+CLASS="COMMAND"
+>ipchains-save</B
+> &gt;/var/state/ipchains/firewall.state</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+>
+
+para guardar la configuración actual de su cortafuegos. Usted la recuperaría,
+quizás en el momento de arranque del sistema, con:
+
+<TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="SCREEN"
+>    <TT
+CLASS="USERINPUT"
+><B
+><B
+CLASS="COMMAND"
+>ipchains-restore</B
+> &lt;/var/state/ipchains/firewall.state</B
+></TT
+></PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>El guión 
+<B
+CLASS="COMMAND"
+>ipchains-restore</B
+> comprueba si ya existe
+cualquiera de las cadenas de usuarios especifica en su entrada.
+Si se proporciona el argumento
+<TT
+CLASS="LITERAL"
+>-f</TT
+>,
+entonces y de forma automáticaa, el guión borrará las reglas de la cadena
+de usuario antes de configurar las de la entrada. El comportamiento
+por defecto es que se le pregunte si desea saltarse esta cadena o
+inicializarla.</P
+></DIV
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notas</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FW-TFN16"
+HREF="x-087-2-firewall.fwchains.html#X-087-2-FW-TFN16"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+> N. del T.: "cadenas de IP"</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.X-087-2-FN05"
+HREF="x-087-2-firewall.fwchains.html#X-087-2-FN05"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>Puede contactar con Paul en
+<SPAN
+CLASS="SYSTEMITEM"
+>Paul.Russell@rustcorp.com.au</SPAN
+>.</P
+></TD
+></TR
+></TABLE
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.original.html"
+ACCESSKEY="P"
+>Anterior</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Inicio</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.future.html"
+ACCESSKEY="N"
+>Siguiente</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>El cortafuegos original de IP (núcleos 2.0)</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="x-087-2-firewall.html"
+ACCESSKEY="U"
+>Subir</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Netfilter e 'IP Tables' (Núcleos 2.4)</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

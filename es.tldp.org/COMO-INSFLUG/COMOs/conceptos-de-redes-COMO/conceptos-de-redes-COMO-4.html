@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+<HEAD>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.9">
+ <TITLE>Linux Networking-concepts HOWTO: Cuesti&oacute;n de IP</TITLE>
+ <LINK HREF="conceptos-de-redes-COMO-5.html" REL=next>
+ <LINK HREF="conceptos-de-redes-COMO-3.html" REL=previous>
+ <LINK HREF="conceptos-de-redes-COMO.html#toc4" REL=contents>
+</HEAD>
+<BODY>
+<A HREF="conceptos-de-redes-COMO-5.html">Página siguiente</A>
+<A HREF="conceptos-de-redes-COMO-3.html">Página anterior</A>
+<A HREF="conceptos-de-redes-COMO.html#toc4">Índice general</A>
+<HR>
+<H2><A NAME="s4">4. Cuesti&oacute;n de IP</A></H2>
+
+<P>
+<A NAME="definition-route"></A> 
+<A NAME="definition-ip-address"></A> 
+De manera que el papel de la capa IP es averiguar c&oacute;mo «encaminar»
+paquetes a su destino final. Para hacerlo posible, cada interfaz en la red
+necesita una «direcci&oacute;n IP». Una direcci&oacute;n IP consiste en cuatro n&uacute;meros
+separados por puntos, tal como «167.216.245.249». Cada n&uacute;mero estar&aacute; entre
+cero y 255.
+<P>Las interfaces de la misma red tienden a tener direcciones IP vecinas.
+Por ejemplo «167.216.245.250» estar&aacute; cerca de la m&aacute;quina con la direcci&oacute;n
+IP «167.216.245.249». Recuerde tambi&eacute;n que un <EM>router</EM> es un nodo con
+interfaces en una o m&aacute;s redes, de manera que el <EM>router</EM> tendr&aacute; una
+direcci&oacute;n IP por cada interfaz.
+<P>
+<A NAME="definition-default-route"></A> 
+Por tanto la capa IP del N&uacute;cleo de Linux tiene una tabla con diferentes
+«rutas», que describe c&oacute;mo llegar a varios grupos de direcciones IP. La
+m&aacute;s sencilla de ellas se llama «ruta por defecto»: si la capa IP no sabe
+qu&eacute; hacer, es ah&iacute; a donde env&iacute;a los paquetes. Puede ver una lista de las
+rutas usando <CODE>/sbin/route</CODE>.
+<P>Las rutas pueden indicar tanto un enlace, como un nodo particular que est&aacute;
+conectado a otra red. Por ejemplo, cuando llamamos a un ISP, la ruta por
+defecto indicar&aacute; el enlace del m&oacute;dem, porque por ah&iacute; se llega al mundo
+entero.
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+  M&oacute;dem de             M&oacute;dem  ~~~~~~ 
+   Rusty             del ISP {      }
+       o------------------o { La Red }
+                             {      }
+                              ~~~~~~  
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>Pero si tenemos una m&aacute;quina en nuestra red que conecta con el mundo
+exterior, es un poco m&aacute;s complejo. En el siguiente diagrama, mi m&aacute;quina
+puede comunicarse directamente con las de Pedro y Pablo, y con el
+cortafuegos («firewall»), pero necesita saber que los paquetes dirigidos
+al resto del mundo han de pasar por el cortafuegos, que los reenviar&aacute;.
+Esto significa que hay dos rutas: una dice «si est&aacute; en mi red,
+sencillamente su&eacute;ltalo ah&iacute;», y luego la ruta por defecto que dice «en
+cualquier otro caso, env&iacute;alo al cortafuegos».
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+                         o  La estaci&oacute;n de trabajo
+                         |    de Pedro          ~~~~~~  
+  La estaci&oacute;n de trabajo |                     {      } 
+   de Rusty     o--------+-----------------o--{ La Red }
+                         |         cortafuegos {      } 
+                         |                      ~~~~~~
+                         o  La estaci&oacute;n de trabajo
+                              de Pablo
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<H2><A NAME="ss4.1">4.1 Grupos de direcciones IP: M&aacute;scaras de Red</A>
+</H2>
+
+<P>
+<A NAME="definition-network-address"></A> 
+Queda un &uacute;ltimo detalle: existe una notaci&oacute;n est&aacute;ndar para grupos de
+direcciones IP, a veces llamada «direcci&oacute;n de red». Igual que un n&uacute;mero de
+tel&eacute;fono puede ser separado en prefijo de &aacute;rea y el resto, podemos separar
+una direcci&oacute;n IP en el prefijo de red y el resto.
+<P>Antes se hablaba de «la red 1.2.3», refiri&eacute;ndose a todas las 256
+direcciones de la 1.2.3.0 a la 1.2.3.255. O si no bastaba con esa red,
+se hac&iacute;a referencia a «la red 1.2», que implica todas las direcciones desde la
+1.2.0.0 a la 1.2.255.255.
+<P>
+<A NAME="definition-network-mask"></A> 
+<A NAME="definition-netmask"></A> 
+Normalmente no escribimos «1.2.0.0 - 1.2.255.255». En su lugar, lo
+abreviamos como «1.2.0.0/16». Esta extra&ntilde;a notaci&oacute;n «/16» (se llama
+«netmask» - m&aacute;scara de red) precisa de alguna explicaci&oacute;n.
+<P>Cada n&uacute;mero entre los puntos en una direcci&oacute;n IP se compone de 8 d&iacute;gitos
+binarios (00000000 a11111111): los escribimos en la forma decimal para
+hacerlos m&aacute;s legibles para el ser humano. El «/16» significa que los primeros
+16 d&iacute;gitos binarios constituyen la direcci&oacute;n d red, o en otras palabras,
+«1.2.» es la parte de la red (recuerde: cada d&iacute;gito representa 8
+binarios). Esto significa que cualquier direcci&oacute;n IP que comience por
+«1.2» es parte de la red: «1.2.3.4» y «1.2.3.50» lo son, y «1.3.1.1» no.
+<P>Para hacer la vida m&aacute;s f&aacute;cil, solemos usar redes que acaban en «/8», «/16»
+y «/24». Por ejemplo, «10.0.0.0/8» es una gran red que contiene las
+direcciones desde la 10.0.0.0 a la 10.255.255.255 (¡alrededor de 24
+millones de direcciones!). 10.0.0.0/16 es m&aacute;s peque&ntilde;a, y s&oacute;lo contiene
+las direcciones IP de la 10.0.0.0 a la 10.0.255.255. 10.0.0.0/24 es a&uacute;n
+m&aacute;s peque&ntilde;a, y s&oacute;lo contiene las direcciones 10.0.0.0 a 10.0.0.255.
+<P>Para termina de hacerlo confuso, hay otras maneras de escribir m&aacute;scaras
+de red. Podemos escribirlas como direcciones IP:
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+10.0.0.0/255.0.0.0
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<A NAME="definition-broadcast-address"></A> 
+Para concluir, cabe se&ntilde;alar que la IP m&aacute;s alta de cualquier
+red est&aacute; reservada para la «direcci&oacute;n de multidifusi&oacute;n», que se puede usar
+para enviar un mensaje a todas las m&aacute;quinas de la red a la vez.
+<P>
+<P>He aqu&iacute; una tabla de m&aacute;scaras de red:
+<BLOCKQUOTE><CODE>
+<PRE>
+Forma   Forma                   M&aacute;ximo n&uacute;mero   Comentarios
+  Corta   Completa                M&aacute;quinas
+
+/8      /255.0.0.0              16,777,215      Se suele llamar «clase A»
+/16     /255.255.0.0            65,535          Se suele llamar «clase B»
+/17     /255.255.128.0          32,767
+/18     /255.255.192.0          16,383
+/19     /255.255.224.0          8,191
+/20     /255.255.240.0          4,095
+/21     /255.255.248.0          2,047
+/22     /255.255.252.0          1,023
+/23     /255.255.254.0          511
+/24     /255.255.255.0          255             Se suele llamar «clase C»
+/25     /255.255.255.128        127
+/26     /255.255.255.192        63
+/27     /255.255.255.224        31
+/28     /255.255.255.240        15
+/29     /255.255.255.248        7
+/30     /255.255.255.252        3
+</PRE>
+</CODE></BLOCKQUOTE>
+<P>
+<HR>
+<A HREF="conceptos-de-redes-COMO-5.html">Página siguiente</A>
+<A HREF="conceptos-de-redes-COMO-3.html">Página anterior</A>
+<A HREF="conceptos-de-redes-COMO.html#toc4">Índice general</A>
+</BODY>
+</HTML>

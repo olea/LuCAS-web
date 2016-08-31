@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <linux/ipc.h>
+#include <linux/msg.h>
+#include <errno.h>
+
+/* Our message structure */
+typedef struct
+{
+  int service;
+  int sender;
+  int receiver;
+  int data;
+} messg_t;
+
+/* Redefinition of kernel message structure */
+typedef struct
+{
+  long mtype;
+  messg_t message;
+} mymsgbuf_t;
+
+/* Structures handling functions */
+void set_type(mymsgbuf_t * buf, int type);
+void set_service(mymsgbuf_t * buf, int service);
+void set_sender(mymsgbuf_t * buf, int sender);
+void set_receiver(mymsgbuf_t * buf, int receiver);
+void set_data(mymsgbuf_t * buf, int data);
+
+int get_service(mymsgbuf_t * buf);
+int get_data(mymsgbuf_t * buf);
+int get_sender(mymsgbuf_t * buf);
+int get_receiver(mymsgbuf_t * buf);
+
+/* This function creates a unique SysV IPC key */
+/* from a letter passed as a parameter */
+key_t build_key(char c);
+
+/* This function creates a SysV message queue identified by an IPC key */
+/* The returned int is the identifier of the queue */
+int create_queue(key_t key);
+
+/*  This function removes the queue from the kernel address space */
+int remove_queue(int qid);
+
+/* This function sends a message to the queue identified by qid. */
+/* Remember the length of a message excludes the field mtype */
+int send_message(int qid, mymsgbuf_t *qbuf);
+
+/* This function reads a message from the queue qid filtering the field mtype */
+/* i.e. gets from the queue the first message with the filed mtype set to the vaule of type */
+int receive_message(int qid, long type, mymsgbuf_t *qbuf);

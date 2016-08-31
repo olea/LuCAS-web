@@ -1,0 +1,1177 @@
+<HTML>
+<HEAD>
+<TITLE>Impresi&oacute;n Como: LPR</TITLE>
+</HEAD>
+<BODY>
+<A HREF="Configuracion-Impresion-Como-3.html">Anterior</A>
+<A HREF="Configuracion-Impresion-Como-5.html">Siguiente</A>
+<A HREF="Configuracion-Impresion-Como.html#toc4">Indice</A>
+<HR>
+<H2><A NAME="s4">4. LPR</A></H2>
+
+
+<P>Todo sistema que se precie es capaz de gestionar una o varias impresoras,
+con uno o varios usuarios, que les env&iacute;an distintas clases de documentos,
+m&aacute;s o menos dignamente.</P>
+<P>Unix resuelve estos problemas mediante un conjunto de programas, los
+servidores de impresi&oacute;n, que gestionan los trabajos pendientes, y los
+encauzan a las impresoras adecuadas, todo de manera completamente
+transparente al usuario.</P>
+<P>Hay dos familias de servicios de impresi&oacute;n: "<CODE>lp</CODE>" en UNIX System V
+(AT&amp;T), y "<CODE>lpr</CODE>", en los U*X BSD, y Linux. En este documento s&oacute;lo
+se hablar&aacute; del segundo sistema; el sistema <CODE>lp</CODE> no es de dominio
+publico, y no conocemos ninguna versi&oacute;n que lo sea; de todos modos,
+ambos tienen hoy d&iacute;a la misma funcionalidad.</P>
+<P>Una variante muy prometedora de <CODE>lpr</CODE>, <I>LPRng</I>, obvia toda una serie
+de limitaciones del <CODE>lpr</CODE> original. Nos limitaremos a mencionar las
+diferencias en los cap&iacute;tulos concretos. </P>
+<P>Dicen los que saben que <CODE>lp</CODE> es m&aacute;s robusto, pero a la hora de trabajar
+en red <CODE>lpr</CODE> se destaca por varios cuerpos.</P>
+
+<H2><A NAME="ss4.1">4.1 ¿Qu&eacute; necesita?</A></H2>
+
+
+<P>Asumimos que usted sabe c&oacute;mo editar un archivo de texto bajo Linux, y
+tiene los conocimientos b&aacute;sicos sobre permisos y propiedad de archivos. </P>
+<P>Tambi&eacute;n suponemos que su sistema Linux funciona sin tropiezos. Si desea
+imprimir en m&aacute;quinas remotas, deber&aacute; adem&aacute;s tener configurado y
+funcionando el soporte de red (vea en <CODE>NET-3-HOWTO</CODE>
+<SL>N. del
+Revisor: <BR> Disponible en breve en castellano como <CODE>NET-3-Como</CODE>,
+ver secci&oacute;n 
+<A HREF="Configuracion-Impresion-Como-8.html#Grupos">Grupos</A></SL>
+).</P>
+<P>Revise las p&aacute;ginas de manual de los comandos <CODE>chmod</CODE> y <CODE>chown</CODE> para
+m&aacute;s informaci&oacute;n.</P>
+
+
+<H2><A NAME="ss4.2">4.2 ¿C&oacute;mo imprimir con Linux?</A></H2>
+
+
+<P>El camino m&aacute;s corto en UNIX (y bajo Linux), es enviar los datos a
+imprimir directamente al dispositivo adecuado. El siguiente comando env&iacute;a
+un listado del directorio a la primera impresora en paralelo (hablando en
+DOS, LPT1:): </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       ls &gt; /dev/lp1
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El problema de este m&eacute;todo es que no aprovecha las capacidades de
+multitarea de Linux, debido a que el tiempo que tarda el comando en
+completarse ser&aacute; el mismo que emplee la impresora en despachar el trabajo.</P>
+<P>En una impresora lenta, o en una apagada o sin papel, puede prolongarse un
+poco. Podr&iacute;amos ejecutar el comando simplemente en segundo plano, pero no
+adelantar&iacute;amos mucho. Adem&aacute;s, deber&aacute; tener privilegios de superusuario. </P>
+<P>Un remedio mejor es crear un &aacute;rea tamp&oacute;n (<I>spool</I>), es decir, guardar
+los datos a imprimir en un fichero temporal, y arrancar un proceso en
+segundo plano que env&iacute;e los datos a la impresora, y gestione las
+incidencias que se presenten. </P>
+<P>Esencialmente, as&iacute; funciona Linux. Para cada impresora, se define un &aacute;rea
+tamp&oacute;n, donde cada trabajo pendiente se almacena en un fichero. Un proceso
+en segundo plano (llamado el demonio de impresi&oacute;n) analiza met&oacute;dica y
+constantemente los ficheros tamp&oacute;n, buscando nuevos datos a imprimir. 
+Cuando aparece alguno, son enviados a la impresora apropiada; cuando m&aacute;s
+de un fichero est&aacute; a la espera, se colocan en una cola (el primero que
+entra es el primero que se procesa), por lo que se habla propiamente de la
+"<I>cola de impresi&oacute;n</I>".</P>
+<P>En el caso de impresi&oacute;n remota, los trabajos se gestionan localmente, como
+cualquier otro, pero el demonio de impresi&oacute;n lo env&iacute;a a trav&eacute;s de la red
+hacia el ordenador o impresora destino. </P>
+<P>La informaci&oacute;n que el demonio de impresi&oacute;n necesita para su trabajo (el
+dispositivo f&iacute;sico, el tamp&oacute;n de datos, la m&aacute;quina e impresora remota ...)
+se almacenan en un fichero llamado "<CODE>printcap</CODE>", que describiremos m&aacute;s
+tarde.</P>
+<P>En lo sucesivo, el t&eacute;rmino "impresora" se referir&aacute; a una m&aacute;quina l&oacute;gica
+definida en <CODE>/etc/printcap</CODE>. El concepto "impresora f&iacute;sica" o
+"trasto", define la cosa que mancha papel. Es perfectamente posible
+describir m&uacute;ltiples entradas en <CODE>/etc/printcap</CODE> que se refieren a
+un s&oacute;lo trasto, pero por caminos tortuosos. No se preocupe, lo aclararemos
+al describir <CODE>printcap</CODE>.</P>
+
+
+<H2><A NAME="ss4.3">4.3 Impresi&oacute;n remota e impresi&oacute;n local.</A></H2>
+
+
+<P>La impresi&oacute;n remota nos permite enviar trabajos de impresi&oacute;n desde una
+m&aacute;quina, hacia otra (ordenador/impresora) conectada a una red; por
+ejemplo, nuestro equipo funciona de servidor en una red, o si una
+impresora asignada a nuestra m&aacute;quina debe ser accesible por otros
+ordenadores. </P>
+<P>Imprimimos localmente cuando usuarios de nuestra m&aacute;quina env&iacute;an trabajos a
+una impresora conectada directamente a la misma. </P>
+
+
+<H2><A NAME="ss4.4">4.4 Los programas importantes</A></H2>
+
+
+<P>El sistema de impresi&oacute;n de Linux se sustenta en cinco programas, que
+deber&iacute;an estar donde aparecen en el siguiente listado, propiedad de
+<CODE>root</CODE>, y grupo <CODE>lp</CODE> (o <CODE>daemon</CODE>, seg&uacute;n el sistema en concreto):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+       -rwxr-xr-x          root          lp            /bin/lpr
+
+       -rwxr-xr-x          root          lp            /bin/lpq
+
+       -rwxr-xr-x          root          lp            /bin/lpc
+
+       -rwxr-xr-x          root          lp            /bin/lprm
+
+       -rwxr-x---         root          lp            /sbin/lpd
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Los cuatro primeros tienen por fin enviar, cancelar y examinar los
+trabajos de impresi&oacute;n. <CODE>/sbin/lpd</CODE> es el demonio de impresi&oacute;n. </P>
+<P>OJO: Los directorios, permisos y propiedad de los ficheros pueden diferir
+a los de su sistema, aunque no deber&iacute;an ser MUY distintos. </P>
+<P>Hay p&aacute;ginas de manual que explican con detalle todas estas &oacute;rdenes y que
+deber&iacute;a consultar para ampliar informaci&oacute;n. </P>
+<P>Es importante saber que, por defecto, <CODE>lpr</CODE>, <CODE>lprm</CODE>, <CODE>lpc</CODE> y
+<CODE>lpq</CODE> trabajan con una impresora llamada "<CODE>lp</CODE>". Si define la
+variable de entorno <CODE>PRINTER</CODE> con el nombre de una impresora, pasar&aacute; a
+ocupar el valor por defecto. Se puede indicar sobre la marcha una
+impresora distinta con la opci&oacute;n <CODE>-P impresora</CODE> en la l&iacute;nea de
+&oacute;rdenes.</P>
+
+<H3>La orden <CODE>lpr</CODE></H3>
+
+
+<P>Con <CODE>lpr</CODE> se env&iacute;a un trabajo a la impresora. Este se copia en el
+tamp&oacute;n, donde el demonio de impresi&oacute;n lo encuentra, y lo env&iacute;a a la
+impresora f&iacute;sica. Si no le suministra un fichero, <CODE>lpr</CODE> usar&aacute; la
+entrada est&aacute;ndar. </P>
+
+<H3>La orden <CODE>lpq</CODE></H3>
+
+
+<P><CODE>lpq</CODE> muestra los trabajos pendientes para la impresora deseada
+("<CODE>lp</CODE>" por defecto). <CODE>lpq</CODE> muestra el n&uacute;mero de cada trabajo, que
+lo identifica para cualquier proceso posterior.</P>
+<P>Muestra tambi&eacute;n el estado de cada trabajo. "<CODE>active</CODE>" indica que el
+demonio est&aacute; enviando el trabajo a su destino, o al menos lo intenta. Si
+no, un n&uacute;mero indica su orden en la cola de impresi&oacute;n. </P>
+
+<H3>La orden <CODE>lprm</CODE></H3>
+
+
+<P><CODE>lprm</CODE> elimina un trabajo de la cola, es decir, borra los ficheros en
+espera en el directorio tamp&oacute;n. Puede indicar espec&iacute;ficamente la identidad
+de un trabajo particular, o "<CODE>-</CODE>", con lo que cancelamos todos los
+trabajos destinados a la impresora seleccionada .Si se es superusuario, y
+quiere eliminar todos los trabajos pertenecientes a un usuario,
+especifique su nombre de usuario en la l&iacute;nea de &oacute;rdenes.</P>
+
+<H3>la orden <CODE>lpc</CODE></H3>
+
+
+<P>Con <CODE>lpc</CODE> podemos comprobar el estado de las impresoras, y controlar
+algunos aspectos de su uso. Particularmente, le permite arrancar y parar
+el tamp&oacute;n de datos, permite activar y desactivar impresoras, y reorganizar
+el orden de los trabajos en cola. Con las &oacute;rdenes siguientes desactivamos
+la impresora "<CODE>impre</CODE>", activamos la cola de "<CODE>tuimpre</CODE>", y
+mueve el trabajo 37 al principio de la cola.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+              lpc down impre
+
+              lpc enable tuimpre
+
+              lpc topq 37
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Si no especificamos argumentos, <CODE>lpc</CODE> entrar&aacute; en modo di&aacute;logo. con
+"<CODE>?</CODE>" obtenemos ayuda. Advierta que algunas funciones de <CODE>lpc</CODE> est&aacute;n
+reservadas para el superusuario.</P>
+
+
+<H2><A NAME="ss4.5">4.5 Los directorios fundamentales.</A></H2>
+
+
+<P>Realmente, s&oacute;lo hay un directorio importante: el &aacute;rea de tamp&oacute;n donde se
+almacenan los datos a la espera de que <CODE>lpd</CODE> decida qu&eacute; hacer con
+ellos. Sin embargo, un sistema t&iacute;pico deber&iacute;a configurarse en varios
+directorios, uno para cada impresora, lo que facilita notablemente el
+mantenimiento. En la mayor&iacute;a de las instalaciones, <CODE>/var/spool/lpd</CODE>
+es el directorio tamp&oacute;n principal, y cada impresora tiene un subdirectorio
+particular, con el mismo nombre que la impresora. As&iacute;, si tiene una
+impresora llamada PJL-16 que admite PostScript y HPGL, deber&iacute;a crear dos
+directorios, por ejemplo <CODE>/var/spool/lpd/PJL-16-ps</CODE> y
+<CODE>/var/spool/lpd/PJL-16-hpgl</CODE>.</P>
+<P>Los directorios temporales deber&iacute;an pertenecer a <CODE>root</CODE>, grupo <CODE>lp</CODE>; 
+user y group deben poder leer y escribir, y el resto, leer. permisos:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-rwxrwxr-x
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(775) </P>
+<P>Para cada directorio de impresora, la orden adecuada ser&iacute;a: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+chmod ug=rwx,o=rx PJL-16-ps
+chgrp lp myprinter
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Los destinos, permisos y propietarios aqu&iacute; indicados deben considerarse
+como indicativos, pues pueden variar entre distintos sistemas e
+instalaciones. </P>
+
+<H3>Y sus correspondientes ficheros.</H3>
+
+
+<P>Adem&aacute;s de los programas ya tratados, cada directorio temporal debe
+contener como m&iacute;nimo estos cuatro ficheros: "<CODE>.seq</CODE>" , "<CODE>errs</CODE>" ,
+"<CODE>lock</CODE>" y "<CODE>status</CODE>". Deber&aacute;n tener permisos </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-rw-rw-r-- 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(664).</P>
+<P>El fichero <CODE>.seq</CODE> contiene la secuencia de trabajos enviados.
+<CODE>status</CODE> contiene el mensaje que devuelve "<CODE>lpc stat</CODE>". El fichero
+<CODE>lock</CODE> impide al <CODE>lpd</CODE> imprimir al tiempo dos trabajos en la misma
+impresora, y <CODE>errs</CODE> guarda un registro de los fallos de la impresora. </P>
+<P>El fichero "<CODE>errs</CODE>" es actualmente potestativo, y ahora puede llamarse
+como le apetezca su nombre se especificar&aacute; en <CODE>/etc/printcap</CODE>.
+Debe, sin embargo, existir un fichero que permita a <CODE>lpd</CODE> registrar los
+mensajes de error. </P>
+
+
+<H2><A NAME="ss4.6">4.6 <CODE>/etc/printcap</CODE></A></H2>
+
+
+<P><CODE>/etc/printcap</CODE> es un fichero texto, modificable con su editor
+favorito.</P>
+<P>Su propietario debe ser <CODE>root</CODE> y debe tener permisos </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+-rw-r--r-- 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+(644)</P>
+<P>Aunque a golpe de vista parezca tan comprensible como la piedra Rosetta ,
+su estructura es muy sencilla y asequible. Parte de la mala fama se debe a
+que algunas distribuciones no incluyen p&aacute;gina de manual para
+<CODE>printcap</CODE>, y el hecho de que muchos <CODE>printcap</CODE> est&aacute;n generados por
+programas, o por gente cuya manera de despreciar al g&eacute;nero humano es
+omitir comentarios que ayuden a su compresi&oacute;n. Desde aqu&iacute; hacemos un
+llamamiento para que su fichero <CODE>printcap</CODE> sea tan legible como sea
+posible.</P>
+<P>Cada entrada de <CODE>printcap</CODE> describe una impresora. Mejor a&uacute;n, cada
+entrada de <CODE>printcap</CODE> provee una denominaci&oacute;n l&oacute;gica para un
+dispositivo f&iacute;sico, y describe c&oacute;mo deben los datos ser enviados y
+manejados por &eacute;l.</P>
+<P>Por ejemplo, una entrada de <CODE>printcap</CODE> definir&aacute; qu&eacute; puerto vamos a
+usar, qu&eacute; directorio tamp&oacute;n, qu&eacute; proceso deben soportar los datos, qu&eacute;
+clase de errores debemos notificar, qu&eacute; volumen de datos se permiten
+enviar como m&aacute;ximo, o limitar el acceso de ciertos dispositivos.</P>
+<P>Adem&aacute;s, podemos definir distintos modos de procesar datos para una misma
+impresora. Por ejemplo, una misma impresora de HP puede manejar datos en
+formatos PostScript, HPGL y PCL, dependiendo de la secuencia de &oacute;rdenes
+que le enviamos al comienzo de cada trabajo. Tendr&iacute;a sentido definir los
+tres modos de trabajo como sendas impresoras, cada una de las cuales
+procesar&aacute; los datos dependiendo del modo de trabajo. Los programas que
+generan datos ps se enviar&aacute;n a la impresora PS, los dibujos HPGL a la
+impresora HPGL, y as&iacute; sucesivamente.</P>
+<P>Llamaremos "filtros" a los programas que procesan los datos a imprimir. Un
+filtro puede incluso no enviar ning&uacute;n dato al puerto. </P>
+
+<H3>Los campos de <CODE>/etc/printcap</CODE>.</H3>
+
+
+<P>Un ejemplo t&iacute;pico de entrada en <CODE>/etc/printcap</CODE> podr&iacute;a ser:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+# Ejemplo de printcap con dos alias
+impresora|HP850C:\
+# lp es el dispositivo de impresion, en este caso, la primera impresora
+:lp=/dev/lp1:\
+# sd indica el directorio tampon
+:sd=/var/spool/lpd/HP850C:
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Como vemos, cada entrada de <CODE>/etc/printcap</CODE> se estructura en una
+serie de campos, encabezados por una etiqueta, y limitados por dos puntos,
+a excepci&oacute;n del primer campo, que describe la impresora. Los campos pueden
+tener tres tipos de valores - Texto, l&oacute;gico y num&eacute;rico, en los que nos
+extenderemos m&aacute;s adelante.</P>
+<P>La primera l&iacute;nea de la entrada determina el nombre y alias de la
+impresora. La impresora por defecto deber&iacute;a llamarse "<CODE>lp</CODE>"; por
+ejemplo, si la impresora del ejemplo anterior es la &uacute;nica que tenemos, la
+primera l&iacute;nea ser&iacute;a:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+# Ejemplo para la impresora por defecto
+lp|HP850C:\
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Podemos usar el nombre que nos apetezca como "<I>La Picadora de papel del
+despacho de Gertrudis</I>", aunque no parezca quiz&aacute; muy pr&aacute;ctico. Ojo: S&oacute;lo
+podemos tener una impresora llamada "<CODE>lp</CODE>". </P>
+<P>Los siguientes campos son los m&aacute;s comunes, y los m&aacute;s importantes:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+Campo    Tipo         Descripcion
+
+lp       Texto        Dispositivo de impresion ( ej.: /dev/lp1 )
+sd       Texto        Nombre del directorio tampon de esta impresora
+lf       Texto        Fichero que almacena el registro de errores
+if       Texto        Nombre del filtro de entrada
+rm       Texto        Nombre del host de impresion remota
+rp       Texto        Nombre de la impresora remota
+sh       Logico       Suprime las paginas que separan los trabajos
+sf       Logico       Suprime las paginas en blanco al final del trabajo
+mx       numerico     Tamagnio maximo del trabajo de impresion (en bloques)
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<UL>
+<LI><B>lp</B> apunta al puerto/dispositivo de impresi&oacute;n. Si
+especificamos <CODE>/dev/null</CODE> como dispositivo, el resto de los
+procesos se ejecutan normalmente, pero los datos de salida van a parar al
+inodoro. No se utiliza a excepci&oacute;n de las pruebas de configuraci&oacute;n del
+dispositivo.  Cuando configure una impresora remota con los campos <CODE>rm</CODE>
+y <CODE>rp</CODE> , deber&iacute;a poner "<CODE>:lp=:</CODE>" en <CODE>/etc/printcap</CODE>,
+indicando que no est&aacute; asignada a ning&uacute;n dispositivo local.. No deje este
+campo en blanco a menos que use una impresora remota, o el demonio de
+impresi&oacute;n se quejar&aacute; amargamente, si no especifica un dispositivo de
+impresi&oacute;n. 
+</LI>
+<LI><B>lf</B> guarda un registro de los errores de impresi&oacute;n.
+Cualquier fichero que especifique deber&aacute; existir antes de su uso, o no se
+registrar&aacute;n las incidencias. 
+</LI>
+<LI><B>if </B>indica el nombre del filtro de impresi&oacute;n a ejecutar. Los
+filtros son programas que reciben datos por la entrada est&aacute;ndar, y los
+devuelven procesados por la salida est&aacute;ndar. 
+
+Un empleo t&iacute;pico es detectar texto llano y convertirlo en PostScript para
+imprimirlo en ese tipo de trastos. Son muy &uacute;tiles, por ejemplo, para
+eliminar el efecto escalera, o cambiar la p&aacute;gina de c&oacute;digos sin necesidad
+de cambiar la configuraci&oacute;n de la impresora cada vez que la usemos entre
+UNIX y DOS. 
+
+Cuando se especifica un filtro de entrada, el demonio de impresi&oacute;n no
+env&iacute;a los datos pendientes al dispositivo especificado. En su lugar,
+arranca el filtro y asigna el fichero temporal a la entrada est&aacute;ndar, y el
+dispositivo de impresi&oacute;n como salida est&aacute;ndar. 
+</LI>
+<LI><B>rm y rp</B> controlan el destino de la impresi&oacute;n remota. Enviar
+el documento a imprimir a una impresora remota es tan f&aacute;cil como indicar
+el anfitri&oacute;n en <CODE>rm</CODE>, la impresora correspondiente en <CODE>rp</CODE>, y
+asegurarse que <CODE>lp</CODE> est&aacute; vac&iacute;o. F&iacute;jese en que los datos se tamponan
+localmente antes de ser enviados, y que le ejecutar&aacute; cualquier filtro que
+especifique. 
+
+Una entrada t&iacute;pica de <CODE>/etc/printcap</CODE> en la m&aacute;quina local
+(<CODE>pera.huerta.net</CODE>)  para trabajar sobre la impresora picapapel, en la
+estaci&oacute;n <CODE>r&aacute;bano.huerta.net</CODE> (remota), ser&iacute;a: 
+
+<CODE>picapapel:lp=:rm=r&aacute;bano.huerta.net:rp=picapapel:sd=/var/spool/lpd/picapapel:</CODE>
+
+En la m&aacute;quina remota necesitar&aacute; que <CODE>/etc/hosts.equiv</CODE> o
+<CODE>/etc/hosts.lpd</CODE> contenga la l&iacute;nea <CODE>pera.huerta.net</CODE>; Tenga
+cuidado con los permisos de acceso. Vea el punto 
+<A HREF="#remota">Y de la impresi&oacute;n remota, ¿qu&eacute;?</A>. 
+</LI>
+<LI><B>sh y sf</B>: Portadillas y separadores. Salvo que haya mucha
+gente distinta usando su impresora, probablemente no estar&aacute; interesado en
+las p&aacute;ginas separadoras de trabajos. Las p&aacute;ginas de fin de trabajo son
+particularmente molestas cuando se trabaja con procesadores de texto, que
+componen p&aacute;ginas completas, por lo que si especificamos <CODE>sf</CODE>, tendremos
+al final de cada trabajo una p&aacute;gina en blanco. 
+
+<B>sf</B> es muy &uacute;til, sin embargo, si usamos la impresora para listar
+directorios, ficheros en crudo ..., asegur&aacute;ndonos que el trabajo sale
+completo de la impresi&oacute;n. Se puede presentar un problema si tenemos una
+impresora PostScript, al quedar residente el &uacute;ltimo tipo de letra
+utilizado. Con el campo <CODE>:tr: </CODE>lo evitaremos. Es preferible en
+estos casos dejar <CODE>:sh:</CODE>, y que sean los filtros quienes se
+encarguen de generar las portadillas. 
+</LI>
+<LI><B>mx</B> limita el tama&ntilde;o del tamp&oacute;n de datos, se&ntilde;alando una
+cantidad en bloques de 1 K ( 1024 bits ). Si <CODE>mx</CODE>=0, el l&iacute;mite viene
+dado por el espacio disponible en disco. Recuerde que lo que limitamos es
+el tama&ntilde;o del tamp&oacute;n, no la cantidad de datos impresos. 
+
+Si intentamos sobrepasar el l&iacute;mite, el fichero simplemente se trunca, y el
+usuario recibe el mensaje 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+lpr: fichero: copy file is too large&quot;.
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+<B>mx</B> es &uacute;til si tiene programas que accidentalmente pueden generar
+un volumen desproporcionado de datos a imprimir (im&aacute;genes, por ejemplo);
+para impresoras ps, no suele tener mucho inter&eacute;s, pues un volumen peque&ntilde;o
+de datos en formato ps pueden generar una notable cantidad de papel
+impreso.  
+
+Podemos sustituir el l&iacute;mite de <CODE>mx</CODE> escribiendo en cada directorio
+tamp&oacute;n un fichero llamado "<CODE>minfree</CODE>" que contiene el espacio m&iacute;nimo
+disponible que permita aceptar trabajos, en forma de fichero texto con el
+n&uacute;mero de bloques m&iacute;nimos disponibles. Normalmente, suele ser un enlace
+con el original en <CODE>/var/spool/lpd</CODE>, ya que es inusual que cada
+impresora deba tener un m&iacute;nimo diferente.</LI>
+</UL>
+</P>
+
+<H3>Probemos <CODE>/etc/printcap</CODE> con un ejemplo</H3>
+
+
+<P>El siguiente gui&oacute;n de shell es un filtro de entrada muy simple. S&oacute;lo
+encadena su entrada al final de un fichero en <CODE>/tmp</CODE>, tras una
+pancarta adecuada. Usaremos este filtro en el campo <CODE>if</CODE>, y enviaremos
+los datos a <CODE>/dev/null</CODE>, ahorr&aacute;ndonos las quejas del demonio
+especificando un dispositivo de impresi&oacute;n. </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+#!/bin/sh
+# Este filtro debera colocarse en el directorio tampon, con el nombre
+# filtro_entrada, propiedad de root, grupo lp y permisos -rwxr-xr-x
+#
+echo ------------------------------------------------&gt;/tmp/testlp.out
+date &gt;&gt; /tmp/testlp.out
+echo ------------------------------------------------&gt;&gt;/tmp/testlp.out
+cat
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Y aqu&iacute; tenemos nuestra flamante entrada en <CODE>/etc/printcap</CODE>. Vea que
+el formato es razonablemente inteligible, usando caracteres de
+continuaci&oacute;n de l&iacute;nea "\" al final de cada una, excepto la &uacute;ltima (de
+hecho, cada entrada en <CODE>/etc/printcap</CODE> es una sola l&iacute;nea):</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+
+impre|PLJ-H1998:\
+:lp=/dev/null:\
+:sd=/var/spool/lpd/PLJ-H1998:\
+:lf=/var/spool/lpd/PLJ-H1998/errores:\
+:if=/var/spool/lpd/PLJ-H1998/filtro_entrada:\
+:mx#0:\
+:sh:\
+:sf: 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Ojo: <EM>NO DEJE ESPACIOS EN BLANCO</EM>, o no funcionar&aacute; (le aparecer&aacute;n
+impresoras sin nombre, no lograr&aacute; volcar los trabajos, y se acumular&aacute;n en
+cola generosamente) </P>
+
+<H3>Valor y al toro: junt&eacute;moslo todo</H3>
+
+
+<P>
+<UL>
+<LI>Primero: <EM>DEBE SER EL SUPERUSUARIO</EM> (<CODE>root</CODE>), tanto si le gusta
+como si no.
+</LI>
+<LI>Segundo: Compruebe los permisos y situaciones de <CODE>lpr</CODE>,
+<CODE>lprm</CODE>, <CODE>lpc</CODE>, <CODE>lpq</CODE> y <CODE>lpd</CODE>.
+</LI>
+<LI>Tercero: Cree el directorio tamp&oacute;n de su impresora: (recuerde que el
+propietario debe ser <CODE>root</CODE>, el grupo <CODE>lp</CODE>, y los permisos
+<CODE>-rwxrwxr-x</CODE> con las &oacute;rdenes: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+mkdir /var/spool/lpd /var/spool/lpd/impre
+chown root.lp /var/spool/lpd /var/spool/lpd/impre
+chmod ug=rwx,o=rx /var/spool/lpd /var/spool/lpd/impre
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Cuarto: En el directorio tamp&oacute;n cree los ficheros necesarios, con
+los debidos permisos y propietarios: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+cd /var/spool/lpd/impre
+touch .seq errores status lock
+chown root.lp .seq errs status lock
+chmod ug=rw,o=r .seq errs status lock
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Quinto: Cree el script filtro de entrada en el directorio tamp&oacute;n.
+Use por ahora el filtro de prueba anterior. Aseg&uacute;rese que el fichero
+pertenece a <CODE>root.lp</CODE>, y es ejecutable para todos.
+</LI>
+<LI>Sexto: Cree el fichero <CODE>/etc/printcap</CODE> tal y como lo hemos
+descrito en el punto anterior. Su propietario ser&aacute; <CODE>root</CODE> y sus permisos
+<CODE>-rw-r--r--</CODE>. 
+</LI>
+<LI>S&eacute;ptimo: Compruebe que <CODE>rc.local</CODE> (normalmente en
+<CODE>/etc/rc.d/</CODE>) contiene la l&iacute;nea <CODE>/sbin/lpd</CODE>, y a&ntilde;&aacute;dala si no
+est&aacute;. Esto hace que arranque el demonio de impresi&oacute;n al arrancar. De todos
+modos puede arrancarlo a mano con la orden <CODE>lpd</CODE>. 
+</LI>
+<LI>Octavo: Haga una prueba: cruce los dedos y teclee 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ls -l | lpr -Pimpre
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Noveno: Busque en <CODE>/tmp</CODE> un fichero llamado <CODE>testlp.out</CODE>. 
+Deber&iacute;a contener un listado del directorio, con un encabezado.
+</LI>
+<LI>D&eacute;cimo: Si ha funcionado (y no dudamos que habr&aacute; sido as&iacute;), edite
+<CODE>/etc/printcap</CODE>, y copie la entrada de prueba en el mismo fichero; 
+En la primera entrada, cambie el nombre de la impresora a "<CODE>testlp</CODE>", o
+el que usted prefiera, pero que no use como nombre real de impresora. En
+la segunda entrada (que ahora ser&aacute; la de su impresora real), cambie el
+contenido de <CODE>lp=/dev/null</CODE> al del puerto de impresora (normalmente
+ser&aacute; <CODE>/dev/lp1</CODE>) de su ordenador, salvo que vaya a utilizar una
+impresora remota, en cuyo caso deber&aacute; definir <CODE>rm</CODE> y <CODE>rp</CODE>. Cambie el
+nombre del filtro <CODE>if</CODE> si tiene ya uno previsto, o supr&iacute;malo si no va a
+utilizar ninguno. 
+</LI>
+<LI>Once: Reinicie el sistema, o mate el demonio de impresi&oacute;n y
+arr&aacute;nquelo, ya que <CODE>lpd</CODE> s&oacute;lo lee <CODE>/etc/printcap</CODE> al comenzar su
+trabajo.
+</LI>
+<LI>Doce: Haga una prueba, y aprecie lo bien que funciona su impresora
+(Si tiene problemas con el efecto escalera, siga leyendo). </LI>
+</UL>
+</P>
+<P>Para a&ntilde;adir nuevas impresoras, s&oacute;lo tendr&aacute; que repetir la entrada de
+<CODE>printcap</CODE>, con las modificaciones pertinentes a cada dispositivo. </P>
+
+<H3><A NAME="remota"></A> Y de la impresi&oacute;n remota, ¿qu&eacute;? </H3>
+
+
+<P>Como primer paso, cualquier m&aacute;quina que intente imprimir en su sistema,
+debe estar registrada en cualquiera de los ficheros
+<CODE>/etc/hosts.equiv</CODE> o <CODE>/etc/hosts.lpd</CODE>, que son simples
+ficheros de texto, con un nombre de maquina por l&iacute;nea. Es preferible el
+segundo, reservando el primero para proporcionar mayores permisos de
+acceso, lo que deber&iacute;a ser evitado en lo posible. </P>
+<P>Puede restringirse el uso tanto por nombre como por grupos. Especifique
+los grupos autorizados con uno o varios campos "<CODE>:rg:</CODE>" en
+<CODE>/etc/printcap</CODE> - <CODE>:rg=admin:</CODE> s&oacute;lo autorizar&aacute; el acceso a la
+impresora a los usuarios asignados al grupo <CODE>admin</CODE>. Puede tambi&eacute;n
+limitar el acceso a aquellos usuarios con cuenta en su sistema utilizando
+el campo l&oacute;gico <CODE>:rs:</CODE>.  </P>
+
+<H3>Socorro: no funciona. </H3>
+
+
+<P>Algo falla; Lo primero que debemos hacer es revisar la existencia y los
+permisos y propiedad de los ficheros y directorios anteriormente
+descritos. Como comprobar&aacute; los permisos de UNIX son algo juguetones hasta
+que se les controla. No se azore, y siga la siguiente rutina de control. 
+Recuerde que cualquier modificaci&oacute;n de <CODE>/etc/printcap</CODE> acarrea
+matar el demonio de impresi&oacute;n y arrancarlo de nuevo, o (&uacute;ltimo y brutal
+recurso)  reiniciar el sistema. </P>
+<P>
+<OL>
+<LI>ejecute "<CODE>ls -l &gt; /dev/lp?</CODE>" (como <CODE>root</CODE>)
+<UL>
+<LI>La impresora funciona: 2</LI>
+<LI>La impresora no funciona: Compruebe el puerto de impresi&oacute;n, el
+cable, y que la impresora f&iacute;sica este encendida y lista. </LI>
+</UL>
+
+</LI>
+<LI>pruebe con <CODE>lpr -P&lt;impresora&gt;</CODE>
+
+<UL>
+<LI>La impresora responde: 7</LI>
+<LI>La impresora no responde: 3</LI>
+</UL>
+
+</LI>
+<LI>Aparecen mensajes de error indicando que no se puede escribir
+<CODE>.seq</CODE> o que no se puede crear la cola: Compruebe que haya sitio en el
+disco, que el directorio tamp&oacute;n existe y que tiene los permisos
+necesarios. 
+
+<UL>
+<LI>no hay mensajes: 4</LI>
+</UL>
+
+</LI>
+<LI>ejecute 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+ps -ax | grep lpd
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+y vea si aparece <CODE>lpd</CODE> en el listado, o hay un mensaje acerca del
+demonio de impresi&oacute;n: 
+
+<UL>
+<LI><CODE>lpd</CODE> no est&aacute; arrancado: Vea si <CODE>rc.local</CODE> tiene una l&iacute;nea
+<CODE>/sbin/lpd</CODE>; si no, a&ntilde;&aacute;dala y reinicie el sistema. Puede arrancarlo
+a mano con <CODE>/sbin/lpd</CODE> como <CODE>root</CODE>. 
+</LI>
+<LI><CODE>lpd</CODE> est&aacute; funcionando: 5</LI>
+</UL>
+
+</LI>
+<LI>Compruebe que el filtro de impresi&oacute;n especificado en <CODE>if</CODE>
+funciona. (<CODE>filtro &lt; datos &gt;salida</CODE>)
+
+<UL>
+<LI>El filtro no funciona: corr&iacute;jalo, y pruebe de nuevo</LI>
+<LI>El filtro funciona: 6</LI>
+</UL>
+
+</LI>
+<LI>Ejecute "<CODE>lpc status</CODE>".
+
+<UL>
+<LI>Aparecen m&aacute;s impresoras que las descritas, algunas con el nombre en
+blanco: Hay espacios en blanco dentro de la entrada de la impresora en
+<CODE>/etc/printcap</CODE>. Revise la sintaxis de la entrada. 
+</LI>
+<LI>s&oacute;lo aparece una impresora que no es <CODE>lp</CODE>: Si no ha especificado
+nombre de impresora, <CODE>lpr</CODE> usar&aacute; <CODE>lp</CODE> por defecto. Pruebe 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+lp -P&lt;impresora&gt; 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>La impresora est&aacute; deseleccionada (<CODE>down</CODE>): ejecute 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+lpc up &lt;impresora&gt;
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+(debe ser superusuario). </LI>
+</UL>
+
+</LI>
+<LI>La impresora funciona, pero imprime mal:
+
+<UL>
+<LI>Se imprimen las cuatro o cinco primeras l&iacute;neas, en escalera:
+Necesita un filtro de entrada. Vea 
+<A HREF="#escalera">Efecto Escalera</A> 
+</LI>
+<LI>El fichero no se imprime completo: Elimine el l&iacute;mite en <CODE>mx</CODE> con
+<CODE>:mx#0:</CODE> en <CODE>/etc/printcap</CODE>. </LI>
+</UL>
+</LI>
+</OL>
+</P>
+<P>Si tras este rastreo sus dificultades contin&uacute;an, tenemos un buen problema. 
+Una buena idea para aislar fallos es incluir el demonio "<CODE>syslogd</CODE>" en
+el arranque, de modo que obtengamos un registro de las incidencias de los
+procesos arrancados, que puedan ayudar al rastreo.</P>
+<P>Un problema que ha ido apareciendo y desapareciendo de modo recurrente en
+distintas versiones de Linux est&aacute; asociado a los mensajes "<I>job queued,
+but cannot start daemon</I>" o "<I>lpc: connect: no such file or
+directory</I>", y <CODE>lpd</CODE> s&iacute; est&aacute; corriendo, parece manifestar un conflicto
+entre los m&oacute;dulos de red y el resto del sistema, y que se manifiesta si la
+red no est&aacute; correctamente configurada. Si no est&aacute; conectado a una red,
+suele corregirse a&ntilde;adiendo en la configuraci&oacute;n de arranque: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+ifconfig lo localhost
+route add localhost
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>¿D&oacute;nde puedo encontrar un <CODE>printcap</CODE> para la impresora xxxxx?</H3>
+
+
+<P>Si ha le&iacute;do todo hasta ahora, comprobar&aacute; que esta pregunta carece de
+sentido. No se le ocurra preguntar en usenet, si quiere que su dignidad se
+mantenga a salvo, y l&eacute;ase este documento completo. </P>
+
+<H3><A NAME="escalera"></A> El "efecto escalera", bajo control. </H3>
+
+
+<P>Mientras que en *DOS el indicador de nueva l&iacute;nea se compone de los
+caracteres CR y LF (retorno de carro y salto de l&iacute;nea), UNIX termina las
+l&iacute;neas con LF. Esto hace que, si en una impresora configurada para *DOS
+imprimimos un documento UNIX, obtendremos una sucesi&oacute;n de l&iacute;neas, que
+acabar&aacute;n march&aacute;ndose inmediatamente por el margen derecho del papel. </P>
+<P>Tenemos dos v&iacute;as para corregirlo: Reconfigurar la impresora para que
+interprete <F>LF</F> como <F>CR</F>+<F>LF</F>, algo molesto si alterna entre *DOS y
+Linux, o a&ntilde;adir un filtro de impresi&oacute;n, que lo haga sobre la marcha.</P>
+<P>Ofrecemos dos: uno general, y el otro espec&iacute;fico para impresoras HP.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# filtro general para prevenir el efecto escalera
+if [ &quot;$1&quot; = -c ] ; then
+cat
+else
+sed -e s/$/^M/
+fi
+echo -ne \\f
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# filtro para corregir el efecto escalera en impresoras HP
+echo -ne \\033\&amp;k2G
+cat
+echo -ne \\f
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>El car&aacute;cter 
+<PRE>
+^M
+</PRE>
+ es el correspondiente a CR. Para obtenerlo
+con <CODE>vi</CODE> use <I>C-v C-m</I>, y con <CODE>emacs</CODE>, <I>C-q C-m</I> (C es la
+tecla <I>Control</I>).</P>
+<P>El mejor sitio para guardar estos filtros es el propio directorio tamp&oacute;n
+de la impresora. Recuerde que deben especificarse en
+<CODE>/etc/printcap</CODE> en el campo <CODE>:if=&lt;filtro&gt;:</CODE>, con permisos
+<CODE>-rwxrwxr-x</CODE>, y propiedad <CODE>root.lp</CODE>. </P>
+
+<H3>Imprimir por el puerto serie es f&aacute;cil.</H3>
+
+
+<P>Primero hemos de ver si <CODE>lpd</CODE> se queja enviando un error acerca de
+<CODE>ioctl(TIOEXCL)</CODE>. Si es as&iacute;, deber&iacute;amos conseguir una versi&oacute;n de
+<CODE>lpd</CODE> que lo acepte (<CODE>lpd-590p2</CODE>, por ejemplo).</P>
+<P>Necesitaremos configurar dos grupos de campos, adem&aacute;s de la velocidad de
+transferencia <CODE>br</CODE> (Observaci&oacute;n: Configurar el campo "<CODE>:fc</CODE>:" puede
+puentear el valor del campo "<CODE>:br#:</CODE>", as&iacute; que aseg&uacute;rese de
+configurar los dos correctamente). </P>
+<P>Cada campo puede tener bits activados y desactivados. Se debe empezar
+desactiv&aacute;ndolos con los campos "<CODE>:fc#*:</CODE>" y "<CODE>:xc#*:</CODE>", para
+activarlos posteriormente con "<CODE>:fs#*:</CODE>" y "<CODE>:xs#*:</CODE>". </P>
+<P>Configurar <CODE>br#</CODE>; es obvio: "<CODE>:br#9600:</CODE> </P>
+<P>Es muy f&aacute;cil traducir la configuraci&oacute;n de <CODE>stty</CODE> a los campos de
+<CODE>/etc/printcap</CODE>. Consulte la p&aacute;gina de manual de stty para obtener
+m&aacute;s informaci&oacute;n.</P>
+<P>Utilice <CODE>stty</CODE> para configurar el puerto de su impresora de manera que
+con "<CODE>cat</CODE>" pueda enviarle un fichero, e imprimirlo sin problemas. Aqu&iacute;
+tiene un ejemplo de la configuraci&oacute;n del puerto serie de la impresora:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# darkstar:/var/spool/lpd # stty -a &lt; /dev/ttyS2
+speed 9600 baud; rows 0; columns 0; line = 0;
+intr = ^C; quit = ^\; erase = ^?; kill = ^U; eof = ^D; eol = &lt;undef&gt;;
+eol2 = &lt;undef&gt;; start = ^Q; stop = ^S; susp = ^Z; rprnt = ^R; werase = ^W;
+lnext = ^V; min = 1; time = 0;
+-parenb -parodd cs8 hupcl -cstopb cread -clocal -crtscts
+-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr
+-igncr -icrnl ixon -ixoff -iuclc -ixany -imaxbel
+-opost -olcuc -ocrnl -onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0
+-isig -icanon -iexten -echo -echoe -echok -echonl -noflsh -xcase -tostop
+-echoprt -echoctl -echoke
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Deber&aacute; estudiar el control de flujo de su impresora serie, y aplicar las
+correcciones necesarias a la configuraci&oacute;n del puerto al que est&aacute;
+conectado el equipo. </P>
+<P>Una vez tengamos la configuraci&oacute;n ajustada, de modo que con la orden </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+cat fichero &gt; /dev/ttyS?
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>la impresora escriba correctamente, consultaremos el fichero
+<CODE>/usr/src/linux/include/linux/termios.h</CODE> ( no ser&aacute; mala idea
+imprimirlo; as&iacute; sabremos si funciona <CODE>:-)</CODE>.</P>
+<P>En la secci&oacute;n que empieza con</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+/* c_cflag bit meaning */
+#define CBAUD 0000017
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>est&aacute; detallado el valor de los bits de "<CODE>fc#</CODE>" y "<CODE>fs#</CODE>". 
+Apreciar&aacute; que los nombres que aparecen aqu&iacute; (tras las velocidades de
+transmisi&oacute;n)  coinciden con una de las l&iacute;neas del listado producido por
+<CODE>stty</CODE>. ¿Ve qu&eacute; f&aacute;cil?</P>
+<P>Estos campos, en <CODE>stty</CODE>, van precedidos por un gui&oacute;n (<CODE>-</CODE>). Sume los
+valores (en octal) que aparecen en el listado. Este valor representa los
+bits a LIMPIAR; es el valor del campo <CODE>:fc#*:</CODE>. Note que, como
+deber&aacute; activar posteriormente los bit necesarios, podr&iacute;a usar
+directamente "<CODE>:fc#0177777:</CODE>". </P>
+<P>Ahora repita el mismo proceso para las opciones sin gui&oacute;n en la salida de
+<CODE>stty</CODE>. En el ejemplo, los bits importantes son <CODE>CS8 (0000060)</CODE>,
+<CODE>HUPCL (0002000)</CODE> y <CODE>CREAD (0000200)</CODE>. Considere tambi&eacute;n los
+indicadores para la velocidad de transmisi&oacute;n (en mi caso <CODE>0000015</CODE>). 
+S&uacute;melos; en este caso, tendremos <CODE>0002275</CODE>: el valor del campo
+<CODE>:fs#*:</CODE> (En mi caso, "<CODE>:fs#02275:</CODE>" funciona).</P>
+<P>Haremos lo mismo con la siguiente secci&oacute;n de <CODE>termios.h</CODE>, que comienza
+con "<CODE>c_lflag bits</CODE>". En mi caso, no he necesitado ning&uacute;n ajuste, y
+utilizo "<CODE>:xc#0157777:</CODE> y "<CODE>:xs#0:</CODE>". </P>
+<P>Una vez modificado <CODE>printcap</CODE>, intente imprimir con <CODE>lpr</CODE>. Si no
+funciona, siga leyendo.</P>
+
+<H3><CODE>cat</CODE> funciona, pero <CODE>lpd</CODE> no.</H3>
+
+
+<P>Mantener "<CODE>lpd</CODE>" en forma se explica en la p&aacute;gina adecuada del manual,
+pero si le persiguen los problemas de configuraci&oacute;n, puede evitar que
+<CODE>lpd</CODE> establezca la configuraci&oacute;n del puerto, haciendo que su impresora
+no presente un dispositivo normal (vea la secci&oacute;n 
+<A HREF="#impresorasqueno">impresorasqueno</A>).  </P>
+<P>El proceso a seguir es el siguiente: </P>
+<P>
+<OL>
+<LI>el campo <CODE>:lp:</CODE> de <CODE>/etc/printcap</CODE> deber&aacute; apuntar a
+<CODE>/dev/null1</CODE> (cr&eacute;elo con <CODE>mknod /dev/null1 c 1 3</CODE>), porque
+no queremos a <CODE>/dev/null</CODE> s&oacute;lo para nosotros. Elimine los campos
+<CODE>:br:</CODE> y <CODE>:fs:</CODE>, <CODE>:fc:</CODE>, <CODE>:xs:</CODE> y <CODE>:xc:</CODE>. 
+</LI>
+<LI>Cree un script, por ejemplo, <CODE>testserie</CODE>, tal que este: 
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+echo if: $* &gt;&gt; /var/spool/lpd/resultados
+# /dev/lp debe estar enlazado (con ln -s) a /dev/ttyS?, donde esta la 
+# impresora
+exec su-filtro-de-entrada-viejo $* &gt; /dev/lp
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+o si no tiene un <CODE>:if:</CODE> instalado
+
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+echo if: $* &gt;&gt; /var/spool/lpd/resultados
+# asumimos que /bin/sh es bash al usar &quot;echo -ne&quot;
+echo -ne \\f &gt; /dev/lp
+</PRE>
+</CODE></BLOCKQUOTE>
+
+</LI>
+<LI>Aseg&uacute;rese que es ejecutable y legible para todos (<CODE>rwxrwxr-x</CODE>).
+Pruebe el filtro con
+
+<BLOCKQUOTE><CODE>
+<PRE>
+# testserie &lt; algo-que-imprimir 
+</PRE>
+</CODE></BLOCKQUOTE>
+
+
+y vea si sale algo por la impresora. Modifique <CODE>/etc/printcap</CODE>,
+para que <CODE>if</CODE> sea "<CODE>testserie</CODE>" (o el nombre que le haya dado).
+</LI>
+<LI>Con <CODE>stty</CODE>, configure el puerto de la impresora. Intente
+imprimir.  Ahora podr&aacute; saber si hay datos en el tamp&oacute;n, y algo
+<I>deber&iacute;a</I> imprimirse si el paso 3 funcion&oacute;.  
+</LI>
+</OL>
+</P>
+<P>Ahora, si el proceso con <CODE>if</CODE> funciona, y cree que la configuraci&oacute;n del
+<CODE>printcap</CODE> original es la correcta, vuelva a revisar la configuraci&oacute;n
+del puerto, las etiquetas de <CODE>termios.h</CODE> ... Si a&uacute;n no funciona,
+probablemente <CODE>lpd</CODE> tiene un defecto, y deba obtener una versi&oacute;n nueva. </P>
+
+<H3><A NAME="impresorasqueno"></A> Impresoras que no son dispositivos simples. </H3>
+
+
+<P>Piense en una impresora conectada de alg&uacute;n modo tortuoso a nuestra red ...
+---ag&aacute;rrese: est&aacute; enchufada a un ordenador con el que s&oacute;lo podemos
+comunicarnos mediante correo electr&oacute;nico---</P>
+<P>Para imprimir a trav&eacute;s de <CODE>lpr</CODE>, el campo <CODE>:lp:</CODE> deber&iacute;a ser
+redirigido a un dispositivo nulo, </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+mknod /dev/null1 c 1 3
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>(no a <CODE>/dev/null</CODE>, pues <CODE>lpd</CODE> lo usa en exclusiva). El filtro
+de entrada ( <CODE>:if:</CODE>, recuerde) debe expl&iacute;citamente codificar y enviar
+como correo al ordenador remoto su salida. </P>
+<P>Se rumorea que alguien consigui&oacute; con algo similar con Novell NetWare y el
+agente de correo Charon; tambi&eacute;n hay quien cree en los Reyes Magos. </P>
+
+
+<H2><A NAME="ss4.7">4.7 Trucos y problemas</A></H2>
+
+
+
+<H3><CODE>lpr -i</CODE> o como modificar la impresi&oacute;n a nuestro antojo.</H3>
+
+
+<P>La opci&oacute;n <CODE>-i</CODE> env&iacute;a argumentos al filtro de impresi&oacute;n. Ante todo,
+necesitamos un filtro instalado en <CODE>printcap</CODE> para que la opci&oacute;n
+'<CODE>-i</CODE>' funcione. &Eacute;sta se limita a pasar a trav&eacute;s de <CODE>lpd</CODE> hacia el
+filtro. Si quisiera un filtro que permitiera configurar su impresora sobre
+la marcha, podr&iacute;amos utilizar un filtro como este: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+# Mi programa de configuracion se llama confimpre.
+exec /usr/lib/confimpre $* 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>que desplace el margen izquierdo, y pasar como argumento el margen deseado.</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/usr/bin/perl
+# confimpre: Desplaza el margen izquierdo en un texto ascii
+# Usamos perl porque convertir numeros a caracteres
+# es un campo de minas en programacion shell
+for  ( $i=0 ; !($_ = $ARGV[$i]) || !/^-i([0-9])+/;
+$i++) {}
+print pack( &quot;cAc&quot; , 27 , &quot;l&quot; , $1) ;
+while (&lt;STDIN&gt;) { print; }
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+
+<H3>'<CODE>lpc</CODE>' y '<CODE>lpq</CODE>' advierten : "<CODE>missingdaemons</CODE>"</H3>
+
+
+<P>Un proceso <CODE>lpd</CODE> corre continuamente, y se desdobla en hijos para
+manipular cada impresora en tanto se necesita. La salud del proceso
+principal no se manifiesta expl&iacute;citamente con '<CODE>lpc</CODE>'; basta con la
+ausencia de errores. El comando '<CODE>lpc stat</CODE>' mostrar&aacute; de manera normal
+el mensaje "<CODE>no daemon present</CODE>" para cada cola actualmente inactiva.
+Si la impresi&oacute;n se desactiva, o la cola se vac&iacute;a, '<CODE>lpq</CODE>' es bastante
+m&aacute;s escandaloso, gritando "<CODE>Warning: no daemon present</CODE>", aunque, de
+hecho, no hay condici&oacute;n de error.  Si el demonio est&aacute; ausente cuando hay
+entradas en la cola, y no ha sido expl&iacute;citamente detenido, probablemente
+se debe a un fallo en alg&uacute;n filtro. F&iacute;jelo y reinicie con "<CODE>lpc up &lt;cola&gt;</CODE>. </P>
+<P>De vez en cuando, al desactivar una impresora, '<CODE>lpc</CODE>' alucina, e
+intenta matar demonios inexistentes, emitiendo un surtido de irritantes e
+inofensivos mensajes de error. Esta "caracter&iacute;stica" es muy rara en
+versiones posteriores a <CODE>lpd-590p2</CODE>.</P>
+
+<H3>Impresi&oacute;n sobre red (notas adicionales)</H3>
+
+
+<P>Dado que la m&aacute;quina que alberga la impresora f&iacute;sica debe saber quien se
+conecta, deberemos dar de alta al resto de los ordenadores en los ficheros
+<CODE>/etc/hosts.equiv</CODE> y <CODE>/etc/hosts.lpd</CODE>, con sus nombres
+can&oacute;nicos, o direcciones IP. Si no est&aacute; seguro del nombre completo de una
+m&aacute;quina, puede incluir todos sus alias conocidos.</P>
+<P>Por motivos de seguridad, es preferible que las m&aacute;quinas que s&oacute;lo deban
+tener acceso a la impresora queden restringidas a <CODE>/etc/hosts.lpd</CODE>. </P>
+<P>Si el servidor de impresi&oacute;n no ejecuta un sistema de impresi&oacute;n tipo BSD (
+<I>UnixWare</I>, <I>HP-UX</I> versi&oacute;n 10 ,...), deber&iacute;a ser posible trabajar
+con &eacute;l, teniendo en cuenta que los ficheros de autorizaci&oacute;n pueden variar
+notablemente, cambiando en cada sistema.</P>
+<P>Si a&uacute;n no puede imprimir sobre un sistema distinto, queda un as en la
+manga: simplemente use una orden remota, tal que <CODE>rsh</CODE>, <CODE>rexec</CODE> ... </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# rsh rabano.huerta.net &quot;lp -dlp&quot; &lt; fichero 
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>permitir&aacute; imprimir sobre un SYSV, desde nuestra <CODE>pera.huerta.net</CODE>.</P>
+
+
+<H2><A NAME="ss4.8">4.8 Los filtros de impresi&oacute;n</A></H2>
+
+
+<P>Los filtros en UNIX, son meramente programas (y como tales deben tener
+permisos de ejecuci&oacute;n) que leen la entrada est&aacute;ndar y escriben sobre la
+salida est&aacute;ndar, independientemente de su complejidad. </P>
+<P>Los filtros de <CODE>lpd</CODE> lo son en el sentido que leen STDIN y escriben en
+STDOUT; su peculiaridad estriba en que deben asumir que la entrada
+est&aacute;ndar es un fichero de acceso aleatorio, sobre el que se pueden
+realizar operaciones con <CODE>lseek()</CODE>. </P>
+<P>Un filtro que interpreta PostScript nos servir&aacute; de ejemplo:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+/usr/bin/gs -q -dSAFER -dNOPAUSE -r?? -sDevice=? -sOutputFile=- - &lt; /dev/null
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>La primera l&iacute;nea invoca al int&eacute;rprete de comandos que lo interpretar&aacute;. 
+Podemos usar <CODE>csh</CODE>, <CODE>bash</CODE>, <CODE>perl</CODE>, <CODE>tcl</CODE>, etc...; va por
+gustos. </P>
+<P>En la segunda l&iacute;nea usamos <CODE>gs</CODE> como filtro, indicando que la entrada
+es STDIN ( el gui&oacute;n del final ), y la salida, STDOUT
+(<CODE>-sOutputFile=-</CODE>).  Lea la p&aacute;gina de manual de '<CODE>gs</CODE>' para m&aacute;s
+detalles.</P>
+<P>Es buena pr&aacute;ctica guardar los filtros de entrada en el directorio tamp&oacute;n
+de la impresora en la que se usan (o en <CODE>/var/spool/lpd/</CODE> ), aunque
+las buenas maneras recomienden camas separadas para datos y programas.</P>
+<P>M&aacute;s dif&iacute;cil a&uacute;n:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+/usr/tex/bin/dvips -f | /usr/bin/gs [...] -sOutputFile=- -
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Como se puede ver, este filtro procesar&aacute; un fichero texto de formato TEX o
+LATEX, obteniendo un fichero <CODE>.dvi</CODE>, que es transformado en PostScript,
+y reprocesado con ghostscript para imprimirlo en una impresora normal.</P>
+<P>Ojo: Si usa impresi&oacute;n remota con <CODE>lpr</CODE>, el filtro deber&aacute; encontrarse en
+la m&aacute;quina remota; <CODE>LPRng</CODE> obvia este inconveniente.</P>
+
+<H3>Los filtros de salida</H3>
+
+
+<P>Son como el <CODE>goto</CODE> en 'C', se pueden usar, pero realmente, es dif&iacute;cil
+encontrar aplicaciones para ellos. Dado que cualquier comando de
+iniciaci&oacute;n de la impresora es ignorado, si tenemos un trabajo rodando que
+cambia algo (el tipo de letra, por ejemplo), el nuevo trabajo
+probablemente acabar&aacute; mal impreso. No los use. </P>
+
+
+<H3>Depuraci&oacute;n de filtros </H3>
+
+
+<P>Es absolutamente trivial:  <CODE>mifiltro &lt;fichero &gt;/dev/lp1</CODE>
+(como <CODE>root</CODE>). Comprobaremos de inmediato si de verdad funciona.</P>
+<P>Un truco muy &uacute;til para los filtros con argumentos en l&iacute;nea de comandos
+consiste en incluir la l&iacute;nea </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+echo $* &gt;&gt; /tmp/filter-log
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>cerca del principio del gui&oacute;n. Recuerde incluir en la primera l&iacute;nea
+'<CODE>#!/bin/sh</CODE>', aseg&uacute;rese de que el propietario es <CODE>root</CODE>, y
+que son ejecutables por todo el mundo. </P>
+
+<H3>Filtros M&aacute;gicos</H3>
+
+
+<P>Tienen de especial estos programas que son capaces de identificar la
+familia de los datos a imprimir a partir de patrones caracter&iacute;sticos de
+datos en situaciones determinadas. Son generalmente guiones Shell, Perl,
+programas en C ...; el programa identifica la fuente de datos, y llama a
+un filtro ordinario que lo procesa de modo adecuado. Con un filtro m&aacute;gico
+adecuado y tres filtros no m&aacute;gicos podemos imprimir cosas como esta:</P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+# lpr -d fich1.dvi fich2.dvi.Z fich3.ps fich4.tex.gz
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Un buen sitio para encontrar filtros m&aacute;gicos como el del ejemplo anterior
+es:</P>
+<P><CODE>
+<A HREF="ftp://tsx-11.mit.edu/pub/linux/sources/usr.bin/magic-filter-??.tar.gz">ftp://tsx-11.mit.edu/pub/linux/sources/usr.bin/magic-filter-??.tar.gz</A></CODE>.</P>
+<P>Como podr&aacute; suponer, nunca se deber&iacute;an usar como filtros de salida. </P>
+<P>Un ejemplo: el siguiente filtro m&aacute;gico identifica un fichero fuente ps o
+texto, y lo procesa de acuerdo a su clase: </P>
+<P>
+<BLOCKQUOTE><CODE>
+<PRE>
+#!/bin/sh
+printf &quot;&lt;Filtro magico para imprimir texto y ps.&gt;&quot;
+read first_line
+first_two_chars=`expr $first_line : '\(..\)'`
+if [ &quot;$first_two_chars&quot; = &quot;%!&quot; ] ; then # Documento PostScript.
+/usr/bin/gs -dSAFER -dNOPAUSE -q -sDEVICE=??? -sOutputFile=- - &lt; /dev/null
+else 
+# Texto llano - Si hace falta, podemos incluir aqui la
+# correccion del efecto escalera
+echo -n $first_line
+cat
+printf &quot;\014&quot;
+fi
+</PRE>
+</CODE></BLOCKQUOTE>
+</P>
+<P>Para desaz&oacute;n de muchos, habr&aacute; ya notado que un script ejecutado por
+alguien distinto al propietario puede ser una brecha de seguridad. Este no
+es el caso de los filtros de <CODE>lpd</CODE>, ya que el entorno de los guiones no
+est&aacute; al alcance de potenciales piratas.</P>
+
+<H3>Los usuarios de HP estamos de suerte</H3>
+
+
+<P>Hasta donde hemos podido averiguar, HP no tiene ning&uacute;n programa que
+permita configurar sobre la marcha sus impresoras (¡¡ ni siquiera para sus
+propios sistemas UNIX!!), salvo que use MS-Windows, o *DOS; por lo que
+s&oacute;lo nos queda, bien usar DOSEMU, o salir a DOS, configurar la impresora,
+y volver a Linux. </P>
+<P>Existe un hermoso programa llamado <CODE>hpmodeset</CODE>
+<SL>Nota del
+Traductor: <BR> Hay tambi&eacute;n otro programa m&aacute;s moderno y pr&aacute;ctico, llamado
+<CODE>hpset</CODE>, localizable en cualquier <I>mirror</I> de Sunsite, en
+<CODE>../system/printing/</CODE></SL>
+, escrito en Eiffel, que hace el
+trabajo por nosotros, muy f&aacute;cil de usar. Su autor es Glenn Maughan
+(<CODE>
+<A HREF="mailto:glennm@insect.sd.monash.edu.au">glennm@insect.sd.monash.edu.au</A></CODE>); se puede conseguir en
+<CODE>
+<A HREF="ftp://hornet.sd.monash.edu.au/pub/hpmodeset/v2.0">ftp://hornet.sd.monash.edu.au/pub/hpmodeset/v2.0</A></CODE>. </P>
+<P>Permite fijar economode, definici&oacute;n, tipo de papel, etc... en ficheros PCL
+(el lenguaje de las impresoras HP) y ps. No es tan espectacular como el
+programa de windows, pero funciona muy bien, y es susceptible de ser
+utilizado como filtro de impresi&oacute;n.</P>
+
+
+<HR>
+<A HREF="Configuracion-Impresion-Como-3.html">Anterior</A>
+<A HREF="Configuracion-Impresion-Como-5.html">Siguiente</A>
+<A HREF="Configuracion-Impresion-Como.html#toc4">Indice</A>
+</BODY>
+</HTML>

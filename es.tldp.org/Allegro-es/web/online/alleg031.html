@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>
+Manual de Allegro: 31 Rutinas matemáticas para usar cuaterniones
+</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css">
+<!--
+A.xref:link    {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:visited {color: blue; text-decoration: none; background: rgb(255, 204, 50);}
+A.xref:hover   {color: blue; text-decoration: underline; background: rgb(255, 224, 150);}
+A.xref:active  {color: red; text-decoration: none; background: rgb(255, 204, 50);}
+blockquote.xref {border: medium solid rgb(255, 204, 51); color: black; background: rgb(255, 204, 50);}
+blockquote.code {border: medium solid rgb(255, 204, 50); color: black; background: rgb(255, 255, 155);}
+blockquote.text {border: medium solid rgb(175, 235, 255); color: black; background: rgb(210, 244, 255);}
+-->
+</style>
+</head><body bgcolor=white text=black link="#0000ee" alink="#ff0000" vlink="#551a8b">
+<h1><a name="31 Rutinas matemáticas para usar cuaterniones">31 Rutinas matemáticas para usar cuaterniones</a></h1>
+
+<ul>
+<li><a href="#apply_quat">apply_quat</a>
+<li><a href="#get_rotation_quat">get_rotation_quat</a>
+<li><a href="#get_vector_rotation_quat">get_vector_rotation_quat</a>
+<li><a href="#get_x_rotate_quat">get_x_rotate_quat</a>
+<li><a href="#get_y_rotate_quat">get_y_rotate_quat</a>
+<li><a href="#get_z_rotate_quat">get_z_rotate_quat</a>
+<li><a href="#identity_quat">identity_quat</a>
+<li><a href="#matrix_to_quat">matrix_to_quat</a>
+<li><a href="#quat_interpolate">quat_interpolate</a>
+<li><a href="#quat_mul">quat_mul</a>
+<li><a href="#quat_slerp">quat_slerp</a>
+<li><a href="#quat_to_matrix">quat_to_matrix</a>
+</ul>
+
+<p>
+Los cuaterniones son una forma alternativa de representar la parte de
+rotación de una transformación, y pueden ser más fáciles de manipular que las
+matrices. Como con una matriz, usted puede codificar transformaciones
+geométricas en una, concatenar varias de ellas para mezclar múltiples
+transformaciones, y aplicarlas a un vector, pero sólo pueden almacenar
+rotaciones puras. La gran ventaja es que puede interpolar precisamente entre
+dos cuaterniones para obtener una rotación parcial, evitando los enormes
+problemas de la interpolación más convencional con ángulos eulerianos.
+
+<p>
+Los cuaterniones sólo poseen versiones de punto flotante, sin ningún sufijo
+"_f". Por otro lado, la mayoría de las funciones de cueterniones se
+corresponden con una función matricial que realiza una operación similar.
+
+<p>
+Cuaternión significa 'de cuatro partes', y es exactamente eso. Aquí está la
+estructura:
+<blockquote class="code"><pre>
+   typedef struct QUAT
+   {
+      float w, x, y, z;
+   }
+</pre></blockquote>
+Usted se divertirá mucho buscando el significado real de estos números, pero
+eso está más allá del alcance de esta documentación. Los cuaterniones
+funcionan -- créame.
+
+<p><br>
+<b>extern QUAT <a name="identity_quat">identity_quat</a>;</b><br>
+   Variable global que contiene el cuaternión identidad 'que no hace nada'.
+   Multiplicar por el cuaternión identidad no tiene efecto alguno.
+
+<p><br>
+<b>void <a name="get_x_rotate_quat">get_x_rotate_quat</a>(QUAT *q, float r);</b><br>
+<b>void <a name="get_y_rotate_quat">get_y_rotate_quat</a>(QUAT *q, float r);</b><br>
+<b>void <a name="get_z_rotate_quat">get_z_rotate_quat</a>(QUAT *q, float r);</b><br>
+   Construye cuaterniones de ejes de rotación, almacenándolos en q. Cuando
+   sean aplicados a un punto, éstos cuaterniones lo rotarán sobre el eje
+   relevante el ángulo especificado (dado en binario, 256 grados forman un
+   círculo).
+
+<p><br>
+<b>void <a name="get_rotation_quat">get_rotation_quat</a>(QUAT *q, float x, float y, float z);</b><br>
+   Construye un cuaternión que rotará puntos alrededor de los tres ejes las
+   cantidades especificadas (dadas en binario, 256 grados forman un círculo).
+
+<p><br>
+<b>void <a name="get_vector_rotation_quat">get_vector_rotation_quat</a>(QUAT *q, float x, y, z, float a);</b><br>
+   Construye un cuaternión que rotará puntos alrededor del vector x,y,z el
+   ángulo especificado (dado en binario, 256 grados forman un círculo).
+
+<p><br>
+<b>void <a name="quat_to_matrix">quat_to_matrix</a>(const QUAT *q, MATRIX_f *m);</b><br>
+   Construye una matriz de rotación a partir de un cuaternión.
+
+<p><br>
+<b>void <a name="matrix_to_quat">matrix_to_quat</a>(const MATRIX_f *m, QUAT *q);</b><br>
+   Construye un cuaternión a partir de una matriz de rotación. La translación
+   es descartada durante la conversión. Use get_align_matrix_f() si la matriz
+   no está ortonormalizada, porque de otra forma podrían pasar cosas
+   extrañas.
+
+<p><br>
+<b>void <a name="quat_mul">quat_mul</a>(const QUAT *p, const QUAT *q, QUAT *out);</b><br>
+   Multiplica dos cuaterniones, almacenando el resultado en out. El
+   cuaternión resultante tendrá el mismo efecto que la combinación de p y q,
+   es decir, cuando es aplicado a un punto, (punto * out) = ((punto * p) *
+   q). Cualquier cantidad de rotaciones pueden ser concatenadas de ésta
+   manera. Note que la multiplicación del cuaternión no es conmutativa, es
+   decir que quat_mul(p, q) != quat_mul(q, p).
+
+<p><br>
+<b>void <a name="apply_quat">apply_quat</a>(const QUAT *q, float x, y, z, *xout, *yout, *zout);</b><br>
+   Multiplica el punto (x, y, z) por el cuaternión q, almacenando el
+   resultado en (*xout, *yout, *zout). Esto es un poquito más lento que
+   apply_matrix_f(), así que úselo para trasladar unos pocos puntos. Si usted
+   tiene muchos puntos, es mucho más eficiente llamar a quat_to_matrix() y
+   entonces usar apply_matrix_f().
+
+<p><br>
+<b>void <a name="quat_interpolate">quat_interpolate</a>(const QUAT *from, QUAT *to, float t, QUAT *out);</b><br>
+   Construye un cuaternión que representa una rotación entre from y to. El
+   argumento t puede ser cualquiera entre 0 y 1, y representa dónde estará
+   el resultado entre from y to. 0 devuelve from, 1 devuelve to, y 0.5
+   devolverá una rotación exactamente en la mitad. El resultado es copiado a
+   out. Esta función creará una rotación corta (menos de 180 grados) entre
+   from y to.
+
+<p><br>
+<b>void <a name="quat_slerp">quat_slerp</a>(const QUAT *from, QUAT *to, float t, QUAT *out, int how);</b><br>
+   Igual que quat_interpolate(), pero permite más control sobre cómo es hecha
+   la rotación. El parámetro how puede ser alguno de estos valores:
+<blockquote class="text"><pre>
+      QUAT_SHORT  - como quat_interpolate(), usa el camino más corto
+      QUAT_LONG   - la rotación será mayor que 180 grados
+      QUAT_CW     - rotación horaria vista desde arriba
+      QUAT_CCW    - rotación antihoraria vista desde arriba
+      QUAT_USER   - los cuaterniones son interpolados exactamente como
+                    son dados.
+</pre></blockquote>
+
+
+<p><br>
+<hr><a href="allegro.html">Volver al Indice</a>
+
+</body>
+</html>
