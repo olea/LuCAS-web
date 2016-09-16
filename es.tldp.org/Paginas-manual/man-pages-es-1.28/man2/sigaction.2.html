@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SIGACTION</title></head><body><p>
+  
+</p><h1>SIGACTION</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 8 mayo 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+sigaction, sigprocmask, sigpending, sigsuspend - funciones POSIX de
+manejo de señales <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/signal.h">signal.h</a>&gt;</b><p><b>int sigaction(int</b> <i>signum</i><b>, const struct
+sigaction *</b><i>act</i><b>,</b> <b>struct sigaction
+*</b><i>oldact</i><b>);</b></p><p><b>int sigprocmask(int</b> <i>how</i><b>, const sigset_t
+*</b><i>set</i><b>,</b> <b>sigset_t *</b><i>oldset</i><b>);</b></p><p><b>int sigpending(sigset_t *</b><i>set</i><b>);</b></p><p><b>int sigsuspend(const sigset_t *</b><i>mask</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La llamad al sistema <b>sigaction</b> se emplea para cambiar la
+acción tomada por un proceso cuando recibe una determinada señal. 
+</p><p><i>signum</i> especifica la señal y puede ser cualquiera válida
+salvo <b>SIGKILL</b> o <b>SIGSTOP</b>.</p><p>Si <i>act</i> no es nulo, la nueva acción para la señal
+<i>signum</i> se instala como <i>act</i>. Si <i>oldact</i> no es
+nulo, la acción anterior se guarda en <i>oldact</i>.</p><p>La estructura <b>sigaction</b> se define como</p><dl compact="compact"><dd>
+<pre>
+struct sigaction {
+    void (*sa_handler)(int);
+    void (*sa_sigaction)(int, siginfo_t *, void *);
+    sigset_t sa_mask;
+    int sa_flags;
+    void (*sa_restorer)(void);
+}
+</pre>
+</dd>
+</dl><p>El elemento <i>sa_restorer</i> está obsoleto y no debería
+utilizarse. POSIX no especifica un elemento <i>sa_restorer</i>.</p><p><i>sa_handler</i> especifica la acción que se va a asociar con
+<i>signum</i> y puede ser <b>SIG_DFL</b> para la acción
+predeterminada, <b>SIG_IGN</b> para no tener en cuenta la señal, o
+un puntero a una función manejadora para la señal.</p><p><i>sa_mask</i> da una máscara de señales que deberían bloquearse
+durante la ejecución del manejador de señal. Además, la señal que
+lance el manejador será bloqueada, a menos que se activen las
+opciones <b>SA_NODEFER</b> o <b>SA_NOMASK</b>.</p><p><i>sa_flags</i> especifica un conjunto de opciones que modifican
+el comportamiento del proceso de manejo de señal. Se forma por la
+aplicación del operador de bits OR a cero o más de las siguientes
+constantes:</p><dl compact="compact"><dd>
+<dl compact="compact"><dt><b>SA_NOCLDSTOP</b></dt>
+
+<dd>Si <i>signum</i> es <b>SIGCHLD</b>, no se reciba notificación
+cuando los procesos hijos se paren (esto es, cuando los procesos
+hijos reciban una de las señales <b>SIGSTOP</b>, <b>SIGTSTP</b>,
+<b>SIGTTIN</b> o <b>SIGTTOU</b>).</dd>
+
+<dt><b>SA_ONESHOT</b> o <b>SA_RESETHAND</b></dt>
+
+<dd>Restáurese la acción para la señal al estado predeterminado una
+vez que el manejador de señal haya sido llamado. (Esto es el
+comportamiento predeterminado de la llamada al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b>(2).)</dd>
+
+<dt><b>SA_RESTART</b></dt>
+
+<dd>Proporciona un comportamiento compatible con la semántica de
+señales de BSD haciendo re-ejecutables algunas llamadas al sistema
+entre señales.</dd>
+
+<dt><b>SA_NOMASK</b> o <b>SA_NODEFER</b></dt>
+
+<dd>No se impida que se reciba la señal desde su propio
+manejador.</dd>
+
+<dt><b>SA_SIGINFO</b></dt>
+
+<dd>El manejador de señal toma 3 argumentos, no uno. En este caso,
+se debe configurar <i>sa_sigaction</i> en lugar de
+<i>sa_handler</i>. (El campo sa_sigaction fue añadido en la versión
+2.1.86 de Linux.)</dd>
+</dl></dd>
+</dl><p>El parámetro <i>siginfo_t</i> para <i>sa_sigaction</i> es una
+estructura con los siguientes elementos</p><dl compact="compact"><dd>
+<pre>
+siginfo_t {
+    int      si_signo;  /* Número de señal */
+    int      si_errno;  /* Un valor errno */
+    int      si_code;   /* Código de señal */
+    pid_t    si_pid;    /* ID del proceso emisor */
+    uid_t    si_uid;    /* ID del usuario real del proceso emisor */
+    int      si_status; /* Valor de salida o señal */
+    clock_t  si_utime;  /* Tiempo de usuario consumido */
+    clock_t  si_stime;  /* Tiempo de sistema consumido */
+    sigval_t si_value;  /* Valor de señal */
+    int      si_int;    /* señal POSIX.1b */
+    void *   si_ptr;    /* señal POSIX.1b */
+    void *   si_addr;   /* Dirección de memoria que ha producido el fallo */
+    int      si_band;   /* Evento de conjunto */
+    int      si_fd;     /* Descriptor de fichero */
+}
+</pre>
+</dd>
+</dl><i>si_signo</i><p>, <i>si_errno</i> y <i>si_code</i> están definidos
+para todas las señales. <b><a href="http://localhost/cgi-bin/man/man2html?2+kill">kill</a></b>(2),
+las señales POSIX.1b y SIGCHLD rellenan <i>si_pid</i> y
+<i>si_uid</i>. <b>SIGCHLD</b>también<b>rellena</b>
+<i>si_status</i>, <i>si_utime</i> y <i>si_stime</i>. <i>si_int</i>
+y <i>si_ptr</i> son especificados por el emisor de la señal
+POSIX.1b. <br />
+ SIGILL, SIGFPE, SIGSEGV y SIGBUS rellenan <i>si_addr</i> con la
+dirección del fallo. SIGPOLL rellena <i>si_band</i> y <i>si_fd</i>.
+
+</p><p><i>si_code</i> indica por qué se ha enviado la señal. Es un
+valor, no una máscara de bits. Los valores que son posibles para
+cualquier señal se listan en la siguiente tabla:</p><table border="1"><tr valign="top"><td align="center" colspan="2"><i>si_code</i><br /></td>
+</tr><tr valign="top"><td>Valor</td>
+<td>Origen de la señal<br /></td>
+</tr><tr valign="top"><td>SI_USER</td>
+<td>kill, sigsend o raise<br /></td>
+</tr><tr valign="top"><td>SI_KERNEL</td>
+<td>El núcleo<br /></td>
+</tr><tr valign="top"><td>SI_QUEUE</td>
+<td>sigqueue<br /></td>
+</tr><tr valign="top"><td>SI_TIMER</td>
+<td>el cronómetro ha vencido<br /></td>
+</tr><tr valign="top"><td>SI_MESGQ</td>
+<td>ha cambiado el estado de mesq<br /></td>
+</tr><tr valign="top"><td>SI_ASYNCIO</td>
+<td>ha terminado una E/S asíncrona<br /></td>
+</tr><tr valign="top"><td>SI_SIGIO</td>
+<td>SIGIO encolada<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGILL<br /></td>
+</tr><tr valign="top"><td>ILL_ILLOPC</td>
+<td>código de operación ilegal<br /></td>
+</tr><tr valign="top"><td>ILL_ILLOPN</td>
+<td>operando ilegal<br /></td>
+</tr><tr valign="top"><td>ILL_ILLADR</td>
+<td>modo de direccionamiento ilegal<br /></td>
+</tr><tr valign="top"><td>ILL_ILLTRP</td>
+<td>trampa ilegal<br /></td>
+</tr><tr valign="top"><td>ILL_PRVOPC</td>
+<td>código de operación privilegiada<br /></td>
+</tr><tr valign="top"><td>ILL_PRVREG</td>
+<td>registro privilegiado<br /></td>
+</tr><tr valign="top"><td>ILL_COPROC</td>
+<td>error del coprocesador<br /></td>
+</tr><tr valign="top"><td>ILL_BADSTK</td>
+<td>error de la pila interna<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGFPE<br /></td>
+</tr><tr valign="top"><td>FPE_INTDIV</td>
+<td>entero dividido por cero<br /></td>
+</tr><tr valign="top"><td>FPE_INTOVF</td>
+<td>desbordamiento de entero<br /></td>
+</tr><tr valign="top"><td>FPE_FLTDIV</td>
+<td>punto flotante dividido por cero<br /></td>
+</tr><tr valign="top"><td>FPE_FLTOVF</td>
+<td>desbordamiento de punto flotante<br /></td>
+</tr><tr valign="top"><td>FPE_FLTUND</td>
+<td>desbordamiento de punto flotante por defecto<br /></td>
+</tr><tr valign="top"><td>FPE_FLTRES</td>
+<td>resultado de punto flotante inexacto<br /></td>
+</tr><tr valign="top"><td>FPE_FLTINV</td>
+<td>operación de punto flotante inválida<br /></td>
+</tr><tr valign="top"><td>FPE_FLTSUB</td>
+<td>subscript fuera de rango<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGSEGV<br /></td>
+</tr><tr valign="top"><td>SEGV_MAPERR</td>
+<td>dirección no asociada a un objeto<br /></td>
+</tr><tr valign="top"><td>SEGV_ACCERR</td>
+<td>permisos inválidos para un objeto presente en memoria<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGBUS<br /></td>
+</tr><tr valign="top"><td>BUS_ADRALN</td>
+<td>alineamiento de dirección inválido<br /></td>
+</tr><tr valign="top"><td>BUS_ADRERR</td>
+<td>dirección física inexistente<br /></td>
+</tr><tr valign="top"><td>BUS_OBJERR</td>
+<td>error hardware específico del objeto<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGTRAP<br /></td>
+</tr><tr valign="top"><td>TRAP_BRKPT</td>
+<td>punto de parada de un proceso<br /></td>
+</tr><tr valign="top"><td>TRAP_TRACE</td>
+<td>trampa de seguimiento paso a paso de un proceso<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGCHLD<br /></td>
+</tr><tr valign="top"><td>CLD_EXITED</td>
+<td>ha terminado un hijo<br /></td>
+</tr><tr valign="top"><td>CLD_KILLED</td>
+<td>se ha matado a un hijo<br /></td>
+</tr><tr valign="top"><td>CLD_DUMPED</td>
+<td>un hijo ha terminado anormalmente<br /></td>
+</tr><tr valign="top"><td>CLD_TRAPPED</td>
+<td>un hijo con seguimiento paso a paso ha sido detenido<br /></td>
+</tr><tr valign="top"><td>CLD_STOPPED</td>
+<td>ha parado un hijo<br /></td>
+</tr><tr valign="top"><td>CLD_CONTINUED</td>
+<td>un hijo parado ha continuado<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">SIGPOLL<br /></td>
+</tr><tr valign="top"><td>POLL_IN</td>
+<td>datos de entrada disponibles<br /></td>
+</tr><tr valign="top"><td>POLL_OUT</td>
+<td>buffers de salida disponibles<br /></td>
+</tr><tr valign="top"><td>POLL_MSG</td>
+<td>mensaje de entrada disponible<br /></td>
+</tr><tr valign="top"><td>POLL_ERR</td>
+<td>error de E/S<br /></td>
+</tr><tr valign="top"><td>POLL_PRI</td>
+<td>entrada de alta prioridad disponible<br /></td>
+</tr><tr valign="top"><td>POLL_HUP</td>
+<td>dispositivo desconectado<br /></td>
+</tr></table><p>La llamada <b>sigprocmask</b> se emplea para cambiar la lista de
+señales bloqueadas actualmente. El comportamiento de la llamada
+depende del valor de <i>how</i>, como sigue:</p><dl compact="compact"><dd>
+<dl compact="compact"><dt><b>SIG_BLOCK</b></dt>
+
+<dd>El conjunto de señales bloqueadas es la unión del conjunto
+actual y el argumento <i>set</i>.</dd>
+
+<dt><b>SIG_UNBLOCK</b></dt>
+
+<dd>Las señales en <i>set</i> se quitan del conjunto actual de
+señales bloqueadas. Es legal intentar el desbloqueo de una señal
+que no está bloqueada.</dd>
+
+<dt><b>SIG_SETMASK</b></dt>
+
+<dd>El conjunto de señales bloqueadas se pone según el argumento
+<i>set</i>.</dd>
+</dl></dd>
+</dl><p>Si <i>oldset</i> no es nulo, el valor anterior de la máscara de
+señal se guarda en <i>oldset</i>.</p><p>La llamada <b>sigpending</b> permite el examen de señales
+pendientes (las que han sido producidas mientras estaban
+bloqueadas). La máscara de señal de las señales pendientes se
+guarda en <i>set</i>.</p><p>La llamada <b>sigsuspend</b> reemplaza temporalmente la máscara
+de señal para el proceso con la dada por <i>mask</i> y luego
+suspende el proceso hasta que se recibe una señal.</p><p><a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><b>sigaction</b><p>, <b>sigprocmask</b>, <b>sigpending</b> y
+<b>sigsuspend</b> devuelven 0 en caso de éxito y -1 en caso de
+error. 
+</p><p><a id="lbAF"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>EINVAL</b></dt>
+
+<dd>Se ha especificado una señal inválida. Esto también se genera
+si se hace un intento de cambiar la acción para <b>SIGKILL</b> o
+<b>SIGSTOP</b>, que no pueden ser capturadas.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd><i>act</i>, <i>oldact</i>, <i>set</i> u <i>oldset</i> apuntan a
+una zona de memoria que no forma parte válida del espacio de
+direcciones del proceso.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>La llamada al sistema ha sido interrumpida.</dd>
+</dl><a id="lbAG"> </a><h2>OBSERVACIONES</h2><p>
+
+No es posible bloquear <b>SIGKILL</b> ni <b>SIGSTOP</b> con una
+llamada a sigprocmask. Los intentos de hacerlo no serán tenidos en
+cuenta, silenciosamente. 
+</p><p>De acuerdo con POSIX, el comportamiento de un proceso está
+indefinido después de que no haga caso de una señal SIGFPE, SIGILL
+o SIGSEGV que no haya sido generada por las funciones <i>kill()</i>
+o <i>raise()</i>. La división entera por cero da un resultado
+indefinido. En algunas arquitecturas generará una señal SIGFPE.
+(También, el dividir el entero más negativo por -1 puede generar
+una señal SIGFPE.) No hacer caso de esta señal puede llevar a un
+bucle infinito.</p><p>POSIX (B.3.3.1.3) anula el establecimiento de SIG_IGN como
+acción para SIGCHLD. Los comportamientos de BSD y SYSV difieren,
+provocando el fallo en Linux de aquellos programas BSD que asignan
+SIG_IGN como acción para SIGCHLD.</p><p>La especificación POSIX sólo define <b>SA_NOCLDSTOP</b>. El
+empleo de otros valores en <i>sa_flags</i> no es transportable.</p><p>La opción <b>SA_RESETHAND</b> es compatible con la de SVr4 del
+mismo nombre.</p><p>La opción <b>SA_NODEFER</b> es compatible con la de SVr4 del
+mismo nombre bajo los núcleos 1.3.9 y posteriores. En núcleos más
+viejos la implementación de Linux permitía la recepción de
+cualquier señal, no sólo la que estábamos instalando (sustituyendo
+así efectivament cualquier valor de <i>sa_mask</i>).</p><p>Los nombres <b>SA_RESETHAND</b> y <b>SA_NODEFER</b> para
+compatibilidad con SVr4 están presentes solamente en las versiones
+de la biblioteca 3.0.9 y mayores.</p><p>La opción <b>SA_SIGINFO</b> viene especificada por POSIX.1b. El
+soporte para ella se añadió en la versión 2.2 de Linux.</p><p><b>sigaction</b> puede llamarse con un segundo argumento nulo
+para saber el manejador de señal en curso. También puede emplearse
+para comprobar si una señal dada es válida para la máquina donde se
+está, llamándola con el segundo y el tercer argumento nulos.</p><p>Vea <b><a href="http://localhost/cgi-bin/man/man2html?3+sigsetops">sigsetops</a></b>(3)
+para detalles sobre manipulación de conjuntos de señales. <a id="lbAH"> </a></p><h2>CONFORME A</h2><p>
+
+POSIX, SVr4. SVr4 no documenta la condición EINTR. 
+</p><p><a id="lbAI"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+kill">kill</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+kill">kill</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+killpg">killpg</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+pause">pause</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+raise">raise</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+siginterrupt">siginterrupt</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+signal">signal</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+sigsetops">sigsetops</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sigvec">sigvec</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">OBSERVACIONES</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

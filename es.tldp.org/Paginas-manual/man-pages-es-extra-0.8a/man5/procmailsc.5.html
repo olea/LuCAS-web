@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of PROCMAILSC</title></head><body><p>
+  
+</p><h1>PROCMAILSC</h1><p>
+
+Section: File Formats (5)<br />
+Updated: 1994/10/07<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+procmailsc - técnica puntuación de peso de procmail <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><p>
+
+[<b>*</b>] <b>w^x condición</b> <a id="lbAD"> </a> 
+</p><h2>DESCRIPCIÓN</h2><p>
+
+Además de las condiciones tradicionales verdadero o falso que puede
+especificar en una receta, puede usar técnicas de puntuación de
+peso para decidir si una cierta receta concuerda o no. Cuando se
+usa la puntuación de peso en una receta, la puntuación final de esa
+receta debe ser positiva para que concuerde. 
+</p><p>Una cierta condición puede contribuir a la puntuación si le
+sitúa un `peso' (<b>w</b>) y un `exponente' (<b>x</b>). Esto lo
+hace precediendo la condición (en la misma línea) con:</p><dl compact="compact"><dd><b>w^x</b></dd>
+</dl><p>
+
+Considerando que <b>w</b> y <b>x</b> son números reales entre
+-2147483647.0 y 2147483647.0. 
+</p><p><a id="lbAE"> </a></p><h2>Condiciones de expresión regular sopesadas</h2><p>
+
+La primera vez que se encuentra la expresión regular, se añadirá
+<i>w</i> a la puntuación. La segunda vez que la encuentre añadirá
+<i>w*x</i> La tercera vez que la encuentre añadirá <i>w*x*x</i> La
+cuarta vez añadirá <i>w*x*x*x</i> y así sucesivamente. 
+</p><p>Esto se puede describir con la siguiente fórmula concisa:</p><dl compact="compact"><dd><br />
+                     n<br />
+     n   k-1        x - 1 w * Sum x = w * -------<br />
+    k=1             x - 1</dd>
+</dl><p>Representa la puntuación total añadida para esta condición si se
+encuentran <b>n</b> concordancias.</p><p>Observe que se pueden hacer las siguientes distinciones de
+casos:</p><dl compact="compact"><dt>x=0</dt>
+
+<dd>Sólo la primera concordancia contribuirá w a la puntuación. Se
+ignoran cualquier concordancia posterior.</dd>
+
+<dt>x=1</dt>
+
+<dd>Cada concordancia contribuirá el mismo w a la puntuación. La
+puntuación crece linealmente con el número de concordancias
+encontradas.</dd>
+
+<dt>0&lt;x&lt;1</dt>
+
+<dd>Cada concordancia contribuye menos a la puntuación que la
+previa. La puntuación se aproxima asintóticamente a cierto valor
+(véase la sección notas <b>NOTAS</b> abajo).</dd>
+
+<dt>1&lt;x</dt>
+
+<dd>Cada concordancia contribuirá más a la puntuación que la
+previa. La puntuación crece exponencialmente.</dd>
+
+<dt>x&lt;0</dt>
+
+<dd>Se puede utilizar para favorecer números pares o impares de
+concordancias.</dd>
+</dl><p>Si la expresión regular está negada (i.e. concuerda si no se
+encuentra), entonces <b>n</b> obviamente puede ser cero o uno. <a id="lbAF"> </a></p><h2>Condiciones de programa sopesadas</h2><p>
+
+Si el programa devuelve un código de salida EXIT_SUCCESS (=0),
+entonces la puntuación total añadida será <b>w</b>. Si devuelve
+cualquier otro código de salida (indicando fallo), la puntuación
+total añadida será <b>x</b>. 
+</p><p>Si el código de salida del programa está negado, el código de
+salida se considerará como si fuera un número virtual de
+concordancias. El cálculo de la puntuación añadida prosigue como si
+tuviera una expresión regular normal con <b>n=`exitcode'</b>
+concordancias. <a id="lbAG"> </a></p><h2>Condiciones de longitud sopesadas</h2><p>
+
+Si la longitud del correo actual es <b>M</b> entonces: 
+</p><dl compact="compact"><dd>* w^x &gt; L</dd>
+</dl><p>generará una puntuación adicional de:</p><dl compact="compact"><dd><br />
+           x<br />
+    /  M  \ w * | --- |<br />
+    \  L  /</dd>
+</dl><p>Y:</p><dl compact="compact"><dd>* w^x &lt; L</dd>
+</dl><p>generará una puntuación adicional de:</p><dl compact="compact"><dd><br />
+           x<br />
+    /  L  \ w * | --- |<br />
+    \  M  /</dd>
+</dl><p>En ambos casos, si L=M, esto añadirá w a la puntuación. En el
+primer caso, sin embargo, se favorecen los correos grandes, en el
+último se favorecen los pequeños. Aunque x se puede variar para un
+mejor ajuste el decrecimiento de la función, el uso típico fija
+x=1. <a id="lbAH"> </a></p><h2>MISCELÁNEA</h2><p>
+
+Puede consultar la puntuación total de todas las condiciones de una
+receta de la variable de entorno <b>$=</b>. Esta variable se fija
+<i>cada vez</i> cuando procmail ha analizado todas las condiciones
+de una receta (incluso si la receta no está siendo ejecutada). <a id="lbAI"> </a> 
+</p><h2>EJEMPLOS</h2><p>
+
+La siguiente receta separa tdos los correos que tienen más de 150
+líneas en el cuerpo. La primera condición contiene una expresión
+regular vacía que, debido a que siempre se verifica, se usa para
+dar a nuestra puntuación un desplazamiento negativo. La segunda
+condición concuerda con cada línea del correo y consume el
+desplazamiento negativo previo que le dimos (un punto por línea).
+Al final, la puntuación será sólo positiva si el correo contiene
+más de 150 líneas. 
+</p><dl compact="compact"><dd>:0 Bh * -150^0 * 1^1 ^.*$ /dev/null</dd>
+</dl><p>Supongamos que tiene una carpeta prioritaria que siempre lee
+primero. La siguiente receta toma la prioridad del correo y lo
+almacena en carpetas especiales. La primera condición es regular,
+i.e. no contribuye a la puntuación, simplemente tiene que
+satisfacerse. Las otras condiciones describen cosas como: john and
+claire normalmente tienen cosas importantes que decir, las
+reuniones son normalmente importantes, las respuestas se favorecen
+un poco, los mail respecto a Elvis (esto es sólo un ejemplo :-) se
+favorecen (cuando más se mencione, más se favorece el correo , pero
+la máxima puntuación extra debida a Elvis será 4000, no importa con
+qué frecuencia sea mencionado), muchas líneas marcadas como de
+respuesta no no gustan, los "smileys" son apreciados (la puntuación
+de ellos alcanza un máximo de 3500, esas tres personas normalmente
+no envían correos interesantes, lo correos serían preferentemente
+pequeños (v.g. mails con 2000 octetos de largos puntuarán -100,
+4000 bytes de largos -800). Como puede ver, si alguien de esas
+personas poco interesantes envía correo, el coreo todavía tiene una
+oportunidad de aterrizar en la carpeta prioritaria, v.g. si es
+sobre una reunión (meeting), o si contiene al menos dos
+"smileys".</p><dl compact="compact"><dd>:0 HB * !^Precedence:.*(junk|bulk) * 2000^0 ^From:.*(<a href="mailto:john@home">john@home</a>|<a href="mailto:claire@work">claire@work</a>) * 2000^0
+^Subject:.*meeting * 300^0 ^Subject:.*Re: * 1000^.75 elvis|presley
+* -100^1 ^&gt; * 350^.9 :-\) * -500^0
+^From:.*(boss|jane|henry)@work * -100^3 &gt; 2000
+carpeta_prioritaria</dd>
+</dl><p>Si está suscrito a una lista de correo y le gustaría leer los
+mensajes de calidad, entonces las siguientes recetas podrían<br />
+ realizar el truco. Primero estamos seguros que el correo proviene de
+la lista de correo, Entonces comprobamos si es de ciertas personas
+de las que valoramos su opinión, o sobre un motivo sobre el que
+queremos saber absolutamente todo. Si es así, lo guardamos. En otro
+caso verificamos si la razón de líneas citadas del original es al
+menos 1:2. Si lo excede separamos el correo. Todo lo que sobreviva
+a la verificación previa se almacena.</p><dl compact="compact"><dd>:0 ^From <a href="mailto:mailinglist-request@some.where">mailinglist-request@some.where</a>
+{<br />
+  :0:<br />
+  * ^(From:.*(paula|bill)|Subject:.*skiing)<br />
+  mailinglist 
+<p><br />
+  :0 Bh<br />
+  *  20^1 ^&gt;<br />
+  * -10^1 ^[^&gt;]<br />
+  /dev/null</p>
+
+<p><br />
+  :0:<br />
+  mailinglist }</p>
+</dd>
+</dl><p>Para más ejemplos debería mirar en la página de manual <b><a href="http://localhost/cgi-bin/man/man2html?5+procmailex">procmailex</a></b>(5).
+<a id="lbAJ"> </a></p><h2>ADVERTENCIAS</h2><p>
+
+Debido a que esto incrementa la búsqueda por un orden de magnitud,
+el egrep interno de procmail siempre buscará la concordancia <i>más
+corta</i> por la izquierda salvo que esté determinado qué asignar a
+<b>MATCH</b>, en cuyo caso busca la concordancia <i>más larga</i>
+por la izquierda. V.g. la concordancia <i>más corta</i> por la
+izquierda, por él mismo, la expresión regular: 
+</p><dl compact="compact"><dt><b>.*</b></dt>
+
+<dd>siempre concuerda con una cadena de longitud cero en el mismo
+sitio.</dd>
+
+<dt><b>.+</b></dt>
+
+<dd>siempre concordará con un carácter (salvo nueva línea, por
+supuesto).</dd>
+</dl><a id="lbAK"> </a><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+procmail">procmail</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+procmailrc">procmailrc</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+procmailex">procmailex</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+sh">sh</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+csh">csh</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+egrep">egrep</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+grep">grep</a></b>(1),
+<a id="lbAL"> </a> 
+</p><h2>FALLOS (BUGS)</h2><p>
+
+Si, en una condición de longitud especifica un <b>x</b> que causa
+un desbordamiento, procmail está a la meced de la función <b><a href="http://localhost/cgi-bin/man/man2html?3+pow">pow</a></b>(3)
+de su librería matemática. 
+</p><p>No se aceptan número en coma flotante en formato exponencial
+(v.g. 12e5). <a id="lbAM"> </a></p><h2>MISCELÁNEA</h2><p>
+
+Tan pronto como se alcanza `mas infinito' (2147483647), cualquier
+condición de <i>peso</i> simplemente se salta. 
+</p><p>Tan pronto como se alcanza `menos infinito' (-2147483647), la
+condición se considerará como `sin concordancia' y la receta
+termina antes. <a id="lbAN"> </a></p><h2>NOTAS</h2><p>
+
+Si en una expresión regular fórmula sopesada <b>0&lt;x&lt;1</b>, la
+puntuación total añadida para esta condición se aproximará
+asintóticamente: 
+</p><dl compact="compact"><dd><br />
+   w -------<br />
+ 1 - x</dd>
+</dl><p>Para alcanzar la mitad del valor máximo necesita</p><dl compact="compact"><dd><br />
+     - ln 2 n = --------<br />
+       ln x</dd>
+</dl><p>concordancias. <a id="lbAO"> </a></p><h2>AUTOR</h2><p>
+
+Stephen R. van den Berg 
+</p><dl compact="compact"><dd>&lt;<a href="mailto:srb@cuci.nl">srb@cuci.nl</a>&gt;</dd>
+</dl><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">Condiciones de expresión regular
+sopesadas</a></dt>
+
+<dt><a href="#lbAF">Condiciones de programa sopesadas</a></dt>
+
+<dt><a href="#lbAG">Condiciones de longitud sopesadas</a></dt>
+
+<dt><a href="#lbAH">MISCELÁNEA</a></dt>
+
+<dt><a href="#lbAI">EJEMPLOS</a></dt>
+
+<dt><a href="#lbAJ">ADVERTENCIAS</a></dt>
+
+<dt><a href="#lbAK">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAL">FALLOS (BUGS)</a></dt>
+
+<dt><a href="#lbAM">MISCELÁNEA</a></dt>
+
+<dt><a href="#lbAN">NOTAS</a></dt>
+
+<dt><a href="#lbAO">AUTOR</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:08 GMT, January 21, 2005
+</p></body></html>

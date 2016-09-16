@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of STDARG</title></head><body><p>
+  
+</p><h1>STDARG</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 29 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+stdarg - lista de argumentos variable <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/stdarg.h">stdarg.h</a>&gt;</b><p><b>void va_start( va_list</b> <i>ap</i><b>,</b>
+<i>last</i><b>);</b><br /><i>type</i> <b>va_arg( va_list</b> <i>ap</i><b>,</b>
+<i>type</i><b>);</b><br /><b>void va_end( va_list</b> <i>ap</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Una función podría ser llamada con un número de argumentos variable
+de tipos igualmente variables. El archivo de cabecera (include)
+<i>stdarg.h</i> declara un tipo <b>va_list</b> y define tres macros
+para moverse a través de una lista de argumentos cuyo número y tipo
+no son conocidos para la función llamada. 
+</p><p>Dicha función debe declarar un objeto de tipo <b>va_list</b> el
+cual es utilizado por las macros <b>va_start</b>, <b>va_arg</b> y
+<b>va_end</b>.</p><p>La macro <b>va_start</b> inicializa <i>ap</i> para su uso
+posterior por <b>va_arg</b> y <b>va_end</b>, y debe ser llamada en
+primer lugar.</p><p>El parámetro <i>last</i> es el nombre del último parámetro antes
+de la lista de argumentos variables, es decir, el último parametro
+sobre el cual la función llamada conoce el tipo.</p><p>Dado que la dirección de este parámetro es utilizada por la
+macro <b>va_start</b> no debería ser declarado como una variable de
+registro, como una función ni como un array.</p><p>La macro <b>va_start</b> no devuelve valor alguno.</p><p>La macro <b>va_arg</b> expande una expresión que contiene el
+tipo y el valor del próximo argumento empleado en la llamada. El
+parámetro <i>ap</i> es el <b>va_list</b> <b>ap</b> inicializado por
+<b>va_start</b>. Cada llamada a <b>va_arg</b> modifica <i>ap</i>
+por tanto la siguiente llamada devolverá el próximo argumento. El
+parámetro <i>type</i> es el nombre de un tipo especificado para que
+para que el tipo de un puntero a un objeto que es de dicho tipo
+pueda ser obtenido simplemente añadiendo un * a <i>type</i>.</p><p>Si no hay próximo argumento, o si <i>type</i> no es compatible
+con el tipo del próximo argumento, se producieran errores
+impredecibles.</p><p>El primer uso de la macro <b>va_arg</b> despues de
+<b>va_start</b> devuelve el argumento tras <i>last</i>.
+Invocaciones sucesivas devolverán los valores del resto de los
+argumentos.</p><p>La macro <b>va_end</b> manipula un retorno normal de la función
+cuya lista de argumentos variable fue inicializada por
+<b>va_start</b>.</p><p>La macro <b>va_end</b> no devuelve valor alguno. <a id="lbAE"> </a></p><h2>EJEMPLOS</h2><p>
+
+La función <i>foo</i> toma una cadena de caracteres de formato e
+imprime el argumento asociado con cada caracter de formato basado
+en el tipo. 
+</p><dl compact="compact"><dd>
+<pre>
+void foo(char *fmt, ...)
+{
+        va_list ap;
+        int d;
+        char c, *p, *s;
+
+        va_start(ap, fmt);
+        while (*fmt)
+                switch(*fmt++) {
+                case 's':                       /* string */
+                        s = va_arg(ap, char *);
+                        printf("string %s\n", s);
+                        break;
+                case 'd':                       /* int */
+                        d = va_arg(ap, int);
+                        printf("int %d\n", d);
+                        break;
+                case 'c':                       /* char */
+                        /* Aquí es necesaria una conversión forzada
+                         * de tipos ya que va_arg sólo toma tipos
+                         * totalmente `ascendidos'.
+                         */
+                        c = (char) va_arg(ap, char);
+                        printf("char %c\n", c);
+                        break;
+                }
+        va_end(ap);
+}
+</pre>
+</dd>
+</dl><a id="lbAF"> </a><h2>CONFORME A</h2><p>
+
+Las macros <b>va_start</b>, <b>va_arg</b> y <b>va_end</b>
+concuerdan con ANSI C3.159-1989 (``ANSI C''). <a id="lbAG"> </a> 
+</p><h2>COMPATIBILIDAD</h2><p>
+
+Estas macros <i>no</i> son compatibles con las macros históricas
+que reemplazan. Se puede encontrar una versión compatible "hacia
+atrás" en el fichero de cabecera <i>varargs.h</i>. <a id="lbAH"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Al contrario que las macros <b>varargs</b>, las macros
+<b>stdarg</b> no permiten a los programadores codificar una función
+con argumentos variables. Este problema genera trabajo
+principalmente cuando se convierte código basado en <b>varargs</b>
+a <b>stdarg</b> pero además crea dificultades a las funciones que
+quieran pasar todos sus argumentos en una función que toma una
+lista de argumentos <b>va_list</b>, como <b><a href="http://localhost/cgi-bin/man/man2html?3+vfprintf">vfprintf</a></b>(3).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">EJEMPLOS</a></dt>
+
+<dt><a href="#lbAF">CONFORME A</a></dt>
+
+<dt><a href="#lbAG">COMPATIBILIDAD</a></dt>
+
+<dt><a href="#lbAH">ERRORES</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

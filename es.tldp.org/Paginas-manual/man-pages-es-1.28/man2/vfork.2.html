@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of VFORK</title></head><body><p>
+  
+</p><h1>VFORK</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 1 noviembre 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+vfork - crea un proceso hijo y bloquea al padre <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><p><b>pid_t vfork(void);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN ESTÁNDAR</h2><p>
+
+(Según XPG4 / SUSv2 / borrador POSIX.) La función <i>vfork</i>()
+tiene el mismo efecto que <i>fork</i>(), pero el comportamiento es
+indefinido si el proceso creado por <i>vfork</i>() o bien modifica
+cualquier otro dato que no sea una variable de tipo pid_t usada
+para almacenar el valor devuelto por <i>vfork</i>(), o bien regresa
+de la función en la que se llamó a <i>vfork</i>() o bien llama a
+cualquier otra función antes de llamar con éxito a <i>_exit</i>() o
+a una de las funciones de la familia <i>exec</i>. <a id="lbAE"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EAGAIN</b></dt>
+
+<dd>Demasiados procesos. Inténtelo de nuevo.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No hay espacio de intercambio suficiente para el nuevo
+proceso.</dd>
+</dl><a id="lbAF"> </a><h2>DESCRIPCIÓN DE LINUX</h2><b>vfork</b><p>, como <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+crea un proceso hijo del proceso invocador. Para más detalles,
+valor devuelto y errores, vea <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2).
+
+</p><p><b>vfork()</b> es un caso especial de <b><a href="http://localhost/cgi-bin/man/man2html?2+clone">clone</a></b>(2).
+Se usa para crear procesos nuevos sin copiar las tablas de páginas
+del proceso padre. Puede ser útil en aplicaciones sensibles al
+rendimiento donde se creará un hijo que a continuación realizará
+inmediatamete una llamada <i>execve()</i>.</p><p><b>vfork()</b> se diferencia de fork en que se suspende al padre
+hasta que el hijo hace una llamada <b><a href="http://localhost/cgi-bin/man/man2html?2+execve">execve</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+_exit">_exit</a></b>(2).
+El hijo comparte con su padre toda la memoria, incluyendo la pila,
+hasta que el hijo invoca a <i>execve()</i>. El hijo no debe
+regresar de la función actual o llamar a <i>exit()</i>, pero puede
+llamar a <i>_exit()</i>.</p><p>Los manejadores de señal se heredan pero no se comparten. Las
+señales destinadas al padre llegan después de que el hijo lo
+libere. <a id="lbAG"> </a></p><h2>DESCRIPCIÓN HISTÓRICA</h2><p>
+
+En Linux <i>fork</i>() se implementa usando páginas de "copia en
+escritura", por lo que la única penalización en la que incurre
+<i>fork</i>() es el tiempo y memoria necesarios para duplicar las
+tablas de páginas del padre y crear una estructura de tarea para el
+hijo. Sin embargo, en los malos tiempos, un <i>fork()</i> requería
+hacer una copia completa del espacio de datos del invocador, a
+menudo de forma inútil ya que, usualmente, se realizaba
+inmediatamente después una llamada <i>exec</i>(). Por tanto, para
+una mayor eficiencia, BSD introdujo la llamada al sistema
+<b>vfork</b> que no copiaba totalmente el espacio de direcciones
+del proceso padre, sino que tomaba prestados la memoria del padre y
+su hilo de ejecución hasta que se producía una llamada a
+<i>execve</i>() o un fin de ejecución. El proceso padre se
+suspendía mientras el hijo usaba sus recursos. El uso de vfork era
+delicado (por ejemplo, el no modificar datos en el proceso padre
+dependía de saber qué variables se mantenían en un registro). <a id="lbAH"> </a> 
+</p><h2>FALLOS</h2><p>
+
+Es bastante desafortunado que Linux haya revivido este espectro del
+pasado. La página de manual de BSD establece: "Esta llamada al
+sistema se eliminará cuando se implementen mecanismos del sistema
+adecuados para compartición. Los usuarios no deberían confiar en la
+semántica de compartición de memoria de <i>vfork</i> ya que, en ese
+momento, será igual a <i>fork</i>." 
+</p><p>Formalmente hablando, la descripción estándar dada antes no
+permite usar <i>vfork</i>() ya que un <i>exec</i> posterior podría
+fallar y lo que a continuación ocurra es indefinido.</p><p>Los detalles del manejo de señales son oscuros y difieren entre
+sistemas. La página de manual de BSD dice: "Para evitar una posible
+situación de abrazo mortal, a aquellos procesos hijos que se
+encuentran a mitad de una llamada <i>vfork</i> nunca se les envía
+una señal SIGTTOU o SIGTTIN. En su lugar, se permiten la salida o
+las <i>ioctl</i>s, y los intentos de entrada dan lugar a una
+indicación de "fin de fichero"."</p><p>Actualmente (Linux 2.3.25), <b><a href="http://localhost/cgi-bin/man/man2html?1+strace">strace</a></b>(1)
+no puede seguir un <i>vfork()</i> y necesita un parche del núcleo.
+<a id="lbAI"> </a></p><h2>HISTORIA</h2><p>
+
+La llamada al sistema <i>vfork</i>() apareció en 3.0BSD. En BSD 4.4
+se hizo sinónima de <i>fork</i>(), pero NetBSD la introdujo de
+nuevo, <i><a href="http://www.netbsd.org/Documentation/kernel/vfork.html">http://www.netbsd.org/Documentation/kernel/vfork.html</a></i>.
+En Linux ha sido equivalente a <i>fork</i>() hasta la versión
+2.2.0-pre6 más o menos. Desde la versión 2.2.0-pre9 (en i386, algo
+más tarde en otras arquitecturas) es una llamada al sistema
+independiente. El soporte para esta llamada se añadió en la versión
+2.0.112 de glibc. <a id="lbAJ"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+La llamada <b>vfork</b> se puede parecer un poco a las llamadas con
+el mismo nombre en otro sistema operativo. Los requisitos sobre
+<b>vfork</b> impuestos por los estándares son más débiles que
+aquellos impuestos sobre <b>fork</b>, por lo que una implementación
+el la que las dos sean sinónimas es correcta. En particular, el
+programador no puede confiar en que el padre se quede bloqueado
+hasta una llamada a <i>execve()</i> o <i>_exit()</i> y no puede
+confiar en ningún comportamiento específico en relación a la
+memoria compartida. <a id="lbAK"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+clone">clone</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+execve">execve</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+wait">wait</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN ESTÁNDAR</a></dt>
+
+<dt><a href="#lbAE">ERRORES</a></dt>
+
+<dt><a href="#lbAF">DESCRIPCIÓN DE LINUX</a></dt>
+
+<dt><a href="#lbAG">DESCRIPCIÓN HISTÓRICA</a></dt>
+
+<dt><a href="#lbAH">FALLOS</a></dt>
+
+<dt><a href="#lbAI">HISTORIA</a></dt>
+
+<dt><a href="#lbAJ">CONFORME A</a></dt>
+
+<dt><a href="#lbAK">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of POPEN</title></head><body><p>
+  
+</p><h1>POPEN</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 7 Mayo 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+popen, pclose - E/S de procesos <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;</b><p><b>FILE *popen(const char *</b><i>orden</i><b>, const char
+*</b><i>tipo</i><b>);</b></p><p><b>int pclose(FILE *</b><i>flujo</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función <b>popen()</b> inicia un proceso creando una tubería,
+llamando a <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2)
+para crear el proceso y ejecutando el intérprete de comandos
+(shell). Puesto que una tubería es unidireccional por definición,
+el argumento <i>tipo</i> sólo puede especificar lectura o
+escritura, pero no ambos; el flujo resultante es respctivamente de
+lectura o escritura exclusiva. 
+</p><p>El argumento <i>orden</i> es un puntero a una cadena terminada
+en cero que contiene una línea de orden del shell. Esta orden se
+pasa a <i>/bin/sh</i> precedida de la opción <b>-c</b>; si se
+necesita interpretar la línea, esto lo hace el shell. El argumento
+<i>tipo</i> es un puntero a una cadena terminada en cero que debe
+ser o "r" para lectura o "w" para escritura.</p><p>El valor devuelto por <b>popen()</b> es un flujo normal de E/S
+estándar a todos los efectos salvo en que debe cerrarse con
+<b>pclose()</b> en vez de con <b>fclose()</b>. Escribir a dicho
+flujo significa escribir en la entrada estándar de la orden; la
+salida estándar de la orden es la misma que la del proceso que
+llamó a <b>popen()</b>, a menos que la propia orden modifique esto.
+De modo análogo, leer de un flujo de `popen' implica leer de la
+salida estándar de la orden, y la entrada estándar de la orden es
+la misma que la del proceso que llamó a <b>popen</b>.</p><p>Observe que los flujos de salida de <b>popen</b> son
+completamente tamponados (buffered) de forma predeterminada.</p><p>La función <b>pclose</b> espera que el proceso asociado termine,
+y devuelve el estado de salida de la orden como el devuelto por
+<b>wait4</b>. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+La función <b>popen</b> devuelve <b>NULL</b> si las llamadas a
+<b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2)
+o a <b><a href="http://localhost/cgi-bin/man/man2html?2+pipe">pipe</a></b>(2)
+fallan, o si no puede reservar memoria. 
+</p><p>La función <b>pclose</b> devuelve -1 si <b>wait4</b> devuelve un
+error o se detecta algún otro error. <a id="lbAF"> </a></p><h2>ERRORES</h2><p>
+
+La función <b>popen</b> no asigna un valor a <i>errno</i> si falla
+la reserva de memoria. Si las funciones subyacentes <b>fork()</b> o
+<b>pipe()</b> fallan, a <i>errno</i> se le asigna un valor
+apropiado. Si el argumento <i>mode</i> es incorrecto y se detecta
+esta condición, a <i>errno</i> se le asigna el valor <b>EINVAL</b>.
+
+</p><p>Si <b>pclose()</b> no puede obtener el estado del hijo, se
+asigna a <i>errno</i> el valor <b>ECHILD</b>. <a id="lbAG"> </a></p><h2>CONFORME A</h2><p>
+
+POSIX.2 <a id="lbAH"> </a> 
+</p><h2>FALLOS</h2><p>
+
+Puesto que la entrada estándar de una orden abierta para lectura
+comparte su puntero de posición con el proceso que llamó a
+<b>popen()</b>, si el proceso original ha hecho una lectura
+tamponada, la posición en la entrada de la orden puede no ser la
+esperada. De forma similar, la salida de una orden abierta para
+escritura puede resultar mezclada con la del proceso original. Esto
+último puede evitarse llamando a <b><a href="http://localhost/cgi-bin/man/man2html?3+fflush">fflush</a></b>(3)
+antes de a <b>popen</b>. 
+</p><p>Un fallo al ejecutar el shell es indistinguible de un fallo del
+shell al ejecutar la orden, o una salida inmediata de la orden. La
+única pista es un estado de salida 127. <a id="lbAI"> </a></p><h2>HISTORIA</h2><p>
+
+Una función <b>popen()</b> y otra <b>pclose()</b> apareció en UNIX
+de AT&amp;T Versión 7. <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+sh">sh</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+pipe">pipe</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+wait4">wait4</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+fflush">fflush</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+fclose">fclose</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+fopen">fopen</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+stdio">stdio</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+system">system</a></b>(3).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">FALLOS</a></dt>
+
+<dt><a href="#lbAI">HISTORIA</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:24 GMT, January 22, 2005
+</p></body></html>

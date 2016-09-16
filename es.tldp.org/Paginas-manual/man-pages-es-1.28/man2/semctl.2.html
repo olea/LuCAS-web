@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SEMCTL</title></head><body><p>
+  
+</p><h1>SEMCTL</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 1 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+semctl - operaciones de control de semáforos <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/sys/sem.h">sys/sem.h</a>&gt;</b>
+
+#if defined(__GNU_LIBRARY__) &amp;&amp; !defined(_SEM_SEMUN_UNDEFINED)
+/* la union semun se define al incluir &lt;<a href="file:/usr/include/sys/sem.h">sys/sem.h</a>&gt; */
+#else
+/* según X/OPEN tenemos que definirla nosostros mismos */
+union semun {
+        int val;                    /* valor para SETVAL */
+        struct semid_ds *buf;       /* buffer para IPC_STAT, IPC_SET */
+        unsigned short int *array;  /* array para GETALL, SETALL */
+        struct seminfo *__buf;      /* buffer para IPC_INFO */
+};
+#endif
+</pre><p><b>int semctl (int</b> <i>semid</i><b>,</b> <b>int</b>
+<i>semnun</i><b>,</b> <b>int</b> <i>cmd</i><b>,</b> <b>union
+semun</b> <i>arg</i><b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función realiza la operación de control especificada por
+<i>cmd</i> en el conjunto de semáforos (o en el semáforo
+<i>semnum</i>-avo del grupo) identificado por <i>semid</i>. El
+primer semáforo del conjunto está indicado por el valor <b>0</b>
+para <i>semnum</i>. 
+</p><p>Valores válidos para <i>cmd</i> son</p><dl compact="compact"><dt><b>IPC_STAT</b></dt>
+
+<dd>Copiar información de la estructura de datos del conjunto de
+semáforos en la estructura apuntada por <i>arg</i><b>.buf</b>. El
+argumento <i>semnum</i> es ignorado. El proceso que realiza la
+llamada debe tener privilegios de acceso de lectura en el conjunto
+de semáforos.</dd>
+
+<dt><b>IPC_SET</b></dt>
+
+<dd>Escribir los valores de algunos miembros de la estructura
+<b>semid_ds</b> apuntada por <i>arg</i><b>.buf</b> a la estructura
+de datos del conjunto de semáforos, actualizando tambien su miembro
+<b>sem_ctime</b>. Los miembros de la estructura provista por el
+usuario <b>struct semid_ds</b> a los que apunta
+<i>arg</i><b>.buf</b> son 
+<pre>
+<b>       sem_perm.uid
+        sem_perm.gid
+        sem_perm.mode  </b> /* solo los 9 bits más bajos */
+</pre>
+
+<p>El ID de usuario efectivo del proceso que realiza la llamada
+debe ser o de super-usuario, o el del creador o propietario del
+conjunto de semáforos. El argumento <i>semnum</i> es ignorado.</p>
+</dd>
+
+<dt><b>IPC_RMID</b></dt>
+
+<dd>Borrar inmediatamente el conjunto de semáforos y sus
+estructuras de datos, despertando todos los procesos en espera
+(devuelve un error, y <b>errno</b> puesto a <b>EIDRM</b>). El ID de
+usuario efectivo del proceso que realiza la llamada debe ser o de
+super-usuario, o el del creador o propietario del conjunto de
+semáforos. El argumento <i>semnum</i> es ignorado.</dd>
+
+<dt><b>GETALL</b></dt>
+
+<dd>Devuelve <b>semval</b> para todos los semáforos del conjunto,
+en <i>arg</i><b>.array</b>. El argumento <i>semnum</i> es ignorado.
+El proceso que realiza la llamada ha de tener privilegios de
+lectura en el conjunto de semáforos.</dd>
+
+<dt><b>GETNCNT</b></dt>
+
+<dd>La llamada al sistema devuelve el valor de <b>semncnt</b> para
+el <i>semnum</i>-avo semáforo del conjunto (p.ej. el número de
+procesos esperando que aumente <b>semval</b> para el
+<i>semnum</i>-avo semáforo del conjunto). El proceso que realiza la
+llamada ha de tener privilegios de lectura en el conjunto de
+semáforos.</dd>
+
+<dt><b>GETPID</b></dt>
+
+<dd>La llamada al sistema devuelve el valor de <b>sempid</b> para
+el <i>semnum</i>-avo semáforo del conjunto (p.ej. el pid del
+proceso que ejecutó la última llamada <b>semop</b> para el
+<i>semnum</i>-avo semáforo del conjunto). El proceso que realiza la
+llamada ha de tener privilegios de lectura en el conjunto de
+semáforos.</dd>
+
+<dt><b>GETVAL</b></dt>
+
+<dd>La llamada al sistema devuelve el valor de <b>semval</b> para
+el <i>semnum</i>-avo semáforo del conjunto. El proceso que realiza
+la llamada ha de tener privilegios de lectura en el conjunto de
+semáforos.</dd>
+
+<dt><b>GETZCNT</b></dt>
+
+<dd>La llamada al sistema devuelve el valor de <b>semzcnt</b> para
+el <i>semnum</i>-avo semáforo del conjunto (p.ej. el número de
+procesos que esperan que <b>semval</b> del <i>semnum</i>-avo
+semáforo del conjunto se ponga a 0). El proceso que realiza la
+llamada ha de tener privilegios de lectura en el conjunto de
+semáforos.</dd>
+
+<dt><b>SETALL</b></dt>
+
+<dd>Poner <b>semval</b> para todos los semáforos del conjunto
+usando <i>arg</i><b>.array</b>, actualizando también el miembro
+<b>sem_ctime</b> de la estructura <b>semid_ds</b> asociada al
+conjunto. Los registros de anulación son limpiados, para los
+semáforos cambiados, en todos los procesos. Los procesos que están
+durmiendo en la cola de espera son despertados si algún
+<b>semval</b> se pone a 0 o se incrementa. El argumento
+<i>semnum</i> es ignorado. El proceso que realiza la llamada ha de
+tener privilegios de modificación en el conjunto de semáforos.</dd>
+
+<dt><b>SETVAL</b></dt>
+
+<dd>Poner el valor de <b>semval</b> a <i>arg</i><b>.val</b> para el
+<i>semnum</i>-avo semáforo del conjunto, actualizando también el
+miembro <b>sem_ctime</b> de la estructura <b>semid_ds</b> asociada
+al conjunto. El registro de anulación es limpiado, para el semáforo
+alterado, en todos los procesos. Los procesos que están durmiendo
+en la cola de espera son despertados si <b>semval</b> se pone a 0 o
+se incrementa. El proceso que realiza la llamada ha de tener
+privilegios de escritura en el conjunto de semáforos.</dd>
+</dl><a id="lbAE"> </a><h2>VALOR DEVUELTO</h2><p>
+
+Si falla, la llamada al sistema devuelve <b>-1</b>, mientras
+<b>errno</b> indica el error. De otro modo, la llamada al sistema
+devuelve un valor no negativo, dependiendo de <i>cmd</i> como
+sigue: 
+</p><dl compact="compact"><dt><b>GETNCNT</b></dt>
+
+<dd>el valor de <b>semncnt</b>.</dd>
+
+<dt><b>GETPID</b></dt>
+
+<dd>el valor de <b>sempid</b>.</dd>
+
+<dt><b>GETVAL</b></dt>
+
+<dd>el valor de <b>semval</b>.</dd>
+
+<dt><b>GETZCNT</b></dt>
+
+<dd>el valor de <b>semzcnt</b>.</dd>
+</dl><a id="lbAF"> </a><h2>ERRORES</h2><p>
+
+En caso de error, <b>errno</b> tendrá uno de los siguientes
+valores: 
+</p><dl compact="compact"><dt><b>EACCESS</b></dt>
+
+<dd>El proceso que reliza la llamada no tiene los permisos
+necesarios para ejecutar <i>cmd</i>.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La dirección a la que apunta <i>arg</i><b>.buf</b> o
+<i>arg</i><b>.array</b> no es accesible.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>El conjunto de semáforos se borró.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Valor no válido para <i>cmd</i> o <i>semid</i>.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El argumento <i>cmd</i> tiene valor <b>IPC_SET</b> o
+<b>IPC_RMID</b> pero el user-ID del proceso que realiza la llamada
+no tiene suficientes privilegios para ejecutar el comando.</dd>
+
+<dt><b>ERANGE</b></dt>
+
+<dd>El argumento <i>cmd</i> tiene el valor <b>SETALL</b> o
+<b>SETVAL</b> y el valor al que ha de ser puesto <b>semval</b>
+(para algún semáforo del conjunto) es menor que 0 o mayor que el
+valor <b>SEMVMX</b> de la implementación.</dd>
+</dl><a id="lbAG"> </a><h2>NOTAS</h2><p>
+
+Las llamadas de control <b>IPC_INFO</b>, <b>SEM_STAT</b> y
+<b>SEM_INFO</b> son utilizadas por el programa <b><a href="http://localhost/cgi-bin/man/man2html?8+ipcs">ipcs</a></b>(8)
+para proveer información sobre recursos asignados. En el futuro
+pueden ser modificadas según se necesite, o llevadas al interfaz
+del sistema de ficheros proc. 
+</p><p>El siguiente límite de sistema para conjuntos de semáforos
+afecta a la llamada <b>semctl</b>:</p><dl compact="compact"><dt><b>SEMVMX</b></dt>
+
+<dd>Valor máximo para <b>semval</b>: depende de la implementación
+(32767).</dd>
+</dl><a id="lbAH"> </a><h2>CONFORME A</h2><p>
+
+SVr4, SVID. SVr4 documenta adicionalmente las condiciones de error
+EINVAL y EOVERFLOW. <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b><p>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmget">shmget</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmat">shmat</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmdt">shmdt</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

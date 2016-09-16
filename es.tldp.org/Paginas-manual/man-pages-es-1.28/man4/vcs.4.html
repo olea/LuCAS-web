@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of VCS</title></head><body><p>
+  
+</p><h1>VCS</h1><p>
+
+Section: Manual del Programador de Linux (4)<br />
+Updated: 2 Julio 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+vcs, vcsa - memoria de la consola virtual <a id="lbAC"> </a> 
+</p><h2>DESCRIPCIÓN</h2><b>/dev/vcs0</b><p> es un dispositivo de carácter con número mayor 7 y
+número menor 0, creado normalmente con modo 0644 y propietario
+root.tty. Designa la memoria del terminal de consola virtual
+visualizado en ese momento. 
+</p><p><b>/dev/vcs[1-63]</b> son los dispositivos de carácter para los
+terminales de consola virtual. Tienen el número mayor 7 y el número
+menor de 1 a 63, y se crean normalmente con el modo 0644 y
+propietario root.tty. <b>/dev/vcsa[0-63]</b> son lo mismo, pero
+incluyendo los atributos, y prefijados con cuatro bytes que indican
+las dimensiones de la pantalla y la posición del cursor:
+<i>líneas</i>, <i>columnas</i>, <i>x</i>, <i>y</i> (<i>x</i> =
+<i>y</i> = 0 en la esquina superior izquierda de la pantalla).</p><p>Estos dispositivos reemplazan las ioctl de volcado de pantalla
+de <b><a href="http://localhost/cgi-bin/man/man2html?4+console">console</a></b>(4),
+de forma que el administrador del sistema pueda controlar el acceso
+a través de los permisos del sistema de ficheros.</p><p>Los dispositivos de las ocho primeras consolas virtuales se
+pueden crear con:</p><pre>
+        for x in 0 1 2 3 4 5 6 7 8; do 
+                mknod -m 644 /dev/vcs$x c 7 $x;
+                mknod -m 644 /dev/vcsa$x c 7 $[$x+128];
+        done
+        chown root:tty /dev/vcs*
+</pre><p>No se aceptan peticiones de <b>ioctl()</b>. <a id="lbAD"> </a></p><h2>EJEMPLOS</h2><p>
+
+Se puede hacer un volcado de pantalla de vt3 conmutando a vt1 y
+tecleando <i>cat /dev/vcs3 &gt;foo</i>. Nótese que la salida no
+contiene caracteres de nueva línea, por lo que puede ser necesario
+algo de procesamiento adicional, como por ejemplo en <i>fold -w 81
+/dev/vcs3 | lpr</i> o en (horror) <i>setterm -dump 3 -file
+/proc/self/fd/1</i>. 
+</p><p>El siguiente programa visualiza los atributos de carácter y
+pantalla que se encuentran en la posición del cursor de la segunda
+consola virtual, y después cambia su color de fondo allí:</p><pre>
+        #include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;
+        #include &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;
+        #include &lt;<a href="file:/usr/include/fcntl.h">fcntl.h</a>&gt;
+
+        int main()
+        {       int fd;
+                struct {char lines, cols, x, y;} scrn;
+                char ch, attrib;
+
+                fd = open("/dev/vcsa2", O_RDWR);
+                (void)read(fd, &amp;scrn, 4);
+                (void)lseek(fd, 4 + 2*(scrn.y*scrn.cols + scrn.x), 0);
+                (void)read(fd, &amp;ch, 1);
+                (void)read(fd, &amp;attrib, 1);
+                (void)printf("c='%c' atrib=0x%02x\n", ch, attrib);
+                attrib ^= 0x10;
+                (void)lseek(fd, -1, 1);
+                (void)write(fd, &amp;attrib, 1);
+                return 0;
+        }
+</pre><p><a id="lbAE"> </a></p><h2>FICHEROS</h2><p>
+
+/dev/vcs[0-63] <br />
+ /dev/vcsa[0-63] <a id="lbAF"> </a> 
+</p><h2>AUTOR</h2><p>
+
+Andries Brouwer &lt;<a href="mailto:aeb@cwi.nl">aeb@cwi.nl</a>&gt;
+<a id="lbAG"> </a> 
+</p><h2>HISTORIA</h2><p>
+
+Disponible a partir de la versión 1.1.92 del núcleo de Linux. <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?4+console">console</a></b><p>(4),
+<b><a href="http://localhost/cgi-bin/man/man2html?4+tty">tty</a></b>(4),
+<b><a href="http://localhost/cgi-bin/man/man2html?4+ttys">ttys</a></b>(4),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+selection">selection</a></b>(1).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAD">EJEMPLOS</a></dt>
+
+<dt><a href="#lbAE">FICHEROS</a></dt>
+
+<dt><a href="#lbAF">AUTOR</a></dt>
+
+<dt><a href="#lbAG">HISTORIA</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:27 GMT, January 22, 2005
+</p></body></html>

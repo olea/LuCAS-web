@@ -1,0 +1,811 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of PROC</title></head><body><p>
+  
+</p><h1>PROC</h1><p>
+
+Section: Manual del Programador de Linux (5)<br />
+Updated: 22 Julio 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+proc - pseudo-sistema de ficheros de información de procesos 
+</p><p><a id="lbAC"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+/proc es un pseudo-sistema de ficheros que se usa como interfaz
+para las estructuras de datos del kernel en lugar de leer e
+interpretar /dev/kmem. La mayor parte de este sistema de ficheros
+es de sólo lectura, pero algunos ficheros permiten cambiar
+variables del kernel. 
+</p><p>El siguiente resumen proporciona una rápida visita a la
+jerarquía /proc.</p><dl compact="compact"><dt><i>[number]</i></dt>
+
+<dd>Hay un subdirectorio numérico para cada proceso en ejecución;
+el nombre del subdirectorio es el ID del proceso. Cada uno de ellos
+contiene los siguientes pseudo ficheros y directorios. 
+<dl compact="compact"><dd>
+<dl compact="compact"><dt><i>cmdline</i></dt>
+
+<dd>Este contiene la línea de comandos completa para el proceso, a
+menos que el proceso entero se haya intercambiado a disco o a menos
+que el proceso sea un proceso zombie. En cualquiera de estos dos
+últimos casos, no hay nada en el fichero, es decir, una lectura
+sobre este fichero regresará como si hubiera leído 0 caracteres.
+Este fichero termina en un carácter nulo, no en un carácter "nueva
+línea".</dd>
+
+<dt><i>cwd</i></dt>
+
+<dd>Este es un enlace hacia el directorio de trabajo actual del
+proceso. Por ejemplo, para encontrar el directorio de trabajo
+actual del proceso 20, puede hacer esto:<br /><pre>
+cd /proc/20/cwd; /bin/pwd
+</pre>
+</dd>
+</dl><p>Dese cuenta que la orden pwd es frecuentemente una orden interna
+del shell, y podría no funcionar adecuadamente en este
+contexto.</p>
+
+<dl compact="compact"><dt><i>environ</i></dt>
+
+<dd>Este fichero contiene el entorno del proceso. Las entradas
+están serparadas por caracteres nulos, y podría haber un carácter
+nulo al final. Por tanto, para mostrar el entorno del proceso 1,
+debería hacer:<br /><pre>
+(cat /proc/1/environ; echo) | tr "\000" "\n"
+</pre>
+</dd>
+</dl><p>(Una razón por la que alguien querría hacer esto, la puede
+encontrar en <i><a href="http://localhost/cgi-bin/man/man2html?8+lilo">lilo</a></i>(8).)</p>
+
+<dl compact="compact"><dt><i>exe</i></dt>
+
+<dd>un puntero al fichero binario que fue ejecutado; aparece com un
+enlace simbólico. La función <i><a href="http://localhost/cgi-bin/man/man2html?2+readlink">readlink</a>(2)</i>
+aplicada al fichero especial "exe" devuelve, bajo Linux 2.0 y
+versiones anteriores, una cadena con el formato: 
+<p>[dispositivo]:nodo-i</p>
+
+<p>Por ejemplo, [0301]:1502 sería el nodo-i 1502 sobre el
+dispositivo con número mayor 03 (discos IDE, MFM, etc.) y número
+menor 01 (primera partición del primer disco. Bajo Linux 2.2 el
+enlace contiene el nombre de la ruta actual de la orden.</p>
+
+<p>También, el enlace simbólico se puede dereferenciar normalmente
+- un intento de abrir "exe" abrirá el fichero ejecutable. Incluso
+puede escribir <i>/proc/[número]/exe</i> para ejecutar otra copia
+del proceso [número].</p>
+
+<p><i><a href="http://localhost/cgi-bin/man/man2html?1+find">find</a></i>(1)
+con la opción -inum se puede usar para buscar el fichero.</p>
+</dd>
+
+<dt><i>fd</i></dt>
+
+<dd>Este es un subdirectorio que contiene una entrada por cada
+fichero que tiene abierto el proceso, nombrada con el descriptor
+del fichero, y la cual es un enlace simbólico al fichero real (como
+lo es la entrada exe). Por tanto, 0 es la entrada estándar, 1 es la
+salida estándar, 2 es la salida estándar de rror, etc. 
+<p>Los programas que no leen de la entrada estándar, sino que leen
+de un fichero, y que no escriben en la salida estándar, sino que
+escriben en un fichero, pueden ser engañados de la siguiente
+manera, suponiendo que -i es la opción que designa al fichero de
+entrada y -o la opción que designa al fichero de salida:<br /></p>
+
+<tt>foobar -i /proc/self/fd/0 -o /proc/self/fd/1</tt><br />
+ y de esta manera su programa funcionará como filtro. Note que esto
+no funcionará en programas que realizan accesos aleatorios sobre
+sus ficheros, ya que los ficheros del directorio fd no permiten
+este tipo de acceso. 
+<p>/proc/self/fd/N es aproximadamente lo mismo que /dev/fd/N en
+algunos sistemas UNIX y sistemas al estilo UNIX. De hecho, la
+mayoría de los guiones shell MAKEDEV de Linux enlazan
+simbólicamente [..]/proc/self/fd con /dev/fd.</p>
+</dd>
+
+<dt><i>maps</i></dt>
+
+<dd>Fichero que contiene las regiones de memoria actualmente
+asociadas y sus permisos de acceso. 
+<p>El formato es:</p>
+
+<pre>
+Dirección         perms desplaz  disp  nodo-i
+00000000-0002f000 r-x-- 00000400 03:03 1401
+0002f000-00032000 rwx-p 0002f400 03:03 1401
+00032000-0005b000 rwx-p 00000000 00:00 0
+60000000-60098000 rwx-p 00000400 03:03 215
+60098000-600c7000 rwx-p 00000000 00:00 0
+bfffa000-c0000000 rwx-p 00000000 00:00 0
+</pre>
+</dd>
+</dl><p>donde dirección es el espacio de direcciones del proceso que
+ocupa, perms es un conjunto de permisos:</p>
+
+<pre>
+r = leer
+w = escribir
+x = ejecutar
+s = compartido
+p = privado (copia en escritura)
+</pre>
+
+<p>desplaz es el desplazamiento dentro del fichero/cosa, disp es el
+dispositivo (mayor:menor) y nodo-i es el nodo-i en ese dispositivo.
+0 indica que no hay un nodo-i asociado a la región de memoria, como
+ocurriría con la región bss del proceso.</p>
+
+<p>Bajo Linux 2.2 existe un campo adicional que da un nombre de
+ruta cuando es aplicable.</p>
+
+<dl compact="compact"><dt><i>mem</i></dt>
+
+<dd>Este no es lo mismo que el dispositivo mem (1;1), a pesar de
+que tiene los mismos números de dispositivo. El dispositivo
+/dev/mem es la memoria física antes de que se haga cualquier
+traducción de direcciones, pero aquí el fichero mem es la memoria a
+la que accede el proceso. Actualmente, a ésta no se le puede
+aplicar la función <i><a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a>(2),</i>
+y no lo será mientras no se añada al kernel una función. <i><a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a>(2)</i>
+general. (Esto podría haber ocurrido cuando lea esto).</dd>
+
+<dt><i>root</i></dt>
+
+<dd>Unix y Linux soportan la idea una raíz del sistema de ficheros
+por proceso, asignada por la llamada al sistema <i><a href="http://localhost/cgi-bin/man/man2html?2+chroot">chroot</a>(2).</i>
+Root apunta a la raíz del sistema de ficheros y se comporta como lo
+hacen exe, fd/*, etc.</dd>
+
+<dt><i>stat</i></dt>
+
+<dd>Información de estado del proceso. Esta es usada por <i><a href="http://localhost/cgi-bin/man/man2html?1+ps">ps</a>(1)</i> . 
+<p>Los campos, en orden, junto con sus indicadores de formato
+apropiados para <i><a href="http://localhost/cgi-bin/man/man2html?3+scanf">scanf</a>(3),</i>
+son:</p>
+
+<dl compact="compact"><dd>
+<dl compact="compact"><dt><i>pid</i> %d</dt>
+
+<dd>Identificador del proceso.</dd>
+
+<dt><i>comm</i> %s</dt>
+
+<dd>Nombre de fichero del ejecutable, en paréntesis. Este es
+visible dependiendo de si el ejecutable ha sido o no
+intercambiado.</dd>
+
+<dt><i>state</i> %c</dt>
+
+<dd>Un carácter de la cadena "RSDZT" donde R significa en
+ejecución, S bloqueado de forma interrumpible, D bloqueado de forma
+ininterrupible o intercambiado, Z zombie y T proceso en ejecución
+paso a paso o parado (en una señal).</dd>
+
+<dt><i>ppid</i> %d</dt>
+
+<dd>El PID del padre.</dd>
+
+<dt><i>pgrp</i> %d</dt>
+
+<dd>El identificador del grupo de procesos del proceso.</dd>
+
+<dt><i>session</i> %d</dt>
+
+<dd>El identificador de sesión del proceso.</dd>
+
+<dt><i>tty</i> %d</dt>
+
+<dd>El terminal que usa el proceso.</dd>
+
+<dt><i>tpgid</i> %d</dt>
+
+<dd>El identificador del grupo de procesos del proceso al que
+pertenece actualmente la terminal a la que está conectado el
+proceso.</dd>
+
+<dt><i>flags</i> %u</dt>
+
+<dd>Las banderas del proceso. Actualmente, cada bandera tiene
+activo el bit "math", ya que crt0.s comprueba la emulación "math",
+por lo que éste no se incluye en la salida. Esto es probablemente
+un error (bug), ya que no todo proceso es un programa en C
+compilado. El bit "math" debe ser un 4 decimal y el bit "paso a
+paso" un 10 decimal.</dd>
+
+<dt><i>minflt</i> %u</dt>
+
+<dd>El número de fallos de página menores producidos por el
+proceso, es decir, aquellos que no han necesitado la carga de una
+página de memoria desde disco.</dd>
+
+<dt><i>cminflt</i> %u</dt>
+
+<dd>El número de fallos de página menores producidos por el proceso
+y sus hijos.</dd>
+
+<dt><i>majflt</i> %u</dt>
+
+<dd>El número de fallos de página mayores producidos por el
+proceso, es decir, aquellos que han necesitado la carga de una
+página de memoria desde disco.</dd>
+
+<dt><i>cmajflt</i> %u</dt>
+
+<dd>El número de fallos de página mayores producidos por el proceso
+y sus hijos.</dd>
+
+<dt><i>utime</i> %d</dt>
+
+<dd>El número de jiffies que este proceso se ha planificado en modo
+usario.</dd>
+
+<dt><i>stime</i> %d</dt>
+
+<dd>El número de jiffies que este proceso se ha planificado en modo
+núcleo.</dd>
+
+<dt><i>cutime</i> %d</dt>
+
+<dd>El número de jiffies que este proceso y sus hijos se han
+planificado en modo usuario.</dd>
+
+<dt><i>cstime</i> %d</dt>
+
+<dd>El número de jiffies que este proceso y sus hijos se han
+planificado en modo núcleo.</dd>
+
+<dt><i>counter</i> %d</dt>
+
+<dd>El tamaño máximo actual, en jiffies, del siguiente quantum del
+proceso, o lo que queda actualmente de su quantum actual, si él es
+ahora mismo el proceso en ejecución .</dd>
+
+<dt><i>priority</i> %d</dt>
+
+<dd>El valor "nice" estándar, más 15. El valor nunca es negativo
+dentro del núcleo.</dd>
+
+<dt><i>timeout</i> %u</dt>
+
+<dd>El tiempo, en jiffies, del siguiente "timeout" del
+proceso.</dd>
+
+<dt><i>itrealvalue</i> %u</dt>
+
+<dd>El tiempo (en jiffies) antes de que la siguiente señal SIGALRM
+sea enviada al proceso.</dd>
+
+<dt><i>starttime</i> %d</dt>
+
+<dd>Tiempo, en jiffies, desde el arranque del sistema hasta el
+inicio de la ejecución del proceso.</dd>
+
+<dt><i>vsize</i> %u</dt>
+
+<dd>Tamaño de la memoria virtual.</dd>
+
+<dt><i>rss</i> %u</dt>
+
+<dd>Tamaño del Conjunto Residente (RSS): número de páginas que el
+proceso tiene en memoria real, menos 3 (para propósitos
+administrativos). Dicho conjunto está formado por las páginas que
+componen actualmente el espacio de código, datos y pila. No incluye
+aquellas páginas que no se han cargado bajo demanda o que se han
+intercambiado a disco.</dd>
+
+<dt><i>rlim</i> %u</dt>
+
+<dd>Límite actual, en bytes, del RSS del proceso (normalmente,
+2,147,483,647).</dd>
+
+<dt><i>startcode</i> %u</dt>
+
+<dd>Dirección por encima de la cual se puede ejecutar el código del
+programa.</dd>
+
+<dt><i>endcode</i> %u</dt>
+
+<dd>Dirección por debajo de la cual se puede ejecutar el código del
+programa.</dd>
+
+<dt><i>startstack</i> %u</dt>
+
+<dd>Dirección de comienzo de la pila.</dd>
+
+<dt><i>kstkesp</i> %u</dt>
+
+<dd>El valor actual del registro ESP (puntero de pila de 32 bits),
+tal como se encuentra en la página de pila del proceso.</dd>
+
+<dt><i>kstkeip</i> %u</dt>
+
+<dd>Valor actual del EIP (puntero de instrucción de 32 bits).</dd>
+
+<dt><i>signal</i> %d</dt>
+
+<dd>Mapa de bits de señales pendientes (normalmente 0).</dd>
+
+<dt><i>blocked</i> %d</dt>
+
+<dd>Mapa de bits de señales bloqueadas (normalmente 0, 2 para los
+shells).</dd>
+
+<dt><i>sigignore</i> %d</dt>
+
+<dd>Mapa de bits de señales ignoradas.</dd>
+
+<dt><i>sigcatch</i> %d</dt>
+
+<dd>Mapa de bits de señales capturadas.</dd>
+
+<dt><i>wchan</i> %u</dt>
+
+<dd>Este es el "canal" en el que está esperando el proceso. Este es
+la dirección de una llamada al sistema, y se puede mirar en una
+lista de nombre si necesita un nombre textual. (Pruebe <i>ps -l</i>
+para ver WCHAN en acción)</dd>
+</dl></dd>
+</dl></dd>
+</dl></dd>
+</dl></dd>
+
+<dt><i>cpuinfo</i></dt>
+
+<dd>Este es una colección de elementos dependientes de la CPU y de
+la arquitectura del sistema. Para cada arquitectura soportada, una
+lista diferente. Las únicas dos entradas comunes son <i>cpu</i> que
+es (adivínalo) la CPU que se está usando actualmente y
+<i>BogoMIPS</i>, una constante del sistema que se calcula durante
+el arranque del núcleo.</dd>
+
+<dt><i>devices</i></dt>
+
+<dd>Lista de números mayores de dispositivo y grupos de
+dispositivos. Esta puede ser usada por los guiones MAKEDEV para
+consistencia con el núcleo.</dd>
+
+<dt><i>dma</i></dt>
+
+<dd>Esta es una lista de los canales DMA (acceso directo a memoria)
+<i>ISA</i> registrados en uso.</dd>
+
+<dt><i>filesystems</i></dt>
+
+<dd>Lista de los sistemas de ficheros que fueron compilados dentro
+del núcleo. Incidentalmente, <i><a href="http://localhost/cgi-bin/man/man2html?1+mount">mount</a>(1)</i>
+usa esto para circular a través de diferentes sistemas de ficheros
+cuando no se especifica ninguno.</dd>
+
+<dt><i>interrupts</i></dt>
+
+<dd>Este es usado para registrar el número de interrupciones para
+cada IRQ sobre (al menos) la arquitectura i386. El formato es muy
+fácil de leer, realizado en ASCII.</dd>
+
+<dt><i>ioports</i></dt>
+
+<dd>Este es una lista de las regiones de puertos de Entrada/Salida
+actualmente registrados que están en uso.</dd>
+
+<dt><i>kcore</i></dt>
+
+<dd>Este fichero representa la memoria física del sistema y su
+formato es el de un fichero core. Con este pseudofichero y un
+binario del núcleo "sin desnudar" (/usr/src/linux/tools/zSystem),
+se puede usar GDB para examinar el estado actual de cualquier
+estrutura de datos del núcleo. 
+<p>La longitud total de este fichero es el tamaño de la memoria
+física (RAM) más 4KB.</p>
+</dd>
+
+<dt><i>kmsg</i></dt>
+
+<dd>Este fichero se puede usar en lugar de la llamada al sistema
+<i><a href="http://localhost/cgi-bin/man/man2html?2+syslog">syslog</a>(2)</i>
+para registrar mensajes del núcleo. Un proceso debe tener permisos
+de superusuario para leer este fichero, y sólo un proceso debe leer
+este fichero. Este fichero no se debe leer si se está ejecutando un
+proceso syslog que usa la llamada al sistema <i><a href="http://localhost/cgi-bin/man/man2html?2+syslog">syslog</a>(2)</i>
+para registrar mensajes del núcleo. 
+<p>A la información de este fichero se accede con el programa <i><a href="http://localhost/cgi-bin/man/man2html?8+dmesg">dmesg</a>(8).</i></p>
+</dd>
+
+<dt><i>ksyms</i></dt>
+
+<dd>Este mantiene las difiniciones de símbolos exportados del
+núcleo usadas por las herramientas de manejo de <i>modulos(X)</i>
+para enlazar dinámicamente módulos.</dd>
+
+<dt><i>loadavg</i></dt>
+
+<dd>Los números de carga media dan el número promedio de trabajos
+en la cola de ejecución en los últimos 1, 5 y 15 minutos. Estos
+números son idénticos a los números de carga media dados por <i><a href="http://localhost/cgi-bin/man/man2html?1+uptime">uptime</a>(1)</i>
+y otros programas.</dd>
+
+<dt><i>malloc</i></dt>
+
+<dd>Este fichero sólo está presente si se definió CONFIGDEBUGMALLOC
+durante la compilación.</dd>
+
+<dt><i>meminfo</i></dt>
+
+<dd>Este es usado por <i><a href="http://localhost/cgi-bin/man/man2html?1+free">free</a>(1)</i>
+para informar de la cantidad de memoria libre y usada en el sistema
+(tanto física como de intercambio) así como de la memoria
+compartida y los buffers usados por el núcleo. 
+<p>El formato es el mismo que el de <i><a href="http://localhost/cgi-bin/man/man2html?1+free">free</a>(1)</i>
+, salvo que los datos se dan en bytes y no en KB.</p>
+</dd>
+
+<dt><i>modules</i></dt>
+
+<dd>Lista de módulos que han sido cargados por el sistema.</dd>
+
+<dt><i>net</i></dt>
+
+<dd>directorio que contiene varios pseudoficheros, los cuales dan
+el estado de algunas partes de la capa de red. Estos ficheros
+contienen estructuras ASCII y, por tanto, se pueden leer con cat.
+Sin embargo, la aplicación <i><a href="http://localhost/cgi-bin/man/man2html?8+netstat">netstat</a>(8)</i>
+proporciona un acceso mucho más claro a estos ficheros. 
+<dl compact="compact"><dd>
+<dl compact="compact"><dt><i>arp</i></dt>
+
+<dd>Este mantiene un vaciado ASCII legible de la tabla ARP del
+núcleo usada para la resolución de direcciones. Mostrará tanto las
+entradas ARP aprendidas dinámicamente como las preprogramadas. El
+formato es: 
+<pre>
+IP address       HW type     Flags       HW address
+10.11.100.129    0x1         0x6         00:20:8A:00:0C:5A
+10.11.100.5      0x1         0x2         00:C0:EA:00:00:4E
+44.131.10.6      0x3         0x2         GW4PTS
+</pre>
+</dd>
+</dl><p>Donde 'IP address' es la dirección IPv4 de la máquina, 'HW type'
+es el tipo de hardware de la dirección según el RFC 826. 'Flags'
+son las banderas internas de la estructura ARP (tal y como se
+definen en /usr/include/linux/if_arp.h) y 'HW address' es, si se
+conoce, la dirección de la capa física asociada a la dirección
+IP.</p>
+
+<dl compact="compact"><dt><i>dev</i></dt>
+
+<dd>El pseudofichero dev contiene información de estado del
+dispositivo de red. Da el número de paquetes recividos y enviados,
+el número de errores y colisiones y otras estadísticas básicas.
+Estas son usadas por el programa <i><a href="http://localhost/cgi-bin/man/man2html?8+ifconfig">ifconfig</a>(8)</i>
+para informar del estado del dispositivo. El formato es: 
+<pre>
+Inter-|   Receive                  |   Transmit
+ face |packets errs drop fifo frame|packets errs drop fifo colls carrier
+    lo:      0    0    0    0    0     2353    0    0    0     0    0
+  eth0: 644324    1    0    0    1   563770    0    0    0   581    0
+</pre>
+</dd>
+
+<dt><i>ipx</i></dt>
+
+<dd>Information no disponible.</dd>
+
+<dt><i>ipx_route</i></dt>
+
+<dd>Information no disponible.</dd>
+
+<dt><i>rarp</i></dt>
+
+<dd>Este fichero usa el mismo formato que el fichero <i>arp</i> y
+contiene la actual base de datos de asociaciones inversas usada
+para proporcionar los servicios de búsqueda de direcciones inversas
+de <i><a href="http://localhost/cgi-bin/man/man2html?8+rarp">rarp</a>(8)</i>
+Si RARP no está configurado dentro del núcleo, este fichero no
+estará presente.</dd>
+
+<dt><i>raw</i></dt>
+
+<dd>Contiene un vaciado de la tabla de sockets RAW. La mayor parte
+de esta información no es útil salvo para propósitos de depuración.
+El valor 'sl' es el número de entrada hash del núcleo para el
+socket. 'local address' es la pareja formada por la dirección local
+y el número de puerto. 'St' es el estado interno del socket.
+'tx_queue' y 'rx_queue' son las colas de datos de entrada y salida
+en términos de uso de memoria del núcleo. Los campos 'tr',
+'tm-&gt;when' y 'rexmits' no los usa RAW. El campo 'uid' contiene
+el idenficador de usario efectivo del creador del socket.</dd>
+
+<dt><i>route</i></dt>
+
+<dd>Information no disponible, pero funciona de forma parecida a
+<i><a href="http://localhost/cgi-bin/man/man2html?8+route">route</a>(8)</i></dd>
+
+<dt><i>snmp</i></dt>
+
+<dd>Este fichero contiene los datos ASCII que necesitan las Bases
+de Información para Administración de IP, ICMP, TCP y UDP para un
+agente SNMP.</dd>
+
+<dt><i>tcp</i></dt>
+
+<dd>Contiene un vaciado de la tabla de sockets TCP. La mayor parte
+de esta información no es útil salvo para propósitos de depuración.
+El valor 'sl' es el número de la ranura hash del núcleo para el
+socket. 'local address' es la pareja formada por la dirección local
+y el número de puerto. 'remote address' es la pareja formada por la
+dirección remota y el número de puerto (si hay conexión). St' es el
+estado interno del socket. 'tx_queue' y 'rx_queue' son las colas de
+datos de entrada y salida en términos de uso de memoria del núcleo.
+Los campos 'tr', 'tm-&gt;when' y 'rexmits' contienen información
+del núcleo del estado del socket y sólo son útiles para depuración.
+El campo</dd>
+
+<dt><i>udp</i></dt>
+
+<dd>Contiene un vaciado de la tabla de sockets UDP. La mayor parte
+de esta información no es útil salvo para propósitos de depuración.
+El valor 'sl' es el número de la entrada hash del núcleo para el
+socket. 'local address' es la pareja formada por la dirección local
+y el número de puerto. 'remote address' es la pareja formada por la
+dirección remota y el número de puerto (si hay conexión). St' es el
+estado interno del socket. 'tx_queue' y 'rx_queue' son las colas de
+datos de entrada y salida en términos de uso de memoria del núcleo.
+Los campos 'tr', 'tm-&gt;when' y 'rexmits' no son usados por UDP.
+El campo 'uid' contiene el idenficador de usario efectivo del
+creador del socket. El formato es: 
+<pre>
+sl  local_address rem_address   st tx_queue rx_queue tr rexmits  tm-&gt;when uid
+ 1: 01642C89:0201 0C642C89:03FF 01 00000000:00000001 01:000071BA 00000000 0
+ 1: 00000000:0801 00000000:0000 0A 00000000:00000000 00:00000000 6F000100 0
+ 1: 00000000:0201 00000000:0000 0A 00000000:00000000 00:00000000 00000000 0
+</pre>
+</dd>
+
+<dt><i>unix</i></dt>
+
+<dd>Lista de sockets de dominio UNIX presentes dentro del sistena y
+el estado de cada uno de ellos. El formato es: 
+<pre>
+Num RefCount Protocol Flags    Type St Path
+ 0: 00000002 00000000 00000000 0001 03
+ 1: 00000001 00000000 00010000 0001 01 /dev/printer
+
+</pre>
+</dd>
+</dl><p>Donde 'Num' es el número de entrada en la tabla del núcleo,
+'RefCount' es el número de usuarios del socket, 'Protocol' es,
+actualmente, siempre 0, -<b>ags' representa las banderas internas
+del núcleo que contienen el estado</b> del socket. 'Type' es,
+actualmente, siempre 1 (los sockets de dominio UNIX del tipo
+datagrama todavía no están soportados en el núcleo). 'St' es el
+estado interno del socket y 'Path' es, si existe, la ruta asociada
+del socket.</p>
+</dd>
+</dl></dd>
+
+<dt><i>pci</i></dt>
+
+<dd>Es una lista de todos los dispositivos PCI encontrados durante
+la inicialización del núcleo y sus configuraciones
+respectivas.</dd>
+
+<dt><i>scsi</i></dt>
+
+<dd>Directorio con pseudoficheros SCSI de nivel medio y varios
+directorios de drivers SCSI de bajo nivel, que contienen un fichero
+para cada host SCSI presente en el sistema, cada uno de los cuales
+da el estado de alguna parte del subsystema de E/S SCSI. Estos
+ficheros contienen estructuras ASCII y, por tanto, son legibles con
+cat. 
+<p>También se puede escribir en algunos de estos ficheros para
+reconfigurar el subsistema o para activar y desactivar ciertas
+características.</p>
+
+<dl compact="compact"><dd>
+<dl compact="compact"><dt><i>scsi</i></dt>
+
+<dd>Esta es una lista de todos los dispositivos SCSI conocidos por
+el kernel. La lista es similar a la que se ve durante el arranque.
+Actualmente, scsi únicamente soporta la orden <i>singledevice</i>
+que permite al superusuario añadir a la lista de dispositivos
+conocidos un dispositivo conectado "en caliente". 
+<p><b>echo `scsi singledevice 1 0 5 0` &gt; /proc/scsi/scsi</b>
+hará que el host scsi1 explore el canal SCSI 0 en busca de un
+dispositivo en la dirección ID 5 LUN 0. Si ya hay un dispositivo
+conocido en esa dirección o si la dirección es inválida, se
+devolverá un error.</p>
+</dd>
+
+<dt><i>drivername</i></dt>
+
+<dd>Actualmente, <i>drivername</i> puede ser: 53c7,8xx, BusLogic,
+NCR53c406a, advansys, aha152x, aha1542, aha 1740, aic7xxx dtc,
+eata, eata_dma, eata_pio, fdomain, g_NCR5380, gdth, in2000,
+ncr53c8xx, pas16, ppa, qlogicfas, qlocicisp, seagate, sg, st, t138,
+u14-34f, ultrastor o wd7000. 
+<p>Estos directorios presentan todos los drivers que registraron al
+menos un HBA SCSI. Cada directorio contiene un fichero por host
+registrado. Cada fichero-host se nombra tras el número que el host
+obtuvo durante la inicialización.</p>
+
+<p>La lectura de estos ficheros mostrará normalmente la
+configuración del driver y el host, estadísticas, etc.</p>
+
+<p>La escritura en estos ficheros permite diferentes cosas sobre
+diferentes hosts. Por ejemplo, con las órdenes <i>latency</i> y
+<i>nolatency</i> el superusuario puede activar y desactivar en el
+driver eata_dma el código para la medición de la latencia de las
+órdenes. Con las órdenes <i>lockup</i> y <i>unlock</i> el
+superusuario puede controlar las búsquedas de bus simuladas por el
+driver scsi_debug.</p>
+</dd>
+</dl></dd>
+</dl></dd>
+
+<dt><i>self</i></dt>
+
+<dd>Este directorio hace referencia al proceso que está accediendo
+al sistema de ficheros /proc y es idéntico al directorio de /proc
+cuyo nombre es el PID del mismo proceso.</dd>
+
+<dt><i>stat</i></dt>
+
+<dd>Estadísticas del núcleo/sistema. 
+<dl compact="compact"><dd>
+<dl compact="compact"><dt><i>cpu 3357 0 4313 1362393</i></dt>
+
+<dd>El número de jiffies (centésimas de segundo) que el sistema
+gastó en modo usuario, modo usuario con baja prioridad (nice), modo
+supervisor y en la tarea 'idle', respectivamente. El último valor
+debe ser 100 veces la segunda entrada del pseudofichero
+uptime.</dd>
+
+<dt><i>disk 0 0 0 0</i></dt>
+
+<dd>Las cuatro entradas de disco no están implantadas en este
+momento. Incluso no estoy seguro de lo que debe ser esto, ya que
+las estadísticas del núcleo en otras máquinas normalmente registran
+tanto las tasas de transferencia como las operaciones de E/S por
+segundo y éste sólo permite un campo por controlador.</dd>
+
+<dt><i>page 5741 1808</i></dt>
+
+<dd>El número de páginas que el sistema cargó y el número de
+páginas que fueron descargadas (desde disco).</dd>
+
+<dt><i>swap 1 0</i></dt>
+
+<dd>El número de páginas de intercambio que han sido introducidas y
+sacadas.</dd>
+
+<dt><i>intr 1462898</i></dt>
+
+<dd>El número de interrupciones recibidas desde el arranque del
+sistema.</dd>
+
+<dt><i>ctxt 115315</i></dt>
+
+<dd>El número de cambios de contexto que el sistema ha
+sufrido.</dd>
+
+<dt><i>btime 769041601</i></dt>
+
+<dd>Instante de arranque, en segundos desde el 1 de Enero de
+1970</dd>
+</dl></dd>
+</dl></dd>
+
+<dt><i>sys</i></dt>
+
+<dd>Este directorio (presente desde la versión 1.3.57) contiene
+varios ficheros y subdirectorios correspondientes a variables del
+núcleo. Estas variables se pueden leer y algunas veces modificar
+usando el sistema de ficheros <i>proc</i> y usando la llamada al
+sistema <i><a href="http://localhost/cgi-bin/man/man2html?2+sysctl">sysctl</a></i>(2).
+Actualmente, existen los subdirectorios <i>kernel</i>, <i>net</i>,
+<i>vm</i> que contienen a su vez más ficheros y subdirectorios. 
+<dl compact="compact"><dd>
+<dl compact="compact"><dt><i>kernel</i></dt>
+
+<dd>Este contiene los ficheros <i>domainname</i>, <i>file-max</i>,
+<i>file-nr</i>, <i>hostname</i>, <i>inode-max</i>, <i>inode-nr</i>,
+<i>osrelease</i>, <i>ostype</i>, <i>panic</i>,
+<i>real-root-dev</i>, <i>securelevel</i>, <i>version</i>, cuya
+función se deduce cláramente a partir del nombre.</dd>
+</dl><p>El fichero (de sólo lectura) <i>file-nr</i> da el número de
+ficheros abiertos en este momento.</p>
+
+<p>El fichero <i>file-max</i> da el número máximo de ficheros
+abiertos que el kernel es capaz de manejar. Si 1024 no es
+suficiente para usted, intente<br /></p>
+
+<pre>
+echo 4096 &gt; /proc/sys/kernel/file-max
+</pre>
+
+<p>De igual forma, los ficheros <i>inode-nr</i> y <i>inode-max</i>
+indican el número actual y máximo de nodos-i, respectivamente.</p>
+
+<p>Los ficheros <i>ostype</i>, <i>osrelease</i>, <i>version</i> dan
+subcadenas de <i>/proc/version</i>.</p>
+
+<p>El fichero <i>panic</i> da los accesos de lectura/escritura
+sobre la variable del núcleo <i>panic_timeout</i>. Si esto es 0, el
+kernel entrará en un bucle infinito ante una situación de pánico;
+si no es cero, indica que el kernel debe autoreinicializarse
+después de ese número de segundos.</p>
+
+<p>El fichero <i>securelevel</i> parece bastante inútil por ahora -
+el superusuario es demasiado poderoso.</p>
+</dd>
+</dl></dd>
+
+<dt><i>uptime</i></dt>
+
+<dd>Este fichero contien dos números: los segundos que el sistema
+lleva funcionando y los segundos gastados en el proceso
+'idle'.</dd>
+
+<dt><i>version</i></dt>
+
+<dd>Esta cadena identifica la versión del kernel que se está
+ejecutando actualmente. Por ejemplo: 
+<pre>
+Linux version 1.0.9 (<a href="mailto:quinlan@phaze">quinlan@phaze</a>) #1 Sat May 14 01:51:54 EDT 1994
+</pre>
+</dd>
+</dl><a id="lbAD"> </a><h2>VÉASE TAMBIÉN</h2><a href="http://localhost/cgi-bin/man/man2html?1+cat">cat</a><p>(1),
+<a href="http://localhost/cgi-bin/man/man2html?1+find">find</a>(1),
+<a href="http://localhost/cgi-bin/man/man2html?1+free">free</a>(1),
+<a href="http://localhost/cgi-bin/man/man2html?1+mount">mount</a>(1),
+<a href="http://localhost/cgi-bin/man/man2html?1+ps">ps</a>(1), <a href="http://localhost/cgi-bin/man/man2html?1+tr">tr</a>(1), <a href="http://localhost/cgi-bin/man/man2html?1+uptime">uptime</a>(1),
+<a href="http://localhost/cgi-bin/man/man2html?2+readlink">readlink</a>(2),
+<a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a>(2),
+<a href="http://localhost/cgi-bin/man/man2html?2+chroot">chroot</a>(2),
+<a href="http://localhost/cgi-bin/man/man2html?2+syslog">syslog</a>(2),
+<a href="http://localhost/cgi-bin/man/man2html?7+hier">hier</a>(7),
+<a href="http://localhost/cgi-bin/man/man2html?8+arp">arp</a>(8),
+<a href="http://localhost/cgi-bin/man/man2html?8+dmesg">dmesg</a>(8),
+<a href="http://localhost/cgi-bin/man/man2html?8+netstat">netstat</a>(8),
+<a href="http://localhost/cgi-bin/man/man2html?8+route">route</a>(8),
+<a href="http://localhost/cgi-bin/man/man2html?8+ifconfig">ifconfig</a>(8),
+<a href="http://localhost/cgi-bin/man/man2html?8+procinfo">procinfo</a>(8)
+y muchos más. <a id="lbAE"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+Esto conforma aproximadamente con el núcleo 1.3.11 de Linux. Por
+favor, actualice esto cuando sea necesario. 
+</p><p>Ultima actualización para la versión 1.3.11 de Linux. <a id="lbAF"> </a></p><h2>ATENCIÓN</h2><p>
+
+Note que muchas cadenas (por ejemplo, el entorno y la línea de
+ordenes) están en formato interno, con los subcampos terminados por
+bytes NUL, por lo que puede encontrar que las cosas son más
+legibles si usa <i>od -c</i> o <i>tr "\000" "\n"</i> para leerlas. 
+</p><p>Esta página de manual está incompleta, posiblemente inexacta, y
+es el tipo de cosas que necesitan ser actualizadas con mucha
+frecuencia. <a id="lbAG"> </a></p><h2>ERRORES</h2><p>
+
+El sistema de ficheros <i>/proc</i> puede introducir agujeros de
+seguridad en procesos ejecutándose con <b><a href="http://localhost/cgi-bin/man/man2html?2+chroot">chroot</a></b>(2).
+Por ejemplo, si <i>/proc</i> se monta en la jerarquía
+<b>chroot,</b> un <b><a href="http://localhost/cgi-bin/man/man2html?2+chdir">chdir</a></b>(2)
+a <i>/proc/1/root</i> nos devolverá a la raíz original del sistema
+de ficheros. Esto puede ser considerado una característica en lugar
+de un error, ya que Linux no soporta ya la llamada <b><a href="http://localhost/cgi-bin/man/man2html?2+fchroot">fchroot</a></b>(2).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAD">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAE">CONFORME A</a></dt>
+
+<dt><a href="#lbAF">ATENCIÓN</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:27 GMT, January 22, 2005
+</p></body></html>

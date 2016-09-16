@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of MPROTECT</title></head><body><p>
+  
+</p><h1>MPROTECT</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 31 mayo 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+mprotect - controla el tipo de acceso permitido sobre una región de
+memoria <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/sys/mman.h">sys/mman.h</a>&gt;</b>
+
+<b>int mprotect(const void *</b><i>addr</i><b>, size_t</b> <i>len</i><b>, int</b> <i>prot</i><b>);
+</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>mprotect</b><p> controla la forma en que una sección de memoria
+puede ser accedida. Si un acceso no es permitido por la protección
+dada, el programa recibe un <b>SIGSEGV</b>. 
+</p><p><i>prot</i> es un O-lógico a nivel de bits de los siguientes
+valores:</p><dl compact="compact"><dt><b>PROT_NONE</b></dt>
+
+<dd>La memoria no puede ser accedida de ninguna forma.</dd>
+
+<dt><b>PROT_READ</b></dt>
+
+<dd>La memoria puede ser leída.</dd>
+
+<dt><b>PROT_WRITE</b></dt>
+
+<dd>La memoria puede ser escrita.</dd>
+
+<dt><b>PROT_EXEC</b></dt>
+
+<dd>La memoria puede contener código ejecutable.</dd>
+</dl><p>La nueva protección reemplaza cualquier protección existente.
+Por ejemplo, si la memoria había sido previamente marcada
+<b>PROT_READ</b>, y <b>mprotect</b> se llama entonces con
+<i>prot</i> igual a <b>PROT_WRITE</b>, no se prodrá leer. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, <b>mprotect</b> devuelve cero. En caso de error,
+se devuelve -1, y se asigna a <i>errno</i> un valor apropiado. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EINVAL</b></dt>
+
+<dd><i>addr</i> no es un puntero válido, o no es un múltiplo de
+PAGESIZE.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La memoria no puede ser accedida.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>La memoria no permite el acceso especificado. Esto puede
+ocurrir si, por ejemplo, asocia a una zona de memoria mediante
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a></b>(2)
+un fichero al cual sólo tiene acceso de lectura y pide a
+<b>mprotect</b> que lo marque <b>PROT_WRITE</b>.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No se han podido reservar estructuras internas del núcleo.</dd>
+</dl><a id="lbAG"> </a><h2>EJEMPLO</h2><pre>
+#include &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;
+#include &lt;<a href="file:/usr/include/stdlib.h">stdlib.h</a>&gt;
+#include &lt;<a href="file:/usr/include/errno.h">errno.h</a>&gt;
+#include &lt;<a href="file:/usr/include/sys/mman.h">sys/mman.h</a>&gt;
+
+#include &lt;<a href="file:/usr/include/limits.h">limits.h</a>&gt;    /* por PAGESIZE */
+#ifndef PAGESIZE
+#define PAGESIZE 4096
+#endif
+
+int
+main(void)
+{
+    char *p;
+    char c;
+
+    /* Reserva un búffer; por defecto, tendrá
+       protección PROT_READ|PROT_WRITE. */
+    p = malloc(1024+PAGESIZE-1);
+    if (!p) {
+        perror("malloc: imposible reservar 1024 bytes");
+        exit(errno);
+    }
+
+    /* Alinear a una dirección múltiplo de PAGESIZE,
+       suponiendo que sea una potencia de 2 */
+    p = (char *)(((int) p + PAGESIZE-1) &amp; ~(PAGESIZE-1));
+
+    c = p[666];         /* Leer; bien */
+    p[666] = 42;        /* Escribir; bien */
+
+    /* Marca el búffer como de sólo-lectura. */
+    if (mprotect(p, 1024, PROT_READ)) {
+        perror("mprotect: imposible cambiar protección");
+        exit(errno);
+    }
+
+    c = p[666];         /* Leer; bien */
+    p[666] = 42;        /* Escribir; el programa recibe SIGSEGV
+                           y muere*/
+
+    exit(0);
+}
+</pre><a id="lbAH"> </a><h2>CONFORME A</h2><p>
+
+SVr4, POSIX.1b (formalmente POSIX.4). SVr4 define un código de
+error adicional, EAGAIN. Las condiciones de error de SVr4 coinciden
+debidamente con las de Linux. POSIX.1b dice que <b>mprotect</b>
+sólo puede ser usada sobre regiones de memoria obtenidas desde
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a></b>(2).
+<a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a></b><p>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">EJEMPLO</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

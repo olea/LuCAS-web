@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SHMCTL</title></head><body><p>
+  
+</p><h1>SHMCTL</h1><p>
+
+Section: Manual del programador de Linux (2)<br />
+Updated: 28 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+shmctl - control de memoria compartida <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b><p><b>#include &lt;<a href="file:/usr/include/sys/shm.h">sys/shm.h</a>&gt;</b></p><p><b>int shmctl(int</b> <i>shmid</i><b>, int</b> <i>cmd</i><b>,
+struct shmid_ds *</b><i>buf</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>shmctl()</b><p> permite al usuario recibir información sobre un
+segmento de memoria compartida, establecer el dueño, grupo y
+permisos del segmento, así como destruirlo. La información sobre el
+segmento identificado como <i>shmid</i> se devuelve en una
+estructura <i>shmid_ds</i>: 
+</p><pre>
+struct shmid_ds {
+        struct  ipc_perm shm_perm;      /* permisos de operación */
+        int     shm_segsz;              /* tamaño del segmento (bytes) */
+        time_t  shm_atime;              /* tiempo de la última unión */
+        time_t  shm_dtime;              /* tiempo de la última separación */
+        time_t  shm_ctime;              /* tiempo del último cambio */
+        unsigned short  shm_cpid;       /* pid del creador */
+        unsigned short  shm_lpid;       /* pid del último operador */
+        short   shm_nattch;             /* nº de uniones actuales */
+        /* Los siguientes son privados */
+        unsigned short   shm_npages;  /* tamaño del segmento (páginas) */
+        unsigned long   *shm_pages;   
+        struct shm_desc *attaches;    /* descriptores para uniones */
+};
+</pre><p>Los campos del miembro <i>shm_perm</i> pueden ser:</p><pre>
+struct ipc_perm
+{
+  key_t  key;
+  <b>ushort uid</b>;   /* euid y egid del <b>dueño</b> */
+  <b>ushort gid</b>;
+  ushort cuid;  /* euid y egid del creador */
+  ushort cgid;
+  <b>ushort mode</b>;  /* 9 bits más bajos de los modos de acceso */
+  ushort seq;   /* número de secuencia */
+};
+</pre><p>Están disponibles los siguientes <i>cmds</i>:<br /></p><dl compact="compact"><dt><b>IPC_STAT</b></dt>
+
+<dd>se usa para copiar la información sobre el segmento de memoria
+compartida en la memoria intermedia <i>buf</i>. El usuario debe
+tener permiso de <b>lectura</b> del segmento de memoria
+compartida.</dd>
+
+<dt><b>IPC_SET</b></dt>
+
+<dd>se usa para aplicar los cambios que el usuario ha efectuado en
+los miembros <i>uid</i>, <i>gid</i>, o <i>mode</i> del campo
+<i>shm_perms</i>. Sólo se usan los 9 bits más bajos de <i>mode</i>.
+El miembro <i>shm_ctime</i> también es actualizado. El usuario debe
+ser el dueño, creador o el superusuario.</dd>
+
+<dt><b>IPC_RMID</b></dt>
+
+<dd>se usa para marcar el segmento como destruido. En realidad, se
+destruirá después de la última separación (es decir, cuando el
+miembro <i>shm_nattch</i> de la estructura asociada <i>shmid_ds</i>
+sea cero). El usuario debe ser el dueño, creador o el
+superusuario.</dd>
+</dl><p>El usuario <i>debe</i> asegurarse de que el segmento se destruye
+al final; de lo contrario, las páginas de dicho segmento que se
+cargaron en memoria al producir un fallo de página, permanecerán en
+memoria o en el fichero de intercambio.</p><p>Además, el <b>superusuario</b> puede impedir o permitir que un
+segmento de memoria compartida pase al fichero de intercambio con
+los siguientes comandos (sólo Linux):<br /></p><dl compact="compact"><dt><b>SHM_LOCK</b></dt>
+
+<dd>impide que un segmento de memoria compartida pase al fichero de
+intercambio. El usuario debe cargar en memoria mediante fallos de
+página cualquier página que necesite estar presente después de que
+se habilite el bloqueo.</dd>
+
+<dt><b>SHM_UNLOCK</b></dt>
+
+<dd>permite sacar del fichero de intercambio al segmento de memoria
+compartida.</dd>
+</dl><p>Las llamadas de control <b>IPC_INFO</b>, <b>SHM_STAT</b> y
+<b>SHM_INFO</b> son usadas por el programa <b><a href="http://localhost/cgi-bin/man/man2html?8+ipcs">ipcs</a></b>(8)
+para proporcionar información sobre los recursos asignados. En el
+futuro, éstos pueden ser modificados según se necesite o movidos a
+un sistema de ficheros proc.</p><p><a id="lbAE"> </a></p><h2>LLAMADAS DEL SISTEMA</h2><dl compact="compact"><dt><b>fork()</b></dt>
+
+<dd>Después de un <b>fork()</b> el hijo hereda los segmentos de
+memoria compartida unidos.</dd>
+
+<dt><b>exec()</b></dt>
+
+<dd>Después de un <b>exec()</b> todos los segmentos de memoria
+compartida unidos son separados (no destruidos).</dd>
+
+<dt><b>exit()</b></dt>
+
+<dd>A través de <b>exit()</b> todos los segmentos de memoria
+compartida unidos son separados (no destruidos).</dd>
+</dl><p><a id="lbAF"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito se devuelve 0, en caso de error -1. <a id="lbAG"> </a> 
+</p><h2>ERRORES</h2><p>
+
+En caso de error, <b>errno</b> tomará uno de los siguientes
+valores: 
+</p><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>se devuelve si se pide <b>IPC_STAT</b> y <i>shm_perm.modes</i>
+no permite acceso de lectura para <i>msqid</i>.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>el argumento <i>cmd</i> tiene el valor <b>IPC_SET</b> o
+<b>IPC_STAT</b> pero la dirección apuntada por <i>buf</i> no es
+accesible.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>se devuelve si <i>shmid</i> no es un identificador válido o
+<i>cmd</i> no es un comando válido.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>se devuelve si <i>shmid</i> apunta a un identificador
+borrado.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>se devuelve si se intenta <b>IPC_SET</b> o <b>IPC_RMID</b> y el
+usuario no es el creador, el propietario, o el superusuario, y el
+usuario no tiene permiso para sus grupos o el resto del mundo.</dd>
+</dl><a id="lbAH"> </a><h2>CONFORME A</h2><p>
+
+SVr4, SVID. SVr4 documenta las condiciones de error adicionales
+EINVAL, ENOENT, ENOSPC, ENOMEM, EEXIST. Ni SVr4 ni SVID documentan
+una condición de error EIDRM. <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+shmget">shmget</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmop">shmop</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">LLAMADAS DEL SISTEMA</a></dt>
+
+<dt><a href="#lbAF">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

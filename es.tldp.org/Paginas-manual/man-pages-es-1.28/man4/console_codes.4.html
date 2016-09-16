@@ -1,0 +1,746 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of CONSOLE_CODES</title></head><body><p>
+  
+</p><h1>CONSOLE_CODES</h1><p>
+
+Section: Manual del Programador de Linux (4)<br />
+Updated: 31 octubre 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+console_codes - secuencias de escape y control de la consola de
+Linux <a id="lbAC"> </a> 
+</p><h2>DESCRIPCIÓN</h2><p>
+
+La consola de Linux implementa un vasto subconjunto de los
+controles de terminal de la VT102 y del estándar ECMA-48/ISO
+6429/ANSI X3.64, más ciertas secuencias de modo privadas para
+cambiar la paleta de colores, asociaciones de conjuntos de
+caracteres, etc. En las descripciones tabulares de abajo, la 2ª
+columna da los mnemónicos ECMA-48 o DEC (éstos, prefijados por DEC)
+para la función dada. Las secuencias sin un mnemónico no son ni
+ECMA-48 ni VT102. 
+</p><p>Después de haber hecho todo el procesamiento de salida normal, y
+de que un flujo de caracteres llega al controlador de consola para
+la impresión de verdad, la 1ª cosa que ocurre es una traducción del
+código empleado para el procesamiento al código empleado para la
+impresión.</p><p>Si la consola está en el modo UTF-8, entonces los bytes que
+llegan se ensamblan 1º a los códigos de 16 b Unicode. Si no, cada
+byte se transforma según la tabla de asociaciones en curso (que lo
+traduce a un valor Unicode). Vea más abajo la sección CONJUNTOS DE
+CARACTERES para la discusión sobre esto.</p><p>En el caso normal, el valor Unicode se convierte a un índice de
+tipo de letra, y éste se almacena en memoria de vídeo, de forma que
+aparezca en la pantalla el grafo correspondiente (según se
+encuentra en la ROM de vídeo). Observe que el empleo de Unicode (y
+el diseño del hardware del PC) nos permite usar 512 grafos
+diferentes simultáneamente.</p><p>Si el valor actual Unicode es un carácter de control, o estamos
+actualmente procesando una secuencia de escape, el valor se tratará
+especialmente. En vez de convertirse a un índice de tipo y
+presentarse como un grafismo, puede lanzar un movimiento del cursor
+u otra función de control. Vea la sección CONTROLES DE LA CONSOLA
+DE LINUX abajo para la discusión sobre esto.</p><p>Generalmente no es una buena idea codificar directamente
+controles de terminal en programas. Linux tiene una base de datos
+<i><a href="http://localhost/cgi-bin/man/man2html?5+terminfo">terminfo</a></i>(5)
+de capacidades de terminales. En vez de emitir a mano secuencias de
+escape de la consola, Ud. debería casi siempre utilizar una
+biblioteca de pantalla que consultara terminfo o una utilidad, como
+<b><a href="http://localhost/cgi-bin/man/man2html?3+ncurses">ncurses</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+tput">tput</a></b>(1),
+o <b><a href="http://localhost/cgi-bin/man/man2html?1+reset">reset</a></b>(1).</p><p><a id="lbAD"> </a></p><h2>CONTROLES DE LA CONSOLA DE LINUX</h2><p>Esta sección describe todos los caracteres de control y
+secuencias de escape que llaman a funciones especiales (i.e.,
+cualquier otra cosa distinta a escribir un grafo en la localización
+del cursor en curso) en la consola de Linux. <a id="lbAE"> </a></p><h3>Caracteres de control</h3><p>
+
+Un carácter lo es de control si (antes de la transformación según
+la tabla de asociaciones) tiene uno de los 14 códigos 00 (NUL), 07
+(BEL), 08 (BS), 09 (HT), 0a (LF), 0b (VT), 0c (FF), 0d (CR), 0e
+(SO), 0f (SI), 18 (CAN), 1a (SUB), 1b (ESC), 7f (DEL). Uno puede
+establecer un modo de `mostrar caracteres de control' (vea más
+abajo), y permitir que los códigos 07, 09, 0b, 18, 1a, 7f se
+muestren como grafos. Por otro lado, en modo UTF-8 todos los
+códigos 00-1f se miran como caracteres de control, sin importar
+ningún modo `mostrar caracteres de control'. 
+</p><p>Si tenemos un carácter de control, se actúa inmediatamente y
+luego se descarta (incluso en medio de una secuencia de escape) y
+la secuencia de escape continúa con el siguiente carácter. (Sin
+embargo, ESC empieza una nueva secuencia de escape, posiblemente
+abortando una anterior no acabada, y CAN y SUB abortan cualquier
+secuencia de escape). Los caracteres de control reconocidos son
+BEL, BS, HT, LF, VT, FF, CR, SO, SI, CAN, SUB, ESC, DEL, CSI. Hacen
+lo que uno esperaría:</p><dl compact="compact"><dd>BEL (0x07, ^G) pita;</dd>
+
+<dd>BS (0x08, ^H) va un espacio atrás a la columna anterior (pero
+no pasa del principio de la línea);</dd>
+
+<dd>HT (0x09, ^I) va a la siguiente parada de tabulación o al final
+de la línea si no hay antes una parada de tabulación;</dd>
+
+<dd>LF (0x0A, ^J), VT (0x0B, ^K) y FF (0x0C, ^L) todos dan un salto
+de línea;</dd>
+
+<dd>CR (0x0D, ^M) da un retorno de carro;</dd>
+
+<dd>SO (0x0E, ^N) activa el conjunto de caracteres G1, y si está
+activado LF/NL (modo de nueva línea), también un retorno de
+carro;</dd>
+
+<dd>SI (0x0F, ^O) activa el conjunto de carcteres G0;</dd>
+
+<dd>CAN (0x18, ^X) y SUB (0x1A, ^Z) interrumpen secuencias de
+escape;</dd>
+
+<dd>ESC (0x1B, ^[) empieza una secuencia de escape;</dd>
+
+<dd>DEL (0x7F) no es tenido en cuenta;</dd>
+
+<dd>CSI (0x9B) es equivalente a ESC [.</dd>
+</dl><p><a id="lbAF"> </a></p><h3>Secuencias de ESC, pero no CSI</h3><table><tr valign="top"><td>ESC c</td>
+<td>RIS</td>
+<td>Inicio.<br /></td>
+</tr><tr valign="top"><td>ESC D</td>
+<td>IND</td>
+<td>Salto de línea.<br /></td>
+</tr><tr valign="top"><td>ESC E</td>
+<td>NEL</td>
+<td>Nueva línea.<br /></td>
+</tr><tr valign="top"><td>ESC H</td>
+<td>HTS</td>
+<td>Pone parada tab en esta columna.<br /></td>
+</tr><tr valign="top"><td>ESC M</td>
+<td>RI</td>
+<td>Salto de línea inverso.<br /></td>
+</tr><tr valign="top"><td>ESC Z</td>
+<td>DECID</td>
+<td>DEC identificación privada. El núcleo<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>devuelve la cadena ESC [ ? 6 c, diciendo<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>que es una VT102.<br /></td>
+</tr><tr valign="top"><td>ESC 7</td>
+<td>DECSC</td>
+<td>Salva el estado actual (cordenadas del cursor,<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>atributos, conjuntos de caracteres).<br /></td>
+</tr><tr valign="top"><td>ESC 8</td>
+<td>DECRC</td>
+<td>Restaura el estado salvado más reciente.<br /></td>
+</tr><tr valign="top"><td>ESC [</td>
+<td>CSI</td>
+<td>Introductor de secuencia de control<br /></td>
+</tr><tr valign="top"><td>ESC %</td>
+<td></td>
+<td>Empieza la secuencia de selección de conjunto de
+caracteres<br /></td>
+</tr><tr valign="top"><td>ESC % @</td>
+<td></td>
+<td>   Selecciona el predeterminado (ISO 646 / ISO 8859-1)<br /></td>
+</tr><tr valign="top"><td>ESC % G</td>
+<td></td>
+<td>   Selecciona UTF-8<br /></td>
+</tr><tr valign="top"><td>ESC % 8</td>
+<td></td>
+<td>   Selecciona UTF-8 (obsoleto)<br /></td>
+</tr><tr valign="top"><td>ESC # 8</td>
+<td>DECALN</td>
+<td>DEC prueba de alineación en pantalla - la llena de E's.<br /></td>
+</tr><tr valign="top"><td>ESC (</td>
+<td></td>
+<td>Empieza secuencia de definición del conjunto G0<br /></td>
+</tr><tr valign="top"><td>ESC ( B</td>
+<td></td>
+<td>   Selecciona predeterminado (asociación ISO 8859-1)<br /></td>
+</tr><tr valign="top"><td>ESC ( 0</td>
+<td></td>
+<td>   Selecciona asociación de gráficos vt100<br /></td>
+</tr><tr valign="top"><td>ESC ( U</td>
+<td></td>
+<td>   Selecciona ninguna asociación - derecho a la ROM<br /></td>
+</tr><tr valign="top"><td>ESC ( K</td>
+<td></td>
+<td>   Selecciona asociación del usuario - la que se carga
+con<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>   la utilidad <b><a href="http://localhost/cgi-bin/man/man2html?8+mapscrn">mapscrn</a></b>(8).<br /></td>
+</tr><tr valign="top"><td>ESC )</td>
+<td></td>
+<td>Empieza la secuencia de definición de G1<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>(seguido por uno de B, 0, U, K, como arriba).<br /></td>
+</tr><tr valign="top"><td>ESC &gt;</td>
+<td>DECPNM</td>
+<td>Pone el teclado auxiliar en modo numérico<br /></td>
+</tr><tr valign="top"><td>ESC =</td>
+<td>DECPAM</td>
+<td>Pone el teclado auxiliar en modo aplicación<br /></td>
+</tr><tr valign="top"><td>ESC ]</td>
+<td>OSC</td>
+<td>(Debería ser: Orden del sistema operativo)<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC ] P <i>nrrggbb</i>: pone paleta, con parámetro<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>dado en 7 dígitos hexadecimales tras la P final :-(.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>Aquí <i>n</i> es el color (0-16), y <i>rrggbb</i> indica<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>los valores rojo/verde/azul (0-255).<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC ] R: restaura paleta<br /></td>
+</tr></table><a id="lbAG"> </a><h3>Secuencias ECMA-48 CSI</h3><p>CSI (o ESC [) es seguido por una secuencia de parámetros, como
+mucho NPAR (16), que son los números decimales separados por punto
+y comas. Un parámetro vacío o ausente se toma como 0. La secuencia
+de parámetros puede ir precedida por un signo de interrogación.</p><p>Sin embargo, tras CSI [ (o ESC [ [) se lee un carácter solo y
+esta secuencia entera no es tenida en cuenta. (La idea es no hacer
+caso de una tecla de función que se muestra.)</p><p>La acción de una secuencia CSI se determina por su carácter
+final.</p><table><tr valign="top"><td>@</td>
+<td>ICH</td>
+<td>Insertar el Nº indicado de caracteres blancos<br /></td>
+</tr><tr valign="top"><td>A</td>
+<td>CUU</td>
+<td>Mover cursor arriba el Nº indicado de filas<br /></td>
+</tr><tr valign="top"><td>B</td>
+<td>CUD</td>
+<td>Mover cursor abajo el Nº indicado de filas<br /></td>
+</tr><tr valign="top"><td>C</td>
+<td>CUF</td>
+<td>Mover cursor a la derecha el Nº indicado de columnas<br /></td>
+</tr><tr valign="top"><td>D</td>
+<td>CUB</td>
+<td>Mover cursor a la izquierda el Nº indicado de columnas<br /></td>
+</tr><tr valign="top"><td>E</td>
+<td>CNL</td>
+<td>Mover cursor abajo el Nº indicado de filas, a la columna
+1<br /></td>
+</tr><tr valign="top"><td>F</td>
+<td>CPL</td>
+<td>Mover cursor arriba el Nº indicado de filas, a la columna
+1<br /></td>
+</tr><tr valign="top"><td>G</td>
+<td>CHA</td>
+<td>Mover cursor a la columna indicada en la fila actual<br /></td>
+</tr><tr valign="top"><td>H</td>
+<td>CUP</td>
+<td>Mover cursor a la fila y columna indicadas (origen en
+1,1)<br /></td>
+</tr><tr valign="top"><td>J</td>
+<td>ED</td>
+<td>Borrar pantalla (p. o.: desde el cursor al final de la
+pantalla).<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 1 J: borrar desde el comienzo hasta el cursor.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 2 J: borrar la pantalla entera.<br /></td>
+</tr><tr valign="top"><td>K</td>
+<td>EL</td>
+<td>Borrar línea (p.o.: desde el cursor al final de la
+línea).<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 1 K: borrar desde el comienzo de la línea al cursor<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 2 K: borrar la línea entera.<br /></td>
+</tr><tr valign="top"><td>L</td>
+<td>IL</td>
+<td>Insertar el Nº indicado de líneas en blanco<br /></td>
+</tr><tr valign="top"><td>M</td>
+<td>DL</td>
+<td>Borrar el Nº indicado de líneas<br /></td>
+</tr><tr valign="top"><td>P</td>
+<td>DCH</td>
+<td>Borrar el Nº indicado de caracteres en la línea actual<br /></td>
+</tr><tr valign="top"><td>X</td>
+<td>ECH</td>
+<td>Borrar el Nº indicado de caracteres en la línea actual<br /></td>
+</tr><tr valign="top"><td>a</td>
+<td>HPR</td>
+<td>Mover cursor a la derecha el Nº indicado de columnas<br /></td>
+</tr><tr valign="top"><td>c</td>
+<td>DA</td>
+<td>Reponder ESC [ ? 6 c: `Yo soy una VT102'.<br /></td>
+</tr><tr valign="top"><td>d</td>
+<td>VPA</td>
+<td>Mover cursor a la fila y columna indicadas<br /></td>
+</tr><tr valign="top"><td>e</td>
+<td>VPR</td>
+<td>Mover cursor abajo el Nº indicado de filas<br /></td>
+</tr><tr valign="top"><td>f</td>
+<td>HVP</td>
+<td>Mover cursor a la fila y columna indicadas<br /></td>
+</tr><tr valign="top"><td>g</td>
+<td>TBC</td>
+<td>Sin parámetro: quita parada TAB en la posición actual<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 3 g: borra todas las paradas de tabulación<br /></td>
+</tr><tr valign="top"><td>h</td>
+<td>SM</td>
+<td>Establece Modo (vea abajo).<br /></td>
+</tr><tr valign="top"><td>l</td>
+<td>RM</td>
+<td>Restablece Modo (vea abajo).<br /></td>
+</tr><tr valign="top"><td>m</td>
+<td>SGR</td>
+<td>Establece atributos (vea abajo).<br /></td>
+</tr><tr valign="top"><td>n</td>
+<td>DSR</td>
+<td>Informe de estado (vea abajo).<br /></td>
+</tr><tr valign="top"><td>q</td>
+<td>DECLL</td>
+<td>Establece los LEDs del teclado.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 0 q: apaga todos los LEDs<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 1 q: pone LED Bloq. Despl.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 2 q: pone LED Bloq. Num.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>ESC [ 3 q: pone LED Bloq. Mayús.<br /></td>
+</tr><tr valign="top"><td>r</td>
+<td>DECSTBM</td>
+<td>Establece región de rodadura; los parámetros son la fila de
+arriba y abajo<br /></td>
+</tr><tr valign="top"><td>s</td>
+<td>?</td>
+<td>Salva la localización del cursor<br /></td>
+</tr><tr valign="top"><td>u</td>
+<td>?</td>
+<td>Restaura la localización del cursor.<br /></td>
+</tr><tr valign="top"><td>`</td>
+<td>HPA</td>
+<td>Mover cursor a la columna indicada en la fila indicada<br /></td>
+</tr></table><a id="lbAH"> </a><h3>ECMA-48 Pone modo Gráfico</h3><p>La secuencia ECMA-48 SGR ESC [ &lt;parámetros&gt; m establece
+los atributos de la pantalla. Se pueden poner varios atributos en
+la misma secuencia.</p><table><tr valign="top"><td>par</td>
+<td>resultado<br /></td>
+</tr><tr valign="top"><td>0</td>
+<td>restablece todos los atributos a sus valores
+predeterminados<br /></td>
+</tr><tr valign="top"><td>1</td>
+<td>pone negrillas<br /></td>
+</tr><tr valign="top"><td>2</td>
+<td>pone medio brillo (simulado con color en una pantalla a
+color)<br /></td>
+</tr><tr valign="top"><td>4</td>
+<td>pone subrayado (simulado con color en una pantalla a
+color)<br /></td>
+</tr><tr valign="top"><td></td>
+<td>(los colores para simular disminución o subrayado se ponen
+con<br /></td>
+</tr><tr valign="top"><td></td>
+<td>ESC ] ...)<br /></td>
+</tr><tr valign="top"><td>5</td>
+<td>pone intermitencia<br /></td>
+</tr><tr valign="top"><td>7</td>
+<td>pone vídeo inverso<br /></td>
+</tr><tr valign="top"><td>10</td>
+<td>restaura asociación seleccionada, indicador de control de<br /></td>
+</tr><tr valign="top"><td></td>
+<td>pantalla y cambia el indicador meta<br /></td>
+</tr><tr valign="top"><td>11</td>
+<td>selecciona no asociación, pone indicador de control de<br /></td>
+</tr><tr valign="top"><td></td>
+<td>pantalla, restaura indicador de cambio meta<br /></td>
+</tr><tr valign="top"><td>12</td>
+<td>selecciona no asociación, pone indicador de control de<br /></td>
+</tr><tr valign="top"><td></td>
+<td>pantalla, pone indicador de cambio meta (que hace que el
+bit<br /></td>
+</tr><tr valign="top"><td></td>
+<td>más alto de un byte cambie antes de que se haga la
+traducción<br /></td>
+</tr><tr valign="top"><td></td>
+<td>de la tabla de asociación.)<br /></td>
+</tr><tr valign="top"><td>21</td>
+<td>pone intensidad normal (esto no es compatible con
+ECMA-48)<br /></td>
+</tr><tr valign="top"><td>22</td>
+<td>pone intensidad normal<br /></td>
+</tr><tr valign="top"><td>24</td>
+<td>quita subrayado<br /></td>
+</tr><tr valign="top"><td>25</td>
+<td>quita intermitencia<br /></td>
+</tr><tr valign="top"><td>27</td>
+<td>quita vídeo inverso<br /></td>
+</tr><tr valign="top"><td>30</td>
+<td>pone negro<br /></td>
+</tr><tr valign="top"><td>31</td>
+<td>pone rojo<br /></td>
+</tr><tr valign="top"><td>32</td>
+<td>pone verde<br /></td>
+</tr><tr valign="top"><td>33</td>
+<td>pone marrón<br /></td>
+</tr><tr valign="top"><td>34</td>
+<td>pone azul<br /></td>
+</tr><tr valign="top"><td>35</td>
+<td>pone rosa<br /></td>
+</tr><tr valign="top"><td>36</td>
+<td>pone celeste<br /></td>
+</tr><tr valign="top"><td>37</td>
+<td>pone blanco<br /></td>
+</tr><tr valign="top"><td>38</td>
+<td>pone subrayado, color predeterminado<br /></td>
+</tr><tr valign="top"><td>39</td>
+<td>quita subrayado, pone color predeterminado<br /></td>
+</tr><tr valign="top"><td>40</td>
+<td>pone negro de fondo<br /></td>
+</tr><tr valign="top"><td>41</td>
+<td>pone rojo de fondo<br /></td>
+</tr><tr valign="top"><td>42</td>
+<td>pone verde de fondo<br /></td>
+</tr><tr valign="top"><td>43</td>
+<td>pone marrón de fondo<br /></td>
+</tr><tr valign="top"><td>44</td>
+<td>pone azul de fondo<br /></td>
+</tr><tr valign="top"><td>45</td>
+<td>pone rosa de fondo<br /></td>
+</tr><tr valign="top"><td>46</td>
+<td>pone celeste de fondo<br /></td>
+</tr><tr valign="top"><td>47</td>
+<td>pone blanco de fondo<br /></td>
+</tr><tr valign="top"><td>49</td>
+<td>pone el color de fondo predeterminado<br /></td>
+</tr></table><a id="lbAI"> </a><h3>Interruptores de Modo ECMA-48</h3><dl compact="compact"><dt>ESC [ 3 h</dt>
+
+<dd>DECCRM (por omisión desactivado): Mostrar caracteres de
+control</dd>
+
+<dt>ESC [ 4 h</dt>
+
+<dd>DECIM (por omisión desactivado): Poner modo de inserción</dd>
+
+<dt>ESC [ 20 h</dt>
+
+<dd>LF/NL (por omisión desactivado): Automáticamente seguir a LF,
+VT o FF con CR.</dd>
+</dl><p><a id="lbAJ"> </a></p><h3>Órdenes de Informe de Estado ECMA-48</h3><dl compact="compact"><dt>ESC [ 5 n</dt>
+
+<dd>Informe de estado de dispositivo (DSR): La respuesta es ESC [ 0
+n (Terminal OK).</dd>
+
+<dt>ESC [ 6 n</dt>
+
+<dd>Informe de posición de cursor (CPR): La respuesta es ESC [
+<i>y</i> ; <i>x</i> R, donde <i>x,y</i> es la localización del
+cursor.</dd>
+</dl><a id="lbAK"> </a><h3>Secuencias de Modo Privado DEC (DECSET/DECRST).</h3><p>Éstas no se describen en ECMA-48. Listamos las secuencias de
+Establecer Modo; las de Reestablecer Modo se obtienen reemplazando
+la hache final por ele.</p><dl compact="compact"><dt>ESC [ ? 1 h</dt>
+
+<dd>DECCKM (por omisisón desactivado): Cuando está activado, las
+teclas de cursor envían un prefijo ESC O, en vez de ESC [.</dd>
+
+<dt>ESC [ ? 3 h</dt>
+
+<dd>DECCOLM (por omisión desactivado = 80 columnas): interruptor de
+modo 80/132 columnas. En los fuentes del controlador se hace notar
+que esto solo no basta; alguna utilidad de usuario como <i><a href="http://localhost/cgi-bin/man/man2html?8+resizecons">resizecons</a></i>(8)
+tiene que cambiar los registros de hardware en la tarjeta de vídeo
+de consola.</dd>
+
+<dt>ESC [ ? 5 h</dt>
+
+<dd>DECSCNM (por omisión desactivado): Pone el modo de vídeo
+inverso</dd>
+
+<dt>ESC [ ? 6 h</dt>
+
+<dd>DECOM (por omisión desactivado): Cuando está activado, el
+direccionamiento del cursor es relativo a la esquina superior
+izquierda de la región de rodadura.</dd>
+
+<dt>ESC [ ? 7 h</dt>
+
+<dd>DECAWM (por omisión activado): Activa el paso automático de
+renglón. En este modo, un carácter gráfico emitido tras la columna
+80 (o la 132 si está activado DECCOLM) fuerza un cambio al
+principio de la siguiente línea.</dd>
+
+<dt>ESC [ ? 8 h</dt>
+
+<dd>DECARM (por omisión activado): Activa la auto-repetición del
+teclado</dd>
+
+<dt>ESC [ ? 9 h</dt>
+
+<dd>Informe de Ratón X10 (por omisión desactivado): Establece el
+modo de informe a 1 (o lo restaura a 0) - vea abajo.</dd>
+
+<dt>ESC [ ? 25 h</dt>
+
+<dd>DECCM (por omisión activado): Hace visible el cursor.</dd>
+
+<dt>ESC [ ? 1000 h</dt>
+
+<dd>Informe de Ratón X11 (por omisión desactivado): Establece el
+modo de informe a 2 (o lo restaura a 0) - vea abajo.</dd>
+</dl><a id="lbAL"> </a><h3>Secuencias Privadas de Consola de Linux CSI</h3><p>Las siguientes secuencias no son ni ECMA-48 ni VT102 nativas.
+Son nativas al controlador de consola de Linux. Los colores están
+en los parámetros SGR: 0 = negro, 1 = rojo, 2 = verde, 3 = marrón,
+4 = azul, 5 = rosa, 6 = celeste, 7 = blanco.</p><table><tr valign="top"><td>ESC [ 1 ; <i>n</i> ]</td>
+<td>Pone el color <i>n</i> como el de subrayado<br /></td>
+</tr><tr valign="top"><td>ESC [ 2 ; <i>n</i> ]</td>
+<td>Pone el color <i>n</i> como el disminuido<br /></td>
+</tr><tr valign="top"><td>ESC [ 8 ]</td>
+<td>Hace al color actual el de los atributos predeterminados<br /></td>
+</tr><tr valign="top"><td>ESC [ 9 ; <i>n</i> ]</td>
+<td>Pone el tiempo de espera del blanqueado de la terminal a
+<i>n</i> min.<br /></td>
+</tr><tr valign="top"><td>ESC [ 10 ; <i>n</i> ]</td>
+<td>Establece la frecuencia del pito en Hz.<br /></td>
+</tr><tr valign="top"><td>ESC [ 11 ; <i>n</i> ]</td>
+<td>Establece la duración del pitido en ms.<br /></td>
+</tr><tr valign="top"><td>ESC [ 12 ; <i>n</i> ]</td>
+<td>Trae al frente la consola especificada.<br /></td>
+</tr><tr valign="top"><td>ESC [ 13 ]</td>
+<td>Quita el blanco de la pantalla.<br /></td>
+</tr><tr valign="top"><td>ESC [ 14 ; <i>n</i> ]</td>
+<td>Establece el intervalo de apagado VESA en min.<br /></td>
+</tr></table><p><a id="lbAM"> </a></p><h2>CONJUNTOS DE CARACTERES</h2><p>El núcleo sabe de 4 traducciones de bytes a símbolos de la
+pantalla de la consola. Las cuatro tablas son: a) Latin1 -&gt; PC,
+b) gráficos VT100 -&gt; PC, c) PC -&gt; PC, d) definida por el
+usuario.</p><p>Hay dos conjuntos de caracteres, llamados G0 y G1, y uno de
+ellos es el actual. (Inicialmente G0.)</p><p>Teclear ^N hace que G1 sea el actual, ^O hace a G0 el
+actual.</p><p>Estas variables G0 y G1 apuntan a una tabla de traducción, y
+pueden ser cambiadas por el usuario. Inicialmente apuntan a las
+tablas a) y b) respectivamente. Las secuencias ESC ( B y ESC ( 0 y
+ESC ( U y ESC ( K causan que G0 apunte a la tabla a), b), c) y d)
+respectivamente. Las secuencias ESC ) B y ESC ) 0 y ESC ) U y ESC )
+K causan que G1 apunte a la tabla a), b), c) y d),
+respectivamente.</p><p>La secuencia ESC c provoca una puesta a cero de la terminal, que
+es lo que uno quiere cuando la pantalla está liada. El otrora truco
+"echo ^V^O" solamente hace G0 actual, pero no hay garantías de que
+G0 apunte a la tabla a). En algunas distribuciones hay un programa
+<b><a href="http://localhost/cgi-bin/man/man2html?1+reset">reset</a></b>(1)
+que simplemente hace "echo ^[c". Si su entrada de terminfo para la
+consola es correcto (y tiene una entrada rs1=\Ec), entonces "tput
+reset" también funcionará.</p><p>La tabla de asociación definida por el usuario puede ponerse con
+<b><a href="http://localhost/cgi-bin/man/man2html?8+mapscrn">mapscrn</a></b>(8).
+El resultado de la asociación es que si hay un símbolo c que se
+imprime, se envía a la memoria de vídeo el símbolo s = map[c]. El
+mapa de bits que corresponde a s se encuentra en la ROM de
+caracteres, y puede cambiarse mediante <b><a href="http://localhost/cgi-bin/man/man2html?8+setfont">setfont</a>(8).</b></p><p><a id="lbAN"> </a></p><h2>PISTA DEL RATÓN</h2><p>La facilidad de seguimiento de pista del ratón sirve para
+devolver informes de estado del ratón compatibles con xterm. Puesto
+que el controlador de consola no tiene forma de conocer el
+dispositivo ni tipo del ratón, estos informes se devuelven en el
+flujo de entrada de la consola sólo cuando del controlador de
+terminal virtual recibe un ioctl de actualización de ratón. Estos
+ioctls deben ser generados por una aplicación de usuario que haga
+uso del ratón como el duende <b><a href="http://localhost/cgi-bin/man/man2html?8+gpm">gpm</a>(8)</b>.</p><p>Los parámetros para todas las secuencias de escape de pista del
+ratón generadas por <i>xterm</i> codifican los parámetros numéricos
+en un simple carácter como <i>valor</i>+040. Por ejemplo, `!' es 1.
+El sistema de coordenadas de la pantalla empieza en 1.</p><p>El modo de compatibilidad X10 envía una secuencia de escape
+cuando se pulsa un botón codificando la localización y el botón del
+ratón pulsado. Esto se activa enviando ESC [ ? 9 h y se desactiva
+con ESC [ ? 9 l. Cuando se pulsa un botón, <i>xterm</i> envía ESC [
+M <i>bxy</i> (6 caracteres). Aquí <i>b</i> es botón-1, y <i>x</i> y
+<i>y</i> son las coordenadas x e y del ratón cuando se pulsó el
+botón. Esto es el mismo código que el núcleo también produce.</p><p>El modo de pista normal (no implementado en Linux 2.0.24) envía
+una secuencia de escape cuando se pulas o se libera un botón.
+También se envía información de modificador. Se habilita enviando
+ESC [ ? 1000 h y se inhabilita con ESC [ 1000 l. Cuando se pulas o
+libera un botón, <i>xterm</i>envía ESC [ M <i>bxy</i>. Los dos bits
+bajos de <i>b</i> codifican información del botón: 0=MB1 pulsado,
+1=MB2 pulsado, 2=MB3 pulsado, 3=liberar. Los bits más altos
+codifican qué modificadores estaban pulsados cuando el botón se
+hubo presionado y se añaden juntos: 4=Mayúsculas, 8=Meta,
+16=Control. De nuevo <i>x</i> e <i>y</i> son las coordenadas x e y
+del evento de ratón. La esquina superior izquierda es (1,1).</p><p><a id="lbAO"> </a></p><h2>COMPARACIONES CON OTRAS TERMINALES</h2><p>Muchos tipos diferentes de terminal se describen, como la
+consola de Linux, como `compatibles VT100'. Aquí se discuten las
+diferencias entre la consola de Linux y las otras dos más
+importantes, la VT102 de DEC y la <i><a href="http://localhost/cgi-bin/man/man2html?1+xterm">xterm</a></i>(1).</p><p><a id="lbAP"> </a></p><h3>Manejo de caracteres de control</h3><p>
+
+La vt102 también reconocía los siguientes caracteres de control: 
+</p><dl compact="compact"><dd>NUL (0x00) no era tenido en cuenta;</dd>
+
+<dd>ENQ (0x05) lanzaba un mensaje de reconocimiento;</dd>
+
+<dd>DC1 (0x11, ^Q, XON) reanudaba la transmisión;</dd>
+
+<dd>DC3 (0x13, ^S, XOFF) hacía que la vt100 no tuviera en cuenta (y
+parara la transmisión) ningún código excepto XOFF y XON.</dd>
+</dl><p>El controlador de tty puede habilitar el procesamiento de
+DC1/DC3 al estilo de la VT100.</p><p>El programa <i>xterm</i> (en modo vt100) reconoce los caracteres
+de control BEL, BS, HT, LF, VT, FF, CR, SO, SI, ESC.</p><p><a id="lbAQ"> </a></p><h3>Secuencias de Escape</h3><p>
+
+Secuncias de consola VT100 no implementadas en la consola de Linux:
+
+</p><table><tr valign="top"><td>ESC N</td>
+<td>SS2</td>
+<td>Simple cambio 2. (Selecciona el conjunto de caracteres<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>G2 sólo para el sgute. carácter.)<br /></td>
+</tr><tr valign="top"><td>ESC O</td>
+<td>SS3</td>
+<td>Simple cambio 3. (Selecciona el conjunto de caracteres<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>G3 sólo para el sgute. carácter.)<br /></td>
+</tr><tr valign="top"><td>ESC P</td>
+<td>DCS</td>
+<td>Cadena de control de dispositivo (acabada por ESC \)<br /></td>
+</tr><tr valign="top"><td>ESC X</td>
+<td>SOS</td>
+<td>Comienzo de cadena.<br /></td>
+</tr><tr valign="top"><td>ESC ^</td>
+<td>PM</td>
+<td>Mensaje de privacidad (acabado por ESC \)<br /></td>
+</tr><tr valign="top"><td>ESC \</td>
+<td>ST</td>
+<td>Terminador de caadena<br /></td>
+</tr><tr valign="top"><td>ESC * ...</td>
+<td></td>
+<td>Designa el conjunto de caracteres G2<br /></td>
+</tr><tr valign="top"><td>ESC + ...</td>
+<td></td>
+<td>Designa el conjunto de caracteres G3<br /></td>
+</tr></table><p>El programa <i>xterm</i> (en modo vt100) reconoce ESC c, ESC #
+8, ESC &gt;, ESC =, ESC D, ESC E, ESC H, ESC M, ESC N, ESC O, ESC P
+... ESC , ESC Z (responde ESC [ ? 1 ; 2 c, `Yo soy una vt100 con
+opción de vídeo avanzado') y ESC ^ ... ESC  con los mismos
+significados que los arriba indicados. Acepta ESC (, ESC ), ESC *,
+ESC + seguidos por 0, A, B para el conjunto de caracteres
+especiales y líneas de dibujo de DEC, UK y US-ASCII,
+respectivamente. Acepta ESC ] para el establecimiento de ciertos
+recursos:</p><table><tr valign="top"><td>ESC ] 0 ; txt BEL</td>
+<td>Pone nombre de icono y título de ventana como txt.<br /></td>
+</tr><tr valign="top"><td>ESC ] 1 ; txt BEL</td>
+<td>Pone txt como nombre de icono.<br /></td>
+</tr><tr valign="top"><td>ESC ] 2 ; txt BEL</td>
+<td>Pone txt como título de ventana.<br /></td>
+</tr><tr valign="top"><td>ESC ] 4 6 ; log BEL</td>
+<td>Cambia el nombre del fichero de registro a log<br /></td>
+</tr><tr valign="top"><td></td>
+<td>(normalmente deshabilitado por una opción de tiempo de<br /></td>
+</tr><tr valign="top"><td></td>
+<td>compilación)<br /></td>
+</tr><tr valign="top"><td>ESC ] 5 0 ; fn BEL</td>
+<td>Pone fn como el tipo de letra.<br /></td>
+</tr></table><p>Reconoce lo siguiente con un significado ligeramente
+modificado:</p><table><tr valign="top"><td>ESC 7 DECSC</td>
+<td>Salva el cursor</td>
+<td><br /></td>
+</tr><tr valign="top"><td>ESC 8 DECRC</td>
+<td>Restaura el cursor</td>
+<td><br /></td>
+</tr></table><p>También reconoce</p><table><tr valign="top"><td>ESC F</td>
+<td></td>
+<td>Cursor a esquina inferior izda. de la pantalla (si<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>permitido por el recurso hpLowerleftBugCompat)<br /></td>
+</tr><tr valign="top"><td>ESC l</td>
+<td></td>
+<td>Bloqueo de memoria (por terminales HP).<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>Bloquea la memoria sobre el cursor.<br /></td>
+</tr><tr valign="top"><td>ESC m</td>
+<td></td>
+<td>Desbloqueo de memoria (por terminales HP).<br /></td>
+</tr><tr valign="top"><td>ESC n</td>
+<td>LS2</td>
+<td>Invoca el conjunto de caracteres G2.<br /></td>
+</tr><tr valign="top"><td>ESC o</td>
+<td>LS3</td>
+<td>Invoca el conjunto de caracteres G2.<br /></td>
+</tr><tr valign="top"><td>ESC |</td>
+<td>LS3R</td>
+<td>Invoca el conjunto de caracteres G3 como GR.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>No tiene efecto visible en xterm.<br /></td>
+</tr><tr valign="top"><td>ESC }</td>
+<td>LS2R</td>
+<td>Invoca el conjunto de caracteres G2 como GR.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>No tiene efecto visible en xterm.<br /></td>
+</tr><tr valign="top"><td>ESC ~</td>
+<td>LS1R</td>
+<td>Invoca el conjunto de caracteres G1 como GR.<br /></td>
+</tr><tr valign="top"><td></td>
+<td></td>
+<td>No tiene efecto visible en xterm.<br /></td>
+</tr></table><p>No reconoce ESC % ...</p><p><a id="lbAR"> </a></p><h3>Secuencias CSI</h3><p>
+
+El programa <i>xterm</i> (en XFree86 3.1.2G) no reconoce los SGRs
+de modo invisible o parpadeo. Versiones originales X11R6 no
+reconocen los SGRs de establecimiento de colores. Todas las otras
+secuencias CSI de ECMA-48 reconocidas por Linux también lo son por
+<i>xterm</i>, y viceversa. 
+</p><p>El programa <i>xterm</i> reconocerá todas las secuencias de Modo
+Privado de DEC listadas arriba, pero ninguna de las secuencias de
+modo privado de Linux. Para una discusión sobre las propias
+secuencias de modo privado de <i>xterm</i>, refiérase al documento
+<i>Xterm Control Sequences</i> por Edward Moy &amp; Stephen Gildea,
+disponible con la distribución X-Window.</p><p><a id="lbAS"> </a></p><h2>FALLOS</h2><p>En 2.0.23, CSI no funciona, y NUL es tenido en cuenta dentro de
+secuencias de escape.</p><p><a id="lbAT"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?4+console">console</a></b><p>(4),
+<b><a href="http://localhost/cgi-bin/man/man2html?4+console_ioctl">console_ioctl</a></b>(4),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+charsets">charsets</a></b>(7)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAD">CONTROLES DE LA CONSOLA DE LINUX</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAE">Caracteres de control</a></dt>
+
+<dt><a href="#lbAF">Secuencias de ESC, pero no CSI</a></dt>
+
+<dt><a href="#lbAG">Secuencias ECMA-48 CSI</a></dt>
+
+<dt><a href="#lbAH">ECMA-48 Pone modo Gráfico</a></dt>
+
+<dt><a href="#lbAI">Interruptores de Modo ECMA-48</a></dt>
+
+<dt><a href="#lbAJ">Órdenes de Informe de Estado ECMA-48</a></dt>
+
+<dt><a href="#lbAK">Secuencias de Modo Privado DEC
+(DECSET/DECRST).</a></dt>
+
+<dt><a href="#lbAL">Secuencias Privadas de Consola de Linux
+CSI</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAM">CONJUNTOS DE CARACTERES</a></dt>
+
+<dt><a href="#lbAN">PISTA DEL RATÓN</a></dt>
+
+<dt><a href="#lbAO">COMPARACIONES CON OTRAS TERMINALES</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAP">Manejo de caracteres de control</a></dt>
+
+<dt><a href="#lbAQ">Secuencias de Escape</a></dt>
+
+<dt><a href="#lbAR">Secuencias CSI</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAS">FALLOS</a></dt>
+
+<dt><a href="#lbAT">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:27 GMT, January 22, 2005
+</p></body></html>

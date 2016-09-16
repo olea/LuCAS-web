@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of HSEARCH</title></head><body><p>
+  
+</p><h1>HSEARCH</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 30 Septiembre 1995<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+hcreate, hdestroy, hsearch - funciones para manejar una tabla
+dispersa (hash) <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/search.h">search.h</a>&gt;</b>
+
+<b>ENTRY *hsearch(ENTRY</b> <i>item</i><b>, ACTION</b> <i>action</i><b>);</b>
+
+<b>int hcreate(unsigned</b> <i>nel</i><b>);</b>
+
+<b>void hdestroy(void);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Estas tres funciones permiten al usuario crear una tabla dispersa
+que asocia una clave con cualquier dato. 
+</p><p>En primer lugar, se debe crear la tabla con la función
+<b>hcreate()</b>. <i>nel</i> es una estimación del número de
+entradas de la tabla. <b>hcreate()</b> puede incrementar este valor
+para mejorar el rendimiento de la tabla dispersa resultante. La
+implementación GNU de <b>hsearch()</b> también agrandará la tabla
+si ésta está casi llena. Para asignar espacio a la tabla se utiliza
+<b><a href="http://localhost/cgi-bin/man/man2html?3+malloc">malloc</a>(3)</b>.</p><p>La función correspondiente <b>hdestroy()</b> libera la memoria
+ocupada por la tabla dispersa de tal forma que se pueda construir
+una nueva tabla.</p><p>El parámetro <i>item</i> es del tipo <b>ENTRY</b>, que se define
+mediante typedef en <i>&lt;<a href="file:/usr/include/search.h">search.h</a>&gt;</i> e incluye
+estos elementos:</p><pre>
+        typedef struct entry 
+          { 
+            char *<i>key</i>;
+            char *<i>data</i>; 
+          } ENTRY;
+</pre><p><i>key</i> apunta a una cadena ASCII terminada en '\0' que es la
+clave de búsqueda. <i>data</i> apunta a los datos asociados con esa
+clave. (Un puntero a cualquier otro tipo distinto de carácter se
+debe convertir al tipo "puntero a carácter). <b>hsearch()</b> busca
+en la tabla dispersa un elemento con la misma clave que <i>item</i>
+y, si tiene éxito, devuelve un puntero al mismo. <i>action</i>
+determina qué debe hacer <b>hsearch()</b> tras una búsqueda sin
+éxito. El valor <b>ENTER</b> le indica que debe insertar un nuevo
+elemento mientras que un valor <b>FIND</b> significa que debe
+devolver <b>NULL</b>. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><b>hcreate()</b><p> devuelve <b>NULL</b> si la tabla dispersa no se
+puede crear con éxito. 
+</p><p><b>hsearch()</b> devuelve <b>NULL</b> si <i>action</i> es
+<b>ENTER</b> y no hay suficiente memoria para expandir la tabla
+dispersa o si <i>action</i> es <b>FIND</b> y <i>item</i> no se
+puede encontrar en la tabla dispersa. <a id="lbAF"> </a></p><h2>CONFORME A</h2><p>SVID, excepto que en SysV, la tabla dispersa no puede crecer. <a id="lbAG"> </a></p><h2>FALLOS</h2><p>
+
+La implementación sólo puede manejar una tabla dispersa a la vez.
+Se pueden añadir a la tabla dispersa entradas individuales pero no
+se pueden eliminar. <a id="lbAH"> </a> 
+</p><h2>EJEMPLO</h2><p>El siguiente programa inserta 24 elementos en una tabla dispersa
+y a continuación imprime algunos de ellos.</p><pre>
+    #include &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;
+    #include &lt;<a href="file:/usr/include/search.h">search.h</a>&gt;
+    
+    char *data[]={ "alpha", "bravo", "charley", "delta",
+         "echo", "foxtrot", "golf", "hotel", "india", "juliette",
+         "kilo", "lima", "mike", "november", "oscar", "papa",
+         "quebec", "romeo", "sierra", "tango", "uniform",
+         "victor", "whiskey", "x-ray", "yankee", "zulu" 
+     };
+
+    int main()
+    {
+      ENTRY e, *ep;
+      int i;
+    
+      /* Comencemos con una pequeña tabla y dejémosla que crezca */
+      <a href="http://localhost/cgi-bin/man/man2html?3+hcreate">hcreate</a>(3);
+      for (i = 0; i &lt; 24; i++)
+        {
+          e.key = data[i]; 
+          /* Los datos son enteros, en lugar de punteros a alguna cosa */
+          e.data = (char *)i;
+          ep = hsearch(e, ENTER);
+          /* No debe haber fallos */
+          if(ep == NULL) {
+             fprintf(stderr, "Fallo en la entrada\n");
+             <a href="http://localhost/cgi-bin/man/man2html?1+exit">exit</a>(1);}
+        }
+      for (i = 22; i &lt; 26; i++)
+        /* Imprime dos entradas de la tabla y demuestra que otras dos no
+           están en la tabla */
+        {
+          e.key = data[i];
+          ep = hsearch(e, FIND);
+          printf("%9.9s -&gt; %9.9s:%d\n", e.key, ep?ep-&gt;key:"NULL", 
+                 ep?(int)(ep-&gt;data):0);
+        }
+      return 0;
+    }
+
+</pre><a id="lbAI"> </a><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+bsearch">bsearch</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+tsearch">tsearch</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+malloc">malloc</a></b>(3).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">CONFORME A</a></dt>
+
+<dt><a href="#lbAG">FALLOS</a></dt>
+
+<dt><a href="#lbAH">EJEMPLO</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:25 GMT, January 22, 2005
+</p></body></html>

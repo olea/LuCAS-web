@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of ACCEPT</title></head><body><p>
+  
+</p><h1>ACCEPT</h1><p>
+
+Section: Manual del programador de Linux (2)<br />
+Updated: 7 Mayo 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+accept - acepta una conexión sobre un conector (socket). <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><p><b>int accept(int</b> <i>s</i><b>, struct sockaddr
+*</b><i>addr</i><b>, socklen_t *</b><i>addrlen</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>La función <b>accept</b> se usa con conectores orientados a
+conexión (<b>SOCK_STREAM</b>, <b>SOCK_SEQPACKET</b> y
+<b>SOCK_RDM</b>). Extrae la primera petición de conexión de la cola
+de conexiones pendientes, le asocia un nuevo conector con,
+practicamente, las misma propiedades que <i>s</i> y reserva un
+nuevo descriptor de fichero para el conector, el cuál es el valor
+devuelto por la llamada. El conector original <i>s</i> no se ve
+afectado por esta llamada. Dese cuenta que cualquier opción por
+descriptor de fichero (cualquiera que se pueda establecer con
+<b>F_SETFL</b> de fcntl, como no bloqueante o estado asíncrono) no
+se hereda en un <i>accept.</i></p><p>El argumento <i>s</i> es un conector que ha sido creado con
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+ligado a una dirección local con <b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b>(2)
+y que se encuentra a la escucha tras un <b><a href="http://localhost/cgi-bin/man/man2html?2+listen">listen</a></b>(2).</p><p>El argumento <i>addr</i> es un puntero a una estructura
+sockaddr. Esta estructura se rellena con la dirección de la entidad
+con la que se conecta, tal y como la conoce la capa de
+comunicaciones. El formato exacto de la dirección pasada en el
+parámetro <i>addr</i> viene determinado por la familia del conector
+(vea <b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2)
+y las páginas de manual del protocolo correspondiente). El
+argumento <i>addrlen</i> es un parámetro de entrada/salida: al
+efectuar la llamada debe contener el tamaño de la estructura
+apuntada por <i>addr</i>; a la salida, contendrá la longitud real
+(en bytes) de la dirección devuelta. Cuando <i>addr</i> es NULL
+nada se rellena.</p><p>Si no hay conexiones pendientes en la cola y el conector no está
+marcado como "no bloqueante", <b>accept</b> bloqueará al invocador
+hasta que se presente una conexión. Si el conector está marcado
+como no bloqueante y no hay conexiones pendientes en la cola,
+<b>accept</b> devolverá EAGAIN.</p><p>Para ser informado de las conexiones entrantes que se produzca
+en un conector, puede usar <b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+poll">poll</a></b>(2).
+Se producirá un evento de lectura en el intento de una nueva
+conexión y entonces puede llamar a <b>accept</b> para obtener un
+conector para esa conexión. Alternativamente, puede configurar el
+conector para que provoque una señal <b>SIGIO</b> cuando se
+produzca actividad en el conector; vea <b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7)
+para más detalles.</p><p>Para determinados protocolos que necesitan una confirmación
+explícita, tales como DECNet, <b>accept</b> se puede interpretar
+como una función que, simplemente, desencola la siguiente petición
+de conexión sin que ello implique la confirmación. Se sobreentiende
+la confirmación cuando se produce una lectura o escritura normal
+sobre el nuevo descriptor de fichero, y el rechazo puede ser de
+igual manera implícito cerrando el nuevo conector. Actualmente,
+sólo DECNet tiene esta semántica en Linux. <a id="lbAE"> </a></p><h2>NOTAS</h2><p>
+
+Puede que no siempre haya una conexión esperando después de que se
+produzca una señal <b>SIGIO</b>, o después de que <b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+poll">poll</a></b>(2)
+devuelvan un evento de lectura, debido a que la conexión podría
+haber sido eliminada por un error asíncrono de red u otro hilo
+antes de que se llame a <b>accept</b>. Si esto ocurre entonces la
+llamada se bloqueará esperando a que llegue la siguiente conexión.
+Para asegurarse de que <b>accept</b> nunca se bloquea, es necesario
+que el conector <i>s</i> pasado tenga la opción <b>O_NONBLOCK</b>
+activa (vea <b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7)).
+<a id="lbAF"> </a> 
+</p><h2>VALOR DEVUELTO</h2><p>
+
+La llamada devuelve -1 ante un error. Si tiene éxito, devuelve un
+entero no negativo que es el descriptor del conector aceptado. <a id="lbAG"> </a> 
+</p><h2>MANEJO DE ERRORES</h2><p>
+
+La llamada <b>accept</b> de Linux pasa los errores de red ya
+pendienes sobre el nuevo conector como un código de error de
+<b>accept</b>. Este comportamiento difiere de otras construcciones
+de conectores BSD. Para un funcionamiento fiable, la aplicación
+debe detectar los errores de red definidos por el protocolo tras
+una llamada a <b>accept</b> y tratarlos como <b>EAGAIN</b>
+reintentado la operación. En el caso de TCP/IP estos son
+<b>ENETDOWN</b>, <b>EPROTO</b>, <b>ENOPROTOOPT</b>,
+<b>EHOSTDOWN</b>, <b>ENONET</b>, <b>EHOSTUNREACH</b>,
+<b>EOPNOTSUPP</b> y <b>ENETUNREACH</b>. <a id="lbAH"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EAGAIN</b> o <b>EWOULDBLOCK</b></dt>
+
+<dd>El conector está marcado como no-bloqueante y no hay conexiones
+que aceptar.</dd>
+
+<dt><b>EBADF</b></dt>
+
+<dd>El descriptor es inválido.</dd>
+
+<dt><b>ENOTSOCK</b></dt>
+
+<dd>El descriptor referencia a un fichero, no a un conector.</dd>
+
+<dt><b>EOPNOTSUPP</b></dt>
+
+<dd>El conector referenciado no es del tipo
+<b>SOCK_STREAM</b>.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>El parámetro <i>addr</i> no se encuentra en una zona accesible
+para escritura por el usuario.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>Las reglas del cortafuegos prohiben la conexión.</dd>
+
+<dt><b>ENOBUFS, ENOMEM</b></dt>
+
+<dd>No hay suficiente memoria disponible. Esto normalmente
+significa que la asignación de memoria está limitada por los
+límites del buffer de conectores, no por la memoria del sistema,
+aunque esto no es 100% coherente.</dd>
+</dl><p>Además, se pueden devolver otros errores de red para el nuevo
+conector y que se encuentren definidos en el protocolo. Diferentes
+núcleos de Linux pueden devolver otros errores diferentes como
+<b>EMFILE</b>, <b>EINVAL</b>, <b>ENOSR</b>, <b>ENOBUFS</b>,
+<b>EPERM</b>, <b>ECONNABORTED</b>, <b>ESOCKTNOSUPPORT</b>,
+<b>EPROTONOSUPPORT</b>, <b>ETIMEDOUT</b>, <b>ERESTARTSYS</b>. <a id="lbAI"> </a></p><h2>CONFORME A</h2><p>
+
+SVr4, 4.4BSD (la función <b>accept</b> apareció por primera vez en
+BSD 4.2). La página de manual de BSD documenta cinco posibles
+respuestas de error (EBADF, ENOTSOCK, EOPNOTSUPP, EWOULDBLOCK,
+EFAULT). SUSv2 documenta los errores EAGAIN, EBADF, ECONNABORTED,
+EFAULT, EINTR, EINVAL, EMFILE, ENFILE, ENOBUFS, ENOMEM, ENOSR,
+ENOTSOCK, EOPNOTSUPP, EPROTO, EWOULDBLOCK. <a id="lbAJ"> </a> 
+</p><h2>NOTA</h2><p>
+
+El tercer argumento de <b>accept</b> se declaró originalmente como
+un `int *' (y así está en libc4 y libc5 y en otros muchos sistemas
+como BSD 4.*, SunOS 4, SGI); el estándar propuesto POSIX 1003.1g
+quiso cambiarlo a `size_t *' y así está en SunOS 5. Más tarde, los
+borradores POSIX tenían `socklen_t *' y así lo tomaron the Single
+Unix Specification y glibc2. Citando a Linus Torvalds:
+<i>_Cualquier_ biblioteca razonable _debe_ hacer que</i>
+"socklen_t" sea del mismo tamaño que int. Cualquier otra cosa
+destroza todo lo de la capa de conectores BSD. POSIX inicialmente
+estableció el tipo a size_t y, de hecho, yo (y es de suponer que
+otros aunque, obviamente, no demasiados) nos quejamos a gritos. El
+ser de tipo size_t es completamente desastroso, precisamente
+porque, por ejemplo, size_t muy rara vez es del mismo tamaño que
+"int" en arquitecturas de 64 bit. Y _tiene_ que ser del mismo
+tamaño que "int" porque así está en la interfaz de conectores BSD.
+De cualquier modo, los de POSIX finalmente tuvieron una idea y
+crearon "socklen_t". Para empezar, no deberían haberlo tocado pero,
+una vez que lo hicieron, pensaron que debían tener un tipo con
+nombre propio por alguna insondable razón (probablemente alguien no
+quería desprestigiarse por haber cometido la estupidez original por
+lo que, simplemente, renombraron su metedura de pata de forma
+silenciosa). <a id="lbAK"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+listen">listen</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">NOTAS</a></dt>
+
+<dt><a href="#lbAF">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAG">MANEJO DE ERRORES</a></dt>
+
+<dt><a href="#lbAH">ERRORES</a></dt>
+
+<dt><a href="#lbAI">CONFORME A</a></dt>
+
+<dt><a href="#lbAJ">NOTA</a></dt>
+
+<dt><a href="#lbAK">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RESOLVER</title></head><body><p>
+  
+</p><h1>RESOLVER</h1><p>
+
+Section: Manual del programador de Linux (5)<br />
+Updated: 11 Noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+resolver - fichero de configuración del resolvedor de nombres <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><p>
+
+/etc/resolv.conf <a id="lbAD"> </a> 
+</p><h2>DESCRIPCIÓN</h2><p>El <i>resolvedor</i> es un conjunto de rutinas en la biblioteca
+de C que proporcionan acceso al Sistema de Nombres de Dominio de
+Internet. El fichero de configuración del resolvedor contiene
+información que es leída por las rutinas del resolvedor la primera
+vez que son llamadas por un proceso. El fichero está diseñado para
+que sea legible por los humanos y contiene una lista de palabras
+clave con valores que proporcionan varios tipos de información para
+el resolvedor.</p><p>En un sistema configurado normalmente este fichero no debería
+ser necesario. El único servidor de nombres estaría en la máquina
+local, el nombre de dominio se determinaría a partir del nombre
+completo del ordenador, y el camino de búsqueda del dominio se
+construiría a partir del nombre de dominio.</p><p>Las diferentes opciones de configuración son:</p><dl compact="compact"><dt><b>nameserver</b></dt>
+
+<dd>Dirección de Internet (en la notación de puntos) de un servidor
+de nombres a quien deberá interrogar el resolvedor. Pueden ponerse
+hasta MAXNS (3 actualmente) servidores de nombres, uno por cada
+palabra clave. Si hay varios servidores, la biblioteca del
+resolvedor los interroga en el orden en que se pongan. Si no hay
+ninguna entrada <b>nameserver</b>, se usará el servidor de nombres
+en la máquina local. (El algoritmo empleado es intentar con un
+servidor de nombres, y si la petición lleva demasiado tiempo,
+intentar con el siguiente, hasta que no haya más, después se
+intenta de nuevo con todos los servidores de nombres, hasta que se
+efectúe un número máximo de reintentos).</dd>
+
+<dt><b>domain</b></dt>
+
+<dd>Nombre de dominio local. La mayoría de las interrogaciones
+sobre nombres dentro de este dominio pueden emplear nombres cortos
+relativos al dominio local. Si no hay una entrada <b>domain</b>, el
+dominio se determina a partir del nombre de ordenador local
+devuelto por <i>gethostname</i>(); la parte del dominio se toma
+como todo lo que haya a partir del primer `.'. Finalmente, si el
+nombre del ordenador no contiene una parte del dominio, se supone
+el dominio raíz.</dd>
+
+<dt><b>search</b></dt>
+
+<dd>Lista de búsqueda para la determinación de nombres de
+ordenador. La lista de búsqueda se determina normalmente a partir
+del nombre de dominio local; por omisión, contiene solamente el
+nombre de dominio local. Esto puede cambiarse listando el camino de
+búsqueda del dominio deseado detrás de la palabra clave
+<i>search</i> con espacios o tabuladores separando los nombres. La
+mayoría de las interrogaciones del resolvedor se intentarán usando
+cada componente del caminio de búsqueda por turnos hasta que haya
+una concordancia. Observe que este proceso puede ser lento y
+generará mucho tráfico de red si los servidores para los dominios
+listados no son locales, y las interrogaciones se rendirán tras un
+tiempo si no hay un servidor disponible para uno de los
+dominios.</dd>
+
+<dd>La lista de búsqueda está actualmente limitada a 6 dominios con
+un total de 256 caracteres.</dd>
+
+<dt><b>sortlist</b></dt>
+
+<dd>Permite clasificar las direcciones devueltas por
+gethostbyname(). Una lista de clasificación se especifica mediante
+pares de direcciones IP, máscaras de red. Las direcciones y pares
+de red opcionales se separan por barras inclinadas. Se pueden
+especificar hasta 10 pares.</dd>
+
+<dd>Ejemplo: sortlist 130.155.160.0/255.255.240.0 130.155.0.0</dd>
+
+<dt><b>options</b></dt>
+
+<dd>Permite la modificación de ciertas variables internas del
+resolvedor. La sintaxis es</dd>
+
+<dd><b>options</b> <i>opción</i> <i>...</i></dd>
+
+<dd>donde <i>opción</i> es una de las siguientes:</dd>
+
+<dd><b>debug</b> --- pone RES_DEBUG en _res.options.</dd>
+
+<dd><b>ndots:</b><i>n</i> --- establece un umbral para el número de
+puntos que deben aparecer en un nombre dado a <b>res_query</b> (vea
+<i>resolver</i>(@LIB_NETWORK_EXT@)) antes de que se haga una
+<i>interrogación absoluta inicial</i>. El valor predeterminado para
+<i>n</i> es ``1'', significando que si hay puntos en un nombre, el
+nombre se considerará primero como un nombre absoluto antes de que
+cualquier elemento de una <i>lista de búsqueda</i> se añada a
+él.</dd>
+</dl><p>Las palabras clave <i>domain</i> y <i>search</i> son mutuamente
+exclusivas. Si más de una instancia de estas palabras clave está
+presente, gana la última.</p><p>La palabra clave <i>search</i> del fichero <i>resolv.conf</i> de
+un sistema puede ser sobrescrita en cada proceso mediante la
+variable de ambiente ``<font size="-1">LOCALDOMAIN</font>'' puesta
+como una lista de dominios de búsqueda separados por espacios.</p><p>La palabra clave <i>options</i> del fichero <i>resolv.conf</i>
+de un sistema puede ser corregida en cada proceso mediante la
+variable de ambiente ``<font size="-1">RES_OPTIONS</font>'' puesta
+como una lista de opciones del resolvedor separadas por espacio,
+como se ha explicado antes bajo el apartado <b>options</b>.</p><p>La palabra clave y su valor deben aparecer en una sola línea, y
+la palabra clave (e.g. <b>nameserver</b>) debe estar en el comienzo
+de la línea. El valor va después de la palabra clave, separada por
+espacio en blanco. <a id="lbAE"> </a></p><h2>FICHEROS</h2><i>/etc/resolv.conf</i><a id="lbAF"> </a><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+gethostbyname">gethostbyname</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+hostname">hostname</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+named">named</a></b>(8),
+<br />
+ Name Server Operations Guide for BIND (Guía de Operaciones del
+Servidor de Nombres para BIND) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">FICHEROS</a></dt>
+
+<dt><a href="#lbAF">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:08 GMT, January 21, 2005
+</p></body></html>

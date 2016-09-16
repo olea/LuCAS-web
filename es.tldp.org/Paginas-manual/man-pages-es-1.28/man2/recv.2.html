@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RECV</title></head><body><p>
+  
+</p><h1>RECV</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: abril 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+recv, recvfrom, recvmsg - reciben un mensaje desde un conector <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><p><b>int recv(int</b> <i>s</i><b>, void *</b><i>buf</i><b>,
+size_t</b> <i>lon</i><b>, int</b> <i>flags</i><b>);</b></p><p><b>int recvfrom(int</b> <i>s</i><b>, void *</b><i>buf</i><b>,
+size_t</b> <i>lon</i><b>, int</b> <i>flags</i><b>,</b> <b>struct
+sockaddr *</b><i>desde</i><b>, socklen_t
+*</b><i>londesde</i><b>);</b></p><p><b>int recvmsg(int</b> <i>s</i><b>, struct msghdr
+*</b><i>msg</i><b>, int</b> <i>flags</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Las llamadas <b>recvfrom</b> y <b>recvmsg</b> se emplean para
+recibir mensajes desde un conector (``socket''), y pueden
+utilizarse para recibir datos de un conector sea orientado a
+conexión o no. 
+</p><p>Si <i>desde</i> no es NULL y el conector no es orientado a
+conexión, la dirección fuente del mensaje se llena. El argumento
+<i>londesde</i> es un parámetro por referencia, inicializado al
+tamaño del búfer asociado con <i>desde</i>, y modificado cuando la
+función regresa para indicar el tamaño real de la dirección
+guardada ahí.</p><p>La llamada a <b>recv</b> se utiliza normalmente sólo en un
+conector <i>conectado</i> (vea <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2))
+y es idéntica a <b>recvfrom</b> con un parámetro <i>desde</i> con
+valor NULL.</p><p>Las tres rutinas devuelven la longitud del mensaje cuando
+terminan bien. Si un mensaje es demasiado largo como para caber en
+el búfer suministrado, los bytes que sobran pueden descartarse
+dependiendo del tipo de conector del que se reciba el mensaje (vea
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2)).</p><p>Si no hay mensajes disponibles en el conector, las llamadas de
+recepción esperan que llegue un mensaje, a menos que el conector
+sea no bloqueante (vea <b><a href="http://localhost/cgi-bin/man/man2html?2+fcntl">fcntl</a></b>(2))
+en cuyo caso se devuelve el valor -1 y la variable externa
+<i>errno</i> toma el valor <b>EAGAIN</b>. Las llamadas de recepción
+devuelven normalmente cualquier dato disponible, hasta la cantidad
+pedida, en vez de esperar la recepción de la cantidad pedida
+completa.</p><p>Las llamadas <b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+poll">poll</a></b>(2)
+pueden emplearse para determinar cuándo llegan más datos.</p><p>El argumento <i>flags</i> de una llamada a recv se forma
+aplicando el operador de bits <i>O</i>-lógico a uno o más de los
+valores siguientes:</p><dl compact="compact"><dt><b>MSG_OOB</b></dt>
+
+<dd>Esta opción pide la recepción de datos fuera-de-banda que no se
+recibirían en el flujo de datos normal. Algunos protocolos ponen
+datos despachados con prontitud en la cabeza de la cola de datos
+normales, y así, esta opción no puede emplearse con tales
+protocolos.</dd>
+
+<dt><b>MSG_PEEK</b></dt>
+
+<dd>Esta opción hace que la operación de recepción devuelva datos
+del principio de la cola de recepción sin quitarlos de allí. Así,
+una próxima llamada de recepción devolverá los mismos datos.</dd>
+
+<dt><b>MSG_WAITALL</b></dt>
+
+<dd>Esta opción hace que la operación se bloquee hasta que se
+satisfaga la petición completamente. Sin embargo, la llamada puede
+aún devolver menos datos de los pedidos si se captura una señal, si
+ocurre un error o una desconexión, o si los próximos datos que se
+van a recibir son de un tipo diferente del que se ha devuelto.</dd>
+
+<dt><b>MSG_NOSIGNAL</b></dt>
+
+<dd>Esta opción desactiva el que se produzca una señal
+<b>SIGPIPE</b> sobre los conectores orientados a conexión cuando el
+otro extremo desaparece.</dd>
+
+<dt><b>MSG_ERRQUEUE</b></dt>
+
+<dd>Esta opción indica que los errores encolados deben recibirse
+desde la cola de errores de conectores. El error se pasa en un
+mensaje auxiliar con un tipo dependiente del protocolo (para IPv4
+éste es <b>IP_RECVERR</b>). El usuario debe proporciona un buffer
+de tamaño suficiente. Vea <b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b>(3)
+para obtener más información sobre mensajes auxiliares. 
+<p>El error se suministra en una estructura
+<b>sock_extended_err</b>:</p>
+</dd>
+
+<dd>
+<dl compact="compact"><dd>
+<pre>
+#define SO_EE_ORIGIN_NONE     0
+#define SO_EE_ORIGIN_LOCAL    1
+#define SO_EE_ORIGIN_ICMP     2
+#define SO_EE_ORIGIN_ICMP6    3
+
+struct sock_extended_err
+{
+      u_int32_t   ee_errno;       /* número de error */
+      u_int8_t    ee_origin;      /* origen del error */
+      u_int8_t    ee_type;        /* tipo */
+      u_int8_t    ee_code;        /* código */
+      u_int8_t    ee_pad;
+      u_int32_t   ee_info;        /* información adicional */
+      u_int32_t   ee_data;        /* otros datos */
+      /* Pueden ir más datos a continuación .*/
+};
+
+struct sockaddr *SOCK_EE_OFFENDER(struct sock_extended_err *);
+
+</pre>
+</dd>
+</dl></dd>
+
+<dd><b>ee_errno</b> contiene el número errno del error encolado.
+<b>ee_origin</b> es el código del origen en donde se ha originado
+el error. Los otros campos son específicos del protocolo. La macro
+<b>SOCK_EE_OFFENDER</b> devuelve un puntero a la dirección del
+objeto de red desde donde se ha originado el error dando un puntero
+al mensaje auxiliar. Si esta dirección se desconoce, el miembro
+<i>sa_family</i> de <b>sockaddr</b> contiene <b>AF_UNSPEC</b> y los
+otros campos de <b>sockaddr</b> quedan indefinidos. El contenido
+útil del paquete que ha producido el error se pasa como datos
+normales.</dd>
+
+<dd>Para los errores locales no se pasa ninguna dirección (esto se
+puede comprobar con el miembro <i>cmsg_len</i> de <b>cmsghdr</b>).
+Para los errores recibidos, se asigna <b>MSG_ERRQUEUE</b> a
+<b>msghdr</b>. Después de que se haya pasado un error, el error de
+conector pendiente se regenera basándose en el siguiente error
+encolado y se pasará en la siguiente operación de conectores.</dd>
+</dl><p>La llamada <b>recvmsg</b> utiliza una estructura <i>msghdr</i>
+para minimizar el número de parámetros suministrados directamente.
+Esta estructura tiene la forma siguiente, según se define en
+<i>&lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</i>:</p><dl compact="compact"><dd>
+<dl compact="compact"><dd>
+<pre>
+struct msghdr {
+    void         * msg_name;     /* dirección opcional */
+    socklen_t    msg_namelen;    /* tamaño de la dirección */
+    struct iovec * msg_iov;      /* vector dispersar/agrupar */
+    size_t       msg_iovlen;     /* nº de elementos en msg_iov */
+    void         * msg_control;  /* datos auxiliares, ver más abajo */
+    socklen_t    msg_controllen; /* long buffer datos auxiliares */
+    int          msg_flags;      /* opciones en mensaje recibido */
+};
+
+</pre>
+</dd>
+</dl></dd>
+</dl><p>Aquí <i>msg_name</i> y <i>msg_namelen</i> especifican la
+dirección de destino si el conector está desconectado;
+<i>msg_name</i> puede darse como un puntero nulo si no se desean o
+requieren nombres. Los campos <i>msg_iov</i> y <i>msg_iovlen</i>
+describen localizaciones dispersar/agrupar, como se discute en
+<b><a href="http://localhost/cgi-bin/man/man2html?2+readv">readv</a></b>(2).
+El campo <i>msg_control</i>, que tiene de longitud
+<i>msg_controllen</i>, apunta a un búfer para otros mensajes
+relacionados con control de protocolo o para datos auxiliares
+diversos. Cuando se llama a <b>recvmsg</b>, <i>msg_controllen</i>
+debe contener la longitud del buffer disponible en
+<i>msg_control</i>; a la vuelta de una llamada con éxito contendrá
+la longitud de la secuencia de mensajes de control.</p><p>Los mensajes son de la forma:</p><dl compact="compact"><dd>
+<pre>
+struct cmsghdr {
+    socklen_t   cmsg_len;   /* Nº de byte de datos, incluye cab. */
+    int         cmsg_level; /* protocolo originante */
+    int         cmsg_type;  /* tipo específico del protocolo */
+                            /* seguido por
+    u_char      cmsg_data[]; */
+};
+
+</pre>
+</dd>
+</dl><p>Los datos auxiliares sólo deberían ser accedidos mediante las
+macros definidas en <b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b>(3).</p><p>Como ejemplo, Linux usa este mecanismo de datos auxiliares para
+pasar errores ampliados, opciones IP o descriptores de fichero
+mediante conectores Unix.</p><p>El campo <i>msg_flags</i> toma un valor al regresar dependiendo
+del mensaje recibido. <b>MSG_EOR</b> indica fin-de-registro; los
+datos devueltos completaron un registro (generalmente empleado con
+conectores del tipo <b>SOCK_SEQPACKET</b>). <b>MSG_TRUNC</b> indica
+que la porción trasera de un datagrama ha sido descartada porque el
+datagrama era más grande que el búfer suministrado.
+<b>MSG_CTRUNC</b> indica que algún dato de control ha sido
+descartado debido a la falta de espacio en el búfer para datos
+auxiliares. <b>MSG_OOB</b> se devuelve para indicar que se han
+recibido datos despachados prontamente o fuera-de-banda.
+<b>MSG_ERRQUEUE</b> indica que no se ha recibido ningún dato sino
+un error ampliado de la cola de errores de conectores. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Estas llamadas devuelven el número de bytes recibidos, o bien -1 en
+caso de que ocurriera un error. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Estos son algunos errores estándares generados por la capa de
+conectores. Los modulos de los protocolos subyacentes pueden
+generar y devolver errores adicionales. Consulte sus páginas de
+manual. 
+</p><dl compact="compact"><dt><b>EBADF</b></dt>
+
+<dd>El argumento <i>s</i> es un descriptor inválido.</dd>
+
+<dt><b>ENOTCONN</b></dt>
+
+<dd>El conector está asociado con un protocolo orientado a la
+conexión y no ha sido conectado (vea <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2)
+y <b><a href="http://localhost/cgi-bin/man/man2html?2+accept">accept</a></b>(2)).</dd>
+
+<dt><b>ENOTSOCK</b></dt>
+
+<dd>El argumento <i>s</i> no se refiere a un conector.</dd>
+
+<dt><b>EAGAIN</b></dt>
+
+<dd>El conector está marcado como no-bloqueante, y la operación de
+recepción produciría un bloqueo, o se ha puesto un límite de tiempo
+en la recepción, que ha expirado antes de que se recibieran
+datos.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>La recepción ha sido interrumpida por la llegada de una señal
+antes de que hubiera algún dato disponible.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>El puntero a búfer de recepción (o punteros) apunta afuera del
+espacio de direcciones del proceso.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Se ha pasado un argumento inválido.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+4.4BSD (estas funciones aparecieron por primera vez en 4.2BSD). <a id="lbAH"> </a> 
+</p><h2>NOTA</h2><p>
+
+Los prototipos datos anteriormente siguen a glibc2. The Single Unix
+Specification coincide en todo excepto en que el tipo de los
+valores devueltos es `ssize_t' (mientras que BSD 4.*, libc4 y libc5
+tienen `int'). El argumento <i>flags</i> es un `int' en BSD 4.*
+pero es un `unsigned int' en libc4 y libc5. El argumento <i>lon</i>
+es un `int' en BSD 4.* pero es un `size_t' en libc4 y libc5. El
+argumento <i>londesde</i> es un `int' en BSD 4.*, libc4 y libc5. El
+actual `socklen_t *' fue inventado por POSIX. Vea también <b><a href="http://localhost/cgi-bin/man/man2html?2+accept">accept</a></b>(2).
+<a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+fcntl">fcntl</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+read">read</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+getsockopt">getsockopt</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b>(3)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">NOTA</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

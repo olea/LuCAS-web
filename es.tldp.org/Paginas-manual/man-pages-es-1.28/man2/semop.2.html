@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SEMOP</title></head><body><p>
+  
+</p><h1>SEMOP</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 1 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+semop - operaciones con semáforos <a id="lbAC"> </a> 
+</p><h2>SINTAXIS</h2><pre>
+<b># include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/sem.h">sys/sem.h</a>&gt;</b>
+</pre><p><b>int semop ( int</b> <i>semid</i><b>,</b> <b>struct sembuf
+*</b><i>sops</i><b>,</b> <b>unsigned</b> <i>nsops</i> <b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Esta función ejecuta operaciones en los miembros seleccionados del
+semaforo indi cado por <i>semid</i>. Cada uno de los <i>nsops</i>
+elementos en el array apuntado por <i>sops</i> especifica una
+operación a ser realizada en un semaforo por <b>struct sembuf</b>
+incluyendo los siguientes miembros: 
+</p><p><b><br /></b> <b><tt>     </tt>short sem_num;<tt>  </tt></b> /* numero de
+semaforo: 0 = primero */<br /><br /><b><tt>       </tt>short sem_op;<tt>   </tt></b> /* operacion
+sobre el semaforo */<br /><br /><b><tt>       </tt>short sem_flg;<tt>  </tt></b> /* banderas
+(indicadores/parametros) de la operacion */<br /></p><p>Banderas reconocidas en <b>sem_flg</b> son <b>IPC_NOWAIT</b> y
+<b>SEM_UNDO</b>. Si una operacion ejecuta <b>SEM_UNDO</b>, sera
+deshecha cuando el proceso finalice.</p><p>La semántica de la llamada al sistema asegura que la operacion
+sera ejecutada si y solo si todas ellas pueden ser ejecutadas. Cada
+operacion es ejecutada en el semaforo numero <b>sem_num</b> donde
+el primer semaforo del conjunto es el semaforo <b>0</b> - y es uno
+entre los siguientes tres.</p><p>Si <b>sem_op</b> es un entero positivo, la operacion añade este
+valor a <b>semval</b>. Sin embargo, si <b>SEM_UNDO</b> es invocado
+para esta operacion, el sistema actualiza el contador del proceso
+(para operaciones "undo") para este semaforo. La operacion siempre
+se ejecuta, por lo que no puede haber ningún proceso durmie ndo. El
+proceso que invoca debe tener los permisos modificados en el
+conjunto de sema foros.</p><p>Si <b>sem_op</b> es cero, el proceso debe tener permiso de
+lectura en el semaforo. Si <b>semval</b> es cero, la operacion se
+ejecuta. Por otra parte, si <b>IPC_NOWAIT</b> es invocado en
+<b>sem_flg</b>, la llamada al sistema falla (deshaciendo todas las
+acciones anteriores ejecutadas) con la variable <b>errno</b> fijada
+a <b>EAGAIN</b>. En otro caso <b>semzcnt</b> es incremetada en uno
+y el proceso duerme hasta que algo de lo siguiente ocurra:</p><dl compact="compact"><dd>
+<dl compact="compact"><dd>
+<dl compact="compact"><dt>*</dt>
+
+<dd><b>semval</b> es 0, instante en el que el valor de
+<b>semzcnt</b> es decrementeado.</dd>
+
+<dt>*</dt>
+
+<dd>El semaforo es eliminado: la llamada al sistema falla con
+<b>errno</b> fijada a <b>EIDRM</b>.</dd>
+
+<dt>*</dt>
+
+<dd>El proceso que lo invoca recibe una señal que debe ser
+atendida: el valor de <b>semzcnt</b> es decrementado y la llamada
+al sistema falla con <b>errno</b> fijada a <b>EINTR</b>.</dd>
+</dl></dd>
+</dl></dd>
+</dl><p>Si <b>sem_op</b> es menor que cero, el proceso debe tener los
+permisos de modificación sobre el semaforo. Si <b>semval</b> es
+mayor que o igual que el valor absoluto de <b>sem_op</b>, el valor
+absoluto de <b>sem_op</b> es restado a <b>semval</b>. Por otra
+parte, si <b>SEM_UNDO</b> es invocado para esta operación, el
+sistema actualiza el contador "undo" del pro ceso para este
+semaforo. Entonces la operacion se ejecuta. En otro caso, si
+<b>IPC_NOWAIT</b> es invocado en <b>sem_flg</b>, la llamada al
+sistema falla (deshaciendo todas las acciones anteriores
+ejecutadas) con <b>errno</b> fijado a <b>EAGAIN</b>. En otro caso
+<b>semncnt</b> es incrementado en uno y el proceso duerme hasta que
+ocurra:</p><dl compact="compact"><dd>
+<dl compact="compact"><dd>
+<dl compact="compact"><dt>*</dt>
+
+<dd><b>semval</b> sea mayor o igual que el valor absoluto de
+<b>sem_op</b>, en cuyo instante el valor de <b>semncnt</b> es
+decrementado, el valor absoluto de <b>sem_op</b> es restado de
+<b>semval</b> y, si <b>SEM_UNDO</b> es invocado para esta
+operacion, el sistema actualiza el contador "undo" del pro ceso
+para este semaforo.</dd>
+
+<dt>*</dt>
+
+<dd>El semaforo es es eliminado del sistema: la llamada al sistema
+falla con <b>errno</b> fijado a <b>EIDRM</b>.</dd>
+
+<dt>*</dt>
+
+<dd>El proceso invocador recibe una señal que tiene que capturar:
+el valor de <b>semncnt</b> es decrementado y la llamada al sistema
+falla con <b>errno</b> fijado a <b>EINTR</b>.</dd>
+</dl></dd>
+</dl></dd>
+</dl><p>En caso de que haya funcionado, el miembro <b>sempid</b> de la
+estructura <b>sem</b> para cada semaforo especificado en el array
+apuntado por <i>sops</i> es fijado al identificador del proceso del
+proceso que la invoca. De otra forma <b>sem_otime</b> y
+<b>sem_ctime</b> son fijados a la hora actual. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Si todo ha sido correcto la llamada al sistema devuelve <b>0</b>,
+en otro caso devuelve <b>-1</b> con <b>errno</b> indicando el
+error. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Para un retorno erroneo <b>errno</b> sera fijado a uno de los
+siguientes valores: 
+</p><dl compact="compact"><dt><b>E2BIG</b></dt>
+
+<dd>El argumento <i>nsops</i> es mayor que <b>SEMOPM</b>, el numero
+máximo de operaciones permitidas por llamada del sistema.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>El proceso invocador no tiene permisos de acceso al semaforo
+como se requiere por una de las operaciones especificadas.</dd>
+
+<dt><b>EAGAIN</b></dt>
+
+<dd>Una operacion no puede ser ejecutada y <b>IPC_NOWAIT</b> ha
+sido invocada en su <i>sem_flg</i><b>.</b></dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La direccion apuntada por <i>sops</i> no es accesible.</dd>
+
+<dt><b>EFBIG</b></dt>
+
+<dd>Para algunas operaciones el valor de <b>sem_num</b> es menor
+que 0 o mayor o igual que el numero de semaforos en el
+conjunto.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>El conjunto de semaforos ha sido eliminado.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>Durmiento en una cola de espera, el proceso recibio una señal
+que debe ser capturada.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Este conjunto de semaforos no existe, o <i>semid</i> es menor
+que cero, o <i>nsops</i> tiene un valor no-positivo.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>El <b>sem_flg</b> de alguna operacion invoco <b>SEM_UNDO</b> y
+el sistema no tiene suficiente memoria para alojar la estructura
+"undo".</dd>
+
+<dt><b>ERANGE</b></dt>
+
+<dd>Para alguna operacion <b>semop+semval</b> es mayor que
+<b>SEMVMX</b>, el valor máximo dependiente de la implementación
+para <b>semval</b>.</dd>
+</dl><a id="lbAG"> </a><h2>ANUNCIA</h2><p>
+
+La estructura <b>sem_undo</b> de un proceso no es heredada por sus
+hijos en la ejecución de <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2)
+Son, en cambio, heredadas por el proceso sustituto resultante de la
+ejecución de <b><a href="http://localhost/cgi-bin/man/man2html?2+execve">execve</a></b>(2)
+
+</p><p>Los siguientes valores son limites en el conjunto de recursos de
+los semaforos q ue afecta a <b>semop</b></p><dl compact="compact"><dt><b>SEMOPM</b></dt>
+
+<dd>Numero máximo de operaciones permitidas para una llamada
+<b>semop</b> ,dependiente de la implementación.</dd>
+
+<dt><b>SEMVMX</b></dt>
+
+<dd>Valor máximo permitido para <b>semval</b>: dependiente de la
+implementación (32767).</dd>
+</dl><p>La implementación no contiene límites intrínsecos para ajustar
+el valor máximo de la salida (<b>SEMAEM</b>), el numero máximo de
+estructuras "undo" que el sistema permite (<b>SEMMNU</b>) y máximo
+numero de entradas "undo" por proceso para los parametros del
+sistema. <a id="lbAH"> </a></p><h2>FALLOS</h2><p>
+
+El sistema mantiene una estructura <b>sem_undo</b> por proceso para
+cada semaforo modificado por el proceso con parametro "undo". Estas
+estructuras están vacías a la terminación de un proceso. Una causa
+de insatisfaccion con el mecanismo "undo" es que no es compatible
+con la noción de tener un conjunto atomico de operacionnes en un
+vector de semaforos. La llamada "undo" para un vector y cada
+semaforo en este deben ser acumuladas en varias llamadas
+<b>semopt</b> Debe pasar un proceso al estado dormido cuando ha
+finalizado, o debe deshacer todas las operaciones realizadas con el
+parametro ? <b>IPC_NOWAIT</b> Actualmente estas operaciones "undo"
+que se invocan son ejecutadas inmediatament e, y aquellas que
+requieren una espera son ignoradas en silencio. Luego el uso
+correcto del "undo" esta garantizado solo con semaforos de tipo pri
+vado. <a id="lbAI"> </a> 
+</p><h2>COMPATIBLE CON</h2><p>
+
+SVr4, SVID. SVr4 documenta las condiciones de error adicionales
+EINVAL, EFBIG, ENOSPC. <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b><p>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semctl">semctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semget">semget</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINTAXIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">ANUNCIA</a></dt>
+
+<dt><a href="#lbAH">FALLOS</a></dt>
+
+<dt><a href="#lbAI">COMPATIBLE CON</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of UNIX</title></head><body><p>
+  
+</p><h1>UNIX</h1><p>
+
+Section: Manual del Programador de Linux (7)<br />
+Updated: 7 mayo 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+unix, PF_UNIX, AF_UNIX, PF_LOCAL, AF_LOCAL - Conectores para la
+comunicación local entre procesos. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/un.h">sys/un.h</a>&gt;</b><p><i>unix_socket</i> <b>= socket(PF_UNIX, type, 0);</b><br /><i>error</i> <b>= socketpair(PF_UNIX, type, 0, int
+*</b><i>sv</i><b>);</b></p><p><a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La familia de conectores <b>PF_UNIX</b> (también conocida como
+<b>PF_LOCAL</b>) se usa para comunicar procesos en la misma máquina
+de manera eficiente. Los conectores Unix pueden ser o bien anónimos
+(creados mediante <b><a href="http://localhost/cgi-bin/man/man2html?2+socketpair">socketpair</a></b>(2))
+o bien estar asociados con un fichero de tipo conector. Linux
+también soporta un espacio de nombres abstracto que es
+independiente del sistema de ficheros. 
+</p><p>Los tipos válidos son <b>SOCK_STREAM</b> para un conector
+orientado a conexión y <b>SOCK_DGRAM</b> para un conector orientado
+a datagramas que conserva las fronteras entre los mensajes. Los
+conectores Unix siempre son fiables y no reordenan los
+datragramas.</p><p>Los conectores Unix soportan el paso de descriptores de fichero
+o credenciales de proceso a otros procesos, como datos auxiliares a
+los datagramas.</p><p><a id="lbAE"> </a></p><h2>FORMATO DE LAS DIRECCIONES</h2><p>
+
+Una dirección Unix se define como un nombre de fichero en el
+sistema de fichero o como una cadena única en el espacio de nombres
+abstracto. Los conectores creados mediante <b><a href="http://localhost/cgi-bin/man/man2html?2+socketpair">socketpair</a></b>(2)
+son anónimos. Para conectores no anónimos la dirección del destino
+se puede configurar usando <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2).
+La dirección local se puede configurar usando <b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b>(2).
+Cuando un conector se conecta y no tiene todavía una dirección
+local, se genera automáticamente una dirección única en el espacio
+de nombres abstracto. 
+</p><dl compact="compact"><dd>
+<pre>
+#define UNIX_PATH_MAX   108
+
+
+struct sockaddr_un {
+    sa_family_t  sun_family;              /* AF_UNIX */
+    char         sun_path[UNIX_PATH_MAX]; /* nombre de la ruta */
+};
+</pre>
+</dd>
+</dl><p><b>sun_family</b> siempre contiene <b>AF_UNIX</b>.
+<b>sun_path</b> contiene el nombre de ruta (terminado en cero) del
+conector en el sistema de ficheros. Si <b>sun_path</b> comienza con
+un byte cero se refiere al espacio de nombres abstracto mantenido
+por el módulo del protocolo Unix. La dirección del conector en este
+espacio de nombres viene dada por el resto de los bytes en
+<b>sun_path</b>. Dese cuenta que los nombres en el espacio de
+nombres abstracto no terminan en cero.</p><p><a id="lbAF"> </a></p><h2>OPCIONES DE LOS CONECTORES</h2><p>
+
+Por razones históricas estas opciones de los conectores se
+especifican con un tipo SOL_SOCKET, aunque sean específicas de
+PF_UNIX. Se pueden configurar con <b><a href="http://localhost/cgi-bin/man/man2html?2+setsockopt">setsockopt</a></b>(2)
+y leer con <b><a href="http://localhost/cgi-bin/man/man2html?2+getsockopt">getsockopt</a></b>(2)
+especificando SOL_SOCKET como familia del conector. 
+</p><dl compact="compact"><dt><b>SO_PASSCRED</b></dt>
+
+<dd>Habilita la recepción de las credenciales del proceso emisor en
+un mensaje auxiliar. Cuando esta opción está activa y el conector
+no está conectado aún, se genera automáticamente un nombre único en
+el espacio de nombres abstracto. Espera una bandera booleana
+entera.</dd>
+</dl><a id="lbAG"> </a><h2>MENSAJES AUXILIARES</h2><p>
+
+Por razones históricas, estos tipos de mensajes auxiliares se
+especifican con un tipo SOL_SOCKET, aunque son específicos de
+PF_UNIX. Para enviarlos, asigne al campo <b>cmsg_level</b> de la
+estructura <b>cmsghdr</b> el valor SOL_SOCKET y al campo
+<b>cmsg_type</b> el tipo. Para más información, vea <b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b>(3).
+
+</p><dl compact="compact"><dt><b>SCM_RIGHTS</b></dt>
+
+<dd>Enviar o recibir un conjunto de descriptores de fichero
+abiertos a/desde otro proceso. La parte de datos contiene un array
+de enteros con los descriptores de fichero. Los descriptores de
+fichero pasados se comportan como si hubieran sido creados con
+<b><a href="http://localhost/cgi-bin/man/man2html?2+dup">dup</a></b>(2).</dd>
+
+<dt><b>SCM_CREDENTIALS</b></dt>
+
+<dd>Enviar o recibir credenciales Unix. Esto se puede usar para
+autenticación. Las credenciales se pasan como un mensaje auxiliar
+<b>struct ucred</b>. 
+<dl compact="compact"><dd>
+<pre>
+struct ucred {
+    pid_t  pid;  /* PID del proceso emisor */  
+    uid_t  uid;  /* UID del proceso emisor */ 
+    gid_t  gid;  /* GID del proceso emisor */ 
+};
+</pre>
+</dd>
+</dl><p>El núcleo comprueba las credenciales que el emisor especifíca.
+Un proceso con identificador de usuario efectivo 0 puede
+especificar valores que no coincidan con los suyos. El emisor debe
+especificar su propio identificador de proceso (a menos que posea
+la capacidad <b>CAP_SYS_ADMIN</b>), sus identificador de usuario,
+identificador de usuario efectivo o identificador de usuario de
+conjunto (a menos que posea la capacidad <b>CAP_SETUID</b>) y sus
+identificador de grupo, identificador de grupo efectivo o
+identificador de grupo de conjunto (a menos que posea la capacidad
+<b>CAP_SETGID</b>). Para recibir un mensaje <b>struct ucred</b> la
+opción <b>SO_PASSCRED</b> debe estar activa en el conector.</p>
+</dd>
+</dl><a id="lbAH"> </a><h2>VERSIONES</h2><b>SCM_CREDENTIALS</b><p> y el espacio de nombres abstracto fueron
+introducidos en la versión 2.2 de Linux y no deberían usarse en
+programas transportables. 
+</p><p><a id="lbAI"> </a></p><h2>NOTAS</h2><p>
+
+En la implementación de Linux, los conectores que son visibles en
+el sistema de ficheros respetan los permisos del directorio en el
+que están. Se pueden cambiar sus propietarios, grupos y permisos.
+La creación de un nuevo conector fallará si el proceso no tiene
+permisos de escritura y búsqueda (ejecución) en el directorio en el
+que se crea el conector. La conexión al objeto conector requiere
+permiso de lectura/escritura. Este comportamiento difiere del de
+muchos sistemas derivados de BSD que ignoran los permisos para los
+conectores Unix. Por seguridad, los programas transportables no
+deberían confiar en esta característica. 
+</p><p>Ligar un conector con un nombre de fichero crea un conector en
+el sistema de ficheros que debe ser borrado por el invocador cuando
+no se necesite más (usando <b><a href="http://localhost/cgi-bin/man/man2html?2+unlink">unlink</a></b>(2)).
+Se aplica la semántica habitual de Unix detrás de una operación de
+cierre: el conector puede ser desligado en cualquier instante y
+será finalmente eliminado del sistema de ficheros cuando se cierre
+la última referecia a él.</p><p>Para pasar descriptores de fichero o credenciales necesita
+enviar/leer al menos un byte.</p><p><a id="lbAJ"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>ENOMEM</b></dt>
+
+<dd>No hay suficiente memoria.</dd>
+
+<dt><b>ECONNREFUSED</b></dt>
+
+<dd>Se ha llamado a <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2)
+con un objeto conector que no está escuchando. Esto puede ocurrir
+cuando no existe el conector remoto o el nombre de fichero no es un
+conector.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Se ha pasado un argumento inválido. Una causa común es olvidar
+asignar AF_UNIX al campo sun_type de las direcciones pasadas o que
+el conector se encuentre en un estado inválido para la operación
+aplicada.</dd>
+
+<dt><b>EOPNOTSUPP</b></dt>
+
+<dd>Se ha invocado una operación orientada a conexión sobre un
+conector no orientado a conexión o se ha intentado usar la opción
+de "datos fuera de orden".</dd>
+
+<dt><b>EPROTONOSUPPORT</b></dt>
+
+<dd>El protocolo pasado no es PF_UNIX.</dd>
+
+<dt><b>ESOCKTNOSUPPORT</b></dt>
+
+<dd>Tipo de conector desconocido.</dd>
+
+<dt><b>EPROTOTYPE</b></dt>
+
+<dd>El tipo del conector remoto no coincide con el tipo del
+conector local (SOCK_DGRAM contra SOCK_STREAM)</dd>
+
+<dt><b>EADDRINUSE</b></dt>
+
+<dd>La dirección local seleccionada ya está en uso o el objeto
+conector del sistema de ficheros ya existe.</dd>
+
+<dt><b>EISCONN</b></dt>
+
+<dd>Se ha llamado a <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2)
+sobre un conector ya conectado o se ha especificado una dirección
+de destino en un conector conectado.</dd>
+
+<dt><b>ENOTCONN</b></dt>
+
+<dd>La operación del conector necesita una dirección de destino
+pero el conector no está conectado.</dd>
+
+<dt><b>ECONNRESET</b></dt>
+
+<dd>Se ha cerrado inesperadamente el conector remoto.</dd>
+
+<dt><b>EPIPE</b></dt>
+
+<dd>Se ha cerrado el conector remoto de un conector orientado a
+conexión. Si se ha activado, también se enviará una señal
+<b>SIGPIPE</b>. Esto se puede evitar pasando la opción
+<b>MSG_NOSIGNAL</b> a <b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2)
+o a <b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b>(2).</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La dirección de memoria de usuario no es válida.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El emisor ha pasado credenciales inválidas en <b>struct
+ucred</b>.</dd>
+</dl><p>La capa de conectores genérica, o el sistema de ficheros al
+generar un objeto conector en el sistema de fichero, pueden
+producir otros errores. Vea las páginas de manual adecuadas para
+más información. <a id="lbAK"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socketpair">socketpair</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7)
+<a id="lbAL"> </a> 
+</p><h2>CREDITOS</h2><p>
+
+Esta página de manual fue escrita por Andi Kleen. 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">FORMATO DE LAS DIRECCIONES</a></dt>
+
+<dt><a href="#lbAF">OPCIONES DE LOS CONECTORES</a></dt>
+
+<dt><a href="#lbAG">MENSAJES AUXILIARES</a></dt>
+
+<dt><a href="#lbAH">VERSIONES</a></dt>
+
+<dt><a href="#lbAI">NOTAS</a></dt>
+
+<dt><a href="#lbAJ">ERRORES</a></dt>
+
+<dt><a href="#lbAK">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAL">CREDITOS</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:29 GMT, January 22, 2005
+</p></body></html>

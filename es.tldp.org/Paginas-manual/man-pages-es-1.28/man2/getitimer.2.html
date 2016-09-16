@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of GETITIMER</title></head><body><p>
+  
+</p><h1>GETITIMER</h1><p>
+
+Section: Manual del programador de Linux (2)<br />
+Updated: 5 agosto 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+getitimer, setitimer - obtiene/asigna el valor de un temporizador
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><dl compact="compact"><dt><b>#include &lt;<a href="file:/usr/include/sys/time.h">sys/time.h</a>&gt;</b><br /></dt>
+
+<dt><b>int getitimer(int</b> <i>which</i><b>,</b> <b>struct
+itimerval</b> <b>*</b><i>value</i><b>);</b></dt>
+
+<dt><b>int setitimer(int</b> <i>which</i><b>,</b> <b>const struct
+itimerval</b> <b>*</b><i>value</i><b>,</b> <b>struct itimerval</b>
+<b>*</b><i>ovalue</i><b>);</b></dt>
+</dl><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><dl><dd>El sistema proporciona a cada proceso 3 temporizadores, los
+cuales se decrementan en distintas escalas de tiempo. Cuando ha
+pasado el intervalo de tiempo definido en el temporizador, se envía
+una señal al proceso, y el temporizador (potencialmente) vuelve a
+empezar.</dd>
+</dl><dl compact="compact"><dt><b>ITIMER_REAL</b></dt>
+
+<dd>se decrementa en tiempo real, y envía <b>SIGALRM</b> al
+expirar.</dd>
+
+<dt><b>ITIMER_VIRTUAL</b></dt>
+
+<dd>se decrementa solo cuando el proceso esta ejecutándose, y envía
+<b>SIGVTALRM</b> al expirar.</dd>
+
+<dt><b>ITIMER_PROF</b></dt>
+
+<dd>se decrementa tanto cuando el proceso esta ejecutándose como
+cuando el sistema esta trabajando en nombre del proceso.<br />
+ Asociado con <b>ITIMER_VIRTUAL</b>, este temporizador suele usarse
+para analizar el tiempo consumido por la aplicación en el espacio
+de usuario y en espacio del nucleo <b>SIGPROF</b> es enviado al
+expirar.</dd>
+</dl><p>Los valores del temporizador estan definidos en los siguientes
+tipos de datos:</p><dl compact="compact"><dd>
+<pre>
+struct itimerval {
+    struct timeval it_interval; /* valor próximo */
+    struct timeval it_value;    /* valor actual */
+};
+struct timeval {
+    long tv_sec;                /* segundos */
+    long tv_usec;               /* microsegundos */
+};
+</pre>
+</dd>
+</dl><p><b><a href="http://localhost/cgi-bin/man/man2html?2+Getitimer">Getitimer</a></b>(2)
+rellena la estructura indicada por <i>value</i> con el valor actual
+para el temporizador especificado por <i>which</i> (uno de estos:
+<b>ITIMER_REAL</b>, <b>ITIMER_VIRTUAL</b>, o <b>ITIMER_PROF</b>).
+El elemento <b>it_value</b> es inicializado a la cantidad de tiempo
+que le falta al temporizador, o cero si el temporizador esta
+deshabilitado. De forma similar, <b>it_interval</b> es iniciazliado
+a un valor por defecto. <b><a href="http://localhost/cgi-bin/man/man2html?2+Setitimer">Setitimer</a></b>(2)
+inicializa el temporizador especificado al valor en <i>value</i>.
+Si <i>ovalue</i> no es cero, el antiguo valor del temporizador es
+almacenado alli.</p><p>Los temporizadore se decrementan desde <i>it_value</i> a cero,
+generan una señal, y se inicializan a <i>it_interval</i>. Un
+temporizador al que se le asigna el valor cero (<i>it_value</i> es
+cero o el temporizador expira y <i>it_interval</i> es cero)
+finaliza.</p><p><i>tv_sec</i> y <i>tv_usec</i> son significativos en la
+determinación de la duración del temporizador.</p><p>Los temporizadores nunca expiran antes del tiempo especificado,
+lo hacen un tiempo constante poco después, dependiente de la
+resolución del temporizador del sistema (actualmente 10ms). En el
+momento de la expiración, una señal será generada y el temporizador
+será inicializado. Si el temporizador expira mientrás el proceso
+esta activo (siempre cierto para <b>ITIMER_VIRT</b>) la señal será
+enviada inmediatamente al generarse. De otra modo el envio será
+aplazado hasta un tiempo después dependiente de la carga de trabajo
+del sistema.</p><p><a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, devuelve 0. En caso de error, devuelve , -1 y
+<i>errno</i> es asignada apropiadamente. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EFAULT</b></dt>
+
+<dd><i>value</i> o <i>ovalue</i> no son punteros válidos.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd><i>which</i> no es uno de <b>ITIMER_REAL</b>,
+<b>ITIMER_VIRT</b>, o <b>ITIMER_PROF</b>.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+SVr4, 4.4BSD (Esta llamada al sistema apareció por primera vez en
+4.2BSD). <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+gettimeofday">gettimeofday</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sigaction">sigaction</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b>(2).
+<a id="lbAI"> </a> 
+</p><h2>FALLOS</h2><p>
+
+En Linux, la generación y envio de una señal son acciones
+distintas, y para cada señal solo se permite un evento. Es, por lo
+tanto, posible que en condiciones extremas de sobrecarga,
+<b>ITIMER_REAL</b> expire antes de que la señal de una anterior
+expiración haya sido enviada. La segunda señal, en esta situación,
+será perdida. 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAI">FALLOS</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

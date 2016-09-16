@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of CLONE</title></head><body><p>
+  
+</p><h1>CLONE</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 25 Abril 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+__clone - crea un proceso hijo <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sched.h">sched.h</a>&gt;</b><p><b>int __clone(int (*</b><i>fn</i><b>) (void
+*</b><i>arg</i><b>), void *</b><i>child_stack</i><b>, int</b>
+<i>flags</i><b>, void *</b><i>arg</i><b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>__clone</b><p> crea un nuevo proceso como lo hace <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2).
+A diferencia de <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+<b>__clone</b> permite al proceso hijo compartir partes de su
+contexto de ejecución con su proceso padre, tales como el espacio
+de memoria, la tabla de descriptores de fichero y la tabla de
+manejadores de señal. El principal uso de <b>__clone</b> es para
+implementar los hilos: múltiples hilos de control en un programa
+que se ejecutan concurrentemente en un espacio de memoria
+compartido. 
+</p><p>Cuando se crea el proceso hijo, éste ejecuta la función
+<i>fn</i>(<i>arg</i>). El argumento <i>fn</i> es un puntero a una
+función que es ejecutada por el proceso hijo al comienzo de su
+ejecución. El argumento <i>arg</i> se pasa a la función
+<i>fn</i>.</p><p>Cuando la función <i>fn</i>(<i>arg</i>) regresa, el proceso hijo
+termina. El entero devuelto por <i>fn</i> es el código de salida
+del proceso hijo. El proceso hijo también puede terminar
+explícitamente ejecutando <b><a href="http://localhost/cgi-bin/man/man2html?1+exit">exit</a></b>(1)
+o después de recibir una señal fatal.</p><p>El argumento <i>child_stack</i> indica la posición de la pila
+utilizada por el proceso hijo. Aunque los procesos padre e hijo
+pueden compartir la memoria, no es posible, en general, para el
+proceso hijo ejecutarse usando la misma pila que el proceso padre.
+Por tanto, el proceso padre debe preparar un área de memoria para
+la pila del hijo y pasar un puntero a dicha área a <b>__clone</b>.
+Las pilas crecen hacia abajo en todos los procesadores en los que
+se ejecuta Linux (excepto en el procesador HP PA), por lo que
+<i>child_stack</i> apunta normalmente a la dirección más alta de la
+zona de memoria preparada para la pila del hijo.</p><p>El byte bajo de <i>flags</i> contiene el número de la señal
+enviada al padre cuando el hijo muere. <i>flags</i> puede también
+ser operado con un OR a nivel de bits (bitwise or) con una o varias
+de las siguientes constantes, para así especificar qué van a
+compartir los procesos padre e hijo:</p><dl compact="compact"><dt><b>CLONE_VM</b></dt>
+
+<dd>Si se pone <b>CLONE_VM</b>, los procesos padre e hijo se
+ejecutan en el mismo espacio de memoria. En particular, la
+escrituras de memoria realizadas por el proceso padre o por el
+proceso hijo también son visibles en el otro proceso. Además,
+cualquier asociación o desasociación de memoria realizada con <b><a href="http://localhost/cgi-bin/man/man2html?2+mmap">mmap</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+munmap">munmap</a></b>(2)
+por el proceso padre o hijo también afecta al otro proceso. 
+<p>Si no se pone <b>CLONE_VM</b>, el proceso hijo se ejecuta en una
+copia particular del espacio de memoria del padre en el momento de
+ejecutar <b>__clone</b>. Las escrituras de memoria o la
+asociación/desasociación de fichero realizada por uno de los
+procesos no afecta al otro, como en el caso de <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2).</p>
+</dd>
+
+<dt><b>CLONE_FS</b></dt>
+
+<dd>Si se pone <b>CLONE_FS</b>, los procesos padre e hijo comparten
+la misma información del sistema de ficheros. Ésta incluye la raíz
+del sistema de ficheros, el directorio de trabajo actual y el valor
+de umask. Cualquier llamada a <b><a href="http://localhost/cgi-bin/man/man2html?2+chroot">chroot</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+chdir">chdir</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+umask">umask</a></b>(2)
+realizada por el proceso padre o hijo también afecta al otro
+proceso. 
+<p>Si no se pone <b>CLONE_FS</b>, el proceso hijo trabaja con una
+copia de la información del sistema de ficheros del proceso padre
+en el momento de ejecutar <b>__clone</b>. Las llamadas a <b><a href="http://localhost/cgi-bin/man/man2html?2+chroot">chroot</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+chdir">chdir</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+umask">umask</a></b>(2)
+realizadas después por uno de los procesos no afectan al otro.</p>
+</dd>
+
+<dt><b>CLONE_FILES</b></dt>
+
+<dd>Si se pone <b>CLONE_FILES</b>, los procesos padre e hijo
+comparten la misma tabla de descriptores de fichero. Los
+descriptores de fichero siempre se refieren a los mismos ficheros
+en el padre y en el proceso hijo. Cualquier descriptor de fichero
+creado por el proceso padre o por el proceso hijo también es válido
+en el otro proceso. De igual forma, si uno de los procesos cierra
+un descriptor de fichero o cambia sus banderas (flags) asociadas,
+el otro proceso también se verá afectado. 
+<p>Si no se pone <b>CLONE_FILES</b>, el proceso hijo hereda una
+copia de todos los descriptores de fichero abiertos en el proceso
+padre en el momento de ejecutar <b>__clone</b>. Las operaciones
+sobre los descriptores de fichero realizadas después por uno de los
+procesos padre o hijo no afectan al otro.</p>
+</dd>
+
+<dt><b>CLONE_SIGHAND</b></dt>
+
+<dd>Si se pone <b>CLONE_SIGHAND</b>, los procesos padre e hijo
+comparten la misma tabla de manejadores de señal. Si el proceso
+padre o hijo llama a <b><a href="http://localhost/cgi-bin/man/man2html?2+sigaction">sigaction</a></b>(2)
+para cambiar el comportamiento asociado a una señal, el
+comportamiento también se cambia en el otro proceso. Sin embargo,
+los procesos padre e hijo todavía tienen diferentes máscaras de
+señales y conjuntos de señales pendientes. Por tanto, uno de ellos
+puede bloquear o desbloquear algunas señales usando <b><a href="http://localhost/cgi-bin/man/man2html?2+sigprocmask">sigprocmask</a></b>(2)
+sin afectar al otro proceso. 
+<p>Si no se pone <b>CLONE_SIGHAND</b>, el proceso hijo hereda una
+copia de los manejadores de señal del proceso padre en el momento
+de ejecutar <b>__clone</b>. Las llamadas a <b><a href="http://localhost/cgi-bin/man/man2html?2+sigaction">sigaction</a></b>(2)
+realizadas después por uno de los procesos no tendrán efecto sobre
+el otro proceso.</p>
+</dd>
+
+<dt><b>CLONE_PID</b></dt>
+
+<dd>Si se pone <b>CLONE_PID</b>, se crea el proceso hijo con el
+mismo identificador de proceso que el proceso padre. 
+<p>Si no se pone <b>CLONE_PID</b>, el proceso hijo posee un
+identificador de proceso único, distinto del identificador del
+padre.</p>
+
+<p><b>.SH</b>VALOR DEVUELTO En caso de éxito, se devuelve el PID
+del hijo en el hilo de ejecución del padre. En caso de fallo, se
+devuelve -1 en el contexto del padre, no se creará ningún proceso
+hijo y se asignará a la variable <i>errno</i> un valor
+apropiado.</p>
+</dd>
+</dl><a id="lbAE"> </a><h2>ERRORES</h2><dl compact="compact"><dt><b>EAGAIN</b></dt>
+
+<dd>Se están ejecutando ya demasiados procesos.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd><b>__clone</b> no puede reservar suficiente memoria para
+obtener una estructura de tarea (task structure) para el hijo o
+para copiar aquellas partes del contexto del padre que necesitan
+ser copiadas.</dd>
+</dl><a id="lbAF"> </a><h2>FALLOS</h2><p>Desde la versión 2.1.97 del núcleo, no se debe usar la bandera
+<b>CLONE_PID</b> ya que otras partes del núcleo y la mayoría del
+software del sistema todavía asumen que los identificadores de
+proceso son únicos.</p><p>No hay una entrada para <b>__clone</b> en la versión 5 de libc.
+libc 6 (o sea, glibc 2) proporciona una llamada <b>__clone</b> tal
+como la que se ha descrito en esta página de manual.</p><p><a id="lbAG"> </a></p><h2>CONFORME A</h2><p>
+
+La llamada <b>__clone</b> es específica de Linux y no debería
+usarse en aquellos programas que pretendan se portables. Para
+programar aplicaciones con hilos (múltiples hilos de control en el
+mismo espacio de memoria) es mejor usar una biblioteca que
+implemente la API de hilos POSIX 1003.1c, como la biblioteca
+LinuxThreads. Vea <b>pthread_create</b>(3thr). 
+</p><p>Esta página de manual se corresponde con los núcleos 2.0.x y
+2.1.x y con las versiones 2.0.x de glibc.</p><p><a id="lbAH"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b><p>(2),
+<b>pthread_create</b>(3thr) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">ERRORES</a></dt>
+
+<dt><a href="#lbAF">FALLOS</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:19 GMT, January 22, 2005
+</p></body></html>

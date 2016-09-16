@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RECNO</title></head><body><p>
+  
+</p><h1>RECNO</h1><p>
+
+Section: C Library Functions (3)<br />
+Updated: 18 Agosto 1994<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+recno - método de acceso a bases de datos con registros numerados
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;
+#include &lt;<a href="file:/usr/include/db.h">db.h</a>&gt;
+</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+La ruinta <i>dbopen</i> es la interfaz de biblioteca para los
+ficheros de bases de datos. Uno de los formatos de fichero
+soportados es el de los ficheros con registros numerados (que
+llamaremos regnum). La descripción general de los métodos de acceso
+a bases de datos se encuentra en la página de manual de <i><a href="http://localhost/cgi-bin/man/man2html?3+dbopen">dbopen</a></i>(3);
+esta página de manual sólo describe información específica de
+regnum. 
+</p><p>La estructura de datos de registros numerados está formada por
+registros de longitud o fija o variable almacenados en un formato
+de fichero plano, accedido por el número lógico de registro. La
+existencia del registro número cinco implica la existencia de los
+registros del 1 al 5, y la eliminación del registro número 1 hace
+que el registro número 5 sea renumerado al registro número 4, de la
+misma manera que el cursor se desplazará un registro hacia abajo si
+se encuentra posicionado después del registro número 1.</p><p>La estructura de datos específica del método de acceso regnum
+proporcionada a <i>dbopen</i> se define en el fichero cabecera
+&lt;<a href="file:/usr/include/db.h">db.h</a>&gt; como sigue:</p><p>typedef struct {</p><dl compact="compact"><dd>u_long flags;<br />
+ u_int cachesize;<br />
+ u_int psize;<br />
+ int lorder;<br />
+ size_t reclen;<br />
+ u_char bval;<br />
+ char *bfname;</dd>
+</dl><p>
+
+} RECNOINFO; 
+</p><p>Los elementos de esta estructura se definen de la siguiente
+manera:</p><dl compact="compact"><dt>flags</dt>
+
+<dd>El valor de las opciones se especifica mediante una operación
+<i>O</i>-lógica de cualquiera de los siguientes valores: 
+<dl compact="compact"><dd>
+<dl compact="compact"><dt>R_FIXEDLEN</dt>
+
+<dd>Los registros son de longitud fija, no delimitados por bytes.
+El elemento <i>reclen</i> de la estructura especifica la longitud
+del registro y el elemento <i>bval</i> de la estructura se usa como
+carácter de relleno. Todos los registros, insertados en la base de
+datos, cuya longitud es más pequeña que <i>reclen</i> bytes, se
+completan automáticamente con el carácter <i>bval</i>.</dd>
+
+<dt>R_NOKEY</dt>
+
+<dd>En la interfaz especificada por <i>dbopen</i>, la recuperación
+secuencial de registros rellena tanto la clave del invocador como
+las estructuras de datos. Si se especifica la opción R_NOKEY, no se
+necesitarán las rutinas con <i>cursor</i> para rellenar la
+estructura de la clave. Esto permite a las aplicaciones recuperar
+registros al final de los ficheros sin leer todos los registros que
+intervienen.</dd>
+
+<dt>R_SNAPSHOT</dt>
+
+<dd>Esta opción exige que se tome una instantanea del fichero
+cuando se llame a <i>dbopen</i>, en lugar de permitir que cualquier
+registro sin modificar sea leído del fichero original.</dd>
+</dl></dd>
+</dl></dd>
+
+<dt>cachesize</dt>
+
+<dd>Tamaño máximo sugerido, en bytes, de la memoria caché. Este
+valor <b>sólo</b> es consultivo y el método de acceso reservará más
+memoria antes que fallar. Si <i>cachesize</i> es 0 (no se
+especifica un tamaño) se usa una caché por defecto.</dd>
+
+<dt>psize</dt>
+
+<dd>El método de acceso regnum almacena las copias residentes en
+memoria de sus registros en un árbolB (btree). Este valor es el
+tamaño (en bytes) de las páginas usadas para nodos del árbol. Si
+<i>psize</i> es 0 (no se especifica un tamaño de página) se
+selecciona un tamaño de página basado en el tamaño de bloque de E/S
+del sistema de ficheros subyacente. Véase <i><a href="http://localhost/cgi-bin/man/man2html?3+btree">btree</a></i>(3)
+para más información.</dd>
+
+<dt>lorder</dt>
+
+<dd>El orden de los bytes para los enteros de los metadatos
+almacenados en la base de datos. El número debería representar el
+orden como un entero; por ejemplo, el orden `el byte de mayor peso
+el último' (orden ascendente) sería el número 4321. Si
+<i>lorder</i> es 0 (no se especifica un orden) se utiliza el orden
+del anfitrión actual.</dd>
+
+<dt>reclen</dt>
+
+<dd>El tamaño de un registro de tamaño fijo.</dd>
+
+<dt>bval</dt>
+
+<dd>El byte delimitador a usar para marcar el final de un registro
+para los registros de tamaño variable, y el carácter de relleno
+para los registros de tamaño fijo. Si no se especifica un valor, se
+utilizan caracteres `nueva línea' (``\n'') para marcar el final de
+los registros de longitud variable y los registros de longitud fija
+se completan con espacios.</dd>
+
+<dt>bfname</dt>
+
+<dd>El método de acceso regnum almacena las copias residentes en
+memoria de sus registros en un árbolB. Si bfname no es NULL,
+especifica el nombre de un fichero árbolB, como si se especificara
+el nombre de fichero para una llamadada a dbopen de un fichero
+árbolB.</dd>
+</dl><p>La parte de datos del par clave/datos usado por el método de
+acceso regnum es la misma que la de los otros métodos de acceso. La
+clave es diferente. El campo <i>data</i> de la clave debería ser un
+puntero a una posición de memoria del tipo <i>recno_t</i>, tal y
+como se define en el fichero cabecera &lt;<a href="file:/usr/include/db.h">db.h</a>&gt;. Normalmente, este tipo
+es el tipo entero sin signo más grande disponible para la
+implementación. El campo <i>size</i> de la clave debería ser el
+tamaño de ese tipo.</p><p>Ya que puede no haber ningún metadato asociado con los ficheros
+subyacentes del método de acceso regnum, cualquier cambio realizado
+a los valores por defecto (por ejemplo, a la longitud de los
+registros de tamaño fijo o al valor del separador de bytes) se debe
+especificar explícitamente cada vez que se abra el fichero.</p><p>En la interfaz especificada por <i>dbopen</i>, el uso de la
+interfaz <i>put</i> para crear un nuevo registro provocará la
+creación de varios registros vacíos si el número de registro es
+mayor, en más de uno, que el número del mayor registro actualmente
+en la base de datos. <a id="lbAE"> </a></p><h2>ERRORES</h2><p>
+
+Las rutinas del método de acceso <i>regnum</i> pueden fallar y
+asignar a <i>errno</i> cualquiera de los errores especificados para
+la rutina de biblioteca <i><a href="http://localhost/cgi-bin/man/man2html?3+dbopen">dbopen</a></i>(3)
+o el siguiente: 
+</p><dl compact="compact"><dt>[EINVAL]</dt>
+
+<dd>Se ha intentado añadir un registro a una base de datos de
+registros de tamaño fijo que s demasiado grande para caber.</dd>
+</dl><a id="lbAF"> </a><h2>VÉASE TAMBIÉN</h2><i><a href="http://localhost/cgi-bin/man/man2html?3+btree">btree</a></i><p>(3)
+<i><a href="http://localhost/cgi-bin/man/man2html?3+dbopen">dbopen</a></i>(3),
+<i><a href="http://localhost/cgi-bin/man/man2html?3+hash">hash</a></i>(3),
+<i><a href="http://localhost/cgi-bin/man/man2html?3+mpool">mpool</a></i>(3),
+
+</p><p><i>Document Processing in a Relational Database System</i>,
+Michael Stonebraker, Heidi Stettner, Joseph Kalash, Antonin
+Guttman, Nadene Lynn, Memorandum No. UCB/ERL M82/32, May 1982. <a id="lbAG"> </a></p><h2>FALLOS</h2><p>
+
+Sólo se soportan los órdenes de bytes ascedente (el byte de mayor
+peso el último) y descendente (el byte de menor peso el último). 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">ERRORES</a></dt>
+
+<dt><a href="#lbAF">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAG">FALLOS</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:26 GMT, January 22, 2005
+</p></body></html>

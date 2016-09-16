@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RESOLVER</title></head><body><p>
+  
+</p><h1>RESOLVER</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 21 May 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+res_init, res_query, res_search, res_querydomain, res_mkquery,
+res_send, dn_comp, dn_expand - rutinas "resolver" (de resolución)
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/netinet/in.h">netinet/in.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/arpa/nameser.h">arpa/nameser.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/resolv.h">resolv.h</a>&gt;</b>
+<b>extern struct state _res;</b>
+
+<b>int res_init(void);</b>
+
+<b>int res_query(const char *</b><i>dname</i><b>, int</b> <i>class</i><b>, int</b> <i>type</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>unsigned char *</b><i>answer</i><b>, int</b> <i>anslen</i><b>);</b>
+&lt;/dl&gt;
+
+<b>int res_search(const char *</b><i>dname</i><b>, int</b> <i>class</i><b>, int</b> <i>type</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>unsigned char *</b><i>answer</i><b>, int</b> <i>anslen</i><b>);</b>
+&lt;/dl&gt;
+
+<b>int res_querydomain(const char *</b><i>name</i><b>, const char *</b><i>domain</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>int</b> <i>class</i><b>, int</b> <i>type</i><b>, unsigned char *</b><i>answer</i><b>, int</b> <i>anslen</i><b>);</b>
+&lt;/dl&gt;
+
+<b>int res_mkquery(int</b> <i>op</i><b>, const char *</b><i>dname</i><b>, int</b> <i>class</i><b>, int</b> <i>type</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>char *</b><i>data</i><b>, int</b> <i>datalen</i><b>, struct rrec *</b><i>newrr</i><b>, char *</b><i>buf</i><b>,</b>
+<b>int</b> <i>buflen</i><b>);</b>
+&lt;/dl&gt;
+
+<b>int res_send(const char *</b><i>msg</i><b>, int</b> <i>msglen</i><b>, char *</b><i>answer</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>int</b> <i>anslen</i><b>);</b>
+&lt;/dl&gt;
+
+<b>int dn_comp(unsigned char *</b><i>exp_dn</i><b>, unsigned char *</b><i>comp_dn</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>int</b> <i>length</i><b>, unsigned char **</b><i>dnptrs</i><b>, unsigned char *</b><i>exp_dn</i><b>,</b>
+<b>unsigned char **</b><i>lastdnptr</i><b>);</b>
+&lt;/dl&gt;
+
+<b>int dn_expand(unsigned char *</b><i>msg</i><b>, unsigned char *</b><i>eomorig</i><b>,</b>
+&lt;dl&gt;&lt;dt&gt;&lt;dd&gt;<b>unsigned char *</b><i>comp_dn</i><b>, unsigned char *</b><i>exp_dn</i><b>, int</b> <i>length</i><b>);</b>
+&lt;/dl&gt;
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Estas funciones hacen peticiones e interpretan las respuestas de
+los servidores de nombres de dominio de Internet. 
+</p><p>La función <b>res_init()</b> lee los ficheros de configuración
+(ver resolv+(8)) para conseguir el nombre del dominio por defecto,
+orden de búsqueda y la dirección(es) del servidor(es) de nombres.
+Si no se proporciona servidor, se intenta con el host local. Si no
+se proporciona dominio, se usa el asociado al host local. Este
+puede sobreescribirse con la variable de entorno LOCALDOMAIN.
+Normalmente <b>res_init()</b> es ejecutado por la primera llamada a
+una de las otras funciones.</p><p>La función <b>res_query()</b> pide al servidor de nombres el
+nombre de dominio completamente cualificado <i>name</i> de
+<i>type</i> y <i>class</i> especificados. La respuesta se deja en
+el buffer <i>answer</i> de longitud <i>anslen</i> proporcionado por
+quien realiza la llamada.</p><p>La función <b>res_search()</b> hace una petición y espera la
+respuesta como <b>res_query()</b>, pero además implementa las
+reglas por defecto y las de búsqueda controladas por RES_DEFNAMES y
+RES_DNSRCH (ver más abajo la descripción de las opciones de
+<i>_res</i>).</p><p>La función <b>res_querydomain()</b> hace una petición utilizando
+<b>res_query()</b> en la concatenación de <i>name</i> y
+<i>domain</i>.</p><p>Las siguientes son funciones de un nivel más bajo utilizadas por
+<b>res_query()</b>.</p><p>La función <b>res_mkquery()</b> construye un mensaje de petición
+en <i>buf</i> de longitud <i>buflen</i> para el nombre de dominio
+<i>dname</i>. El tipo de petición <i>op</i> normalmente es QUERY,
+pero puede ser cualquiera de los tipos definidos en <i>&lt;<a href="file:/usr/include/arpa/nameser.h">arpa/nameser.h</a>&gt;</i>.
+<i>newrr</i> actualmente no se usa.</p><p>La función <b>res_send()</b> envía una petición preformateada,
+dada en <i>msg</i> de longitud <i>msglen</i> y devuelve la
+respuesta en <i>answer</i> que tiene longitud <i>anslen</i>. Este
+llamará a <b>res_init()</b>, si aún no ha sido llamado.</p><p>La función <b>dn_comp()</b> comprime el nombre de dominio
+<i>exp_dn</i> y lo guarda en el buffer <i>comp_dn</i> de longitud
+<i>length</i>. La compresión usa una matriz de punteros
+<i>dnptrs</i> a nombres previamente comprimidos en el mensaje
+actual. El primero de los punteros apunta al principio del mensaje
+y la lista termina con NULL. El límite de la matriz está
+especificado por <i>lastdnptr</i>. Si <i>dnptr</i> es NULL, los
+nombres de dominio no se comprimen. Si <i>lastdnptr</i> es NULL, la
+lista de etiquetas no se actualiza.</p><p>La función dn_expand() expande el nombre de dominio comprimido
+<i>comp_dn</i> a un nombre de dominio completo, y es puesto en el
+buffer <i>exp_dn</i> de tamaño <i>length</i>. El nombre comprimido
+está contenido en una petición o mensaje de respuesta, y <i>msg</i>
+apunta al principio del mensaje.</p><p>Las rutinas del "resolver" usan la configuración global e
+información del estado contenida en la estructura <i>_res</i>,
+definida en <i>&lt;<a href="file:/usr/include/resolv.h">resolv.h</a>&gt;</i>. El único
+campo que puede manipular normalmente el usuario es
+<i>_res.options</i>. Este campo puede contener un "o (OR) lógico"
+bit a bit de las siguientes opciones:</p><dl compact="compact"><dt><b>RES_INIT</b></dt>
+
+<dd>Cierto si <b>res_init()</b> ha sido llamado.</dd>
+
+<dt><b>RES_DEBUG</b></dt>
+
+<dd>Imprimir mensajes de depuración.</dd>
+
+<dt><b>RES_AAONLY</b></dt>
+
+<dd>Aceptar respuestas autoritativas solamente. <b>res_send()</b>
+continua hasta que encuentra una respuesta autoritativa o devuelve
+un error. [Àún no implementado].</dd>
+
+<dt><b>RES_USEVC</b></dt>
+
+<dd>Usar conexiones TCP para las peticiones, en vez de datagramas
+UDP.</dd>
+
+<dt><b>RES_PRIMARY</b></dt>
+
+<dd>Hacer petición solamente al servidor de nombres de dominio
+primario.</dd>
+
+<dt><b>RES_IGNTC</b></dt>
+
+<dd>Ignorar errores de truncado. No reintentar con TCP. [Aún no
+implementado].</dd>
+
+<dt><b>RES_RECURSE</b></dt>
+
+<dd>Poner a 1 el bit de recursión deseada en las peticiones. La
+recursión es llevada a cabo por el servidor de nombres de dominio,
+no por <b>res_send()</b>. [Activado por defecto].</dd>
+
+<dt><b>RES_DEFNAMES</b></dt>
+
+<dd>Si está puesto a 1, <b>res_search()</b> añadirá el nombre de
+dominio por defecto a los nombres de componentes simples, p.ej.
+aquellos que no contienen punto. [Activado por defecto].</dd>
+
+<dt><b>RES_STAYOPEN</b></dt>
+
+<dd>Usado con RES_USEVC para mantener la conexión TCP abierta entre
+peticiones.</dd>
+
+<dt><b>RES_DNSRCH</b></dt>
+
+<dd>Si está a 1, <b>res_search()</b> buscará nombres de host en el
+dominio actual y en los dominios "padre". Esta opción es usada por
+<b><a href="http://localhost/cgi-bin/man/man2html?3+gethostbyname">gethostbyname</a></b>(3).
+[Activado por defecto].</dd>
+</dl><a id="lbAE"> </a><h2>VALOR REGRESADO</h2><p>
+
+La función <b>res_init()</b> devuelve 0 si hay éxito, o -1 si hubo
+un error. 
+</p><p>Las funciones <b>res_query()</b>, <b>res_search()</b>,
+<b>res_querydomain()</b>, <b>res_mkquery()</b> y <b>res_send()</b>
+devuelven la longitud de la respuesta, o -1 si hubo un error.</p><p>Las funciones <b>dn_comp()</b> y <b>dn_expand()</b> devuelven la
+longitud del nombre comprimido, o -1 si hubo un error. <a id="lbAF"> </a></p><h2>FICHEROS</h2><pre>
+/etc/resolv.conf          fichero de configuración de resolver
+/etc/host.conf            fichero de configuración de resolver
+</pre><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+BSD 4.3 <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+gethostbyname">gethostbyname</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+hostname">hostname</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+named">named</a></b>(8),
+<b>resolv+</b>(8) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR REGRESADO</a></dt>
+
+<dt><a href="#lbAF">FICHEROS</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:25 GMT, January 22, 2005
+</p></body></html>

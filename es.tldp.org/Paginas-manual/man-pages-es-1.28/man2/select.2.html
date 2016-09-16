@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SELECT</title></head><body><p>
+  
+</p><h1>SELECT</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 11 febrero 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+select, FD_CLR, FD_ISSET, FD_SET, FD_ZERO - multiplexación de E/S
+síncrona <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/time.h">sys/time.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><p><b>int select(int</b> <i>n</i><b>, fd_set
+*</b><i>readfds</i><b>, fd_set *</b><i>writefds</i><b>, fd_set
+*</b><i>exceptfds</i><b>, struct timeval
+*</b><i>timeout</i><b>);</b></p><p><b>FD_CLR(int</b> <i>fd</i><b>, fd_set
+*</b><i>set</i><b>);</b><br /><b>FD_ISSET(int</b> <i>fd</i><b>, fd_set
+*</b><i>set</i><b>);</b><br /><b>FD_SET(int</b> <i>fd</i><b>, fd_set
+*</b><i>set</i><b>);</b><br /><b>FD_ZERO(fd_set *</b><i>set</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>select</b><p> espera a que una serie de descriptores de ficheros
+cambien su estado. 
+</p><p>Se miran tres conjuntos independientes de descriptores. Aquéllos
+listados en <i>readfds</i> serán observados para ver si hay
+caracteres que llegan a estar disponibles para lectura, aquéllos en
+<i>writefds</i> serán observados para ver si es correcto escribir
+inmediatamente en ellos, y aquéllos en <i>exceptfds</i> serán
+observados para ver si ocurren excepciones. En caso de éxito, los
+conjuntos se modifican en marcha para indicar qué descriptores
+cambiaron realmente su estado.</p><p>Se proporcionan cuatro macros para manipular los conjuntos.
+<b>FD_ZERO</b> limpiará un conjunto. <b>FD_SET</b> y <b>FD_CLR</b>
+añaden o borran un descriptor dado a o de un conjunto.
+<b>FD_ISSET</b> mira a ver si un descriptor es parte del conjunto;
+esto es útil después de que <b>select</b> regrese.</p><p><i>n</i> es el descriptor con el número más alto en cualquiera
+de los tres conjuntos, más 1.</p><p><i>timeout</i> es un límite superior de la cantidad de tiempo
+transcurrida antes de que <b>select</b> regrese. Puede ser cero,
+causando que <b>select</b> regrese inmediatamente. Si
+<i>timeout</i> es NULL (no hay tiempo de espera), <b>select</b>
+puede bloquear indefinidamente. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, <b>select</b> devuelve el número de descriptores
+contenidos en los conjuntos de descriptores, que puede ser cero si
+el tiempo de espera expira antes de que ocurra algo interesante. En
+caso de error, se devuelve -1, y se pone un valor apropiado en
+<i>errno</i>; los conjuntos y <i>timeout</i> estarán indefinidos,
+así que no confíe en sus contenidos tras un error. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EBADF</b></dt>
+
+<dd>Se ha dado un descriptor de fichero inválido en uno de los
+conjuntos.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>Se ha capturado una señal no bloqueante.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd><i>n</i> es negativo.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd><b>select</b> no ha sido capaz de reservar memoria para las
+tablas internas.</dd>
+</dl><a id="lbAG"> </a><h2>OBSERVACIONES</h2><p>
+
+Hay algún código por ahí que llama a <b>select</b> con los tres
+conjuntos vacíos, <i>n</i> cero, y un <i>timeout</i> distinto de
+cero como una forma transportable y curiosa de dormir con una
+precisión por debajo del segundo. 
+</p><p>En Linux, <i>timeout</i> se modifica para reflejar la cantidad
+de tiempo no dormido; la mayoría de otras implementaciones no hacen
+esto. Esto produce problemas cuando el código de Linux que lee
+<i>timeout</i> se transporta a otros sistemas operativos, y cuando
+se transporta a Linux código que reutiliza una struct timeval para
+varias <b>select</b>s en un bucle sin reinicializarla. Considere
+que <i>timeout</i> está indefinido después de que <b>select</b>
+regrese. <a id="lbAH"> </a></p><h2>EJEMPLO</h2><pre>
+#include &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;
+#include &lt;<a href="file:/usr/include/sys/time.h">sys/time.h</a>&gt;
+#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;
+#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;
+
+int
+main(void)
+{
+    fd_set rfds;
+    struct timeval tv;
+    int valret;
+
+    /* Mirar stdin (df 0) para ver si tiene entrada */
+    FD_ZERO(&amp;rfds);
+    FD_SET(0, &amp;rfds);
+    /* Esperar hasta 5 s */
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+
+    valret = select(1, &amp;rfds, NULL, NULL, &amp;tv);
+    /* ¡No confiar ahora en el valor de tv! */
+
+    if (valret)
+        printf("Los datos ya están disponibles.\n");
+        /* FD_ISSET(0, &amp;rfds) será verdadero */
+    else
+        printf("Ningún dato en 5 segundos.\n");
+
+    return(0);
+}
+</pre><a id="lbAI"> </a><h2>CONFORME A</h2><p>
+
+4.4BSD (la función <b>select</b> apareció por primera vez en
+4.2BSD). Generalmente es transportable a o desde sistemas no-BSD
+que admitan clones de la capa de zócalos de BSD (incluyendo
+variantes System V). Sin embargo, observe que la variante System V
+normalmente pone la variable de espera antes de salir, pero la
+variante BSD no. <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+accept">accept</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+poll">poll</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+read">read</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+recv">recv</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+send">send</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+write">write</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">OBSERVACIONES</a></dt>
+
+<dt><a href="#lbAH">EJEMPLO</a></dt>
+
+<dt><a href="#lbAI">CONFORME A</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

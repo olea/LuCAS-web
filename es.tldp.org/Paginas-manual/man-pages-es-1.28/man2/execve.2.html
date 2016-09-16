@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of EXECVE</title></head><body><p>
+  
+</p><h1>EXECVE</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 3 septiembre 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+execve - ejecuta un programa <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><p><b>int execve (const char *</b><i>filename</i><b>, const char
+*</b><i>argv</i> <b>[], const char *</b><i>envp</i><b>[]);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>execve()</b><p> ejecuta el programa indicado por <i>filename</i>.
+<i>filename</i> debe ser bien un binario ejecutable, bien un guión
+shell (shell script) comenzando con una línea de la forma
+"<b>#!</b> <i>intérprete</i> [arg]". En el segundo caso, el
+intérprete debe ser un nombre de camino válido para un ejecutable
+que no sea él mismo un guión y que será ejecutado como
+<b>intérprete</b> [arg] <i>filename</i>. <br />
+  <i>argv</i> es un array de cadenas de argumentos pasados al nuevo
+programa. <i>envp</i> es un array de cadenas, convencionalmente de
+la forma <b>clave=valor</b>, que se pasan como entorno al nuevo
+programa. Tanto <i>argv</i> como <i>envp</i> deben terminar en un
+puntero nulo. El vector de argumentos y el entorno pueden ser
+accedidos por la función "main" del programa invocado cuando se
+define como <b>int main(int argc, char *argv[], char *envp[])</b>. 
+</p><p><b>execve()</b> no regresa en caso de éxito, y el código, datos,
+bss y la pila del proceso invocador se reescriben con los
+correspondientes del programa cargado. El programa invocado hereda
+el PID del proceso invocador y cualquier descriptor de fichero
+abierto que no se halla configurado para "cerrar en ejecución"
+(close on exec). Las señales pendientes del proceso invocador se
+limpian. Cualquier señal capturada por el proceso invocador es
+devuelta a su comportamiento por defecto.</p><p>Si el programa actual está bajo inspección de ptrace, se le
+enviará una señal <b>SIGTRAP</b> trás la ejecución exitosa de
+<b>execve()</b>.</p><p>Si el bit "set-uid" está activo en el fichero del programa
+indicado por <i>filename</i>, se cambia el ID de usuario efectivo
+del proceso invocador al del propietario del fichero del programa.
+De igual forma, cuando el bit "set-gid" del fichero del programa
+está activo, se cambia el ID del grupo efectivo del proceso
+invocador al del grupo del fichero del programa.</p><p>Si el ejecutable es un ejecutable binario a.out enlazado
+dinámicamente que contiene "stubs" de bibliotecas compartidas, se
+llama al enlazador dinámico de Linux, <i><a href="http://localhost/cgi-bin/man/man2html?8+ld.so">ld.so</a></i>(8),
+al comienzo de la ejecución para traer al núcleo las bibliotecas
+compartidas necesarias y enlazar el ejecutable con ellas.</p><p>Si el ejecutable es un ejecutable ELF enlazado dinámicamente, se
+usa el intérprete especificado en el segmento PT_INTERP para cargar
+las bibliotecas compartidas necesarias. Este intérprete es
+usualmente <i>/lib/ld-linux.so.1</i> para los binarios enlazados
+con la versión 5 de la libc de Linux o <i>/lib/ld-linux.so.2</i>
+para los binarios enlazados con la versión 2 de la libc de GNU.</p><p><a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito <b>execve()</b> no regresa mientras que en caso de
+error el valor devuelto es -1, y a la variable <i>errno</i> se le
+asigna un valor apropiado. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>El fichero o el intérprete de guiones no es un fichero
+regular.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>Se ha denegado el permiso de ejecución para el fichero o el
+intérprete de guiones.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>El sistema de ficheros está montado con la opción
+<i>noexec</i>.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El sistema de ficheros está montado con la opción
+<i>nosuid</i>, el usuario no es el superusuario y el fichero tiene
+activo el bit SUID o SGID.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El proceso está siendo ejecutado paso a paso, el usuario no es
+el superusuario y el fichero tiene activo el bit SUID o SGID.</dd>
+
+<dt><b>E2BIG</b></dt>
+
+<dd>La lista de argumentos es demasiado grande.</dd>
+
+<dt><b>ENOEXEC</b></dt>
+
+<dd>El ejecutable no se encuentra en un formato reconocible, es
+para una arquitectura incorrecta o tiene algún otro error de
+formato que impide su ejecución.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd><i>filename</i> apunta fuera de su espacio de direcciones
+accesible.</dd>
+
+<dt><b>ENAMETOOLONG</b></dt>
+
+<dd><i>filename</i> es demasiado largo.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>El fichero <i>filename</i> no existe o no existe un intérprete
+de guiones o no existe un intérprete ELF.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No hay suficiente memoria disponible en el núcleo.</dd>
+
+<dt><b>ENOTDIR</b></dt>
+
+<dd>Un componente del camino <i>filename</i> o del camino del
+intérprete de guiones o del intérprete ELF no es un
+directorio.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>Se ha denegado el permiso de búsqueda en uno de los componentes
+del camino <i>filename</i> o del camino del intérprete de
+guiones.</dd>
+
+<dt><b>ELOOP</b></dt>
+
+<dd>Se han econtrado demasiados enlaces simbólicos al resolver
+<i>filename</i>, el nombre del intérprete de guiones o el nombre
+del intérprete ELF.</dd>
+
+<dt><b>ETXTBUSY</b></dt>
+
+<dd>Uno o más procesos han abierto el ejecutable para
+escritura.</dd>
+
+<dt><b>EIO</b></dt>
+
+<dd>Se ha producido un error de E/S.</dd>
+
+<dt><b>ENFILE</b></dt>
+
+<dd>Se ha alcanzado el límite del número total de ficheros abiertos
+en el sistema.</dd>
+
+<dt><b>EMFILE</b></dt>
+
+<dd>El proceso ya tiene abiertos el número máximo de fichero.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>El ejecutable ELF tiene más de un segmento PT_INTERP (es decir,
+ha intentado especificar más de un intérprete).</dd>
+
+<dt><b>EISDIR</b></dt>
+
+<dd>El intérprete ELF es un directorio.</dd>
+
+<dt><b>ELIBBAD</b></dt>
+
+<dd>El intérprete ELF no está en un formato reconocible.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+SVr4, SVID, X/OPEN y BSD 4.3. POSIX no documenta el significado de
+#! pero, en cualquier caso, es compatible. SVr4 documenta las
+condiciones de error adicionales EAGAIN, EINTR, ELIBACC, ENOLINK y
+EMULTIHOP; POSIX no documenta las condiciones de error ETXTBSY,
+EPERM, EFAULT, ELOOP, EIO, ENFILE, EMFILE, EINVAL, EISDIR ni
+ELIBBAD. 
+</p><p><a id="lbAH"> </a></p><h2>NOTAS</h2><p>
+
+Procesos SUID y SGID no pueden ser inspeccionados con
+<b>ptrace()</b>. 
+</p><p>La longitud máxima de línea en un ejecutable del tipo #! es de
+127 caracteres en la primera línea del fichero.</p><p>Linux ignora los bits SUID y SGID en los guiones shell. <a id="lbAI"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+chmod">chmod</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+execl">execl</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+environ">environ</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+ld.so">ld.so</a></b>(8)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">NOTAS</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

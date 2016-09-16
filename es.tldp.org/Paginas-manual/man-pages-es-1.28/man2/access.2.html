@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of ACCESS</title></head><body><p>
+  
+</p><h1>ACCESS</h1><p>
+
+Section: Llamadas al sistema (2)<br />
+Updated: 13 enero 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+access - comprueba los permisos de usuario para un fichero <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b>
+
+<b>int access(const char *</b><i>pathname</i><b>, int</b> <i>mode</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>access</b><p> comprueba si al proceso se le permitiría leer,
+escribir o comprobar la existencia del fichero (u otro objeto del
+sistema de ficheros) cuyo nombre es <i>pathname</i>. Si
+<i>pathname</i> es un enlace simbólico se comprueban los permisos
+del fichero referenciado por dicho enlace simbólico. 
+</p><p><i>mode</i> es una máscara compuesta por uno o más de los
+siguientes elementos: <b>R_OK</b>, <b>W_OK</b>, <b>X_OK</b> y
+<b>F_OK</b>.</p><p><b>R_OK</b>, <b>W_OK</b> y <b>X_OK</b> se utilizan para la
+comprobación de lectura, escritura o ejecución del fichero,
+respectivamente. <b>F_OK</b> se utiliza para ver si se permite la
+mera comprobación de la existencia del fichero. Esto depende de los
+permisos de los directorios que aparecen en el camino hasta el
+fichero, tal como se da en <i>pathname</i>, y de los permisos de
+los directorios y ficheros referenciados por los enlaces simbólicos
+que se pueden encontrar a lo largo del camino.</p><p>La comprobación se realiza con los uid y gid <i>reales</i> del
+proceso, en lugar de utilizar los identificadores efectivos, tal
+como se hace cuando realmente se intenta una operación. Esto
+permite a los programas con el bit <b>SETUID</b> activo determinar
+fácilmente la autoridad del usuario invocador.</p><p>Sólo se comprueban los bits de acceso, no el tipo de fichero o
+sus contenidos. Por lo tanto, si encontramos que un directorio se
+puede "escribir", probablemente esto significa que se pueden crear
+ficheros en el directorio, no que el directorio se pueda escribir
+como se hace con un fichero. Similarmente, podemos encontrar un
+fichero DOS como "ejecutable" y, aún así, puede fallar una llamada
+a <b><a href="http://localhost/cgi-bin/man/man2html?2+execve">execve</a></b>(2).</p><p><a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Si ha habido éxito (se han concedido todos los permisos
+solicitados) la función devuelve un valor 0. Si se ha producido un
+error (al menos, uno de los bits de <i>mode</i> ha interrogado por
+un permiso que ha sido denegado, o ha ocurrido algún otro tipo de
+error), la función devuelve -1 y a <i>errno</i> se le asigna un
+valor adecuado. 
+</p><p><a id="lbAF"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>Se denegaría el acceso solicitado al fichero o se deniega el
+permiso de búsqueda para uno de los directorios en
+<i>pathname</i>.</dd>
+
+<dt><b>EROFS</b></dt>
+
+<dd>Se ha solicitado permiso de escritura para un fichero en un
+sistema de ficheros de sólo lectura.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd><i>pathname</i> apunta fuera del espacio de direcciones al que
+tiene acceso."</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd><i>mode</i> se ha especificado incorrectamente</dd>
+
+<dt><b>ENAMETOOLONG</b></dt>
+
+<dd><i>pathname</i> es demasiado largo.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>Un directorio componente de <i>pathname</i> es accesible pero
+no existe o es un enlace simbólico colgado.</dd>
+
+<dt><b>ENOTDIR</b></dt>
+
+<dd>Un componente usado como directorio en <i>pathname</i> no es,
+de hecho, un directorio.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No hay suficiente memoria disponible en el kernel.</dd>
+
+<dt><b>ELOOP</b></dt>
+
+<dd>Se han encontrado demasiados enlaces simbólicos al resolver
+<i>pathname</i>.</dd>
+
+<dt><b>EIO</b></dt>
+
+<dd>Ha ocurrido un error de E/S.</dd>
+</dl><a id="lbAG"> </a><h2>RESTRICCIONES</h2><b>access</b><p> regresa un error si falla cualquiera de los tipos de
+acceso especificados en la llamada a la función, aunque los otros
+tipos tuvieran éxito. 
+</p><p><b>access</b> no puede funcionar correctamente sobre sistemas de
+ficheros NFS que tengan activa la aplicación del UID, porque la
+aplicación del UID se realiza en el servidor y se oculta a los
+clientes que comprueban los permisos.</p><p>Usar <b>access</b> para comprobar si un usuario está autorizado
+a, por ejemplo, abrir un fichero antes de que realmente lo haga
+usando <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2),
+crea un agujero de seguridad ya que el usuario podría explotar el
+breve intervalo de tiempo que hay entre la comprobación y la
+apertura del fichero para manipularlo. <a id="lbAH"> </a></p><h2>CONFORME A</h2><p>
+
+SVID, AT&amp;T, POSIX, X/OPEN, BSD 4.3 <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+stat">stat</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+chmod">chmod</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+chown">chown</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+setuid">setuid</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+setgid">setgid</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">RESTRICCIONES</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

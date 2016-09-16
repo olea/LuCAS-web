@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of GETTIMEOFDAY</title></head><body><p>
+  
+</p><h1>GETTIMEOFDAY</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 10 diciembre 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+gettimeofday, settimeofday - pone u obtiene la hora <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/time.h">sys/time.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><p><b>int gettimeofday(struct timeval *</b><i>tv</i><b>, struct
+timezone *</b><i>tz</i><b>);</b><br /><b>int settimeofday(const struct timeval *</b><i>tv</i> <b>, const
+struct timezone *</b><i>tz</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>gettimeofday</b><p> y <b>settimeofday</b> pueden poner tanto la
+hora como una zona horaria. <i>tv</i> es una estructura
+<b>timeval</b>, tal como se especifica en /usr/include/sys/time.h: 
+</p><pre>
+struct timeval {
+long    tv_sec;         /* segundos */
+long    tv_usec;        /* microsegundos */
+};
+</pre><p>y <i>tz</i> es una estructura <b>timezone</b> :</p><pre>
+struct timezone {
+int   tz_minuteswest; /* minutos al O de Greenwich */
+int   tz_dsttime;     /* tipo de correción horaria invierno/verano */
+};
+</pre><p>El uso de la estructura timezone es obsoleto; el campo
+<i>tz_dsttime</i> nunca ha sido utilizado en Linux - no lo ha sido
+y nunca será soportado por libc o glibc. Todas y cada una de las
+ocurrencias de este campo en el fuente del núcleo (distintas de la
+declaración) son un fallo. Por tanto, lo siguiente es puramente de
+interés histórico.</p><p>El campo <i>tz_dsttime</i> contiene una constante simbólica (los
+valores se dan más abajo) que indica en qué parte del año la
+`correción horaria invierno/verano' (Daylight Saving Time, DST,
+también conocida como `horario de ahorro energético') está en
+vigor. (Nota: su valor es constante a lo largo del año - no indica
+si DST está o no en vigor, sólo selecciona un algoritmo). Los
+algoritmos de corrección horaria invierno/verano se definen como
+sigue:</p><p><b>DST_NONE</b> /* no hay */<br /><b>DST_USA</b> /* estilo EE.UU. */<br /><b>DST_AUST</b> /* estilo australiano */<br /><b>DST_WET</b> /* como en Europa Occidental */<br /><b>DST_MET</b> /* como en Europa Central */<br /><b>DST_EET</b> /* como en Europa del Este */<br /><b>DST_CAN</b> /* Canadá */<br /><b>DST_GB</b> /* Gran Bretaña e Irlanda */<br /><b>DST_RUM</b> /* Rumanía */<br /><b>DST_TUR</b> /* Turquía */<br /><b>DST_AUSTALT</b> /* est. australiano con cambio en 1986 */</p><p>Naturalmente, resultó ser que el periodo en el que la corrección
+horaria invierno/verano está en vigor no se podía dar mediante un
+simple algoritmo, uno por país: de hecho, este periodo se determina
+por decisiones políticas impredecibles. Por tanto, este método de
+representación de las zonas horarias se ha abandonado. Bajo Linux,
+en una llamada a <b>settimeofday</b> el campo <i>tz_dsttime</i>
+debe ser cero.</p><p>Bajo Linux hay algunas semánticas de `Warp clock' peculariares
+asociadas a la llamada al sistema <b>settimeofday</b> si en la
+primera llamada de todas (después del arranque) que tenga un
+argumento <i>tz</i> no NULL, el argumento <i>tv</i> es NULL y el
+campo <i>tz_minuteswest</i> es no cero. En tal caso, se asume que
+el reloj CMOS está en el horario local y que tiene que ser
+incrementado en esta cantidad para obtener el horario del sistema
+UTC. No cabe duda que usar esta característica es una mala
+idea.</p><p>Para operar sobre la estructura timeval se definen las
+siguientes macros:<br /></p><pre>
+#define timerisset(tvp)\
+<br />
+        ((tvp)-&gt;tv_sec || (tvp)-&gt;tv_usec)
+#define timercmp(tvp, uvp, cmp)\
+((tvp)-&gt;tv_sec cmp (uvp)-&gt;tv_sec ||\
+(tvp)-&gt;tv_sec == (uvp)-&gt;tv_sec &amp;&amp;\
+(tvp)-&gt;tv_usec cmp (uvp)-&gt;tv_usec)
+#define timerclear(tvp)\
+<br />
+        ((tvp)-&gt;tv_sec = (tvp)-&gt;tv_usec = 0)
+</pre><p>Si <i>tv</i> o <i>tz</i> es nulo, la estructura correspondiente
+no se ajusta ni se devuelve.</p><p>Solamente el super-usuario puede emplear <b>settimeofday</b>. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><b>gettimeofday</b><p> y <b>settimeofday</b> devuelven 0 en caso de
+éxito ó -1 si ocurre un fallo (en cuyo caso <i>errno</i> toma un
+valor apropiado). <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EPERM</b></dt>
+
+<dd>Alguien que no es el super-usuario ha llamado a
+<b>settimeofday</b></dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>La zona horaria (o algo más) es inválida.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>Uno de <i>tv</i> o <i>tz</i> apuntaba afuera de su espacio de
+direcciones accesible.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+SVr4, BSD 4.3 <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+date">date</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+adjtimex">adjtimex</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+time">time</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+ctime">ctime</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+ftime">ftime</a></b>(3)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of LOGROTATE</title></head><body><p>
+  
+</p><h1>LOGROTATE</h1><p>
+
+Section: Maintenance Commands (8)<br />
+Updated: Jueves 27 febrero 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><b>Logrotate</b><p> - cambia, comprime y envía por correo archivos de
+registro del sistema. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>logrotate</b><p> [-dv] [-s|--<i>archivo</i> de estado]
+<i>archivo_de_configuración</i>+ <a id="lbAD"> </a> 
+</p><h2>DESCRIPCIÓN</h2><b>Logrotate</b><p> ha sido diseñado para facilitar la administración
+de sistemas que generan gran cantidad de archivos de registro
+(logs). El programa permite el cambio, compresión, eliminación y
+envío automático por correo de los archivos de registro. Cada
+archivo puede ser tratado diariamente, semanalmente, mensualmente o
+siempre que se haga demasiado grande. 
+</p><p>Normalmente, <b>logrotate</b> se ejecuta como tarea diaria de
+tipo cron. El programa no modificará un archivo repetidas veces a
+no ser que el criterio para ese archivo se base en el tamaño del
+mismo y <b>logrotate</b> se ejecute varias veces al día.</p><p>En la línea de comandos pueden indicarse un número ilimitado de
+archivos de configuración. Más tarde, estos archivos de
+configuración pueden invalidar las opciones dadas en archivos de
+configuración anteriores, por lo tanto, el orden en que se listan
+los archivos de configuración de <b>logrotate</b> es muy
+importante. Normalmente, debería usarse un sólo archivo de
+configuración que incluya tantos otros archivos de configuración
+como sean necesarios. Véase más abajo cómo usar la directiva
+<i>include</i> para conseguirlo. Si se proporciona un nombre de
+directorio en la línea de comandos, cada uno de los archivos que se
+encuentren en ese directorio se usará como archivo de
+configuración.</p><p><a id="lbAE"> </a></p><h2>OPCIONES</h2><dl compact="compact"><dt><b>-d</b></dt>
+
+<dd>Activa el modo de depuración e implica <b>-v</b>. En modo de
+depuración, no se efectuará ningún cambio a los archivos de
+registro ni al archivo de estado de <b>logrotate</b>.</dd>
+
+<dt><b>--usage</b></dt>
+
+<dd>Muestra un pequeño mensaje de uso, versión y copyright.</dd>
+</dl><a id="lbAF"> </a><h2>ARCHIVO DE CONFIGURACIÓN</h2><p><b>logrotate</b> lee toda la información necesaria sobre los
+archivos de registro que debe manejar de la serie de archivos de
+configuración que se especifiquen en la línea de comandos. Cada
+archivo de configuración puede establecer opciones globales (las
+definiciones locales anulan a las globales, y aquellas definiciones
+efectuadas en último lugar anulan siempre a las anteriores) y
+especificar el archivo de registro que se ha de cambiar. Un archivo
+de configuración simple sería el siguiente:</p><pre>
+# sample logrotate configuration file
+errors <a href="mailto:sysadmin@my.org">sysadmin@my.org</a>
+compress
+
+/var/log/messages {
+    rotate 5
+    weekly
+    postrotate
+                              /sbin/killall -HUP syslogd
+    endscript
+}
+
+/var/log/httpd/access.log {
+    rotate 5
+    mail <a href="mailto:www@my.org">www@my.org</a>
+    errors <a href="mailto:www@my.org">www@my.org</a>
+    size=100k
+    postrotate
+                              /sbin/killall -HUP httpd
+    endscript
+}
+
+/var/log/news/* {
+    monthly
+    rotate 2
+    errors <a href="mailto:newsadmin@my.org">newsadmin@my.org</a>
+    postrotate
+                              kill -HUP `cat /var/run/inn.pid`
+    endscript
+    nocompress
+}
+</pre><p>Las primeras líneas establecen opciones globales; cualquier
+error que ocurra durante el procesamiento de los archivos de
+registro se envía por correo a sysadmin.org y los archivos de
+registro se comprimen después de ser cambiados. Nótese que pueden
+aparecer comentarios en cualquier parte del archivo de
+configuración siempre y cuando el primer espacio que no está en
+blanco en la línea sea un #.</p><p>La siguiente sección del archivo de configuración especifica la
+acción a realizar sobre el archivo de registro
+<i>/var/log/messages</i>. El archivo sufrirá cinco cambios
+semanales antes de ser eliminado. Después de que el archivo ha sido
+modificado (pero antes de haberse comprimido la versión antigua del
+mismo) se ejecutará el comando <i>/sbin/killall -HUP
+syslogd</i>.</p><p>La siguiente sección define los parámetros de
+<i>/var/log/http/access.log</i>. Éste se cambia siempre y cuando
+excede los 100k de tamaño, y los archivos de registro antiguos se
+envían (sin comprimir) a <a href="mailto:www@my.org">www@my.org</a>
+después de haber sufrido cinco cambios, en vez de ser eliminados.
+Del mismo modo, cualquier error que pueda ocurrir durante el
+procesamiento del archivo de registro se envía a <a href="mailto:www@my.org">www@my.org</a> (anulando así la directiva
+global <i>errors</i>)</p><p>La última sección define los parámetros para todos lo archivos
+en <i>/var/log/news</i>. Cada archivo se cambia mensualmente y los
+errores se envían a <a href="mailto:newsadmin@my.org">newsadmin@my.org</a>.Ésta se
+considera una directiva de cambio simple y si ocurre un error para
+más de un archivo se envía en un único mensaje. En este caso, los
+archivos de registro no se comprimirán.</p><p>A continuación se proporciona más información sobre las
+directivas que se pueden incluir en un archivo de configuración de
+<b>logrotate</b>:</p><dl compact="compact"><dt><b>compress</b></dt>
+
+<dd>Las versiones antiguas de los archivos de registro se comprimen
+con <b>gzip</b>. Véase también <b>nocompress</b>.</dd>
+
+<dt><b>copytruncate</b></dt>
+
+<dd>Trunca el archivo de registro original en el lugar en el que se
+encuentre tras crear una copia, en vez de mover el archivo antiguo
+y crear una nuevo opcionalmente. Se puede usar cuando a algún
+programa no se le puede ordenar que cierre su archivo de registro y
+por lo tanto podría seguir escribiendo (añadiendo) continuamente en
+el archivo de registro anterior. Nótese que transcurre una fracción
+de tiempo muy pequeña entre el copiado del archivo y su truncado,
+por lo que se podrían perder algunos datos. Cuando se usa esta
+opción, no tendrá efecto la opción <b>create</b>, dado que el
+archivo antiguo permanecerá en su lugar.</dd>
+
+<dt><b>create</b> <i>mode</i> <i>owner</i> <i>group</i></dt>
+
+<dd>Se crea el archivo de registro (con el mismo nombre del archivo
+de registro que se acaba de rotar) inmediatamente después del
+cambio (antes de que se ejecute el script <b>postrotate</b>).
+<i>mode</i> especifica el modo del archivo de registro en octal (al
+igual que <b>chmod (2)</b>), <i>owner</i> especifica el nombre del
+usuario al que pertenecerá el archivo de registro, y <i>group</i>
+especifica el grupo al que pertenecerá el archivo. Se puede omitir
+cualquiera de los atributos del archivo de registro, en cuyo caso,
+el nuevo archivo usará los valores del archivo antiguo para
+aquellos atributos que se hayan omitido. Esta opción se puede
+anular usando la opción <b>nocreate</b>.</dd>
+
+<dt><b>daily</b></dt>
+
+<dd>Los archivos de registro se cambian diariamente.</dd>
+
+<dt><b>delaycompress</b></dt>
+
+<dd>Pospone la compresión del archivo de registro anterior hasta el
+siguiente ciclo de rotación. Sólo tiene efecto cuando se usa en
+combinación con <b>compress</b>. Se puede usar cuando no se puede
+ordenar a un programa que cierre su archivo de registro y podría
+continuar escribiendo en él durante algún tiempo.</dd>
+
+<dt><b>errors</b> <i>address</i></dt>
+
+<dd>Cualquier error que ocurra durante el procesamiento de los
+registros se enviará a la dirección de correo que se
+especifique.</dd>
+
+<dt><b>ifempty</b></dt>
+
+<dd>Cambia el archivo de registro incluso si está vacío, anulando
+la opción <b>notifempty</b> (opción por defecto).</dd>
+
+<dt><b>include</b> <i>file_or_directory</i></dt>
+
+<dd>Lee el archivo dado como argumento como si se incluyese donde
+aparece la directiva <b>include</b>. Si se da un directorio, la
+mayoría de los archivos se leen antes de que continúe el
+procesamiento del archivo en el que se incluyen. Los únicos
+archivos que se ignoran son archivos que no son corrientes (tales
+como directorios y pipes con nombre) y aquellos archivos cuyos
+nombres terminan con una de las extensiones tabú según se
+especifica en la directiva <b>tabooext</b>. La directiva
+<b>include</b> puede no aparecer en la definición de un archivo de
+registro.</dd>
+
+<dt><b>monthly</b></dt>
+
+<dd>Los archivos de registro se cambian la primera vez que se
+ejecuta <b>logrotate</b> en un mes (normalmente el primer día del
+mes).</dd>
+
+<dt><b>nocompress</b></dt>
+
+<dd>Las versiones antiguas de los archivos de registro no se
+comprimen con <b>gzip</b>. Véase también <b>compress</b>.</dd>
+
+<dt><b>nocopytruncate</b></dt>
+
+<dd>No trunca el archivo de registro original en el lugar en el que
+se encuentre tras crear una copia. (Esto anula la opción
+<b>copytruncate</b>).</dd>
+
+<dt><b>nocreate</b></dt>
+
+<dd>No se crean archivos de registro nuevos (esto anula la opción
+<b>create</b>).</dd>
+
+<dt><b>nodelaycompress</b></dt>
+
+<dd>No pospone la compresión del archivo de registro anterior hasta
+el próximo ciclo de cambio (esto anula la opción
+<b>delaycompress</b>).</dd>
+
+<dt><b>nomail</b></dt>
+
+<dd>No envían los archivos de registro antiguos a ninguna dirección
+de correo.</dd>
+
+<dt><b>noolddir</b></dt>
+
+<dd>Los archivos se cambian en el mismo directorio en el que el
+archivo reside normalmente (esto anula la opción
+<b>olddir</b>).</dd>
+
+<dt><b>notifempty</b></dt>
+
+<dd>No rota el archivo de registro si está vacío (esto anula la
+opción <b>ifempty</b>).</dd>
+
+<dt><b>olddir</b> <i>directory</i></dt>
+
+<dd>Los archivos de registro se mueven a <i>directory</i> para su
+rotación. El <i>directory</i> debe encontrarse en el mismo
+dispositivo físico que el archivo de registro que se va a cambiar.
+Cuando se usa esta opción, todas las versiones antiguas del archivo
+de registro van a parar a <i>directory</i>. Esta opción puede
+anularse por medio de la opción <b>noolddir</b>.</dd>
+
+<dt><b>postrotate</b>/<b>endscript</b></dt>
+
+<dd>Las líneas entre <i>postrotate</i> y <i>endscript</i> (ambas
+deben aparecer en líneas por separado) se ejecutan una vez que el
+archivo de registro ha sido rotado. Estas directivas sólo pueden
+aparecer dentro de una definición de archivo de registro. Véase
+también <b>prerotate</b>.</dd>
+
+<dt><b>prerotate</b>/<b>endscript</b></dt>
+
+<dd>Las líneas entre <i>prerotate</i> y <i>endscript</i> (ambas
+deben aparecer en líneas por separado) se ejecutan una vez que el
+archivo de registro ha sido rotado. Estas directivas sólo pueden
+aparecer dentro de una definición de archivo de registro. Véase
+también <b>postrotate</b>.</dd>
+
+<dt><b>rotate</b> <i>count</i></dt>
+
+<dd>Los archivos de registro se cambian &lt;count&gt; veces antes
+de ser eliminados o enviados a la dirección especificada en una
+directiva <b>mail</b>. Si <i>count</i> es 0, las versiones antiguas
+se eliminarán en vez de ser cambiadas.</dd>
+
+<dt><b>size</b> <i>size</i></dt>
+
+<dd>Los archivos de registro se cambian cuando superan el tamaño de
+<i>size</i> bytes. Si a <i>size</i> le sigue <i>M</i>, se asume que
+se está indicando el tamaño en megabytes. Si se usa <i>k</i>, el
+tamaño será en kilobytes. Por lo tanto son válidos tanto <b>size
+100</b> como <i>size 100k</i> y <i>size 100M</i>.</dd>
+
+<dt><b>tabooext</b> [+] <i>list</i></dt>
+
+<dd>Se cambia la lista actual de extensiones tabú (véase la
+directiva <b>include</b> si se desea información sobre las
+extensiones tabú). Si un + precede a la lista de extensiones, la
+lista actual de extensiones tabú se aumenta, de otro modo se
+reemplaza. Al comienzo, la lista de extensiones tabú contiene
+.rpmorig, .rpmsave, ,v y ~.</dd>
+
+<dt><b>weekly</b></dt>
+
+<dd>Los archivos de registro se cambian si el día de la semana
+actual es menor que el día de la semana del último cambio o si ha
+pasado más de una semana desde el último cambio. Normalmente, esto
+es lo mismo que cambiar los archivos el primer día de la semana,
+pero funciona mejor si <i>logrotate</i> no se ejecuta todas las
+noches.</dd>
+</dl><a id="lbAG"> </a><h2>VÉASE TAMBIÉN</h2><i><a href="http://localhost/cgi-bin/man/man2html?1+gzip">gzip</a></i><p>(1)
+
+</p><p><a id="lbAH"> </a></p><h2>AUTOR</h2><pre>
+Erik Troan &lt;<a href="mailto:ewt@redhat.com">ewt@redhat.com</a>&gt;
+</pre><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">OPCIONES</a></dt>
+
+<dt><a href="#lbAF">ARCHIVO DE CONFIGURACIÓN</a></dt>
+
+<dt><a href="#lbAG">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAH">AUTOR</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:08 GMT, January 21, 2005
+</p></body></html>

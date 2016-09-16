@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of NETDEVICE</title></head><body><p>
+  
+</p><h1>NETDEVICE</h1><p>
+
+Section: Manual del Programador de Linux (7)<br />
+Updated: 2 mayo 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+netdevice - Acceso de bajo nivel a los dispositivos de red de
+Linux. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/ioctl.h">sys/ioctl.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/net/if.h">net/if.h</a>&gt;</b><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Esta página de manual describe la interfaz de conectores que se usa
+para configurar los dispositivos de red. 
+</p><p>Linux soporta algunas ioctls estándares para configurar los
+dispositivos de red. Se pueden usar sobre cualquier descriptor de
+fichero de un conector sin tener en cuenta la familia o el tipo. Se
+pasa una estructura <b>ifreq</b>:</p><pre>
+struct ifreq
+{
+    char            ifr_name[IFNAMSIZ];   /* Nombre de la interfaz */
+    union {
+                    struct sockaddr       ifr_addr;
+                    struct sockaddr       ifr_dstaddr;
+                    struct sockaddr       ifr_broadaddr;
+                    struct sockaddr       ifr_netmask;
+                    struct sockaddr       ifr_hwaddr;
+                    short                 ifr_flags;
+                    int                   ifr_ifindex;
+                    int                   ifr_metric;
+                    int                   ifr_mtu;
+                    struct ifmap          ifr_map;
+                    char                  ifr_slave[IFNAMSIZ];
+                    char                  ifr_newname[IFNAMSIZ];
+                    char *                ifr_data;
+    };
+}
+
+struct ifconf
+{
+    int ifc_len;                          /* tamaño del buffer */
+    union {
+                    char *  ifc_buf;      /* dirección del buffer */
+                    struct ifreq *ifc_req;/* array de estructuras */
+    };
+};
+
+</pre><p>Normalmente, el usuario especifica a qué dispositivo va a
+afectar asignando a <b>ifr_name</b> el nombre de la interfaz. Todos
+los otros miembros de la estructura pueden compartir memoria.</p><p><a id="lbAE"> </a></p><h2>IOCTLS</h2><p>
+
+Si se marca una ioctl como privilegiada entonces su uso requiere un
+identificador de usuario efectivo 0 o la capacidad
+<b>CAP_NET_ADMIN</b>. Si éste no es el caso se devuelve
+<b>EPERM</b>. 
+</p><dl compact="compact"><dt><b>SIOCGIFNAME</b></dt>
+
+<dd>Dado un <b>ifr_ifindex</b>, devuelve el nombre de la interfaz
+en <b>ifr_name</b>. Ésta es la única ioctl que devuelve su
+resultado en <b>ifr_name</b>.</dd>
+
+<dt><b>SIOCGIFINDEX</b></dt>
+
+<dd>Devuelve el índice de interfaz de la interfaz en
+<b>ifr_ifindex</b>.</dd>
+
+<dt><b>SIOCGIFFLAGS</b>, <b>SIOCSIFFLAGS</b></dt>
+
+<dd>Obtiene o establece la palabra de banderas activas del
+dispositivo. <b>ifr_flags</b> contiene una máscara de bits de los
+siguientes valores: 
+<table border="1"><tr valign="top"><td align="center" colspan="2">Significado de las banderas<br /></td>
+</tr><tr valign="top"><td>IFF_UP</td>
+<td>La interfaz está funcionando.<br /></td>
+</tr><tr valign="top"><td>IFF_BROADCAST</td>
+<td>Dirección de difusión válida asignada.<br /></td>
+</tr><tr valign="top"><td>IFF_DEBUG</td>
+<td>Bandera de depuración interna.<br /></td>
+</tr><tr valign="top"><td>IFF_LOOPBACK</td>
+<td>Ésta es una interfaz loopback.<br /></td>
+</tr><tr valign="top"><td>IFF_POINTOPOINT</td>
+<td>La interfaz es un enlace punto a punto.<br /></td>
+</tr><tr valign="top"><td>IFF_RUNNING</td>
+<td>Recursos necesarios reservados.<br /></td>
+</tr><tr valign="top"><td>IFF_NOARP</td>
+<td>Sin protocolo ARP, la dirección de destino de Nivel 2 no está
+configurada.<br /></td>
+</tr><tr valign="top"><td>IFF_PROMISC</td>
+<td>La interfaz se encuentra en modo promiscuo.<br /></td>
+</tr><tr valign="top"><td>IFF_NOTRAILERS</td>
+<td>Evitar el uso de terminadores.<br /></td>
+</tr><tr valign="top"><td>IFF_ALLMULTI</td>
+<td>Recibir todos los paquetes multidestino.<br /></td>
+</tr><tr valign="top"><td>IFF_MASTER</td>
+<td>Interfaz maestra de un grupo de balanceo de carga.<br /></td>
+</tr><tr valign="top"><td>IFF_SLAVE</td>
+<td>Interfaz esclava de un grupo de balanceo de carga.<br /></td>
+</tr><tr valign="top"><td>IFF_MULTICAST</td>
+<td>La interfaz soporta multidestino.<br /></td>
+</tr><tr valign="top"><td>IFF_PORTSEL</td>
+<td>La interfaz es capaz de seleccionar el tipo de medio mediante
+ifmap.<br /></td>
+</tr><tr valign="top"><td>IFF_AUTOMEDIA</td>
+<td>Autoselección de medios activa.<br /></td>
+</tr><tr valign="top"><td>IFF_DYNAMIC</td>
+<td>Las direcciones se pierden cuando la interfaz se
+desactiva.<br /></td>
+</tr></table><p>La configuración de la palabra de banderas activas es una
+operación privilegiada pero cualquier proceso puede leerla.</p>
+</dd>
+
+<dt><b>SIOCGIFMETRIC</b>, <b>SIOCSIFMETRIC</b></dt>
+
+<dd>Obtiene o establece la métrica del dispositivo usando
+<b>ifr_metric</b>. Todavía no implementado. Asigna un 0 a
+<b>ifr_metric</b> cuando se intenta leer y devuelve
+<b>EOPNOTSUPP</b> cuando se intenta asignarle un valor.</dd>
+
+<dt><b>SIOCGIFMTU</b>, <b>SIOCSIFMTU</b></dt>
+
+<dd>Obtiene o establece la MTU (unidad de transferencia máxima) del
+dispositivo usando <b>ifr_mtu</b>. La configuración de la MTU es
+una operación privilegiada. Configurar la MTU con valores demasiado
+pequeños puede provocar un fallo del núcleo.</dd>
+
+<dt><b>SIOCGIFHWADDR</b>, <b>SIOCSIFHWADDR</b></dt>
+
+<dd>Obtiene o establece la dirección hardware del dispositivo
+usando <b>ifr_hwaddr</b>. La configuración de la dirección hardware
+es una operación privilegiada.</dd>
+
+<dt><b>SIOCSIFHWBROADCAST</b></dt>
+
+<dd>Establece la dirección de difusión hardware del dispositivo a
+partir de <b>ifr_hwaddr</b>. Es una operación privilegiada.</dd>
+
+<dt><b>SIOCGIFMAP</b>, <b>SIOCSIFMAP</b></dt>
+
+<dd>Obtiene o establece los parámetros hardware de la interfaz
+usando <b>ifr_map</b>. La configuración de los parámetros es una
+operación privilegiada. 
+<pre>
+struct ifmap 
+{
+    unsigned long   mem_start;
+    unsigned long   mem_end;
+    unsigned short  base_addr; 
+    unsigned char   irq;                  
+    unsigned char   dma; 
+    unsigned char   port; 
+};
+
+</pre>
+
+<p>La interpretación de la estructura ifmap depende del manejador
+del dispositivo y de la arquitectura.</p>
+</dd>
+
+<dt><b>SIOCADDMULTI</b>, <b>SIOCDELMULTI</b></dt>
+
+<dd>Añade una dirección a o borra una dirección de los filtros
+multidestino de la capa de enlace de la interfaz usando
+<b>ifr_hwaddr</b>. Estas operaciones son privilegiadas. Si quiere
+una alternativa, vea también <b><a href="http://localhost/cgi-bin/man/man2html?7+packet">packet</a></b>(7).</dd>
+
+<dt><b>SIOCGIFTXQLEN</b>, <b>SIOCSIFTXQLEN</b></dt>
+
+<dd>Obtiene o establece la longitud de la cola de transmisión de un
+dispositivo usando <b>ifr_qlen</b>. La configuración de la longitud
+de la cola de transmisión es una operación privilegiada.</dd>
+
+<dt><b>SIOCSIFNAME</b></dt>
+
+<dd>Cambia el nombre de la interfaz indicada en <b>ifr_ifindex</b>
+a <b>ifr_newname</b>. Es una operación privilegiada.</dd>
+
+<dt><b>SIOCGIFCONF</b></dt>
+
+<dd>Devuelve una lista de direcciones de interfaces (capa de
+transporte). Actualmente, esto sólo significa direcciones de la
+familia AF_INET por compatibilidad. El usuario pasa a la ioctl una
+estructura <b>ifconf</b> como argumento. Contiene un puntero a un
+array de estructuras <i>ifreq</i> en <b>ifc_req</b> y sus
+longitudes en bytes en <b>ifc_len.</b> El núcleo rellena los ifreqs
+con todas las direcciones de las interfaces de Nivel 3 actuales que
+están funcionando: <i>ifr_name</i> contiene el nombre de la
+interfaz (eth0:1 etc.), <i>ifr_addr</i> la dirección. El núcleo
+regresa con la longitud real en <i>ifc_len</i>. Si es igual a la
+longitud original, el usuario debe asumir que se desbordó y debe
+reintentarlo con una buffer mayor. Cuando no se produce ningún
+error, la ioctl devuelve 0. En otro caso, -1. El desbordamiento no
+es un error.</dd>
+</dl><p>La mayoría de los protocolos soportan sus propias ioctls para
+configurar las opciones de la interfaz específicas del protocolo.
+Vea las páginas de manual de los protocolos para una descripción
+más amplia. Para la configuración de direcciones IP, vea <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7).</p><p>Además, algunos dispositivos soportan ioctls privadas. Éstas no
+se describen aquí. <a id="lbAF"> </a></p><h2>NOTA</h2><p>
+
+Si lo vemos de forma estricta, <b>SIOCGIFCONF</b> es específica de
+IP y pertence a <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7). 
+</p><p>Los nombres de interfaces que no tiene dirección o que no tienen
+la opción <b>IFF_RUNNING</b> activa, se pueden encontrar a través
+de <i>/proc/net/dev.</i> <a id="lbAG"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b><p>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+proc">proc</a></b>(7)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">IOCTLS</a></dt>
+
+<dt><a href="#lbAF">NOTA</a></dt>
+
+<dt><a href="#lbAG">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:29 GMT, January 22, 2005
+</p></body></html>

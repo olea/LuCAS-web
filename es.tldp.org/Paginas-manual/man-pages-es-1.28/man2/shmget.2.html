@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SHMGET</title></head><body><p>
+  
+</p><h1>SHMGET</h1><p>
+
+Section: Manual del programador de Linux (2)<br />
+Updated: 28 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+shmget - asigna un segmento de memoria compartida <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b><p><b>#include &lt;<a href="file:/usr/include/sys/shm.h">sys/shm.h</a>&gt;</b></p><p><b>int shmget(key_t</b> <i>key</i><b>, int</b> <i>size</i><b>,
+int</b> <i>shmflg</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>shmget()</b><p> devuelve el identificativo del segmento de memoria
+compartida asociado al valor del argumento <i>key</i>. Se crea un
+nuevo segmento de memoria compartida, de tamaño igual al múltiplo
+de <b>PAGE_SIZE</b> más aproximado (por exceso) a <i>size</i>, si
+<i>key</i> tiene el valor <b>IPC_PRIVATE</b> o <i>key</i> no es
+<b>IPC_PRIVATE</b>, no hay ningún segmento de memoria compartida
+asociado a <i>key</i>, y <b>IPC_CREAT</b> está declarado en
+<i>shmflg</i> (es decir, <i>shmflg</i><b>&amp;IPC_CREAT</b> es
+distinto de cero). La presencia en 
+</p><p><i>shmflg</i> está compuesta de:</p><dl compact="compact"><dt><b>IPC_CREAT</b></dt>
+
+<dd>para crear un nuevo segmento. Si este indicador no se usa,
+<b>shmget()</b> encontrará el segmento asociado con <i>key</i>,
+comprobará que el usuario tenga permiso para recibir el
+<i>shmid</i> asociado con el segmento, y se asegurará de que el
+segmento no esté marcado para destrucción.</dd>
+
+<dt><b>IPC_EXCL</b></dt>
+
+<dd>usado con <b>IPC_CREAT</b> para asegurar el fallo si el
+segmento existe.</dd>
+
+<dt><b>mode_flags (9 bits más bajos)</b></dt>
+
+<dd>especifican los permisos otorgados al dueño, grupo y resto del
+mundo. Actualmente el sistema no usa los permisos de
+ejecución.</dd>
+</dl><p>Si se crea un nuevo segmento, los permisos de acceso de
+<i>shmflg</i> son copiados al miembro <i>shm_perm</i> de la
+estructura <i>shmid_ds</i> que define el segmento. La estructura
+<i>shmid_ds</i>:</p><pre>
+struct shmid_ds {
+        struct  ipc_perm shm_perm;      /* permisos de operación */
+        int     shm_segsz;              /* tamaño del segmento (bytes) */
+        time_t  shm_atime;              /* tiempo de la última unión */
+        time_t  shm_dtime;              /* tiempo de la última separación */
+        time_t  shm_ctime;              /* tiempo del último cambio */
+        unsigned short  shm_cpid;       /* pid del creador */
+        unsigned short  shm_lpid;       /* pid del último operador */
+        short   shm_nattch;             /* nº de uniones actuales */
+};
+</pre><pre>
+struct ipc_perm
+{
+  key_t  key;
+  ushort uid;   /* euid y egid del dueño */
+  ushort gid;
+  ushort cuid;  /* euid y egid del creador */
+  ushort cgid;
+  ushort mode;  /* 9 bits más bajos de <i>shmflg</i> */
+  ushort seq;   /* número de secuencia */
+};
+</pre><p>Además, mientras se crea, la llamada del sistema inicializa la
+estructura de datos <b>shmid_ds</b> del segmento de memoria
+compartida del sistema como sigue:</p><dl compact="compact"><dd><b>shm_perm.cuid</b> y <b>shm_perm.uid</b> son asignados al
+identificativo de usuario efectivo (euid) del proceso creador.</dd>
+
+<dd><b>shm_perm.cgid</b> y <b>shm_perm.gid</b> son asignados al
+identificativo de grupo efectivo (egid) del proceso creador.</dd>
+
+<dd>Los 9 bits más bajos de <b>shm_perm.mode</b> toman el valor de
+los 9 bits más bajos de <i>shmflg</i>.</dd>
+
+<dd><b>shm_segsz</b> toma el valor de <i>size.</i></dd>
+
+<dd><b>shm_lpid</b>, <b>shm_nattch</b>, <b>shm_atime</b> y
+<b>shm_dtime</b> son puestos a <b>0.</b></dd>
+
+<dd><b>shm_ctime</b> toma el valor del tiempo actual.</dd>
+</dl><p>Si el segmento de memoria compartida ya existe, se verifican los
+permisos de acceso, y se comprueba si está marcado para
+destrucción.</p><p><a id="lbAE"> </a></p><h2>LLAMADAS DEL SISTEMA</h2><dl compact="compact"><dt><b>fork()</b></dt>
+
+<dd>Después de un <b>fork()</b> el hijo hereda los segmentos de
+memoria compartida unidos.</dd>
+
+<dt><b>exec()</b></dt>
+
+<dd>Después de un <b>exec()</b> todos los segmentos de memoria
+compartida unidos son separados (no destruidos).</dd>
+
+<dt><b>exit()</b></dt>
+
+<dd>A través de <b>exit()</b> todos los segmentos de memoria
+compartida unidos son separados (no destruidos).</dd>
+</dl><p><a id="lbAF"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito se devuelve el identificativo válido de segmento
+<i>shmid</i>. En caso de error se devuelve -1. <a id="lbAG"> </a> 
+</p><h2>ERRORES</h2><p>
+
+En caso de error, <b>errno</b> tomará uno de los siguientes
+valores: 
+</p><dl compact="compact"><dt><b>EINVAL</b></dt>
+
+<dd>se devuelve si <b>SHMMIN</b> &gt; <i>size</i> o <i>size</i>
+&gt; <b>SHMMAX</b>, o <i>size</i> es mayor que el tamaño del
+segmento.</dd>
+
+<dt><b>EEXIST</b></dt>
+
+<dd>se devuelve si se especificó <b>IPC_CREAT | IPC_EXCL</b> y el
+segmento existe.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>se devuelve si el segmento está marcado como destruido o fue
+borrado.</dd>
+
+<dt><b>ENOSPC</b></dt>
+
+<dd>se devuelve si se han usado todos los identificativos posibles
+de memoria compartida (<b>SHMMNI</b>), o si asignar un segmento del
+tamaño (<i>size</i>) solicitado causaría al sistema exceder su
+propio límite de memoria compartida (<b>SHMALL</b>).</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>se devuelve si no existe segmento para el <i>key</i> dado, y no
+se especificó <b>IPC_CREAT</b>.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>se devuelve si el usuario no tiene permiso para acceder al
+segmento de memoria compartida.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>se devuelve si no pudo asignarse suficiente memoria para el
+segmento requerido.</dd>
+</dl><a id="lbAH"> </a><h2>NOTAS</h2><b>IPC_PRIVATE</b><p> no es un indicador, sino un tipo <b>key_t</b>.
+Si se usa este valor especial para <i>key</i>, la llamada del
+sistema ignora todos menos los 9 bits más bajos de <i>shmflg</i> y
+crea un nuevo segmento de memoria compartida (en caso de éxito). 
+</p><p>Los siguientes son los límites de los recursos de un segmento de
+memoria compartida afectados por una llamada <b>shmget</b>:</p><dl compact="compact"><dt><b>SHMALL</b></dt>
+
+<dd>Máximo número de páginas de memoria compartida de todo el
+sistema. Dependiente del criterio que se use.</dd>
+
+<dt><b>SHMMAX</b></dt>
+
+<dd>Máximo tamaño en bytes de un segmento de memoria compartida.
+Dependiente de la implementación (actualmente 4M).</dd>
+
+<dt><b>SHMMIN</b></dt>
+
+<dd>Mínimo tamaño en bytes de un segmento de memoria compartida.
+Dependiente de la implementación (actualmente 1 byte, aunque
+<b>PAGE_SIZE</b> es el tamaño mínimo efectivo).</dd>
+
+<dt><b>SHMMNI</b></dt>
+
+<dd>Máximo número de segmentos de memoria compartida de todo el
+sistema. Dependiente de la implementación (actualmente 4096).</dd>
+</dl><p>La implementación no tiene límites específicos respecto al
+máximo número de segmentos de memoria compartida por proceso
+(<b>SHMSEG</b>). <a id="lbAI"> </a></p><h2>FALLOS</h2><p>
+
+El uso de <b>IPC_PRIVATE</b> no impide a otros procesos el acceso
+al segmento de memoria compartida asignado. 
+</p><p>Del mismo modo que ocurre con los ficheros, actualmente no hay
+ningún modo intrínseco por el que un proceso pueda asegurarse
+acceso exclusivo a un segmento de memoria compartida. Declarar
+tanto <b>IPC_CREAT</b> como <b>IPC_EXCL</b> en <i>shmflg</i> sólo
+asegura, en caso de éxito, que se creará un nuevo segmento de
+memoria compartida. No implica acesso exclusivo a dicho segmento.
+<a id="lbAJ"> </a></p><h2>CONFORME A</h2><p>
+
+SVr4, SVID. SVr4 documenta la condición de error adicional EEXIST.
+Ni SVr4 ni SVID documentan una condición EIDRM. <a id="lbAK"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+ftok">ftok</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmctl">shmctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmat">shmat</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmdt">shmdt</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">LLAMADAS DEL SISTEMA</a></dt>
+
+<dt><a href="#lbAF">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+
+<dt><a href="#lbAH">NOTAS</a></dt>
+
+<dt><a href="#lbAI">FALLOS</a></dt>
+
+<dt><a href="#lbAJ">CONFORME A</a></dt>
+
+<dt><a href="#lbAK">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

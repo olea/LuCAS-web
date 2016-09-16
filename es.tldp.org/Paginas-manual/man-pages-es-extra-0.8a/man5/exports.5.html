@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of EXPORTS</title></head><body><p>
+  
+</p><h1>EXPORTS</h1><p>
+
+Section: Administración del Sistema Linux (5)<br />
+Updated: 6 Enero 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+exports - Sistemas de ficheros NFS a exportar <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>/etc/exports</b><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+El fichero <i>/etc/exports</i> sirve como la lista de control de
+acceso para sistemas de ficheros que pueden ser exportados a
+clientes NFS. Lo utilizan el duende de montaje <b><a href="http://localhost/cgi-bin/man/man2html?8+mountd">mountd</a></b>(8)
+y el duende servidor de ficheros NFS <b><a href="http://localhost/cgi-bin/man/man2html?8+nfsd">nfsd</a></b>(8).
+
+</p><p>El formato del fichero es similar al fichero <i>exports</i> del
+SunOS con la excepción de que se permiten varias opciones
+adicionales. Cada línea contiene un punto de montaje y una lista de
+máquinas o nombres de grupo de red a las que se les permite montar
+el sistema de ficheros en ese punto. A continuación del nombre de
+la máquina se puede poner entre paréntesis una lista opcional de
+parámetros de montaje. Las líneas en blanco no son tenidas en
+cuenta, y el símbolo # se puede utilizar para poner comentarios de
+una línea.</p><p><a id="lbAE"> </a></p><h3>Opciones Generales</h3><dl compact="compact"><dt><i>secure</i></dt>
+
+<dd>Esta opción requiere que los pedidos se originen en un puerto
+de internet menor que IPPORT_RESERVED (1024). Esta opción esta
+habilitada por omisión. Para deshabilitarla se debe especificar
+<i>insecure</i>.</dd>
+
+<dt><i>ro</i></dt>
+
+<dd>Sólo permitir pedidos de lectura exclusiva en este volumen NFS.
+Por omisión, también se permiten pedidos de escritura, lo cual se
+puede hacer explícito usando la opción <i>rw</i>.</dd>
+
+<dt><i>link_relative</i></dt>
+
+<dd>Convierte enlaces simbólicos absolutos (donde los contenidos
+del enlace empiezan con una barra) en enlaces relativos, añadiendo
+la cantidad necesaria de ../'s al frente del nombre para llegar
+desde el directorio que contiene el enlace a la raíz en el
+servidor. Esta opción tiene implicaciones sutiles, y quizá
+cuestionables, cuando la jerarquía de ficheros no está montada en
+su raíz.</dd>
+
+<dt><i>link_absolute</i></dt>
+
+<dd>Deja los enlaces simbólicos como están. Esta es la operación
+por omisión.</dd>
+</dl><a id="lbAF"> </a><h3>Correspondencia de ID de Usuarios</h3><p>El control de acceso a ficheros de <i>nfsd</i> en la máquina
+servidora se basa en el uid (identificador de usuario) y gid
+(identificador de grupo) proporcionado en cada pedido RPC de NFS.
+Como los usuarios suponen que pueden acceder a sus ficheros de la
+misma forma que en un sistema de ficheros normal, la máquina
+cliente y la máquina servidora deberían utilizar los mismos uids y
+gids. Sin embargo, esto no siempre ocurre y no siempre es
+conveniente.</p><p>Muy a menudo, no es conveniente que el usuario root en la
+máquina cliente sea también tratado como root en los accesos a los
+ficheros en el servidor NFS. Por lo tanto, el uid 0 se suele hacer
+corresponder a un id diferente: el uid <i>nobody</i> o anónimo.
+Este modo de operación (llamado `root squashing') es el modo por
+omisión, y se puede deshabilitar utilizando la opción
+<i>no_root_squash</i>.</p><p>Al comienzo del programa, <i>nfsd</i> intenta obtener el uid y
+gid anónimo buscando el usuario <i>nobody</i> en el fichero de
+cuentas passwd. Si no lo encuentra, utiliza un uid y un gid igual a
+-2 (65534). Estos valores se pueden cambiar utilizando las opciones
+<i>anonuid</i> y <i>anongid</i>.</p><p>Además de esto, <i>nfsd</i> también permite especificar
+cualquier uid y gid para ser trasladados al usuario nobody.
+Finalmente, también se pueden trasladar todos los pedidos de
+usuarios al uid anónimo utilizando la opción <i>all_squash</i>.</p><p>Para facilitar el trabajo en aquellas instalaciones donde las
+uids son diferentes entre distintas máquinas, <i>nfsd</i> permite
+trasladar dinámicamente uids del servidor a uids del cliente y
+viceversa. Para habilitar esta traducción se utiliza la opción
+<i>map_daemon ,</i> la cual utiliza el protocolo RPC UGID. Para que
+esto funcione, el duende de traslados <b><a href="http://localhost/cgi-bin/man/man2html?8+ugidd">ugidd</a></b>(8)
+debe ser ejecutado en la máquina cliente.</p><p>La siguiente es la lista completa de opciones de traslado:</p><dl compact="compact"><dt><i>root_squash</i></dt>
+
+<dd>Traslada pedidos del uid/gid 0 al uid/gid anonymous. Nótese que
+esto no se aplica a otros uids que pueden ser igualmente sensibles,
+como el usuario <i>bin</i>.</dd>
+
+<dt><i>no_root_squash</i></dt>
+
+<dd>Deshabilita la opción de `root squashing'. Esta opción es
+particularmente útil para clientes sin discos.</dd>
+
+<dt><i>squash_uids</i> y <i>squash_gids</i></dt>
+
+<dd>Esta opción especifica una lista de uids o gids que se deberían
+trasladar al usuario anonymous. La siguiente es una lista válida de
+ids:</dd>
+
+<dd>squash_uids=0-15,20,25-50</dd>
+
+<dd>En general, la lista es mucho mas simple, por ejemplo:</dd>
+
+<dd>squash_uids=0-100</dd>
+
+<dt><i>all_squash</i></dt>
+
+<dd>Traslada todos los uids y gids al usuario anónimo. Útil para
+exportar con NFS directorios FTP públicos, directorios de spool
+para noticias, etc. La opción contraria es <i>no_all_squash</i>, la
+cual está habilitada por omisión.</dd>
+
+<dt><i>map_daemon</i></dt>
+
+<dd>Esta opción habilita el traslado de uids y gids dinámico. Cada
+uid en un pedido NFS se traduce a su equivalente uid del servidor,
+y cada uid en una respuesta NFS se traduce a su equivalente uid del
+cliente. Para usar esta opción, el duende <b><a href="http://localhost/cgi-bin/man/man2html?8+rpc.ugidd">rpc.ugidd</a></b>(8)
+debe ejecutarse en la máquina cliente. Las opciones por omisión son
+<i>map_identity</i>, la cuál deja todos los uids como están. Esté o
+no el traslado dinámico habilitado, el sistema utilizará las
+opciones normales de squash.</dd>
+
+<dt><i>anonuid</i> y <i>anongid</i></dt>
+
+<dd>Estas opciones establecen en forma explícita las uid y gid de
+la cuenta anónima. Esta opción es útil para clientes PC/NFS, donde
+todos los pedidos parecen provenir de un solo usuario. Por ejemplo,
+la línea de exportación para <i>/home/pepe</i> en la sección de
+ejemplo de más abajo, mapea todos los pedidos al uid 150 (que
+supuestamente pertenece al usuario pepe).</dd>
+</dl><a id="lbAG"> </a><h2>EJEMPLO</h2><pre>
+# fichero de ejemplo /etc/exports
+/               master(rw) trusty(rw,no_root_squash)
+/projects       proj*.local.domain(rw)
+/usr            *.local.domain(ro) @trusted(rw)
+/home/pepe       pc001(rw,all_squash,anonuid=150,anongid=100)
+/pub            (ro,insecure,all_squash)
+</pre><p>La primera línea exporta el sistema de ficheros completo a las
+máquinas master y trusty. Además de permitir acceso de escritura,
+deshabilita el traslado de uids para la máquina trusty. La segunda
+y la tercer entradas muestran ejemplos de comodines en nombres de
+máquinas y grupos de red (la entrada `@trusted'). La cuarta línea
+muestra la entrada para el cliente PC/NFS presentada anteriormente.
+La última línea exporta el directorio público FTP a todas las
+máquinas del mundo, y los pedidos serán ejecutados usando la cuenta
+nobody. La opción <i>insecure</i> también permite clientes con
+implementaciones NFS que no utilizan un puerto reservado para NFS.
+<a id="lbAH"> </a></p><h2>ADVERTENCIAS</h2><p>
+
+Contrariamente a otras implementaciones del servidor NFS, este
+<b>nfsd</b> permite exportar directorios y sus respectivos
+subdirectorios a la misma máquina, por ejemplo <i>/usr</i> y
+<i>/usr/X11R6</i>. En este caso, se utilizan las opciones de
+montaje para la entrada mas específica. Por ejemplo, cuando un
+usuario en una máquina cliente acceda a un fichero en
+<i>/usr/X11R6</i>, se usarán las opciones de montaje de
+<i>/usr/X11R6 .</i> Este mismo criterio se utiliza cuando la
+entrada es un comodín o un grupo de red. <a id="lbAI"> </a> 
+</p><h2>FICHEROS</h2><dl compact="compact"><dt><i>/etc/exports</i></dt>
+
+<dd>Fichero de configuración para <b><a href="http://localhost/cgi-bin/man/man2html?8+nfsd">nfsd</a></b>(8).</dd>
+
+<dt><i>/etc/passwd</i></dt>
+
+<dd>El fichero de cuentas.</dd>
+</dl><p><a id="lbAJ"> </a></p><h2>DIAGNÓSTICOS</h2><p>
+
+Errores de sintaxis en el fichero de configuración se registran
+usando <b><a href="http://localhost/cgi-bin/man/man2html?8+syslogd">syslogd</a></b>(8)
+con nivel NOTICE de un DAEMON cuando <b><a href="http://localhost/cgi-bin/man/man2html?8+nfsd">nfsd</a></b>(8)
+o <b><a href="http://localhost/cgi-bin/man/man2html?8+mountd">mountd</a></b>(8)
+comienzan. Las máquinas desconocidas también se registran al
+comienzo. Como <a href="http://localhost/cgi-bin/man/man2html?8+named">named</a>(8)
+no suele reconocer todas las máquinas al arrancar el sistema, a
+medida que se van encontrando máquinas, éstas se registran
+utilizando los mismos parámetros para <a href="http://localhost/cgi-bin/man/man2html?8+syslogd">syslogd</a>(8).
+<a id="lbAK"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?8+mountd">mountd</a></b><p>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+nfsd">nfsd</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+nfs">nfs</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+passwd">passwd</a></b>(5).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAE">Opciones Generales</a></dt>
+
+<dt><a href="#lbAF">Correspondencia de ID de Usuarios</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAG">EJEMPLO</a></dt>
+
+<dt><a href="#lbAH">ADVERTENCIAS</a></dt>
+
+<dt><a href="#lbAI">FICHEROS</a></dt>
+
+<dt><a href="#lbAJ">DIAGNÓSTICOS</a></dt>
+
+<dt><a href="#lbAK">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:08 GMT, January 21, 2005
+</p></body></html>

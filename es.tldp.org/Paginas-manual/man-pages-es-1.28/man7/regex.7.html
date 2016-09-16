@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of REGEX</title></head><body><p>
+  
+</p><h1>REGEX</h1><p>
+
+Section: Environments, Tables, and Troff Macros (7)<br />
+Updated: 7 febrero 1994<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+regex - expresiones regulares POSIX 1003.2 <a id="lbAC"> </a> 
+</p><h2>DESCRIPCIÓN</h2><p>
+
+Las expresiones regulares (``ER''s), tal y como se definen en POSIX
+1003.2, tienen dos formas: ERs modernas (tal y como <i>egrep</i>;
+llama a estas ERs ``extendidas'' de 1003.2) y ERs obsoletas (las
+que usa <i>ed</i>; son ERs ``básicas'' de 1003.2). 
+</p><p>Las ERs obsoletas existen como tales por mantener la
+compatibilidad para algunos viejos programas; y serán discutidas al
+final.</p><p>1003.2 deja abiertos algunos aspectos de la sintaxis y semántica
+de las ER; `(dg' es una de las decisiones tomadas al respecto de
+estos temas que puede no ser portable con otras implementaciones de
+la 1003.2.</p><p>Una ER (moderna) es una + o más de una+ <i>rama</i> no vacía,
+separadas por `|'. Acepta cualquier cosa que se corresponda con una
+de las ramas.</p><p>Una rama es una + o más de una <i>pieza</i>, concatenadas.
+Acepta algo que corresponda con la primera, seguida por algo que
+corresponda con la segunda, etc.</p><p>Una pieza es un <i>átomo</i> posiblemente seguido por un solo +
+`*', `+', `?', o por un <i>límite</i>. Un átomo seguido por `*'
+ajusta con una secuencia de 0 o más átomos. Un átomo seguido por
+`+' ajusta con una secuencia de 1 o más átomos. Un átomo seguido
+por `?' ajusta con una secuencia de 0 o 1 átomo.</p><p>Un <i>límite</i> es un `{' seguido por un entero decimal sin
+signo, posiblemente seguido por una `,' posiblemente seguida por
+otro entero decimal sin signo, y todo acabado por un `}'. Los
+enteros deben encontrarse entre 0 y RE_DUP_MAX (255+) inclusive, y
+si hay dos de ellos, el primero no podrá ser mayor que el segundo.
+Un átomo seguido por un límite conteniendo un solo entero <i>i</i>
+y sin coma ajusta con una secuencia de exactamente <i>i</i> átomos.
+Un átomo seguido por un límite conteniendo un entero <i>i</i> y una
+coma ajusta con una secuencia de <i>i</i> o más átomos. Un átomo
+seguido por un límite conteniendo dos enteros <i>i</i> y <i>j</i>
+ajusta con una secuencia de entre <i>i</i> y <i>j</i> átomos (ambos
+inclusive).</p><p>Un átomo es una expresión regular dentro de `()' (ajustándose
+con una aparición de la expresión regular), un conjunto vacío de
+`()' (ajustando con una cadena vacía)+, una <i>expresión con
+corchetes</i> (ver abajo), `.' (ajustándose con un solo carácter),
+`^' (ajustando con la cadena vacía al principio de una linea), `$'
+(ajustando con la cadena vacía al final de una linea), un `\'
+seguido por uno de los caracteres `^.[$()|*+?{\' (ajustando con ese
+carácter tenido como un carácter normal), un `\' seguido por otro
+carácter+ (ajustando con ese carácter tenido como un carácter
+ordinario, como si el `\' no estuviera presente+), o un solo
+carácter sin ningún otro significado adicional (ajustando con ese
+carácter). Un `{' seguido por un carácter diferente de un dígito es
+un carácter ordinario, no el principio de un límite.+ Es ilegal
+terminar una ER con `\'.</p><p>Una <i>expresión con corchetes</i> es una lista de caracteres
+entre unos `[]'. Normalmente ajusta con solo uno de los caracteres
+de la lista (pero vea más adelante). Si la lista comienza por `^',
+ajusta con un solo carácter (pero vea más adelante) que <i>no</i>
+pertenezca al resto de la lista. Si hay en la lista dos caracteres
+separados por `-', es una abreviación de un <i>rango</i> completo
+de caracteres entre dos (inclusive) en la secuencia, por ejemplo
+`[0-9]' en ASCII ajusta con cualquier dígito decimal. Es ilegal+
+que dos rangos compartan un carácter, por ejemplo `a-c-e'.</p><p>Los rangos son muy dependientes de la secuencia de
+especificación y los programas portables deberían evitar
+utilizarlos.</p><p>Para incluir un literal `]' en la lista, debe aparecer el
+primero en la misma (siguiendo a un posible `^'). Para incluir un
+literal `-', debe aparecer el primero o el último en la lista, o
+ser el segundo carácter de un rango.</p><p>Para usar un literal `-' como el primer carácter de un rango,
+debe rodearse entre `[.' y `.]' para hacerlo un elemento a tratar
+(vea más abajo). Con la excepción de estas y algunas combinaciones
+que usan `[' (vea los siguientes párrafos), todos los otros
+caracteres especiales, incluyendo `\', pierden su significado
+especial dentro de una expresión entre corchetes.</p><p>Dentro de una expresión entre corchetes, un elemento a tratar
+(un carácter, una secuencia de más de un carácter que se interpreta
+como si fuera un solo carácter, o un nombre de secuencia de
+definición incluido entre `[.' y `.]' se entiende como la secuencia
+de caracteres de ese elemento. La secuencia es un elemento aislado
+de la lista contenida en la expresión con corchetes. Una expresión
+con corchetes que contenga un elemento de más de un carácter puede
+ajustar por más de un carácter, por ejemplo si la secuencia incluye
+un elemento `ch', entonces la ER `[[.ch.]]*c' ajusta con los
+primeros cinco caracteres de `chchcc'.</p><p>Dentro de una expresión con corchetes, un elemento englobado
+entre `[=' y `=]' es una clase de equivalencia, comprendiendo las
+secuencias de caracteres de todos los elementos equivalentes a ese
+otro, incluyéndose a él mismo. (Si no hay ningún otro elemento
+equivalente, el tratamiento es como si los delimitadores hubieran
+sido `[.' y `.]'.) Por ejemplo, si o y son miembros de una clase de
+equivalencia, entonces, entonces `[[=o=]]', `[[==]]', y `[o]' son
+todos sinónimos. Una clase de equivalencia no+ puede formar parte
+de un rango.</p><p>Dentro de una expresión con corchetes, el nombre de una <i>clase
+de caracteres</i> englobado entre `[:' y `:]' se interpreta como la
+lista de todos los caracteres que pertenecen a esa clase. Los
+nombre de clase de caracteres estándar son:</p><dl compact="compact"><dd>
+<pre>
+alnum digitpunct
+alpha graphspace
+blank lowerupper
+cntrl printxdigit
+</pre>
+</dd>
+</dl><p>Están compuestos por las clases de caracteres definidos en <i><a href="http://localhost/cgi-bin/man/man2html?3+ctype">ctype</a></i>(3).
+Localmente podrán proveerse de otras. Una clase de caracteres no
+puede formar parte de un rango.</p><p>Hay dos casos especiales+ de expresiones con corchetes: las
+expresiones con corchetes `[[:&lt;:]]' y `[[:&gt;:]]' ajustan con
+la cadena vacía del principio y final de una palabra,
+respectivamente. Una palabra se define como una secuencia de
+caracteres de palabra que no se encuentra ni precedida ni seguida
+por caracteres de palabra. Un carácter de palabra es un carácter de
+la clase <i>alnum</i> (tal y como se define en <i><a href="http://localhost/cgi-bin/man/man2html?3+ctype">ctype</a></i>(3))
+o un carácter de subrayado. Esta es una extensión, compatible pero
+no especificada por POSIX 1003.2, y debe ser usada con cuidado en
+aquel software que deba ser portable a otros sistemas.</p><p>En el caso en que una ER puede ajustar con más de una subcadena
+de la cadena dada, la ER se ajusta con aquella que comience antes
+en la cadena dada. Si la ER puede ajustar con varias subcadenas que
+comienzan en el mismo punto, se ajusta con la más larga. Las
+subexpresiones también ajustan con las subcadenas más largas
+posibles, sujetas a la restricción de que el ajuste global sea el
+más largo posible, con subexpresiones que empiecen antes en la ER
+con mayor prioridad que aquellas que comiencen después.</p><p>Nótese que las subexpresiones de nivel más alto tienen prioridad
+respecto a sus subexpresiones componentes de nivel inferior.</p><p>Las longitudes de los ajustes son medidas en caracteres, no en
+elementos. Una cadena vacía se considera más larga que cualquier
+otro ajuste. Por ejemplo, `bb*' se ajusta con los tres caracteres
+del centro de `abbbc', `(wee|week)(knights|nights)' se ajusta con
+los diez caracteres de `weeknights' , cuando `(.*).*' se intenta
+ajustar con `abc' la subexpresión se ajusta con los tres
+caracteres, y cuando `(a*)*' se intenta ajustar con `bc' tanto la
+ER como la subexpresión entre paréntesis se ajustan a la cadena
+vacía.</p><p>Si se ha especificado un ajuste no dependiente de las
+mayúsculas, el efecto es como si todas las distinciones entre
+mayúsculas y minúsculas hubieran desaparecido del alfabeto. Cuando
+un término del alfabeto existe tanto en mayúsculas como en
+minúsculas aparece como un carácter ordinario fuera de una
+expresión con corchetes, se transforma en una expresión con
+corchetes conteniendo los dos casos, por ejemplo, `x' se convierte
+en `[xX]'. Cuando aparece dentro de una expresión con corchetes,
+todos los casos posibles son añadidos a la expresión con corchetes,
+de tal manera que (por ejemplo) `[x]' se convierte en `[xX]' y
+`[^x]' se convierte en `[^xX]'.</p><p>No se impone ningún límite en particular en la longitud de las
+ERs+. Los programas que deban ser portables no deben emplear ERs
+más largas de 256 bytes, ya que una implementación puede rechazar
+el aceptar estas ERs y seguir cumpliendo POSIX.</p><p>Las expresiones regulares obsoletas (``basic'') difieren en
+varios aspectos. `|', `+', y `?' son caracteres ordinarios y no
+existe el equivalente para sus funcionalidades. Los delimitadores
+para los límites son `\{' y `\}', con `{' y `}' como caracteres
+ordinarios. Los paréntesis para subexpresiones anidadas son `\(' y
+`\)', siendo `(' y `)' caracteres ordinarios. `^' es un carácter
+ordinario excepto en el principio de la ER o+ al principio de una
+subexpresión con paréntesis, `$' es un carácter ordinario excepto
+al final de la ER o+ al final de una subexpresión con paréntesis, y
+`*' es un carácter ordinario si aparece al principio de la ER o al
+principio de una subexpresión con paréntesis (después de un posible
+`^' inicial). Finalmente, existe un nuevo tipo de átomo, la
+<i>referencia hacia atrás</i><b>: `\' seguido por un dígito decimal
+mayor que cero</b> <i>d</i> ajusta con la misma secuencia de
+caracteres ajustada por la subexpresión con paréntesis
+<i>d</i>-ésima (numerando las subexpresiones por las posiciones de
+sus paréntesis de apertura, y de izquierda a derecha), de tal
+manera que (por ejemplo) `\([bc]\)\1' ajusta con `bb' o `cc' pero
+no con `bc'. <a id="lbAD"> </a></p><h2>VÉASE TAMBIÉN</h2><a href="http://localhost/cgi-bin/man/man2html?3+regex">regex</a><p>(3) 
+</p><p>POSIX 1003.2, sección 2.8 (Regular Expression Notation). <a id="lbAE"> </a></p><h2>FALLOS</h2><p>
+
+Tener dos tipos de ERs es molesto. 
+</p><p>La especificación actual de 1003.2 dice que un `)' es un
+carácter ordinario en ausencia de un `(' sin ajustar; este fue un
+resultado no intencionado de un error de redacción, y es probable
+que sea modificado. Evite usarlo.</p><p>Las referencias hacia atrás son una espantosa `chapuza',
+añadiendo bastantes problemas para una implementación eficiente.
+También hay cosas vagamente definidas (¿ `a\(\(b\)*\2\)*d' ajusta
+con `abbbd'?). Evite usarlo.</p><p>La especificación 1003.2 sobre el ajuste independiente de
+mayúsculas es muy vaga. La definición ``mayúsculas o minúsculas
+implican al otro'' (<b>N. del T.</b> ``one case implies all
+cases'') dada arriba es un consenso entre todos los implementadores
+como la buena interpretación.</p><p>La sintaxis para límites de palabras es increíblemente
+desagradable. <a id="lbAF"> </a></p><h2>AUTOR</h2><p>
+
+Esta página ha sido obtenida del paquete regex de Henry Spencer. 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAD">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAE">FALLOS</a></dt>
+
+<dt><a href="#lbAF">AUTOR</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

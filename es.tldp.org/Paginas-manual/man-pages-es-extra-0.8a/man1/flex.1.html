@@ -1,0 +1,3078 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of FLEX</title></head><body><p>
+  
+</p><h1>FLEX</h1><p>
+
+Section: User Commands (1)<br />
+Updated: Abril 1995<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+flex - generador de analizadores léxicos rápidos <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>flex</b><b>[-bcdfhilnpstvwBFILTV78+? -C[aefFmr] -osalida
+-Pprefijo -Sesqueleto]</b><b>[--help --version]</b><i>[nombrefichero ...]</i><a id="lbAD"> </a><h2>INTRODUCCIÓN</h2><p>
+
+Este manual describe <i>flex,</i> una herramienta para la
+generación de programas que realizan concordancia de patrones en
+texto. El manual incluye a la vez secciones de tutorial y de
+referencia: 
+</p><pre>
+    Descripción
+        una breve introducción a la herramienta
+
+    Algunos Ejemplos Simples
+
+    Formato del Fichero de Entrada
+
+    Patrones
+        las expresiones regulares extendidas que utiliza flex
+
+    Cómo se Empareja la Entrada
+        las reglas para determinar lo que ha concordado
+
+    Acciones
+        cómo especificar qué hacer cuando concuerde un patrón
+
+    El Escáner Generado
+        detalles respecto al escáner que produce flex;
+        cómo controlar la fuente de entrada
+
+    Condiciones de Arranque
+        la introdución de contexto en sus escáneres, y
+        conseguir "mini-escáneres"
+
+    Múltiples Buffers de Entrada
+        cómo manipular varias fuentes de entrada; cómo
+        analizar cadenas en lugar de ficheros.
+
+    Reglas de Fin-de-Fichero
+        reglas especiales para reconocer el final de la entrada
+
+    Macros Misceláneas
+        un sumario de macros disponibles para las acciones
+
+    Valores Disponibles para el Usuario
+        un sumario de valores disponibles para las acciones
+
+    Interfaz con Yacc
+        conectando escáneres de flex junto con analizadores de yacc
+
+    Opciones
+        opciones de línea de comando de flex, y la directiva
+        "%option"
+
+    Consideraciones de Rendimiento
+        cómo hacer que sus analizadores vayan tan rápido
+        como sea posible
+
+    Generando Escáneres en C++
+        la facilidad (experimental) para generar analizadores
+        léxicos como clases de C++
+
+    Incompatibilidades con Lex y POSIX
+        cómo flex difiere del lex de AT&amp;T y del lex estándar
+        de POSIX 
+
+    Diagnósticos
+        esos mensajes de error producidos por flex (o por
+        los escáneres que este genera) cuyo significado podría
+        no ser evidente
+
+    Ficheros
+        los ficheros usados por flex
+
+    Deficiencias / Errores
+        problemas de flex conocidos
+
+    Ver También
+        otra documentación, herramientas relacionadas
+
+    Autor
+        incluye información de contacto
+
+</pre><a id="lbAE"> </a><h2>DESCRIPCIÓN</h2><i>flex</i><p> es una herramienta para generar <i>escáneres:</i>
+programas que reconocen patrones léxicos en un texto. <i>flex</i>
+lee los ficheros de entrada dados, o la entrada estándar si no se
+le ha indicado ningún nombre de fichero, con la descripción de un
+escáner a generar. La descripción se encuentra en forma de parejas
+de expresiones regulares y código C, denominadas <i>reglas.
+flex</i> genera como salida un fichero fuente en C,
+<b>lex.yy.c,</b> que define una rutina <b>yylex().</b> Este fichero
+se compila y se enlaza con la librería <b>-lfl</b> para producir un
+ejecutable. Cuando se arranca el fichero ejecutable, este analiza
+su entrada en busca de casos de las expresiones regulares. Siempre
+que encuentra uno, ejecuta el código C correspondiente. <a id="lbAF"> </a> 
+</p><h2>ALGUNOS EJEMPLOS SIMPLES</h2><p>En primer lugar veremos algunos ejemplos simples para una toma
+de contacto con el uso de <i>flex.</i> La siguiente entrada de
+<i>flex</i> especifica un escáner que siempre que encuentre la
+cadena "username" la reemplazará por el nombre de entrada al
+sistema del usuario:</p><pre>
+    %%
+    username    printf( "%s", getlogin() );
+
+</pre><p>
+
+Por defecto, cualquier texto que no reconozca el analizador léxico
+de <i>flex</i> se copia a la salida, así que el efecto neto de este
+escáner es copiar su fichero de entrada a la salida con cada
+aparición de "username" expandida. En esta entrada, hay solamente
+una regla. "username" es el <i>patrón</i> y el "printf" es la
+<i>acción.</i> El "%%" marca el comienzo de las reglas. 
+</p><p>Aquí hay otro ejemplo simple:</p><pre>
+            int num_lineas = 0, num_caracteres = 0;
+
+    %%
+    \n      ++num_lineas; ++num_caracteres;
+    .       ++num_caracteres;
+
+    %%
+    main()
+            {
+            yylex();
+            printf( "# de líneas = %d, # de caracteres. = %d\n",
+                    num_lineas, num_caracteres );
+            }
+
+</pre><p>
+
+Este analizador cuenta el número de caracteres y el número de
+líneas en su entrada (no produce otra salida que el informe final
+de la cuenta). La primera línea declara dos variables globales,
+"num_lineas" y "num_caracteres", que son visibles al mismo tiempo
+dentro de <b>yylex()</b> y en la rutina <b>main()</b> declarada
+después del segundo "%%". Hay dos reglas, una que empareja una
+línea nueva ("\n") e incrementa la cuenta de líneas y la cuenta de
+caracteres, y la que empareja cualquier caracter que no sea una
+línea nueva (indicado por la expresión regular "."). 
+</p><p>Un ejemplo algo más complicado:</p><pre>
+    /* escáner para un lenguaje de juguete al estilo de Pascal */
+
+    %{
+    /* se necesita esto para la llamada a atof() más abajo */
+    #include &lt;<a href="file:/usr/include/math.h">math.h</a>&gt;
+    %}
+
+    DIGITO   [0-9]
+    ID       [a-z][a-z0-9]*
+
+    %%
+
+    {DIGITO}+   {
+                printf( "Un entero: %s (%d)\n", yytext,
+                        atoi( yytext ) );
+                }
+
+    {DIGITO}+"."{DIGITO}*      {
+                printf( "Un real: %s (%g)\n", yytext,
+                        atof( yytext ) );
+                }
+
+    if|then|begin|end|procedure|function        {
+                printf( "Una palabra clave: %s\n", yytext );
+                }
+
+    {ID}        printf( "Un identificador: %s\n", yytext );
+
+    "+"|"-"|"*"|"/"   printf( "Un operador: %s\n", yytext );
+
+    "{"[^}\n]*"}"     /* se come una linea de comentarios */
+
+    [ \t\n]+          /* se come los espacios en blanco */
+
+    .           printf( "Caracter no reconocido: %s\n", yytext );
+
+    %%
+
+    main( argc, argv )
+    int argc;
+    char **argv;
+        {
+        ++argv, --argc;  /* se salta el nombre del programa */
+        if ( argc &gt; 0 )
+                yyin = fopen( argv[0], "r" );
+        else
+                yyin = stdin;
+        
+        yylex();
+        }
+
+</pre><p>
+
+Esto podría ser los comienzos de un escáner simple para un lenguaje
+como Pascal. Este identifica diferentes tipos de <i>tokens</i> e
+informa a cerca de lo que ha visto. 
+</p><p>Los detalles de este ejemplo se explicarán en las secciones
+siguientes. <a id="lbAG"> </a></p><h2>FORMATO DEL FICHERO DE ENTRADA</h2><p>
+
+El fichero de entrada de <i>flex</i> está compuesto de tres
+secciones, separadas por una línea donde aparece únicamente un
+<b>%%</b> en esta: 
+</p><pre>
+    definiciones
+    %%
+    reglas
+    %%
+    código de usuario
+
+</pre><p>
+
+La sección de <i>definiciones</i> contiene declaraciones de
+definiciones de <i>nombres</i> sencillas para simplificar la
+especificación del escáner, y declaraciones de <i>condiciones de
+arranque,</i> que se explicarán en una sección posterior. 
+</p><p>Las definiciones de nombre tienen la forma:</p><pre>
+    nombre definición
+
+</pre><p>
+
+El "nombre" es una palabra que comienza con una letra o un
+subrayado ('_') seguido por cero o más letras, dígitos, '_', o '-'
+(guión). La definición se considera que comienza en el primer
+caracter que no sea un espacio en blanco siguiendo al nombre y
+continuando hasta el final de la línea. Posteriormente se puede
+hacer referencia a la definición utilizando "{nombre}", que se
+expandirá a "(definición)". Por ejemplo, 
+</p><pre>
+    DIGITO   [0-9]
+    ID       [a-z][a-z0-9]*
+
+</pre><p>
+
+define "DIGITO" como una expresión regular que empareja un dígito
+sencillo, e "ID" como una expresión regular que empareja una letra
+seguida por cero o más letras o dígitos. Una referencia posterior a
+
+</p><pre>
+    {DIGITO}+"."{DIGITO}*
+
+</pre><p>
+
+es idéntica a 
+</p><pre>
+    ([0-9])+"."([0-9])*
+
+</pre><p>
+
+y empareja uno o más dígitos seguido por un '.' seguido por cero o
+más dígitos. 
+</p><p>La sección de <i>reglas</i> en la entrada de <i>flex</i>
+contiene una serie de reglas de la forma:</p><pre>
+    patrón   acción
+
+</pre><p>
+
+donde el patrón debe estar sin sangrar y la acción debe comenzar en
+la misma línea. 
+</p><p>Ver más abajo para una descripción más amplia sobre patrones y
+acciones.</p><p>Finalmente, la sección de código de usuario simplemente se copia
+a <b>lex.yy.c</b> literalmente. Esta sección se utiliza para
+rutinas de complemento que llaman al escáner o son llamadas por
+este. La presencia de esta sección es opcional; Si se omite, el
+segundo <b>%%</b> en el fichero de entrada se podría omitir
+también.</p><p>En las secciones de definiciones y reglas, cualquier texto
+<i>sangrado</i> o encerrado entre <b>%{</b> y <b>%}</b> se copia
+íntegramente a la salida (sin los %{}'s). Los %{}'s deben aparecer
+sin sangrar en líneas ocupadas únicamente por estos.</p><p>En la sección de reglas, cualquier texto o %{} sangrado que
+aparezca antes de la primera regla podría utilizarse para declarar
+variables que son locales a la rutina de análisis y (después de las
+declaraciones) al código que debe ejecutarse siempre que se entra a
+la rutina de análisis. Cualquier otro texto sangrado o %{} en la
+sección de reglas sigue copiándose a la salida, pero su significado
+no está bien definido y bien podría causar errores en tiempo de
+compilación (esta propiedad se presenta para conformidad con
+<i>POSIX</i> ; ver más abajo para otras características
+similares)</p><p>En la sección de definiciones (pero no en la sección de reglas),
+un comentario sin sangría (es decir, una línea comenzando con "/*")
+también se copia literalmente a la salida hasta el próximo "*/". <a id="lbAH"> </a></p><h2>PATRONES</h2><p>
+
+Los patrones en la entrada se escriben utilizando un conjunto
+extendido de expresiones regulares. Estas son: 
+</p><pre>
+    x          empareja el caracter 'x'
+    .          cualquier caracter (byte) excepto una línea nueva
+    [xyz]      una "clase de caracteres"; en este caso, el patrón
+                 empareja una 'x', una 'y', o una 'z'
+    [abj-oZ]   una "clase de caracteres" con un rango; empareja
+                 una 'a', una 'b', cualquier letra desde la 'j'
+                 hasta la 'o', o una 'Z'
+    [^A-Z]     una "clase de caracteres negada", es decir, cualquier
+                 caracter menos los que aparecen en la clase.  En 
+                 este caso, cualquier caracter EXCEPTO una letra
+                 mayúscula.
+    [^A-Z\n]   cualquier caracter EXCEPTO una letra mayúscula o
+                 una línea nueva
+    r*         cero o más r's, donde r es cualquier expresión regular
+    r+         una o más r's
+    r?         cero o una r (es decir, "una r opcional")
+    r{2,5}     donde sea de dos a cinco r's
+    r{2,}      dos o más r's
+    r{4}       exactamente 4 r's
+    {nombre}   la expansión de la definición de "nombre"
+               (ver más abajo)
+    "[xyz]\"foo"
+               la cadena literal: [xyz]"foo
+    \X         si X es una 'a', 'b', 'f', 'n', 'r', 't', o 'v',
+                 entonces la interpretación ANSI-C de \x.
+                 En otro caso, un literal 'X' (usado para
+                 indicar operadores tales como '*')
+    \0         un caracter NUL (código ASCII 0)
+    \123       el caracter con valor octal 123
+    \x2a       el caracter con valor hexadecimal 2a
+    (r)        empareja una r; los paréntesis se utilizan para
+                 anular la precedencia (ver más abajo)
+
+
+    rs         la expresión regular r seguida por la expresión
+                 regular s; se denomina "concatenación"
+
+
+    r|s        bien una r o una s
+
+
+    r/s        una r pero sólo si va seguida por una s.  El
+                 texto emparejado por s se incluye cuando se
+                 determina si esta regla es el "emparejamiento
+                 más largo", pero se devuelve entonces a la
+                 entrada antes que se ejecute la acción.  Así
+                 que la acción sólo ve el texto emparejado
+                 por r.  Este tipo de patrones se llama
+                 "de contexto posterior".
+                 (Hay algunas combinaciones de r/s que flex
+                 no puede emparejar correctamente; vea las notas
+                 en la sección Deficiencias / Errores más abajo
+                 respecto al "contexto posterior peligroso".)
+    ^r         una r, pero sólo al comienzo de una línea (es
+                 decir, justo al comienzo del análisis, o a la
+                 derecha después de que se haya analizado una
+                 línea nueva).
+    r$         una r, pero sólo al final de una línea (es decir,
+                 justo antes de una línea nueva).  Equivalente
+                 a "r/\n".
+
+               Fíjese que la noción de flex de una "línea nueva"
+               es exáctamente lo que el compilador de C utilizado
+               para compilar flex interprete como '\n'; en
+               particular, en algunos sistemas DOS debe filtrar
+               los \r's de la entrada used mismo, o explícitamente
+               usar r/\r\n para "r$".
+
+
+    &lt;s&gt;r       una r, pero sólo en la condición de arranque s
+                 (ver más abajo para una discusión sobre las
+                 condiciones de arranque)
+    &lt;s1,s2,s3&gt;r
+               lo mismo, pero en cualquiera de las condiciones
+                 de arranque s1, s2, o s3
+    &lt;*&gt;r       una r en cualquier condición de arranque, incluso
+                 una exclusiva.
+
+
+    &lt;&lt;EOF&gt;&gt;    un fin-de-fichero
+    &lt;s1,s2&gt;&lt;&lt;EOF&gt;&gt;
+               un fin-de-fichero en una condición de arranque s1 o s2
+
+</pre><p>
+
+Fíjese que dentro de una clase de caracteres, todos los operadores
+de expresiones regulares pierden su significado especial excepto el
+caracter de escape ('\') y los operadores de clase de caracteres,
+'-', 
+</p><p>Las expresiones regulares en el listado anterior están agrupadas
+de acuerdo a la precedencia, desde la precedencia más alta en la
+cabeza a la más baja al final. Aquellas agrupadas conjuntamente
+tienen la misma precedencia. Por ejemplo,</p><pre>
+    foo|bar*
+
+</pre><p>
+
+es lo mismo que 
+</p><pre>
+    (foo)|(ba(r*))
+
+</pre><p>
+
+ya que el operador '*' tiene mayor precedencia que la
+concatenación, y la concatenación más alta que el operador '|'.
+Este patrón por lo tanto empareja <i>bien</i> la cadena "foo"
+<i>o</i> la cadena "ba" seguida de cero o más r's. Para emparejar
+"foo" o, cero o más "bar"'s, use: 
+</p><pre>
+    foo|(bar)*
+
+</pre><p>
+
+y para emparejar cero o más "foo"'s o "bar"'s: 
+</p><pre>
+    (foo|bar)*
+
+</pre><p>Además de caracteres y rangos de caracteres, las clases de
+caracteres pueden también contener <i>expresiones</i> de clases de
+caracteres. Son expresiones encerradas entre los delimitadores
+<b>[:</b> y <b>:]</b> (que también deben aparecer entre el '[' y el
+']' de la clase de caracteres; además pueden darse otros elementos
+dentro de la clase de caracteres). Las expresiones válidas son:</p><pre>
+    [:alnum:] [:alpha:] [:blank:]
+    [:cntrl:] [:digit:] [:graph:]
+    [:lower:] [:print:] [:punct:]
+    [:space:] [:upper:] [:xdigit:]
+
+</pre><p>
+
+Todas estas expresiones designan un conjunto de caracteres
+equivalentes a la correspondiente función estándar <b>isXXX</b> de
+C. Por ejemplo, <b>[:alnum:]</b> designa aquellos caracteres para
+los cuales <b>isalnum()</b> devuelve verdadero - esto es, cualquier
+caracter alfabético o numérico. Algunos sistemas no ofrecen
+<b>isblank(),</b> así que flex define <b>[:blank:]</b> como un
+espacio en blanco o un tabulador. 
+</p><p>Por ejemplo, las siguientes clases de caracteres son todas
+equivalentes:</p><pre>
+    [[:alnum:]]
+    [[:alpha:][:digit:]]
+    [[:alpha:]0-9]
+    [a-zA-Z0-9]
+
+</pre><p>
+
+Si su escáner ignora la distinción entre mayúsculas y minúsculas
+(la bandera <b>-i</b> ), entonces <b>[:upper:]</b> y
+<b>[:lower:]</b> son equivalentes a <b>[:alpha:].</b> 
+</p><p>Algunas notas sobre los patrones:</p><dl compact="compact"><dt>-</dt>
+
+<dd>Una clase de caracteres negada tal como el ejemplo "[^A-Z]"
+anterior <i>emparejará una línea nueva</i> a menos que "\n" (o una
+secuencia de escape equivalente) sea uno de los caracteres
+presentes explícitamente en la clase de caracteres negada (p.ej.,
+"[^A-Z\n]"). Esto es diferente a cómo muchas de las otras
+herramientas de expresiones regulares tratan las clases de
+caracteres negadas, pero desafortunadamente la inconsistencia está
+fervientemente enrraizada históricamente. Emparejar líneas nuevas
+significa que un patrón como [^"]* puede emparejar la entrada
+completa a menos que haya otra comilla en la entrada.</dd>
+
+<dt>-</dt>
+
+<dd>Una regla puede tener lo más una instancia del contexto
+posterior (el operador '/' o el operador '$'). La condición de
+arranque, los patrones '^', y "&lt;&lt;EOF&gt;&gt;" pueden aparecer
+solamente al principio de un patrón, y, al igual que con '/' y '$',
+no pueden agruparse dentro de paréntesis. Un '^' que no aparezca al
+principio de una regla o un '$' que no aparezca al final de una
+regla pierde sus propiedades especiales y es tratado como un
+caracter normal.</dd>
+
+<dd>Lo siguiente no está permitido: 
+<pre>
+    foo/bar$
+    &lt;sc1&gt;foo&lt;sc2&gt;bar
+
+</pre>
+
+Fíjese que la primera regla se puede escribir como
+"foo/bar\n".</dd>
+
+<dd>En el siguiente ejemplo un '$' o un '^' es tratado como un
+caracter normal: 
+<pre>
+    foo|(bar$)
+    foo|^bar
+
+</pre>
+
+Si lo que se desea es un "foo" o un "bar" seguido de una línea
+nueva, puede usarse lo siguiente (la acción especial '|' se explica
+más abajo): 
+<pre>
+    foo      |
+    bar$     /* la acción va aquí */
+
+</pre>
+
+Un truco parecido funcionará para emparejar un "foo" o, un "bar" al
+principio de una línea.</dd>
+</dl><a id="lbAI"> </a><h2>CÓMO SE EMPAREJA LA ENTRADA</h2><p>
+
+Cuando el escáner generado está funcionando, este analiza su
+entrada buscando cadenas que concuerden con cualquiera de sus
+patrones. Si encuentra más de un emparejamiento, toma el que
+empareje más texto (para reglas de contexto posterior, se incluye
+la longitud de la parte posterior, incluso si se devuelve a la
+entrada). Si encuentra dos o más emparejamientos de la misma
+longitud, se escoge la regla listada en primer lugar en el fichero
+de entrada de <i>flex.</i> 
+</p><p>Una vez que se determina el emparejamiento, el texto
+correspondiente al emparejamiento (denominado el <i>token)</i> está
+disponible en el puntero a caracter global <b>yytext,</b> y su
+longitud en la variable global entera <b>yyleng.</b> Entonces la
+<i>acción</i> correspondiente al patrón emparejado se ejecuta (una
+descripción más detallada de las acciones viene a continuación), y
+entonces la entrada restante se analiza para otro
+emparejamiento.</p><p>Si no se encuentra un emparejamiento, entonces se ejecuta la
+<i>regla por defecto:</i> el siguiente caracter en la entrada se
+considera reconocido y se copia a la salida estándar. Así, la
+entrada válida más simple de <i>flex</i> es:</p><pre>
+    %%
+
+</pre><p>
+
+que genera un escáner que simplemente copia su entrada (un caracter
+a la vez) a la salida. 
+</p><p>Fíjese que <b>yytext</b> se puede definir de dos maneras
+diferentes: bien como un <i>puntero</i> a caracter o como un
+<i>array</i> de caracteres. Usted puede controlar la definición que
+usa <i>flex</i> incluyendo una de las directivas especiales
+<b>%pointer</b> o <b>%array</b> en la primera sección
+(definiciones) de su entrada de flex. Por defecto es
+<b>%pointer,</b> a menos que use la opción de compatibilidad
+<b>-l,</b> en cuyo caso <b>yytext</b> será un array. La ventaja de
+usar <b>%pointer</b> es un análisis substancialmente más rápido y
+la ausencia de desbordamiento del buffer cuando se emparejen tokens
+muy grandes (a menos que se agote la memoria dinámica). La
+desventaja es que se encuentra restringido en cómo sus acciones
+pueden modificar <b>yytext</b> (vea la siguiente sección), y las
+llamadas a la función <b>unput()</b> destruyen el contenido actual
+de <b>yytext,</b> que puede convertirse en un considerable
+quebradero de cabeza de portabilidad al cambiar entre diferentes
+versiones de <i>lex.</i></p><p>La ventaja de <b>%array</b> es que entoces puede modificar
+<b>yytext</b> todo lo que usted quiera, las llamadas a
+<b>unput()</b> no destruyen <b>yytext</b> (ver más abajo). Además,
+los programas de <i>lex</i> existentes a veces acceden a
+<b>yytext</b> externamente utilizando declaraciones de la
+forma:</p><pre>
+    extern char yytext[];
+</pre><p>
+
+Esta definición es errónea cuando se utiliza <b>%pointer,</b> pero
+correcta para <b>%array.</b> 
+</p><p><b>%array</b> define a <b>yytext</b> como un array de
+<b>YYLMAX</b> caracteres, que por defecto es un valor bastante
+grande. Usted puede cambiar el tamaño símplemente definiendo con
+#define a <b>YYLMAX</b> con un valor diferente en la primera
+sección de su entrada de <i>flex.</i> Como se mencionó antes, con
+<b>%pointer</b> yytext crece dinámicamente para acomodar tokens
+grandes. Aunque esto signifique que con <b>%pointer</b> su escáner
+puede acomodar tokens muy grandes (tales como emparejar bloques
+enteros de comentarios), tenga presente que cada vez que el escáner
+deba cambiar el tamaño de <b>yytext</b> también debe reiniciar el
+análisis del token entero desde el principio, así que emparejar
+tales tokens puede resultar lento. Ahora <b>yytext</b> <i>no</i>
+crece dinámicamente si una llamada a <b>unput()</b> hace que se
+deba devolver demasiado texto; en su lugar, se produce un error en
+tiempo de ejecución.</p><p>También tenga en cuenta que no puede usar <b>%array</b> en los
+analizadores generados como clases de C++ (la opción <b>c++;</b>
+vea más abajo). <a id="lbAJ"> </a></p><h2>ACCIONES</h2><p>
+
+Cada patrón en una regla tiene una acción asociada, que puede ser
+cualquier sentencia en C. El patrón finaliza en el primer caracter
+de espacio en blanco que no sea una secuencia de escape; lo que
+queda de la línea es su acción. Si la acción está vacía, entonces
+cuando el patrón se empareje el token de entrada simplemente se
+descarta. Por ejemplo, aquí está la especificación de un programa
+que borra todas las apariciones de "zap me" en su entrada: 
+</p><pre>
+    %%
+    "zap me"
+
+</pre><p>
+
+(Este copiará el resto de caracteres de la entrada a la salida ya
+que serán emparejados por la regla por defecto.) 
+</p><p>Aquí hay un programa que comprime varios espacios en blanco y
+tabuladores a un solo espacio en blanco, y desecha los espacios que
+se encuentren al final de una línea:</p><pre>
+    %%
+    [ \t]+        putchar( ' ' );
+    [ \t]+$       /* ignora este token */
+
+</pre><p>Si la acción contiene un '{', entonces la acción abarca hasta
+que se encuentre el correspondiente '}', y la acción podría
+entonces cruzar varias líneas. <i>flex</i> es capaz de reconocer
+las cadenas y comentarios de C y no se dejará engañar por las
+llaves que encuentre dentro de estos, pero aun así también permite
+que las acciones comiencen con <b>%{</b> y considerará que la
+acción es todo el texto hasta el siguiente <b>%}</b> (sin tener en
+cuenta las llaves ordinarias dentro de la acción).</p><p>Una acción que consista sólamente de una barra vertical ('|')
+significa "lo mismo que la acción para la siguiente regla." Vea más
+abajo para una ilustración.</p><p>Las acciones pueden incluir código C arbitrario, incuyendo
+sentencias <b>return</b> para devolver un valor desde cualquier
+rutina llamada <b>yylex().</b> Cada vez que se llama a
+<b>yylex()</b> esta continúa procesando tokens desde donde lo dejó
+la última vez hasta que o bien llegue al final del fichero o
+ejecute un return.</p><p>Las acciones tienen libertad para modificar <b>yytext</b>
+excepto para alargarla (añadiendo caracteres al final--esto
+sobreescribirá más tarde caracteres en el flujo de entrada). Sin
+embargo esto no se aplica cuando se utiliza <b>%array</b> (ver
+arriba); en ese caso, <b>yytext</b> podría modificarse libremente
+de cualquier manera.</p><p>Las acciones tienen libertad para modificar <b>yyleng</b>
+excepto que estas no deberían hacerlo si la acción también incluye
+el uso de <b>yymore()</b> (ver más abajo).</p><p>Hay un número de directivas especiales que pueden incluirse
+dentro de una acción:</p><dl compact="compact"><dt>-</dt>
+
+<dd><b>ECHO</b> copia yytext a la salida del escáner.</dd>
+
+<dt>-</dt>
+
+<dd><b>BEGIN</b> seguido del nombre de la condición de arranque
+pone al escáner en la condición de arranque correspondiente (ver
+más abajo).</dd>
+
+<dt>-</dt>
+
+<dd><b>REJECT</b> ordena al escáner a que proceda con la "segunda
+mejor" regla que concuerde con la entrada (o un prefijo de la
+entrada). La regla se escoge como se describió anteriormente en
+"Cómo se Empareja la Entrada", y <b>yytext</b> e <b>yyleng</b> se
+ajustan de forma apropiada. Podría ser una que empareje tanto texto
+como la regla escogida originalmente pero que viene más tarde en el
+fichero de entrada de <i>flex,</i> o una que empareje menos texto.
+Por ejemplo, lo que viene a continuación contará las palabras en la
+entrada y llamará a la rutina especial() siempre que vea "frob": 
+<pre>
+            int contador_palabras = 0;
+    %%
+
+    frob        especial(); REJECT;
+    [^ \t\n]+   ++contador_palabras;
+
+</pre>
+
+Sin el <b>REJECT,</b> cualquier número de "frob"'s en la entrada no
+serían contados como palabras, ya que el escáner normalmente
+ejecuta solo una acción por token. Se permite el uso de múltiples
+<b>REJECT's,</b> cada uno buscando la siguiente mejor elección a la
+regla que actualmente esté activa. Por ejemplo, cuando el siguiente
+escáner analice el token "abcd", este escribirá "abcdabcaba" a la
+salida: 
+<pre>
+    %%
+    a        |
+    ab       |
+    abc      |
+    abcd     ECHO; REJECT;
+    .|\n     /* se come caracteres sin emparejar */
+
+</pre>
+
+(Las primeras tres reglas comparten la acción de la cuarta ya que
+estas usan la acción especial '|'.) <b>REJECT</b> es una propiedad
+particularmente cara en términos de rendimiento del escáner; si se
+usa en <i>cualquiera</i> de las acciones del escáner esta
+ralentizará <i>todo</i> el proceso de emparejamiento del escáner.
+Además, <b>REJECT</b> no puede usarse con las opciones <i>-Cf</i> o
+<i>-CF</i> (ver más abajo).</dd>
+
+<dd>Fíjese también que a diferencia de las otras acciones
+especiales, <b>REJECT</b> es una <i>bifurcación;</i> el código que
+la siga inmediatamente en la acción <i>no</i> será ejecutado.</dd>
+
+<dt>-</dt>
+
+<dd><b>yymore()</b> dice al escáner que la próxima vez que empareje
+una regla, el token correspondiente debe ser <i>añadido</i> tras el
+valor actual de <b>yytext</b> en lugar de reemplazarlo. Por
+ejemplo, dada la entrada "mega-klugde" lo que viene a continuación
+escribirá "mega-mega-kludge" a la salida: 
+<pre>
+    %%
+    mega-    ECHO; yymore();
+    kludge   ECHO;
+
+</pre>
+
+El primer "mega-" se empareja y se repite a la salida. Entonces se
+empareja "kludge", pero el "mega-" previo aún está esperando al
+inicio de <b>yytext</b> asi que el <b>ECHO</b> para la regla del
+"kludge" realmente escribirá "mega-kludge".</dd>
+</dl><p>Dos notas respecto al uso de <b>yymore().</b> Primero,
+<b>yymore()</b> depende de que el valor de <i>yyleng</i> refleje
+correctamente el tamaño del token actual, así que no debe modificar
+<i>yyleng</i> si está utilizando <b>yymore().</b> Segundo, la
+presencia de <b>yymore()</b> en la acción del escáner implica una
+pequeña penalización de rendimiento en la velocidad de
+emparejamiento del escáner.</p><dl compact="compact"><dt>-</dt>
+
+<dd><b><a href="http://localhost/cgi-bin/man/man2html?n+yyless">yyless</a>(n)</b>
+devuelve todos excepto los primeros <i>n</i> caracteres del token
+actual de nuevo al flujo de entrada, donde serán reanalizados
+cuando el escáner busque el siguiente emparejamiento. <b>yytext</b>
+e <b>yyleng</b> se ajustan de forma adecuada (p.ej., <b>yyleng</b>
+no será igual a <i>n</i> ). Por ejemplo, con la entrada "foobar" lo
+que viene a continuación escribirá "foobarbar": 
+<pre>
+    %%
+    foobar    ECHO; <a href="http://localhost/cgi-bin/man/man2html?3+yyless">yyless</a>(3);
+    [a-z]+    ECHO;
+
+</pre>
+
+Un argumento de 0 para <b>yyless</b> hará que la cadena de entrada
+actual sea analizada por completo de nuevo. A menos que haya
+cambiado la manera en la que el escáner procese de ahora en
+adelante su entrada (utilizando <b>BEGIN,</b> por ejemplo), esto
+producirá un bucle sin fin.</dd>
+</dl><p>Fíjese que <b>yyless</b> es una macro y puede ser utilizada
+solamente en el fichero de entrada de flex, no desde otros ficheros
+fuente.</p><dl compact="compact"><dt>-</dt>
+
+<dd><b>unput(c)</b> pone el caracter <i>c</i> de nuevo en el flujo
+de entrada. Este será el próximo caracter analizado. La siguiente
+acción tomará el token actual y hará que se vuelva a analizar pero
+encerrado entre paréntesis. 
+<pre>
+    {
+    int i;
+    /* Copia yytext porque unput() desecha yytext */
+    char *yycopia = strdup( yytext );
+    unput( ')' );
+    for ( i = yyleng - 1; i &gt;= 0; --i )
+        unput( yycopia[i] );
+    unput( '(' );
+    free( yycopia );
+    }
+
+</pre>
+
+Fíjese que ya que cada <b>unput()</b> pone el caracter dado de
+nuevo al <i>principio</i> del flujo de entrada, al devolver cadenas
+de caracteres se debe hacer de atrás hacia delante.</dd>
+</dl><p>Un problema potencial importante cuando se utiliza
+<b>unput()</b> es que si está usando <b>%pointer</b> (por defecto),
+una llamada a <b>unput()</b> <i>destruye</i> el contenido de
+<i>yytext,</i> comenzando con su caracter más a la derecha y
+devorando un caracter a la izquierda con cada llamada. Si necesita
+que se preserve el valor de yytext después de una llamada a
+<b>unput()</b> (como en el ejemplo anterior), usted debe o bien
+copiarlo primero en cualquier lugar, o construir su escáner usando
+<b>%array</b><br />
+ (ver Cómo se Empareja la Entrada).</p><p>Finalmente, note que no puede devolver <b>EOF</b> para intentar
+marcar el flujo de entrada con un fin-de-fichero.</p><dl compact="compact"><dt>-</dt>
+
+<dd><b>input()</b> lee el próximo caracter del flujo de entrada.
+Por ejemplo, lo que viene a continuación es una manera de comerse
+los comentarios en C: 
+<pre>
+    %%
+    "/*"        {
+                register int c;
+
+                for ( ; ; )
+                    {
+                    while ( (c = input()) != '*' &amp;&amp;
+                            c != EOF )
+                        ;    /* se come el texto del comentario */
+
+                    if ( c == '*' )
+                        {
+                        while ( (c = input()) == '*' )
+                            ;
+                        if ( c == '/' )
+                            break;    /* encontró el final */
+                        }
+
+                    if ( c == EOF )
+                        {
+                        error( "EOF en comentario" );
+                        break;
+                        }
+                    }
+                }
+
+</pre>
+
+(Fíjese que si el escáner se compila usando <b>C++,</b> entonces a
+<b>input()</b> se le hace referencia con <b>yyinput(),</b> para
+evitar una colisión de nombre con el flujo de <b>C++</b> por el
+nombre <i>input.)</i></dd>
+
+<dt>-</dt>
+
+<dd><b>YY_FLUSH_BUFFER</b> vacía el buffer interno del escáner de
+manera que la próxima vez que el escáner intente emparejar un
+token, este primero rellenará el buffer usando <b>YY_INPUT</b> (ver
+El Escáner Generado, más abajo). Esta acción es un caso especial de
+la función más general <b>yy_flush_buffer(),</b> descrita más abajo
+en la sección Múltiples Buffers de Entrada.</dd>
+
+<dt>-</dt>
+
+<dd><b>yyterminate()</b> se puede utilizar en lugar de una
+sentencia de retorno en una acción. Esta hace que finalice el
+escáner y retorne un 0 a quien haya llamado al escáner, indicando
+que "todo está hecho". Por defecto, también se llama a
+<b>yyterminate()</b> cuando se encuentra un fin-de-fichero. Esta es
+una macro y podría ser redefinida.</dd>
+</dl><a id="lbAK"> </a><h2>El Escáner Generado</h2><p>
+
+La salida de <i>flex</i> es el fichero <b>lex.yy.c,</b> que
+contiene la rutina de análisis <b>yylex(),</b> un número de tablas
+usadas por esta para emparejar tokens, y un número de rutinas
+auxiliares y macros. Por defecto, <b>yylex()</b> se declara así 
+</p><pre>
+    int yylex()
+        {
+        ... aquí van varias definiciones y las acciones ...
+        }
+
+</pre><p>
+
+(Si su entorno acepta prototipos de funciones, entonces este será
+"int yylex( void )"). Esta definición podría modificarse definiendo
+la macro "YY_DECL". Por ejemplo, podría utilizar: 
+</p><pre>
+    #define YY_DECL float lexscan( a, b ) float a, b;
+
+</pre><p>
+
+para darle a la rutina de análisis el nombre <i>lexscan,</i> que
+devuelve un real, y toma dos reales como argumentos. Fíjese que si
+pone argumentos a la rutina de análisis usando una declaración de
+función no-prototipada/tipo-K&amp;R, debe hacer terminar la
+definición con un punto y coma (;). 
+</p><p>Siempre que se llame a <b>yylex(),</b> este analiza tokens desde
+el fichero de entrada global <i>yyin</i> (que por defecto es igual
+a stdin). La función continúa hasta que alcance el final del
+fichero (punto en el que devuelve el valor 0) o una de sus acciones
+ejecute una sentencia <i>return.</i></p><p>Si el escáner alcanza un fin-de-fichero, entonces el
+comportamiento en las llamadas posteriores está indefinido a menos
+que o bien <i>yyin</i> apunte a un nuevo fichero de entrada (en
+cuyo caso el análisis continúa a partir de ese fichero), o se llame
+a <b>yyrestart().</b> <b>yyrestart()</b> toma un argumento, un
+puntero <b>FILE *</b> (que puede ser nulo, si ha preparado a
+<b>YY_INPUT</b> para que analice una fuente distinta a
+<i>yyin),</i> e inicializa <i>yyin</i> para que escanee ese
+fichero. Esencialmente no hay diferencia entre la asignación a
+<i>yyin</i> de un nuevo fichero de entrada o el uso de
+<b>yyrestart()</b> para hacerlo; esto último está disponible por
+compatibilidad con versiones anteriores de <i>flex,</i> y porque
+puede utilizarse para conmutar ficheros de entrada en medio del
+análisis. También se puede utilizar para desechar el buffer de
+entrada actual, invocándola con un argumento igual a <i>yyin;</i>
+pero mejor es usar <b>YY_FLUSH_BUFFER</b> (ver más arriba). Fíjese
+que <b>yyrestart()</b> <i>no</i> reinicializa la condición de
+arranque a <b>INITIAL</b> (ver Condiciones de Arranque, más
+abajo).</p><p>Si <b>yylex()</b> para el análisis debido a la ejecución de una
+sentencia <i>return</i> en una de las acciones, el analizador
+podría ser llamado de nuevo y este reanudaría el análisis donde lo
+dejó.</p><p>Por defecto (y por razones de eficiencia), el analizador usa
+lecturas por bloques en lugar de simples llamadas a <i>getc()</i>
+para leer caracteres desde <i>yyin.</i> La manera en la que toma su
+entrada se puede controlar definienfo la macro <b>YY_INPUT.</b> La
+secuencia de llamada para YY_INPUT es
+"YY_INPUT(buf,result,max_size)". Su acción es poner hasta
+<i>max_size</i> caracteres en el array de caracteres <i>buf</i> y
+devolver en la variable entera <i>result</i> bien o el número de
+caracteres leídos o la constante YY_NULL (0 en sistemas Unix) para
+indicar EOF. Por defecto YY_INPUT lee desde la variable global
+puntero a fichero "yyin".</p><p>Una definición de ejemplo para YY_INPUT (en la sección de
+definiciones del fichero de entrada) es:</p><pre>
+    %{
+    #define YY_INPUT(buf,result,max_size) \
+        { \
+        int c = getchar(); \
+        result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \
+        }
+    %}
+
+</pre><p>
+
+Esta definición cambiará el procesamiento de la entrada para que
+suceda un caracter a la vez. 
+</p><p>Cuando el analizador reciba una indicación de fin-de-fichero
+desde YY_INPUT, entonces esta comprueba la función <b>yywrap().</b>
+Si <b>yywrap()</b> devuelve falso (cero), entonces se asume que la
+función ha ido más allá y ha preparado <i>yyin</i> para que apunte
+a otro fichero de entrada, y el análisis continúa. Si este retorna
+verdadero (no-cero), entonces el analizador termina, devolviendo un
+0 a su invocador. Fíjese que en cualquier caso, la condición de
+arranque permanece sin cambios; esta <i>no</i> vuelve a ser
+<b>INITIAL.</b></p><p>Si no proporciona su propia versión de <b>yywrap(),</b> entonces
+debe bien o usar <b>%option noyywrap</b> (en cuyo caso el
+analizador se comporta como si <b>yywrap()</b> devolviera un 1), o
+debe enlazar con <b>-lfl</b> para obtener la versión por defecto de
+la rutina, que siempre devuelve un 1.</p><p>Hay disponibles tres rutinas para analizar desde buffers de
+memoria en lugar de desde ficheros: <b>yy_scan_string(),
+yy_scan_bytes(),</b> e <b>yy_scan_buffer().</b> Las trataremos en
+la sección Múltiples Buffers de Entrada.</p><p>El analizador escribe su salida con <b>ECHO</b> a la variable
+global <i>yyout</i> (por defecto, stdout), que el usuario podría
+redefinir asignándole cualquier otro puntero a <b>FILE.</b> <a id="lbAL"> </a></p><h2>CONDICIONES DE ARRANQUE</h2><i>flex</i><p> dispone de un mecanismo para activar reglas
+condicionalmente. Cualquier regla cuyo patrón se prefije con
+"&lt;sc&gt;" únicamente estará activa cuando el analizador se
+encuentre en la condición de arranque llamada "sc". Por ejemplo, 
+</p><pre>
+    &lt;STRING&gt;[^"]*        { /* se come el cuerpo de la cadena ... */
+                ...
+                }
+
+</pre><p>
+
+estará activa solamente cuando el analizador esté en la condición
+de arranque "STRING", y 
+</p><pre>
+    &lt;INITIAL,STRING,QUOTE&gt;\. { /* trata una secuencia de escape ... */
+                ...
+                }
+
+</pre><p>
+
+estará activa solamente cuando la condición de arranque actual sea
+o bien "INITIAL", "STRING", o "QUOTE". 
+</p><p>Las condiciones de arranque se declaran en la (primera) sección
+de definiciones de la entrada usando líneas sin sangrar comenzando
+con <b>%s</b> o <b>%x</b> seguida por una lista de nombres. Lo
+primero declara condiciones de arranque <i>inclusivas,</i> lo
+último condiciones de arranque <i>exclusivas.</i> Una condición de
+arranque se activa utilizando la acción <b>BEGIN.</b> Hasta que se
+ejecute la próxima acción <b>BEGIN,</b> las reglas con la condición
+de arranque dada estarán activas y las reglas con otras condiciones
+de arranque estarán inactivas. Si la condición de arranque es
+<i>inclusiva,</i> entonces las reglas sin condiciones de arranque
+también estarán activas. Si es <i>exclusiva,</i> entonces
+<i>sólamente</i> las reglas calificadas con la condición de
+arranque estarán activas. Un conjunto de reglas dependientes de la
+misma condición de arranque exclusiva describe un analizador que es
+independiente de cualquiera de las otras reglas en la entrada de
+<i>flex.</i> Debido a esto, las condiciones de arranque exclusivas
+hacen fácil la especificación de "mini-escáneres" que analizan
+porciones de la entrada que son sintácticamente diferentes al resto
+(p.ej., comentarios).</p><p>Si la distinción entre condiciones de arranque inclusivas o
+exclusivas es aún un poco vaga, aquí hay un ejemplo simple que
+ilustra la conexión entre las dos. El conjunto de reglas:</p><pre>
+    %s ejemplo
+    %%
+
+    &lt;ejemplo&gt;foo   hacer_algo();
+
+    bar            algo_mas();
+
+</pre><p>
+
+es equivalente a 
+</p><pre>
+    %x ejemplo
+    %%
+
+    &lt;ejemplo&gt;foo   hacer_algo();
+
+    &lt;INITIAL,ejemplo&gt;bar    algo_mas();
+
+</pre><p>
+
+Sin el calificador <b>&lt;INITIAL,example&gt;,</b> el patrón
+<i>bar</i> en el segundo ejemplo no estará activo (es decir, no
+puede emparejarse) cuando se encuentre en la condición de arranque
+<b>example.</b> Si hemos usado <b>&lt;example&gt;</b> para
+calificar <i>bar,</i> aunque, entonces este únicamente estará
+activo en <b>example</b> y no en <b>INITIAL,</b> mientras que en el
+primer ejemplo está activo en ambas, porque en el primer ejemplo la
+condición de arranque <b>example</b> es una condición de arranque
+<i>inclusiva</i> <b>(%s).</b> 
+</p><p>Fíjese también que el especificador especial de la condición de
+arranque <b>&lt;*&gt;</b> empareja todas las condiciones de
+arranque. Así, el ejemplo anterior también pudo haberse
+escrito;</p><pre>
+    %x ejemplo
+    %%
+
+    &lt;ejemplo&gt;foo   hacer_algo();
+
+    &lt;*&gt;bar    algo_mas();
+
+</pre><p>La regla por defecto (hacer un <b>ECHO</b> con cualquier
+caracter sin emparejar) permanece activa en las condiciones de
+arranque. Esta es equivalente a:</p><pre>
+    &lt;*&gt;.|\n     ECHO;
+
+</pre><p><b>BEGIN(0)</b> retorna al estado original donde solo las reglas
+sin condiciones de arranque están activas. Este estado también
+puede referirse a la condición de arranque "INITIAL", así que
+<b>BEGIN(INITIAL)</b> es equivalente a <b>BEGIN(0).</b> (No se
+requieren los paréntesis alrededor del nombre de la condición de
+arranque pero se considera de buen estilo.)</p><p>Las acciones <b>BEGIN</b> pueden darse también como código
+sangrado al comienzo de la sección de reglas. Por ejemplo, lo que
+viene a continuación hará que el analizador entre en la condición
+de arranque "ESPECIAL" siempre que se llame a <b>yylex()</b> y la
+variable global <i>entra_en_especial</i> sea verdadera:</p><pre>
+            int entra_en_especial;
+
+    %x ESPECIAL
+    %%
+            if ( entra_en_especial )
+                BEGIN(ESPECIAL);
+
+    &lt;ESPECIAL&gt;blablabla
+    ...más reglas a continuación...
+
+</pre><p>Para ilustrar los usos de las condiciones de arranque, aquí hay
+un analizador que ofrece dos interpretaciones diferentes para una
+cadena como "123.456". Por defecto este la tratará como tres
+tokens, el entero "123", un punto ('.'), y el entero "456". Pero si
+la cadena viene precedida en la línea por la cadena "espera-reales"
+este la tratará como un único token, el número en coma flotante
+123.456:</p><pre>
+    %{
+    #include &lt;<a href="file:/usr/include/math.h">math.h</a>&gt;
+    %}
+    %s espera
+
+    %%
+    espera-reales        BEGIN(espera);
+
+    &lt;espera&gt;[0-9]+"."[0-9]+      {
+                printf( "encontró un real, = %f\n",
+                        atof( yytext ) );
+                }
+    &lt;espera&gt;\n           {
+                /* este es el final de la línea,
+                 * así que necesitamos otro
+                 * "espera-numero" antes de
+                 * que volvamos a reconocer más
+                 * números
+                 */
+                BEGIN(INITIAL);
+                }
+
+    [0-9]+      {
+                printf( "encontró un entero, = %d\n",
+                        atoi( yytext ) );
+                }
+
+    "."         printf( "encontró un punto\n" );
+
+</pre><p>
+
+Aquí está un analizador que reconoce (y descarta) comentarios de C
+mientras mantiene una cuenta de la línea actual de entrada. 
+</p><pre>
+    %x comentario
+    %%
+            int num_linea = 1;
+
+    "/*"         BEGIN(comentario);
+
+    &lt;comentario&gt;[^*\n]*       /* come todo lo que no sea '*' */
+    &lt;comentario&gt;"*"+[^*/\n]*  /* come '*'s no seguidos por '/' */
+    &lt;comentario&gt;\n            ++num_linea;
+    &lt;comentario&gt;"*"+"/"       BEGIN(INITIAL);
+
+</pre><p>
+
+Este analizador se complica un poco para emparejar tanto texto como
+le sea posible en cada regla. En general, cuando se intenta
+escribir un analizador de alta velocidad haga que cada regla
+empareje lo más que pueda, ya que esto es un buen logro. 
+</p><p>Fíjese que los nombres de las condiciones de arranque son
+realmente valores enteros y pueden ser almacenados como tales. Así,
+lo anterior podría extenderse de la siguiente manera:</p><pre>
+    %x comentario foo
+    %%
+            int num_linea = 1;
+            int invocador_comentario;
+
+    "/*"         {
+                 invocador_comentario = INITIAL;
+                 BEGIN(comentario);
+                 }
+
+    ...
+
+    &lt;foo&gt;"/*"    {
+                 invocador_comentario = foo;
+                 BEGIN(comentario);
+                 }
+
+    &lt;comentario&gt;[^*\n]*        /* se come cualquier cosa que no sea un '*' */
+    &lt;comentario&gt;"*"+[^*/\n]*   /* se come '*'s que no continuen con '/'s */
+    &lt;comentario&gt;\n             ++num_linea;
+    &lt;comentario&gt;"*"+"/"        BEGIN(invocador_comentario);
+
+</pre><p>
+
+Además, puede acceder a la condición de arranque actual usando la
+macro de valor entero <b>YY_START.</b> Por ejemplo, las
+asignaciones anteriores a <i>invocador_comentario</i> podrían
+escribirse en su lugar como 
+</p><pre>
+    invocador_comentario = YY_START;
+
+</pre><p>
+
+Flex ofrece <b>YYSTATE</b> como un alias para <b>YY_START</b> (ya
+que es lo que usa <i>lex</i> de AT&amp;T). 
+</p><p>Fíjese que las condiciones de arranque no tienen su propio
+espacio de nombres; los %s's y %x's declaran nombres de la misma
+manera que con #define's.</p><p>Finalmente, aquí hay un ejemplo de cómo emparejar cadenas entre
+comillas al estilo de C usando condiciones de arranque exclusivas,
+incluyendo secuencias de escape expandidas (pero sin incluir la
+comprobación de cadenas que son demasiado largas):</p><pre>
+    %x str
+
+    %%
+            char string_buf[MAX_STR_CONST];
+            char *string_buf_ptr;
+
+
+    \"      string_buf_ptr = string_buf; BEGIN(str);
+
+    &lt;str&gt;\"        { /* se vio la comilla que cierra - todo está hecho */
+            BEGIN(INITIAL);
+            *string_buf_ptr = '\0';
+            /* devuelve un tipo de token de cadena constante y
+             * el valor para el analizador sintáctico
+             */
+            }
+
+    &lt;str&gt;\n        {
+            /* error - cadena constante sin finalizar */
+            /* genera un mensaje de error */
+            }
+
+    &lt;str&gt;\\[0-7]{1,3} {
+            /* secuencia de escape en octal */
+            int resultado;
+
+            (void) sscanf( yytext + 1, "%o", &amp;resultado );
+
+            if ( resultado &gt; 0xff )
+                    /* error, constante fuera de rango */
+
+            *string_buf_ptr++ = resultado;
+            }
+
+    &lt;str&gt;\\[0-9]+ {
+            /* genera un error - secuencia de escape errónea;
+             * algo como '\48' o '\0777777'
+             */
+            }
+
+    &lt;str&gt;\\n  *string_buf_ptr++ = '\n';
+    &lt;str&gt;\\t  *string_buf_ptr++ = '\t';
+    &lt;str&gt;\\r  *string_buf_ptr++ = '\r';
+    &lt;str&gt;\\b  *string_buf_ptr++ = '\b';
+    &lt;str&gt;\\f  *string_buf_ptr++ = '\f';
+
+    &lt;str&gt;\\(.|\n)  *string_buf_ptr++ = yytext[1];
+
+    &lt;str&gt;[^\\\n\"]+        {
+            char *yptr = yytext;
+
+            while ( *yptr )
+                    *string_buf_ptr++ = *yptr++;
+            }
+
+</pre><p>A menudo, como en alguno de los ejemplos anteriores, uno acaba
+escribiendo un buen número de reglas todas precedidas por la(s)
+misma(s) condición(es) de arranque. Flex hace esto un poco más
+fácil y claro introduciendo la noción de <i>ámbito</i> de la
+condición de arranque. Un ámbito de condición de arranque comienza
+con:</p><pre>
+    &lt;SCs&gt;{
+
+</pre><p>
+
+Donde <i>SCs</i> es una lista de una o más condiciones de arranque.
+Dentro del ámbito de la condición de arranque, cada regla
+automáticamente tiene el prefijo <i>&lt;SCs&gt;</i> aplicado a
+esta, hasta un <i>'}'</i> que corresponda con el <i>'{'</i>
+inicial. Así, por ejemplo, 
+</p><pre>
+    &lt;ESC&gt;{
+        "\\n"   return '\n';
+        "\\r"   return '\r';
+        "\\f"   return '\f';
+        "\\0"   return '\0';
+    }
+
+</pre><p>
+
+es equivalente a: 
+</p><pre>
+    &lt;ESC&gt;"\\n"  return '\n';
+    &lt;ESC&gt;"\\r"  return '\r';
+    &lt;ESC&gt;"\\f"  return '\f';
+    &lt;ESC&gt;"\\0"  return '\0';
+
+</pre><p>
+
+Los ámbitos de las condiciones de arranque pueden anidarse. 
+</p><p>Están disponibles tres rutinas para manipular pilas de
+condiciones de arranque:</p><dl compact="compact"><dt><b>void yy_push_state(int new_state)</b></dt>
+
+<dd>empuja la condición de arranque actual al tope de la pila de
+las condiciones de arranque y cambia a <i>new_state</i> como si
+hubiera utilizado <b>BEGIN new_state</b> (recuerde que los nombres
+de las condiciones de arranque también son enteros).</dd>
+
+<dt><b>void yy_pop_state()</b></dt>
+
+<dd>extrae el tope de la pila y cambia a este mediante un
+<b>BEGIN.</b></dd>
+
+<dt><b>int yy_top_state()</b></dt>
+
+<dd>devuelve el tope de la pila sin alterar el contenido de la
+pila.</dd>
+</dl><p>La pila de las condiciones de arranque crece dinámicamente y por
+ello no tiene asociada ninguna limitación de tamaño. Si la memoria
+se agota, se aborta la ejecución del programa.</p><p>Para usar pilas de condiciones de arranque, su analizador debe
+incluir una directiva <b>%option stack</b> (ver Opciones más
+abajo). <a id="lbAM"> </a></p><h2>MÚLTIPLES BUFFERS DE ENTRADA</h2><p>
+
+Algunos analizadores (tales como aquellos que aceptan ficheros
+"incluidos") requieren la lectura de varios flujos de entrada. Ya
+que los analizadores de <i>flex</i> hacen mucho uso de buffers, uno
+no puede controlar de dónde será leída la siguiente entrada
+escribiendo símplemente un <b>YY_INPUT</b> que sea sensible al
+contexto del análisis. A <b>YY_INPUT</b> sólo se le llama cuando el
+analizador alcanza el final de su buffer, que podría ser bastante
+tiempo después de haber analizado una sentencia como un "include"
+que requiere el cambio de la fuente de entrada. 
+</p><p>Para solventar este tipo de problemas, <i>flex</i> provee un
+mecanismo para crear y conmutar entre varios buffers de entrada. Un
+buffer de entrada se crea usando:</p><pre>
+    YY_BUFFER_STATE yy_create_buffer( FILE *file, int size )
+
+</pre><p>
+
+que toma un puntero a <i>FILE</i> y un tamaño "size" y crea un
+buffer asociado con el fichero dado y lo suficientemente grande
+para mantener <i>size</i> caracteres (cuando dude, use
+<b>YY_BUF_SIZE</b> para el tamaño). Este devuelve un handle
+<b>YY_BUFFER_STATE,</b> que podría pasarse a otras rutinas (ver más
+abajo). El tipo de <b>YY_BUFFER_STATE</b> es un puntero a una
+estructura opaca <b>struct yy_buffer_state,</b> de manera que
+podría inicializar de forma segura variables YY_BUFFER_STATE a
+<b>((YY_BUFFER_STATE) 0)</b> si lo desea, y también hacer
+referencia a la estructura opaca para declarar correctamente
+buffers de entrada en otros ficheros fuente además de los de su
+analizador. Fíjese que el puntero a <i>FILE</i> en la llamada a
+<b>yy_create_buffer</b> se usa solamente como el valor de
+<i>yyin</i> visto por <b>YY_INPUT;</b> si usted redefine
+<b>YY_INPUT</b> de manera que no use más a <i>yyin,</i> entonces
+puede pasar de forma segura un puntero <i>FILE</i> nulo a
+<b>yy_create_buffer.</b> Se selecciona un buffer en particular a
+analizar utilizando: 
+</p><pre>
+    void yy_switch_to_buffer( YY_BUFFER_STATE nuevo_buffer )
+
+</pre><p>
+
+conmuta el buffer de entrada del analizador de manera que los
+tokens posteriores provienen de <i>nuevo_buffer.</i> Fíjese que
+<b>yy_switch_to_buffer()</b> podría usarlo yywrap() para arreglar
+las cosas para un análisis continuo, en lugar de abrir un nuevo
+fichero y que <i>yyin</i> apunte a este. Fíjese también que cambiar
+las fuentes de entrada ya sea por medio de
+<b>yy_switch_to_buffer()</b> o de <b>yywrap()</b> <i>no</i> cambia
+la condición de arranque. 
+</p><pre>
+    void yy_delete_buffer( YY_BUFFER_STATE buffer )
+
+</pre><p>
+
+se usa para recuperar el almacenamiento asociado a un buffer. (El
+<b>buffer</b> puede ser nulo, en cuyo caso la rutina no hace nada.)
+Puede también limpiar el contenido actual de un buffer usando: 
+</p><pre>
+    void yy_flush_buffer( YY_BUFFER_STATE buffer )
+
+</pre><p>
+
+Esta función descarta el contenido del buffer, de manera que la
+próxima vez que el analizador intente emparejar un token desde el
+buffer, este primero rellenará el buffer utilizando
+<b>YY_INPUT.</b> 
+</p><p><b>yy_new_buffer()</b> es un alias de <b>yy_create_buffer(),</b>
+que se ofrece por compatibilidad con el uso en C++ de <i>new</i> y
+<i>delete</i> para crear y destruir objetos dinámicos.</p><p>Finalmente, la macro <b>YY_CURRENT_BUFFER</b> retorna un handle
+<b>YY_BUFFER_STATE</b> al buffer actual.</p><p>Aquí hay un ejemplo del uso de estas propiedades para escribir
+un analizador que expande ficheros incluidos (la propiedad
+<b>&lt;&lt;EOF&gt;&gt;</b> se comenta más abajo):</p><pre>
+    /* el estado "incl" se utiliza para obtener el nombre
+     * del fichero a incluir.
+     */
+    %x incl
+
+    %{
+    #define MAX_INCLUDE_DEPTH 10
+    YY_BUFFER_STATE include_stack[MAX_INCLUDE_DEPTH];
+    int include_stack_ptr = 0;
+    %}
+
+    %%
+    include             BEGIN(incl);
+
+    [a-z]+              ECHO;
+    [^a-z\n]*\n?        ECHO;
+
+    &lt;incl&gt;[ \t]*      /* se come los espacios en blanco */
+    &lt;incl&gt;[^ \t\n]+   { /* obtiene el nombre de fichero a incluir */
+            if ( include_stack_ptr &gt;= MAX_INCLUDE_DEPTH )
+                {
+                fprintf( stderr, "Demasiados include anidados" );
+                exit( 1 );
+                }
+
+            include_stack[include_stack_ptr++] =
+                YY_CURRENT_BUFFER;
+
+            yyin = fopen( yytext, "r" );
+
+            if ( ! yyin )
+                error( ... );
+
+            yy_switch_to_buffer(
+                yy_create_buffer( yyin, YY_BUF_SIZE ) );
+
+            BEGIN(INITIAL);
+            }
+
+    &lt;&lt;EOF&gt;&gt; {
+            if ( --include_stack_ptr &lt; 0 )
+                {
+                yyterminate();
+                }
+
+            else
+                {
+                yy_delete_buffer( YY_CURRENT_BUFFER );
+                yy_switch_to_buffer(
+                     include_stack[include_stack_ptr] );
+                }
+            }
+
+</pre><p>
+
+Se dispone de tres rutinas para preparar buffers de entrada para el
+análisis de cadenas en memoria en lugar de archivos. Todas estas
+crean un nuevo buffer de entrada para analizar la cadena, y
+devuelven el correspondiente handle <b>YY_BUFFER_STATE</b> (que
+usted debería borrar con <b>yy_delete_buffer()</b> cuando termine
+con él). Estas también conmutan el nuevo buffer usando
+<b>yy_switch_to_buffer(),</b> de manera que la próxima llamada a
+<b>yylex()</b> comenzará analizando la cadena. 
+</p><dl compact="compact"><dt><b>yy_scan_string(const char *str)</b></dt>
+
+<dd>analiza una cadena terminada en nulo.</dd>
+
+<dt><b>yy_scan_bytes(const char *bytes, int len)</b></dt>
+
+<dd>analiza <i>len</i> bytes (incluyendo posibles NUL's) comenzando
+desde el punto <i>bytes.</i></dd>
+</dl><p>Fíjese que ambas de estas funciones crean y analizan una
+<i>copia</i> de la cadena o bytes. (Esto podría ser deseable, ya
+que <b>yylex()</b> modifica el contenido del buffer que está
+analizado.) Usted puede evitar la copia utilizando:</p><dl compact="compact"><dt><b>yy_scan_buffer(char *base, yy_size_t size)</b></dt>
+
+<dd>que analiza in situ el buffer comenzando en <i>base,</i> que
+consiste de <i>size</i> bytes, donde los dos últimos bytes
+<i>deben</i> ser <b>YY_END_OF_BUFFER_CHAR</b> (ASCII NUL). Estos
+dos últimos bytes no se analizan; así, el análisis consta de
+<b>base[0]</b> hasta <b>base[size-2],</b> inclusive.</dd>
+
+<dd>Si se equivoca al disponer <i>base</i> de esta manera (es
+decir, olvidar los dos <b>YY_END_OF_BUFFER_CHAR</b> bytes finales),
+entonces <b>yy_scan_buffer()</b> devuelve un puntero nulo en lugar
+de crear un nuevo buffer de entrada.</dd>
+
+<dd>El tipo <b>yy_size_t</b> es un tipo entero con el que puede
+hacer una conversión a una expresión entera para reflejar el tamaño
+del buffer.</dd>
+</dl><a id="lbAN"> </a><h2>REGLAS DE FIN-DE-FICHERO</h2><p>
+
+La regla especial "&lt;&lt;EOF&gt;&gt;" indica las acciones que
+deben tomarse cuando se encuentre un fin-de-fichero e yywrap()
+retorne un valor distinto de cero (es decir, indica que no quedan
+ficheros por procesar). La acción debe finalizar haciendo una de
+estas cuatro cosas: 
+</p><dl compact="compact"><dt>-</dt>
+
+<dd>asignando a <i>yyin</i> un nuevo fichero de entrada (en
+versiones anteriores de flex, después de hacer la asignación debía
+llamar a la acción especial <b>YY_NEW_FILE;</b> esto ya no es
+necesario);</dd>
+
+<dt>-</dt>
+
+<dd>ejecutando una sentencia <i>return;</i></dd>
+
+<dt>-</dt>
+
+<dd>ejecutando la acción especial <b>yyterminate();</b></dd>
+
+<dt>-</dt>
+
+<dd>o, conmutando a un nuevo buffer usando
+<b>yy_switch_to_buffer()</b> como se mostró en el ejemplo
+anterior.</dd>
+</dl><p>Las reglas &lt;&lt;EOF&gt;&gt; no deberían usarse con otros
+patrones; estas deberían calificarse con una lista de condiciones
+de arranque. Si se da una regla &lt;&lt;EOF&gt;&gt; sin calificar,
+esta se aplica a <i>todas</i> las condiciones de arranque que no
+tengan ya acciones &lt;&lt;EOF&gt;&gt;. Para especificar una regla
+&lt;&lt;EOF&gt;&gt; solamente para la condición de arranque
+inicial, use</p><pre>
+    &lt;INITIAL&gt;&lt;&lt;EOF&gt;&gt;
+
+</pre><p>Estas reglas son útiles para atrapar cosas tales como
+comentarios sin final. Un ejemplo:</p><pre>
+    %x comilla
+    %%
+
+    ...otras reglas que tengan que ver con comillas...
+
+    &lt;comilla&gt;&lt;&lt;EOF&gt;&gt;   {
+             error( "comilla sin cerrar" );
+             yyterminate();
+             }
+    &lt;&lt;EOF&gt;&gt;  {
+             if ( *++filelist )
+                 yyin = fopen( *filelist, "r" );
+             else
+                yyterminate();
+             }
+
+</pre><a id="lbAO"> </a><h2>MACROS MISCELÁNEAS</h2><p>
+
+La macro <b>YY_USER_ACTION</b> puede definirse para indicar una
+acción que siempre se ejecuta antes de la acción de la regla
+emparejada. Por ejemplo, podría declararse con #define para que
+llame a una rutina que convierta yytext a minúsculas. Cuando se
+invoca a <b>YY_USER_ACTION,</b> la variable <i>yy_act</i> da el
+número de la regla emparejada (las reglas están numeradas
+comenzando en 1). Suponga que quiere medir la frecuencia con la que
+sus reglas son emparejadas. Lo que viene a continuación podría
+hacer este truco: 
+</p><pre>
+    #define YY_USER_ACTION ++ctr[yy_act]
+
+</pre><p>
+
+donde <i>ctr</i> en un vector que mantiene la cuenta para las
+diferentes reglas. Fíjese que la macro <b>YY_NUM_RULES</b> da el
+número total de reglas (incluyendo la regla por defecto, incluso si
+usted usa <b>-s),</b> así que una declaración correcta para
+<i>ctr</i> es: 
+</p><pre>
+    int ctr[YY_NUM_RULES];
+
+</pre><p>La macro <b>YY_USER_INIT</b> podría definirse para indicar una
+acción que siempre se ejecuta antes del primer análisis (y antes de
+que se haga la inicialización interna del analizador). Por ejemplo,
+este podría usarse para llamar a una rutina que lea una tabla de
+datos o abrir un fichero de registro.</p><p>La macro <b>yy_set_interactive(is_interactive)</b> se puede usar
+para controlar si el buffer actual se considera <i>interactivo.</i>
+Un buffer interactivo se procesa más lentamente, pero debe usarse
+cuando la fuente de entrada del analizador es realmente interactiva
+para evitar problemas debidos a la espera para el llenado de los
+buffers (ver el comentario de la bandera <b>-I</b> más abajo). Un
+valor distinto de cero en la invocación de la macro marcará el
+buffer como interactivo, un valor de cero como no-interactivo.
+Fíjese que el uso de esta macro no tiene en cuenta <b>%option
+always-interactive</b> o <b>%option never-interactive</b> (ver
+Opciones más abajo). <b>yy_set_interactive()</b> debe invocarse
+antes del comienzo del análisis del buffer que es considerado (o
+no) interactivo.</p><p>La macro <b>yy_set_bol(at_bol)</b> puede usarse para controlar
+si el contexto del buffer de análisis actual para el próximo
+emparejamiento de token se hace como si se encontrara al principio
+de una línea. Un argumento de la macro distinto de cero hace
+activas a las reglas sujetas a '^', mientras que un argumento igual
+a cero hacer inactivas a las reglas con '^'.</p><p>La macro <b>YY_AT_BOL()</b> devuelve verdadero si el próximo
+token analizado a partir del buffer actual tendrá activas las
+reglas '^', de otra manera falso.</p><p>En el analizador generado, las acciones están recogidas en una
+gran sentencia switch y separadas usando <b>YY_BREAK,</b> que puede
+ser redefinida. Por defecto, este es símplemente un "break", para
+separar la acción de cada regla de las reglas que le siguen.
+Redefiniendo <b>YY_BREAK</b> permite, por ejemplo, a los usuarios
+de C++ que #define YY_BREAK no haga nada (¡mientras tengan cuidado
+para que cada regla finalice con un "break" o un "return"!) para
+evitar que sufran los avisos de sentencias inalcanzables cuando
+debido a que la acción de la regla finaliza con un "return", el
+<b>YY_BREAK</b> es inaccesible. <a id="lbAP"> </a></p><h2>VALORES DISPONIBLES AL USUARIO</h2><p>
+
+Esta sección resume los diferentes valores disponibles al usuario
+en las acciones de la regla. 
+</p><dl compact="compact"><dt>-</dt>
+
+<dd><b>char *yytext</b> apunta al texto del token actual. Este
+puede modificarse pero no alargarse (no puede añadir caracteres al
+final).</dd>
+
+<dd>Si aparece la directiva especial <b>%array</b> en la primera
+sección de la descripción del analizador, entonces <b>yytext</b> se
+declara en su lugar como <b>char yytext[YYLMAX],</b> donde
+<b>YYLMAX</b> es la definicion de una macro que puede redefinir en
+la primera sección si no le gusta el valor por defecto
+(generalmente 8KB). El uso de <b>%array</b> produce analizadores
+algo más lentos, pero el valor de <b>yytext</b> se vuelve inmune a
+las llamadas a <i>input()</i> y <i>unput(),</i> que potencialmente
+destruyen su valor cuando <b>yytext</b> es un puntero a caracter.
+El opuesto de <b>%array</b> es <b>%pointer,</b> que se encuentra
+por defecto.</dd>
+
+<dd>Usted no puede utilizar <b>%array</b> cuando genera
+analizadores como clases de C++ (la bandera <b>-+</b> ).</dd>
+
+<dt>-</dt>
+
+<dd><b>int yyleng</b> contiene la longitud del token actual.</dd>
+
+<dt>-</dt>
+
+<dd><b>FILE *yyin</b> es el fichero por el que <i>flex</i> lee por
+defecto. Este podría redefinirse pero hacerlo solo tiene sentido
+antes de que el análisis comience o después de que se haya
+encontrado un EOF. Cambiándolo en medio del análisis tendrá
+resultados inesperados ya que <i>flex</i> utiliza buffers en su
+entrada; use <b>yyrestart()</b> en su lugar. Una vez que el
+análisis termina debido a que se ha visto un fin-de-fichero, puede
+asignarle a <i>yyin</i> el nuevo fichero de entrada y entonces
+llamar al analizador de nuevo para continuar analizando.</dd>
+
+<dt>-</dt>
+
+<dd><b>void yyrestart( FILE *new_file )</b> podría ser llamada para
+que <i>yyin</i> apunte al nuevo fichero de entrada. El cambio al
+nuevo fichero es inmediato (cualquier entrada contenida en el
+buffer previamente se pierde). Fíjese que llamando a
+<b>yyrestart()</b> con <i>yyin</i> como argumento de esta manera
+elimina el buffer de entradda actual y continúa analizando el mismo
+fichero de entrada.</dd>
+
+<dt>-</dt>
+
+<dd><b>FILE *yyout</b> es el fichero sobre el que se hacen las
+acciones <b>ECHO.</b> Este puede ser reasignado por el
+usuario.</dd>
+
+<dt>-</dt>
+
+<dd><b>YY_CURRENT_BUFFER</b> devuelve un handle
+<b>YY_BUFFER_STATE</b> al buffer actual.</dd>
+
+<dt>-</dt>
+
+<dd><b>YY_START</b> devuelve un valor entero correspondiente a la
+condición de arranque actual. Posteriormente puede usar este valor
+con <b>BEGIN</b> para retornar a la condición de arranque.</dd>
+</dl><a id="lbAQ"> </a><h2>INTERFAZ CON YACC</h2><p>
+
+Uno de los usos principales de <i>flex</i> es como compañero del
+generador de analizadores sintácticos <i>yacc.</i> Los analizadores
+de <i>yacc</i> esperan invocar a una rutina llamada <b>yylex()</b>
+para encontrar el próximo token de entrada. La rutina se supone que
+devuelve el tipo del próximo token además de poner cualquier valor
+asociado en la variable global <b>yylval.</b> Para usar <i>flex</i>
+con <i>yacc,</i> uno especifica la opción <b>-d</b> de <i>yacc</i>
+para intruirle a que genere el fichero <b>y.tab.h</b> que contiene
+las definiciones de todos los <b>%tokens</b> que aparecen en la
+entrada de <i>yacc.</i> Entonces este archivo se incluye en el
+analizador de <i>flex</i> Por ejemplo, si uno de los tokens es
+"TOK_NUMERO", parte del analizador podría parecerse a: 
+</p><pre>
+    %{
+    #include "y.tab.h"
+    %}
+
+    %%
+
+    [0-9]+        yylval = atoi( yytext ); return TOK_NUMERO;
+
+</pre><a id="lbAR"> </a><h2>OPCIONES</h2><i>flex</i><p> tiene las siguientes opciones: 
+</p><dl compact="compact"><dt><b>-b</b></dt>
+
+<dd>Genera información de retroceso en <i>lex.backup.</i> Esta es
+una lista de estados del analizador que requieren retroceso y los
+caracteres de entrada con los que la hace. Añadiendo reglas uno
+puede eliminar estados de retroceso. Si <i>todos</i> los estados de
+retroceso se eliminan y se usa <b>-Cf</b> o <b>-CF,</b> el
+analizador generado funcionará más rápido (ver la bandera
+<b>-p).</b> Únicamente los usuarios que desean exprimir hasta el
+último ciclo de sus analizadores necesitan preocuparse de esta
+opción. (Ver la sección sobre Consideraciones de Rendimiento más
+abajo.)</dd>
+
+<dt><b>-c</b></dt>
+
+<dd>es una opción que no hace nada, incluída para cumplir con
+POSIX.</dd>
+
+<dt><b>-d</b></dt>
+
+<dd>hace que el analizador generado se ejecute en modo de
+<i>depuración.</i> Siempre que se reconoce un patrón y la variable
+global <b>yy_flex_debug</b> no es cero (que por defecto no lo es),
+el analizador escribirá en <i>stderr</i> una línea de la forma: 
+<pre>
+    --accepting rule at line 53 ("el texto emparejado")
+
+</pre>
+
+El número de línea hace referencia al lugar de la regla en el
+fichero que define al analizador (es decir, el fichero que se le
+introdujo a flex). Los mensajes también se generan cuando el
+analizador retrocede, acepta la regla por defecto, alcanza el final
+de su buffer de entrada (o encuentra un NUL; en este punto, los dos
+parecen lo mismo en lo que le concierne al analizador), o alcance
+el fin-de-fichero.</dd>
+
+<dt><b>-f</b></dt>
+
+<dd>especifica un <i>analizador rápido.</i> No se realiza una
+compresión de tablas y se evita el uso de stdio. El resultado es
+grande pero rápido. Esta opción es equivalente a <b>-Cfr</b> (ver
+más abajo).</dd>
+
+<dt><b>-h</b></dt>
+
+<dd>genera un sumario de "ayuda" de las opciones de <i>flex</i> por
+<i>stdout</i> y entonces finaliza. <b>-?</b> y <b>--help</b> son
+sinónimos de <b>-h.</b></dd>
+
+<dt><b>-i</b></dt>
+
+<dd>indica a <i>flex</i> que genere un analizador
+<i>case-insensitive.</i> Se ignorará si las letras en los patrones
+de entrada de <i>flex</i> son en mayúsculas o en minúsculas, y los
+tokens en la entrada serán emparejados sin tenerlo en cuenta. El
+texto emparejado dado en <i>yytext</i> tendrá las mayúsculas y
+minúsculas preservadas (es decir, no se convertirán).</dd>
+
+<dt><b>-l</b></dt>
+
+<dd>activa el modo de máxima compatibilidad con la implementación
+original de <i>lex</i> de AT&amp;T. Fíjese que esto no significa
+una compatibilidad <i>completa.</i> El uso de esta opción cuesta
+una cantidad considerable de rendimiento, y no puede usarse con las
+opciones <b>-+, -f, -F, -Cf,</b> o <b>-CF.</b> Para los detalles a
+cerca de la compatibilidad que se ofrece, vea la sección
+"Incompatibilidades con Lex y POSIX" más abajo. Esta opción también
+hace que se defina el nombre <b>YY_FLEX_LEX_COMPAT</b> en el
+analizador generado.</dd>
+
+<dt><b>-n</b></dt>
+
+<dd>es otra opción que no hace nada, incluída para cumplir con
+POSIX.</dd>
+
+<dt><b>-p</b></dt>
+
+<dd>genera un informe de rendimiento en stderr. El informe consta
+de comentarios que tratan de las propiedades del fichero de entrada
+de <i>flex</i> que provocarán pérdidas serias de rendimiento en el
+analizador resultante. Si indica esta bandera dos veces, también
+obtendrá comentarios que tratan de las propiedades que producen
+pérdidas menores de rendimiento.</dd>
+
+<dd>Fíjese que el uso de <b>REJECT,</b> <b>%option yylineno,</b> y
+el contexto posterior variable (vea la sección Deficiencias /
+Errores más abajo) supone una penalización substancial del
+rendimiento; el uso de <i>yymore(),</i> el operador <b>^,</b> y la
+bandera <b>-I</b> supone penalizaciones del rendimiento
+menores.</dd>
+
+<dt><b>-s</b></dt>
+
+<dd>hace que la <i>regla por defecto</i> (que la entrada sin
+emparejar del analizador se repita por <i>stdout)</i> se suprima.
+Si el analizador encuentra entrada que no es reconocida por ninguna
+de sus reglas, este aborta con un error. Esta opción es útil para
+encontrar agujeros en el conjunto de reglas del analizador.</dd>
+
+<dt><b>-t</b></dt>
+
+<dd>indica a <i>flex</i> que escriba el analizador que genera a la
+salida estándar en lugar de en <b>lex.yy.c.</b></dd>
+
+<dt><b>-v</b></dt>
+
+<dd>especifica que <i>flex</i> debería escribir en <i>stderr</i> un
+sumario de estadísticas respecto al analizador que genera. La
+mayoría de las estadísticas no tienen significado para el usuario
+casual de <i>flex,</i> pero la primera línea identifica la versión
+de <i>flex</i> (la misma que se informa con <b>-V),</b> y la
+próxima línea las banderas utilizadas cuando se genera el
+analizador, incluyendo aquellas que se encuentran activadas por
+defecto.</dd>
+
+<dt><b>-w</b></dt>
+
+<dd>suprime los mensajes de aviso.</dd>
+
+<dt><b>-B</b></dt>
+
+<dd>dice a <i>flex</i> que genere un analizador <i>batch,</i> que
+es lo opuesto al analizador <i>interactivo</i> generador por
+<b>-I</b> (ver más abajo). En general, use <b>-B</b> cuando esté
+<i>seguro</i> de que su analizador nunca se usará de forma
+interactiva, y quiere con esto exprimir un <i>poco</i> más el
+rendimiento. Si por el contrario su objetivo es exprimirlo
+<i>mucho</i> más, debería estar utilizando la opción <b>-Cf</b> o
+<b>-CF</b> (comentadas más abajo), que activa <b>-B</b>
+automáticamente de todas maneras.</dd>
+
+<dt><b>-F</b></dt>
+
+<dd>especifica que se debe utilizar la representación de la tabla
+rápida (y elimina referencias a stdio). Esta representación es
+aproximadamente tan rápida como la representación completa de la
+tabla <b>(-f),</b> y para algunos conjuntos de patrones será
+considerablemente más pequeña (y para otros, mayor). En general, si
+el conjunto de patrones contiene "palabras clave" y una regla
+"identificador" atrápalo-todo, como la del conjunto: 
+<pre>
+    "case"    return TOK_CASE;
+    "switch"  return TOK_SWITCH;
+    ...
+    "default" return TOK_DEFAULT;
+    [a-z]+    return TOK_ID;
+
+</pre>
+
+entonces será mejor que utilice la representación de la tabla
+completa. Si sólo está presente la regla "identificador" y utiliza
+una tabla hash o algo parecido para detectar palabras clave, mejor
+utilice <b>-F.</b></dd>
+
+<dd>Esta opción es equivalente a <b>-CFr</b> (ver más abajo). Esta
+opción no puede utilizarse con <b>-+.</b></dd>
+
+<dt><b>-I</b></dt>
+
+<dd>ordena a <i>flex</i> que genere un analizador
+<i>interactivo</i> Un analizador interactivo es uno que solo mira
+hacia delante para decidir que token ha sido reconocido únicamente
+si debe hacerlo. Resulta que mirando siempre un caracter extra
+hacia delante, incluso si el analizador ya ha visto suficiente
+texto para eliminar la ambigüedad del token actual, se es un poco
+más rápido que mirando solamente cuando es necesario. Pero los
+analizadores que siempre miran hacia delante producen un
+comportamiento interactivo malísimo; por ejemplo, cuando un usuario
+teclea una línea nueva, esta no se reconoce como un token de línea
+nueva hasta que introduzca <i>otro</i> token, que a menudo
+significa introducir otra línea completa.</dd>
+
+<dd>Los analizadores de <i>flex</i> por defecto son
+<i>interactivos</i> a menos que use la opción <b>-Cf</b> o
+<b>-CF</b> de compresión de tablas (ver más abajo). Esto es debido
+a que si está buscando un rendimiento alto tendría que estar
+utilizando una de estas opciones, así que si no lo ha hecho
+<i>flex</i> asume que prefiere cambiar un poco de rendimiento en
+tiempo de ejecución en beneficio de un comportamiento iteractivo
+intuitivo. Fíjese también que <i>no puede</i> utilizar <b>-I</b>
+conjuntamente con <b>-Cf</b> o <b>-CF.</b> Así, esta opción no se
+necesita realmente; está activa por defecto para todos esos casos
+en los que se permite.</dd>
+
+<dd>Usted puede forzar al analizador que <i>no</i> sea interactivo
+usando <b>-B</b> (ver más arriba).</dd>
+
+<dt><b>-L</b></dt>
+
+<dd>ordena a <i>flex</i> que no genere directivas <b>#line.</b> Sin
+esta opción, <i>flex</i> acribilla al analizador generado con
+directivas #line para que los mensajes de error en las acciones
+estén localizadas correctamente respecto al fichero original de
+<i>flex</i> (si los errores son debidos al código en el fichero de
+entrada), o a <b>lex.yy.c</b> (si los errores son fallos de
+<i>flex</i> -- debería informar de este tipo de errores a la
+dirección de correo dada más abajo).</dd>
+
+<dt><b>-T</b></dt>
+
+<dd>hace que <i>flex</i> se ejecute en modo de <i>traza.</i> Este
+generará un montón de mensajes en <i>stderr</i> relativos a la
+forma de la entrada y el autómata finito no-determinista o
+determinista resultante. Esta opción generalmente es para usarla en
+el mantenimiento de <i>flex.</i></dd>
+
+<dt><b>-V</b></dt>
+
+<dd>imprime el número de la versión en <i>stdout</i> y sale.
+<b>--version</b> es un sinónimo de <b>-V.</b></dd>
+
+<dt><b>-7</b></dt>
+
+<dd>ordena a <i>flex</i> que genere un analizador de 7-bits, es
+decir, uno que sólo puede reconocer caracteres de 7-bits en su
+entrada. La ventaja de usar <b>-7</b> es que las tablas del
+analizador pueden ser hasta la mitad del tamaño de aquellas
+generadas usando la opción <b>-8</b> (ver más abajo). La desventaja
+es que tales analizadores a menudo se cuelgan o revientan si su
+entrada contiene caracteres de 8-bits.</dd>
+
+<dd>Fíjese, sin embargo, que a menos que genere su analizador
+utilizando las opciones de compresión de tablas <b>-Cf</b> o
+<b>-CF,</b> el uso de <b>-7</b> ahorrará solamente una pequeña
+cantidad de espacio en la tabla, y hará su analizador
+considerablemente menos portable. El comportamiento por defecto de
+<i>flex</i> es generar un analizador de 8-bits a menos que use
+<b>-Cf</b> o <b>-CF,</b> en cuyo caso <i>flex</i> por defecto
+genera analizadores de 7-bits a menos que su sistema siempre esté
+configurado para generar analizadores de 8-bits (a menudo este será
+el caso de los sistemas fuera de EEUU). Puede decir si flex generó
+un analizador de 7 u 8 bits inspeccionando el sumario de banderas
+en la salida de <b>-v</b> como se describió anteriormente.</dd>
+
+<dd>Fíjese que si usa <b>-Cfe</b> o <b>-CFe</b> (esas opciones de
+compresión de tablas, pero también el uso de clases de equivalencia
+como se comentará más abajo), flex genera aún por defecto un
+analizador de 8-bits, ya que normalmente con estas opciones de
+compresión las tablas de 8-bits completas no son mucho más caras
+que las tablas de 7-bits.</dd>
+
+<dt><b>-8</b></dt>
+
+<dd>ordena a <i>flex</i> que genere un analizador de 8-bits, es
+decir, uno que puede reconocer caracteres de 8-bits. Esta bandera
+sólo es necesaria para analizadores generados usando <b>-Cf</b> o
+<b>-CF,</b> ya que de otra manera flex por defecto genera un
+analizador de 8-bits de todas formas.</dd>
+
+<dd>Vea el comentario sobre <b>-7</b> más arriba a cerca del
+comportamiento por defecto de flex y la discusión entre los
+analizadores de 7-bits y 8-bits.</dd>
+
+<dt><b>-+</b></dt>
+
+<dd>especifica que quiere que flex genere un analizador como una
+clase de C++. Vea la sección Generando Escáners en C++ más abajo
+para los detalles.</dd>
+
+<dt><b>-C[aefFmr]</b></dt>
+
+<dd>controla el grado de compresión de la tabla y, más
+generalmente, el compromiso entre analizadores pequeños y
+analizadores rápidos.</dd>
+
+<dd><b>-Ca</b> ("alinea") ordena a flex que negocie tablas más
+grandes en el analizador generado para un comportamiento más rápido
+porque los elementos de las tablas están mejor alineados para el
+acceso a memoria y computación. En algunas arquitecturas RISC, la
+búsqueda y manipulación de palabras largas es más eficiente que con
+unidades más pequeñas tales como palabras cortas. Esta opción puede
+doblar el tamaño de las tablas usadas en su analizador.</dd>
+
+<dd><b>-Ce</b> ordena a <i>flex</i> que construya <i>clases de
+equivalencia,</i> es decir, conjunto de caracteres que tienen
+identicas propiedades léxicas (por ejemplo, si la única aparición
+de dígitos en la entrada de <i>flex</i> es en la clase de
+caracteres "[0-9]" entonces los dígitos '0', '1', ..., '9' se
+pondrán todos en la misma clase de equivalencia). Las clases de
+equivalencia normalmente ofrecen notables reducciones en los
+tamaños de los ficheros finales de tabla/objeto (típicamente un
+factor de 2-5) y son juiciosamente bastante baratos en cuanto al
+rendimiento (una localización en un vector por caracter
+analizado).</dd>
+
+<dd><b>-Cf</b> especifica que se deben generar las tablas del
+analizador <i>completas</i> - <i>flex</i> no debería comprimir las
+tablas tomando ventaja de las funciones de transición similares
+para diferentes estados.</dd>
+
+<dd><b>-CF</b> especifica que debería usarse la representación del
+analizador rápido alternativo (descrito anteriormente en la bandera
+<b>-F</b> ) Esta opción no puede usarse con <b>-+.</b></dd>
+
+<dd><b>-Cm</b> ordena a <i>flex</i> a que construya <i>clases de
+meta-equivalencias,</i> que son conjuntos de clases de equivalencia
+(o caracteres, si las clases de equivalencia no se están usando)
+que comunmente se usan de forma conjunta. Las clases de
+meta-equivalencias son a menudo un gran ahorro cuando se usan
+tablas comprimidas, pero tienen un impacto moderado en el
+rendimiento (uno o dos tests "if" y una localización en un array
+por caracter analizado).</dd>
+
+<dd><b>-Cr</b> hace que el analizador generado <i>elimine</i> el
+uso de la librería de E/S estándar para la entrada. En lugar de
+llamar a <b>fread()</b> o <b>getc(),</b> el analizador utilizará la
+llamada al sistema <b>read(),</b> produciendo una ganancia en el
+rendimiento que varía de sistema en sistema, pero en general
+probablemente es insignificante a menos que también esté usando
+<b>-Cf</b> o <b>-CF.</b> El uso de <b>-Cr</b> puede producir un
+comportamiento extraño si, por ejemplo, lee de <i>yyin</i> usando
+stdio antes de llamar al analizador (porque el analizador perderá
+cualquier texto que sus lecturas anteriores dejaron en el buffer de
+entrada de stdio).</dd>
+
+<dd><b>-Cr</b> no tiene efecto si usted define <b>YY_INPUT</b> (ver
+El Escáner Generado más arriba).</dd>
+
+<dd>Con solamente <b>-C</b> se especifica que las tablas del
+analizador deberían comprimirse pero no debería utilizarse ni las
+clases de equivalencia ni las clases de meta-equivalencias.</dd>
+
+<dd>Las opciones <b>-Cf</b> o <b>-CF</b> y <b>-Cm</b> no tienen
+sentido juntas - no hay oportunidad para las clases de
+meta-equivalencias si la tabla no está siendo comprimida. De otra
+forma las opciones podrían mezclarse líbremente, y son
+acumulativas.</dd>
+
+<dd>La configuración por defecto es <b>-Cem,</b> que especifica que
+<i>flex</i> debería generar clases de equivalencia y clases de
+meta-equivalencias. Esta configuración provee el mayor grado de
+compresión. Puede llegarse a un compromiso entre analizadores de
+ejecución más rápida con el coste de tablas mayores siendo
+generalmente verdadero lo siguiente: 
+<pre>
+    lo más lento y pequeño
+          -Cem
+          -Cm
+          -Ce
+          -C
+          -C{f,F}e
+          -C{f,F}
+          -C{f,F}a
+    lo más rápido y grande
+
+</pre>
+
+Fíjese que los analizadores con tablas más pequeñas normalmente se
+generan y compilan de la forma más rápida posible, así que durante
+el desarrollo usted normalmente querrá usar como viene por defecto,
+compresión máxima.</dd>
+
+<dd><b>-Cfe</b> a menudo es un buen compromiso entre velocidad y
+tamaño para la producción de analizadores.</dd>
+
+<dt><b>-osalida</b></dt>
+
+<dd>ordena a flex que escriba el analizador al fichero
+<b>salida</b> en lugar de a <b>lex.yy.c.</b> Si combina <b>-o</b>
+con la opción <b>-t,</b> entonces el analizador se escribe en
+<i>stdout</i> pero sus directivas <b>#line</b> (vea la opción
+<b>\-L</b> más arriba) hacen referencia al fichero
+<b>salida.</b></dd>
+
+<dt><b>-Pprefijo</b></dt>
+
+<dd>cambia el prefijo <i>yy</i> usado por defecto por <i>flex</i>
+para todas las variables visibles globalmente y nombres de
+funciones para que sea <i>prefijo.</i> Por ejemplo, <b>-Pfoo</b>
+cambia el nombre de <b>yytext</b> a <b>footext.</b> Este también
+cambia el nombre por defecto del fichero de salida de
+<b>lex.yy.c</b> a <b>lex.foo.c.</b> Aquí están todos los nombres
+afectados: 
+<pre>
+    yy_create_buffer
+    yy_delete_buffer
+    yy_flex_debug
+    yy_init_buffer
+    yy_flush_buffer
+    yy_load_buffer_state
+    yy_switch_to_buffer
+    yyin
+    yyleng
+    yylex
+    yylineno
+    yyout
+    yyrestart
+    yytext
+    yywrap
+
+</pre>
+
+(Si usted está utilizando un analizador en C++, entonces únicamente
+<b>yywrap</b> y <b>yyFlexLexer</b> se ven afectados.) Dentro de su
+analizador, puede aún hacer referencia a las variables globales y
+funciones usando cualquier versión de su nombre; pero externamente,
+estas tienen el nombre modificado.</dd>
+
+<dd>Esta opción le deja enlazar fácilmente múltiples programas
+<i>flex</i> conjuntamente en el mismo ejecutable. Fíjese, sin
+embargo, que usando esta opción también se renombra
+<b>yywrap(),</b> de manera que ahora <i>debe</i> o bien proveer su
+propia versión de la rutina (con el nombre apropiado) para su
+analizador, o usar <b>%option noyywrap,</b> ya que enlazar con
+<b>-lfl</b> no podrá proveerle una por defecto.</dd>
+
+<dt><b>-Sfichero_esqueleto</b></dt>
+
+<dd>ignora el fichero de esqueleteo por defecto con el que
+<i>flex</i> construye sus analizadores. Usted probablemente nunca
+necesitará utilizar esta opción a menos que este haciendo
+mantenimiento o un desarrollo de <i>flex.</i></dd>
+</dl><p><i>flex</i> también ofrece un mecanismo para controlar las
+opciones dentro de la propia especificación del analizador, en vez
+de a partir de la línea de comando. Esto se hace incluyendo las
+directivas <b>%option</b> en la primera sección de la
+especificación del analizador. Usted puede especificar varias
+opciones con una sola directiva <b>%option,</b> y varias directivas
+en la primera sección de su fichero de entrada de flex.</p><p>La mayoría de las opciones vienen dadas simplemente como
+nombres, opcionalmente precedidos por la palabra "no" (sin
+intervenir un espacio) para negar su significado. Las banderas de
+flex o su negación son equivalentes a un número:</p><pre>
+    7bit            opción -7
+    8bit            opción -8
+    align           opción -Ca
+    backup          opción -b
+    batch           opción -B
+    c++             opción -+
+
+    caseful o
+    case-sensitive  opuesto de -i (por defecto)
+
+    case-insensitive o
+    caseless        opción -i
+
+    debug           opción -d
+    default         opuesto de la opción -s
+    ecs             opción -Ce
+    fast            opción -F
+    full            opción -f
+    interactive     opción -I
+    lex-compat      opción -l
+    meta-ecs        opción -Cm
+    perf-report     opción -p
+    read            opción -Cr
+    stdout          opción -t
+    verbose         opción -v
+    warn            opuesto de la opción -w
+                    (use "%option nowarn" para -w)
+
+    array           equivalente a "%array"
+    pointer         equivalente a "%pointer" (por defecto)
+
+</pre><p>
+
+Algunas directivas <b>%option</b> ofrecen propiedades que de otra
+manera no están disponibles: 
+</p><dl compact="compact"><dt><b>always-interactive</b></dt>
+
+<dd>ordena a flex que genere un analizador que siempre considere su
+entrada como "interactiva". Normalmente, sobre cada fichero de
+entrada nuevo el analizador llama a <b>isatty()</b> como intento
+para determinar si la entrada del analizador es interactiva y por
+lo tanto debería leer un caracter a la vez. Cuando esta opción se
+utilice, sin embargo, entonces no se hace tal llamada.</dd>
+
+<dt><b>main</b></dt>
+
+<dd>ordena a flex que facilite un programa <b>main()</b> por
+defecto para el analizador, que simplemente llame a <b>yylex().</b>
+Esta opción implica <b>noyywrap</b> (ver más abajo).</dd>
+
+<dt><b>never-interactive</b></dt>
+
+<dd>ordena a flex que genere un analizador que nunca considere su
+entrada como "interactiva" (de nuevo, no se hace ninguna llamada a
+<b>isatty()).</b> Esta es la opuesta a
+<b>always-interactive.</b></dd>
+
+<dt><b>stack</b></dt>
+
+<dd>activa el uso de pilas de condiciones de arranque (ver
+Condiciones de Arranque más arriba).</dd>
+
+<dt><b>stdinit</b></dt>
+
+<dd>si se establece (es decir, <b>%option stdinit)</b> inicializa
+<i>yyin</i> e <i>yyout</i> a <i>stdin</i> y <i>stdout,</i> en lugar
+del que viene por defecto que es <i>nil.</i> Algunos pogramas de
+<i>lex</i> existentes dependen de este comportamiento, incluso si
+no sigue el ANSI C, que no requiere que <i>stdin</i> y
+<i>stdout</i> sean constantes en tiempo de compilación.</dd>
+
+<dt><b>yylineno</b></dt>
+
+<dd>ordena a <i>flex</i> a generar un analizador que mantenga el
+número de la línea actual leída desde su entrada en la variable
+global <b>yylineno.</b> Esta opción viene implícita con <b>%option
+lex-compat.</b></dd>
+
+<dt><b>yywrap</b></dt>
+
+<dd>si no se establece (es decir, <b>%option noyywrap),</b> hace
+que el analizador no llame a <b>yywrap()</b> hasta el
+fin-de-fichero, pero simplemente asume que no hay más ficheros que
+analizar (hasta que el usuario haga apuntar <i>yyin</i> a un nuevo
+fichero y llame a <b>yylex()</b> otra vez).</dd>
+</dl><p><i>flex</i> analiza las acciones de sus reglas para determinar
+si utiliza las propiedades <b>REJECT</b> o <b>yymore()</b> Las
+opciones <b>reject</b> e <b>yymore</b> están disponibles para
+ignorar sus decisiones siempre que use las opciones, o bien
+estableciendolas (p.ej., <b>%option reject)</b> para indicar que la
+propiedad se utiliza realmente, o desactivándolas para indicar que
+no es utilizada (p.ej., <b>%option noyymore).</b></p><p>Tres opciones toman valores delimitados por cadenas, separadas
+por '=':</p><pre>
+    %option outfile="ABC"
+
+</pre><p>
+
+es equivalente a <b>-oABC,</b> y 
+</p><pre>
+    %option prefix="XYZ"
+
+</pre><p>
+
+es equivalente a <b>-PXYZ.</b> Finalmente, 
+</p><pre>
+    %option yyclass="foo"
+
+</pre><p>
+
+sólo se aplica cuando se genera un analizador en C++ (opción
+<b>-+).</b> Este informa a <i>flex</i> que ha derivado a <b>foo</b>
+como una subclase de <b>yyFlexLexer,</b> así que <i>flex</i> pondrá
+sus acciones en la función miembro <b>foo::yylex()</b> en lugar de
+<b>yyFlexLexer::yylex().</b> Este también genera una función
+miembro <b>yyFlexLexer::yylex()</b> que emite un error en tiempo de
+ejecución (invocando a <b>yyFlexLexer::LexerError())</b> si es
+llamada. Ver Generando Escáners en C++, más abajo, para información
+adicional. 
+</p><p>Están disponibles un número de opciones para los puristas de
+lint que desean suprimir la aparición de rutinas no necesarias en
+el analizador generado. Cada una de la siguientes, si se desactivan
+(p.ej., <b>%option nounput</b> ), hace que la rutina
+correspondiente no aparezca en el analizador generado:</p><pre>
+    input, unput
+    yy_push_state, yy_pop_state, yy_top_state
+    yy_scan_buffer, yy_scan_bytes, yy_scan_string
+
+</pre><p>
+
+(aunque <b>yy_push_state()</b> y sus amigas no aparecerán de todas
+manera a menos que use <b>%option stack).</b> <a id="lbAS"> </a> 
+</p><h2>CONSIDERACIONES DE RENDIMIENTO</h2><p>
+
+El principal objetivo de diseño de <i>flex</i> es que genere
+analizadores de alto rendimiento. Este ha sido optimizado para
+comportarse bien con conjuntos grandes de reglas. Aparte de los
+efectos sobre la velocidad del analizador con las opciones de
+compresión de tablas <b>-C</b> anteriormente introducidas, hay un
+número de opciones/acciones que degradan el rendimiento. Estas son,
+desde la más costosa a la menos: 
+</p><pre>
+    REJECT
+    %option yylineno
+    contexto posterior arbitrario
+
+    conjunto de patrones que requieren retroceso
+    %array
+    %option interactive
+    %option always-interactive
+
+    '^' operador de comienzo de línea
+    yymore()
+
+</pre><p>
+
+siendo las tres primeras bastante costosas y las dos últimas
+bastante económicas. Fíjese también que <b>unput()</b> se
+implementa como una llamada de rutina que potencialmente hace
+bastante trabajo, mientras que <b>yyless()</b> es una macro
+bastante económica; así que si está devolviendo algún texto
+excedente que ha analizado, use <b>yyless().</b> 
+</p><p><b>REJECT</b> debería evitarse a cualquier precio cuando el
+rendimiento es importante. Esta es una opción particularmente
+cara.</p><p>Es lioso deshacerse del retroceso y a menudo podría ser una
+cantidad de trabajo enorme para un analizador complicado. En
+principio, uno comienza utilizando la bandera <b>-b</b> para
+generar un archivo <i>lex.backup.</i> Por ejemplo, sobre la
+entrada</p><pre>
+    %%
+    foo        return TOK_KEYWORD;
+    foobar     return TOK_KEYWORD;
+
+</pre><p>
+
+el fichero tiene el siguiente aspecto: 
+</p><pre>
+    El estado #6 es no-aceptar -
+     números de línea asociados a la regla:
+           2       3
+     fin de transiciones: [ o ]
+     transiciones de bloqueo: fin de archivo (EOF) [ \001-n  p-\177 ]
+
+    El estado #8 es no-aceptar -
+     números de línea asociados a la regla:
+           3
+     fin de transiciones: [ a ]
+     transiciones de bloqueo: fin de archivo (EOF) [ \001-`  b-\177 ]
+
+    El estado #9 es no-aceptar -
+     números de línea asociados a la regla:
+           3
+     fin de transiciones: [ r ]
+     transiciones de bloqueo: fin de archivo (EOF) [ \001-q  s-\177 ]
+
+    Las tablas comprimidas siempre implican un retroceso.
+
+</pre><p>
+
+Las primeras líneas nos dicen que hay un estado del analizador en
+el que se puede hacer una transición con una 'o' pero no sobre
+cualquier otro caracter, y que en ese estado el texto recientemente
+analizado no empareja con ninguna regla. El estado ocurre cuando se
+intenta emparejar las reglas encontradas en las líneas 2 y 3 en el
+fichero de entrada. Si el analizador está en ese estado y entoces
+lee cualquier cosa que no sea una 'o', tendrá que retroceder para
+encontrar una regla que empareje. Con un poco de análisis uno puede
+ver que este debe ser el estado en el que se está cuando se ha
+visto "fo". Cuando haya ocurrido, si se ve cualquier cosa que no
+sea una 'o', el analizador tendrá que retroceder para simplemente
+emparejar la 'f' (por la regla por defecto). 
+</p><p>El comentario que tiene que ver con el Estado #8 indica que hay
+un problema cuando se analiza "foob". En efecto, con cualquier
+caracter que no sea una 'a', el analizador tendrá que retroceder
+para aceptar "foo". De forma similar, el comentario para el Estado
+#9 tiene que ver cuando se ha analizado "fooba" y no le sigue una
+'r'.</p><p>El comentario final nos recuerda que no mecere la pena todo el
+trabajo para eliminar el retroceso de las reglas a menos que
+estemos usando <b>-Cf</b> o <b>-CF,</b> y que no hay ninguna mejora
+del rendimiento haciéndolo con analizadores comprimidos.</p><p>La manera de quitar los retrocesos es añadiendo reglas de
+"error":</p><pre>
+    %%
+    foo         return TOK_KEYWORD;
+    foobar      return TOK_KEYWORD;
+
+    fooba       |
+    foob        |
+    fo          {
+                /* falsa alarma, realmente no es una palabra clave */
+                return TOK_ID;
+                }
+
+</pre><p>La eliminación de retroceso en una lista de palabras clave
+también puede hacerse utilizando una regla "atrápalo-todo":</p><pre>
+    %%
+    foo         return TOK_KEYWORD;
+    foobar      return TOK_KEYWORD;
+
+    [a-z]+      return TOK_ID;
+
+</pre><p>
+
+Normalmente esta es la mejor solución cuando sea adecuada. 
+</p><p>Los mensajes sobre retrocesos tienden a aparecer en cascada. Con
+un conjunto complicado de reglas no es poco común obtener cientos
+de mensajes. Si uno puede descifrarlos, sin embargo, a menudo sólo
+hay que tomar una docena de reglas o algo así para eliminar los
+retrocesos (ya que es fácil cometer una equivocación y tener una
+regla de error que reconozca un token válido. Una posible
+característica futura de <i>flex</i> será añadir reglas
+automáticamente para eliminar el retroceso).</p><p>Es importante tener en cuenta que se obtienen los beneficios de
+eliminar el retroceso sólo si elimina <i>cada</i> instancia del
+retroceso. Dejar solamente una significa que no ha ganado
+absolutamente nada.</p><p>El contexto posterior <i>variable</i> (donde la parte delantera
+y posterior no tienen una longitud fija) supone casi la misma
+pérdida de rendimiento que <b>REJECT</b> (es decir, substanciales).
+Así que cuando sea posible una regla como esta:</p><pre>
+    %%
+    raton|rata/(gato|perro)   correr();
+
+</pre><p>
+
+es mejor escribirla así: 
+</p><pre>
+    %%
+    raton/gato|perro          correr();
+    rata/gato|perro           correr();
+
+</pre><p>
+
+o así 
+</p><pre>
+    %%
+    raton|rata/gato           correr();
+    raton|rata/perro          correr();
+
+</pre><p>
+
+Fíjese que aquí la acción especial '|' <i>no</i> ofrece ningún
+ahorro, y puede incluso hacer las cosas peor (ver Deficiencias /
+Errores más abajo). 
+</p><p>Otro área donde el usuario puede incrementar el rendimiento del
+analizador (y una que es más fácil de implementar) surge del hecho
+que cuanto más tarde se empareje un token, más rápido irá el
+analizador. Esto es debido a que con tokens grandes el
+procesamiento de la mayoría de los caracteres de entrada tiene
+lugar en el (corto) bucle de análisis más interno, y no tiene que
+ir tan a menudo a hacer el trabajo de más para constituir el
+entorno del analizador (p.ej., <b>yytext)</b> para la acción.
+Recuerde el analizador para los comentarios en C:</p><pre>
+    %x comentario
+    %%
+            int num_linea = 1;
+
+    "/*"         BEGIN(comentario);
+
+    &lt;comentario&gt;[^*\n]*
+    &lt;comentario&gt;"*"+[^*/\n]*
+    &lt;comentario&gt;\n             ++num_linea;
+    &lt;comentario&gt;"*"+"/"        BEGIN(INITIAL);
+
+</pre><p>
+
+Esto podría acelerarse escribiéndolo como: 
+</p><pre>
+    %x comentario
+    %%
+            int num_linea = 1;
+
+    "/*"         BEGIN(comentario);
+
+    &lt;comentario&gt;[^*\n]*
+    &lt;comentario&gt;[^*\n]*\n      ++num_linea;
+    &lt;comentario&gt;"*"+[^*/\n]*
+    &lt;comentario&gt;"*"+[^*/\n]*\n ++num_linea;
+    &lt;comentario&gt;"*"+"/"        BEGIN(INITIAL);
+
+</pre><p>
+
+Ahora en lugar de que cada línea nueva requiera el procesamiento de
+otra regla, el reconocimiento de las líneas nuevas se "distribuye"
+sobre las otras reglas para mantener el texto reconocido tan largo
+como sea posible. ¡Fíjese que el <i>añadir</i> reglas <i>no</i>
+ralentiza el analizador! La velocidad del analizador es
+independiente del número de reglas o (dadas las consideraciones
+dadas al inicio de esta sección) cuán complicadas sean las reglas
+respecto a operadores tales como '*' y '|'. 
+</p><p>Un ejemplo final sobre la aceleración de un analizador: suponga
+que quiere analizar un fichero que contiene identificadores y
+palabras clave, una por línea y sin ningún caracter extraño, y
+reconocer todas las palabras clave. Una primera aproximación
+natural es:</p><pre>
+    %%
+    asm      |
+    auto     |
+    break    |
+    ... etc ...
+    volatile |
+    while    /* es una palabra clave */
+
+    .|\n     /* no es una palabra clave */
+
+</pre><p>
+
+Para eliminar el retroceso, introduzca una regla atrápalo-todo: 
+</p><pre>
+    %%
+    asm      |
+    auto     |
+    break    |
+    ... etc ...
+    volatile |
+    while    /* es una palabra clave */
+
+    [a-z]+   |
+    .|\n     /* no es una palabra clave */
+
+</pre><p>
+
+Ahora, si se garantiza que hay exáctamente una palabra por línea,
+entonces podemos reducir el número total de emparejamientos por la
+mitad mezclando el reconocimiento de líneas nuevas con las de los
+otros tokens: 
+</p><pre>
+    %%
+    asm\n    |
+    auto\n   |
+    break\n  |
+    ... etc ...
+    volatile\n |
+    while\n  /* es una palabra clave */
+
+    [a-z]+\n |
+    .|\n     /* no es una palabra clave */
+
+</pre><p>
+
+Uno tiene que ser cuidadoso aquí, ya que hemos reintroducido
+retroceso en el analizador. En particular, aunque <i>nosotros</i>
+sepamos que ahí nunca habrán otros caracteres en el flujo de
+entrada que no sean letras o líneas nuevas, <i>flex</i> no puede
+figurarse eso, y planeará la posible necesidad de retroceder cuando
+haya analizado un token como "auto" y el próximo caracter sea algo
+distinto a una línea nueva o una letra. Previamente este podría
+entonces emparejar la regla "auto" y estar todo hecho, pero ahora
+este no tiene una regla "auto", solamente una regla "auto\n". Para
+eliminar la posibilidad de retroceso, podríamos o bien duplicar
+todas las reglas pero sin línea nueva al final, o, ya que nunca
+esperamos encontrar tal entrada y por lo tanto ni cómo es
+clasificada, podemos introducir una regla atrápalo-todo más, esta
+que no incluye una línea nueva: 
+</p><pre>
+    %%
+    asm\n    |
+    auto\n   |
+    break\n  |
+    ... etc ...
+    volatile\n |
+    while\n  /* es una palabra clave */
+
+    [a-z]+\n |
+    [a-z]+   |
+    .|\n     /* no es una palabra clave */
+
+</pre><p>
+
+Compilado con <b>-Cf,</b> esto es casi tan rápido como lo que uno
+puede obtener de un analizador de <i>flex</i> para este problema en
+particular. 
+</p><p>Una nota final: <i>flex</i> es lento cuando empareja NUL's,
+particularmente cuando un token contiene múltiples NUL's. Es mejor
+escribir reglas que emparejen <i>cortas</i> cantidades de texto si
+se anticipa que el texto incluirá NUL's a menudo.</p><p>Otra nota final en relación con el rendimiento: tal y como se
+mencionó en la sección Cómo se Reconoce la Entrada, el reajuste
+dinámico de <b>yytext</b> para acomodar tokens enormes es un
+proceso lento porque ahora requiere que el token (inmenso) sea
+reanalizado desde el principio. De esta manera si el rendimiento es
+vital, debería intentar emparejar "grandes" cantidades de texto
+pero no "inmensas" cantidades, donde el punto medio está en torno a
+los 8K caracteres/token. <a id="lbAT"> </a></p><h2>GENERANDO ESCÁNERES EN C++</h2><i>flex</i><p> ofrece dos maneras distintas de generar analizadores
+para usar con C++. La primera manera es simplemente compilar un
+analizador generado por <i>flex</i> usando un compilador de C++ en
+lugar de un compilador de C. No debería encontrarse ante ningún
+error de compilación (por favor informe de cualquier error que
+encuentre a la dirección de correo electrónico dada en la sección
+Autores más abajo). Puede entonces usar código C++ en sus acciones
+de las reglas en lugar de código C. Fíjese que la fuente de entrada
+por defecto para su analizador permanece como <i>yyin,</i> y la
+repetición por defecto se hace aún a <i>yyout.</i> Ambos permanecen
+como variables <i>FILE *</i> y no como <i>flujos</i> de C++. 
+</p><p>También puede utilizar <i>flex</i> para generar un analizador
+como una clase de C++, utilizando la opción <b>-+</b> (o,
+equivalentemente, <b>%option c++),</b> que se especifica
+automáticamente si el nombre del ejecutable de flex finaliza con un
+'+', tal como <i>flex++.</i> Cuando se usa esta opcióx, flex
+establece por defecto la generación del analizador al fichero
+<b>lex.yy.cc</b> en vez de <b>lex.yy.c.</b> El analizador generado
+incluye el fichero de cabecera <i>FlexLexer.h,</i> que define el
+interfaz con las dos clases de C++.</p><p>La primera clase, <b>FlexLexer,</b> ofrece una clase base
+abstracta definiendo la interfaz a la clase del analizador general.
+Este provee las siguientes funciones miembro:</p><dl compact="compact"><dt><b>const char* YYText()</b></dt>
+
+<dd>retorna el texto del token reconocido más recientemente, el
+equivalente a <b>yytext.</b></dd>
+
+<dt><b>int YYLeng()</b></dt>
+
+<dd>retorna la longitud del token reconocido más recientemente, el
+equivalente a <b>yyleng.</b></dd>
+
+<dt><b>int lineno() const</b></dt>
+
+<dd>retorna el número de línea de entrada actual (ver <b>%option
+yylineno),</b> o <b>1</b> si no se usó <b>%option
+yylineno.</b></dd>
+
+<dt><b>void set_debug( int flag )</b></dt>
+
+<dd>activa la bandera de depuración para el analizador, equivalente
+a la asignación de <b>yy_flex_debug</b> (ver la sección Opciones
+más arriba). Fíjese que debe construir el analizador utilizando
+<b>%option debug</b> para incluir información de depuración en
+este.</dd>
+
+<dt><b>int debug() const</b></dt>
+
+<dd>retorna el estado actual de la bandera de depuración.</dd>
+</dl><p>También se proveen funciones miembro equivalentes a
+<b>yy_switch_to_buffer(),</b> <b>yy_create_buffer()</b> (aunque el
+primer argumento es un puntero a objeto <b>istream*</b> y no un
+<b>FILE*),</b> <b>yy_flush_buffer(),</b> <b>yy_delete_buffer(),</b>
+y <b>yyrestart()</b> (de nuevo, el primer argumento es un puntero a
+objeto <b>istream*</b> ).</p><p>La segunda clase definida en <i>FlexLexer.h</i> es
+<b>yyFlexLexer,</b> que se deriva de <b>FlexLexer.</b> Esta define
+las siguientes funciones miembro adicionales:</p><dl compact="compact"><dt><b>yyFlexLexer( istream* arg_yyin = 0, ostream* arg_yyout = 0
+)</b></dt>
+
+<dd>construye un objeto <b>yyFlexLexer</b> usando los flujos dados
+para la entrada y salida. Si no se especifica, los flujos se
+establecen por defecto a <b>cin</b> y <b>cout,</b>
+respectivamente.</dd>
+
+<dt><b>virtual int yylex()</b></dt>
+
+<dd>hace el mismo papel que <b>yylex()</b> en los analizadores de
+flex ordinarios: analiza el flujo de entrada, consumiendo tokens,
+hasta que la acción de una regla retorne un valor. Si usted deriva
+una subclase <b>S</b> a partir de <b>yyFlexLexer</b> y quiere
+acceder a las funciones y variables miembro de <b>S</b> dentro de
+<b>yylex(),</b> entonces necesita utilizar <b>%option yyclass=S</b>
+para informar a <i>flex</i> que estará utilizando esa subclase en
+lugar de <b>yyFlexLexer.</b> Es este caso, en vez de generar
+<b>yyFlexLexer::yylex(),</b> <i>flex</i> genera <b>S::yylex()</b>
+(y también genera un substituto <b>yyFlexLexer::yylex()</b> que
+llama a <b>yyFlexLexer::LexerError()</b> si se invoca).</dd>
+
+<dt><b>virtual void switch_streams(istream* new_in = 0,</b></dt>
+
+<dd><b>ostream* new_out = 0)</b> reasigna <b>yyin</b> a
+<b>new_in</b> (si no es nulo) e <b>yyout</b> a <b>new_out</b>
+(idem), borrando el buffer de entrada anterior si se reasigna
+<b>yyin.</b></dd>
+
+<dt><b>int yylex( istream* new_in, ostream* new_out = 0 )</b></dt>
+
+<dd>primero conmuta el flujo de entrada via <b>switch_streams(
+new_in, new_out )</b> y entonces retorna el valor de
+<b>yylex().</b></dd>
+</dl><p>Además, <b>yyFlexLexer</b> define las siguientes funciones
+virtuales protegidas que puede redefinir en clases derivadas para
+adaptar el analizador:</p><dl compact="compact"><dt><b>virtual int LexerInput( char* buf, int max_size )</b></dt>
+
+<dd>lee hasta <b>max_size</b> caracteres en <b>buf</b> y devuelve
+el número de caracteres leídos. Para indicar el fin-de-la-entrada,
+devuelve 0 caracteres. Fíjese que los analizadores "interactivos"
+(ver las banderas <b>-B</b> y <b>-I</b> ) definen la macro
+<b>YY_INTERACTIVE.</b> Si usted redefine <b>LexerInput()</b> y
+necesita tomar acciones distintas dependiendo de si el analizador
+está analizando una fuente de entrada interactivo o no, puede
+comprobar la presencia de este nombre mediante <b>#ifdef.</b></dd>
+
+<dt><b>virtual void LexerOutput( const char* buf, int size
+)</b></dt>
+
+<dd>escribe a la salida <b>size</b> caracteres desde el buffer
+<b>buf,</b> que, mientras termine en NUL, puede contener también
+NUL's "internos" si las reglas del analizador pueden emparejar
+texto con NUL's dentro de este.</dd>
+
+<dt><b>virtual void LexerError( const char* msg )</b></dt>
+
+<dd>informa con un mensaje de error fatal. La versión por defecto
+de esta función escribe el mensaje al flujo <b>cerr</b> y
+finaliza.</dd>
+</dl><p>Fíjese que un objeto <b>yyFlexLexer</b> contiene su estado de
+análisis <i>completo.</i> Así puede utilizar tales objetos para
+crear analizadore reentrantes. Puede hacer varias instancias de la
+misma clase <b>yyFlexLexer,</b> y puede combinar varias clases de
+analizadores en C++ conjuntamente en el mismo programa usando la
+opción <b>-P</b> comentada anteriormente.</p><p>Finalmente, note que la característica <b>%array</b> no está
+disponible en clases de analizadores en C++; debe utilizar
+<b>%pointer</b> (por defecto).</p><p>Aquí hay un ejemplo de un analizador en C++ simple:</p><pre>
+    // Un ejemplo del uso de la clase analizador en C++ de flex.
+
+    %{
+    int mylineno = 0;
+    %}
+
+    string  \"[^\n"]+\"
+
+    ws      [ \t]+
+
+    alpha   [A-Za-z]
+    dig     [0-9]
+    name    ({alpha}|{dig}|\$)({alpha}|{dig}|[_.\-/$])*
+    num1    [-+]?{dig}+\.?([eE][-+]?{dig}+)?
+    num2    [-+]?{dig}*\.{dig}+([eE][-+]?{dig}+)?
+    number  {num1}|{num2}
+
+    %%
+
+    {ws}    /* evita los espacios en blanco y tabuladores */
+
+    "/*"    {
+            int c;
+
+            while((c = yyinput()) != 0)
+                {
+                if(c == '\n')
+                    ++mylineno;
+
+                else if(c == '*')
+                    {
+                    if((c = yyinput()) == '/')
+                        break;
+                    else
+                        unput(c);
+                    }
+                }
+            }
+
+    {number}  cout &lt;&lt; "número " &lt;&lt; YYText() &lt;&lt; '\n';
+
+    \n        mylineno++;
+
+    {name}    cout &lt;&lt; "nombre " &lt;&lt; YYText() &lt;&lt; '\n';
+
+    {string}  cout &lt;&lt; "cadena " &lt;&lt; YYText() &lt;&lt; '\n';
+
+    %%
+
+    int main( int /* argc */, char** /* argv */ )
+        {
+        FlexLexer* lexer = new yyFlexLexer;
+        while(lexer-&gt;yylex() != 0)
+            ;
+        return 0;
+        }
+</pre><p>
+
+Si desea crear varias (diferentes) clases analizadoras, use la
+bandera <b>-P</b> (o la opción <b>prefix=</b> ) para renombrar cada
+<b>yyFlexLexer</b> a algún otro <b>xxFlexLexer.</b> Entonces puede
+incluir <b>&lt;<a href="file:/usr/include/FlexLexer.h">FlexLexer.h</a>&gt;</b> en los
+otros ficheros fuente una vez por clase analizadora, primero
+renombrando <b>yyFlexLexer</b> como se presenta a continuación: 
+</p><pre>
+    #undef yyFlexLexer
+    #define yyFlexLexer xxFlexLexer
+    #include &lt;<a href="file:/usr/include/FlexLexer.h">FlexLexer.h</a>&gt;
+
+    #undef yyFlexLexer
+    #define yyFlexLexer zzFlexLexer
+    #include &lt;<a href="file:/usr/include/FlexLexer.h">FlexLexer.h</a>&gt;
+
+</pre><p>
+
+si, por ejemplo, usted utilizó <b>%option prefix=xx</b> para uno de
+sus analizadores y <b>%option prefix=zz</b> para el otro. 
+</p><p>IMPORTANTE: la forma actual de la clase analizadora es
+<i>experimental</i> y podría cambiar considerablemente entre
+versiones principales. <a id="lbAU"> </a></p><h2>INCOMPATIBILIDADES CON LEX Y POSIX</h2><i>flex</i><p> es una reescritura de la herramienta <i>lex</i> del
+Unix de AT&amp;T (aunque las dos implementaciones no comparten
+ningún código), con algunas extensiones e incompatibilidades, de
+las que ambas conciernen a aquellos que desean escribir
+analizadores aceptables por cualquier implementación. Flex sigue
+completamente la especificación POSIX de <i>lex,</i> excepto que
+cuando se utiliza <b>%pointer</b> (por defecto), una llamada a
+<b>unput()</b> destruye el contenido de <b>yytext,</b> que va en
+contra de la especificación POSIX. 
+</p><p>En esta sección comentaremos todas las áreas conocidas de
+incompatibilidades entre flex, lex de AT&amp;T, y la especificación
+POSIX.</p><p>La opción <b>-l</b> de <i>flex</i> activa la máxima
+compatibilidad con la implementación original de <i>lex</i> de
+AT&amp;T, con el coste de una mayor pérdida de rendimiento en el
+analizador generado. Indicamos más abajo qué incompatibilidades
+pueden superarse usando la opción <b>-l.</b></p><p><i>flex</i> es totalmente compatible con <i>lex</i> con las
+siguientes excepciones:</p><dl compact="compact"><dt>-</dt>
+
+<dd>La variable interna del analizador de <i>lex</i> sin documentar
+<b>yylineno</b> no se ofrece a menos que se use <b>-l</b> o
+<b>%option yylineno.</b></dd>
+
+<dd><b>yylineno</b> debería gestionarse por buffer, en lugar de por
+analizador (simple variable global).</dd>
+
+<dd><b>yylineno</b> no es parte de la especificación POSIX.</dd>
+
+<dt>-</dt>
+
+<dd>La rutina <b>input()</b> no es redefinible, aunque podría
+invocarse para leer los caracteres que siguen a continuación de lo
+que haya sido reconocido por una regla. Si <b>input()</b> se
+encuentra con un fin-de-fichero se realiza el procesamiento de
+<b>yywrap()</b> normal. <b>input()</b> retorna un fin-de-fichero
+``real'' como <i>EOF.</i></dd>
+
+<dd>La entrada en su lugar se controla definiendo la macro
+<b>YY_INPUT.</b></dd>
+
+<dd>La restricción de <i>flex</i> de que <b>input()</b> no puede
+redefinirse va de acuerdo a la especificación POSIX, que
+simplemente no especifica ninguna manera de controlar la entrada
+del analizador que no sea haciendo una asignación inicial a
+<i>yyin.</i></dd>
+
+<dt>-</dt>
+
+<dd>La rutina <b>unput()</b> no es redefinible. Esta restricción va
+de acuerdo a POSIX.</dd>
+
+<dt>-</dt>
+
+<dd>Los analizadores de <i>flex</i> no son tan reentrantes como los
+analizadores de <i>lex.</i> En particular, si tiene un analizador
+interactivo y un gestor de interrupción con long-jumps fuera del
+analizador, y el analizador a continuación se invoca de nuevo,
+podría obtener el siguiente mensaje: 
+<pre>
+    fatal flex scanner internal error--end of buffer missed
+
+</pre>
+
+Para volver al analizador, primero utilice 
+<pre>
+    yyrestart( yyin );
+
+</pre>
+
+Vea que esta llamada eliminará cualquier entrada en el buffer;
+normalmente esto no es un problema con un analizador
+interactivo.</dd>
+
+<dd>Dese cuenta también de que las clases analizadoras en C++
+<i>son</i> reentrantes, así que si usar C++ es una opción para
+usted, debería utilizarla. Vea "Generando Escáners en C++" más
+arriba para los detalles.</dd>
+
+<dt>-</dt>
+
+<dd><b>output()</b> no se provee. La salida desde la macro
+<b>ECHO</b> se hace al puntero de fichero <i>yyout</i> (por defecto
+a <i>stdout).</i></dd>
+
+<dd><b>output()</b> no es parte de la especificación POSIX.</dd>
+
+<dt>-</dt>
+
+<dd><i>lex</i> no acepta condiciones de arranque exclusivas (%x),
+aunque están en la especificación POSIX.</dd>
+
+<dt>-</dt>
+
+<dd>Cuando se expanden las definiciones, <i>flex</i> las encierra
+entre paréntesis. Con lex, lo siguiente: 
+<pre>
+    NOMBRE    [A-Z][A-Z0-9]*
+    %%
+    foo{NOMBRE}?      printf( "Lo encontró\n" );
+    %%
+
+</pre>
+
+no reconocerá la cadena "foo" porque cuando la macro se expanda la
+regla es equivalente a "foo[A-Z][A-Z0-9]*?" y la precedencia es tal
+que el '?' se asocia con "[A-Z0-9]*". Con <i>flex,</i> la regla se
+expandirá a "foo([A-Z][A-Z0-9]*)?" y así la cadena "foo" se
+reconocerá.</dd>
+
+<dd>Fíjese que si la definición comienza con <b>^</b> o finaliza
+con <b>$</b> entonces <i>no</i> se expande con paréntesis, para
+permitir que estos operadores aparezcan en las definiciones sin
+perder su significado especial. Pero los operadores <b>&lt;s&gt;,
+/,</b> y <b>&lt;&lt;EOF&gt;&gt;</b> no pueden utilizarse en una
+definición de <i>flex.</i></dd>
+
+<dd>El uso de <b>-l</b> produce en el comportamiendo de <i>lex</i>
+el no poner paréntesis alrededor de la definición.</dd>
+
+<dd>La especificación de POSIX dice que la definición debe ser
+encerrada entre paréntesis.</dd>
+
+<dt>-</dt>
+
+<dd>Algunas implementaciones de <i>lex</i> permiten que la acción
+de una regla comience en una línea separada, si el patrón de la
+regla tiene espacios en blanco al final: 
+<pre>
+    %%
+    foo|bar&lt;espacio aquí&gt;
+      { foobar_action(); }
+
+</pre>
+
+<i>flex</i> no dispone de esta propiedad.</dd>
+
+<dt>-</dt>
+
+<dd>La opción <b>%r</b> de <i>lex</i> (generar un analizador
+Ratfor) no se ofrece. No es parte de la especificación de
+POSIX.</dd>
+
+<dt>-</dt>
+
+<dd>Después de una llamada a <b>unput(),</b> el contenido de
+<i>yytext</i> está indefinido hasta que se reconozca el próximo
+token, a menos que el analizador se haya construido usando
+<b>%array.</b> Este no es el caso de <i>lex</i> o la especificación
+de POSIX. La opción <b>-l</b> elimina esta incompatibilidad.</dd>
+
+<dt>-</dt>
+
+<dd>La precedencia del operador <b>{}</b> (rango numérico) es
+diferente. <i>lex</i> interpreta "abc{1,3}" como "empareja uno,
+dos, o tres apariciones de<br />
+ 'abc'", mientras que <i>flex</i> lo interpreta como "empareja 'ab'
+seguida de una, dos o tres apariciones de 'c'". Lo último va de
+acuerdo con la especificación de POSIX.</dd>
+
+<dt>-</dt>
+
+<dd>La precedencia del operador <b>^</b> es diferente. <i>lex</i>
+interpreta "^foo|bar" como "empareja bien 'foo' al principio de una
+línea, o 'bar' en cualquier lugar", mientras que <i>flex</i> lo
+interpreta como "empareja 'foo' o 'bar' si vienen al principio de
+una línea". Lo último va de acuerdo con la especificación de
+POSIX.</dd>
+
+<dt>-</dt>
+
+<dd>Las declaraciones especiales del tamaño de las tablas tal como
+<b>%a</b> que reconoce <i>lex</i> no se requieren en los
+analizadores de <i>flex;</i> <i>flex</i> los ignora.</dd>
+
+<dt>-</dt>
+
+<dd>El identificador FLEX_SCANNER se #define de manera que los
+analizadores podrían escribirse para ser procesados con <i>flex</i>
+o con <i>lex.</i> Los analizadores también incluyen
+<b>YY_FLEX_MAJOR_VERSION</b> y <b>YY_FLEX_MINOR_VERSION</b>
+indicando qué versión de <i>flex</i> generó el analizador (por
+ejemplo, para la versión 2.5, estas definiciones serán 2 y 5
+respectivamente).</dd>
+</dl><p>Las siguientes propiedades de <i>flex</i> no se incluyen en
+<i>lex</i> o la especificación POSIX:</p><pre>
+    analizadores en C++
+    %option
+    ámbitos de condiciones de arranque
+    pilas de condiciones de arranque
+    analizadores interactivos/no-interactivos
+    yy_scan_string() y sus amigas
+    yyterminate()
+    yy_set_interactive()
+    yy_set_bol()
+    YY_AT_BOL()
+    &lt;&lt;EOF&gt;&gt;
+    &lt;*&gt;
+    YY_DECL
+    YY_START
+    YY_USER_ACTION
+    YY_USER_INIT
+    directivas #line
+    %{}'s alrededor de acciones
+    varias acciones en una línea
+
+</pre><p>
+
+más casi todas las banderas de flex. La última propiedad en la
+lista se refiere al hecho de que con <i>flex</i> puede poner varias
+acciones en la misma línea, sepradas con punto y coma, mientras que
+con <i>lex,</i> lo siguiente 
+</p><pre>
+    foo    handle_foo(); ++num_foos_seen;
+
+</pre><p>
+
+se trunca (sorprendentemente) a 
+</p><pre>
+    foo    handle_foo();
+
+</pre><i>flex</i><p> no trunca la acción. Las acciones que no se encierran
+en llaves simplemente se terminan al final de la línea. <a id="lbAV"> </a> 
+</p><h2>DIAGNÓSTICOS</h2><p><i>aviso, la regla no se puede aplicar</i> indica que la regla
+dada no puede emparejarse porque sigue a otras reglas que siempre
+emparejarán el mismo texto que el de esta. Por ejemplo, en el
+siguiente ejemplo "foo" no puede emparejarse porque viene después
+de una regla "atrápalo-todo" para identificadores:</p><pre>
+    [a-z]+    obtuvo_identificador();
+    foo       obtuvo_foo();
+
+</pre><p>
+
+El uso de <b>REJECT</b> en un analizador suprime este aviso. 
+</p><p><i>aviso,</i> <i>se ha especificado la opción</i> <b>-s</b>
+<i>pero se puede aplicar la regla por defecto</i> significa que es
+posible (tal vez únicamente en una condición de arranque en
+particular) que la regla por defecto (emparejar cualquier caracter
+simple) sea la única que emparejará una entrada particular. Ya que
+se indicó <b>-s,</b> presumiblemente esto no es lo que se
+pretendía.</p><p><i>definición no definida {reject_used_but_not_detected}</i> o
+<i>definición no definida {yymore_used_but_not_detected} -</i>
+Estos errores pueden suceder en tiempo de compilación. Indican que
+el analizador usa <b>REJECT</b> o <b>yymore()</b> pero que
+<i>flex</i> falló en darse cuenta del hecho, queriendo decir que
+<i>flex</i> analizó las dos primeras secciones buscando apariciones
+de estas acciones y falló en encontrar alguna, pero que de algún
+modo se le han colado (por medio de un archivo #include, por
+ejemplo). Use <b>%option reject</b> o <b>%option yymore</b> para
+indicar a flex que realmente usa esta funcionalidad.</p><p><i>flex scanner jammed -</i> un analizador compilado con
+<b>-s</b> ha encontrado una cadena de entrada que no fue reconocida
+por niguna de sus reglas. Este error puede suceder también debido a
+problemas internos.</p><p><i>token too large, exceeds YYLMAX -</i> su analizador usa
+<b>%array</b> y una de sus reglas reconoció una cadena más grande
+que la constante <b>YYLMAX</b> (8K bytes por defecto). Usted puede
+incrementar el valor haciendo un #define <b>YYLMAX</b> en la
+sección de definiciones de su entrada de <i>flex.</i></p><p><i>el analizador requiere la opción -8 para</i> <i>poder usar el
+carácter 'x' -</i> La especificación de su analizador incluye el
+reconocimiento del caracter de 8-bits <i>'x'</i> y no ha
+especificado la bandera -8, y su analizador por defecto está a
+7-bits porque ha usado las opciones <b>-Cf</b> o <b>-CF</b> de
+compresión de tablas. Vea el comentario de la bandera <b>-7</b>
+para los detalles.</p><p><i>flex scanner push-back overflow -</i> usted utilizó
+<b>unput()</b> para devolver tanto texto que el buffer del
+analizador no pudo mantener el texto devuelto y el token actual en
+<b>yytext.</b> Idealmente el analizador debería ajustar
+dinámicamente el buffer en este caso, pero actualmente no lo
+hace.</p><p><i>input buffer overflow, can't enlarge buffer because scanner
+uses REJECT -</i> el analizador estaba intentando reconocer un
+token extremadamente largo y necesitó expandir el buffer de
+entrada. Esto no funciona con analizadores que usan
+<b>REJECT.</b></p><p><i>fatal flex scanner internal error--end of buffer missed -</i>
+Esto puede suceder en un analizador que se reintroduce después de
+que un long-jump haya saltado fuera (o sobre) el registro de
+activación del analizador. Antes de reintroducir el analizador,
+use:</p><pre>
+    yyrestart( yyin );
+
+</pre><p>
+
+o, como se comentó más arriba, cambie y use el analizador como
+clase de C++. 
+</p><p><i>too many start conditions in &lt;&gt; construct! -</i> ha
+listado más condiciones de arranque en una construcción &lt;&gt;
+que las que existen (así que tuvo que haber listado al menos una de
+ellas dos veces). <a id="lbAW"> </a></p><h2>FICHEROS</h2><dl compact="compact"><dt><b>-lfl</b></dt>
+
+<dd>librería con la que los analizadores deben enlazarse.</dd>
+
+<dt><i>lex.yy.c</i></dt>
+
+<dd>analizador generado (llamado <i>lexyy.c</i> en algunos
+sistemas).</dd>
+
+<dt><i>lex.yy.cc</i></dt>
+
+<dd>clase generada en C++ con el analizador, cuando se utiliza
+<b>-+.</b></dd>
+
+<dt><i>&lt;<a href="file:/usr/include/FlexLexer.h">FlexLexer.h</a>&gt;</i></dt>
+
+<dd>fichero de cabecera definiendo la clase base del analizador en
+C++, <b>FlexLexer,</b> y su clase derivada,
+<b>yyFlexLexer.</b></dd>
+
+<dt><i>flex.skl</i></dt>
+
+<dd>esqueleto del analizador. Este fichero se utiliza únicamente
+cuando se construye flex, no cuando flex se ejecuta.</dd>
+
+<dt><i>lex.backup</i></dt>
+
+<dd>información de los retrocesos para la bandera <b>-b</b>
+(llamada <i>lex.bck</i> en algunos sistemas).</dd>
+</dl><a id="lbAX"> </a><h2>DEFICIENCIAS / ERRORES</h2><p>Algunos patrones de contexto posterior no pueden reconocerse
+correctamente y generan mensajes de aviso ("contexto posterior
+peligroso"). Estos son patrones donde el final de la primera parte
+de la regla reconoce el comienzo de la segunda parte, tal como
+"zx*/xy*", donde el 'x*' reconoce la 'x' al comienzo del contexto
+posterior. (Fíjese que el borrador de POSIX establece que el texto
+reconocido por tales patrones no está definido.)</p><p>Para algunas reglas de contexto posterior, partes que son de
+hecho de longitud fija no se reconocen como tales, resultando en la
+pérdida de rendimiento mencionada anteriormente. En particular, las
+partes que usan '|' o {n} (tales como "foo{3}") siempre se
+consideran de longitud variable.</p><p>La combinación de contexto posterior con la acción especial '|'
+puede producir que el contexto posterior <i>fijo</i> se convierta
+en contexto posterior <i>variable</i> que es más caro. Por ejemplo,
+en lo que viene a continuación:</p><pre>
+    %%
+    abc      |
+    xyz/def
+
+</pre><p>El uso de <b>unput()</b> invalida yytext e yyleng, a menos que
+se use la directiva <b>%array</b> o la opción <b>-l.</b></p><p>La concordancia de patrones de NUL's es substancialmente más
+lento que el reconocimiento de otros caracteres.</p><p>El ajuste dinámico del buffer de entrada es lento, ya que
+conlleva el reanálisis de todo el texto reconocido hasta entonces
+por el (generalmente enorme) token actual.</p><p>Debido al uso simultáneo de buffers de entrada y lecturas por
+adelantado, no puede entremezclar llamadas a rutinas de &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;, tales como, por
+ejemplo, <b>getchar(),</b> con reglas de <i>flex</i> y esperar que
+funcione. Llame a <b>input()</b> en su lugar.</p><p>La totalidad de las entradas de la tabla listada por la bandera
+<b>-v</b> excluye el número de entradas en la tabla necesarias para
+determinar qué regla ha sido emparejada. El número de entradas es
+igual al número de estados del DFA si el analizador no usa
+<b>REJECT,</b> y algo mayor que el número de estados si se usa.</p><p><b>REJECT</b> no puede usarse con las opciones <b>-f</b> o
+<b>-F.</b></p><p>El algoritmo interno de <i>flex</i> necesita documentación. <a id="lbAY"> </a></p><h2>VER TAMBIÉN</h2><p><a href="http://localhost/cgi-bin/man/man2html?1+lex">lex</a>(1), <a href="http://localhost/cgi-bin/man/man2html?1+yacc">yacc</a>(1), <a href="http://localhost/cgi-bin/man/man2html?1+sed">sed</a>(1), <a href="http://localhost/cgi-bin/man/man2html?1+awk">awk</a>(1).</p><p>John Levine, Tony Mason, and Doug Brown, <i>Lex &amp; Yacc,</i>
+O'Reilly and Associates. Esté seguro de obtener la 2ª edición.</p><p>M. E. Lesk and E. Schmidt, <i>LEX - Lexical Analyzer
+Generator</i></p><p>Alfred Aho, Ravi Sethi and Jeffrey Ullman, <i>Compilers:
+Principles, Techniques and Tools,</i> Addison-Wesley (1986)
+(Edición en castellano: <i>Compiladores: Principios, Técnicas y
+Herramientas,</i> Addison-Wesley Iberoamericana, S.A. (1990))
+Describe las técnicas de concordancia de patrones usadas por
+<i>flex</i> (autómata finito determinista). <a id="lbAZ"> </a></p><h2>AUTOR</h2><p>
+
+Vern Paxson, con la ayuda de muchas ideas e inspiración de Van
+Jacobson. Versión original por Jef Poskanzer. La representación de
+tablas rápidas es una implementación parcial de un diseño hecho por
+Van Jacobson. La implementación fue hecha por Kevin Gong y Vern
+Paxson. 
+</p><p>Agradecimientos a los muchos <i>flex</i> beta-testers,
+feedbackers, y contribuidores, especialmente a Francois Pinard,
+Casey Leedom, Robert Abramovitz, Stan Adermann, Terry Allen, David
+Barker-Plummer, John Basrai, Neal Becker, Nelson H.F. Beebe, <a href="mailto:benson@odi.com">benson@odi.com</a>, Karl Berry, Peter
+A. Bigot, Simon Blanchard, Keith Bostic, Frederic Brehm, Ian
+Brockbank, Kin Cho, Nick Christopher, Brian Clapper, J.T. Conklin,
+Jason Coughlin, Bill Cox, Nick Cropper, Dave Curtis, Scott David
+Daniels, Chris G. Demetriou, Theo Deraadt, Mike Donahue, Chuck
+Doucette, Tom Epperly, Leo Eskin, Chris Faylor, Chris Flatters, Jon
+Forrest, Jeffrey Friedl, Joe Gayda, Kaveh R. Ghazi, Wolfgang Glunz,
+Eric Goldman, Christopher M. Gould, Ulrich Grepel, Peer Griebel,
+Jan Hajic, Charles Hemphill, NORO Hideo, Jarkko Hietaniemi, Scott
+Hofmann, Jeff Honig, Dana Hudes, Eric Hughes, John Interrante,
+Ceriel Jacobs, Michal Jaegermann, Sakari Jalovaara, Jeffrey R.
+Jones, Henry Juengst, Klaus Kaempf, Jonathan I. Kamens, Terrence O
+Kane, Amir Katz, <a href="mailto:ken@ken.hilco.com">ken@ken.hilco.com</a>, Kevin B.
+Kenny, Steve Kirsch, Winfried Koenig, Marq Kole, Ronald Lamprecht,
+Greg Lee, Rohan Lenard, Craig Leres, John Levine, Steve Liddle,
+David Loffredo, Mike Long, Mohamed el Lozy, Brian Madsen, Malte,
+Joe Marshall, Bengt Martensson, Chris Metcalf, Luke Mewburn, Jim
+Meyering, R. Alexander Milowski, Erik Naggum, G.T. Nicol, Landon
+Noll, James Nordby, Marc Nozell, Richard Ohnemus, Karsten Pahnke,
+Sven Panne, Roland Pesch, Walter Pelissero, Gaumond Pierre, Esmond
+Pitt, Jef Poskanzer, Joe Rahmeh, Jarmo Raiha, Frederic Raimbault,
+Pat Rankin, Rick Richardson, Kevin Rodgers, Kai Uwe Rommel, Jim
+Roskind, Alberto Santini, Andreas Scherer, Darrell Schiebel, Raf
+Schietekat, Doug Schmidt, Philippe Schnoebelen, Andreas Schwab,
+Larry Schwimmer, Alex Siegel, Eckehard Stolz, Jan-Erik Strvmquist,
+Mike Stump, Paul Stuart, Dave Tallman, Ian Lance Taylor, Chris
+Thewalt, Richard M. Timoney, Jodi Tsai, Paul Tuinenga, Gary Weik,
+Frank Whaley, Gerhard Wilhelms, Kent Williams, Ken Yap, Ron Zellar,
+Nathan Zelle, David Zuhn, y aquellos cuyos nombres han caído bajo
+mis escasas dotes de archivador de correo pero cuyas contribuciones
+son apreciadas todas por igual.</p><p>Agradecimientos a Keith Bostic, Jon Forrest, Noah Friedman, John
+Gilmore, Craig Leres, John Levine, Bob Mulcahy, G.T. Nicol,
+Francois Pinard, Rich Salz, y a Richard Stallman por la ayuda con
+diversos quebraderos de cabeza con la distribución.</p><p>Agradecimientos a Esmond Pitt y Earle Horton por el soporte de
+caracteres de 8-bits; a Benson Margulies y a Fred Burke por el
+soporte de C++; a Kent Williams y a Tom Epperly por el soporte de
+la clase de C++; a Ove Ewerlid por el soporte de NUL's; y a Eric
+Hughes por el soporte de múltiples buffers.</p><p>Este trabajo fue hecho principalmente cuando yo estaba con el
+Grupo de Sistemas de Tiempo Real en el Lawrence Berkeley Laboratory
+en Berkeley, CA. Muchas gracias a todos allí por el apoyo que
+recibí.</p><p>Enviar comentarios a <a href="mailto:vern@ee.lbl.gov">vern@ee.lbl.gov</a>.</p><p>Sobre esta traducción enviar comentarios a Adrián Pérez Jorge
+(<a href="mailto:alu1415@csi.ull.es">alu1415@csi.ull.es</a>).</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">INTRODUCCIÓN</a></dt>
+
+<dt><a href="#lbAE">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAF">ALGUNOS EJEMPLOS SIMPLES</a></dt>
+
+<dt><a href="#lbAG">FORMATO DEL FICHERO DE ENTRADA</a></dt>
+
+<dt><a href="#lbAH">PATRONES</a></dt>
+
+<dt><a href="#lbAI">CÓMO SE EMPAREJA LA ENTRADA</a></dt>
+
+<dt><a href="#lbAJ">ACCIONES</a></dt>
+
+<dt><a href="#lbAK">El Escáner Generado</a></dt>
+
+<dt><a href="#lbAL">CONDICIONES DE ARRANQUE</a></dt>
+
+<dt><a href="#lbAM">MÚLTIPLES BUFFERS DE ENTRADA</a></dt>
+
+<dt><a href="#lbAN">REGLAS DE FIN-DE-FICHERO</a></dt>
+
+<dt><a href="#lbAO">MACROS MISCELÁNEAS</a></dt>
+
+<dt><a href="#lbAP">VALORES DISPONIBLES AL USUARIO</a></dt>
+
+<dt><a href="#lbAQ">INTERFAZ CON YACC</a></dt>
+
+<dt><a href="#lbAR">OPCIONES</a></dt>
+
+<dt><a href="#lbAS">CONSIDERACIONES DE RENDIMIENTO</a></dt>
+
+<dt><a href="#lbAT">GENERANDO ESCÁNERES EN C++</a></dt>
+
+<dt><a href="#lbAU">INCOMPATIBILIDADES CON LEX Y POSIX</a></dt>
+
+<dt><a href="#lbAV">DIAGNÓSTICOS</a></dt>
+
+<dt><a href="#lbAW">FICHEROS</a></dt>
+
+<dt><a href="#lbAX">DEFICIENCIAS / ERRORES</a></dt>
+
+<dt><a href="#lbAY">VER TAMBIÉN</a></dt>
+
+<dt><a href="#lbAZ">AUTOR</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:06 GMT, January 21, 2005
+</p></body></html>

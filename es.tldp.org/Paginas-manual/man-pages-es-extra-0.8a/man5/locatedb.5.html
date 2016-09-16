@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of LOCATEDB</title></head><body><p>
+  
+</p><h1>LOCATEDB</h1><p>
+
+Section: Misc. Reference Manual Pages (5L)<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+locatedb - base de datos de cabecera comprimida de nombres de
+fichero <a id="lbAC"> </a> 
+</p><h2>DESCRIPCIÓN</h2><p>
+
+Esta página de manual documenta el formato de las bases de datos de
+nombres de fichero para la versión GNU de <b>locate</b>. La base de
+datos de nombres de fichero contiene listas de los ficheros que
+estaban en los árboles de directorios cuando se actualizaron la
+última vez las bases de datos. Puede haber múltiples bases de
+datos. Los usuarios pueden seleccionar en qué bases de datos busca
+<b>locate</b> usando una variable de entorno, o una opción de línea
+de comando; ver <b><a href="http://localhost/cgi-bin/man/man2html?1L+locate">locate</a></b>(1L).
+El administrador de sistema puede elegir el nombre de fichero de la
+base de datos por defecto, la frecuencia con que se actualizan las
+bases de datos, y los directorios para los que contienen entradas.
+Normalmente, las bases de datos de nombres de fichero se actualizan
+al ejecutar el programa <b>updatedb</b> periódicamente, típicamente
+de noche; ver <b><a href="http://localhost/cgi-bin/man/man2html?1L+updatedb">updatedb</a></b>(1L).
+<b>updatedb</b> ejecuta un programa llamado <b>frcode</b> para
+comprimir la lista de nombres de fichero utilizando compresión de
+cabeceras, que reduce el tamaño de la base de datos por un factor
+de 4 a 5. La compresión de cabeceras (también conocida por
+codificación incremental) trabaja de la forma que se explica a
+continuación. Las entradas de la base de datos son una lista
+ordenada (sin tener en cuenta mayúsculas y minúsculas, para
+conveniencia de los usuarios). Como la lista está ordenada, es
+probable que cada entrada comparta un prejijo (cadena de caracteres
+inicial) con la entrada anterior. Cada entrada de la base de datos
+comienza con un byte de diferencia de desplazamiento
+(offset-differential count byte), que es el número adicional de
+caracteres de prefijo de la entrada precedente a utilizar más allá
+del número que está utilizando la entrada precedente de su propio
+predecesor. (El número puede ser negativo). Tras el número queda un
+resto ASCII terminado en nulo --- la parte del nombre que sigue al
+prefijo compartido. Si la cuenta diferencial de desplazamiento es
+mayor que el que puede guardarse en un byte (+/-127), el byte tiene
+el valor 0x80 y la cuenta sigue en una palabra de 2 bytes, con el
+byte alto primero (orden de byte de red). 
+</p><p>Cada base de datos comienza con una entrada falsa a un fichero
+llamado `LOCATE02', que <b>locate</b> comprueba para asegurarse que
+el fichero de base de datos tiene el formato correcto; ignora la
+entrada al hacer la búsqueda. Las bases de datos no pueden ser
+concatenadas juntas, aunque la primera entrada (falsa) se elimine
+de todas las bases de datos excepto la primera. Esto se debe a que
+las cuentas diferenciales en la primera entrada de la segunda y
+siguientes bases de datos serían incorrectas. También hay un
+formato antiguo de base de datos, usado por los programas
+<b>locate</b> y <b>find</b> de Unix y versiones anteriores a las de
+GNU. <b>updatedb</b> ejecuta los programas llamados <b>bigram</b> y
+<b>code</b> para producir bases de datos en el formato antiguo. El
+formato antiguo difiere de la descripción de arriba de las
+siguientes maneras. En vez de que cada entrada empiece con un byte
+de cuenta diferencial de desplazamiento y termine con un nulo, los
+valores del byte de 0 a 28 indican cuentas diferenciales de
+desplazamiento de -14 a 14. El valor del byte que indica una cuenta
+de desplazamiento larga es 0x1e (30), no 0x80. Las cuentas largas
+se almacenan en el orden de byte de host, que no es necesariamente
+el orden de byte de red, y con tamaño de palabra de entero de host,
+que normalmente son 4 bytes. También representan una cuenta
+inferior en 14 a su valor. Las líneas de la base de datos no tienen
+byte de terminación; el comienzo de la siguiente línea está
+indicado por su primer byte con valor &lt;= 30. Además, en vez de
+comenzar con una entrada falsa, el formato antiguo de base de datos
+comienza con una tabla de 256 bytes que contiene los 128 bigramas
+más comunes en la lista de ficheros. Un bigrama es un par de bytes
+adyacentes. Los bytes de la base de datos que tienen el bit alto a
+1 son índices (con el bit alto borrado) a la tabla de bigramas. La
+codificación de bigramas y cuentas diferenciales de desplazamiento
+hace estas bases de datos 20-25% más pequeñas que el nuevo formato,
+pero hace que no tengan el bit 8 limpio. Cualquier byte de un
+nombre de fichero que esté en los rangos usados para los códigos
+especiales es reemplazado en la base de datos por una
+interrogación, que no es por coincidencia el comodín de la shell
+para sustituír un carácter cualquiera. <a id="lbAD"> </a></p><h2>EJEMPLO</h2><pre>
+Entrada a <b>frcode</b>:
+/usr/src
+/usr/src/cmd/aardvark.c
+/usr/src/cmd/armadillo.c
+/usr/tmp/zoo
+
+Longitud del prefijo más largo a compartir de la entrada precedente:
+0 /usr/src
+8 /cmd/aardvark.c
+14 rmadillo.c
+5 tmp/zoo
+
+</pre><p>
+
+Salida a <b>frcode</b>, con nulos al final cambiados a saltos de
+línea y bytes de cuenta hechos imprimibles: 
+</p><pre>
+0 LOCATE02
+0 /usr/src
+8 /cmd/aardvark.c
+6 rmadillo.c
+-9 tmp/zoo
+
+(6 = 14 - 8, y -9 = 5 - 14)
+</pre><a id="lbAE"> </a><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1L+find">find</a></b><p>(1L),
+<b><a href="http://localhost/cgi-bin/man/man2html?1L+locate">locate</a></b>(1L),
+<b><a href="http://localhost/cgi-bin/man/man2html?5L+locatedb">locatedb</a></b>(5L),
+<b><a href="http://localhost/cgi-bin/man/man2html?1L+xargs">xargs</a></b>(1L)
+<b>Finding Files</b> (on-line en Info, o impreso) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAD">EJEMPLO</a></dt>
+
+<dt><a href="#lbAE">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:08 GMT, January 21, 2005
+</p></body></html>

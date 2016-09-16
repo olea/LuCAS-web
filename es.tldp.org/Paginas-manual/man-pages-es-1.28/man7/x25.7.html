@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of X25</title></head><body><p>
+  
+</p><h1>X25</h1><p>
+
+Section: Manual del Programador de Linux (4)<br />
+Updated: 1 diciembre 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+x25, PF_X25 - interfaz del protocolo ITU-T X.25 / ISO-8208. 
+</p><p><a id="lbAC"> </a></p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/linux/x25.h">linux/x25.h</a>&gt;</b><p><b>x25_socket = socket(PF_X25, SOCK_SEQPACKET, 0);</b></p><p><a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Los conectores (sockets) X25 proporcionan una interfaz al protocolo
+de la capa de paquetes X.25. Éstos permiten a las aplicaciones
+comunicarse a través de una red pública de datos X.25 según
+establece la recomendación X.25 de la International
+Telecommunication Union (X.25 modo DTE-DCE). Los conectores X25
+también se pueden usar para comunicarse sin una red X.25 intermedia
+(X.25 modo DTE-DTE) como se describe en ISO-8208. 
+</p><p>Se conservan los límites de los mensajes (una operación <b><a href="http://localhost/cgi-bin/man/man2html?2+read">read</a></b>(2)
+de un conector recuperará la misma cantidad de datos que la salida
+producida con la correspondiente operación <b><a href="http://localhost/cgi-bin/man/man2html?2+write">write</a>(2)</b>
+en el conector asociado del otro extremo). Cuando es necesario, el
+núcleo se preocupa de segmentar y reensamblar los mensajes largos
+mediante el bit M de X.25. No existe un límite superior fijo para
+el tamaño de mensaje. Sin embargo, el reensamblaje de un mensaje
+largo puede fallar si se produce una escasez temporal de recursos
+del sistema o cuando se ponen de manifiesto otras limitaciones
+(como la memoria de los conectores o los límites de los tamaños de
+los buffers). En tal caso, se reiniciará la conexión X.25. <a id="lbAE"> </a></p><h2>DIRECCIONES DE LOS CONECTORES</h2><p>
+
+La familia de direcciones de los conectores <b>AF_X25</b> usa la
+estructura <b>struct sockaddr_x25</b> para representar las
+direcciones de red tal y como se definen en la recomendación X.121
+del ITU-T. 
+</p><dl compact="compact"><dd>
+<pre>
+struct sockaddr_x25 {
+    sa_family_t   sx25_family;  /* debe ser AF_X25 */
+    x25_address   sx25_addr;    /* Dirección X.121 */
+};
+
+</pre>
+</dd>
+</dl><p><i>sx25_addr</i> contiene un array de caracteres,
+<i>x25_addr[]</i>, que se interpreta como una cadena terminada en
+un carácter nulo. <i>sx25_addr.x25_addr[]</i> consiste de hasta 15
+caracteres ASCII (sin contar el 0 del final) que forman la
+dirección X.121. Sólo se permiten los caracteres del '0' al '9'. <a id="lbAF"> </a></p><h2>OPCIONES DE LOS CONECTORES</h2><p>
+
+Las siguientes opciones específicas de los conectores X.25 se
+pueden configurar usando <b><a href="http://localhost/cgi-bin/man/man2html?2+setsockopt">setsockopt</a></b>(2)
+y se pueden leer con <b><a href="http://localhost/cgi-bin/man/man2html?2+getsockopt">getsockopt</a></b>(2),
+asignándole al parámetro de nivel el valor <b>SOL_X25</b>. 
+</p><dl compact="compact"><dt><b>X25_QBITINCL</b></dt>
+
+<dd>Controla si el usuario puede acceder al bit Q de X.25
+(Qualified Data Bit, bit de datos acreditados). Se espera un
+argumento entero. Si es 0 (valor por defecto), nunca se activa el
+bit Q para los paquetes de salida y se ignora el bit Q de los
+paquetes de entrada. Si es 1, se añade un primer byte adicional a
+cada mensaje leído de o escrito en el conector. Para los datos
+leídos del conector, un primer byte 0 indica que no estaba activo
+el bit Q de los paquetes de datos de entrada correspondientes. Un
+primer byte con valor 1 indica que estaba activo el bit Q de los
+paquetes de datos de entrada correspondientes. Si el primer byte de
+los datos escritos en el conector es 1, se activa el bit Q de los
+paquetes de datos de salida correspondientes. Si el primer byte es
+0, no se activará el bit Q.</dd>
+</dl><a id="lbAG"> </a><h2>FALLOS</h2><p>
+
+Bastantes, ya que la implementación X.25 PLP es
+<b>CONFIG_EXPERIMENTAL</b>. 
+</p><p>Esta página de manual está incompleta.</p><p>Todavía no existe un fichero cabecera específico para el
+programador de aplicaciones. Necesita incluir el fichero cabecera
+<b>&lt;<a href="file:/usr/include/linux/x25.h">linux/x25.h</a>&gt;</b> del
+núcleo. <b>CONFIG_EXPERIMENTAL</b> también implica que la versiones
+futuras de la interfaz podrían no ser compatibles a nivel
+binario.</p><p>Los eventos N-Reset de X.25 todavía no se propagan al proceso de
+usuario. Por eso, si se produce un reinicio, se podrían perder
+datos sin darse cuenta. <a id="lbAH"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b><p>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2).
+
+</p><p>Jonathan Simon Naylor: lqReanálisis y reimplementación de
+X.25.rq La URL es:<br /><i><a href="ftp://ftp.pspt.fi/pub/ham/linux/ax25/x25doc.tgz">ftp://ftp.pspt.fi/pub/ham/linux/ax25/x25doc.tgz</a></i>
+<a id="lbAI"> </a></p><h2>VERSIONES</h2><p>
+
+La familia de procotolo PF_X25 es una nueva característica de la
+versión 2.2 de Linux. 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">DIRECCIONES DE LOS CONECTORES</a></dt>
+
+<dt><a href="#lbAF">OPCIONES DE LOS CONECTORES</a></dt>
+
+<dt><a href="#lbAG">FALLOS</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAI">VERSIONES</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

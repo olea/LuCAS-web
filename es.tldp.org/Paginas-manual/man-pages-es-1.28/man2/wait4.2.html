@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of WAIT4</title></head><body><p>
+  
+</p><h1>WAIT4</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 23 junio 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+wait3, wait4 - esperan la terminación de un proceso, al estilo BSD
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#define _USE_BSD</b>
+<b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/sys/resource.h">sys/resource.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/sys/wait.h">sys/wait.h</a>&gt;</b>
+
+<b>pid_t wait3(int *</b><i>status</i><b>, int</b> <i>options</i><b>,</b>
+ <b>     struct rusage *</b><i>rusage</i><b>)</b>
+
+<b>pid_t wait4(pid_t</b> <i>pid</i><b>, int *</b><i>status</i><b>, int</b> <i>options</i><b>,</b>
+ <b>     struct rusage *</b><i>rusage</i><b>)</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+La función <b>wait3</b> suspende la ejecución del proceso actual
+hasta que finalice un hijo o hasta que se produzca una señal cuya
+acción sea finalizar el proceso actual o llamar a una función
+manejadora de señales. Si un hijo ha terminado ya cuando se realiza
+la llamada (lo que se conoce como proceso "zombie"), la función
+regresa inmediatamente. Todos los recursos del sistema utilizados
+por el hijo son liberados. 
+</p><p>La función <b>wait4</b> suspende la ejecución del proceso actual
+hasta que un hijo, especificado por el argumento <i>pid</i>, haya
+terminado o hasta que se produzca una señal cuya acción sea
+finalizar el proceso actual o llamar a una función manejadora de
+señales. Si el hijo especificado por <i>pid</i> ha terminado cuando
+se realiza la llamada (lo que se conoce como proceso "zombie"), la
+función regresa inmediatamente. Todos los recursos del sistema
+utilizados por el hijo son liberados.</p><p>El valor de <i>pid</i> puede ser uno de los siguientes:</p><dl compact="compact"><dt>&lt; -1</dt>
+
+<dd>lo que significa que espera por cualquier proceso hijo cuyo ID
+de grupo es igual al valor absoluto de <i>pid</i>.</dd>
+
+<dt>-1</dt>
+
+<dd>que significa que espera por cualquier proceso hijo; esto es
+equivalente a llamar a <b>wait3</b>.</dd>
+
+<dt>0</dt>
+
+<dd>que significa esperar por cualquier proceso hijo cuyo ID de
+grupo es igual al del proceso invocador.</dd>
+
+<dt>&gt; 0</dt>
+
+<dd>que significa esperar por el proceso hijo cuyo ID es igual a
+<i>pid</i>.</dd>
+</dl><p>El valor de <i>options</i> es un OR de cero o más de las
+siguientes constantes:</p><dl compact="compact"><dt><b>WNOHANG</b></dt>
+
+<dd>que significa volver inmediatamente si no hay hijo por el que
+esperar.</dd>
+
+<dt><b>WUNTRACED</b></dt>
+
+<dd>que significa volver porque hay hijos que están parados (estado
+stop), y de cuyo estado no se ha recibido notificación.</dd>
+</dl><p>Si <i>status</i> no es <b>NULL</b>, <b>wait3</b> o <b>wait4</b>
+almacenan información de estado en la memoria apuntada por
+<i>status</i>.</p><p>Este estado puede ser evaluado con las siguientes macros (que
+toman como argumento el propio buffer (un <b>int</b>) --- ¡no un
+puntero al buffer!):</p><dl compact="compact"><dt><b>WIFEXITED(</b><i>status</i><b>)</b></dt>
+
+<dd>es distinto de cero si el hijo terminó normalmente.</dd>
+
+<dt><b>WEXITSTATUS(</b><i>status</i><b>)</b></dt>
+
+<dd>evalúa los ocho bits menos significativos del código de retorno
+del hijo que terminó, que pueden haber sido activados como un
+argumento en la llamada a la función <b>exit()</b> o como un
+argumento para un <b>return</b> en el programa principal. Esta
+macro sólo puede ser evaluada si <b>WIFEXITED</b> devolvió un valor
+distinto de cero.</dd>
+
+<dt><b>WIFSIGNALED(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve "true" si el proceso hijo terminó a causa de una señal
+no capturada.</dd>
+
+<dt><b>WTERMSIG(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve el número de la señal que causó el final del proceso
+hijo. Esta macro sólo puede ser evaluada si <b>WIFSIGNALED</b>
+devolvió un valor distinto de cero.</dd>
+
+<dt><b>WIFSTOPPED(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve "true" si el proceso hijo que provocó el retorno está
+actualmente parado; esto sólo es posible si la llamada se hizo
+usando <b>WUNTRACED</b>.</dd>
+
+<dt><b>WSTOPSIG(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve el número de la señal que provocó la parada del
+proceso hijo. Esta macro sólo puede ser evaluada si
+<b>WIFSTOPPED</b> devolvió un valor distinto de cero. 
+<p>Si <i>rusage</i> no es <b>NULL</b>, se rellenará la estructura
+<b>struct</b>rusage<b>,</b> según se define en <i>&lt;<a href="file:/usr/include/sys/resource.h">sys/resource.h</a>&gt;</i>,
+con información contable. Ver <b><a href="http://localhost/cgi-bin/man/man2html?2+getrusage">getrusage</a></b>(2)
+para más detalles.</p>
+</dd>
+</dl><a id="lbAE"> </a><h2>VALOR DEVUELTO</h2><p>
+
+El ID del proceso hijo que terminó, -1 en caso de error (en
+particular, cuando no existe un proceso hijo, por el que no
+esperamos, del tipo especificado) o cero si se utilizó
+<b>WNOHANG</b> y no había ningún hijo disponible todavía. En los
+dos últimos casos <i>errno</i> será activado convenientemente. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>ECHILD</b></dt>
+
+<dd>No existe un proceso hijo como el especificado y por el que no
+esperamos.</dd>
+
+<dt><b>ERESTARTSYS</b></dt>
+
+<dd>si no se activó <b>WNOHANG</b> y se capturó una señal no
+bloqueada o una <b>SIGCHLD</b>. Este error es devuelto por la
+llamada al sistema. El interfaz de la biblioteca no permite
+devolver <b>ERESTARTSYS</b>, pero devolverá <b>EINTR</b>.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+SVr4, POSIX.1 <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+getrusage">getrusage</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+wait">wait</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+signal">signal</a></b>(7)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

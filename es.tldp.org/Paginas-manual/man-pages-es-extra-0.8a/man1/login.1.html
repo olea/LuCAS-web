@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of LOGIN</title></head><body><p>
+  
+</p><h1>LOGIN</h1><p>
+
+Section: Manual del Programador de Linux (1)<br />
+Updated: 4 Noviembre 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+login - firmar <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>login [</b><p> name <b>]</b> <br /><b>login -p</b> <br /><b>login -h</b> hostname <br /><b>login -f</b> name <a id="lbAD"> </a> 
+</p><h2>DESCRIPCIÓN</h2><b>login</b><p> es usado cuando se firma en un sistema. Puede ser
+usado para cambiar desde un usuario a otro en cualquier momento
+(los shells más modernos disponen de esta característica incluida
+internamente). 
+</p><p>Si no se da ningún argumento, <b>login</b> pregunta por el
+nombre de usuario.</p><p>Si el usuario <i>no</i> es root, y si existe
+<i>/etc/nologin</i>, el contenido de este fichero se escribe en la
+pantalla y el ingreso finaliza. Esto se usa típicamente para
+prevenir los ingresos cuando el sistema se está cerrando.</p><p>Si se han especificado restricciones de acceso para el usuario
+en <i>/etc/usertty</i>, estas son requeridas, o la petición de
+ingreso será denegada y se generará un mensaje a través de
+<b>syslog</b>. Vea la sección "Restricciones de Acceso
+Especiales".</p><p>Si el usuario es root, entonces el ingreso debe estar ocurriendo
+en alguno de los tty listados en <i>/etc/securetty</i>. Los fallos
+serán registrados mediante <b>syslog</b>.</p><p>Después de comprobar estas condiciones, se pedirá la contraseña
+y se validará (si es que se requiere de una contraseña para el
+usuario). Se permite un total de diez intentos antes de que
+<b>login</b> muera, pero después de los tres primeros, la respuesta
+comienza a ser muy lenta. Los fallos de ingreso son registrados a
+través de <b>syslog</b>. También es usado para registrar cualquier
+ingreso correcto del usuario root.</p><p>Si el fichero <i>.hushlogin</i> existe, entonces se realiza un
+ingreso "reservado" (esto deshabilita la comprobación del correo y
+la escritura de la hora del último ingreso así como el mensaje del
+día). Por otro lado, si existe <i>/var/log/lastlog</i>, la hora del
+último ingreso se imprime (y el ingreso actual es registrado).</p><p>Se llevan a cabo algunas tareas administrativas, como el cambio
+del UID y GID del tty. La variable de entorno TERM se preserva, si
+existe (las otras variables de entorno son preservadas si se usa la
+opción <b>-p</b>). Después son definidas las variables HOME, PATH,
+SHELL, TERM, MAIL y LOGNAME. El PATH por defecto será
+<i>/usr/local/bin:/bin:/usr/bin:.</i> para usuarios normales, y
+<i>/sbin:/bin:/usr/sbin:/usr/bin</i> para root. Por último, si no
+es un ingreso "reservado", el mensaje del día será imprimido y se
+comprobará el fichero con el nombre del usuario en
+<i>/usr/spool/mail</i> y se imprimirá un mensaje si este tuviera un
+tamaño diferente de cero.</p><p>A continuación, se inicia el shell del usuario. Si no se
+especifica ninguno para el usuario en <b>/etc/passwd</b>, entonces
+se usará <b>/bin/sh</b>. Si no hay un directorio especificado en
+<i>/etc/passwd</i>, entonces se usará <i>/</i> (el directorio del
+usuario se analizará en busca del fichero <i>.hushlogin</i>
+descrito más abajo).</p><p><a id="lbAE"> </a></p><h2>OPCIONES</h2><dl compact="compact"><dt><b>-p</b></dt>
+
+<dd>Usado por <b><a href="http://localhost/cgi-bin/man/man2html?8+getty">getty</a></b>(8)
+para indicar a <b>login</b> que no destruya el entorno</dd>
+
+<dt><b>-f</b></dt>
+
+<dd>Usado para evitar la segunda autenticación del ingreso. Esto
+<b>no</b> funciona específicamente para root y no parece que
+funcione correctamente bajo Linux.</dd>
+
+<dt><b>-h</b></dt>
+
+<dd>Usado por otros servidores (por ejemplo, <b><a href="http://localhost/cgi-bin/man/man2html?8+telnetd">telnetd</a></b>(8))
+para pasar el nombre del host remoto a <b>login</b> de tal manera
+que pueda ser puesto en utmp y wtmp. Solo el superusuario podrá
+usar esta opción.</dd>
+</dl><a id="lbAF"> </a><h2>RESTRICCIONES DE ACCESO ESPECIALES</h2><p>
+
+El fichero <i>/etc/securetty</i> lista los nombres de los ttys
+donde se permite que el root pueda ingresar. Deberá especificarse
+un nombre de tty por línea (sin el prefijo /dev/). Si el fichero no
+existiera, se permitirá su ingreso desde cualquier tty. 
+</p><p>El fichero <i>/etc/usertty</i> especifica restricciones de
+acceso adicionales para usuarios específicos. Si no existiera este
+fichero, no se impondrá ninguna restricción de acceso adicional. El
+fichero consiste en una secuencia de secciones. Hay tres tipos de
+secciones posibles: CLASSES, GROUPS y USERS. Una sección de tipo
+CLASSES define tipos de ttys y patrones de nombres de hosts, una
+sección de tipo GROUPS define los ttys permitidos y los hosts grupo
+por grupo y una sección USERS define los ttys permitidos y los
+hosts usuario por usuario.</p><p>Cada línea de este fichero no puede tener más de 255 caracteres.
+Los comentarios comienzan con un carácter # y se extienden hasta el
+final de la línea.</p><p><a id="lbAG"> </a></p><h3>La sección CLASSES</h3><p>
+
+Una sección de tipo CLASSES comienza por la palabra CLASSES al
+principio de la línea escrito en mayúsculas. Cada una de las líneas
+hasta el principio de una nueva sección o del final del fichero
+consiste en una secuencia de palabras separadas pos tabuladores o
+espacios. Cada línea define una clase de ttys y patrones de hosts. 
+</p><p>La palabra al principio de la línea es tomada como el nombre
+colectivo para los ttys y patrones de hosts especificados en el
+resto de la línea. Este nombre colectivo puede usarse en las
+siguientes secciones de tipo GROUPS o USERS. No debería aparecer el
+nombre de una clase como parte de la definición de una clase para
+evitar problemas de recursividad de nombres.</p><p>Una sección CLASSES de ejemplo:</p><pre>
+CLASSES
+miclase1                tty1 tty2
+miclase2                tty3 @.foo.com
+</pre><p>Esto define las clases <i>miclase1</i> y <i>miclase2</i> como
+las partes derechas correspondientes.</p><p><a id="lbAH"> </a></p><h3>La sección GROUPS</h3><p>
+
+Una sección GROUPS define los ttys y hosts permitidos para cada
+grupo <i>/etc/passwd</i> y <i>/etc/group</i> y ese grupo es
+mencionado en una sección de tipo GROUPS en <i>/etc/usertty</i>
+entonces el usuario tiene acceso permitido. 
+</p><p>Una sección GROUPS comienza con la palabra GROUPS en mayúsculas
+en el principio de una línea, y cada una de las siguientes líneas
+es una secuencia de palabras separadas pos espacios o tabuladores.
+La primera palabra de una línea es el nombre del grupo, y el resto
+de las palabras de la línea especifican los ttys y hosts donde los
+miembros de ese grupo tienen permitido el acceso. Estas
+especificaciones pueden comportar el uso de las clases definidas en
+secciones CLASSES anteriores.</p><p>Un ejemplo de una sección GROUPS:</p><pre>
+GROUPS
+sys             tty1 @.bar.edu
+stud            miclase1 tty4
+</pre><p>Este ejemplo especifica que los miembros del grupo <i>sys</i>
+pueden ingresar en el tty1 y desde los hosts en el dominio bar.edu.
+Los usuarios en el grupo <i>stud</i> pueden ingresar desde los
+hosts/ttys especificados en la clase miclase1 o desde el tty4.</p><p><a id="lbAI"> </a></p><h3>La sección USERS</h3><p>
+
+Una sección USERS comienza con la palabra USERS toda en mayúsculas
+al principio de la línea, y cada una de las líneas siguientes es
+una secuencia de palabras separadas por espacios o tabuladores. La
+primera palabra de una línea es un nombre de usuario y a ese
+usuario se le permite ingresar en los ttys y desde los hosts
+mencionados en el resto de la línea. Estas especificaciones pueden
+contener clases definidas en secciones CLASSES anteriores. Si no se
+especifica al principio del fichero una cabecera de sección, por
+defecto la primera sección se interpreta como del tipo USERS. 
+</p><p>Una sección USERS de ejemplo:</p><pre>
+USERS
+zacho           tty1 @130.225.16.0/255.255.255.0
+pepe            tty3 miclase2
+</pre><p>Esto autoriza al usuario zacho a ingresar solo en el tty1 y
+desde los hosts con direcciones IP en el rango 130.225.16.0 -
+130.225.16.255, y también autoriza al usuario pepe a ingresar en el
+tty3 y desde cualquier parte mencionada en la clase miclase2.</p><p>Podrá aparecer una línea en la sección USERS que comience por un
+nombre de usuario *. Esta es la regla por defecto y será aplicada a
+cualquier usuario que no aparezca en ninguna de las otras
+líneas.</p><p>Si un usuario encaja con una línea USERS y con una línea GROUPS,
+el usuario estará autorizado a ingresar desde la unión de todos los
+ttys/hosts mencionados en estas especificaciones.</p><p><a id="lbAJ"> </a></p><h3>Orígenes</h3><p>
+
+Las especificaciones de patrones de tty y host usadas en la
+especificación de las clases, grupos y usuarios se llaman orígenes.
+Un origen es una cadena de caracteres que puede tener uno de estos
+formatos: 
+</p><dl compact="compact"><dt>o</dt>
+
+<dd>El nombre de un dispositivo tty sin el prefijo /dev/, por
+ejemplo tty1 o ttyS0.</dd>
+</dl><dl compact="compact"><dt>o</dt>
+
+<dd>La cadena @localhost, indicando que el usuario está autorizado
+a telnet/rlogin desde el host local al mismo host. Esto también
+habilita al usuario a ejecutar, por ejemplo, el comando: xterm -e
+/bin/login.</dd>
+</dl><dl compact="compact"><dt>o</dt>
+
+<dd>Un sufijo de nombre de dominio como @.algun.dom, indicando que
+el usuario podrá hacer rlogin/telnet desde cualquier host cuyo
+nombre de dominio tenga el sufijo .algun.dom.</dd>
+</dl><dl compact="compact"><dt>o</dt>
+
+<dd>Un rango de direcciones IPv4, escritas @x.x.x.x/y.y.y.y donde
+x.x.x.x es la dirección IP en la notación decimal tradicional con
+puntos, e y.y.y.y es una máscara de bits en la misma notación
+especificando cuales de los bits de la dirección serán comparados
+con la dirección IP del host remoto. Por ejemplo
+@130.255.16.0/255.255.254.0 significa que el usuario podrá hacer
+rlogin/telnet desde cualquier host cuya dirección IP esté en el
+rango 130.255.16.0 - 130.255.17.255.</dd>
+</dl><p>Cualquiera de los orígenes anteriores pueden tener un prefijo
+con la especificación temporal acordando con la sintaxis:</p><pre>
+espec-tiempo ::= '[' &lt;día-u-hora&gt; [':' &lt;día-u-hora&gt;]* ']'
+día          ::= 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+hora         ::= '0' | '1' | ... | '23'
+espec-hora   ::= &lt;hora&gt; | &lt;hora&gt; '-' &lt;hora&gt;
+día-u-hora   ::= &lt;día&gt; | &lt;espec-hora&gt;
+</pre><p>Por ejemplo, el origen [mon:tue:wed:thu:fri:8-17]tty3 significa
+que solo se permitirán ingresos de lunes a viernes entre las 8:00 y
+las 17:59 (5:59 pm) en el tty3. Esto también muestra que un rango
+de horas a-b incluye todo momento entre a:00 y b:59. Una sola hora
+(por ejemplo 10) significará un espacio temporal entre las 10:00 y
+las 10:59.</p><p>Si no se especifica ningún prefijo temporal para un tty o host
+significará que se permitirá el ingreso desde ese origen a
+cualquier hora. Si da un prefijo temporal asegúrese de especificar
+tanto el conjunto de días como una o más horas o rango de horas.
+Una especificación de tiempo no puede incluir espacios en
+blanco.</p><p>Si no se define ninguna regla por defecto entonces los usuarios
+que no concuerden con ninguna línea de <i>/etc/usertty</i> está
+autorizados para ingresar desde cualquier lugar en la manera
+estándar.</p><p><a id="lbAK"> </a></p><h2>FICHEROS</h2><pre>
+<i>/var/run/utmp</i>
+<i>/var/log/wtmp</i>
+<i>/var/log/lastlog</i>
+<i>/usr/spool/mail/*</i>
+<i>/etc/motd</i>
+<i>/etc/passwd</i>
+<i>/etc/nologin</i>
+<i>/etc/usertty</i>
+<i>.hushlogin</i>
+</pre><a id="lbAL"> </a><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?8+init">init</a></b><p>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+getty">getty</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+mail">mail</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+passwd">passwd</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+passwd">passwd</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+environ">environ</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+shutdown">shutdown</a></b>(8)
+<a id="lbAM"> </a> 
+</p><h2>FALLOS</h2><p>Linux, a diferencia de otros sistemas operativos draconianos, no
+comprueba las cuotas.</p><p>La opción no documentada <b>-r</b> de BSD no está soportada.
+Esta podría ser requerida por algún programa <b><a href="http://localhost/cgi-bin/man/man2html?8+rlogind">rlogind</a></b>(8)
+<a id="lbAN"> </a></p><h2>AUTOR</h2><p>
+
+Derivado de login 5.40 de BSD (5/9/89) por Michael Glad (<a href="mailto:glad@daimi.dk">glad@daimi.dk</a>) para HP-UX <br />
+ Portado a Linux 0.12: Peter Orbaek (<a href="mailto:poe@daimi.aau.dk">poe@daimi.aau.dk</a>) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">OPCIONES</a></dt>
+
+<dt><a href="#lbAF">RESTRICCIONES DE ACCESO ESPECIALES</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAG">La sección CLASSES</a></dt>
+
+<dt><a href="#lbAH">La sección GROUPS</a></dt>
+
+<dt><a href="#lbAI">La sección USERS</a></dt>
+
+<dt><a href="#lbAJ">Orígenes</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAK">FICHEROS</a></dt>
+
+<dt><a href="#lbAL">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAM">FALLOS</a></dt>
+
+<dt><a href="#lbAN">AUTOR</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:07 GMT, January 21, 2005
+</p></body></html>

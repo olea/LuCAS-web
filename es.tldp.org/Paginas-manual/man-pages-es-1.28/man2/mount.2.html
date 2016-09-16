@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of MOUNT</title></head><body><p>
+  
+</p><h1>MOUNT</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 4 noviembre 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+mount, umount - monta y desmonta sistemas de ficheros. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/mount.h">sys/mount.h</a>&gt;</b><p><b>int mount(const char *</b><i>fespecial</i><b>, const char
+*</b> <i>dir</i> <b>, const char *</b> <i>tiposf</i><b>, unsigned
+long</b> <i>le</i> <b>, const void *</b> <i>datos</i><b>);</b></p><p><b>int umount(const char *</b><i>fespecial</i><b>);</b></p><p><b>int umount(const char *</b><i>dir</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>mount</b><p> engarza el sistema de ficheros especificado por
+<i>fespecial</i> (que es frecuentemente un nombre de dispositivo)
+al directorio especificado por <i>dir</i>. 
+</p><p><b>umount</b> desengancha el sistema de ficheros especificado
+por <i>fespecial</i> o <i>dir</i>.</p><p>Sólo el super-usuario puede montar y desmontar sistemas de
+ficheros.</p><p>El argumento <i>tiposf</i> puede tomar cualquier valor de los
+listados en /proc/filesystems (como "minix", "ext2", "msdos",
+"proc", "nfs", "iso9660", etc.).</p><p>El argumento <i>le</i> tiene el número mágico 0xC0ED en los
+últimos 16 bits, y varias opciones de montaje (como las definidas
+en &lt;<a href="file:/usr/include/linux/fs.h">linux/fs.h</a>&gt;
+para libc4 y libc5 y en &lt;<a href="file:/usr/include/sys/mount.h">sys/mount.h</a>&gt; para
+glibc2) en los primeros 16 bits:</p><pre>
+#define MS_RDONLY    1 /* montar para lectura exclusiva */
+#define MS_NOSUID    2 /* no tener en cuenta los bits suid ni sgid */
+#define MS_NODEV     4 /* no permitir acceso a ficheros especiales
+                          de dispositivo */
+#define MS_NOEXEC    8 /* no permitir ejecución de programas */
+#define MS_SYNC     16 /* las escrituras se vuelcan a disco
+                          inmediatamente */
+#define MS_REMOUNT  32 /* alterar opciones de un SF ya montado */
+#define MS_MGC_VAL  0xC0ED0000
+</pre><p>Si el número mágico está ausente, los dos últimos argumentos no
+se utilizan.</p><p>El argumento <i>datos</i> es interpretado por cada diferente
+sistema de ficheros.</p><p><a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito se devuelve 0. En caso de error, -1, y se da a
+<i>errno</i> un valor apropiado. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Los valores de error dados más abajo son independientes del tipo de
+sistema de ficheros. Cada tipo de sistemas de ficheros puede tener
+sus propios errores especiales y comportamiento. Consulte los
+fuentes del núcleo para los detalles. 
+</p><dl compact="compact"><dt><b>EPERM</b></dt>
+
+<dd>El usuario no es el super-usuario.</dd>
+
+<dt><b>ENODEV</b></dt>
+
+<dd><i>tiposf</i> no configurado en el núcleo.</dd>
+
+<dt><b>ENOTBLK</b></dt>
+
+<dd><i>fespecial</i> no es un dispositivo de bloque (si se
+necesitaba un dispositivo).</dd>
+
+<dt><b>EBUSY</b></dt>
+
+<dd><i>fespecial</i> ya está montado. O no puede remontarse para
+lectura exclusiva, porque ya contiene ficheros abiertos para
+escritura. O no puede montarse en <i>dir</i> porque <i>dir</i> ya
+está ocupado (es el directorio de trabajo de alguna tarea, el punto
+de montaje de otro dispositivo, tiene ficheros abiertos,
+etc.).</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd><i>fespecial</i> tiene un superbloque inválido. O se ha
+intentado volver a montar, pero <i>fespecial</i> no estaba ya
+montado en <i>dir</i>. O se ha intentado desmontar, pero <i>dir</i>
+no era un punto de montaje.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>Uno de los argumentos de tipo puntero apunta afuera del espacio
+de direcciones de usuario.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>El núcleo no pudo obtener una página libre para copiar en ella
+nombres de ficheros o datos.</dd>
+
+<dt><b>ENAMETOOLONG</b></dt>
+
+<dd>Un nombre de camino era más largo que MAXPATHLEN.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>Un nombre de camino estaba vacío o tenía un componente
+inexistente.</dd>
+
+<dt><b>ENOTDIR</b></dt>
+
+<dd>El segundo argumento, o un prefijo del primero, no es un
+directorio.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>Un componente del camino era inaccesible.<br />
+ O se intentó montar un sistema de ficheros para lectura exclusiva
+sin dar la opción MS_RDONLY.<br />
+ O el dispositivo de bloques <i>fespecial</i> estaba en un sistema
+de ficheros montado con la opción MS_NODEV.</dd>
+
+<dt><b>ENXIO</b></dt>
+
+<dd>El número mayor del dispositivo de bloques <i>fespecial</i>
+está fuera de rango.</dd>
+
+<dt><b>EMFILE</b></dt>
+
+<dd>(En caso de que no se necesite un dispositivo de bloques:) La
+tabla de dispositivos ficticios está llena.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+Estas funciones son específicas de Linux y no deberían emplearse en
+programas pretendidamente transportables. <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?8+mount">mount</a></b><p>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+umount">umount</a></b>(8)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of NETLINK</title></head><body><p>
+  
+</p><h1>NETLINK</h1><p>
+
+Section: Manual del Programador de Linux (7)<br />
+Updated: 27 abril 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+netlink, PF_NETLINK - Comunicación entre el núcleo y el usuario. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/asm/types.h">asm/types.h</a>&gt;</b>
+<br /><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b>
+<br /><b>#include &lt;<a href="file:/usr/include/linux/netlink.h">linux/netlink.h</a>&gt;</b> 
+<br /><b>netlink_socket = socket(PF_NETLINK,</b> <i>socket_type</i><b>,</b> <i>netlink_family</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Netlink se utiliza para transferir información entre los módulos
+del núcleo y los procesos del espacio de usuario. Consiste en una
+interfaz basada en conectores estándares para los procesos de
+usuario y una API del núcleo interna para los módulos del núcleo.
+La interfaz del núcleo interna no se documenta en esta página de
+manual. También existe una interfaz netlink obsoleta mediante
+dispositivos de caracteres netlink. Esta interfaz no se documenta
+aquí y sólo se proporciona por compatibilidad hacia atrás. 
+</p><p>Netlink es un servicio orientado a datagramas. Tanto
+<b>SOCK_RAW</b> como <b>SOCK_DGRAM</b> son valores válidos para
+<i>socket_type</i>. Sin embargo, el protocolo netlink no distingue
+entre conectores de datagrama y conectores directos (raw).</p><p><i>netlink_family</i> selecciona el módulo del núcleo o el grupo
+netlink con el que comunicarse. Las familias netlink asignadas
+actualmente son:</p><dl compact="compact"><dt><b>NETLINK_ROUTE</b></dt>
+
+<dd>Recibe actualizaciones de enrutamiento y puede usarse para
+modificar la tabla de enrutamiento de IPv4 (vea <b><a href="http://localhost/cgi-bin/man/man2html?7+rtnetlink">rtnetlink</a></b>(7)).</dd>
+
+<dt><b>NETLINK_FIREWALL</b></dt>
+
+<dd>Recibe paquetes enviados por el código del cortafuegos de
+IPv4.</dd>
+
+<dt><b>NETLINK_ARPD</b></dt>
+
+<dd>Para gestionar la tabla ARP en el espacio de usuario.</dd>
+
+<dt><b>NETLINK_ROUTE6</b></dt>
+
+<dd>Recibe y envía actualizaciones a la tabla de enrutamiento de
+IPv6.</dd>
+
+<dt><b>NETLINK_IP6_FW</b></dt>
+
+<dd>Para recibir los paquetes que no pasarón las comprobaciones del
+cortafuegos de IPv6 (actualmente no implementado).</dd>
+
+<dt><b>NETLINK_TAPBASE</b>...<b>NETLINK_TAPBASE+15</b></dt>
+
+<dd>Son las instancias del dispositivo <b>ethertap</b>. El
+dispositivo ethertap es un pseudodispositivo de tunel de red que
+permite simular un manejador ethernet desde el espacio de
+usuario.</dd>
+
+<dt><b>NETLINK_SKIP</b></dt>
+
+<dd>Reservado para ENskip.</dd>
+
+<dt><b>NETLINK_USERSOCK</b></dt>
+
+<dd>Reservado para futuros protocolos en el espacio de
+usuario.</dd>
+</dl><p>Los mensajes netlink consisten en un flujo de bytes con una o
+más cabeceras <b>nlmsghdr</b> y sus cargas útiles asociadas. Para
+los mensajes multiparte, la primera cabecera y las siguientes
+tienen activa la opción <b>NLM_F_MULTI</b>, excepto la última
+cabecera, que tiene el tipo <b>NLMSG_DONE</b>. El flujo de bytes
+sólo debería ser accedido con las macros estándares <b>NLMSG_*</b>.
+Vea <b><a href="http://localhost/cgi-bin/man/man2html?3+netlink">netlink</a></b>(3).</p><p>Netlink no es un protocolo fiable. Intenta hacerlo lo mejor que
+puede para entregar un mensaje en su destino (o destinos), pero
+puede perder mensajes cuando no hay suficiente memoria o se produce
+cualquier otro error. Para una transferencia fiable, el emisor
+puede solicitar un reconocimiento del receptor activando la opción
+<b>NLM_F_ACK</b>. Un reconocimiento es un paquete
+<b>NLMSG_ERROR</b> cuyo campo de error vale 0. La propia aplicación
+debe generar reconocimientos para los mensajes recibidos. El núcleo
+intenta enviar un mensaje <b>NLMSG_ERROR</b> para cualquier paquete
+que falle. Un proceso de usuario también debería seguir estas
+convenciones.</p><p>Cada familia netlink tiene un conjunto de 32 grupos multidestino
+(mutlicast). Cuando se llama a <b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b>(2)
+sobre el conector, se debe configurar el campo <b>nl_groups</b> de
+<b>sockaddr_nl</b> como una máscara de bits de los grupos que se
+desea escuchar. El valor por omisión para este campo es cero, lo
+que significa que no se recibirán multidestinos.</p><p>Un conector puede enviar un mensajes con varios destinos a
+cualquiera de los grupos multidestino, asignando a <b>nl_groups</b>
+una máscara de bits de los grupos a los que desea enviar cuando
+llama a <b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2)
+o hace un <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2).
+Sólo los usuarios con un identificador de usuario efectivo 0 o la
+capacidad <b>CAP_NET_ADMIN</b> pueden enviar a o escuchar de un
+grupo netlink multidestino. Cualquier respuesta a un mensaje
+recibido por un grupo multidestino se debe enviar de regreso al pid
+emisor y al grupo multidestino.</p><dl compact="compact"><dd>
+<pre>
+struct nlmsghdr
+{
+    __u32    nlmsg_len;  /* Longitud del mensaje incluyendo
+                            la cabecera */
+    __u16    nlmsg_type; /* Contenido del mensaje */
+    __u16    nlmsg_flags;/* Opciones adicionales */
+    __u32    nlmsg_seq;  /* Número de secuencia */
+    __u32    nlmsg_pid;  /* PID del proceso emisor */
+};
+
+
+struct nlmsgerr
+{
+    int      error;      /* número de error negativo o 0
+                            para reconocimientos */ 
+    struct nlmsghdr msg; /* cabecera del mensaje que
+                            provocó el error */ 
+};
+
+</pre>
+</dd>
+</dl><p>Después de cada <b>nlmsghdr</b> viene la carga útil.
+<b>nlmsg_type</b> puede ser uno de los tipos de mensajes
+estándares:</p><dl compact="compact"><dt><b>NLMSG_NOOP</b></dt>
+
+<dd>Se va a ignorar el mensaje.</dd>
+
+<dt><b>NLMSG_ERROR</b></dt>
+
+<dd>El mensaje indica un error y la carga útil contiene una
+estructura <i>nlmsgerr</i>.</dd>
+
+<dt><b>NLMSG_DONE</b></dt>
+
+<dd>El mensaje termina un mensaje multiparte.</dd>
+</dl><p>Una familia netlink normalmente especifica más tipos de
+mensajes. Vea las páginas de manual adecuadas para ello. Por
+ejemplo, <b><a href="http://localhost/cgi-bin/man/man2html?7+rtnetlink">rtnetlink</a></b>(7)
+para <i>NETLINK_ROUTE</i>.</p><table><tr valign="top"><td><b>Bits de opciones estándares en nlmsg_flags</b></td>
+<td></td>
+<td></td>
+<td><br /></td>
+</tr><tr valign="top"><td align="center" colspan="2">NLM_F_REQUEST:Poner en todos los
+mensajes de solicitud</td>
+</tr><tr valign="top"><td>NLM_F_MULTI:T{</td>
+<td></td>
+</tr><tr valign="top"><td>El mensaje es parte de un mensaje multiparte terminado
+mediante</td>
+<td></td>
+</tr><tr valign="top"><td>NLMSG_DONE</td>
+<td></td>
+</tr><tr valign="top"><td>T}</td>
+<td></td>
+</tr><tr valign="top"><td>NLM_F_ACK:Responder con un reconocimiento en caso de éxito</td>
+<td></td>
+</tr><tr valign="top"><td>NLM_F_ECHO:Hacer eco de esta solicitud</td>
+<td></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">Bits de opciones adicionales para
+peticiones GET<br /></td>
+</tr><tr valign="top"><td>NLM_F_ROOT</td>
+<td>Devolver la tabla completa en lugar de una única entrada.<br /></td>
+</tr><tr valign="top"><td>NLM_F_MATCH</td>
+<td>Todavía no implementado.<br /></td>
+</tr><tr valign="top"><td>NLM_F_ATOMIC</td>
+<td>Devolver una copia instantánea atómica de la tabla.<br /></td>
+</tr><tr valign="top"><td>NLM_F_DUMP</td>
+<td>Todavía no documentado.<br /></td>
+</tr></table><table border="1"><tr valign="top"><td align="center" colspan="2">Bits de opciones adicionales para
+peticiones NEW<br /></td>
+</tr><tr valign="top"><td>NLM_F_REPLACE</td>
+<td>Reemplazar un objeto existente.<br /></td>
+</tr><tr valign="top"><td>NLM_F_EXCL</td>
+<td>No reemplazar si el objeto ya existe.<br /></td>
+</tr><tr valign="top"><td>NLM_F_CREATE</td>
+<td>Crear un objeto sin no existe ya.<br /></td>
+</tr><tr valign="top"><td>NLM_F_APPEND</td>
+<td>Añadir al final de la lista de objetos.<br /></td>
+</tr></table><p>Dese cuenta que NLM_F_ATOMIC requiere CAP_NET_ADMIN o derechos
+de superusuario.</p><p><a id="lbAE"> </a></p><h2>FORMATOS DE LAS DIRECCIONES</h2><p>
+
+La estructura <b>sockaddr_nl</b> describe un cliente netlink en el
+espacio de usuario o en el núcleo. Una sockaddr_nl puede ser o bien
+unidestino (envío a un único igual) o bien un envío a grupos
+netlink (nl_groups distinto de 0). 
+</p><dl compact="compact"><dd>
+<pre>
+struct sockaddr_nl
+{
+    sa_family_t nl_family;    /* AF_NETLINK */
+    unsigned short nl_pad;    /* cero */
+    pid_t       nl_pid;       /* PID del proceso */
+    __u32       nl_groups;    /* Máscara de grupos
+                                 mutlidirección */
+};
+</pre>
+</dd>
+</dl><p><b>nl_pid</b> es el PID del netlink en el espacio de usuario o 0
+si el destino está en el núcleo. <b>nl_groups</b> es una máscara de
+bits con cada bit representando a un número de grupo netlink.</p><p><a id="lbAF"> </a></p><h2>FALLOS</h2><p>
+
+Esta página de manual no está completa. 
+</p><p><a id="lbAG"> </a></p><h2>NOTAS</h2><p>
+
+Normalmente es mejor usar netlink mediante <b>libnetlink</b> que
+mediante la interfaz de bajo nivel del núcleo. 
+</p><p><a id="lbAH"> </a></p><h2>VERSIONES</h2><p>
+
+La interfaz de conectores netlink es una nueva característica de la
+versión 2.2 de Linux. 
+</p><p>La versión 2.0 de Linux soportaba una interfaz netlink más
+primitiva basada en dispositivos (que todavía está disponible por
+compatibilidad). Esta interfaz obsoleta no se describe aquí.</p><p><a id="lbAI"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+rtnetlink">rtnetlink</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+netlink">netlink</a></b>(3).
+
+</p><p><b><a href="ftp://ftp.inr.ac.ru/ip-routing/iproute2*">ftp://ftp.inr.ac.ru/ip-routing/iproute2*</a></b>
+para libnetlink</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">FORMATOS DE LAS DIRECCIONES</a></dt>
+
+<dt><a href="#lbAF">FALLOS</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">VERSIONES</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

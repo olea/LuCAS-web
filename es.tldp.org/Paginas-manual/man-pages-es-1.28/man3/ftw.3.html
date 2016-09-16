@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of FTW</title></head><body><p>
+  
+</p><h1>FTW</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 25 junio 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+ftw, nftw - recorre un árbol de ficheros <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/ftw.h">ftw.h</a>&gt;</b><b>int ftw (const char *</b><i>directorio</i><b>, int
+(*</b><i>fn</i><b>)(const</b><b>char *</b><i>fichero</i><b>, const
+struct stat *</b><i>sb</i><b>, int</b><i>flag</i><b>),</b><b>int</b><i>profun</i><b>);</b><p><b>int nftw (const char *</b><i>directorio</i><b>, int
+(*</b><i>fn</i><b>)(const</b> <b>char *</b><i>fichero</i><b>, const
+struct stat *</b><i>sb</i><b>, int</b> <i>flag</i><b>,</b>
+<b>struct FTW *</b><i>s</i><b>),</b> <b>int</b> <i>profun</i><b>,
+int</b> <i>flags</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>ftw</b><p>() recorre un árbol de directorios empezando por el
+<i>directorio</i> indicado. Para cada entrada encontrada en el
+árbol, llama a <i>fn</i>() con el nombre de camino completo de la
+entrada, un puntero a la estructura <b><a href="http://localhost/cgi-bin/man/man2html?2+stat">stat</a></b>(2)
+para la entrada, y un int, cuyo valor será uno de los siguientes: 
+</p><dl compact="compact"><dt><b>FTW_F</b></dt>
+
+<dd>El ítem es un fichero normal</dd>
+
+<dt><b>FTW_D</b></dt>
+
+<dd>El ítem es un directorio</dd>
+
+<dt><b>FTW_DNR</b></dt>
+
+<dd>El ítem es un directorio que no se puede leer</dd>
+
+<dt><b>FTW_SL</b></dt>
+
+<dd>El ítem es un enlace simbólico</dd>
+
+<dt><b>FTW_NS</b></dt>
+
+<dd>stat ha fallado en el ítem que no es un enlace simbólico</dd>
+</dl><p>Si el ítem es un enlace simbólico y `stat' ha fallado, XPG4v2
+establece que el estado queda indefinido si se usa FTW_NS o
+FTW_SL.</p><p><b>ftw</b>() se llama a sí misma recursivamente para atravesar
+los directorios que encuentra, tratando un directorio antes que sus
+ficheros o subdirectorios. Para evitar el uso de todos los
+descriptores de fichero de un programa, el argumento <i>profun</i>
+especifica el número de directorios abiertos simultáneamente.
+Cuando la profundidad es sobrepasada, <b>ftw</b>() se ralentizará
+porque los directorios deberán cerrarse y volverse a abrir.
+<b>ftw</b>() usa, como mucho, un descriptor de fichero para cada
+nivel de la jerarquía de ficheros.</p><p>Para detener el recorrido por el árbol, <i>fn</i>() devuelve un
+valor no-cero. Este valor se convertirá en el devuelto por
+<b>ftw</b>(). De otro modo, <b>ftw</b>() continuará hasta que haya
+recorrido el árbol entero, en cuyo caso devolverá cero, o hasta que
+ocurra un error distinto de EACCES (como un fallo de <b><a href="http://localhost/cgi-bin/man/man2html?3+malloc">malloc</a></b>(3)),
+en cuyo caso devolverá -1.</p><p>Puesto que <b>ftw()</b> usa estructuras de datos dinámicas, la
+única forma segura de salir de un recorrido por un árbol es
+devolver un valor no cero. Para manejar interrupciones, por
+ejemplo, marque que ha ocurrido una interrupción y devuelva un
+valor no-cero (no emplee <b><a href="http://localhost/cgi-bin/man/man2html?3+longjmp">longjmp</a></b>(3)
+a menos que el programa vaya a terminar).</p><p>La función <b>nftw</b>() hace precisamente lo mismo que
+<b>ftw</b>(), excepto que tiene un argumento <i>flags</i> adicional
+(y llama a la función proporcionada con un argumento más). Este
+argumento <i>flags</i> es un <b>O</b>-lógico de cero o más de las
+siguientes opciones:</p><dl compact="compact"><dt><b>FTW_CHDIR</b></dt>
+
+<dd>Llama a <i>chdir</i>() para moverse a un directorio antes de
+manejar su contenido.</dd>
+
+<dt><b>FTW_DEPTH</b></dt>
+
+<dd>Realiza una búsqueda primero en profundidad, es decir, llama a
+la función para el propio directorio sólo después de tratar el
+contenido del directorio y de sus subdirectorios.</dd>
+
+<dt><b>FTW_MOUNT</b></dt>
+
+<dd>Permanece dentro del mismo sistema de ficheros.</dd>
+
+<dt><b>FTW_PHYS</b></dt>
+
+<dd>No sigas enlaces simbólicos (esto es lo que desea). Cuando no
+está activa, se siguen los enlaces simbólicos, pero ningún fichero
+aparece dos veces.</dd>
+</dl><p>Si la opción FTW_PHYS no está activa, pero FTW_DEPTH sí,
+entonces nunca se llama a la función <i>fn</i>() para un directorio
+que sería descendiente de sí mismo.</p><p>La función <i>fn</i>() se llama con cuatro argumentos: la ruta
+de la entrada encontrada, un puntero a una estructura `stat' para
+esa entrada, un entero que describe su tipo y un puntero a una
+estructura FTW. El tipo será uno de los siguientes: FTW_F, FTW_D,
+FTW_DNR, FTW_SL, FTW_NS (con el significado de antes. FTW_SL se da
+sólo con FTW_PHYS activa) o</p><dl compact="compact"><dt><b>FTW_DP</b></dt>
+
+<dd>El ítem es un directorio y todos sus descendientes ya han sido
+tratados. (Esto sólo ocurre cuando FTW_DEPTH está activa).</dd>
+
+<dt><b>FTW_SLN</b></dt>
+
+<dd>El ítem es un enlace simbólico que apunta a un fichero
+inexistente. (Esto ocurre sólo cuando FTW_PHYS no está
+activa.)</dd>
+</dl><p>La estructura FTW apuntada por el cuarto argumento de
+<i>fn</i>() tiene al menos los campos <i>base</i>, el
+desplazamiento del nombre de fichero del ítem en la ruta dada como
+primer argumento de <i>fn</i>(), y <i>level</i>, la profundidad del
+ítem relativo al punto de comienzo (que tiene profundidad 0). <a id="lbAE"> </a></p><h2>NOTA</h2><p>
+
+La función <i>nftw</i>() y el uso de FTW_SL con <i>ftw</i>() se
+introdujeron en XPG4v2. Bajo Linux, libc4, libc5 y glibc 2.0.6
+usarán FTW_F para todos los objetos (ficheros, enlaces simbólicos,
+FIFOs, etc) sobre los que se pueda aplicar la función <b><a href="http://localhost/cgi-bin/man/man2html?2+stat">stat</a></b>(2),
+y que no sean un directorio. La primera glibc 2.1 suporta FTW_SL y
+<i>nftw</i>(). <a id="lbAF"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+AES, SVID2, SVID3, XPG2, XPG3, XPG4 y XPG4v2. 
+</p><p><a id="lbAG"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+stat">stat</a></b><p>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">NOTA</a></dt>
+
+<dt><a href="#lbAF">CONFORME A</a></dt>
+
+<dt><a href="#lbAG">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:24 GMT, January 22, 2005
+</p></body></html>

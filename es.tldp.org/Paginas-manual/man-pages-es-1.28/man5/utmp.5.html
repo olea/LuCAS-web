@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of UTMP</title></head><body><p>
+  
+</p><h1>UTMP</h1><p>
+
+Section: Formatos de fichero (5)<br />
+Updated: 2 de Julio de 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+utmp, wtmp - registro de sesiones <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><p>
+
+#include &lt;<a href="file:/usr/include/utmp.h">utmp.h</a>&gt; <a id="lbAD"> </a> 
+</p><h2>DESCRIPCIÓN</h2><p>
+
+El fichero <b>utmp</b> nos permite obtener información de quiénes
+están usando el sistema actualmente. Puede haber más usuarios
+usando el sistema en el momento actual ya que no todos los
+programas usan utmp como registro de sesiones. 
+</p><p><b>Atención:</b> <b>utmp</b> no debe ser modificable ya que
+muchos programas del sistema dependen (tontamente) de su
+integridad. Corre el riesgo de tener ficheros de registro
+(logfiles) del sistema falsos y de modificaciones en ficheros del
+sistema si deja que cualquiera pueda escribir en <b>utmp</b>.</p><p>El fichero es una secuencia de entradas con la siguiente
+estructura declarada en el fichero cabecera (dese cuenta que ésta
+es sólo una de las posibles definiciones; los detalles dependen de
+la versión de libc):</p><dl compact="compact"><dd>
+<pre>
+
+#define UT_UNKNOWN            0
+#define RUN_LVL               1
+#define BOOT_TIME             2
+#define NEW_TIME              3
+#define OLD_TIME              4
+#define INIT_PROCESS          5
+#define LOGIN_PROCESS         6
+#define USER_PROCESS          7
+#define DEAD_PROCESS          8
+#define ACCOUNTING            9
+
+#define UT_LINESIZE           12
+#define UT_NAMESIZE           32
+#define UT_HOSTSIZE           256
+
+struct exit_status {
+  short int e_termination;    /* estado de terminación del
+                                 proceso.  */
+  short int e_exit;           /* estado de salida del
+                                 proceso.  */
+};
+
+struct utmp {
+  short ut_type;              /* tipo de login */
+  pid_t ut_pid;               /* pid del proceso de login */
+  char ut_line[UT_LINESIZE];  /* nombre de dispositivo de tty */
+  char ut_id[2];              /* id de inicio o nombre abreviado
+                                 de tty */
+  char ut_user[UT_NAMESIZE];  /* nombre de usuario */
+  char ut_host[UT_HOSTSIZE];  /* nombre de la máquina para login
+                                 remoto */
+  struct exit_status ut_exit; /* estado de salida de un proceso
+                                 marcado como DEAD_PROCESS. */ 
+  long ut_session;            /* ID de sesión, usado para el
+                                 manejo de ventanas */
+  struct timeval ut_tv;       /* instante en el que se hizo la
+                                 entrada. */
+  int32_t ut_addr_v6[4];      /* dirección IP de la máquina
+                                 remota. */
+  char pad[20];               /* Reservado para uso futuro.  */
+};
+
+/* Para compatibilidad hacia atrás.  */
+#define ut_name ut_user
+#ifndef _NO_UT_TIME
+#define ut_time ut_tv.tv_sec
+#endif
+#define ut_xtime ut_tv.tv_sec
+#define ut_addr ut_addr_v6[0]
+
+</pre>
+</dd>
+</dl><p>
+
+Esta estructura nos da el nombre del fichero especial asociado con
+el terminal del usuario, el login del usuario y el momento de
+inicio de sesión en el formato de <i><a href="http://localhost/cgi-bin/man/man2html?2+time">time</a></i>(2).
+Los campos del tipo cadena terminan en <b>'\0'</b> si son más
+cortos que el tamaño del campo. 
+</p><p>Las primeras entradas que se crean siempre proceden del
+procesamiento de <i><a href="http://localhost/cgi-bin/man/man2html?5+inittab">inittab</a></i>(5)
+por parte de <i><a href="http://localhost/cgi-bin/man/man2html?8+init">init</a></i>(8).
+Sin embargo, antes de que se procese una entrada, <i><a href="http://localhost/cgi-bin/man/man2html?8+init">init</a></i>(8)
+limpia utmp asignando a <b>ut_type</b> el valor
+<b>DEAD_PROCESS</b>, limpiando los campos <b>ut_user</b>,
+<b>ut_host</b> y <b>ut_time</b> con caracteres nulos para cada
+registro cuyo campo <b>ut_type</b> no sea <b>DEAD_PROCESS</b> ni
+<b>RUN_LVL</b> y donde no exista ningún proceso con PID
+<b>ut_pid</b>. Si no se puede encontrar ningún registro vacío con
+el <b>ut_id</b> que se necesita, init crea uno nuevo. Asigna un
+valor a <b>ut_id</b> a partir del inittab, a <b>ut_pid</b> y a
+<b>ut_time</b> a partir de los valores actuales y asigna a
+<b>ut_type</b> el valor <b>INIT_PROCESS</b>.</p><p><i><a href="http://localhost/cgi-bin/man/man2html?8+getty">getty</a></i>(8)
+busca la entrada por el pid, cambia el valor de <b>ut_type</b> a
+<b>LOGIN_PROCESS</b>, cambia <b>ut_time</b>, asigna un valor a
+<b>ut_line</b> y espera a que se establezca la conexión. <i><a href="http://localhost/cgi-bin/man/man2html?8+login">login</a></i>(8),
+después de que se haya autenticado un usuario, cambia el valor de
+<b>ut_type</b> a <b>USER_PROCESS</b>, cambia <b>ut_time</b> y
+asigna un valor a <b>ut_host</b> y a <b>ut_addr</b>. Dependiendo de
+<i><a href="http://localhost/cgi-bin/man/man2html?8+getty">getty</a></i>(8)
+y <i><a href="http://localhost/cgi-bin/man/man2html?8+login">login</a></i>(8),
+los registros se pueden buscar por <b>ut_line</b> en lugar de por
+<b>ut_pid</b>, como es preferible.</p><p>Cuando <i><a href="http://localhost/cgi-bin/man/man2html?8+init">init</a></i>(8)
+encuentra que un proceso ha terminado, busca su entrada utmp por
+<b>ut_pid</b>, asinga a <b>ut_type</b> el valor <b>DEAD_PROCESS</b>
+y limpia <b>ut_user</b>, <b>ut_host</b> y <b>ut_time</b> con bytes
+nulos.</p><p><i><a href="http://localhost/cgi-bin/man/man2html?1+xterm">xterm</a></i>(1)
+y otros emuladores de terminal crean directamente un registro
+<b>USER_PROCESS</b> y generan <b>ut_id</b> utilizando las últimas
+dos letras de <b>/dev/ttyp</b><i>%c</i> o utilizando
+<b>p</b><i>%d</i> para <b>/dev/pts/</b><i>%d</i>. Si encuentran un
+<b>DEAD_PROCESS</b> para este id, lo reutilizan, en caso contrario,
+crean una nueva entrada. Si pueden, las marcarán como
+<b>DEAD_PROCESS</b> al terminar y se aconseja que también rellenen
+con nulos los campos <b>ut_line</b>, <b>ut_time</b>, <b>ut_user</b>
+y <b>ut_host</b>.</p><p><i><a href="http://localhost/cgi-bin/man/man2html?8+xdm">xdm</a></i>(8)
+no debe crear un registro utmp, ya que no hay un terminal asignado.
+Si se le perimte crear uno provocará problemas del tipo: finger:
+can not stat /dev/machine.dom. En cambio, debe crear entradas wtmp,
+tal como lo hace <i><a href="http://localhost/cgi-bin/man/man2html?8+ftpd">ftpd</a></i>(8).</p><p><i><a href="http://localhost/cgi-bin/man/man2html?8+telnetd">telnetd</a></i>(8)
+establece una entrada <b>LOGIN_PROCESS</b> y deja el resto a <i><a href="http://localhost/cgi-bin/man/man2html?8+login">login</a></i>(8),
+como es habitual. Después de que termine la sesión de telnet, <i><a href="http://localhost/cgi-bin/man/man2html?8+telnetd">telnetd</a></i>(8)
+limpia utmp de la forma descrita.</p><p>El fichero<b>wtmp</b> registra todos los inicios y finales de
+sesión. Su formato es como el de <b>utmp</b> salvo ue un nombre
+nulo de usuario indica el fin de sesión en la terminal asociada.
+Además, el nombre de terminal <b>"~"</b> con nombre de usuario
+<b>"shutdown"</b> r <b>"reboot"</b> indica un cierre (shutdown) o
+rearranque del sistema y el par de nombres de terminal
+<b>"|"</b>/<b>"}"</b> registra la fecha antigua/nueva del sistema
+cuando la cambia <i><a href="http://localhost/cgi-bin/man/man2html?1+date">date</a></i>(1).
+<b>wtmp</b> es mantenido por <i><a href="http://localhost/cgi-bin/man/man2html?1+login">login</a></i>(1),
+e <i><a href="http://localhost/cgi-bin/man/man2html?1+init">init</a></i>(1)
+y algunas versiones de <i><a href="http://localhost/cgi-bin/man/man2html?1+getty">getty</a></i>(1).
+Ninguno de estos programas crea el fichero, por lo que si se borra
+se desactiva el mantenimiento de los registros. <a id="lbAE"> </a></p><h2>FICHEROS</h2><p>
+
+/var/run/utmp <br />
+ /var/log/wtmp <a id="lbAF"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+Las entradas utmp de Linux no se corresponden ni con las de v7/BSD
+ni con las de SYSV: son una mezcla de ambos tipos. v7/BSD tiene
+menos campos; lo más importante es la falta de <b>ut_type</b>, lo
+que provocará que los programas nativos de v7/BSD muestren (por
+ejemplo) entradas truncadas o de sesión. Además, no existe ningún
+fichero de configuración que asigne entradas a las sesiones. BSD lo
+hace de esta manera por la ausencia de los campos <b>ut_id</b>. En
+Linux (como en SYSV), el campo <b>ut_id</b> de un registro nunca
+cambiará una vez que se le haya asignado un valor, lo que reserva
+esa entrada sin necesidad de un fichero de configuración. Limpiar
+el campo <b>ut_id</b> puede producir condiciones de carrera que
+conduzcan a entradas utmp corruptas y a agujeros de seguridad
+potenciales. La semántica de SYSV no necesita la limpieza de los
+campos mencionados anteriormente rellenándolos con bytes nulos,
+pero esto permite ejecutar muchos programas que suponen una
+semántica BSD y que no modifican utmp. Linux usa las convenciones
+de BSD para los contenidos de las líneas, tal y como se ha
+documentado más arriba. 
+</p><p>SYSV sólo usa el campo de tipo para marcarlas y para grabar en
+el campo de línea mensajes informativos tales como, por ejemplo,
+<b>"new time"</b>. <b>UT_UNKNOWN</b> parece ser un invento de
+Linux. SYSV no tiene los campos <b>ut_host</b> ni
+<b>ut_addr</b>.</p><p>A diferencia de otros sistemas, donde el registro de información
+en utmp se puede desabilitar borrando el fichero, en Linux este
+fichero siempre debe existir. Si quiere deshabilitar <i><a href="http://localhost/cgi-bin/man/man2html?1+who">who</a></i>(1)
+elimine el permiso de lectura de utmp de los permisos
+correspondientes a "otros".</p><p>Note que la estructura utmp de libc5 ha cambiado en libc6. Como
+consecuencia de esto, los binarios que usen la antigua estructura
+de libc5 corromperán <i>/var/run/utmp</i> y/o <i>/var/log/wtmp</i>.
+Los sistemas Debian incluyen una libc5 parcheada que usa el nuevo
+formato de utmp. El problema todavía existe con wtmp ya que se
+utiliza directamente en libc5. <a id="lbAG"> </a></p><h2>FALLOS</h2><p>
+
+Esta página de manual se basa en la de libc5; ahora las cosas
+pueden funcionar de forma diferente. <a id="lbAH"> </a>
+
+</p><h2>RESTRICCIONES</h2><p>
+
+El formato del fichero es dependiente de la máquina, por lo que se
+recomienda que sea procesado únicamente en la arquitectura de
+máquina donde se creó. <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+ac">ac</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+date">date</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+getutent">getutent</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+init">init</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+last">last</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+login">login</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+updwtmp">updwtmp</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+who">who</a></b>(1) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">FICHEROS</a></dt>
+
+<dt><a href="#lbAF">CONFORME A</a></dt>
+
+<dt><a href="#lbAG">FALLOS</a></dt>
+
+<dt><a href="#lbAH">RESTRICCIONES</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

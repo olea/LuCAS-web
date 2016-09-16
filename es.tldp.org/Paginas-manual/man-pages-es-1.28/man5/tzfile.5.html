@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of TZFILE</title></head><body><p>
+  
+</p><h1>TZFILE</h1><p>
+
+Section: File Formats (5)<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+tzfile - información de huso horario <a id="lbAC"> </a>
+
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/tzfile.h">tzfile.h</a>&gt;</b><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Los ficheros de información de huso horario usados por <i><a href="http://localhost/cgi-bin/man/man2html?3+tzset">tzset</a></i>(3)
+comienzan con la secuencia de caracteres mágicos "TZif" para
+identificarlos como ficheros de información de huso horario,
+seguidos por 16 bytes reservados para uso futuro y seguidos por 6
+valores de 4 bytes de tipo <b>long</b>, escritos en un orden de
+bytes ``estándar'' (se escribe primero el byte de orden superior
+del valor). Estos valores son, en orden: 
+</p><dl compact="compact"><dt><i>tzh_ttisgmtcnt</i></dt>
+
+<dd>El número de indicadores UTC/local almacenados en el
+fichero.</dd>
+
+<dt><i>tzh_ttisstdcnt</i></dt>
+
+<dd>El número de indicadores estándar/incorporado almacenados en el
+fichero.</dd>
+
+<dt><i>tzh_leapcnt</i></dt>
+
+<dd>El número de "segundos de salto" para los datos almacenados en
+el fichero.</dd>
+
+<dt><i>tzh_timecnt</i></dt>
+
+<dd>El número de "instantes de transición" para los datos
+almacenados en el fichero.</dd>
+
+<dt><i>tzh_typecnt</i></dt>
+
+<dd>El número de "tipos de hora local" para los datos almacenados
+en el fichero (no debe ser cero).</dd>
+
+<dt><i>tzh_charcnt</i></dt>
+
+<dd>El número de caracteres de las "cadenas de abreviación de husos
+horarios" almacenadas en el fichero.</dd>
+</dl><p>A la cabecera anterior le siguen valores <i>tzh_timecnt</i> de
+cuatro bytes de tipo <b>long</b>, almacenados en orden ascendente.
+Estos valores se escriben en un orden de bytes ``estándar''. Cada
+uno de ellos se utiliza como un instante de transición (tal y como
+<i><a href="http://localhost/cgi-bin/man/man2html?2+time">time</a></i>(2)
+devuelve las horas) en el que cambian las reglas para el cálculo de
+la hora local. A continuación viene un valor <i>tzh_timecnt</i> de
+un byte de tipo <b>unsigned char</b>; cada uno de los cuales indica
+cuál de los diferentes tipos de ``hora local'' descritos en el
+fichero se asocia con el instante de transición colocado en la
+misma posición relativa. Estos valores sirven como índices en un
+array de estructuras <i>ttinfo</i> que aparecen después en el
+fichero; estas estructuras se definen como sigue:</p><pre>
+struct ttinfo {
+     long          tt_gmtoff;
+     int           tt_isdst;
+     unsigned int  tt_abbrind;
+};
+</pre><p>Cada estructura se escribe como un valor de cuatro byte para
+<i>tt_gmtoff</i> de tipo <b>long</b>, en un orden de bytes
+estándar, seguido por un valor de un byte para <i>tt_isdst</i> y un
+valor de un byte para <i>tt_abbrind</i>. En cada estructura,
+<i>tt_gmtoff</i> da el número de segundos a añadir a UTC,
+<i>tt_isdst</i> indica si <i>tm_isdst</i> debe ser o no establecido
+por <i><a href="http://localhost/cgi-bin/man/man2html?3+localtime">localtime</a></i>(3)
+y <i>tt_abbrind</i> se utiliza como un índice en el array de
+caracteres de abreviación de huso horario que siguen a la(s)
+estructura(s) <i>ttinfo</i> en el fichero.</p><p>Después hay parejas de valores <i>tzh_leapcnt</i> de 4 bytes,
+escritas en un orden de bytes estándar; el primer valor de cada
+pareja indica la hora (tal y como la devuelve <i><a href="http://localhost/cgi-bin/man/man2html?2+time">time</a>(2))</i>
+a la que se produce un segundo de salto; el segundo indica el
+número <i>total</i> de segundos de salto a aplicar después del
+instante dado. Las parejas de valores se almacenan en orden
+ascedente de tiempo.</p><p>A continuación, exiten indicadores estándar/incorporado
+<i>tzh_ttisstdcnt</i>, cada uno almacenado como un valor de un
+byte; indican si los instantes de transición asociados con los
+tipos de hora local se especificaron como una hora estándar o como
+una hora del reloj incorporado, y se usan cuando un fichero de huso
+horario se usa para manejar variables de entorno de huso horario al
+estilo POSIX.</p><p>Finalmente, hay indicadores UTC/local <i>tzh_ttisgmtcnt</i>,
+cada uno almacenado como un valor de un byte; indican si los
+instantes de transición asociados con los tipos de hora local se
+especificaron como horas UTC o locales, y se usan cuando un fichero
+de huso horario se usa para manejar variables de entorno de huso
+horario al estilo POSIX.</p><p><i>Localtime</i> usa la primera estructura <i>ttinfo</i> de hora
+estándar del fichero (o, simplemente, la primera estructura
+<i>ttinfo</i> en ausencia de un estructura de hora estándar) si o
+bien <i>tzh_timecnt</i> es cero o bien el argumento de tiempo es
+menor que el primer instante de transición almacenado en el
+fichero. <a id="lbAE"> </a></p><h2>VÉASE TAMBIÉN</h2><a href="http://localhost/cgi-bin/man/man2html?3+newctime">newctime</a><p>(3)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

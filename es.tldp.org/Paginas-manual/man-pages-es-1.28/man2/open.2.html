@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of OPEN</title></head><body><p>
+  
+</p><h1>OPEN</h1><p>
+
+Section: Llamadas al Sistema (2)<br />
+Updated: 3 junio 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+open, creat - abren y posiblemente crean un fichero o dispositivo
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/sys/stat.h">sys/stat.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/fcntl.h">fcntl.h</a>&gt;</b>
+
+<b>int open(const char *</b><i>camino</i><b>, int</b> <i>flags</i><b>);</b>
+<b>int open(const char *</b><i>camino</i><b>, int</b> <i>flags</i><b>, mode_t</b> <i>modo</i><b>);</b>
+<b>int creat(const char *</b><i>camino</i><b>, mode_t</b> <i>modo</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+La llamada al sistema <b>open()</b> se utiliza para convertir una
+ruta en un descriptor de fichero (un pequeño entero no negativo que
+se utiliza en las operaciones de E/S posteriores como en
+<b>read</b>, <b>write</b>, etc.). Cuando la llamada tiene éxito, el
+descriptor de fichero devuelto será el descriptor de fichero más
+pequeño no abierto actualmente para el proceso. Esta llamada crea
+un nuevo fichero abierto, no compartido con ningún otro proceso.
+(Pero pueden aparecer ficheros abiertos compartidos a través de la
+llamada al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2).)
+El nuevo descriptor de fichero se configura para que permanezca
+abierto a través de funciones exec (vea <b><a href="http://localhost/cgi-bin/man/man2html?2+fcntl">fcntl</a></b>(2)).
+El apuntador de lectura/escritura del fichero se configura para que
+apunte al principio del fichero. <i>flags</i> es uno de
+<b>O_RDONLY</b>, <b>O_WRONLY</b> u <b>O_RDWR</b> que,
+respectivamente, piden que la apertura del fichero sea solamente
+para lectura, solamente para escritura, o para lectura y escritura.
+
+</p><p><i>flags</i> puede también ser la combinación, con el operador
+de bits OR (|), de una o más de las siguientes macros:</p><dl compact="compact"><dt><b>O_CREAT</b></dt>
+
+<dd>Si el fichero no existe, será creado.</dd>
+
+<dt><b>O_EXCL</b></dt>
+
+<dd>Cuando se combina con <b>O_CREAT</b>, es un error que el
+fichero ya exista, y <b>open</b> fallará. <b>O_EXCL</b> no funciona
+en sistemas de ficheros de red NFS, programas que confíen en él
+para efectuar tareas de bloqueo contendrán una condición de
+concurso. La solución para efectuar un bloqueo atómico de fichero
+mediante un fichero de bloqueo es crear un fichero único en el
+mismo sistema de ficheros (por ejemplo, incorporando el nombre del
+ordenador y el PID) y utilizar <b><a href="http://localhost/cgi-bin/man/man2html?2+link">link</a></b>(2)
+para hacer un enlace al fichero de bloqueo. Si <b>link()</b>
+devuelve 0, el bloqueo tiene éxito. En caso contrario, use <b><a href="http://localhost/cgi-bin/man/man2html?2+stat">stat</a></b>(2)
+en el fichero único para comprobar si su número de enlaces se ha
+incrementado a 2, en cuyo caso el bloqueo también tiene éxito.</dd>
+
+<dt><b>O_NOCTTY</b></dt>
+
+<dd>Si <i>camino</i> se refiere a una terminal --- vea <b><a href="http://localhost/cgi-bin/man/man2html?4+tty">tty</a></b>(4)
+--- no se convertirá en la terminal controladora del proceso ni en
+el caso de que el proceso no tenga ninguna.</dd>
+
+<dt><b>O_TRUNC</b></dt>
+
+<dd>Si el fichero ya existe, será truncado.</dd>
+
+<dt><b>O_APPEND</b></dt>
+
+<dd>El fichero se abrirá en modo de sólo-añadir. Antes de cada
+<b>escritura</b>, el apuntador del fichero es posicionado al final
+del fichero, como se haría con <b>lseek</b>. <b>O_APPEND</b> puede
+conducir a ficheros corruptos en sistemas de ficheros NFS si más de
+un proceso añade datos a un fichero a la vez. Esto es así porque
+NFS no admite añadir a un fichero, así que el núcleo del cliente ha
+de simularlo, lo que no puede hacerse sin una condición de
+concurso.</dd>
+
+<dt><b>O_NONBLOCK</b> u <b>O_NDELAY</b></dt>
+
+<dd>El fichero se abre en modo no bloqueante. Ni el <b>open</b> ni
+ninguna operación subsecuente sobre el descriptor de
+fichero<tt>   </tt>que es<br />
+devuelto harán que el proceso que hace la llamada espere. Para el
+manejo de FIFOs (tuberías nombradas), vea también <b><a href="http://localhost/cgi-bin/man/man2html?4+fifo">fifo</a></b>(4).</dd>
+
+<dt><b>O_SYNC</b></dt>
+
+<dd>El fichero se abre para E/S síncrona. Cualesquiera operaciones
+de escritura <b>write</b> sobre el descriptor de fichero resultante
+bloquearán el proceso que ha efectuado la llamada hasta que los
+datos hayan sido físicamente escritos en el dispositivo subyacente.
+<i>Vea no obstante más abajo la sección RESTRICCIONES.</i></dd>
+
+<dt><b>O_NOFOLLOW</b></dt>
+
+<dd>Si <i>pathname</i> es un enlace simbólico, entonces la apertura
+falla. Ésta es una extensión de FreeBSD que fue añadida a Linux en
+la versión 2.1.126. Todavía se seguirán los enlaces simbólicos de
+los componentes anteriores de la ruta. Los ficheros cabecera de la
+versión 2.0.100 y posteriores de glibc incluyen una definición de
+esta opción; <i>los núcleos anteriores al 2.1.126 lo ignorarán si
+se usa</i>.</dd>
+
+<dt><b>O_DIRECTORY</b></dt>
+
+<dd>Si <i>pathname</i> no es un directorio, hará que la apertura
+falle. Esta opción es específica de Linux y fue añadida en la
+versión 2.1.126 del núcleo para evitar problemas de denegación de
+servicio al llamar a <b><a href="http://localhost/cgi-bin/man/man2html?3+opendir">opendir</a></b>(3)
+sobre una FIFO o dispositivo de cinta, pero no se debería usar
+fuera de la implementación de <b>opendir</b>.</dd>
+
+<dt><b>O_LARGEFILE</b></dt>
+
+<dd>En sistemas de 32 bits que soportan el `sistema de ficheros
+grandes' (Large Files System, LFS) permite abrir ficheros cuyos
+tamaños no pueden ser representados en 31 bits. El núcleo de Linux
+todavía no soporta esto (hasta, al menos, el 2.1.130), pero la
+definición de la opción está ahí y las interfaces de LFS en el
+espacio de usuario están presentes en las versiones 2.1 de prueba
+de glibc.</dd>
+</dl><p>Algunos de estos modificadores opcionales pueden alterarse
+mediante el empleo de <b>fcntl</b> después de que el fichero haya
+sido abierto.</p><p>El argumento <i>modo</i> especifica los permisos a emplear si se
+crea un nuevo fichero. Es modificado por la máscara <b>umask</b>
+del proceso de la forma habitual: los permisos del fichero creado
+son <b>(modo &amp; ~umask)</b>.</p><p>Se proporcionan las siguientes constantes simbólicas para
+<i>modo</i>:</p><dl compact="compact"><dt><b>S_IRWXU</b></dt>
+
+<dd>00700 el usuario (el propietario del fichero) tiene permisos de
+lectura, escritura y ejecución</dd>
+
+<dt><b>S_IRUSR (S_IREAD)</b></dt>
+
+<dd>00400 el usuario tiene permiso de lectura</dd>
+
+<dt><b>S_IWUSR (S_IWRITE)</b></dt>
+
+<dd>00200 el usuario tiene permiso de escritura</dd>
+
+<dt><b>S_IXUSR (S_IEXEC)</b></dt>
+
+<dd>00100 el usuario tiene permiso de ejecución</dd>
+
+<dt><b>S_IRWXG</b></dt>
+
+<dd>00070 el grupo tiene permiso de lectura, escritura y
+ejecución</dd>
+
+<dt><b>S_IRGRP</b></dt>
+
+<dd>00040 el grupo tiene permiso de lectura</dd>
+
+<dt><b>S_IWGRP</b></dt>
+
+<dd>00020 el grupo tiene permiso de escritura</dd>
+
+<dt><b>S_IXGRP</b></dt>
+
+<dd>00010 el grupo tiene permiso de ejecución</dd>
+
+<dt><b>S_IRWXO</b></dt>
+
+<dd>00007 los otros tienen permiso de lectura, escritura y
+ejecución</dd>
+
+<dt><b>S_IROTH</b></dt>
+
+<dd>00004 los otros tienen permiso de lectura</dd>
+
+<dt><b>S_IWOTH</b></dt>
+
+<dd>00002 los otros tienen permiso de escritura</dd>
+
+<dt><b>S_IXOTH</b></dt>
+
+<dd>00001 los otros tienen permiso de ejecución</dd>
+</dl><p>El argumento <i>modo</i> siempre debe especificarse cuando
+<b>O_CREAT</b> está en <i>flags</i>, y si no está, no es tenido en
+cuenta.</p><p><b>creat</b> equivale a <b>open</b> con <i>flags</i> igual a
+<b>O_CREAT|O_WRONLY|O_TRUNC</b>. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><b>open</b><p> y <b>creat</b> devuelven el nuevo descriptor de
+fichero, o -1 si ha ocurrido un error (en cuyo caso, se da un valor
+apropiado a <i>errno</i>). Observe que <b>open</b> pueden abrir
+ficheros especiales de dispositivo, pero <b>creat</b> no puede
+crearlos; emplee <b><a href="http://localhost/cgi-bin/man/man2html?2+mknod">mknod</a></b>(2)
+en su lugar. 
+</p><p>En sistemas de ficheros NFS con asociación de UIDs habilitada,
+<b>open</b> puede devolver un descriptor de fichero pero p. ej.
+llamadas a <b><a href="http://localhost/cgi-bin/man/man2html?2+read">read</a></b>(2)
+pueden denegarse con el error <b>EACCES</b>. Esto es así porque el
+cliente hace el <b>open</b> comprobando los permisos, pero la
+asociación de UID la hace el servidor sobre las peticiones de
+lectura y escritura. <a id="lbAF"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>EEXIST</b></dt>
+
+<dd><i>camino</i> ya existe y se usaron <b>O_CREAT</b> y
+<b>O_EXCL</b>.</dd>
+
+<dt><b>EISDIR</b></dt>
+
+<dd><i>camino</i> se refiere a un directorio y el acceso pedido
+implicaba escribir.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>El acceso pedido al fichero no es permitido, o uno de los
+directorios en <i>camino</i> no tiene permiso de búsqueda o paso
+(ejecución), o el fichero todavía no existe y el directorio padre
+no tiene permiso de escritura.</dd>
+
+<dt><b>ENAMETOOLONG</b></dt>
+
+<dd><i>camino</i> era demasiado largo.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>Un componente directorio en <i>camino</i> no existe o es un
+enlace simbólico colgante (que apunta a un fichero
+inexistente).</dd>
+
+<dt><b>ENOTDIR</b></dt>
+
+<dd>Un componente de <i>camino</i> empleado como un directorio no
+es, de hecho, un directorio o se ha especificado la opción
+<b>O_DIRECTORY</b> y <i>pathname</i> no es un directorio.</dd>
+
+<dt><b>ENXIO</b></dt>
+
+<dd>Se ha seleccionado O_NONBLOCK | O_WRONLY, el fichero indicado
+es una FIFO y ningún proceso tiene el fichero abierto para lectura.
+O el fichero es un fichero especial de dispositivo y no existe el
+dispositivo correspondiente.</dd>
+
+<dt><b>ENODEV</b></dt>
+
+<dd><i>pathname</i> se refiere a un fichero especial de dispositivo
+y no existe el dispositivo correspondiente. (Éste es un fallo del
+núcleo de Linux. En esta situación se debería devolver ENXIO.)</dd>
+
+<dt><b>EROFS</b></dt>
+
+<dd><i>camino</i> se refiere a un fichero de un sistema de ficheros
+de sólo lectura y se ha pedido un acceso de escritura.</dd>
+
+<dt><b>ETXTBSY</b></dt>
+
+<dd><i>camino</i> se refiere a una imagen ejecutable que se está
+ejecutando ahora mismo y se pidió un acceso de escritura.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd><i>camino</i> apunta afuera de su espacio de direcciones
+accesible.</dd>
+
+<dt><b>ELOOP</b></dt>
+
+<dd>Se han encontrado demasiados enláces simbólicos al resolver
+<i>camino</i>, o se ha especificado la opción <b>O_NOFOLLOW</b>
+pero <i>pathname</i> no es un enlace simbólico.</dd>
+
+<dt><b>ENOSPC</b></dt>
+
+<dd><i>camino</i> iba a ser creado pero el dispositivo que lo
+habría de contener no tiene espacio para el nuevo fichero.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No hay disponible bastante memoria del núcleo.</dd>
+
+<dt><b>EMFILE</b></dt>
+
+<dd>El proceso ya tiene abiertos todos los ficheros que puede.</dd>
+
+<dt><b>ENFILE</b></dt>
+
+<dd>Se ha alcanzado el límite del número total de ficheros abiertos
+en el sistema.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+SVr4, SVID, POSIX, X/OPEN, BSD 4.3 <a id="lbAH"> </a> 
+</p><h2>RESTRICCIONES</h2><p>
+
+Hay muchas impropiedades en el protocolo subyacente a NFS,
+afectando entre otros a <b>O_SYNC</b> y a <b>O_NDELAY</b>. POSIX
+proporciona tres variantes diferentes de E/S síncrona,
+correspondientes a las opciones <b>O_SYNC</b>, <b>O_DSYNC</b> y
+<b>O_RSYNC</b>. Actualmente (2.1.130) todas ellas son sinónimas en
+Linux. <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+read">read</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+write">write</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+fcntl">fcntl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+close">close</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+link">link</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mknod">mknod</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mount">mount</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+stat">stat</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+umask">umask</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+unlink">unlink</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+fopen">fopen</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?4+fifo">fifo</a></b>(4)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">RESTRICCIONES</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

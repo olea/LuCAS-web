@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RCMD</title></head><body><p>
+  
+</p><h1>RCMD</h1><p>
+
+Section: Manual del programador de Linux (3)<br />
+Updated: 4 Junio 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+rcmd, rresvport, iruserok, ruserok - Funciones que devuelven un
+flujo (stream) hacia una orden remota <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><p><b>int rcmd(char **</b><i>ahost</i><b>, int</b>
+<i>inport</i><b>, const char *</b><i>locuser</i><b>, const char
+*</b><i>remuser</i><b>, const char *</b><i>cmd</i><b>, int
+*</b><i>fd2p</i><b>)</b></p><p><b>int rresvport(int *</b><i>port</i><b>)</b></p><p><b>int iruserok(u_int32_t</b> <i>raddr</i><b>, int</b>
+<i>superuser</i><b>, const char *</b><i>ruser</i><b>, const char
+*</b><i>luser</i><b>)</b></p><p><b>int ruserok(const char *</b><i>rhost</i><b>, int</b>
+<i>superuser</i><b>, const char *</b><i>ruser</i><b>, const char
+*</b><i>luser</i><b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función <b>rcmd</b> es utilizada por el superusuario para
+ejecutar una orden en una máquina remota usando un esquema de
+autenticación basado en números de puertos reservados. La función
+<b>rresvport</b> devuelve el descriptor de un enchufe (socket) cuya
+dirección cae dentro del espacio de puertos privilegidados. Los
+servidores utilizan las funciones <b>iruserok</b> y <b>ruserok</b>
+para autenticar a los clientes que solicitan servicios mediante
+<b>rcmd</b>. Estas cuatro funciones se encuentran en el mismo
+fichero y son usadas por el servidor <b><a href="http://localhost/cgi-bin/man/man2html?8+rshd">rshd</a></b>(8)
+(entre otros). 
+</p><p>La función <b>rcmd</b> busca al anfitrión (host) <i>*ahost</i>
+usando <b><a href="http://localhost/cgi-bin/man/man2html?3+gethostbyname">gethostbyname</a></b>(3),
+devolviendo -1 si el anfitrión no existe. En caso contrario, se
+asigna a <i>*ahost</i> el nombre estándar del anfitrión y se
+establece una conexión con el servidor que reside en el, bien
+definido, puerto de Internet <i>inport</i>.</p><p>Si la conexión tiene éxito, se devuelve al invocador un socket
+dentro del dominio de Internet del tipo <b>SOCK_STREAM</b>, y dicho
+socket se convierte en la <b>entrada estándar (stdin)</b> y la
+<b>salida estándar (stdout)</b> de la orden remota. Si <i>fd2p</i>
+no es cero, se creará un canal auxiliar hacia un proceso de control
+y en <i>*fd2p</i> se colocará un descriptor para dicho canal. El
+proceso de control devolverá la salida de error (descriptor de
+fichero número 2) de la orden remota sobre este canal, y también
+aceptará sobre este canal el envío de bytes que se comportarán como
+números de señal de <b>UNIX</b> para ser enviados al grupo de
+procesos de la orden. Si <i>fd2p</i> es 0, entonces la <b>salida de
+error estándar (stderr)</b> (descriptor de fichero número 2 de la
+orden remota) coincidirán con la <b>salida estándar (stdout)</b> y
+no habrá forma de enviar señales arbitrarias al proceso remoto,
+aunque podrá llamar su atención usando datos "fuera de orden"
+(out-of-band).</p><p>El protocolo se describe con detalle en <b><a href="http://localhost/cgi-bin/man/man2html?8+rshd">rshd</a></b>(8).</p><p>La función <b>rresvport</b> se utiliza para obtener un socket
+que tenga una dirección privilegiada ligada a él. Este socket es
+adecuado para ser usado por <b>rcmd</b> y otras funciones diversas.
+Los puertos de Internet privilegiados son aquellos que van de 0 a
+1023. Sólo el superusuario puede ligar una dirección de este tipo a
+un socket.</p><p>Las funciones <b>iruserok</b> y <b>ruserok</b> toman la
+dirección IP o el nombre de un anfitrión remoto, respectivamente,
+dos nombres de usuario y una bandera que indica si el nombre del
+usuario local es o no el del superusuario. A continuación, si el
+usuario <b>NO</b> es el superusuario, comprueba el fichero
+<i>/etc/hosts.equiv</i>. Si dicha búsqueda no se realiza o no tiene
+éxito, se comprueba el fichero <i>.rhosts</i> en el directorio raíz
+(home) del usuario local para ver si se permite la petición de
+servicio.</p><p>Si el fichero no existe, no es un fichero regular, pertenece a
+alguien que no es el usuario ni el superusuario, o puede ser
+escrito por alguien que no sea el propietario, la comprobación
+fracasa automáticamente. Si el nombre de la máquina aparece en el
+fichero <i>hosts.equiv</i> o si el anfitrión y el nombre del
+usuario remoto se encuentran en el fichero <i>.rhosts</i>, se
+devuelve un 0; en caso contrario <b>iruserok</b> y <b>ruserok</b>
+devuelven -1. Si el dominio local (como se obtiene de <b><a href="http://localhost/cgi-bin/man/man2html?2+gethostname">gethostname</a></b>(2))
+es el mismo que el dominio remoto, sólo se necesita especificar el
+nombre de la máquina.</p><p>Si se conoce la dirección IP del anfitrión remoto,
+preferentemente se debe usar <b>iruserok</b> en lugar de
+<b>ruserok</b>, ya que no necesita consultar al servidor DNS para
+el dominio del anfitrión remoto. <a id="lbAE"> </a></p><h2>ERRORES</h2><p>
+
+La función <b>rcmd</b> devuelve un descriptor válido de socket en
+caso de éxito. Devuelve -1 en caso de error y muestra un mensaje de
+error en la salida de error estándar. 
+</p><p>La función <b>rresvport</b> devuelve un descriptor de socket
+válido, y ya ligado, en caso de éxito. Devuelve -1 en caso de error
+y asigna a <i>errno</i> un valor que indica la razón del fallo. Se
+sobrecarga el significado del código de error <b>EAGAIN</b> para
+indicar que ``Todos los puertos de red están en uso.'' <a id="lbAF"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+rlogin">rlogin</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+rsh">rsh</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+intro">intro</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+rexec">rexec</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+rexecd">rexecd</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+rlogind">rlogind</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+rshd">rshd</a></b>(8)
+<a id="lbAG"> </a> 
+</p><h2>HISTORIA</h2><p>
+
+Estas funciones aparecieron en 4.2BSD. 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">ERRORES</a></dt>
+
+<dt><a href="#lbAF">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAG">HISTORIA</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:27 GMT, January 22, 2005
+</p></body></html>

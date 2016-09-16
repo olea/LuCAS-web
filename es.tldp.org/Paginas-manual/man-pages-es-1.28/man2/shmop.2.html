@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SHMOP</title></head><body><p>
+  
+</p><h1>SHMOP</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 28 enero 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+shmop - operaciones cno memoria compartida <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b># include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/shm.h">sys/shm.h</a>&gt;</b>
+</pre><p><b>void *shmat ( int</b> <i>shmid</i><b>,</b> <b>const void
+*</b><i>shmaddr</i><b>,</b> <b>int</b> <i>shmflg</i> <b>)</b></p><p><b>int shmdt ( const void *</b><i>shmaddr</i><b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función <b>shmat</b> pega el segmento de memoria compartida
+identificada por <b>shmid</b> al segmento de datos del proceso que
+llama a la función. La dirección del pegado se especifica en
+<i>shmaddr</i> según uno de los criterios siguientes: 
+</p><dl compact="compact"><dd>Si <i>shmaddr</i> es <b>0</b>, el sistema intenta encontrar una
+región no asociada en el rango de 1 a 1,5 GB comenzando por el
+valor superior y bajando desde él.</dd>
+
+<dd>Si <i>shmaddr</i> no es <b>0</b> y <b>SHM_RND</b> está activado
+en <i>shmflg</i>, el pegado ocurre en la dirección igual al
+redondeo por abajo de <i>shmaddr</i> a un múltiplo de
+<b>SHMLBA</b>. De otro modo, <i>shmaddr</i> debe ser una dirección
+alineada de una página en la cual ocurra el pegado.</dd>
+</dl><p>Si <b>SHM_RDONLY</b> está activado en <i>shmflg</i>, el segmento
+se pega para lectura y el proceso debe tener permiso de lectura en
+el segmento. De otro modo el segmento se pega para lectura y
+escritura y debe tener permisos de lectura y escritura en el
+segmento. No existe la noción de segmentos de memoria compartida de
+escritura exclusiva.</p><p>El valor de <b>brk</b> del proceso que llama a la función no se
+altera por el pegado. El segmento se despegará automáticamente
+cuendo el proceso se acabe. El mismo segmento puede ser pegaado
+como de lectura y de lectura-escritura, y más de una vez, en el
+espacio de direcciones del proceso.</p><p>Tras una llamada exitosa a <b>shmat</b> el sistema actualiza los
+miembros de la estructura <b>shmid_ds</b> asociada al segmento de
+memoria compartida como sigue:</p><dl compact="compact"><dd><b>shm_atime</b> toma el valor de la hora actual.</dd>
+
+<dd><b>shm_lpid</b> toma el valor del PID del proceso
+llamador.</dd>
+
+<dd><b>shm_nattch</b> se incrementa en uno.</dd>
+</dl><p>Observe que el pegado tiene éxito también si el segmento de
+memoria compartida se marca como para ser borrado.</p><p>La función <b>shmdt</b> despega del segmento de datos del
+proceso que la llama el segmento de memoria compartida localizado
+en la dirección especificada por <i>shmaddr</i>. El segmento de
+memoria compartida despegado debe ser uno de entre los pegados
+actualmente (al espacio de direcciones del proceso) con
+<i>shmaddr</i> igual al valor devuelto por su llamada de pegado
+<b>shat</b>.</p><p>Tras una llamada exitosa a <b>shmdt</b> el sistema actualiza los
+miembros de la estructura <b>shmid_ds</b> asociada al segmento de
+memoria compartida como sigue:</p><dl compact="compact"><dd><b>shm_dtime</b> toma el valor de la hora actual.</dd>
+
+<dd><b>shm_lpid</b> toma el valor del PID del proceso
+llamador.</dd>
+
+<dd><b>shm_nattch</b> se decrementa en uno. Si llega a 0 y el
+segmento está marcado para ser borrado, el segmento se borra.</dd>
+</dl><p>La región ocupada en el espacio de usuario del proceso llamador
+es desasociada.</p><p><a id="lbAE"> </a></p><h2>LLAMADAS AL SISTEMA</h2><dl compact="compact"><dt><b>fork()</b></dt>
+
+<dd>Después de un <b>fork()</b> el hijo hereda los segmentos de
+memoria compartidos pegados.</dd>
+
+<dt><b>exec()</b></dt>
+
+<dd>Tras un <b>exec()</b> todos los segmentos de memoria compartida
+pegados son despegados (pero no destruidos).</dd>
+
+<dt><b>exit()</b></dt>
+
+<dd>Tras <b>exit()</b> todos los segmentos de memoria compartida
+pegados son despegados (no destruidos).</dd>
+</dl><p><a id="lbAF"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de fallo ambas funciones devuelven <b>-1</b> con
+<b>errno</b> indicando el error; en otro caso <b>shmat</b> devuelve
+la dirección del segmento de memoria compartido pegado, y
+<b>shmdt</b> devuelve <b>0</b>. <a id="lbAG"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Cuando <b>shmat</b> falla, al regresar, <b>errno</b> tendrá uno de
+entre los siguientes valores: 
+</p><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>El proceso llamador no tiene permisos de acceso para el tipo de
+pegado pedido.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Valor de <i>shmid</i> inválido, no alineado (i.e., sin
+alineamiento de página y <b>SHM_RND</b> no se especificó), o valor
+de <i>shmaddr</i> inválido, o pegado fallido en <b>brk</b>.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No se pudo reservar memoria para el descriptor o para las
+tablas de página.</dd>
+</dl><p>La función <b>shmdt</b> puede fallar sólo si no hay segmento de
+memoria compartida pegada en <i>shmaddr</i>, en cuyo caso al
+regresar <b>errno</b> tendrá el valor <b>EINVAL</b>. <a id="lbAH"> </a></p><h2>NOTAS</h2><p>
+
+Al ejecutar una llamada al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+el hijo hereda todos los segmentos de memoria compartida pegados. 
+</p><p>Los segmentos de memoria compartida pegados a un proceso que
+ejecuta una llamada al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+execve">execve</a></b>(2)
+no serán pegados en el proceso resultante.</p><p>El siguiente es un parámetro del sistema que afecta a la llamada
+al sistema <b>shmat</b>:</p><dl compact="compact"><dt><b>SHMLBA</b></dt>
+
+<dd>Dirección del límite inferior del segmento. Debe estar alineado
+a página. Para la implementación actual el valor de <b>SHMBLA</b>
+es <b>PAGE_SIZE</b>.</dd>
+</dl><p>La implementación no tiene un límite intrínseco para el número
+máximo de segmentos de memoria compartida por proceso
+(<b>SHMSEG</b>) <a id="lbAI"> </a></p><h2>CONFORME A</h2><p>
+
+SVr4, SVID. SVr4 documenta una condición de error adicional EMFILE.
+En SVID-v4, el tipo del argumento <i>shmaddr</i> se cambió de
+<b>char *</b> a <b>const void *</b>, y el tipo del valor devuelto
+por <i>shmat</i>() de <b>char *</b> a <b>void *</b>. (Linux libc4 y
+libc5 poseen los prototipos <b>char *</b>. glibc2 posee <b>void
+*</b>.) <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b><p>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmctl">shmctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmget">shmget</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">LLAMADAS AL SISTEMA</a></dt>
+
+<dt><a href="#lbAF">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+
+<dt><a href="#lbAH">NOTAS</a></dt>
+
+<dt><a href="#lbAI">CONFORME A</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

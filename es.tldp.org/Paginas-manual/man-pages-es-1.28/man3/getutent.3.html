@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of GETUTENT</title></head><body><p>
+  
+</p><h1>GETUTENT</h1><p>
+
+Section: Funciones de biblioteca (3)<br />
+Updated: 25 Febrero 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+getutent, getutid, getutline, pututline, setutent, endutent,
+utmpname - acceden a las entradas del fichero utmp <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/utmp.h">utmp.h</a>&gt;</b><p><b>struct utmp *getutent(void);</b><br /><b>struct utmp *getutid(struct utmp *</b><i>ut</i><b>);</b><br /><b>struct utmp *getutline(struct utmp *</b><i>ut</i><b>);</b></p><p><b>void pututline(struct utmp *</b><i>ut</i><b>);</b></p><p><b>void setutent(void);</b><br /><b>void endutent(void);</b></p><p><b>void utmpname(const char *</b><i>fichero</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>utmpname</b><p>() establece qué nombre tiene el fichero en formato
+utmp al que van a acceder las otras funciones descritas aquí. Si
+<b>utmpname</b>() no se llama para establecer el nombre de fichero
+antes de que se usen las otras funciones, se asume el nombre
+<b>_PATH_UTMP</b>, como se define en <i>&lt;<a href="file:/usr/include/paths.h">paths.h</a>&gt;</i>. 
+</p><p><b>setutent</b>() rebobina el indicador de fichero al principio
+del fichero utmp. Generalmente es una Buena Idea llamar a esta
+función antes que cualquiera de las siguientes.</p><p><b>endutent</b>() cierra el fichero utmp. Debe llamarse cuando
+el código de usuario ha terminado de acceder al fichero con las
+otras funciones.</p><p><b>getutent</b>() lee una línea desde donde está actualmente el
+indicador de posición del fichero en el de formato utmp. Devuelve
+un puntero a una estructura que contiene los campos
+correspondientes a la línea.</p><p><b>getutid</b>() busca hacia adelante desde la posición actual
+en el fichero utmp según <i>ut</i>. Si <i>ut</i><b>-&gt;ut_type</b>
+es <b>RUN_LVL</b>, <b>BOOT_TIME</b>, <b>NEW_TIME</b>, u
+<b>OLD_TIME</b>, <b>getutid</b>() encontrará la primera entrada
+cuyo campo <b>ut_type</b> concuerde con
+<i>ut</i><b>-&gt;ut_type</b>. Si <i>ut</i><b>-&gt;ut_type</b> es
+uno de <b>INIT_PROCESS</b>, <b>LOGIN_PROCESS</b>,
+<b>USER_PROCESS</b>, o <b>DEAD_PROCESS</b>, <b>getutid</b>()
+encontrará la primera entrada cuyo campo <b>ut_id</b> coincida con
+<i>ut</i><b>-&gt;ut_id</b>.</p><p><b>getutline</b>() busca hacia adelante desde la posición actual
+en el fichero utmp. Rastrea las entradas cuyo campo ut_type sea
+<b>USER_PROCESS</b> o <b>LOGIN_PROCESS</b> y devuelve la primera
+cuyo campo <b>ut_line</b> coincida con
+<i>ut</i><b>-&gt;ut_line</b>.</p><p><b>pututline</b>() escribe la estructura utmp <i>ut</i> en el
+fichero utmp. Utiliza <b>getutid</b>() para buscar el sitio
+correcto en el fichero donde insertar la nueva entrada. Si no puede
+encontrar un sitio apropiado para <i>ut</i>, <b>pututline</b>()
+añadirá la nueva entrada al final del fichero. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><b>getutent</b><p>(), <b>getutid</b>() y <b>getutline</b>() devuelven
+un puntero a una <b>static struct utmp</b>. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+En caso de error, se devuelve <b>(struct utmp*)0</b>. <a id="lbAG"> </a> 
+</p><h2>EJEMPLO</h2><p>
+
+El siguiente ejemplo añade y quita un registro utmp, suponiendo que
+se ejecuta desde una pseudo-terminal. Para un uso correcto en una
+aplicación más realística, se deberían comprobar los valores
+devueltos por getpwuid() y ttyname(). 
+</p><pre>
+#include &lt;<a href="file:/usr/include/string.h">string.h</a>&gt;
+#include &lt;<a href="file:/usr/include/stdlib.h">stdlib.h</a>&gt;
+#include &lt;<a href="file:/usr/include/pwd.h">pwd.h</a>&gt;
+#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;
+#include &lt;<a href="file:/usr/include/time.h">time.h</a>&gt;
+#include &lt;<a href="file:/usr/include/utmp.h">utmp.h</a>&gt;
+
+int main(int argc, char *argv[])
+{
+  struct utmp entrada;
+
+  system("echo antes de añadir la entrada:;who");
+
+  entrada.ut_type = USER_PROCESS;
+  entrada.ut_pid = getpid();
+  strcpy(entrada.ut_line, ttyname(0) + strlen("/dev/"));
+  /* sólo correcto para ptys llamadas /dev/tty[pqr][0-9a-z] */
+  strcpy(entrada.ut_id, ttyname(0) + strlen("/dev/tty"));
+  time(&amp;entrada.ut_time);
+  strcpy(entrada.ut_user, getpwuid(getuid())-&gt;pw_name);
+  memset(entrada.ut_host, 0, UT_HOSTSIZE);
+  entrada.ut_addr = 0;
+  setutent();
+  pututline(&amp;entrada);
+
+  system("echo tras añadir la entrada:;who");
+
+  entrada.ut_type = DEAD_PROCESS;
+  memset(entrada.ut_line, 0, UT_LINESIZE);
+  entrada.ut_time = 0;
+  memset(entrada.ut_user, 0, UT_NAMESIZE);
+  setutent();
+  pututline(&amp;entrada);
+
+  system("echo tras borrar la entrada:;who");
+
+  endutent();
+  return 0;
+}
+</pre><a id="lbAH"> </a><h2>FICHEROS</h2><p>
+
+/var/run/utmp<tt>  </tt>datos de los usuarios que están en el
+sistema<br /><br />
+ /var/log/wtmp<tt>  </tt>datos de entradas de usuario
+anteriores<br /><a id="lbAI"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+XPG 2, SVID 2, Linux FSSTND 1.2 <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?5+utmp">utmp</a></b><p>(5)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">EJEMPLO</a></dt>
+
+<dt><a href="#lbAH">FICHEROS</a></dt>
+
+<dt><a href="#lbAI">CONFORME A</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

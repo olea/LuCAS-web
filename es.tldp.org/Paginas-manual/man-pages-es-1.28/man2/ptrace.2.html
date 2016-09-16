@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of PTRACE</title></head><body><p>
+  
+</p><h1>PTRACE</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 7 noviembre 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+ptrace - rastreo de un proceso <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/ptrace.h">sys/ptrace.h</a>&gt;</b><p><b>long int ptrace(enum __ptrace_request</b> <i>petición</i><b>,
+pid_t</b> <i>pid</i><b>, void *</b> <i>direc</i><b>, void *</b>
+<i>datos</i><b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La llamada al sistema <b>ptrace</b> proporciona un medio por el que
+un proceso padre puede observar y controlar la ejecución de un
+proceso hijo y examinar y cambiar su imagen de memoria y registros.
+Se usa principalmente en la implementación de depuración con puntos
+de ruptura y en el rastreo de llamadas al sistema. 
+</p><p>El padre puede inicar un rastreo llamando a <b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2)
+haciendo que el hijo restultante realice un PTRACE_TRACEME, seguido
+(normalmente) por un <b><a href="http://localhost/cgi-bin/man/man2html?2+exec">exec</a></b>(2).
+Alternativamente, el padre puede comenzar a rastrear un proceso
+existente usando PTRACE_ATTACH.</p><p>Mientras está siendo rastreado, el hijo se detendrá cada vez que
+reciba una señal, aun cuando la señal se haya ignorado. (La
+excepción es SIGKILL que tiene su efecto habitual.) El padre será
+informado en su siguiente <b><a href="http://localhost/cgi-bin/man/man2html?2+wait">wait</a></b>(2)
+y puede inspeccionar y modificar el proceso hijo mientras está
+parado. A continuación, el padre puede hacer que el hijo continúe,
+ignorando opcionalmente la señal recibida (o incluso entregando una
+señal distinta en su lugar). Cuando el padre termina de rastrear,
+puede terminar el hijo con PTRACE_KILL o hace que se continúe
+ejecutando en un modo normal sin rastreo mediante
+PTRACE_DETACH.</p><p>El valor del argumento <i>petición</i> determina la acción a
+realizar:</p><dl compact="compact"><dt>PTRACE_TRACEME</dt>
+
+<dd>Indica que este proceso va a ser rastreado por su padre.
+Cualquier señal (excepto SIGKILL) entregada a este proceso hará que
+se pare y su padre será informado mediante <b>wait.</b> También,
+cualquier llamada posterior a <b>exec</b> realizada por este
+proceso hará que se le envíe un SIGTRAP, dando al padre la
+posibilidad de obtener el control antes de que el nuevo programa
+comience su ejecución. Probablemente, un proceso no debería hacer
+esta petición si su padre no está esperando para rastrearlo.
+(<i>pid</i>, <i>direc</i> y <i>datos</i> se ignoran.)</dd>
+</dl><p>La petición anterior la usa sólo el proceso hijo. El resto las
+usa sólo el padre. En las siguientes peticiones, <i>pid</i> indica
+el proceso hijo sobre el que se actuará. Para peticiones distintas
+de PTRACE_KILL, el proceso hijo debe estar parado.</p><dl compact="compact"><dt>PTRACE_PEEKTEXT, PTRACE_PEEKDATA</dt>
+
+<dd>Lee una palabra de la posición <i>direc</i>.</dd>
+
+<dt>PTRACE_PEEKUSER</dt>
+
+<dd>Lee una palabra en el desplazamiento <i>direc</i> del área
+<b>USER</b> del hijo, que contiene los registros y otra información
+sobre el proceso (vea &lt;<a href="file:/usr/include/linux/user.h">linux/user.h</a>&gt; y &lt;<a href="file:/usr/include/sys/user.h">sys/user.h</a>&gt;). La palabra
+se devuelve como resultado de la llamada <b>ptrace</b>.
+Típicamente, el desplazamiento debe está alineado en una frontera
+de palabra, aunque esto podría variar en cada arquitectura.
+(<i>datos</i> se ignora).</dd>
+
+<dt>PTRACE_POKETEXT, PTRACE_POKEDATA</dt>
+
+<dd>Copia una palabra de la posición <i>datos</i> de la memoria del
+padre a la posición <i>direc</i> de la memoria del hijo. Como
+antes, las dos peticiones son actualmente equivalentes.</dd>
+
+<dt>PTRACE_POKEUSER</dt>
+
+<dd>Copia una palabra de la posición <i>datos</i> de la memoria del
+padre al desplazamiento <i>direc</i> en el área <b>USER</b> del
+hijo. Al igual que antes, el desplazamiento debe estar típicamente
+alineado en una frontera de palabra. Para conservar la integridad
+del núcleo, algunas modificaciones al área <b>USER</b> se
+encuentran deshabilitadas.</dd>
+
+<dt>PTRACE_GETREGS, PTRACE_GETFPREGS</dt>
+
+<dd>Copia los registros de propósito general o de punto flotante
+del hijo, respectivamente, a la posición <i>datos</i> del padre.
+Vea &lt;<a href="file:/usr/include/linux/user.h">linux/user.h</a>&gt; para
+obtener información sobre el formato de estos datos. (<i>direc</i>
+se ignora.)</dd>
+
+<dt>PTRACE_SETREGS, PTRACE_SETFPREGS</dt>
+
+<dd>Copia los registros de propósito general o de punto flotante
+del hijo, respectivamente, desde la posición <i>datos</i> del
+padre. Al igual que para PTRACE_POKEUSER, alguna modificaciones de
+los registros de propósito general pueden estar deshabilitadas.
+(<i>direc</i> se ignora.)</dd>
+
+<dt>PTRACE_CONT</dt>
+
+<dd>Reinicia el proceso hijo parado. Si <i>datos</i> no es cero y
+tampoco SIGSTOP se interpreta como una señal que se entregará al
+hijo. En otro caso, no se entrega ninguna señal. Así, por ejemplo,
+el padre puede controlar si una señal enviada al hijo es entregada
+o no. (<i>direc</i> se ignora.)</dd>
+
+<dt>PTRACE_SYSCALL, PTRACE_SINGLESTEP</dt>
+
+<dd>Reinicia el proceso hijo parado al igual que PTRACE_CONT pero
+prepara al hijo para que se pare en la siguiente entrada a o salida
+de una llamda al sistema o tras la ejecución de una única
+intrucción, respectivamente. (Como es usual, el hijo también se
+detendrá al recibir una señal). Desde la perspectiva del padre, el
+hijo aparecerá como si se hubiera detenido al recibir una señal
+SIGTRAP. Por lo que, por ejemplo, para PTRACE_SYSCALL, la idea es
+inspeccionar los argumentos de la llamada al sistema en la primera
+parada, realizar a continuación otra PTRACE_SYSCALL e inspeccionar
+los valores devueltos por la llamada al sistema cuando se detenga
+la segunda vez. (<i>direc</i> se ignora.)</dd>
+
+<dt>PTRACE_KILL</dt>
+
+<dd>Envía al hijo una señal <b>SIGKILL</b> para que termine.
+(<i>direc</i> y <i>datos</i> se ignoran.)</dd>
+
+<dt>PTRACE_ATTACH</dt>
+
+<dd>Ata al proceso especificado en <i>pid</i>, convirtiéndolo en un
+"hijo" rastreado. El hijo se comporta como si hubiera realizado un
+PTRACE_TRACEME. El proceso actual realmente se convierte en el
+padre del proceso hijo para la mayoría de propósitos (por ejemplo,
+recibirá notificación de los eventos del hijo y aparecerá en la
+salida de <b><a href="http://localhost/cgi-bin/man/man2html?1+ps">ps</a></b>(1)
+como padre del hijo), pero un <b><a href="http://localhost/cgi-bin/man/man2html?2+getpid">getpid</a></b>(2)
+por parte del hijo todavía devolverá el pid del padre original. Al
+hijo se le envía un SIGSTOP pero, necesariamente, no tiene por qué
+haberse parado cuando esta llamada haya terminado. Use <b>wait</b>
+para esperar a que el hijo se pare. (<i>direc</i> y <i>datos</i> se
+ignoran.)</dd>
+
+<dt>PTRACE_DETACH</dt>
+
+<dd>Reinicia el hijo parado al igual que PTRACE_CONT pero primero
+lo desata del proceso, deshaciendo el efecto de reparentesco de
+PTRACE_ATTACH y los efectos de PTRACE_TRACEME. Aunque quizás no sea
+intencionado, bajo Linux un proceso rastreado puede ser desatado de
+esta manera sin tener en cuenta qué método se usó para iniciar el
+rastreo. (<i>direc</i> is ignored.)</dd>
+</dl><a id="lbAE"> </a><h2>OBSERVACIONES</h2><p>
+
+Aunque los argumentos de <b>ptrace</b> se interpretan según el
+prototipo dado, GNU libc declara actualmente <b>ptrace</b> como una
+función en la que sólo el argumento <i>petición</i> tiene sentido.
+Esto significa que se pueden omitir los argumentos del final
+innecesarios, aunque al hacerlo así se hace uso de comportamiento
+de <b><a href="http://localhost/cgi-bin/man/man2html?1+gcc">gcc</a>(1)</b>
+sin documentar. 
+</p><p><b><a href="http://localhost/cgi-bin/man/man2html?8+init">init</a></b>(8),
+el proceso con PID 1, no puede ser rastreado.</p><p>La disposición de los contenidos de memoria y del área USER son
+bastante específicos del sistema operativo (y la arquitectura).</p><p>El tamaño de una "palabra" viene determinado por la variante del
+sistema operativo (por ejemplo, para un Linux de 32 bits es de 32
+bits, etc.)</p><p>El rastreo provoca unas pocas diferencias sutiles en la
+semántica de los procesos rastreados. Por ejemplo, si se ata un
+proceso con PTRACE_ATTACH, su padre original ya no puede recibir
+notificaciones mediante <b>wait</b> cuando se detiene y no hay
+forma de que el nuevo padre pueda simular de forma efectiva esta
+notificación.</p><p>Esta página documenta la forma en que funciona actualmente la
+llamada <b>ptrace</b> en Linux. Su comportamiento difiere
+notablemente en otros Unix. En cualquier caso, el uso <b>ptrace</b>
+es altamente específico del sistema operativo (y la
+arquitectura).</p><p>La página de manual de SunOS describe <b>ptrace</b> como "única
+y arcaica", que lo es. La interfaz de depuración basada en el
+sistema de ficheros virtual "proc" presente en Solaris 2 implementa
+un superconjunto de la funcionalidad de <b>ptrace</b> de forma más
+potente y uniforme. <a id="lbAF"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, las peticiones PTRACE_PEEK* devuelven los datos
+solicitados, mientras que las otras peticiones devuelven cero. En
+caso de error, todas las peticiones devuelven -1 y a <i><a href="http://localhost/cgi-bin/man/man2html?3+errno">errno</a></i>(3)
+se le asigna un valor apropiado. Ya que el valor devuelto por una
+petición PTRACE_PEEK* con éxito puede ser -1, el invocador debe
+comprobar <i>errno</i> después de tales peticiones para determinar
+si hubo error o no. <a id="lbAG"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EPERM</b></dt>
+
+<dd>El proceso indicado no puede ser rastreado. Esto podría deberse
+a que el padre no tiene suficientes privilegios. Los procesos que
+no son del root no pueden rastrear procesos a los que no pueden
+enviar señales o programas en ejecución setuid/setgid por razones
+obvias. Alternativamente, puede que el proceso ya se esté
+rastreando o ser el proceso <b>init</b> (pid 1).</dd>
+
+<dt><b>ESRCH</b></dt>
+
+<dd>El proceso especificado no existe o el invocador no lo está
+rastreando actualmente o no está parado (para peticiones que
+necesiten que lo esté).</dd>
+
+<dt><b>EIO</b></dt>
+
+<dd><i>Petición</i> no es válida o se ha intentado leer de o
+escribir en una área inválida de la memoria del padre o del hijo, o
+se ha producido una violación en la alineación de palabra o se ha
+especificado una señal inválida durante una petición de
+reinicio.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>Se ha intentado leer de o escribir en una área inválida de la
+memoria del padre o del hijo, probablemente porque el área no
+estaba asignada o no era accesible. Desafortunadamente, en Linux,
+diferentes versiones de este fallo devolverán EIO o EFAULT de forma
+más o menos arbitraria.</dd>
+</dl><a id="lbAH"> </a><h2>CONFORME A</h2><p>
+
+SVr4, SVID EXT, AT&amp;T, X/OPEN, BSD 4.3 <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+exec">exec</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+wait">wait</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+gdb">gdb</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+strace">strace</a></b>(1)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">OBSERVACIONES</a></dt>
+
+<dt><a href="#lbAF">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

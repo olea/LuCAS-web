@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of REBOOT</title></head><body><p>
+  
+</p><h1>REBOOT</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 24 Septiembre 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+reboot - rearranca o habilita/inhabilita Ctrl-Alt-Supr <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><p>
+
+Para libc4 y libc5 la función de biblioteca y la llamada al sistema
+son idénticas, y desde la versión 2.1.30 del núcleo existen nombres
+simbólicos LINUX_REBOOT_* para las constantes y un cuarto argumento
+para la llamada: 
+</p><p><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/linux/reboot.h">linux/reboot.h</a>&gt;</b></p><p><b>int reboot (int</b> <i>magico</i><b>, int</b>
+<i>otro_magico</i><b>, int</b> <i>flag</i><b>, void
+*</b><i>arg</i><b>);</b></p><p>Bajo glibc se han asignado nombres simbólicos RB_* a algunas de
+las contantes involucradas y la función de biblioteca es un
+envoltorio de 1 argumento de la llamada al sistema de 3
+argumentos:</p><p><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/reboot.h">sys/reboot.h</a>&gt;</b></p><p><b>int reboot (int</b> <i>flag</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La llamada <b>reboot</b> rearranca el sistema o habilita/inhabilita
+la pulsación de rearranque (abreviada CAS, ya que por defecto es
+Ctrl-Alt-Supr; se puede cambiar usando <b><a href="http://localhost/cgi-bin/man/man2html?1+loadkeys">loadkeys</a></b>(1)).
+
+</p><p>Esta llamada al sistema fallará (con EINVAL) a menos que
+<i>magico</i> sea igual a LINUX_REBOOT_MAGIC1 (esto es, 0xfee1dead)
+y <i>otro_magico</i> sea igual a LINUX_REBOOT_MAGIC2 (o sea,
+672274793). Sin embargo, también se permiten como valores de
+<i>otro_magico</i> LINUX_REBOOT_MAGIC2A (esto es, 85072278) desde
+la versión 2.1.17 y LINUX_REBOOT_MAGIC2B (es decir, 369367448)
+desde la versión 2.1.97. (Los valores hexadecimales de estas
+constantes no tienen sentido.) El argumento <i>flag</i> puede tener
+los siguientes valores:</p><dl compact="compact"><dt><b>LINUX_REBOOT_CMD_RESTART</b></dt>
+
+<dd>(RB_AUTOBOOT, 0x1234567). Se muestra el mensaje `Restarting
+system.' y se realiza inmediatamente un rearranque por defecto. Si
+no se precede por una llamada a <b><a href="http://localhost/cgi-bin/man/man2html?2+sync">sync</a></b>(2)
+se perderán datos.</dd>
+
+<dt><b>LINUX_REBOOT_CMD_HALT</b></dt>
+
+<dd>(RB_HALT_SYSTEM, 0xcdef0123; desde la versión 1.1.76). Se
+muestra el mensaje `System halted.' y se detiene el sistema. El
+control se cede al monitor en ROM, si existe alguno. Si no se
+precede por una llamada a <b><a href="http://localhost/cgi-bin/man/man2html?2+sync">sync</a></b>(2)
+se perderán datos.</dd>
+
+<dt><b>LINUX_REBOOT_CMD_POWER_OFF</b></dt>
+
+<dd>(0x4321fedc; desde la versión 2.1.30). Se muestra el mensaje
+`Power down.', se detiene el sistema y se apaga el sistema, si es
+posible. Si no se precede por una llamada a <b><a href="http://localhost/cgi-bin/man/man2html?2+sync">sync</a></b>(2)
+se perderán datos.</dd>
+
+<dt><b>LINUX_REBOOT_CMD_RESTART2</b></dt>
+
+<dd>(0xa1b2c3d4; desde la versión 2.1.30). Se muestra el mensaje
+`Restarting system with command '%s'' y se realiza inmediatamente
+un rearranque (usando la cadena de orden dada en <i>arg</i>). Si no
+se precede por una llamada a <b><a href="http://localhost/cgi-bin/man/man2html?2+sync">sync</a></b>(2)
+se perderán datos.</dd>
+
+<dt><b>LINUX_REBOOT_CMD_CAD_ON</b></dt>
+
+<dd>(RB_ENABLE_CAD, 0x89abcdef). Se habilita la combinación de
+teclas CAS. Esto significa que una pulsación CAS producirá
+inmediatamente la acción asociada a LINUX_REBOOT_CMD_RESTART.</dd>
+
+<dt><b>LINUX_REBOOT_CMD_CAD_OFF</b></dt>
+
+<dd>(RB_DISABLE_CAD, 0). Se inhabilita la combinación de teclas
+CAS. Esto significa que una pulsación CAS producirá el envío de la
+señal SIGINT a init (el proceso 1), y como consecuencia de esto
+este proceso puede decidir una acción apropiada (quizás, matar
+todos los procesos, llamar a sync y reiniciar).</dd>
+</dl><p>Sólo el súperusuario puede utilizar esta función.</p><p>El efecto exacto de las acciones anteriores depende de la
+arquitectura. Para la arquitectura i386, el argumento adicional no
+hace nada por el momento (2.1.122), pero el tipo de rearranque se
+puede determinar mediante argumentos en la línea de órdenes del
+núcleo (`Reboot=...') para que sea bien `en caliente', bien `en
+frio', y bien hardware, bien a través de la BIOS. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, se devuelve 0. En caso de error, se devuelve -1 y
+se pone un valor apropiado en <i>errno</i>. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>EINVAL</b></dt>
+
+<dd>Números mágicos o <i>flag</i> incorrectos.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>Un usuario distinto de root intenta llamar a
+<b>reboot</b>.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><b>reboot</b><p> es específico de Linux y no debería emplearse en
+programas que se pretendan transportables. <a id="lbAH"> </a> 
+</p><h2>FALLOS</h2><p>
+
+En un sistema basado en glibc, los parámetros <i>magico</i> y
+<i>otro_magico</i> no existen. Sólo existe el parámetro
+<i>flag</i>. <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+sync">sync</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+bootparam">bootparam</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+ctrlaltdel">ctrlaltdel</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+halt">halt</a></b>(8),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+reboot">reboot</a></b>(8)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">FALLOS</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

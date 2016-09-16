@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of GETHOSTBYNAME</title></head><body><p>
+  
+</p><h1>GETHOSTBYNAME</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 10 enero 1995<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+gethostbyname, gethostbyaddr, sethostent, endhostent, herror,
+hstrerror - obtienen una entrada de anfitrión de red <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/netdb.h">netdb.h</a>&gt;</b>
+<b>extern int h_errno;</b>
+
+<b>struct hostent *gethostbyname(const char *</b><i>name</i><b>);</b>
+
+<b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;          /* para AF_INET */</b>
+<b>struct hostent *gethostbyaddr(const char *</b><i>addr</i><b>, int</b> <i>len</i><b>, int</b> <i>type</i><b>);</b>
+
+<b>void sethostent(int</b> <i>stayopen</i><b>);</b>
+
+<b>void endhostent(void);</b>
+
+<b>void herror(const char *</b><i>s</i><b>);</b>
+
+<b>const char * hstrerror(int</b> <i>err</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+La función <b>gethostbyname()</b> devuelve una estructura del tipo
+<i>hostent</i> para el anfitrión (host) dado <i>name</i>. Aquí,
+<i>name</i> es ora un nombre de anfitrión, ora una dirección IPv4
+en la notación normal de puntos, ora una dirección IPv6 en la
+notación de dos puntos (y posiblemente de puntos). (Vea la RFC 1884
+para una descripción de las direcciones en IPv6). Si <i>name</i> es
+una dirección IPv4 o IPv6, no se realiza ninguna búsqueda y
+<b>gethostbyname</b>() simplemente copia <i>name</i> en el campo
+<i>h_name</i> y su equivalente <i>struct in_addr</i> en el campo
+<i>h_addr_list[0]</i> de la estructura <i>hostent</i> devuelta. Si
+<i>name</i> no termina con un punto y la variable de ambiente
+<b>HOSTALIASES</b> está asignada, se buscará primero <i>name</i> en
+el fichero de alias señalado por <b>HOSTALIASES</b>. (Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+hostname">hostname</a></b>(7)
+para saber cómo es el formato del fichero.) Se buscan el dominio
+actual y sus ancestros a menos que <i>name</i> termine en punto. 
+</p><p>La función <b>gethostbyaddr()</b> devuelve una estructura del
+tipo <i>hostent</i> para la dirección de anfitrión dada <i>addr</i>
+de longitud <i>len</i> y de tipo <i>type</i>. El único tipo de
+dirección válido actualmente es AF_INET.</p><p>La función <b>sethostent()</b> especifica, si <i>stayopen</i> es
+true (1), que se debería emplear un conector (socket) TCP para las
+interrogaciones al servidor de nombres y que la conexión debería
+permanecer abierta durante sucesivas preguntas. De otro modo, las
+peticiones al servidor de nombres utilizarán datagramas UDP.</p><p>La función <b>endhostent()</b> termina el uso de una conexión
+TCP para las peticiones al servidor de nombres.</p><p>La (obsoleta) función <b>herror()</b> muestra en stderr un
+mensaje de error asociado con el valor actual de
+<i>h_errno</i>.</p><p>La (obsoleta) función <b>hstrerror()</b> toma un número de error
+(habitualmente <i>h_errno</i>) y devuelve la cadena del mensaje
+correspondiente.</p><p>Las preguntas al servidor de nombres llevadas a cabo por
+<b>gethostbyname()</b> y <b>gethostbyaddr()</b> usan una
+combinación de uno o todos los servidores de nombres <b><a href="http://localhost/cgi-bin/man/man2html?8+named">named</a></b>(8),
+una declaración en <i>/etc/hosts</i>, y el Servicio de Información
+de Red (NIS, antes Páginas Amarillas, YP), dependiendo de los
+contenidos de la línea <i>order</i> en <i>/etc/host.conf</i>. (Vea
+<b>resolv+</b>(8)). La acción predeterminada es preguntar a <b><a href="http://localhost/cgi-bin/man/man2html?8+named">named</a></b>(8),
+seguido por <i>/etc/hosts</i>.</p><p>La estructura <i>hostent</i> se define en <i>&lt;<a href="file:/usr/include/netdb.h">netdb.h</a>&gt;</i> como
+sigue:</p><dl compact="compact"><dd>
+<pre>
+struct hostent {
+        char    *h_name;        /* nombre oficial del anfitrión */
+        char    **h_aliases;    /* lista de alias */
+        int     h_addrtype;     /* tipo dirección anfitrión */
+        int     h_length;       /* longitud de la dirección */
+        char    **h_addr_list;  /* lista de direcciones */
+}
+#define h_addr  h_addr_list[0]  /* por compatibilidad atrás */
+
+</pre>
+</dd>
+</dl><p>Los miembros de la estructura <i>hostent</i> son:</p><dl compact="compact"><dt><i>h_name</i></dt>
+
+<dd>El nombre oficial de un anfitrión.</dd>
+
+<dt><i>h_aliases</i></dt>
+
+<dd>Una cadena terminada en el carácter nulo de los nombres
+alternativos para el anfitrión.</dd>
+
+<dt><i>h_addrtype</i></dt>
+
+<dd>El tipo de dirección; siempre AF_INET de momento.</dd>
+
+<dt><i>h_length</i></dt>
+
+<dd>La longitud de la dirección en bytes.</dd>
+
+<dt><i>h_addr_list</i></dt>
+
+<dd>Una cadena terminada en nulo de direcciones de red para el
+anfitrión en orden de bytes de red.</dd>
+
+<dt><i>h_addr</i></dt>
+
+<dd>La primera dirección en <i>h_addr_list</i> por compatibilidad
+hacia atrás.</dd>
+</dl><a id="lbAE"> </a><h2>VALOR DEVUELTO</h2><p>
+
+Las funciones <b>gethostbyname()</b> y <b>gethostbyaddr()</b>
+devuelven la estructura <i>hostent</i>, o un puntero NULL si ha
+ocurrido un error. En caso de error, la variable <i>h_errno</i>
+contiene un número de error. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+La variable <i>h_errno</i> puede tener los siguientes valores: 
+</p><dl compact="compact"><dt><b>HOST_NOT_FOUND</b></dt>
+
+<dd>El anfitrión especificado es desconocido.</dd>
+
+<dt><b>NO_ADDRESS</b> o <b>NO_DATA</b></dt>
+
+<dd>El nombre pedido es válido pero no tiene una dirrección
+IP.</dd>
+
+<dt><b>NO_RECOVERY</b></dt>
+
+<dd>Ha ocurrido un error no recuperable del servidor de
+nombres.</dd>
+
+<dt><b>TRY_AGAIN</b></dt>
+
+<dd>Ha ocurrido un error temporal sobre un servidor de nombres con
+autoridad. Intente luego más tarde.</dd>
+</dl><a id="lbAG"> </a><h2>FICHEROS</h2><dl compact="compact"><dt><i>/etc/host.conf</i></dt>
+
+<dd>fichero de configuración del resolvedor</dd>
+
+<dt><i>/etc/hosts</i></dt>
+
+<dd>fichero de base de datos de anfitriones</dd>
+</dl><a id="lbAH"> </a><h2>CONFORME A</h2><p>
+
+BSD 4.3. SUS-v2 declara el parámetro <i>len</i> como del tipo
+<i>size_t</i>. <a id="lbAI"> </a> 
+</p><h2>RUMORES</h2><p>
+
+La futura glibc2.2 seguirá SUS-v2. <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+resolver">resolver</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+hosts">hosts</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+hostname">hostname</a></b>(7),
+<b>resolv+</b>(8), <b><a href="http://localhost/cgi-bin/man/man2html?8+named">named</a></b>(8)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">FICHEROS</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">RUMORES</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

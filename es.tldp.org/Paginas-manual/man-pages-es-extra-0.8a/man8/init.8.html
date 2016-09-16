@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of INIT</title></head><body><p>
+  
+</p><h1>INIT</h1><p>
+
+Section: Manual del Administrador de Sistemas (8)<br />
+Updated: 9 Marzo 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+init, telinit - control de inicialización de procesos <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>/sbin/init</b><p> [ <b>0123456Ss</b> ] <br /><b>/sbin/telinit</b> [ <b>-t sec</b> ] [ <b>0123456sSQqabcUu</b> ]
+<a id="lbAD"> </a> 
+</p><h2>DESCRIPCIÓN</h2><a id="lbAE"> </a><h3>Init</h3><b>Init</b><p> es el padre de todos los procesos. Su papel primario es
+crear procesos a partir de un guión guardado en el fichero
+<b>/etc/inittab</b> (véase <i><a href="http://localhost/cgi-bin/man/man2html?5+inittab">inittab</a></i>(5)).
+Este fichero normalmente tiene entradas que harán que se levante
+<b>getty</b>s en cada línea en que los usuarios puedan conectarse.
+También controla procesos autónomos requeridos por un sistema
+particular. 
+</p><p><a id="lbAF"> </a></p><h2>NIVELES DE EJECUCIÓN (RUNLEVELS)</h2><p>
+
+Un <i>nivel de ejecución</i> es una configuración de software del
+sistema que permite existir sólo a un grupo de procesos
+seleccionado. Los procesos levantados por <b>init</b> para cada uno
+de estos niveles de ejecución se definen en el fichero
+<b>/etc/inittab</b>. <b>Init</b> puede estar en uno de los ocho
+niveles de ejecución: <b>0-6</b> y <b>S</b> o <b>s</b>. El cambio
+de nivel de ejecución se hace mediante un usuario con privilegio
+que ejecute <b>telinit</b>, que envía las señales apropiadas a
+<b>init</b>, diciéndole a qué nivel de ejecuación tiene que
+cambiar. 
+</p><p>Los Niveles de Ejecución <b>0</b>, <b>1</b>, y <b>6</b> están
+reservados. El Nivel de Ejecución 0 es usa para detener el sistema,
+el Nivel de Ejecución 6 se utiliza para reiniciar el sistema y el
+Nivel de Ejecución 1 se usa para llevar al sistema al modo
+monousuario.El Nivel de Ejecución <b>S</b> no significa que se use
+directamente, pero la mayoría de los guiones se ejecutan cuando se
+entra al Nivel de Ejecución 1. Paraa más información sobre esto,
+vea las páginas del manual de <b><a href="http://localhost/cgi-bin/man/man2html?8+shutdown">shutdown</a></b>(8)
+y <b><a href="http://localhost/cgi-bin/man/man2html?5+inittab">inittab</a></b>(5).</p><p>Los niveles 7-9 también son válidos, aunque realmente no están
+documantados. Esto es porque las variantes Unix tradicionales no
+los usan. En caso de que sea curioso, los niveles de ejecución
+<i>S</i> y <i>s</i> ason de hecho el mismo. Internamente se les
+renombra para el mismo nivel de ejecución. re in fact the same.
+Internally they are aliases for the same runlevel - this is just a
+leftover from the systems the author used to use when writing
+sysvinit.</p><p><a id="lbAG"> </a></p><h2>CARGA</h2><p>
+
+Tras llamar a <b>init</b> como el último paso de la secuencia de
+carga del núcleo, busca el fichero <b>/etc/inittab</b> para ver si
+hay una entrada del tipo <b>initdefault</b> (véase <i><a href="http://localhost/cgi-bin/man/man2html?5+inittab">inittab</a></i>(5)).
+La entrada <b>initdefault</b> determina el nivel de ejecución
+inicial del sistema. Si no está esa entrada (o no existe
+<b>/etc/inittab</b> ), se debe introducir un nivel de ejecución en
+la consola del sistema 
+</p><p>El nivel de ejecución <b>S</b> o <b>s</b> lleva al sistema al
+modo monousuario y no requiere un fichero <b>/etc/initttab</b> . En
+modo monousuario, se llama a <b>/sbin/sulogin</b> en
+<b>/dev/console</b>.</p><p>Cuando se entra en modo monusuario, <b>init</b> lee el estado
+<i><a href="http://localhost/cgi-bin/man/man2html?2+ioctl">ioctl</a></i>(2)
+de <b>/etc/ioctl.save</b>. Si no existe este fichero, <b>init</b>
+inicializa la línea a <b>9600 baud</b> y con valores <b>CLOCAL</b>.
+Cuando <b>init</b> deja el modo monousuario, guarda los valores
+<i>ioctl</i> de la consola en este fichero para que se pueda usar
+en la siguiente sesión monousuario.</p><p>Cuando se entra por primera vez en un modo multiusuario,
+<b>init</b> realiza las entradas <b>boot</b> y <b>bootwait</b> para
+permitir que se monten los sistemas de ficheros antes de que los
+usuarios se presenten al sistema. Entonces se procesan todas las
+entradas para este nivel.</p><p>Cuando inicia un nuevo proceso, <b>init</b> primero verifica si
+existe el fichero <i>/etc/initscript</i>. Si existe, usa este
+script para iniciar el proceso.</p><p>Cada vez que un hijo termina, <b>init</b> registra el hecho y la
+razón de su muerte en<br />
+ <b>/var/run/utmp</b> y <b>/var/log/wtmp</b>, suponiendo  que estos ficheros existen.</p><p><a id="lbAH"> </a></p><h2>CAMBIO DE NIVEL DE EJECUCIÓN</h2><p>
+
+Tras haber lanzado todos los procesos especificados, <b>init</b>
+espera a que alguno de sus procesos descendientes muera, una señal
+de fallo de alimentación o hsata que se le indique por
+<b>telinit</b> que cambie el nivel de ejecución del sisema. Cuando
+alguna de las tres condiciones anteriores ocurre, re-examina el
+fichero <b>/etc/inittab</b>. Se pueden añadir nuevas entradas a
+este fichero en cualquier momento. Sin embargo, <b>init</b> aun
+espera a que alguna de las tres condiciones anteriores suceda. Para
+proporcionar un respuesta inmediata, <b>telinit Q</b> o el mandato
+<b>q</b> puede levantar <b>init</b> para que re-examine el fichero
+<b>/etc/inittab</b>. 
+</p><p>Si <b>init</b> no está en modo monousuario una señal de fallo de
+alimentación, se llaman las entradas especiales powerfail.</p><p>Cuando se lesolicita a <b>init</b> que cambie el nivel, envía la
+señal de aviso <font size="-1"><b>SIGTERM</b></font> a todos los
+procesos que no están definidos en el nuevo nivel de ejecución.
+Espera 5 segundos antes de forzar la terminación de estos procesos
+mediante la señal <font size="-1"><b>SIGKILL</b></font>. Observe
+que <b>init</b> supone que todos estos procesos (y sus
+descendientes) permanecen en el mismo grupo de procesos que
+<b>init</b> creó originalmente para ellos. Si cualquier proceso
+cambia la afiliación de grupo de proceso no recibirá estas señales.
+Tales procesos necesitan ser terminados de forma separada. <a id="lbAI"> </a></p><h2>TELINIT</h2><b>/sbin/telinit</b><p> está enlazado con <b>/sbin/init</b>. Toma un
+argumento de un solo carácter y señala a <b>init</b> para realizar
+la acción apropiada. Los siguientes argumetos sirven como
+directivas para <b>telinit</b>: 
+</p><dl compact="compact"><dt><b>0</b>,<b>1</b>,<b>2</b>,<b>3</b>,<b>4</b>,<b>5</b> o
+<b>6</b></dt>
+
+<dd>indica a <b>init</b> que cambie al nivel de ejecución
+especificado.</dd>
+
+<dt><b>a</b>,<b>b</b>,<b>c</b></dt>
+
+<dd>indica a <b>init</b> que procese sólo las entradas del fichero
+<b>/etc/inittab</b> que tengan nivel de ejecución <b>a</b>,<b>b</b>
+o <b>c</b>.</dd>
+
+<dt><b>Q</b> o <b>q</b></dt>
+
+<dd>indica a <b>init</b> que re-examine el fichero
+<b>/etc/inittab</b>.</dd>
+
+<dt><b>S</b> o <b>s</b></dt>
+
+<dd>indica a <b>init</b> que cambie a modo monousuario.</dd>
+
+<dt><b>U</b> or <b>u</b></dt>
+
+<dd>indica a <b>init</b> que reejecute él mismo (guardando el
+estado). No re-examining el fichero <b>/etc/inittab</b>. El nivel
+de ejecución debería ser uno de <b>Ss12345</b>, en otro caso la
+solicitud sería ignorada silenciosamente.</dd>
+</dl><p><b>telinit</b> ptambién puede decir a <b>init</b> cuanto
+esperará entre los envíos a los procesos de las señales SIGTERM y
+SIGKILL. El valor por defecto es is 5 segundos, pero se puede
+cambiar con la opción <b>-t sec</b>.</p><p><b>telinit</b> sólo se puede llamar por usuarios con los
+privilegios apropiados.</p><p>El binario <b>init</b> comprueba si es <b>init</b> o
+<b>telinit</b> mirando a su <i>id de proceso</i>; el id del proceso
+<b>init</b> real es siempre <b>1</b>. De esto podemos concluir que
+en lugar de llamar a <b>telinit</b> se puede usar <b>init</b> en su
+lugar como abreviatura. <a id="lbAJ"> </a></p><h2>ENTORNO</h2><b>Init</b><p> fija las siguientes variables de entorno para todos sus
+hijos: 
+</p><dl compact="compact"><dt><b>PATH</b></dt>
+
+<dd><i>/usr/local/sbin:/sbin:/bin:/usr/sbin:/usr/bin</i></dd>
+
+<dt><b>INIT_VERSION</b></dt>
+
+<dd>Como el nombre dice. Útil para determinar si un guión corre
+directamente de <b>init</b>.</dd>
+
+<dt><b>RUNLEVEL</b></dt>
+
+<dd>El nivel actual de ejecución del sistema.</dd>
+
+<dt><b>PREVLEVEL</b></dt>
+
+<dd>El nivel de ejecución previo (útil tras un cambio de
+nivel).</dd>
+
+<dt><b>CONSOLE</b></dt>
+
+<dd>La consola del sistema. Esto realmente es heredado del núcleo;
+sin embargo si no está fijado <b>init</b> lo pondrá como
+<b>/dev/console</b> por defecto.</dd>
+</dl><a id="lbAK"> </a><h2>BANDERAS DE CARGA</h2><p>
+
+Es posible pasar un número de banderas a <b>init</b> desde el
+monitor de arranque (v.g. LILO). <b>Init</b> acepta las siguientes
+banderas: 
+</p><dl compact="compact"><dt><b>S, single</b></dt>
+
+<dd>Arranque en modo monousuario. En este modo <i>/etc/inittab</i>
+se examina y los guiones de carga rc normalmente se ejecutan antes
+de que la shell del modo monousuario se inicie.</dd>
+</dl><dl compact="compact"><dt><b>1-5</b></dt>
+
+<dd>Nivel de ejecución en el que arrancar.</dd>
+</dl><dl compact="compact"><dt><b>-b, emergency</b></dt>
+
+<dd>Carga directamente en una shell monousuario sin ejecutar
+cualquier otro guion de inicio.</dd>
+</dl><p><a id="lbAL"> </a></p><h2>INTERFAZ</h2><p>
+
+Init escucha en un <i>fifo</i> en /dev, <i>/dev/initctl</i>, los
+mensajes. <b>Telinit</b> usa esto para comunicar con init. La
+interfaz no está muy bien documentada o acabada. Quienes estén
+interesados debería estudiar el fichero <i>initreq.h</i> del
+subdirectorio <i>src/</i> del código fuente de <br />
+ <b>init</b> . <a id="lbAM"> </a> 
+</p><h2>SEÑALES</h2><p>
+
+Init reacciona ante diversas señales: 
+</p><dl compact="compact"><dt><b>SIGHUP</b></dt>
+
+<dd>Init busca <i>/etc/initrunlvl</i> y <i>/var/log/initrunlvl.</i>
+Si uno de estos ficheros existe y contiene un nivel de ejecución
+ASCII, init cambia al nuevo nivel de ejecución. <i>¡Esto es por
+compatibilidad anterior sólo!</i> . En el cso normal (el fichero no
+existe) init se comporta como cuando se ejecuta <b>telinit
+q</b>.</dd>
+</dl><dl compact="compact"><dt><b>SIGUSR1</b></dt>
+
+<dd>Al recibir esta señal, init cierra y reabre su fifo de de
+control <b>/dev/initctl</b>. Ess útil para los guiones de arranque
+cuando se vuelve a montar /dev.</dd>
+
+<dt><b>SIGINT</b></dt>
+
+<dd>Normalmente el núcleo envía esta señal a init cuando se pulsa
+CTRL-ALT-SUPR. Esto activa la acción <i>ctrlaltdel</i>.</dd>
+
+<dt><b>SIGWINCH</b></dt>
+
+<dd>El núcleo envía esta señal cuado se pulsa la tecla
+<i>KeyboardSignal</i>. Activa la acción <i>kbrequest</i>.</dd>
+</dl><a id="lbAN"> </a><h2>CONFORME A</h2><b>Init</b><p> es compatible con el init System V init. Funciona junto
+a los guiones de lso directorios <i>/etc/init.d</i> y
+<i>/etc/rc{runlevel}.d</i>. Si su sistema usa esta convención,
+debería haber un fichero <i>README</i> en el directorio
+<i>/etc/init.d</i> que explica como funcionan estos guiones. <a id="lbAO"> </a> 
+</p><h2>FICHEROS</h2><pre>
+/etc/inittab
+/etc/initscript
+/dev/console
+/etc/ioctl.save
+/var/run/utmp
+/var/log/wtmp
+/dev/initctl
+</pre><a id="lbAP"> </a><h2>ADVERTENCIAS</h2><b>Init</b><p> supone que procesos y descendientes de procesos
+permanecen en el mismo grupo de procesos que se creó originalmente
+para ellos. Si los procesos cambian su grupo <b>init</b> no puede
+matarlos y v.d. puede acabar con dos procesos leyendo de una línea
+del terminal. <a id="lbAQ"> </a> 
+</p><h2>DIAGNÓSTICOS</h2><p>
+
+Si <b>init</b> encuantra que está levantando continuamente una
+entrada, más de 10 veces en dos minutos, supondrá que es un error
+en la cedena del mandato, genera un mensaje de error en la consola
+del sistema y rehusa levantar esta entrada hasta que hayan pasado 5
+minutos o recibas una señal. Esto no previene de que se coma los
+recursos del sistema cuando alguien comete un error tipográfico en
+el fichero <b>/etc/inittab</b> o en el programa para el que se
+elimina la entrada. <a id="lbAR"> </a> 
+</p><h2>AUTOR</h2><p>
+
+Miquel van Smoorenburg (<a href="mailto:miquels@cistron.nl">miquels@cistron.nl</a>), página de
+manual inicial por Michael Haardt (<a href="mailto:u31b3hs@pool.informatik.rwth-aachen.de">u31b3hs@pool.informatik.rwth-aachen.de</a>).
+<a id="lbAS"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+getty">getty</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+login">login</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+sh">sh</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?1+who">who</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?8+shutdown">shutdown</a>(8),</b>
+<b><a href="http://localhost/cgi-bin/man/man2html?1+kill">kill</a></b>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+inittab">inittab</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+initscript">initscript</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+utmp">utmp</a></b>(5)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAE">Init</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAF">NIVELES DE EJECUCIÓN (RUNLEVELS)</a></dt>
+
+<dt><a href="#lbAG">CARGA</a></dt>
+
+<dt><a href="#lbAH">CAMBIO DE NIVEL DE EJECUCIÓN</a></dt>
+
+<dt><a href="#lbAI">TELINIT</a></dt>
+
+<dt><a href="#lbAJ">ENTORNO</a></dt>
+
+<dt><a href="#lbAK">BANDERAS DE CARGA</a></dt>
+
+<dt><a href="#lbAL">INTERFAZ</a></dt>
+
+<dt><a href="#lbAM">SEÑALES</a></dt>
+
+<dt><a href="#lbAN">CONFORME A</a></dt>
+
+<dt><a href="#lbAO">FICHEROS</a></dt>
+
+<dt><a href="#lbAP">ADVERTENCIAS</a></dt>
+
+<dt><a href="#lbAQ">DIAGNÓSTICOS</a></dt>
+
+<dt><a href="#lbAR">AUTOR</a></dt>
+
+<dt><a href="#lbAS">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:08 GMT, January 21, 2005
+</p></body></html>

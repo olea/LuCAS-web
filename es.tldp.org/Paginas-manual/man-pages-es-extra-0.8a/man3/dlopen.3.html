@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of DLOPEN</title></head><body><p>
+  
+</p><h1>DLOPEN</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 16 Mayo 1995<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+dlclose, dlerror, dlopen, dlsym - Interfaz de programación con el
+cargador de enlaces dinámicos. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/dlfcn.h">dlfcn.h</a>&gt;</b><p><b>void *dlopen (const char *</b><i>nomfich</i><b>, int</b>
+<i>indicador</i><b>);</b><br /><b>const char *dlerror(void);</b><br /><b>void *dlsym(void *manejador</b><i>, char
+*símbolo</i><b>);</b><br /><b>int dlclose (void *manejador</b><i>);</i></p><p>Símbolos especiales: <b>_init</b>, <b>_fini</b>. <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>dlopen</b><p> carga una biblioteca dinámica desde el fichero
+nombrado por la cadena que termina con el valor nulo <i>nomfich</i>
+y devuelve un "manejador" opaco para la biblioteca dinámica. Si
+<i>nomfich</i> no es un camino absoluto (esto es, no comienza con
+"/"), entonces el fichero se busca en los siguientes lugares: 
+</p><dl compact="compact"><dd>
+<p>Una lista de directorios separados por dos puntos en la variable
+de entorno de usuario <b>LD_LIBRARY</b>.</p>
+
+<p>La lista de bibliotecas especificada en
+<i>/etc/ld.so.cache</i>.</p>
+
+<p><i>/usr/lib</i>, seguida de <i>/lib</i>.</p>
+</dd>
+</dl><p>Si <i>nomfich</i> es un apuntador nulo (NULL), entonces el
+manejador devuelto corresponde al programa principal.</p><p>Las referencias externas en la biblioteca se resuelven usando
+las bibliotecas en la lista de dependencias de la misma, y
+cualquier otra biblioteca abierta previamenta con el indicador
+<b>RTLD_GLOBAL</b>. Si el ejecutable fue enlazado con el indicador
+"-rdynamic", entonces los símbolos globales en dicho ejecutable
+también se usarán para resolver referencias en una bibliotaca
+cargada dinámicamente.</p><p><i>indicador</i> debe ser o bien <b>RTLD_LAZY</b>, significando
+que resuelva los símbolos no definidos según se vaya ejecutando
+código de la biblioteca dinámica, o bien <b>RTLD_NOW</b>,
+significando que deben resolverse todos los símbolos sin definir
+antes de que <b>dlopen</b> vuelva, y que falle si esto no se puede
+hacer. Opcionalmente, puede aplicarse la operación "o" entre
+<b>RTLD_GLOBAL</b> e <i>indicador,</i> en cuyo caso los símbolos
+externos definidos en la biblioteca estarán disponibles a otras
+bibliotecas cargadas posteriormente.</p><p>Si la biblioteca exporta una rutina llamada <b>_init</b>,
+entonces ese código se ejecuta antes de que dlopen vuelva. Si la
+misma biblioteca se caga dos veces con <b>dlopen()</b>, se devuelve
+el mismo manejador de fichero. La biblioteca dl mantiene contadores
+de los enlaces para manejadores dinámicos de fichero, así que una
+biblioteca dinámica no se desaloja hasta que <b>dlclose</b> ha sido
+llamado sobre ella tantas veces como <b>dlopen</b> se ha realizado
+en ella.</p><p>Si <b>dlopen</b> falla por alguna razón, devuelve el valor nulo
+NULL. Puede obtenerse una cadena legible describiendo el error más
+reciente ocurrido desde cualquiera de las rutinas dl (dlopen, dlsym
+o dlclose) mediante <b>dlerror()</b>. <b>dlerror</b> devuelve NULL
+si no han ocurrido errores desde la iniciación o desde que se llamó
+la última vez. (Llamando a <b>dlerror()</b> dos veces consecutivas,
+siempre se obtendrá el NULL procedente de la segunda llamada).</p><p><b>dlsym</b> toma un "manejador" de una biblioteca dinámica
+devuelto por dlopen y el nombre del símbolo terminado en nulo,
+devolviendo la dirección donde ese símbolo está cargado. Si no se
+encuentra el símbolo, <b>dlsym</b> devuelve NULL; de todas formas,
+el modo correcto de comprobar un error de <b>dlsym</b> es guardar
+el resultado de <b>dlerror</b> en una variable, y entonces revisar
+si el valor guardado no es nulo. Esto es así porque el valor del
+símbolo realmente podría ser nulo. También es necesario guardar los
+resultados de <b>dlerror</b> en una variable porque si se llama
+otra vez a <b>dlerror</b> devolverá nulo.</p><p><b>dlclose</b> decrementa el contador de referencias al
+manejador de la biblioteca dinámica <i>manejador</i>. Si el
+contador de referencias llega a cero y ninguna otra biblioteca
+cargada usa símbolos en ella, entonces se descarga la bilbioteca
+dinámica. Si la biblioteca dinámica exporta una rutina llamada
+<b>_fini</b>, entonces esa rutina se llama justo antes de que la
+biblioteca se descargue. <a id="lbAE"> </a></p><h2>EJEMPLOS</h2><b>Cargar la bibloteca matemática, e imprimir el coseno de 2.0:</b><dl compact="compact"><dd>
+<pre>
+#include &lt;<a href="file:/usr/include/dlfcn.h">dlfcn.h</a>&gt;
+
+int main(int argc, char **argv) {
+    void *manejador = dlopen ("/lib/libm.so", RTLD_LAZY);
+    double (*cosine)(double) = dlsym(manejador, "cos");
+    printf ("%f\n", (*cosine)(2.0));
+    dlclose(manejador);
+}
+</pre>
+
+<p>Si este programa estuviera en un fichero llamado "cucu.c", se
+construiría el programa con el comando siguiente:</p>
+
+<dl compact="compact"><dd>
+<p>gcc -rdynamic -o cucu cucu.c -ldl</p>
+</dd>
+</dl></dd>
+</dl><p><b>Hacer lo mismo, pero comprobando los errores a cada
+paso:</b></p><dl compact="compact"><dd>
+<pre>
+#include &lt;<a href="file:/usr/include/stdio.h">stdio.h</a>&gt;
+#include &lt;<a href="file:/usr/include/dlfcn.h">dlfcn.h</a>&gt;
+
+int main(int argc, char **argv) {
+    void *manejador;
+    double (*cosine)(double);
+    char *error;
+
+    manejador = dlopen ("/lib/libm.so", RTLD_LAZY);
+    if (!manejador) {
+        fputs (dlerror(), stderr);
+        <a href="http://localhost/cgi-bin/man/man2html?1+exit">exit</a>(1);
+    }
+
+    cosine = dlsym(manejador, "cos");
+    if ((error = dlerror()) != NULL)  {
+        fputs(error, stderr);
+        <a href="http://localhost/cgi-bin/man/man2html?1+exit">exit</a>(1);
+    }
+
+    printf ("%f\n", (*cosine)(2.0));
+    dlclose(manejador);
+}
+</pre>
+</dd>
+</dl><a id="lbAF"> </a><h2>RECONOCIMIENTOS</h2><p>
+
+La interfaz estándar dlopen proviene de Solaris. La implementación
+Linux de dlopen en principio fue escrita por Eric Youngdale con
+ayuda de Mitch D'Souza, David Engel, Hongjiu Lu, Andreas Schwab y
+otros. La página de manual la escribió Adam Richter. <a id="lbAG"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+ld">ld</a>(1)</b><p>,
+<b><a href="http://localhost/cgi-bin/man/man2html?8+ld.so">ld.so</a>(8)</b>,
+<b><a href="http://localhost/cgi-bin/man/man2html?8+ldconfig">ldconfig</a>(8)</b>,
+<b><a href="http://localhost/cgi-bin/man/man2html?1+ldd">ldd</a>(1)</b>,
+<b>ld.so.info</b>. 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">EJEMPLOS</a></dt>
+
+<dt><a href="#lbAF">RECONOCIMIENTOS</a></dt>
+
+<dt><a href="#lbAG">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 20:28:07 GMT, January 21, 2005
+</p></body></html>

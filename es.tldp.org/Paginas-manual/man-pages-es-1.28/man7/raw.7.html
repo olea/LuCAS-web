@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RAW</title></head><body><p>
+  
+</p><h1>RAW</h1><p>
+
+Section: Manual del Programador de Linux (7)<br />
+Updated: 2 octubre 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+raw, SOCK_RAW - Conectores directos (raw) IPv4 de Linux <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/netinet/in.h">netinet/in.h</a>&gt;</b><br /><b>raw_socket = socket(PF_INET, SOCK_RAW, int</b><i>protocol</i><b>);</b><p><a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Los conectores directos permiten implementar nuevos protocolos IPv4
+en el espacio de usuario. Un conector directo recibe o envía el
+datagrama crudo sin incluir cabeceras del nivel de enlace. 
+</p><p>La capa IPv4 genera una cabecera IP cuando se envía un paquete,
+a menos que se active la opción <b>IP_HDRINCL</b> en el conector.
+Cuando se activa, el paquete debe contener una cabecera IP. En la
+recepción, la cabecera IP siempre está incluida en el paquete.</p><p>Sólo los procesos con un identificador de usuario efectivo de 0
+o la capacidad <b>CAP_NET_RAW</b> pueden abrir conectores
+directos.</p><p>Todos los paquetes o errores cuyo protocolo coinciden con el
+número <i>protocol</i> especificado por el conector directo, se
+pasan a este conector. Para una lista de los protocolos permitidos
+vea los números asignados en RFC1700 y <b><a href="http://localhost/cgi-bin/man/man2html?3+getprotobyname">getprotobyname</a></b>(3).</p><p>Un protocolo <b>IPPROTO_RAW</b> implica que <b>IP_HDRINCL</b>
+está activa y recibe todos los protocolos IP. El envío no está
+permitido.</p><table border="1"><tr valign="top"><td align="center" colspan="2">Campos de cabecera IP modificados en
+el envío por IP_HDRINCL<br /></td>
+</tr><tr valign="top"><td>Suma de comprobación IP</td>
+<td>Siempre se rellena.<br /></td>
+</tr><tr valign="top"><td>Dirección fuente</td>
+<td>Se rellena cuando es cero.<br /></td>
+</tr><tr valign="top"><td>Identificador del paquete</td>
+<td>Se rellena cuando es cero.<br /></td>
+</tr><tr valign="top"><td>Longitud total</td>
+<td>Siempre se rellena.<br /></td>
+</tr></table><p>Si se especifica <b>IP_HDRINCL</b> y la cabecera IP tiene una
+dirección de destino distinta de cero, la dirección de destino del
+conector se utiliza para enrutar el paquete. Cuando se especifica
+<b>MSG_DONTROUTE</b>, la dirección de destino debe referirse a una
+interfaz local, de lo contrario, se realiza una búsqueda en la
+tabla de enrutamiento, aunque se ignoran las rutas que se dirigen a
+enrutadores.</p><p>Si no se activa <b>IP_HDRINCL</b>, se pueden configurar las
+opciones de la cabecera IP de los conectores directos con <b><a href="http://localhost/cgi-bin/man/man2html?2+setsockopt">setsockopt</a></b>(2).
+Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7)
+para más información.</p><p>En Linux 2.2 todas las opciones y campos de las cabeceras IP se
+pueden configurar usando las opciones de los conectores IP. Esto
+significa que los conectores directos son usualmente necesarios
+sólo para protocolos nuevos o protocolos que no tienen una interfaz
+de usuario (como ICMP).</p><p>Cuando se recibe un paquete, se pasa a cualquier conector
+directo que haya sido asociado a su protocolo antes de que sea
+pasado al manejador de cualquier otro protocolo (por ejemplo, los
+módulos de protocolo del núcleo).</p><p><a id="lbAE"> </a></p><h2>FORMATO DE LAS DIRECCIONES</h2><p>
+
+Los conectores directos usan la estructura de direcciones estándar
+<b>sockaddr_in</b> definida en <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7). El
+campo <b>sin_port</b> se podría usar para especificar el número de
+protocolo IP, pero en Linux 2.2 se ignora al enviar y siempre
+debería valer 0 (vea FALLOS). Para los paquetes de entrada, a
+<b>sin_port</b> se le asigna el protocolo del paquete. Vea el
+fichero cabecera <b>&lt;<a href="file:/usr/include/netinet/in.h">netinet/in.h</a>&gt;</b> para
+protocolos IP válidos. 
+</p><p><a id="lbAF"> </a></p><h2>OPCIONES DE LOS CONECTORES</h2><p>
+
+Las opciones de los conectores directos se pueden configurar con
+<b><a href="http://localhost/cgi-bin/man/man2html?2+setsockopt">setsockopt</a></b>(2)
+y leer con <b><a href="http://localhost/cgi-bin/man/man2html?2+getsockopt">getsockopt</a></b>(2),
+pasando la opción de familia <i>SOL_RAW</i>. 
+</p><dl compact="compact"><dt><b>ICMP_FILTER</b></dt>
+
+<dd>Activa un filtro especial para los conectores directos
+asociados al protocolo <b>IPPROTO_ICMP</b>. El valor tiene un bit
+activo para cada tipo de mensaje ICMP que debe filtrarse. Por
+defecto, no se filtra ningún mensaje ICMP.</dd>
+</dl><p>Además, se soportan todas las opciones <b>SOL_IP</b> de <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7)
+válidas.</p><p><a id="lbAG"> </a></p><h2>NOTAS</h2><p>
+
+Los conectores directos fragmentan un paquete cuando su longitud
+total excede la MTU de la interfaz (no obstante, vea FALLOS). Una
+alternativa más rápida y favorable para la red es implementar el
+descubrimiento del MTU de la ruta como se describe en la sección
+<b>IP_PMTU_DISCOVER</b> de <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7). 
+</p><p>Se puede asociar un conector directo a una dirección local
+específica usando la llamada <b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b>(2).
+Si no está asociado, se reciben todos los paquetes con el protocolo
+IP especificado. Además, se puede asociar un conector directo a un
+dispositivo de red específico usando <b>SO_BINDTODEVICE</b>. Vea
+<b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7).</p><p>Un conector <b>IPPROTO_RAW</b> es sólo de envío. Si
+verdaderamente quiere recibir todos los paquetes IP, use un
+conector <b><a href="http://localhost/cgi-bin/man/man2html?7+packet">packet</a></b>(7)
+con el protocolo <b>ETH_P_IP</b>. Dése cuenta que, a diferencia de
+los conectores directos, los conectores de paquete no reensamblan
+fragmentos IP.</p><p>Si quiere recibir todos los paquetes ICMP para un conector de
+datagramas, normalmente es mejor usar <b>IP_RECVERR</b> en ese
+conector particular. Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7).</p><p>Los conectores directos pueden interceptar todos los protocolos
+IP de Linux, incluso protocolos como ICMP o TCP que poseen un
+módulo de protocolo dentro del núcleo. En este caso, los paquetes
+se pasan tanto al módulo del núcleo como al conector (o conectores)
+directo. No se debería confiar en esto en programas transportables
+ya que muchas otras implementaciones de conectores BSD tienen
+limitaciones aquí.</p><p>Linux nunca cambia las cabeceras pasadas por el usuario (salvo
+para rellenar algunos campos de valor 0 como se ha descrito en
+<b>IP_HDRINCL</b>). Esto es diferente de muchas otras
+implementaciones de conectores directos.</p><p>Generalmente, los conectores directos son poco transportables y
+deberían evitarse en programas destinados a ser transportables.</p><p>En el envío a través de conectores directos se debería tomar el
+protocolo IP de <b>sin_port.</b> Esta capacidad se perdió en Linux
+2.2. La forma de solucionar esto es usar <b>IP_HDRINCL</b>. <a id="lbAH"> </a></p><h2>MANEJO DE ERRORES</h2><p>Sólo se pasan al usuario los errores generados por la red cuando
+el conector está conectado o está activa la opción
+<b>IP_RECVERR</b>. Para conectores conectados, sólo se pasan
+<b>EMSGSIZE</b> y <b>EPROTO</b> por compatibilidad. Con
+<b>IP_RECVERR</b> todos los errores de red se guardan en la cola de
+errores. <a id="lbAI"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>EMSGSIZE</b></dt>
+
+<dd>Paquete demasiado grande. O bien el descubrimiento del MTU de
+la ruta está activo (la opción <b>IP_PMTU_DISCOVER</b> de los
+conectores) o bien el tamaño del paquete excede el máximo tamaño de
+64KB permitido por IPv4.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>El usuario ha intentado enviar a una dirección de difusión sin
+tener activa la opción de difusión en el conector.</dd>
+
+<dt><b>EPROTO</b></dt>
+
+<dd>Ha llegado un error ICMP informando de un problema de
+parámetros.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>Se ha pasado una dirección de memoria inválida.</dd>
+
+<dt><b>EOPNOTSUPP</b></dt>
+
+<dd>Se ha pasado a la llamada socket una opción inválida (como
+<b>MSG_OOB</b>).</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Argumento inválido.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El usuario no tiene permiso para abrir conectores directos.
+Sólo los procesos con un identificador de usuario efectivo de 0 o
+el atributo <b>CAP_NET_RAW</b> pueden hacerlo.</dd>
+</dl><a id="lbAJ"> </a><h2>VERSIONES</h2><b>IP_RECVERR</b><p> y <b>ICMP_FILTER</b> son nuevos en la versión 2.2
+de Linux. Ambos son extensiones de Linux y no deberían usarse en
+programas transportables. 
+</p><p>La versión 2.0 de Linux activaba cierta compatibilidad fallo a
+fallo con BSD en el código de los conectores directos cuando se
+activaba la opción SO_BSDCOMPAT. Ésto se ha eliminado en la versión
+2.2.</p><p><a id="lbAK"> </a></p><h2>FALLOS</h2><p>
+
+No se han descrito las extensiones de proxy transparente. 
+</p><p>Cuando se activa la opción <b>IP_HDRINCL</b>, los datagramas no
+se fragmentan y están limitados por la MTU de la interfaz. Ésta es
+una limitación de la versión 2.2 de Linux.</p><p>La posibilidad de especificar el protocolo IP en <b>sin_port</b>
+durante el envío desapareció en Linux 2.2. Siempre se usa el
+protocolo al que se enlazó el conector o el que se especificó en la
+llamada inicial a <b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2).
+<a id="lbAL"> </a></p><h2>AUTOR</h2><p>
+
+Esta página de manual fue escrita por Andi Kleen. 
+</p><p><a id="lbAM"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b><p>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2).
+
+</p><p><b>RFC1191</b> para el descubrimiento del MTU de la ruta.</p><p><b>RFC791</b> y el fichero cabecera <b>&lt;<a href="file:/usr/include/linux/ip.h">linux/ip.h</a>&gt;</b> para el
+protocolo IP.</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">FORMATO DE LAS DIRECCIONES</a></dt>
+
+<dt><a href="#lbAF">OPCIONES DE LOS CONECTORES</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">MANEJO DE ERRORES</a></dt>
+
+<dt><a href="#lbAI">ERRORES</a></dt>
+
+<dt><a href="#lbAJ">VERSIONES</a></dt>
+
+<dt><a href="#lbAK">FALLOS</a></dt>
+
+<dt><a href="#lbAL">AUTOR</a></dt>
+
+<dt><a href="#lbAM">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:29 GMT, January 22, 2005
+</p></body></html>

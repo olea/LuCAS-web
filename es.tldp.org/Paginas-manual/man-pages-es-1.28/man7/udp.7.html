@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of UDP</title></head><body><p>
+  
+</p><h1>UDP</h1><p>
+
+Section: Manual del Programador de Linux (7)<br />
+Updated: 2 octubre 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+udp - Protocolo UDP sobre IPv4. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/netinet/in.h">netinet/in.h</a>&gt;</b><br /><b>udp_socket = socket(PF_INET, SOCK_DGRAM, 0);</b><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Ésta es una implementación del protocolo UDP (User Datagram
+Protocol) descrito en RFC768. Implementa un servicio de paquetes de
+datagramas no fiable y sin conexión. Los paquetes pueden ser
+reordenados o duplicados antes de que lleguen. UDP genera y
+comprueba sumas de verificación (checksums) para detectar errores
+de transmisión. 
+</p><p>Cuando se crea un conector (socket) UDP, sus direcciones local y
+remota están sin especificar. Se pueden enviar datagramas
+inmediatamente usando <b><a href="http://localhost/cgi-bin/man/man2html?2+sendto">sendto</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2)
+con una dirección de destino válida como argumento. Cuando se llama
+a <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2)
+sobre el conector, se envía la dirección de destino por defecto y a
+partir de ese momento se pueden enviar datagramas usando <b><a href="http://localhost/cgi-bin/man/man2html?2+send">send</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+write">write</a></b>(2)
+sin especificar una dirección de destino. Todavía es posible
+realizar envíos a otros destinos pasando una dirección a <b><a href="http://localhost/cgi-bin/man/man2html?2+sendto">sendto</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2).
+Para poder recibir paquetes, primero se debe ligar el conector a
+una dirección local usando <b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b>(2).
+Cuando éste no sea el caso, la capa de conectores le asignará
+automáticamente un puerto local en la primera petición de recepción
+del usuario.</p><p>Todas las operaciones de recepción sólo devuelven un paquete.
+Cuando el paquete es más pequeño que el buffer pasado, sólo se
+devuelven los datos del paquete y, cuando es mayor, el paquete se
+trunca y la bandera <b>MSG_TRUNC</b> se activa.</p><p>Se pueden enviar o recibir opciones IP usando las opciones de
+conectores descritas en <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7).
+Estas son procesadas por el núcleo sólo cuando está activa la
+sysctl adecuada (pero todavía se pasan al usuario incluso cuando
+está desactivada). Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7).</p><p>Cuando en un envío está activa la opción <b>MSG_DONTROUTE</b>,
+la dirección de destino debe referirse a la dirección de una
+interfaz local y el paquete sólo se envía a esa interfaz.</p><p>UDP fragmenta un paquete cuando su longitud total excede la MTU
+(Unidad de Transmisión Máxima) de la interfaz. Una alternativa de
+red más amigable es usar el descubrimiento de la MTU de la ruta
+como se describe en la sección <b>IP_PMTU_DISCOVER</b> de <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7).</p><p><a id="lbAE"> </a></p><h2>FORMATO DE DIRECCIÓN</h2><p>
+
+UDP usa el formato de dirección <b>sockaddr_in</b> de IPv4 descrito
+en <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7). 
+</p><p><a id="lbAF"> </a></p><h2>MANEJO DE ERRORES</h2><p>
+
+Todos los errores fatales serán pasados al usuario como un
+resultado de error incluso cuando el conector no esté conectado.
+Este comportamiento difiere de muchas otras implementaciones de
+conectores BSD que no pasan ningún error al menos que el conector
+esté conectado. El comportamiento de Linux viene mandado por el
+<b>RFC1122.</b> 
+</p><p>Por compatibilidad con código anterior es posible activar la
+opción <b>SO_BSDCOMPAT</b> de SOL_SOCKET para recibir errores
+remotos (excepto <b>EPROTO</b> y <b>EMSGSIZE</b>) sólo cuando el
+conector se ha conectado. Es mejor arreglar el código para manejar
+adecuadamente los errores que habilitar esta opción. Los errores
+generados localmente siempre se pasan.</p><p>Cuando se activa la opción <b>IP_RECVERR</b> todos los errores
+se almacenan en la cola de errores de conector y se pueden recibir
+mediante <b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b>(2)
+con la opción <b>MSG_ERRQUEUE</b> activa.</p><p><a id="lbAG"> </a></p><h2>ERRORES</h2><p>
+
+Una operación de enviar o recibir sobre un conector UDP puede
+devolver cualquier error documentado en <b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7)
+o <b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7). 
+</p><p><b>ECONNREFUSED</b> No se ha asociado un receptor a la dirección
+de destino. Esto podría ser provocado por un paquete anterior
+enviado por el conector.</p><p><a id="lbAH"> </a></p><h2>VERSIONES</h2><p>
+
+IP_RECVERR es una nueva característica de la versión 2.2 de Linux. 
+</p><p><a id="lbAI"> </a></p><h2>CREDITOS</h2><p>
+
+Esta página de manual fue escrita por Andi Kleen. 
+</p><p><a id="lbAJ"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b><p>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+raw">raw</a></b>(7). 
+</p><p>RFC768 para el protocolo UDP.<br />
+ RFC1122 para los requisitos del anfitrión (host).<br />
+ RFC1191 para una descripción del descubrimiento de la MTU de la
+ruta.</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">FORMATO DE DIRECCIÓN</a></dt>
+
+<dt><a href="#lbAF">MANEJO DE ERRORES</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+
+<dt><a href="#lbAH">VERSIONES</a></dt>
+
+<dt><a href="#lbAI">CREDITOS</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:29 GMT, January 22, 2005
+</p></body></html>

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SEMGET</title></head><body><p>
+  
+</p><h1>SEMGET</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 1 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+semget - obtiene el identificador de un conjunto de semáforos <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b># include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/sem.h">sys/sem.h</a>&gt;</b>
+</pre><p><b>int semget ( key_t</b> <i>key</i><b>,</b> <b>int</b>
+<i>nsems</i><b>,</b> <b>int</b> <i>semflg</i> <b>)</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función devuelve el identificador del conjunto de semáforos
+asociado al valor del argumento <i>key</i>. Un nuevo conjunto de
+<i>nsems</i> semáforos se crea si <i>key</i> tiene el valor
+<b>IPC_PRIVATE</b>, o si <i>key</i> no vale <b>IPC_PRIVATE</b>, no
+hay un conjunto de semáforos asociado a <i>key</i>, y el bit
+<b>IPC_CREAT</b> vale 1 en <i>semflg</i> (p.ej. <i>semflg</i> &amp;
+<b>IPC_CREAT</b> es distinto de cero). La presencia en
+<i>semflg</i> de los campos <b>IPC_CREAT</b> e <b>IPC_EXCL</b>
+tiene el mismo papel, con respecto a la existencia del conjunto de
+semáforos, que la presencia de <b>O_CREAT</b> y <b>O_EXCL</b> en el
+argumento mode de la llamada del sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2):
+p.ej., la función <b>semget</b> falla si <i>semflg</i> tiene a 1
+tanto <b>IPC_CREAT</b> como <b>IPC_EXCL</b> y ya existe un conjunto
+de semáforos para <i>key</i>. 
+</p><p>Acerca de la creación, los 9 bits bajos del argumento
+<i>semflg</i> definen los permisos de acceso (para el propietario,
+grupo y otros) al conjunto de semáforos en el mismo formato, y con
+el mismo significado, que para el parámetro de permisos de acceso
+en las llamadas al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+creat">creat</a></b>(2)
+(aunque los permisos de ejecución no son usados por el sistema, y
+los de escritura, para un conjunto de semáforos, efectivamente
+significa permisos de modificación).</p><p>Además, durante la creación, la llamada al sistema inicializa la
+estructura de datos <b>semid_ds</b> del conjunto de semáforos del
+sistema, como sigue:</p><dl compact="compact"><dd>Se pone el ID de usuario efectivo del proceso que realiza la
+llamada en <b>sem_perm.cuid</b> y <b>sem_perm.uid</b></dd>
+
+<dd>Se pone el ID de grupo efectivo del proceso que realiza la
+llamada en <b>sem_perm.cgid</b> y <b>sem_perm.gid</b></dd>
+
+<dd>Los 9 bits más bajos de <b>sem_perm.mode</b> se ponen como los
+9 bits más bajos de <i>semflg</i>.</dd>
+
+<dd>Se pone el valor de <i>nsems</i> en <b>sem_nsems</b>.</dd>
+
+<dd><b>sem_otime</b> se pone a 0.</dd>
+
+<dd>Se pone la hora actual en <b>sem_ctime.</b></dd>
+</dl><p>El argumento <i>nsems</i> puede ser <b>0</b> (un comodín o valor
+sin importancia) cuando la llamada del sistema no es de creación.
+En otro caso <i>nsems</i> debe ser mayor que <b>0</b> y menor o
+igual que el número máximo de semáforos por semid,
+(<b>SEMMSL</b>).</p><p>Si el conjunto de semáforos ya existe, los permisos de acceso
+son verificados, y se hace una comprobación para ver si está
+marcado para ser destruido. <a id="lbAE"> </a></p><h2>VALOR REGRESADO</h2><p>
+
+Si hubo éxito, el valor devuelto será el identificador del conjunto
+de semáforos (un entero positivo), de otro modo, se devuelve
+<b>-1</b> con <b>errno</b> indicando el error. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Para un retorno fallido, <b>errno</b> tendrá uno de entre los
+siguientes valores: 
+</p><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>Existe un conjunto de semáforos para <i>key</i>, pero el
+proceso que realiza la llamada no tiene permisos de acceso al
+conjunto.</dd>
+
+<dt><b>EEXIST</b></dt>
+
+<dd>Existe un conjunto de semáforos para <b>key</b> y <i>semflg</i>
+tiene a 1 tanto <b>IPC_CREAT</b> como <b>IPC_EXCL</b>.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>El conjunto de semáforos está marcado para ser borrado.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>No existe ningún conjunto de semáforos para <i>key</i> y
+<i>semflg</i> no tiene a 1 <b>IPC_CREAT</b>.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>Se ha de crear un conjunto de semáforos, pero el sistema no
+tiene suficiente memoria para la nueva estructura de datos.</dd>
+
+<dt><b>ENOSPC</b></dt>
+
+<dd>Se ha de crear un conjunto de semáforos, pero el límite del
+sistema para el número máximo de conjuntos de semáforos
+(<b>SEMMNI</b>), o el número de semáforos máximo del sistema
+(<b>SEMMNS</b>), sería excedido.</dd>
+</dl><a id="lbAG"> </a><h2>NOTAS</h2><b>IPC_PRIVATE</b><p> no es un campo bandera (flag), sino que es de
+tipo <b>key_t</b> Si este valor especial es usado para <i>key</i>,
+la llamada del sistema ignora todo excepto los 9 bits más bajos de
+<i>semflg</i> y crea un nuevo conjunto de semáforos (si hay éxito).
+
+</p><p>Los siguientes son límites de los recursos de los conjuntos de
+semáforos que afectan a la llamada <b>semget</b> :</p><dl compact="compact"><dt><b>SEMMNI</b></dt>
+
+<dd>Máximo total de conjuntos de semáforos para el sistema: depende
+de la política.</dd>
+
+<dt><b>SEMMSL</b></dt>
+
+<dd>Máximo de semáforos por semid: depende de la implementación
+(500 normalmente).</dd>
+
+<dt><b>SEMMNS</b></dt>
+
+<dd>Máximo total de semáforos para el sistema: depende de la
+política. Valores mayores que <b>SEMMSL * SEMMNI</b> lo hacen
+irrelevante.</dd>
+</dl><a id="lbAH"> </a><h2>FALLOS</h2><p>
+
+El uso de <b>IPC_PRIVATE</b> no inhibe el acceso de los demás
+procesos al conjunto de semáforos asignado. 
+</p><p>Al igual que pasa con los ficheros, no hay una manera intrínseca
+para que un proceso se asegure el acceso exclusivo a un conjunto de
+semáforos. Tener a 1 tanto <b>IPC_CREAT</b> como <b>IPC_EXCL</b> en
+<i>semflg</i> solo asegura (si hay éxito) la creación de un nuevo
+conjunto de semáforos, no implica acceso exclusivo a dicho
+conjunto.</p><p>La estructura de datos asociada con cada semáforo del conjunto
+no es inicializada por la llamada del sistema. Para inicializar
+estas estructuras de datos, se ha de ejecutar la subsiguiente
+llamada a <b><a href="http://localhost/cgi-bin/man/man2html?2+semctl">semctl</a></b>(2)
+para realizar un comando <b>SETVAL</b> o <b>SETALL</b> en el
+conjunto de semáforos. <a id="lbAI"> </a></p><h2>CONFORME A</h2><p>
+
+SVr4, SVID. SVr4 documenta condiciones de error adicionales EINVAL,
+EFBIG, E2BIG, EAGAIN, ERANGE, EFAULT. <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+ftok">ftok</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semctl">semctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semop">semop</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR REGRESADO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">FALLOS</a></dt>
+
+<dt><a href="#lbAI">CONFORME A</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

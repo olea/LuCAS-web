@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of PACKET</title></head><body><p>
+  
+</p><h1>PACKET</h1><p>
+
+Section: Manual del Porgramador de Linux (7)<br />
+Updated: 29 abril 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+packet, PF_PACKET - Interfaz de paquetes a nivel de dispositivo. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b>
+<br /><b>#include &lt;<a href="file:/usr/include/features.h">features.h</a>&gt;   /* para el número de versión de glibc */</b>
+<br /><b>#if __GLIBC__ &gt;= 2 &amp;&amp; __GLIBC_MINOR &gt;= 1</b> 
+<br /><b>#include &lt;<a href="file:/usr/include/netpacket/packet.h">netpacket/packet.h</a>&gt;</b>
+<br /><b>#include &lt;<a href="file:/usr/include/net/ethernet.h">net/ethernet.h</a>&gt;       /* los protocolos de nivel 2 */</b>
+<br /><b>#else</b>
+<br /><b>#include &lt;<a href="file:/usr/include/asm/types.h">asm/types.h</a>&gt;</b>
+<br /><b>#include &lt;<a href="file:/usr/include/linux/if_packet.h">linux/if_packet.h</a>&gt;</b>
+<br /><b>#include &lt;<a href="file:/usr/include/linux/if_ether.h">linux/if_ether.h</a>&gt;     /* los protocolos de nivel 2 */</b> 
+<br /><b>#endif</b>
+
+
+<b>packet_socket = socket(PF_PACKET, int</b> <i>socket_type</i><b>, int protocol</b><i>);</i>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Los conectores de paquetes (packet sockets) se usan para recibir o
+enviar<br />
+paquetes directos (raw) en el nivel del manejador de dispositivo
+(Nivel 2 de OSI). Permiten al usuario implementar módulos de
+protocolo en el espacio de usuario por encima de la capa física. 
+</p><p><i>socket_type</i> es o bien <b>SOCK_RAW</b> para paquetes
+directos incluyendo la cabecera del nivel de enlace o bien
+<b>SOCK_DGRAM</b> para paquetes preparados con la cabecera del
+nivel de enlace eliminada. La información de la cabecera del nivel
+de enlace está disponible en un formato común en una estructura
+<b>sockaddr_ll</b>. <i>protocol</i> es el protocolo IEEE 802.3 con
+los bytes en orden de red. Vea el fichero cabecera <b>&lt;<a href="file:/usr/include/linux/if_ether.h">linux/if_ether.h</a>&gt;</b>
+para una lista de los protocolos permitidos. Cuando se asigna a
+<i>protocol</i> el valor <b>htons(ETH_P_ALL)</b>, se reciben todos
+los protocolos. Todos los paquetes de entrada con el tipo de
+protocolo indicado se pasarán al conector de paquetes antes de que
+sean pasados a los protocolos implementados dentro del
+núcleo.<br />
+  Sólo los procesos con uid efectivo 0 o la capacidad
+<b>CAP_NET_RAW</b> pueden abrir conectores de paquetes.</p><p>Los paquetes <b>SOCK_RAW</b> se pasan a y desde el manejador de
+dispositivo sin ningún cambio en los datos del paquete. Cuando se
+recibe un paquete, la dirección todavía se analiza y se pasa en una
+estructura de dirección <b>sockaddr_ll</b> estándar. Cuando se
+transmite un paquete, el buffer proporcionado por el usuario
+debería contener la cabecera de la capa física. A continuación, ese
+paquete se encola sin modificar en la tarjeta de red de la interfaz
+definida por la dirección de destino. Algunos manejadores
+(`drivers') de dispositivo siempre añaden otras cabeceras.
+<b>SOCK_RAW</b> es similar pero no compatible con el obsoleto
+<b>SOCK_PACKET</b> de la versión 2.0 de Linux.</p><p><b>SOCK_DGRAM</b> opera en un nivel ligeramente superior. Se
+elimina la cabecera física antes de que el paquete se pase al
+usuario. Los paquetes enviados a través de un conector de paquetes
+<b>SOCK_DGRAM</b> obtienen una cabecera adecuada de la capa física
+según la información de la dirección de destino <b>sockaddr_ll</b>,
+antes de ser encolados.</p><p>Por defecto, todos los paquetes del tipo de protocolo
+especificado se pasan a un conector de paquetes. Para obtener sólo
+los paquetes de una interfaz específica, use <b><a href="http://localhost/cgi-bin/man/man2html?2+bind">bind</a></b>(2)
+especificando una dirección en una estructura <b>struct
+sockaddr_ll</b> para enlazar el conector de paquetes a una
+interfaz. Sólo se usan para propósitos de enlace los campos de
+dirección <b>sll_protocol</b> y <b>sll_ifindex</b>.</p><p>La operación <b><a href="http://localhost/cgi-bin/man/man2html?2+connect">connect</a></b>(2)
+no está soportada en conectores de paquetes. <a id="lbAE"> </a></p><h2>TIPOS DE DIRECCIONES</h2><p>
+
+sockaddr_ll es una dirección de la capa física independiente del
+dispositivo. 
+</p><dl compact="compact"><dd>
+<pre>
+struct sockaddr_ll
+{
+    unsigned short  sll_family;    /* Siempre es AF_PACKET */
+    unsigned short  sll_protocol;  /* Protocolo de la capa física */
+    int             sll_ifindex;   /* Número de la interfaz */
+    unsigned short  sll_hatype;    /* Tipo de cabecera */
+    unsigned char   sll_pkttype;   /* Tipo de paquete */
+    unsigned char   sll_halen;     /* Longitud de la dirección */ 
+    unsigned char   sll_addr[8];   /* Dirección de la capa física */
+};
+
+</pre>
+</dd>
+</dl><p><b>sll_protocol</b> es el tipo del protocolo ethernet estándar
+dado en orden de red definido en el fichero cabecera
+<b>linux/if_ether.h</b>. <b>sll_ifindex</b> es el índice de la
+interfaz (vea <b><a href="http://localhost/cgi-bin/man/man2html?2+netdevice">netdevice</a></b>(2)).
+Un 0 concuerda con cualquier interfaz (sólo legal para enlazar).
+<b>sll_hatype</b> es un tipo ARP de los definidos en el fichero
+cabecera <b>linux/if_arp.h</b>. <b>sll_pkttype</b> contiene el tipo
+del paquete. Los tipos válidos son <b>PACKET_HOST</b> para un
+paquete aplicado al anfitrión (host) local, <b>PACKET_BROADCAST</b>
+para un paquete de difusión de la capa física,
+<b>PACKET_MULTICAST</b> para un paquete enviado a una dirección
+multidestino de la capa física, <b>PACKET_OTHERHOST</b> para un
+paquete destinado a otros anfitriones que ha sido capturado por el
+manejador del dispositivo en modo promiscuo y
+<b>PACKET_OUTGOING</b> para un paquete originado desde el anfitrión
+local que es devuelto de regreso a un conector de paquetes. Estos
+tipos sólo tienen sentido para recibir. <b>sll_addr</b> y
+<b>sll_halen</b> contienen la dirección de la capa física (por
+ejemplo, IEEE 802.3) y su longitud. La interpretación exacta
+depende del dispositivo.</p><p><a id="lbAF"> </a></p><h2>OPCIONES DE LOS CONECTORES</h2><p>Los conectores de paquetes sólo se pueden usar para configurar
+el envío multidestino de la capa física y el modo promíscuo. Esto
+funciona llamando a <b><a href="http://localhost/cgi-bin/man/man2html?2+setsockopt">setsockopt</a></b>(2)
+con SOL_PACKET, para un conector de paquetes, y una de las opciones
+<b>PACKET_ADD_MEMBERSHIP</b> para añadir un enlace o
+<b>PACKET_DROP_MEMBERSHIP</b> para eliminarlo. Ambas esperan una
+estructura <b>packet_mreq</b> como argumento:</p><dl compact="compact"><dd>
+<pre>
+struct packet_mreq
+{
+    int             mr_ifindex;    /* índice de la interfaz */
+    unsigned short  mr_type;       /* acción */
+    unsigned short  mr_alen;       /* longitud de la dirección */
+    unsigned char   mr_address[8]; /* dirección de la capa física */ 
+};
+
+</pre>
+</dd>
+</dl><p><b>mr_ifindex</b> contien el índice de la interfaz cuyo estado
+debe cambiarse. El parámetro <b>mr_type</b> indica la acción a
+realizar. <b>PACKET_MR_PROMISC</b> habilita la recepción de todos
+los paquetes sobre un medio compartido (conocido normalmente como
+``modo promiscuo''), <b>PACKET_MR_MULTICAST</b> enlaza el conector
+al grupo multidestino de la capa física indicado en
+<b>mr_address</b> y <b>mr_alen</b>, y <b>PACKET_MR_ALLMULTI</b>
+configura el conector para recibir todos los paquetes multidestino
+que lleguen a la interfaz.</p><p>Además, se pueden usar las ioctls tradicionales,
+<b>SIOCSIFFLAGS</b>, <b>SIOCADDMULTI</b> y <b>SIOCDELMULTI</b>,
+para el mismo propósito.</p><p><a id="lbAG"> </a></p><h2>IOCTLS</h2><b>SIOCGSTAMP</b><p> se puede usar para recibir la marca de tiempo del
+último paquete recibido. El argumento es una esctructura <b>struct
+timeval.</b> 
+</p><p>Además, todas las ioctls estándares definidas en <b><a href="http://localhost/cgi-bin/man/man2html?7+netdevice">netdevice</a></b>(7)
+y <b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7)
+son válidas en los conectores de paquetes.</p><p><a id="lbAH"> </a></p><h2>MANEJO DE ERRORES</h2><p>
+
+Los conectores de paquetes no manejan otros errores que los
+ocurridos al pasar el paquete al manejador del dispositivo. No
+poseen el concepto de error pendiente. 
+</p><p><a id="lbAI"> </a></p><h2>COMPATIBILIDAD</h2><p>
+
+En la versión 2.0 de Linux, la única forma de obtener un conector
+de paquetes era llamando a <b>socket(PF_INET, SOCK_PACKET,</b>
+<i>protocol</i><b>)</b>. Esto todavía está soportado pero se
+desaprueba fuertemente. La principal diferencia entre los dos
+métodos es que <b>SOCK_PACKET</b>, para especificar una interfaz,
+usa la antigua <b>struct sockaddr_pkt</b> que no proporciona
+independencia de la capa física. 
+</p><dl compact="compact"><dd>
+<pre>
+struct sockaddr_pkt
+{
+    unsigned short  spkt_family;
+    unsigned char   spkt_device[14];
+    unsigned short  spkt_protocol;
+};
+
+</pre>
+</dd>
+</dl><p><b>spkt_family</b> contiene el tipo del dispositivo,
+<b>spkt_protocol</b> es el tipo del protocolo IEEE 802.3 de los
+definidos en <b>&lt;<a href="file:/usr/include/sys/if_ether.h">sys/if_ether.h</a>&gt;</b>
+y <b>spkt_device</b> es el nombre del dispositivo dado como una
+cadena terminada en un nulo, por ejemplo, eth0.</p><p>Esta estructura está obsoleta y no debería usarse en código
+nuevo.</p><p><a id="lbAJ"> </a></p><h2>NOTAS</h2><p>
+
+Se sugiere que los programas transportables usen <b>PF_PACKET</b> a
+través de <b><a href="http://localhost/cgi-bin/man/man2html?3+pcap">pcap</a></b>(3),
+aunque esto sólo cubre un subconjunto de las características de
+<b>PF_PACKET</b>. 
+</p><p>Los conectores de paquetes <b>SOCK_DGRAM</b> no intentan crear o
+analizar la cabecera LLC IEEE 802.2 para una trama IEEE 802.3.
+Cuando se especifica <b>ETH_P_802_3</b> como protocolo para enviar,
+el núcleo crea la trama 802.3 y rellena el campo de longitud. El
+usuario tiene que proporcionar la cabecera LLC para obtener un
+paquete totalmente conforme. Los paquetes 802.3 de entrada no son
+multiplexados en los campos DSAP/SSAP del protocolo. En su lugar,
+se entregan al usuario como protocolo <b>ETH_P_802_2</b> con la
+cabecera LLC añadida. Por tanto, es imposible enlazar con
+<b>ETH_P_802_3</b>. Enlace en su lugar con <b>ETH_P_802_2</b> y
+haga usted mismo la multiplexación del protocolo. Para enviar por
+omisión se utiliza la encapsulación estándar Ethernet DIX con el
+dato del protocolo lleno.</p><p>Los conectores de paquetes no están sujetos a las cadenas de
+entrada ni de salida del cortafuegos.</p><p><a id="lbAK"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>ENETDOWN</b></dt>
+
+<dd>La interfaz no está activa.</dd>
+
+<dt><b>ENOTCONN</b></dt>
+
+<dd>No se ha pasado una dirección de interfaz.</dd>
+
+<dt><b>ENODEV</b></dt>
+
+<dd>Nombre de dispositivo o índice de interfaz, especificados en la
+dirección de interfaz, desconocidos.</dd>
+
+<dt><b>EMSGSIZE</b></dt>
+
+<dd>El paquete es más grande que la MTU de la interfaz.</dd>
+
+<dt><b>ENOBUFS</b></dt>
+
+<dd>No hay suficiente memoria para colocar el paquete.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>El usuario ha pasado una dirección de memoria inválida.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Argumento inválido.</dd>
+
+<dt><b>ENXIO</b></dt>
+
+<dd>La dirección de interfaz contiene un índice de interfaz
+ilegal.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El usuario no tiene privilegios suficientes para llevar a cabo
+esta operación.</dd>
+
+<dt><b>EADDRNOTAVAIL</b></dt>
+
+<dd>Se ha pasado una dirección desconocida de grupo
+multidestino.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>No se ha recibido ningún paquete. 
+<p>Además, el manejador de bajo nivel puede generar otros
+errores.</p>
+</dd>
+</dl><a id="lbAL"> </a><h2>VERSIONES</h2><b>PF_PACKET</b><p> es una nueva característica de la versión 2.2 de
+Linux. Las primeras versiones de Linux sólo soportaban
+<b>SOCK_PACKET.</b> 
+</p><p><a id="lbAM"> </a></p><h2>FALLOS</h2><p>
+
+glibc 2.1 no posee una macro "define" para <b>SOL_PACKET.</b> La
+solución sugerida es usar 
+</p><dl compact="compact"><dd>
+<pre>
+#ifndef SOL_PACKET
+#define SOL_PACKET 263
+#endif
+</pre>
+</dd>
+</dl><p>
+
+Esto se soluciona en versiones posteriores de glibc. Este problema
+tampoco se produce en sistemas libc5. 
+</p><p>El tratamiento del IEEE 802.2/803.3 LLC se podría considerar un
+fallo.</p><p>No se han documentado los filtros de los conectores. <a id="lbAN"> </a></p><h2>CREDITOS</h2><p>
+
+Esta página de manual fue escrita por Andi Kleen con la ayuda de
+Matthew Wilcox. 
+</p><p>Alexey Kuznetsov implementó la característica PF_PACKET de la
+versión 2.2 de Linux basándose en el código de Alan Cox y
+otros.</p><p><a id="lbAO"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b><p>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+raw">raw</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+pcap">pcap</a></b>(3).
+
+</p><p>RFC 894 for the standard IP Ethernet encapsulation.</p><p>RFC 1700 for the IEEE 802.3 IP encapsulation.</p><p>El fichero cabecera <b>linux/if_ether.h</b> para los protocolos
+de la capa física.</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">TIPOS DE DIRECCIONES</a></dt>
+
+<dt><a href="#lbAF">OPCIONES DE LOS CONECTORES</a></dt>
+
+<dt><a href="#lbAG">IOCTLS</a></dt>
+
+<dt><a href="#lbAH">MANEJO DE ERRORES</a></dt>
+
+<dt><a href="#lbAI">COMPATIBILIDAD</a></dt>
+
+<dt><a href="#lbAJ">NOTAS</a></dt>
+
+<dt><a href="#lbAK">ERRORES</a></dt>
+
+<dt><a href="#lbAL">VERSIONES</a></dt>
+
+<dt><a href="#lbAM">FALLOS</a></dt>
+
+<dt><a href="#lbAN">CREDITOS</a></dt>
+
+<dt><a href="#lbAO">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

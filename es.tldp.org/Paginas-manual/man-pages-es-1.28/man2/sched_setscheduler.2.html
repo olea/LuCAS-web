@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SETSCHEDULER</title></head><body><p>
+  
+</p><h1>SETSCHEDULER</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 18 agosto 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+sched_setscheduler, sched_getscheduler - establecen y obtienen los
+algoritmos/parámetros de planificación <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sched.h">sched.h</a>&gt;</b><p><b>int sched_setscheduler(pid_t</b> <i>pid</i><b>, int</b>
+<i>politica</i><b>, const struct sched_param
+*</b><i>p</i><b>);</b></p><p><b>int sched_getscheduler(pid_t</b> <i>pid</i><b>);</b></p><pre>
+<b>struct sched_param {
+    ...
+    int</b> <i>sched_priority</i><b>;
+    ...
+};
+
+</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>sched_setscheduler</b><p> establece tanto la política de
+planificación como los parámetros asociados para el proceso
+identificado por <i>pid</i>. Si <i>pid</i> es igual a cero, se
+establece el planificador del proceso que hace la llamada. La
+interpretación del parámetro <i>p</i> depende de la política
+seleccionada. Actualmente se admiten en Linux las tres siguientes
+políticas: <i>SCHED_FIFO</i>, <i>SCHED_RR</i>, y
+<i>SCHED_OTHER</i>; sus respectivas semánticas se describen abajo. 
+</p><p><b>sched_getscheduler</b> pregunta por la política de
+planificación aplicada actualmente al proceso identificado por
+<i>pid</i>. Si <i>pid</i> es igual a cero, se obtiene la política
+del proceso que hace la llamada.</p><p><a id="lbAE"> </a></p><h3>Políticas de Planificación</h3><p>
+
+El planificador es la parte del núcleo que decide qué proceso
+ejecutable será ejecutado por la CPU a continuación. El
+planificador de Linux ofrece tres políticas de planificación
+diferentes, una para los procesos normales y dos para aplicaciones
+en tiempo real. Se asigna a cada proceso un valor de prioridad
+estática <i>sched_priority</i> y este valor sólo puede cambiarse a
+través de llamadas al sistema. Conceptualmente, el planificador
+mantiene una lista de procesos ejecutables para cada posible valor
+<i>sched_priority</i>, y <i>sched_priority</i> puede tener un valor
+en el rango de 0 a 99. Para poder determinar qué proceso se debe
+ejecutar a continuación, el planificador de Linux busca en la lista
+no vacía con la prioridad estática más alta y toma el proceso a la
+cabeza de dicha lista. La política de planificación determina para
+cada proceso, dónde se insertará en la lista de procesos con igual
+prioridad estática y cómo se moverá dentro de esta lista. 
+</p><p><i>SCHED_OTHER</i> es el planificador de tiempo compartido
+universal predeterminado empleado por la mayoría de los procesos;
+<i>SCHED_FIFO</i> y <i>SCHED_RR</i> han sido pensados para
+aplicaciones especiales donde el tiempo es crítico y necesitan un
+control preciso sobre la forma en la que se seleccionan para
+ejecución los procesos ejecutables. A los procesos planificados con
+<i>SCHED_OTHER</i> se les debe asignar la prioridad estática 0; los
+procesos planificados bajo <i>SCHED_FIFO</i> o <i>SCHED_RR</i>
+pueden tener una prioridad estática en el rango de 1 a 99.
+Solamente los procesos con privilegio de súper-usuario pueden
+obtener una prioridad estática mayor que 0 y por tanto pueden ser
+planificados bajo <i>SCHED_FIFO</i> o <i>SCHED_RR</i>. Las llamadas
+al sistema <b>sched_get_priority_min</b> y
+<b>sched_get_priority_max</b> pueden emplearse para encontrar el
+rango válido de prioridad para una política de planificación de una
+manera transportable en todos los sistemas que cumplan
+POSIX.1b.</p><p>Toda la planificación es apropiativa: si un proceso con una
+prioridad estática más alta está listo para ejecutarse, el proceso
+actual será apropiado y devuelto a su lista de espera. La política
+de planificación solamente determina la clasificación en la lista
+de procesos ejecutables con igual prioridad estática.</p><p><a id="lbAF"> </a></p><h3>SCHED_FIFO: Planificación FIFO (1º en entrar, 1º en
+salir).</h3><i>SCHED_FIFO</i><p> sólo puede emplearse con prioridades estáticas
+mayores que 0, lo que significa que cuando un proceso
+<i>SCHED_FIFO</i> se convierte en ejecutable, siempre prevalecerá
+inmediatamente sobre cualquier otro proceso normal
+<i>SCHED_OTHER</i> ejecutándose. <i>SCHED_FIFO</i> es un simple
+algoritmo de planificación sin rodajas de tiempo. Para procesos
+planificados bajo la política <i>SCHED_FIFO</i>, se aplican las
+siguientes reglas: Un proceso <i>SCHED_FIFO</i> que ha sido
+apropiado por otro proceso de mayor prioridad permanecerá en la
+cabeza de la lista para su prioridad y reanudará su ejecución tan
+pronto como todos los procesos de prioridad más alta se bloqueen de
+nuevo. Cuando un proceso <i>SCHED_FIFO</i> llegue a ser ejecutable,
+se insertará al final de la lista para su prioridad. Una llamada a
+<b>sched_setscheduler</b> o a <b>sched_setparam</b> pondrá el
+proceso <i>SCHED_FIFO</i> identificado por <i>pid</i> al final de
+la lista si era ejecutable. Un proceso que llame a
+<b>sched_yield</b> será colocado al final de la lista. Ningún otro
+suceso moverá un proceso planificado bajo la política
+<i>SCHED_FIFO</i> en la lista de espera de procesos ejecutables con
+igual prioridad estática. Un proceso <i>SCHED_FIFO</i> se ejecuta
+hasta que es bloqueado por una petición de E/S, hasta que sea
+apropiado por un proceso de más alta prioridad, o hasta que llame a
+<b>sched_yield</b>. 
+</p><p><a id="lbAG"> </a></p><h3>SCHED_RR: Planificación circular (Round Robin).</h3><i>SCHED_RR</i><p> es una mejora simple de <i>SCHED_FIFO</i>. Todo lo
+descrito arriba para <i>SCHED_FIFO</i> se aplica también a
+<i>SCHED_RR</i>, excepto que a cada proceso sólo se le permite
+ejecutarse durante un cuanto de tiempo máximo. Si un proceso
+<i>SCHED_RR</i> ha estado ejecutándose durante un periodo de tiempo
+igual o mayor que el cuanto de tiempo, será puesto al final de la
+lista para su prioridad. Un proceso <i>SCHED_RR</i> que ha sido
+apropiado por un proceso de más alta prioridad y subsecuentemente
+reanuda su ejecución como un proceso en ejecución, completará la
+porción no expirada de su cuanto de tiempo de asignación en rueda.
+La cantidad del cuanto de tiempo puede ser obtenida con
+<b>sched_rr_get_interval</b>. 
+</p><p><a id="lbAH"> </a></p><h3>SCHED_OTHER: Planificación predeterminada de Linux en t.c.</h3><i>SCHED_OTHER</i><p> solamente puede emplearse con la prioridad
+estática 0. <i>SCHED_OTHER</i> es el planificador estándar de Linux
+en tiempo compartido, pensado para todos los procesos que no
+requieren mecanismos especiales de prioridad estática en tiempo
+real. El proceso a ejecutarse se escoge de la lista de prioridad
+estática 0 basado en una prioridad dinámica que se determina
+solamente dentro de esta lista. La prioridad dinámica se basa en el
+nivel de `nice' (puesto por la llamada <b>nice</b> o
+<b>setpriority</b>) e incrementado para cada cuanto de tiempo para
+el que el proceso está listo para la ejecución, pero denegado para
+ella por el planificador. Esto asegura un buen progreso entre todos
+los procesos <i>SCHED_OTHER</i>. 
+</p><p><a id="lbAI"> </a></p><h3>Tiempo de respuesta</h3><p>Un proceso de alta prioridad bloqueado esperando E/S tiene un
+cierto tiempo de respuesta antes de que sea planificado otra vez.
+El escritor del controlador del dispositivo puede reducir
+grandemente este tiempo de respuesta empleando un manejador de
+interrupción de "interrupción lenta" como se describe en <b><a href="http://localhost/cgi-bin/man/man2html?9+request_irq">request_irq</a></b>(9).</p><p><a id="lbAJ"> </a></p><h3>Miscelánea</h3><p>
+
+Los procesos hijos heredan el algoritmo y parámetros de
+planificación a través de un <b>fork</b>. 
+</p><p>Usualmente se necesita un bloqueo de memoria para que los
+procesos en tiempo real puedan evitar demoras en la paginación;
+esto puede hacerse con <b>mlock</b> o <b>mlockall</b>.</p><p>Como un bucle infinito no bloqueante en un proceso planificado
+bajo <i>SCHED_FIFO</i> o <i>SCHED_RR</i>, bloqueará para siempre
+todos los procesos con baja prioridad, un desarrollador de software
+debería siempre mantener disponible en la consola un shell
+planificado bajo una prioridad estática mayor que la de la
+aplicación en pruebas. Esto permitirá un `kill' de emergencia en
+aplicaciones de tiempo real en pruebas que no bloqueen o terminen
+como se espere. Como los procesos <i>SCHED_FIFO</i> y
+<i>SCHED_RR</i> pueden apropiar otros procesos para siempre, sólo
+los procesos de root tienen permiso para activar estas políticas
+bajo Linux.</p><p>Los sistemas POSIX en los cuales se dispone de
+<b>sched_setscheduler</b> y <b>sched_getscheduler</b> definen
+<i>_POSIX_PRIORITY_SCHEDULING</i> en &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;.</p><p><a id="lbAK"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, <b>sched_setscheduler</b> devuelve cero. En caso
+de éxito, <b>sched_getscheduler</b> devuelve la política para el
+proceso (un entero no negativo). En caso de error, se devuelve -1 y
+se pone en <i>errno</i> un valor apropiado. <a id="lbAL"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>ESRCH</b></dt>
+
+<dd>No se ha podido encontrar el proceso cuya ID es
+<i>pid</i>.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El proceso que hace la llamada no tiene los privilegios
+apropiados. Solamente los procesos de root tienen permiso para
+activar las políticas <i>SCHED_FIFO</i> y <i>SCHED_RR</i>. El
+proceso que llame a <b>sched_setscheduler</b> necesita un UID
+efectivo igual al EUID o al UID del proceso identificado por
+<i>pid</i>, o debe ser un proceso del súper-usuario.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>La <i>politica</i> de planificación no es una de las políticas
+reconocidas, o el parámetro <i>p</i> no tiene sentido para la
+<i>politica</i>.</dd>
+</dl><a id="lbAM"> </a><h2>CONFORME A</h2><p>
+
+POSIX.1b (antiguamente POSIX.4) <a id="lbAN"> </a> 
+</p><h2>FALLOS</h2><p>
+
+En Linux-1.3.81, <i>SCHED_RR</i> no había sido aún probada
+cuidadosamente y pudiera ser que no se comportara exactamente como
+se describe o requiere por POSIX.1b. <a id="lbAO"> </a>
+
+</p><h2>NOTA</h2><p>
+
+El Linux estándar es un sistema operativo de propósito general que
+puede manejar procesos en segundo plano, aplicaciones interactivas
+y aplicaciones flexibles de tiempo real (aplicaciones que necesitan
+de forma usual cumplir límites temporales). Esta página de manual
+está dirigida a esos tipos de aplicaciones. 
+</p><p>El Linux estándar <i>no</i> está diseñado para soportar
+aplicaciones estrictas de tiempo real, es decir, aplicaciones en
+las se deben garantizar los plazos (a menudo mucho más breves que
+un segundo) o el sistema fracasará catastróficamente. Como todos
+los sistemas operativos de propósito general, Linux está diseñado
+para maximizar el rendimiento del caso medio en lugar del
+rendimiento del peor caso. El rendimiento del peor caso de Linux
+para el manejo de interrupciones es mucho más pobre que su caso
+medio, sus distintos cerrojos del núcleo (como los de SMP) producen
+tiempos de espera de máxima duracción y muchas de sus técnicas para
+mejorar el rendimiento decrementan el tiempo medio incrementando el
+tiempo del peor caso. Para la mayoría de situaciones, eso es lo que
+usted quiere, pero si realmente está desarrollando una aplicación
+estricta de tiempo real considere el usar extensiones estrictas de
+tiempo real para Linux como RTLinux (<a href="http://www.rtlinux.org)">http://www.rtlinux.org)</a> o use un
+sistema operativo diferentes diseñado específicamente para
+aplicaciones estrictas de tiempo real. <a id="lbAP"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+sched_setparam">sched_setparam</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sched_getparam">sched_getparam</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sched_yield">sched_yield</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sched_get_priority_max">
+sched_get_priority_max</a></b>(2), <b><a href="http://localhost/cgi-bin/man/man2html?2+sched_get_priority_min">
+sched_get_priority_min</a></b>(2), <b><a href="http://localhost/cgi-bin/man/man2html?2+nice">nice</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+setpriority">setpriority</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+getpriority">getpriority</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mlockall">mlockall</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+munlockall">munlockall</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mlock">mlock</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+munlock">munlock</a></b>(2).
+
+</p><p><i>Programming for the real world - POSIX.4</i> por Bill O.
+Gallmeister, O'Reilly &amp; Associates, Inc., ISBN
+1-56592-074-0<br /><i>IEEE Std 1003.1b-1993</i> (estándar POSIX.1b)<br /><i>ISO/IEC 9945-1:1996</i> - Ésta es la nueva revisión de 1996 de
+POSIX.1, que contiene en un solo estándar POSIX.1(1990),
+POSIX.1b(1993), POSIX.1c(1995), y POSIX.1i(1995).</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAE">Políticas de Planificación</a></dt>
+
+<dt><a href="#lbAF">SCHED_FIFO: Planificación FIFO (1º en entrar,
+1º en salir).</a></dt>
+
+<dt><a href="#lbAG">SCHED_RR: Planificación circular (Round
+Robin).</a></dt>
+
+<dt><a href="#lbAH">SCHED_OTHER: Planificación predeterminada de
+Linux en t.c.</a></dt>
+
+<dt><a href="#lbAI">Tiempo de respuesta</a></dt>
+
+<dt><a href="#lbAJ">Miscelánea</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAK">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAL">ERRORES</a></dt>
+
+<dt><a href="#lbAM">CONFORME A</a></dt>
+
+<dt><a href="#lbAN">FALLOS</a></dt>
+
+<dt><a href="#lbAO">NOTA</a></dt>
+
+<dt><a href="#lbAP">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

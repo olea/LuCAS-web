@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SEND</title></head><body><p>
+  
+</p><h1>SEND</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: julio 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+send, sendto, sendmsg - envía un mensaje de un conector (socket) <a id="lbAC"> </a> 
+</p><h2>SINTAXIS</h2><b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><p><b>int send(int</b> <i>s</i><b>, const void *</b><i>msg</i><b>,
+size_t</b> <i>len</i><b>,</b> <b>int</b>
+<i>flags</i><b>);</b><br /><b>int sendto(int</b> <i>s</i><b>, const void *</b><i>msg</i><b>,
+size_t</b> <i>len</i><b>,</b> <b>int</b> <i>flags</i><b>, const
+struct sockaddr *</b><i>to</i><b>, socklen_t</b>
+<i>tolen</i><b>);</b><br /><b>int sendmsg(int</b> <i>s</i><b>, const struct msghdr
+*</b><i>msg</i><b>,</b> <b>int</b> <i>flags</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><b>Send</b><p>, <b>sendto</b> y <b>sendmsg</b> son utilizados para
+transmitir un mensaje a otro conector. <b>Send</b> solo puede ser
+usado cuando un conector está en un estado <i>connected</i>
+mientras <b>sendto</b> y <b>sendmsg</b> pueden ser utilizados en
+cualquier momento. 
+</p><p>La dirección de destino viene dada por <i>to</i> con
+<i>tolen</i> especificando su tamaño. La longitud del mensaje viene
+dada por <i>len</i>. Si el mensaje es demasiado largo para pasar
+automáticamente a través del protocolo inferior, se devuelve el
+error <b>EMSGSIZE</b> y el mensaje no es transmitido.</p><p>La llamada <b>send</b> lleva implícita el que no se indiquen los
+posibles errores en la entrega. Los errores detectados localmente
+se indican devolviendo un valor -1.</p><p>Cuando el mensaje no cabe en el buffer de envío del conector,
+<b>send</b> se bloquea, a no ser que el conector se haya colocado
+en el modo de E/S no bloqueante. En el modo no bloqueante
+devolvería <b>EAGAIN</b> en este caso. Se puede utilizar la llamada
+<b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2)
+para determinar cuando es posible enviar más información.</p><p>El parámetro <i>flags</i> es una palabra de opciones y puede
+contener las siguientes opciones:</p><dl compact="compact"><dt><b>MSG_OOB</b></dt>
+
+<dd>Enviar datos <i>fuera de orden</i>(out-of-band) en conectores
+que soportan esta noción (p.ej. <b>SOCK_STREAM</b>); el protocolo
+subyacente también debe soportar datos <i>fuera de orden</i>.</dd>
+
+<dt><b>MSG_DONTROUTE</b></dt>
+
+<dd>No usar un ``gateway'' para enviar el paquete, enviar sólo a
+los ordenadores que se encuentren en redes conectadas directamente.
+Normalmente, esto sólo lo utilizan los programas de diagnóstico y
+enrutamiento. Esta opción sólo está definida para familias de
+protocolos que enrutan. Los conectores de paquetes no enrutan.</dd>
+
+<dt><b>MSG_DONTWAIT</b></dt>
+
+<dd>Habilitar el funcionamiento no bloqueante. Si la operación se
+bloqueara, se devolvería <b>EAGAIN</b> (esto también se puede
+habilitar usando la bandera <b>O_NONBLOCK</b> con la operación
+<b>F_SETFL</b> de <b><a href="http://localhost/cgi-bin/man/man2html?2+fcntl">fcntl</a>(2)).</b></dd>
+
+<dt><b>MSG_NOSIGNAL</b></dt>
+
+<dd>Solicitar el no enviar <b>SIGPIPE</b> en caso de error en
+conectores orientados a conexión cuando el otro extremo rompa la
+conexión. Todavía se devuelve el error <b>EPIPE</b>.</dd>
+</dl><p>Vea <b><a href="http://localhost/cgi-bin/man/man2html?2+recv">recv</a></b>(2)
+para una descripción de la estructura <i>msghdr</i>. Puede enviar
+información de control usando los miembros <i>msg_control</i> y
+<i>msg_controllen</i>. La longitud máxima del buffer de control que
+el núcleo puede procesar está limitada por conector por la sysctl
+<b>net.core.optmem_max</b>. Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7).
+<a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Las llamadas devuelven el numero de caracteres enviados, o -1 si ha
+ocurrido un error. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Estos son algunos errores estándares generados por la capa de
+conectores. Los módulos de los protocolos subyacentes pueden
+generar y devolver errores adicionales. Vea sus páginas de manual
+respectivas. 
+</p><dl compact="compact"><dt><b>EBADF</b></dt>
+
+<dd>Se ha especificado un descriptor no válido.</dd>
+
+<dt><b>ENOTSOCK</b></dt>
+
+<dd>El argumento <i>s</i> no es un conector.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>Se ha especificado como parámetro una dirección incorrecta del
+espacio de usuario. tro.</dd>
+
+<dt><b>EMSGSIZE</b></dt>
+
+<dd>El conector requiere que este mensaje sea enviado
+automáticamente, y el tamaño del mensaje a ser enviado lo hace
+imposible.</dd>
+
+<dt><b>EAGAIN</b> o <b>EWOULDBLOCK</b></dt>
+
+<dd>El conector está marcado como no bloqueante y la operación
+solicitada lo bloquearía.</dd>
+
+<dt><b>ENOBUFS</b></dt>
+
+<dd>La cola de salida del interface de red está llena. Esto
+generalmente indica que el interfaz ha parado de enviar, pero puede
+ser causado por una congestión temporal. (Esto no puede ocurrir en
+Linux, los paquetes simplemente se suprimen silenciosamente cuando
+la cola de un dispositivo se desborda.)</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>Se ha producido una señal.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>No hay memoria disponible.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Se ha pasado un argumento inválido.</dd>
+
+<dt><b>EPIPE</b></dt>
+
+<dd>Se ha desconectado el extremo local en un conector orientado a
+conexión. En este caso el proceso tambíen recibirá una señal
+<b>SIGPIPE</b> a menos que se active la opción
+<b>MSG_NOSIGNAL</b>.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+4.4BSD, SVr4, borrador POSIX 1003.1g (estas llamadas a función
+aparecieron en 4.2BSD). <a id="lbAH"> </a> 
+</p><h2>NOTA</h2><p>
+
+Los prototipos indicados más arriba siguen `the Single Unix
+Specification', ya que glibc2 también lo hace; el argumento
+<i>flags</i> era `int' en BSD 4.* pero `unsigned int' en libc4 y
+libc5; el argumento <i>len</i> era `int' en BSD 4.* y libc4 pero
+`size_t' en libc5; el argumento <i>tolen</i> era `int' en BSD 4.*,
+libc4 y libc5. Vea también <b><a href="http://localhost/cgi-bin/man/man2html?2+accept">accept</a></b>(2).
+<a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+fcntl">fcntl</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+recv">recv</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+getsockopt">getsockopt</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+sendfile">sendfile</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+write">write</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+tcp">tcp</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+udp">udp</a></b>(7) 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINTAXIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">NOTA</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

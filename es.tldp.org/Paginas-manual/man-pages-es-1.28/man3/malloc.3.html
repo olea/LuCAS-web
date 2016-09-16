@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of MALLOC</title></head><body><p>
+  
+</p><h1>MALLOC</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 4 Abril 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+calloc, malloc, free, realloc - Asignar y liberar memoria dinámica
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/stdlib.h">stdlib.h</a>&gt;</b>
+
+<b>void *calloc(size_t</b> <i>nmemb</i><b>, size_t</b> <i>size</i><b>);</b>
+<b>void *malloc(size_t</b> <i>size</i><b>);</b>
+<b>void free(void</b> <i>*ptr</i><b>);</b>
+<b>void *realloc(void</b> <i>*ptr</i><b>, size_t</b> <i>size</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>calloc()</b><p> asigna memoria para una matriz de <i>nmemb</i>
+elementos de <i>size</i> bytes cada uno y devuelve un puntero a la
+memoria asignada. La memoria es puesta a cero. 
+</p><p><b>malloc()</b> asigna <i>size</i> bytes y devuelve un puntero a
+la memoria asignada. La memoria no es borrada.</p><p><b>free()</b> libera el espacio de memoria apuntado por
+<i>ptr</i>, que debe haber sido devuelto por una llamada previa a
+<b>malloc()</b>, <b>calloc()</b> o <b>realloc()</b>. En caso
+contrario, o si <b>free(</b><i>ptr</i><b>)</b> ya se ha llamado
+antes, se produce un comportamiento indefinido. Si <i>ptr</i> es
+<b>NULL</b>, no se realiza ninguna operación.</p><p><b>realloc()</b> cambia el tamaño del bloque de memoria apuntado
+por <i>ptr</i> a <i>size</i> bytes. El contenido permanecerá
+inalterado hasta el mínimo entre el tamaño viejo y el nuevo; la
+memoria recién asignada quedará sin inicializar. Si <i>ptr</i> es
+<b>NULL</b>, la llamada es equivalente a <b>malloc(size)</b>; si
+size es igual a cero, la llamada es equivalente a
+<b>free(</b><i>ptr</i><b>)</b><i>.</i> <i>ptr</i> debe haber sido
+devuelto por una llamada previa a <b>malloc()</b>, <b>calloc()</b>
+o <b>realloc()</b>, a menos que <i>ptr</i> sea <b>NULL</b>. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Para <b>calloc()</b> y <b>malloc()</b>, el valor devuelto es un
+puntero a la memoria asignada, que está convenientemente alineada
+para cualquier tipo de variable, o <b>NULL</b> si la petición
+falla. 
+</p><p><b>free()</b> no devuelve ningún valor.</p><p><b>realloc()</b> devuelve un puntero a la memoria recién
+asignada, que está convenientemente preparada para cualquier tipo
+de variable y podría ser diferente de <i>ptr</i>, o <b>NULL</b> si
+la petición falla o si size era igual a 0. Si <b>realloc()</b>
+falla el bloque original se queda como estaba - no es liberado ni
+movido. <a id="lbAF"> </a></p><h2>CONFORME A</h2><p>
+
+ANSI-C <a id="lbAG"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+brk">brk</a></b><p>(2)
+<a id="lbAH"> </a> 
+</p><h2>NOTAS</h2><p>
+
+El estándar Unix98 necesita que <b>malloc</b>(), <b>calloc</b>() y
+<b>realloc</b>() asignen a <i>errno</i> el valor ENOMEM en caso de
+fallo. Glibc asume que esto se hace (y las versiones de glibc de
+estas rutinas hacen esto); si usa una implementación privada de
+malloc que no asinga un valor a <i>errno</i>, entonces ciertas
+rutinas de biblioteca pueden fallar sin que en <i>errno</i>
+aparezca el motivo del fallo. 
+</p><p>Los caídas de <b>malloc()</b>, <b>free()</b> o <b>realloc()</b>
+casi siempre están relacionadas con la corrupción de la memoria
+montón (heap), tal como el desbordamiento de una porción de memoria
+reservada o la liberación del mismo puntero dos veces.</p><p>Las versiones recientes de libc de Linux (posteriores a la
+5.4.23) y de GNU libc (2.x) incluyen una implementación de malloc
+que se puede ajustar mediante variables de entorno. Cuando se
+define <b>MALLOC_CHECK_</b>, se usa una implementación especial
+(menos eficiente) que está diseñada para tolerar errores simples,
+tales como una llamada doble a <b>free()</b> con el mismo argumento
+o sobrepasar un límite en un byte (fallos "fuera por poco" o de
+desbordamiento). No obstante, no es posible protegerse contra todos
+los errores y se pueden producir pérdidas de memoria. Si se asigna
+a <b>MALLOC_CHECK_</b> el valor 0, cualquier corrupción de memoria
+montón detectada se ignora silenciosamente; si se le asigna el
+valor 1, se imprime un diagnóstico en la salida estándar de error
+(stderr); si se le asigna el valor 2, se llama inmediatamente a
+<b>abort()</b>. Esto es útil porque, en caso contrario, se puede
+producir una caída mucho más tarde y entonces es mucho más difícil
+buscar y encontrar la causa real del problema.</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">CONFORME A</a></dt>
+
+<dt><a href="#lbAG">VÉASE TAMBIÉN</a></dt>
+
+<dt><a href="#lbAH">NOTAS</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:25 GMT, January 22, 2005
+</p></body></html>

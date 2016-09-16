@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of WAIT</title></head><body><p>
+  
+</p><h1>WAIT</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 23 junio 1997<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+wait, waitpid - espera por el final de un proceso <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/wait.h">sys/wait.h</a>&gt;</b><p><b>pid_t wait(int *</b><i>status</i><b>)</b><br /><b>pid_t waitpid(pid_t</b> <i>pid</i><b>, int
+*</b><i>status</i><b>, int</b> <i>options</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función <b>wait</b> suspende la ejecución del proceso actual
+haste que un proceso hijo ha terminado, o hasta que se produce una
+señal cuya acción es terminar el proceso actual o llamar a la
+función manejadora de la señal. Si un hijo ha salido cuando se
+produce la llamada (lo que se entiende por proceso "zombie"), la
+función vuelve inmediatamente. Todos los recursos del sistema
+reservados por el hijo son liberados. 
+</p><p>La función <b>waitpid</b> suspende la ejecución del proceso en
+curso hasta que un hijo especificado por el argumento <i>pid</i> ha
+terminado, o hasta que se produce una señal cuya acción es
+finalizar el proceso actual o llamar a la función manejadora de la
+señal.</p><p>Si el hijo especificado por <i>pid</i> ha terminado cuando se
+produce la llamada (un proceso "zombie"), la función vuelve
+inmediatamente. Todos los recursos del sistema reservados por el
+hijo son liberados.</p><p>El valor de <i>pid</i> puede ser uno de los siguientes:</p><dl compact="compact"><dt>&lt; -1</dt>
+
+<dd>lo que significa esperar a que cualquier proceso hijo cuyo ID
+del proceso es igual al valor absoluto de <i>pid</i>.</dd>
+
+<dt>-1</dt>
+
+<dd>lo que significa que espera por cualquier proceso hijo; este es
+el mismo comportamiento que tiene <b>wait</b>.</dd>
+
+<dt>0</dt>
+
+<dd>lo que significa que espera por cualquier proceso hijo cuyo ID
+es igual al del proceso llamante.</dd>
+
+<dt>&gt; 0</dt>
+
+<dd>lo que significa que espera por el proceso hijo cuyo ID es
+igual al valor de <i>pid</i>.</dd>
+</dl><p>El valor de <i>options</i> es un OR de cero o más de las
+siguientes constantes:</p><dl compact="compact"><dt><b>WNOHANG</b></dt>
+
+<dd>que significa que vuelve inmediatamente si ningún hijo ha
+terminado.</dd>
+
+<dt><b>WUNTRACED</b></dt>
+
+<dd>que significa que también vuelve si hay hijos parados, y de
+cuyo estado no ha recibido notificación.</dd>
+</dl><p>Si <i>status</i> no es <b>NULL</b>, <b>wait</b> o <b>waitpid</b>
+almacena la información de estado en la memoria apuntada por
+<i>status</i>.</p><p>Si el estado puede ser evaluado con las siguientes macros
+(dichas macros toman el buffer stat (un <b>int</b>) como argumento
+--- ¡no un puntero al buffer!):</p><dl compact="compact"><dt><b>WIFEXITED(</b><i>status</i><b>)</b></dt>
+
+<dd>es distinto de cero si el hijo terminó normalmente.</dd>
+
+<dt><b>WEXITSTATUS(</b><i>status</i><b>)</b></dt>
+
+<dd>evalúa los ocho bits menos significativos del código de retorno
+del hijo que terminó, que podrían estar activados como el argumento
+de una llamada a <b>exit()</b> o como el argumento de unñ
+<b>return</b> en el programa principal. Esta macro solamente puede
+ser tenida en cuenta si <b>WIFEXITED</b> devuelve un valor distinto
+de cero.</dd>
+
+<dt><b>WIFSIGNALED(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve true si el proceso hijo terminó a causa de una señal
+no capturada.</dd>
+
+<dt><b>WTERMSIG(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve el número de la señal que provocó la muerte del
+proceso hijo. Esta macro sólo puede ser evaluada si
+<b>WIFSIGNALED</b> devolvió un valor distinto de cero.</dd>
+
+<dt><b>WIFSTOPPED(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve true si el proceso hijo que provocó el retorno está
+actualmente pardo; esto solamente es posible si la llamada se hizo
+usando <b>WUNTRACED</b>.</dd>
+
+<dt><b>WSTOPSIG(</b><i>status</i><b>)</b></dt>
+
+<dd>devuelve el número de la señal que provocó la parada del hijo.
+Esta macro solamente puede ser evaluada si <b>WIFSTOPPED</b>
+devolvió un valor distinto de cero.</dd>
+</dl><a id="lbAE"> </a><h2>VALOR DEVUELTO</h2><p>
+
+El ID del proceso del hijo que terminó, -1 en caso de error o cero
+si se utilizó <b>WNOHANG</b> y no hay hijo disponible (en este
+caso, <i>errno</i> se pone a un valor apropiado). <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>ECHILD</b></dt>
+
+<dd>si el proceso especificado en <i>pid</i> no termina o no es
+hijo del proceso llamante. (Esto puede ocurrir para nuestros
+propios hijos si se asigna SIG_IGN como acción de SIGCHLD.)</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>si el argumento <i>options</i> no fue valido.</dd>
+
+<dt><b>ERESTARTSYS</b></dt>
+
+<dd>si no se activó <b>WNOHANG</b> y si no se ha capturado una
+señal no bloqueada o <b>SIGCHLD</b> El interfaz de la biblioteca no
+tiene permitido devolver <b>ERESTARTSYS</b>, pero devolverá
+<b>EINTR</b>.</dd>
+</dl><a id="lbAG"> </a><h2>NOTAS</h2><p>
+
+The Single Unix Specification (Especificación para un Unix Único)
+describe un modificador SA_NOCLDWAIT (no presente en Linux) tal que
+si este modificador está activo, o bien se ha asignado SIG_IGN como
+acción para SIGCHLD (que, por cierto, no está permitido por POSIX),
+entonces los hijos que terminan no se convierten en zombies y una
+llamada a <i>wait()</i> o <i>waitpid()</i> se bloqueará hasta que
+todos los hijos hayan terminado y, a continuación, fallará
+asignando a <i>errno</i> el valor ECHILD. <a id="lbAH"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+SVr4, POSIX.1 <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+wait4">wait4</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+signal">signal</a></b>(7)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:21 GMT, January 22, 2005
+</p></body></html>

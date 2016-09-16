@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of MSGGET</title></head><body><p>
+  
+</p><h1>MSGGET</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 1 noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+msgget - devuelve el identificador para una cola de mensajes <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b># include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/msg.h">sys/msg.h</a>&gt;</b>
+</pre><p><b>int msgget ( key_t</b> <i>key</i><b>,</b> <b>int msgflg</b>
+<i>)</i> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La función devuelve el identificador de la cola de mensajes
+asociada a <i>key</i>. Se crea una nueva cola de mensajes si
+<i>key</i> tiene el valor <b>IPC_PRIVATE</b>, o si <i>key</i> no es
+<b>IPC_PRIVATE</b> pero no existe ninguna cola de mensajes asociada
+a <i>key</i>, y <b>IPC_CREAT</b> se inserta en <i>msgflg</i> (esto
+es, <i>msgflg</i><b>&amp;</b><i>IPC_CREAT</i> es distinto de cero).
+La presencia en <i>msgflg</i> de los campos <b>IPC_CREAT</b> y
+<b>IPC_EXCL</b> desempeñan el mismo papel, con respecto a la
+existencia de la cola de mensajes, que <b>O_CREAT</b> y
+<b>O_EXCL</b> en el argumento "mode" de la llamada al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2),
+es decir, la función <b>msgget</b> falla si <i>msgflg</i> inserta
+<b>IPC_CREAT</b> y <b>IPC_EXCL</b> y ya esiste una cola de mensajes
+para <i>key</i>. 
+</p><p>En la creación, los 9 bits más bajos del argumento <i>msgflg</i>
+definen los permisos de acceso a la cola de mensajes. Estos bits
+para los permisos tienen la misma forma y semántica que los de los
+permisos de acceso en las llamadas al sistema <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2)
+o <b><a href="http://localhost/cgi-bin/man/man2html?2+creat">creat</a></b>(2)
+(Los permisos de ejecución no son usados.)</p><p>Además, durante la creación, la llamada al sistema inicializa la
+estructura de datos del sistema para la cola <b>msqid_ds</b> como
+se muestra:</p><dl compact="compact"><dd><b>msg_perm.cuid</b> y <b>msg_perm.uid</b> son fijados al
+identificador del usuario efectivo del proceso invocador.</dd>
+
+<dd><b>msg_perm.cgid</b> y <b>msg_perm.gid</b> son fijados al
+identificador de grupo efectivo del proveso invocador.</dd>
+
+<dd>Los 9 bits más bajo de <b>msg_perm.mode</b> son fijados a los 9
+bits más bajos de <i>msgflg</i>.</dd>
+
+<dd><b>msg_qnum</b>, <b>msg_lspid</b>, <b>msg_lrpid</b>,
+<b>msg_stime</b> y <b>msg_rtime</b> son puestos a 0.</dd>
+
+<dd><b>msg_ctime</b> contendrá la hora actual</dd>
+
+<dd><b>msg_qbytes</b> será igual al límite impuesto por el sistema
+<b>MSGMNB</b>.</dd>
+</dl><p>Si la cola de mensajes ya existe, se verifican los permisos de
+acceso, y ser realiza una comprobación a fin de verificar si está
+marcada para su destrucción. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Si ha funcionado correctamente, devuelve el idenficador para la
+cola de mensajes (un entero no negativo), en otro caso <b>-1</b>
+con <b>errno</b> indicando el error. <a id="lbAF"> </a>
+
+</p><h2>ERRORES</h2><p>
+
+Cuando se produzca un error, <b>errno</b> tendrá uno de los
+siguientes valores: 
+</p><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>Existe una cola de mensajes para <i>key</i>, pero el proceso no
+tiene permiso de acceso a la cola.</dd>
+
+<dt><b>EEXIST</b></dt>
+
+<dd>Existe una cola de mensajes para <b>key</b> y <i>msgflg</i>
+contiene <b>IPC_CREAT</b> y <b>IPC_EXCL</b>.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>La cola está marcada para ser eliminada.</dd>
+
+<dt><b>ENOENT</b></dt>
+
+<dd>No existe una cola de mensajes para <i>key</i> y <i>msgflg</i>
+no contiene <b>IPC_CREAT</b>.</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>Una cola de mensajes ha de ser creada pero el sistema no
+contiene suficiente memoria para la nueva estructura de datos.</dd>
+
+<dt><b>ENOSPC</b></dt>
+
+<dd>Una cola de mensajes ha de ser creada pero el límite del
+sistema para el máximo número de colas de mensajes (<b>MSGMNI</b>)
+será superado.</dd>
+</dl><a id="lbAG"> </a><h2>NOTAS</h2><b>IPC_PRIVATE</b><p> no es un campo de tipo bandera, es del tipo
+<b>key_t</b> Si este valor especial es utilizado por <i>key</i>, la
+llamada al sistema ignorará todo excepto los 9 bits de menor orden
+de <i>msgflg</i> y crea una nueva cola de mensajes (si ha
+funcionado). 
+</p><p>Lo siguiente es una limitación en los recursos del sistema que
+afecta a la llamada <b>msgget</b></p><dl compact="compact"><dt><b>MSGMNI</b></dt>
+
+<dd>Número máximo de colas de mensajes soportadas por el sistema:
+depende de la política tomada.</dd>
+</dl><a id="lbAH"> </a><h2>ERRORES</h2><p>
+
+El uso de <b>IPC_PRIVATE</b> no prohibe a otros procesos tener
+acceso a la cola de mensajes creada. 
+</p><p>Como en el caso de los ficheros, no existe una forma intrínseca
+de asegurar el acceso exclusivo a la cola de mensajes. Insertando
+<b>IPC_CREAT</b> y <b>IPC_EXCL</b> en <i>msgflg</i> sólo garantiza
+que la nueva cola de mensajes será creada, no implica acceso
+exclusivo a la cola de mensajes. <a id="lbAI"> </a></p><h2>CONFORME A</h2><p>
+
+SVr4, SVID. SVr4 no documenta el código de error EIDRM. <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+ftok">ftok</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgctl">msgctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgsnd">msgsnd</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgrcv">msgrcv</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">ERRORES</a></dt>
+
+<dt><a href="#lbAI">CONFORME A</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

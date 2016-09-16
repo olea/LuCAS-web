@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of RTNETLINK</title></head><body><p>
+  
+</p><h1>RTNETLINK</h1><p>
+
+Section: Manual del Programador de Linux (7)<br />
+Updated: 30 abril 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+rtnetlink, NETLINK_ROUTE - Conector de enrutamiento IPv4 de Linux.
+<a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/asm/types.h">asm/types.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/linux/netlink.h">linux/netlink.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/linux/rtnetlink.h">linux/rtnetlink.h</a>&gt;</b><br /><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><p><b>rtnetlink_socket = socket(PF_NETLINK, int</b>
+<i>socket_type</i><b>, NETLINK_ROUTE);</b></p><p><a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Rtnetlink permite leer y alterar las tablas de enrutamiento del
+núcleo. Se usa dentro del núcleo para comunicar entre sí varios
+subsistemas (aunque este uso no se documenta aquí) y para la
+comunicación con programas en el espacio de usuario. Las rutas de
+red, las direcciones IP, los parámetros de enlace, las
+configuraciones de vecinos, las disciplinas de encolamiento, las
+clases de intercambio y los clasificadores de paquetes pueden
+controlarse a través de conectores <b>NETLINK_ROUTE</b>. Todo esto
+se basa en mensajes netlink. Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+netlink">netlink</a></b>(7)
+para más información. 
+</p><p><a id="lbAE"> </a></p><h2>ATRIBUTOS DE ENRUTAMIENTO</h2><p>
+
+Algunos mensajes rtnetlink poseen atributos opcionales después de
+la cabecera inicial: 
+</p><pre>
+struct rtattr
+{
+    unsigned short rta_len;     /* Longitud de la opción */
+    unsigned short rta_type;    /* Tipo de opción */
+    /* Los datos vienen a continuación */ 
+};
+</pre><p>Estos atributos sólo deberían manipularse usando las macros
+RTA_* o la librería libnetlink. Vea <b><a href="http://localhost/cgi-bin/man/man2html?3+rtnetlink">rtnetlink</a></b>(3).</p><p><a id="lbAF"> </a></p><h2>MENSAJES</h2><p>
+
+Rtnetlink está formado por los siguientes tipos de mensajes (además
+de los mensajes netlink estándares): 
+</p><dl compact="compact"><dt><b>RTM_NEWLINK</b>, <b>RTM_DELLINK</b>, <b>RTM_GETLINK</b></dt>
+
+<dd>Crea, borra u obtiene información de una interfaz de red
+específica. Estos mensajes contienen una estructura
+<b>ifinfomsg</b> seguida por una serie de estructuras
+<b>rtattr</b>. 
+<pre>
+struct ifinfomsg
+{
+    unsigned char  ifi_family;  /* AF_UNSPEC */
+    unsigned char  __ifi_pad;   /* Sin usar */
+    unsigned short ifi_type;    /* Tipo del dispositivo */ 
+    int            ifi_index;   /* Índice de la interfaz   */
+    unsigned int   ifi_flags;   /* Opciones del dispositivo  */
+    unsigned int   ifi_change;  /* Máscara de cambios */
+};
+</pre>
+
+<p><b>ifi_flags</b> contiene las opciones del dispositivo. Vea
+<b><a href="http://localhost/cgi-bin/man/man2html?7+netdevice">netdevice</a>(7).</b>
+<b>ifi_index</b> es el índice de la interfaz. <b>ifi_change</b> se
+reserva para uso futuro y siempre debe valer 0xFFFFFFFF.</p>
+
+<table border="1"><tr valign="top"><td align="center" colspan="3"><i>Atributos de
+enrutamiento</i><br /></td>
+</tr><tr valign="top"><td><b>rta_type</b></td>
+<td><b>Tipo de valor</b></td>
+<td><b>Descripción</b><br /></td>
+</tr><tr valign="top"><td>IFLA_UNSPEC</td>
+<td>-</td>
+<td>sin especificar.<br /></td>
+</tr><tr valign="top"><td>IFLA_ADDRESS</td>
+<td>dirección hardware</td>
+<td>dirección del Nivel 2 de la interfaz<br /></td>
+</tr><tr valign="top"><td>IFLA_BROADCAST</td>
+<td>dirección hardware</td>
+<td>dirección de difusión del Nivel 2<br /></td>
+</tr><tr valign="top"><td>IFLA_IFNAME</td>
+<td>cadena terminada en cero</td>
+<td>nombre del dispositivo<br /></td>
+</tr><tr valign="top"><td>IFLA_MTU</td>
+<td>entero sin signo</td>
+<td>MTU del dispositivo<br /></td>
+</tr><tr valign="top"><td>IFLA_LINK</td>
+<td>entero</td>
+<td>tipo de enlace<br /></td>
+</tr><tr valign="top"><td>IFLA_QDISC</td>
+<td>cadena terminada en cero</td>
+<td>disciplina de encolamiento<br /></td>
+</tr><tr valign="top"><td>IFLA_STATS</td>
+<td>estructura net_device_stats</td>
+<td>estadísticas de la interfaz<br /></td>
+</tr></table></dd>
+
+<dt><b>RTM_NEWADDR</b>, <b>RTM_DELADDR</b>, <b>RTM_GETADDR</b></dt>
+
+<dd>Añade, elmina o recibe información de una dirección IP asociada
+con una interfaz. En Linux 2.2 una interfaz puede acarrear varias
+direcciones IP. Esto reemplaza el concepto de dispositivo alias de
+la versión 2.0. En Linux 2.2 estos mensajes soportan direcciones
+IPv4 e IPv6. Contienen una estructura <b>ifaddrmsg</b> seguida
+opcionalmente por atributos de enrutamiento <b>rtaddr</b>. 
+<pre>
+struct ifaddrmsg
+{
+    unsigned char  ifa_family;    /* Tipo de dirección */
+    unsigned char  ifa_prefixlen; /* Longitud del prefijo de
+                                     la dirección */
+    unsigned char  ifa_flags;     /* Opciones de la dirección */
+    unsigned char  ifa_scope;     /* Ámbito de la dirección */
+    int            ifa_index;     /* Índice de la interfaz */
+};
+</pre>
+
+<p><b>ifa_family</b> es el tipo de la familia de direcciones
+(actualmente <b>AF_INET</b> o <b>AF_INET6),</b>
+<b>ifa_prefixlen</b> es la longitud de la máscara de la dirección
+si ésta está definida para la familia (como ocurre con IPv4),
+<b>ifa_scope</b> es el ámbito de la dirección, <b>ifa_index</b> es
+el índice de la interfaz con la que la dirección está asociada.
+<b>ifa_flags</b> es una palabra de opciones que contiene
+<b>IFA_F_SECONDARY</b> para una dirección secundaria (antiguo
+interfaz alias), <b>IFA_F_PERMANENT</b> para una dirección
+permanente configurada por el usuario, y otras opciones sin
+documentar.</p>
+
+<table border="1"><tr valign="top"><td align="center" colspan="3"><i>Atributos</i><br /></td>
+</tr><tr valign="top"><td><b>rta_type</b></td>
+<td><b>Tipo de valor</b></td>
+<td><b>Descripción</b><br /></td>
+</tr><tr valign="top"><td>IFA_UNSPEC</td>
+<td>-</td>
+<td>sin especificar.<br /></td>
+</tr><tr valign="top"><td>IFA_ADDRESS</td>
+<td>dirección de protocolo</td>
+<td>dirección de la interfaz<br /></td>
+</tr><tr valign="top"><td>IFA_LOCAL</td>
+<td>dirección de protocolo</td>
+<td>dirección local<br /></td>
+</tr><tr valign="top"><td>IFA_LABEL</td>
+<td>cadena terminada en cero</td>
+<td>nombre de la interfaz<br /></td>
+</tr><tr valign="top"><td>IFA_BROADCAST</td>
+<td>dirección de protocolo</td>
+<td>dirección de difusión<br /></td>
+</tr><tr valign="top"><td>IFA_ANYCAST</td>
+<td>dirección de protocolo</td>
+<td>dirección de "cualquier destino"<br /></td>
+</tr><tr valign="top"><td>IFA_CACHEINFO</td>
+<td>estructura ifa_cacheinfo</td>
+<td>información de la dirección<br /></td>
+</tr></table></dd>
+
+<dt><b>RTM_NEWROUTE</b>, <b>RTM_DELROUTE</b>,
+<b>RTM_GETROUTE</b></dt>
+
+<dd>Crea, borra o recibe información de una ruta de red. Estos
+mensajes contienen una estructura <b>rtmsg</b> con una secuencia
+opcional a continuación de estructuras <b>rtattr</b>. 
+<pre>
+struct rtmsg
+{
+    unsigned char  rtm_family;    /* Familia de direcciones de
+                                     la ruta */
+    unsigned char  rtm_dst_len;   /* Longitud del destino */
+    unsigned char  rtm_src_len;   /* Longitud del origen */ 
+    unsigned char  rtm_tos;       /* Filtro TOS */
+
+    unsigned char  rtm_table;     /* Identificador de la tabla de
+                                     enrutamiento */
+    unsigned char  rtm_protocol;  /* Protocolo de enrutamiento.
+                                     Ver más abajo */
+    unsigned char  rtm_scope;     /* Ver más abajo */
+    unsigned char  rtm_type;      /* Ver más abajo */
+
+    unsigned int   rtm_flags;     
+};
+</pre>
+
+<table border="1"><tr valign="top"><td><b>rtm_type</b></td>
+<td><b>Tipo de ruta</b><br /></td>
+</tr><tr valign="top"><td>RTN_UNSPEC</td>
+<td>ruta desconocida<br /></td>
+</tr><tr valign="top"><td>RTN_UNICAST</td>
+<td>una pasarela (gateway) o ruta directa<br /></td>
+</tr><tr valign="top"><td>RTN_LOCAL</td>
+<td>una ruta de la interfaz local<br /></td>
+</tr><tr valign="top"><td>RTN_BROADCAST</td>
+<td>una ruta de difusión local (enviada en una difusión)<br /></td>
+</tr><tr valign="top"><td>RTN_ANYCAST</td>
+<td>una ruta de difusión local (enviada en un unidestino)<br /></td>
+</tr><tr valign="top"><td>RTN_MULTICAST</td>
+<td>una ruta multidestino<br /></td>
+</tr><tr valign="top"><td>RTN_BLACKHOLE</td>
+<td>una ruta para la pérdida de paquetes<br /></td>
+</tr><tr valign="top"><td>RTN_UNREACHABLE</td>
+<td>un destino inalcanzable<br /></td>
+</tr><tr valign="top"><td>RTN_PROHIBIT</td>
+<td>una ruta de rechazo de paquetes<br /></td>
+</tr><tr valign="top"><td>RTN_THROW</td>
+<td>continuar la búsqueda de rutas en otra tabla<br /></td>
+</tr><tr valign="top"><td>RTN_NAT</td>
+<td>una regla de traducción de direcciones de red<br /></td>
+</tr><tr valign="top"><td>RTN_XRESOLVE</td>
+<td>remitir a una entidad de resolución externa (no
+implementado)<br /></td>
+</tr></table><table border="1"><tr valign="top"><td><b>rtm_protocol</b></td>
+<td><b>Ruta original</b><br /></td>
+</tr><tr valign="top"><td>RTPROT_UNSPEC</td>
+<td>desconocido<br /></td>
+</tr><tr valign="top"><td>RTPROT_REDIRECT</td>
+<td>por una redirección ICMP (no usado actualmente)<br /></td>
+</tr><tr valign="top"><td>RTPROT_KERNEL</td>
+<td>por el núcleo<br /></td>
+</tr><tr valign="top"><td>RTPROT_BOOT</td>
+<td>durante el arranque<br /></td>
+</tr><tr valign="top"><td>RTPROT_STATIC</td>
+<td>por el administrador<br /></td>
+</tr></table><p>Los valores mayores que <b>RTPROT_STATIC</b> no son
+interpretados por el núcleo, sólo son para información de usuario.
+Se pueden usar para identificar la fuente de una información de
+enrutamiento o para distinguir entre varios demonios de
+enrutamiento. Vea <b>&lt;<a href="file:/usr/include/linux/rtnetlink.h">linux/rtnetlink.h</a>&gt;</b>
+para los indentificadores de los demonios de enrutamiento que ya
+están asignados.</p>
+
+<p><b>rtm_scope</b> es la distancia al destino:</p>
+
+<table border="1"><tr valign="top"><td>RT_SCOPE_UNIVERSE</td>
+<td>ruta global<br /></td>
+</tr><tr valign="top"><td>RT_SCOPE_SITE</td>
+<td>ruta interior en el sistema autónomo local<br /></td>
+</tr><tr valign="top"><td>RT_SCOPE_LINK</td>
+<td>ruta en este enlace<br /></td>
+</tr><tr valign="top"><td>RT_SCOPE_HOST</td>
+<td>ruta en el anfitrión local<br /></td>
+</tr><tr valign="top"><td>RT_SCOPE_NOWHERE</td>
+<td>el destino no existe<br /></td>
+</tr></table><p>Los valores entre <b>RT_SCOPE_UNIVERSE</b> y
+<b>RT_SCOPE_SITE</b> están disponibles para el usuario.</p>
+
+<p><b>rtm_flags</b> tiene los siguientes significados:</p>
+
+<table border="1"><tr valign="top"><td>RTM_F_NOTIFY</td>
+<td>si la ruta cambia, informar al usuario mediante rtnetlink<br /></td>
+</tr><tr valign="top"><td>RTM_F_CLONED</td>
+<td>la ruta es un duplicado de otra ruta<br /></td>
+</tr><tr valign="top"><td>RTM_F_EQUALIZE</td>
+<td>un equalizador multidestino (no implementado todavía)<br /></td>
+</tr></table><p><b>rtm_table</b> especifica la tabla de enrutamiento</p>
+
+<table border="1"><tr valign="top"><td>RT_TABLE_UNSPEC</td>
+<td>una tabla de enrutamiento sin especificar<br /></td>
+</tr><tr valign="top"><td>RT_TABLE_DEFAULT</td>
+<td>la tabla por defecto<br /></td>
+</tr><tr valign="top"><td>RT_TABLE_MAIN</td>
+<td>la tabla principal<br /></td>
+</tr><tr valign="top"><td>RT_TABLE_LOCAL</td>
+<td>la tabla local<br /></td>
+</tr></table><p>El usuario puede asignar valores arbitrarios entre
+<b>RT_TABLE_UNSPEC</b> y <b>RT_TABLE_DEFAULT</b>.</p>
+
+<table border="1"><tr valign="top"><td align="center" colspan="3"><i>Atributos</i><br /></td>
+</tr><tr valign="top"><td><b>rta_type</b></td>
+<td><b>Tipo de valor</b></td>
+<td><b>Descripción</b><br /></td>
+</tr><tr valign="top"><td>RTA_UNSPEC</td>
+<td>-</td>
+<td>ignorado<br /></td>
+</tr><tr valign="top"><td>RTA_DST</td>
+<td>dirección de protocolo</td>
+<td>dirección de destino de la ruta<br /></td>
+</tr><tr valign="top"><td>RTA_SRC</td>
+<td>dirección de protocolo</td>
+<td>dirección de origen de la ruta<br /></td>
+</tr><tr valign="top"><td>RTA_IIF</td>
+<td>entero</td>
+<td>índice de la interfaz de entrada<br /></td>
+</tr><tr valign="top"><td>RTA_OIF</td>
+<td>entero</td>
+<td>índice de la interfaz de salida<br /></td>
+</tr><tr valign="top"><td>RTA_GATEWAY</td>
+<td>dirección de protocolo</td>
+<td>la pasarela (gateway) de la ruta<br /></td>
+</tr><tr valign="top"><td>RTA_PRIORITY</td>
+<td>entero</td>
+<td>prioridad de la ruta<br /></td>
+</tr><tr valign="top"><td>RTA_PREFSRC</td>
+<td></td>
+<td><br /></td>
+</tr><tr valign="top"><td>RTA_METRICS</td>
+<td>entero</td>
+<td>métrica de la ruta<br /></td>
+</tr><tr valign="top"><td>RTA_MULTIPATH</td>
+<td></td>
+<td><br /></td>
+</tr><tr valign="top"><td>RTA_PROTOINFO</td>
+<td></td>
+<td><br /></td>
+</tr><tr valign="top"><td>RTA_FLOW</td>
+<td></td>
+<td><br /></td>
+</tr><tr valign="top"><td>RTA_CACHEINFO</td>
+<td></td>
+<td><br /></td>
+</tr></table><p><b>¡Esta tabla está incompleta!</b></p>
+</dd>
+
+<dt><b>RTM_NEWNEIGH</b>, <b>RTM_DELNEIGH</b>,
+<b>RTM_GETNEIGH</b></dt>
+
+<dd>Añade, borra o recibe información de una entrada de la tabla de
+vecinos (por ejemplo, una entrada ARP). El mensaje contiene una
+estructura <b>ndmsg</b>. 
+<pre>
+struct ndmsg
+{
+    unsigned char  ndm_family;
+    unsigned char  ndm_pad1;
+    unsigned short ndm_pad2;
+    int            ndm_ifindex; /* Índice de la interfaz */
+    __u16          ndm_state;   /* Estado */ 
+    __u8           ndm_flags;   /* Opciones */
+    __u8           ndm_type;   
+};
+
+struct nda_cacheinfo
+{
+    __u32          ndm_confirmed;
+    __u32          ndm_used;
+    __u32          ndm_updated;
+    __u32          ndm_refcnt;
+};
+</pre>
+
+<p><b>ndm_state</b> es una máscara de bits de los siguientes
+estados:</p>
+
+<table border="1"><tr valign="top"><td>NUD_INCOMPLETE</td>
+<td>una entrada de la cache que se está resolviendo
+actualmente<br /></td>
+</tr><tr valign="top"><td>NUD_REACHABLE</td>
+<td>una entrada de la cache que ya se ha confirmado como
+operativa<br /></td>
+</tr><tr valign="top"><td>NUD_STALE</td>
+<td>una entrada de la cache caduca<br /></td>
+</tr><tr valign="top"><td>NUD_DELAY</td>
+<td>una entrada que espera a un cronómetro<br /></td>
+</tr><tr valign="top"><td>NUD_PROBE</td>
+<td>una entrada de la cache que se está sondeando de nuevo
+actualmente<br /></td>
+</tr><tr valign="top"><td>NUD_FAILED</td>
+<td>una entrada de la cache inválida<br /></td>
+</tr><tr valign="top"><td>NUD_NOARP</td>
+<td>un dispositivo sin cache de destinos<br /></td>
+</tr><tr valign="top"><td>NUD_PERMANENT</td>
+<td>una entrada estática<br /></td>
+</tr></table><p>Los <b>ndm_flags</b> válidos son:</p>
+
+<table border="1"><tr valign="top"><td>NTF_PROXY</td>
+<td>una entrada proxy arp<br /></td>
+</tr><tr valign="top"><td>NTF_ROUTER</td>
+<td>un enrutador IPv6<br /></td>
+</tr></table><p><b>Hay que documentar mejor los miembros de la
+estructura.</b></p>
+
+<p>La estructura <b>rtaddr</b> tiene los siguientes significados
+para el campo <b>rta_type</b>:</p>
+
+<table border="1"><tr valign="top"><td>NDA_UNSPEC</td>
+<td>tipo desconocido<br /></td>
+</tr><tr valign="top"><td>NDA_DST</td>
+<td>una dirección de destino de la capa de red de la cache de
+vecinos<br /></td>
+</tr><tr valign="top"><td>NDA_LLADDR</td>
+<td>una dirección de la capa de enlace de la cache de vecinos<br /></td>
+</tr><tr valign="top"><td>NDA_CACHEINFO</td>
+<td>estadísticas de la cache<br /></td>
+</tr></table><p>Si el campo <b>rta_type</b> es <b>NDA_CACHEINFO</b>, a
+continuación viene una cabecera <b>struct nda_cacheinfo</b>.</p>
+</dd>
+
+<dt><b>RTM_NEWRULE</b>, <b>RTM_DELRULE</b>, <b>RTM_GETRULE</b></dt>
+
+<dd>Añade, borra o recupera una regla de enrutamiento. Lleva
+asociada una <b>struct rtmsg</b>.</dd>
+
+<dt><b>RTM_NEWQDISC</b>, <b>RTM_DELQDISC</b>,
+<b>RTM_GETQDISC</b></dt>
+
+<dd>Añade, borra u obtiene una disciplina de encolamiento. El
+mensaje contiene una <b>struct tcmsg</b> que puede ir seguida por
+una serie de atributos. 
+<pre>
+struct tcmsg
+{
+    unsigned char  tcm_family;
+    unsigned char  tcm__pad1;
+    unsigned short tcm__pad2;
+    int            tcm_ifindex; /* Índice de la interfaz */
+    __u32          tcm_handle;  /* Descriptor qdisc */ 
+    __u32          tcm_parent;  /* Qdisc del padre*/
+    __u32          tcm_info;
+};
+</pre>
+
+<table border="1"><tr valign="top"><td align="center" colspan="3"><i>Atributos</i><br /></td>
+</tr><tr valign="top"><td><b>rta_type</b></td>
+<td><b>Tipo de valor</b></td>
+<td><b>Descripción</b><br /></td>
+</tr><tr valign="top"><td>TCA_UNSPEC</td>
+<td>-</td>
+<td>sin especificar<br /></td>
+</tr><tr valign="top"><td>TCA_KIND</td>
+<td>cadena terminada en cero</td>
+<td>nombre de la disciplina de encolamiento<br /></td>
+</tr><tr valign="top"><td>TCA_OPTIONS</td>
+<td>secuencia de bytes</td>
+<td>opciones específicas de Qdisc que vienen a continuación<br /></td>
+</tr><tr valign="top"><td>TCA_STATS</td>
+<td>estructura tc_stats</td>
+<td>estadísticas qdisc<br /></td>
+</tr><tr valign="top"><td>TCA_XSTATS</td>
+<td>específico de qdisc</td>
+<td>estadísticas específicas del módulo<br /></td>
+</tr><tr valign="top"><td>TCA_RATE</td>
+<td>estructura tc_estimator</td>
+<td>límite de la tasa<br /></td>
+</tr></table><p>Además, se permiten otros atributos diferentes específicos del
+módulo qdisc. Para más información, vea los ficheros cabecera
+adecuados.</p>
+</dd>
+
+<dt><b>RTM_NEWTCLASS</b>, <b>RTM_DELTCLASS</b>,
+<b>RTM_GETTCLASS</b></dt>
+
+<dd>Añade, borra u obtiene una clase de intercambio. Estos mensajes
+contienen una <b>struct tcmsg</b> como la descrita
+anteriormente.</dd>
+
+<dt><b>RTM_NEWTFILTER</b>, <b>RTM_DELTFILTER</b>,
+<b>RTM_GETTFILTER</b></dt>
+
+<dd>Añade, borra o recibe información de una filtro de tráfico.
+Estos mensajes contienen una <b>struct tcmsg</b> como la descrita
+anteriormente.</dd>
+</dl><a id="lbAG"> </a><h2>VERSIONES</h2><p><b>rtnetlink</b> es una nueva característica de la versión 2.2
+de Linux.</p><p><a id="lbAH"> </a></p><h2>FALLOS</h2><p>
+
+Esta página de manual es deficiente y está incompleta. 
+</p><p><a id="lbAI"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?7+netlink">netlink</a></b><p>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+cmsg">cmsg</a></b>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?7+ip">ip</a></b>(7),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+rtnetlink">rtnetlink</a></b>(3)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">ATRIBUTOS DE ENRUTAMIENTO</a></dt>
+
+<dt><a href="#lbAF">MENSAJES</a></dt>
+
+<dt><a href="#lbAG">VERSIONES</a></dt>
+
+<dt><a href="#lbAH">FALLOS</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>

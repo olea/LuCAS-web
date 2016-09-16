@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of CMSG</title></head><body><p>
+  
+</p><h1>CMSG</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 2 octubre 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NONMBRE</h2><p>
+
+CMSG_ALIGN, CMSG_SPACE, CMSG_NXTHDR, CMSG_FIRSTHDR - Acceso a datos
+auxiliares. <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/sys/socket.h">sys/socket.h</a>&gt;</b><br /><p><b>struct cmsghdr *CMSG_FIRSTHDR(struct msghdr
+*</b><i>msgh</i><b>);</b><br /><b>struct cmsghdr *CMSG_NXTHDR(struct msghdr *</b><i>msgh</i><b>,
+struct cmsghdr *</b><i>cmsg</i><b>);</b><br /><b>size_t CMSG_ALIGN(size_t</b> <i>length</i><b>);</b><br /><b>size_t CMSG_SPACE(size_t</b> <i>length</i><b>);</b><br /><b>size_t CMSG_LEN(size_t</b> <i>length</i><b>);</b><br /><b>void *CMSG_DATA(struct cmsghdr *</b><i>cmsg</i><b>);</b></p><pre>
+struct cmsghdr {
+        socklen_t   cmsg_len;   /* cantidad de bytes de datos,
+                                incluyendo la cabecera */
+        int         cmsg_level; /* protocolo originario */
+        int         cmsg_type;  /* tipo específico del protocolo */
+                                /* seguido de
+        unsigned char           cmsg_data[]; */
+};
+
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Estas macros se usan para crear y acceder a mensajes de control
+(también llamados datos auxiliares) que no son parte del contenido
+útil de un conector. Esta información de control puede incluir la
+interfaz en la que se ha recibido el paquete, diferentes campos de
+cabecera usados raramente, una descripción de error ampliada, un
+conjunto de descriptores de fichero o credenciales de Unix. Por
+ejemplo, los mensajes de control se pueden usar para enviar campos
+de cabecera adicionales tales como opciones IP. Los datos
+auxiliares se envían llamando a <b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b>(2)
+y se reciben llamando a <b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b>(2).
+Vea sus páginas de manual para más información. 
+</p><p>Los datos auxiliares son una secuencia de estructuras <b>struct
+cmsghdr</b> con datos añadidos. Sólo se debería acceder a esta
+secuencia usando las macros descritas en esta página de manual y
+nunca directamente. Vea las páginas de manual específicas del
+protocolo para conocer los tipos de mensajes de control
+disponibles. El tamaño máximo permitido del buffer auxiliar por
+conector se puede configura con la sysctl
+<b>net.core.optmem_max</b>. Vea <b><a href="http://localhost/cgi-bin/man/man2html?7+socket">socket</a></b>(7).</p><p><b>CMSG_FIRSTHDR</b> devuelve un puntero a la primera
+<b>cmsghdr</b> en el buffer de datos auxiliares asociado con la
+<b>msghdr</b> pasada.</p><p><b>CMSG_NXTHDR</b> devuelve la siguiente <b>cmsghdr</b> válida
+después de la <b>cmsghdr</b> pasada. Devuelve <b>NULL</b> cuando no
+queda suficiente espacio en el buffer. when there isn't enough
+space left in the buffer.</p><p><b>CMSG_ALIGN</b>, dada una longitud, la devuelve incluyendo la
+alineación necesaria. Ésta es una expresión constante.</p><p><b>CMSG_SPACE</b> devuelve la cantidad de bytes que ocupa un
+elemento auxiliar cuyo contenido útil es de la longitud de datos
+pasada. Ésta es una expresión constante.</p><p><b>CMSG_DATA</b> devuelve un puntero a la porción de datos de
+una <b>cmsghdr</b>.</p><p><b>CMSG_LEN</b> devuelve el valor a almacenar en el miembro
+<i>cmsg_len</i> de la estructura <b>cmsghdr</b> teniendo en cuenta
+cualquier alineación necesaria. Toma como argumento la longitud de
+los datos. Ésta es una expresión constante.</p><p>Para crear datos auxiliares, inicialice primero el miembro
+<i>msg_controllen</i> de la estructura <b>msghdr</b> con el tamaño
+del buffer de mensajes de control. Use <b>CMSG_FIRSTHDR</b> sobre
+<b>msghdr</b> para obtener el primer mensaje de control y
+<b>CMSG_NEXTHDR</b> para obtener los siguientes. En cada mensaje de
+control, inicialice <i>cmsg_len</i> (con <b>CMSG_LEN</b>), los
+otros campos cabecera de <b>cmsghdr</b> y la parte de datos usando
+<b>CMSG_DATA</b>. Finalmente, debería asignar al campo
+<i>msg_controllen</i> de <b>msghdr</b> la suma de los
+<b>CMSG_SPACE</b> de las longitudes de todos los mensajes de
+control del buffer. Para más información sobre <b>msghdr</b>, vea
+<b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b>(2).</p><p>Cuando el buffer de mensajes de control es demasiado pequeño
+para almacenar todos los mensajes, se activa la bandera
+<b>MSG_CTRUNC</b> en el miembro <i>msg_flags</i> de <b>msghdr</b>.
+<a id="lbAE"> </a></p><h2>EJEMPLO</h2><p>
+
+Este código busca la opción <b>IP_TTL</b> en un buffer auxiliar
+recibido: 
+</p><dl compact="compact"><dd>
+<pre>
+struct msghdr msgh; 
+struct cmsghdr *cmsg;
+int *ttlptr;
+int received_ttl;
+
+/* Recibir los datos auxiliares en msgh */ 
+for (cmsg = CMSG_FIRSTHDR(&amp;msgh); 
+     cmsg != NULL; 
+     cmsg = CMSG_NXTHDR(&amp;msgh,cmsg) {
+        if (cmsg-&gt;cmsg_level == SOL_IP 
+          &amp;&amp; cmsg-&gt;cmsg_type == IP_TTL) { 
+                ttlptr = (int *) CMSG_DATA(cmsg);
+                received_ttl = *ttlptr; 
+                break;
+        }
+}
+if (cmsg == NULL) {
+        /* Error: IP_TTL no habilitada o buffer pequeño o
+         * error de E/S.
+         */ 
+} 
+
+</pre>
+</dd>
+</dl><p>El siguiente código pasa un vector de descriptores de ficheros
+mediante un conector Unix usando <b>SCM_RIGHTS</b>:</p><dl compact="compact"><dd>
+<pre>
+struct msghdr msg = {0};
+struct cmsghdr *cmsg;
+int myfds[NUM_FD]; /* Los descriptores de fichero a pasar. */ 
+char buf[CMSG_SPACE(sizeof myfds)];  /* buffer de datos auxiliares */
+int *fdptr;
+
+msg.msg_control = buf; 
+msg.msg_controllen = sizeof buf;
+cmsg = CMSG_FIRSTHDR(&amp;msg); 
+cmsg-&gt;cmsg_level = SOL_SOCKET;
+cmsg-&gt;cmsg_type = SCM_RIGHTS;
+cmsg-&gt;cmsg_len = CMSG_LEN(sizeof(int) * NUM_FD); 
+/* Inicializar el contenido útil: */ 
+fdptr = (int *)CMSG_DATA(cmsg); 
+memcpy(fdptr, myfds, NUM_FD * sizeof(int)); 
+/* Sumar la longitud de todos los mensajes de control en el buffer: */ 
+msg.msg_controllen = cmsg-&gt;cmsg_len;
+
+</pre>
+</dd>
+</dl><a id="lbAF"> </a><h2>NOTAS</h2><p>
+
+Para transportabilidad, sólo se debería acceder a los datos
+auxiliares usando las macros descritas aquí. <b>CMSG_ALIGN</b> es
+una extensión de Linux y no debería usarse en programas
+transportables. 
+</p><p>En Linux, <b>CMSG_LEN</b>, <b>CMSG_DATA</b> y <b>CMSG_ALIGN</b>
+son expresiones constantes (suponiendo que su argumento sea
+contante). Esto se podría usar para declarar el tamaño de variables
+globales pero, sin embargo, podría no ser transportable. <a id="lbAG"> </a></p><h2>CONFORME A</h2><p>
+
+El modelo de datos auxiliares sigue el borrador POSIX.1003.1g,
+4.4BSD-Lite, la API avanzada de IPv6 descrita en RFC2292 y the
+Single Unix specification v2. <b>CMSG_ALIGN</b> es una extensión de
+Linux. <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+sendmsg">sendmsg</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+recvmsg">recvmsg</a></b>(2)
+
+</p><p>RFC 2292</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NONMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">EJEMPLO</a></dt>
+
+<dt><a href="#lbAF">NOTAS</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

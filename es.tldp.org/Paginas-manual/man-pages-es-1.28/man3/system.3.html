@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SYSTEM</title></head><body><p>
+  
+</p><h1>SYSTEM</h1><p>
+
+Section: Manual del Programador de Linux (3)<br />
+Updated: 11 Mayo 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+system - ejecuta una orden del intérprete de comandos (shell) <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/stdlib.h">stdlib.h</a>&gt;</b>
+
+<b>int system (const char *</b> <i>mandato</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>system()</b><p> ejecuta una orden especificada en <i>mandato</i>
+llamando a <b>/bin/sh -c</b> <i>mandato</i>, y regresa después de
+que la orden se haya terminado de ejecutar. Durante la ejecucion de
+la orden, se bloqueará <b>SIGCHLD</b> y no se hace caso de las
+señales <b>SIGINT</b> ni <b>SIGQUIT</b>. <a id="lbAE"> </a> 
+</p><h2>VALOR DEVUELTO</h2><p>
+
+El valor devuelto es 127 si la llamada a <b>execve()</b> para
+<b>/bin/sh</b> falla, -1 si se produce otro error, y el código de
+salida de la orden en cualquier otro caso. 
+</p><p>Si el valor de <i>mandato</i> es <b>NULL</b>, <b>system()</b>
+devuelve un número distinto de cero si hay un intérprete de
+comandos disponible, y cero si no.</p><p><b>system()</b> no afecta al estado de espera de cualquier otro
+proceso hijo. <a id="lbAF"> </a></p><h2>CONFORME A</h2><p>
+
+C ANSI, POSIX.2, BSD 4.3 <a id="lbAG"> </a> 
+</p><h2>FALLOS</h2><p>Es extremadamente desafortunado que la versión de
+<b>system()</b> en libc no haga caso de las interrupciones. Esto
+hace imposible interrumpir los programas que la llaman desde un
+bucle. Lo cual significa que para tales propósitos uno no debería
+utilizar <b>system()</b> sino una versión privada, como la
+siguiente (aviso: ¡código no probado!):<br /></p><pre>
+int mi_system (const char *mandato) {
+    int pid, status;
+
+    if (mandato == 0)
+        return 1;   /* En UNIX/Linux siempre hay un shell */
+    pid = fork();
+    if (pid == -1)
+        return -1;
+    if (pid == 0) {
+        char *argv[4];
+        argv[0] = "sh";
+        argv[1] = "-c";
+        argv[2] = mandato;
+        argv[3] = 0;
+        execve("/bin/sh", argv, environ);
+        exit(127);
+    }
+    do {
+        if (waitpid(pid, &amp;status, 0) == -1) {
+            if (errno != EINTR)
+                return -1;
+        } else
+            return status;
+    } <a href="http://localhost/cgi-bin/man/man2html?1+while">while</a>(1);
+}
+</pre><p>De hecho, <b>system()</b> no funcionará adecuadamente desde
+programas con privilegios suid o sgid en sistemas en los que
+<b>/bin/sh</b> sea la versión 2 de <b>bash</b>, ya que bash 2 omite
+los privilegios en el momento de ejecutarse. (Debian usa una
+versión modificada de bash que no hace esto cuando se invoca como
+<b>sh</b>). No llame a <b>system()</b> desde un programa con
+privilegios suid o sgid, porque pudiera ser que se emplearan
+valores extraños para algunas variables de entorno para comprometer
+la integridad del sistema. En su lugar emplee la familia de
+funciones <b><a href="http://localhost/cgi-bin/man/man2html?3+exec">exec</a></b>(3),
+salvo <b><a href="http://localhost/cgi-bin/man/man2html?3+execlp">execlp</a></b>(3)
+o <b><a href="http://localhost/cgi-bin/man/man2html?3+execvp">execvp</a></b>(3).</p><p>En realidad no se comprueba si el intérprete de comandos
+<b>/bin/sh</b> está disponible o no; en Linux siempre se supone que
+lo está. ISO C especifica la comprobación, pero POSIX.2 especifica
+que el valor devuelto siempre será no cero, ya que un sistema sin
+intérprete de comandos no es conforme, y esto es lo que se
+implementa.</p><p>Es posible que una orden del intérprete de comandos devuelva
+127, así que ese código no es una indicación segura de que
+<b>execve()</b> haya fallado; compruebe el valor de <i>errno</i>
+para asegurarse. <a id="lbAH"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?1+sh">sh</a></b><p>(1),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+signal">signal</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?3+exec">exec</a></b>(3)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">CONFORME A</a></dt>
+
+<dt><a href="#lbAG">FALLOS</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:27 GMT, January 22, 2005
+</p></body></html>

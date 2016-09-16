@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of FCNTL</title></head><body><p>
+  
+</p><h1>FCNTL</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 12 julio 1999<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+fcntl - manipula el descriptor de fichero <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b>
+<b>#include &lt;<a href="file:/usr/include/fcntl.h">fcntl.h</a>&gt;</b>
+
+<b>int fcntl(int</b> <i>fd</i><b>, int</b> <i>cmd</i><b>);</b>
+<b>int fcntl(int</b> <i>fd</i><b>, int</b> <i>cmd</i><b>, long</b> <i>arg</i><b>);</b>
+<b>int fcntl(int</b> <i>fd</i><b>, int</b> <i>cmd</i><b>, struct flock *</b> <i>lock</i><b>);</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>fcntl</b><p> realiza una de las diversas y variadas operaciones
+sobre <i>fd</i>. La operación en cuestión se determina mediante
+<i>cmd</i>: 
+</p><dl compact="compact"><dt><b>F_DUPFD</b></dt>
+
+<dd>Busca el descriptor de fichero disponible de menor número mayor
+o igual que <i>arg</i> y lo convierte en una copia de <i>fd</i>.
+Esto es diferente en <b><a href="http://localhost/cgi-bin/man/man2html?2+dup2">dup2</a></b>(2)
+que usa exactamente el descriptor especificado. 
+<p>Los descriptores antiguo y nuevo pueden usarse indistintamente.
+Ambos comparten candados (locks), indicadores de posición de
+ficheros y banderas (flags); por ejemplo, si la posición del
+fichero se modifica usando <b>lseek</b> en uno de los descriptores,
+la posición del otro resulta modificada simultáneamente.</p>
+
+<p>Sin embargo, los dos descriptores no comparten la bandera
+close-on-exec "cerrar-al-ejecutar". La bandera close-on-exec de la
+copia está desactivada, significando que no se cerrará en
+ejecución.</p>
+
+<p>En caso de éxito, se devuelve el nuevo descriptor.</p>
+</dd>
+
+<dt><b>F_GETFD</b></dt>
+
+<dd>Lee la bandera close-on-exec. Si el bit <b>FD_CLOEXEC</b> es 0,
+el fichero permanecerá abierto durante <b>exec</b>, en caso
+contrario se cerrará el fichero.</dd>
+
+<dt><b>F_SETFD</b></dt>
+
+<dd>Asigna el valor de la bandera close-on-exec al valor
+especificado por el bit <b>FD_CLOEXEC</b> de <i>arg</i>.</dd>
+
+<dt><b>F_GETFL</b></dt>
+
+<dd>Lee las banderas del descriptor (todas las banderas, según
+hayan sido asignadas por <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2),
+serán devueltas).</dd>
+
+<dt><b>F_SETFL</b></dt>
+
+<dd>Asigna las banderas del descriptor al valor asignado por
+<i>arg</i>. Sólo <b>O_APPEND</b>, <b>O_NONBLOCK</b> y
+<b>O_ASYNC</b> pueden asignarse; las otras banderas no se ven
+afectadas. 
+<p>Las banderas se comparten entre copias (hechas con <b><a href="http://localhost/cgi-bin/man/man2html?2+dup">dup</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+fork">fork</a></b>(2),
+etc.) del mismo descriptor de fichero.</p>
+
+<p>Las banderas y su semántica están descritas en <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2).
+<b>F_GETLK</b>, <b>F_SETLK</b> y <b>F_SETLKW</b> se utilizan para
+gestionar candados de ficheros discrecionales (discretionary file
+locks). El tercer argumento <i>lock</i> es un puntero a una struct
+flock (que puede ser sobrescrita por esta llamada).</p>
+</dd>
+
+<dt><b>F_GETLK</b></dt>
+
+<dd>Devuelve la estructura flock que nos impide obtener el candado,
+o establece el campo <b>l_type</b> del candado a <b>F_UNLCK</b> si
+no hay obstrucción.</dd>
+
+<dt><b>F_SETLK</b></dt>
+
+<dd>El candado está cerrado (cuando <b>l_type</b> es <b>F_RDLCK</b>
+o <b>F_WRLCK</b>) o abierto (cuando es <b>F_UNLCK</b>). Si el
+candado está cogido por alguien más, esta llamada devuelve -1 y
+pone en <i>errno</i> el código de error <b>EACCES</b> o
+<b>EAGAIN</b>.</dd>
+
+<dt><b>F_SETLKW</b></dt>
+
+<dd>Como <b>F_SETLK</b>, pero en vez de devolver un error esperamos
+que el candado se abra. Si se recibe una señal a capturar mientras
+<b>fcntl</b> está esperando, se interrumpe y (después de que el
+manejador de la señal haya terminado) regresa inmediatamente
+(devolviendo -1 y asignado a <i>errno</i> el valor <b>EINTR</b>).
+<b>F_GETOWN</b>, <b>F_SETOWN</b>, <b>F_GETSIG</b> y <b>F_SETSIG</b>
+se utilizan para gestionar las señales de disponibilidad de
+E/S:</dd>
+
+<dt><b>F_GETOWN</b></dt>
+
+<dd>Obtiene el ID de proceso o el grupo de procesos que actualmente
+recibe las señales SIGIO y SIGURG para los eventos sobre el
+descriptor de fichero <i>fd</i>. 
+<p>Los grupos de procesos se devuelven como valores negativos.</p>
+</dd>
+
+<dt><b>F_SETOWN</b></dt>
+
+<dd>Establece el ID de proceso o el grupo de procesos que recibirá
+las señales SIGIO y SIGURG para los eventos sobre el descriptor de
+fichero <i>fd</i>. 
+<p>Los grupos de procesos se especifican mediante valores
+negativos. (Se puede usar <b>F_SETSIG</b> para especificar una
+señal diferente a SIGIO).</p>
+
+<p>Si activa la bandera de estado <b>O_ASYNC</b> sobre un
+descriptor de fichero (tanto si proporciona esta bandera con la
+llamada <i><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></i>(2)
+como si usa la orden <b>F_SETFL</b> de <b>fcntl</b>), se enviará
+una señal SIGIO cuando sea posible la entrada o la salida sobre ese
+descriptor de fichero.</p>
+
+<p>El proceso o el grupo de procesos que recibirá la señal se puede
+seleccionar usando la orden <b>F_SETOWN</b> de la función
+<b>fcntl</b>. Si el descriptor de fichero es un enchufe (socket),
+esto también seleccionará al recipiente de las señales SIGURG que
+se entregan cuando llegan datos fuera de orden (out-of-band, OOB)
+sobre el enchufe. (SIGURG se envía en cualquier situación en la que
+<b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2)
+informaría que el enchufe tiene una "condición excepcional"). Si el
+descriptor de fichero corresponde a un dispositivo de terminal,
+entonces las señales SIGIO se envían al grupo de procesos en primer
+plano de la terminal.</p>
+</dd>
+
+<dt><b>F_GETSIG</b></dt>
+
+<dd>Obtiene la señal enviada cuando la entrada o la salida son
+posibles. Un valor cero significa que se envía SIGIO. Cualquier
+otro valor (incluyendo SIGIO) es la señal enviada en su lugar y en
+este caso se dispone de información adicional para el manejador de
+señal si se instala con SA_SIGINFO.</dd>
+
+<dt><b>F_SETSIG</b></dt>
+
+<dd>Establece la señal enviada cuando la entrada o la salida son
+posibles. Un valor cero significa enviar la señal por defecto
+SIGIO. Cualquier otro valor (incluyendo SIGIO) es la señal a enviar
+en su lugar y en este caso se dispone de información adiciona para
+el manejador de señal si se instala con SA_SIGINFO. 
+<p>Usando F_SETSIF con un valor distinto de cero y asignando
+SA_SIGINFO para el manejador de señal (vea <b><a href="http://localhost/cgi-bin/man/man2html?2+sigaction">sigaction</a></b>(2)),
+se pasa información extra sobre los eventos de E/S al manejador en
+la estructura <i>siginfo_t</i>. Si el campo <i>si_code</i> indica
+que la fuente is SI_SIGIO, el campo <i>si_fd</i> proporciona el
+descriptor de fichero asociado con el evento. En caso contrario, no
+se indican qué descriptores de ficheros hay pendientes y, para
+determinar qué descriptores de fichero están disponibles para E/S,
+debería usar los mecanismos usuales (<b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+poll">poll</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+read">read</a></b>(2)
+con <b>O_NONBLOCK</b> activo, etc.).</p>
+
+<p>Seleccionando una señal de tiempo real POSIX.1b (valor &gt;=
+SIGRTMIN), se pueden encolar varios eventos de E/S usando los
+mismos números de señal. (El encolamiento depende de la memoria
+disponible). Se dispone de información extra si se asigna
+SA_SIGINFO al manejador de señal, como antes.</p>
+</dd>
+</dl><p>Usando estos mecanismos, un programa puede implementar E/S
+totalmente asíncrona, sin usar <b><a href="http://localhost/cgi-bin/man/man2html?2+select">select</a></b>(2)
+ni <b><a href="http://localhost/cgi-bin/man/man2html?2+poll">poll</a></b>(2)
+la mayor parte del tiempo.</p><p>El uso de <b>O_ASYNC</b>, <b>F_GETOWN</b> y <b>F_SETOWN</b> es
+específico de Linux y BSD. <b>F_GETSIG</b> y <b>F_SETSIG</b> son
+específicos de Linux. POSIX posee E/S asíncrona y la estructura
+<i>aio_sigevent</i> para conseguir cosas similares; estas también
+están disponibles en Linux como parte de la biblioteca de C de GNU
+(GNU C Library, Glibc). <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Para una llamada con éxito, el valor devuelto depende de la
+operación: 
+</p><dl compact="compact"><dt><b>F_DUPFD</b></dt>
+
+<dd>El nuevo descriptor.</dd>
+
+<dt><b>F_GETFD</b></dt>
+
+<dd>Valor de la bandera.</dd>
+
+<dt><b>F_GETFL</b></dt>
+
+<dd>Valor de las banderas.</dd>
+
+<dt><b>F_GETOWN</b></dt>
+
+<dd>Valor del propietario del descriptor.</dd>
+
+<dt><b>F_GETSIG</b></dt>
+
+<dd>Valor de la señal enviada cuando la lectura o la escritura son
+posibles o cero para el comportamiento tradicional con SIGIO.</dd>
+
+<dt><b>Para cualquier otra orden</b></dt>
+
+<dd>Cero.</dd>
+</dl><p>En caso de error el valor devuelto es -1, y se pone un valor
+apropiado en <i>errno</i>. <a id="lbAF"> </a></p><h2>ERRORES</h2><dl compact="compact"><dt><b>EACCES</b></dt>
+
+<dd>La operación está prohibida por candados mantenidos por otros
+procesos.</dd>
+
+<dt><b>EAGAIN</b></dt>
+
+<dd>La operación está prohibida porque el fichero ha sido asociado
+a memoria por otro proceso.</dd>
+
+<dt><b>EDEADLK</b></dt>
+
+<dd>Se ha detectado que el comando <b>F_SETLKW</b> especificado
+provocaría un interbloqueo.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd><i>lock</i> está fuera de su espacio de direcciones
+accesible.</dd>
+
+<dt><b>EBADF</b></dt>
+
+<dd><i>fd</i> no es un descriptor de fichero abierto.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>El comando <b>F_SETLKW</b> ha sido interrumpido por una señal.
+Para <b>F_GETLK</b> y <b>F_SETLK</b>, la orden fue interrumpida por
+una señal antes de que el candado fuera comprobado o adquirido. Es
+más probable al poner un candado a un fichero remoto (por ejemplo,
+un candado sobre NFS) pero algunas veces puede ocurrir
+localmente.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Para <b>F_DUPFD</b>, <i>arg</i> es negativo o mayor que el
+valor máximo permitido. Para <b>F_SETSIG</b>, <i>arg</i> no es un
+número de señal permitido.</dd>
+
+<dt><b>EMFILE</b></dt>
+
+<dd>Para <b>F_DUPFD</b>, el proceso ya ha llegado al número máximo
+de descriptores de ficheros abiertos.</dd>
+
+<dt><b>ENOLCK</b></dt>
+
+<dd>Demasiados candados de segmento abiertos, la tabla de candados
+está llena o ha fallado un protocolo de candados remoto (por
+ejemplo, un candado sobre NFS).</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>Se ha intentado limpiar la bandera <b>O_APPEND</b> sobre un
+fichero que tiene activo el atributo de `sólo añadir'
+(append-only).</dd>
+</dl><a id="lbAG"> </a><h2>NOTAS</h2><p>
+
+Los errores devueltos por <b>dup2</b> son distintos de aquéllos
+dados por <b>F_DUPFD</b>. <a id="lbAH"> </a> 
+</p><h2>CONFORME A</h2><p>
+
+SVID, AT&amp;T, POSIX, X/OPEN, BSD 4.3. Sólo las operaciones
+F_DUPFD, F_GETFD, F_SETFD, F_GETFL, F_SETFL, F_GETLK, F_SETLK y
+F_SETLKW se especifican en POSIX.1. F_GETOWN y F_SETOWN son
+BSD-ismos no aceptados en SVr4; F_GETSIG y F_SETSIG son específicos
+de Linux. Las banderas legales para F_GETFL/F_SETFL son aquéllas
+que acepta <b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b>(2)
+y varían entre estos sistemas; O_APPEND, O_NONBLOCK, O_RDONLY y
+O_RDWR son las que se mencionan en POSIX.1. SVr4 admite algunas
+otras opciones y banderas no documentadas aquí. 
+</p><p>SVr4 documenta las condiciones de error adicionales EIO, ENOLINK
+y EOVERFLOW. <a id="lbAI"> </a></p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+open">open</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+socket">socket</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+dup2">dup2</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+flock">flock</a></b>(2).
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">NOTAS</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

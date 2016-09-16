@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of MLOCKALL</title></head><body><p>
+  
+</p><h1>MLOCKALL</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 26 noviembre 1995<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+mlockall - desactiva la paginación para el proceso invocador <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b>#include &lt;<a href="file:/usr/include/sys/mman.h">sys/mman.h</a>&gt;</b>
+
+<b>int mlockall(int</b> <i>flags</i><b>);
+</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><b>mlockall</b><p> desactiva la paginación para todas las páginas
+asociadas en el espacio de direcciones del proceso que hace la
+llamada. Esto incluye las páginas del código, de los datos y del
+segmento de pila, así como las bibliotecas compartidas, datos de
+núcleo en espacio de usuario, memoria compartida y ficheros
+asociados a memoria. Se garantiza que todas las páginas asociadas
+estarán en RAM cuando la llamada al sistema <b>mlockall</b> regrese
+con éxito, y se garantiza que permanecerán en RAM hasta que las
+páginas se desbloqueen de nuevo mediante <b>munlock</b> o
+<b>munlockall</b> o hasta que el proceso termine o empiece otro
+programa debido a la llamada <b>exec</b>. Los procesos hijos no
+heredan bloqueos de página a través de un <b>fork</b>. 
+</p><p>El bloqueo de memoria tiene dos aplicaciones principales:
+algoritmos de tiempo real y procesamiento de datos de alta
+seguridad. Las aplicaciones en tiempo real requieren tiempos
+deterministas, y, como la planificación, la paginación es una de
+las principales causas de retrasos inesperados en la ejecución de
+programas. Las aplicaciones de tiempo real normalmente también
+cambiarán a un planificador de tiempo real con
+<b>sched_setscheduler</b>. Los programas de seguridad
+criptográficos a menudo manejan bytes críticos como contraseñas o
+claves secretas como estructuras de datos. Como resultado de la
+paginación, estos datos secretos pueden transferirse a un medio de
+almacenamiento permanente como resultado del trasiego (swap), donde
+podrían ser accesibles al enemigo bastante tiempo después de que el
+programa de seguridad hubiera terminado y borrado los datos
+secretos de la RAM. Para aplicaciones de seguridad, sólo tienen que
+bloquearse partes pequeñas de la memoria, para lo cual se dispone
+de <b>mlock</b>.</p><p>El parámetro <i>flags</i> puede construirse aplicando el
+operador lógico de bits O (OR) a las siguientes constantes:</p><dl compact="compact"><dt><b>MCL_CURRENT</b></dt>
+
+<dd>Bloquea todas las páginas que están asociadas actualmente en el
+espacio de direcciones del proceso.</dd>
+
+<dt><b>MCL_FUTURE</b></dt>
+
+<dd>Bloquea todas las páginas que en el futuro se asociarán en el
+espacio de direcciones del proceso. Éstas podrían ser, por ejemplo,
+páginas nuevas requeridas por una pila y montón crecientes así como
+nuevos ficheros asociados a memoria o regiones de memoria
+compartida.</dd>
+</dl><p>Si se ha especifiado <b>MCL_FUTURE</b> y el número de páginas
+bloqueadas excede el límite superior de las páginas bloqueadas
+permitidas, entonces la llamada al sistema que haya causado la
+nueva asociación fallará con <b>ENOMEM</b>. Si estas nuevas páginas
+han sido asociadas por la pila creciente, entonces el núcleo
+denegará la expansión de la pila y mandará una señal
+<b>SIGSEGV</b>.</p><p>Los procesos en tiempo real deberían reservar bastantes páginas
+bloqueadas antes de entrar en la sección crítica de tiempo, de
+forma que ninguna llamada a función pueda provocar un fallo de
+página. Esto puede lograrse llamando a una función que tenga una
+variable automática suficientemente grande y que escriba en la
+memoria ocupada por este vector grande, para tocar estas páginas de
+la pila. De esta forma, se asociarán bastantes páginas para la pila
+y se pueden bloquear en la RAM. Las escrituras falsas asegurarán
+que ni siquiera ocurran fallos de página de copia-en-escritura en
+la sección crítica.</p><p>Los bloqueos de memoria no se apilan; esto es, las páginas que
+hayan sido bloqueadas varias veces mediante llamadas a
+<b>mlockall</b> o a <b>mlock</b> se desbloquearán con una simple
+llamada a <b>munlockall</b>. Las páginas que estén asociadas a
+varias localizaciones o por varios procesos permanecen bloqueadas
+en RAM mientras que estén bloqueadas al menos en una localización o
+al menos por un proceso.</p><p>En sistemas POSIX en los cuales estén disponibles
+<b>mlockall</b> y <b>munlockall</b>, se define
+<b>_POSIX_MEMLOCK</b> en &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;. <a id="lbAE"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+En caso de éxito, <b>mlockall</b> devuelve cero. En caso de error,
+se devuelve -1 y se pone un valor apropiado en <i>errno</i>. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>ENOMEM</b></dt>
+
+<dd>El proceso intentó excederse en el número máximo de páginas
+bloqueadas permitido.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>El proceso que hace la llamada no tiene los privilegios
+apropiados. Sólo los procesos de root tienen permiso para bloquear
+páginas.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Se han especificado <i>flags</i> desconocidos.</dd>
+</dl><a id="lbAG"> </a><h2>CONFORME A</h2><p>
+
+POSIX.1b, SVr4. SVr4 documenta un código de error adicional,
+EAGAIN. <a id="lbAH"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?2+munlockall">munlockall</a></b><p>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+mlock">mlock</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+munlock">munlock</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">CONFORME A</a></dt>
+
+<dt><a href="#lbAH">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:22 GMT, January 22, 2005
+</p></body></html>

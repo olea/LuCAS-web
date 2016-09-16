@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of SYSCTL</title></head><body><p>
+  
+</p><h1>SYSCTL</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 5 enero 1998<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+sysctl - lee/escribe parámetros del sistema <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><b>#include &lt;<a href="file:/usr/include/unistd.h">unistd.h</a>&gt;</b><p><b>#include &lt;<a href="file:/usr/include/linux/unistd.h">linux/unistd.h</a>&gt;</b></p><p><b>#include &lt;<a href="file:/usr/include/linux/sysctl.h">linux/sysctl.h</a>&gt;</b></p><p><b>_syscall1(int, _sysctl, struct __sysctl_args *,
+args);</b></p><p><b>int _sysctl(struct __sysctl_args *</b><i>args</i><b>);</b> <a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+La llamada <b>_sysctl</b> lee o escribe parámetros del núcleo. Por
+ejemplo, el nombre del computador, o el número máximo de ficheros
+abiertos. El argumento tiene la forma 
+</p><pre>
+struct __sysctl_args {
+        int *name;        /* vector describiendo la variable */
+        int nlen;         /* longitud de este vector */
+        void *oldval;     /* 0 ó dir. donde guardar valor antiguo */
+        size_t *oldlenp;  /* sitio disponible para el valor antiguo,
+                       sobrescrito por el tamaño real de dicho valor */
+        void *newval;     /* 0 ó dirección del nuevo valor */
+        size_t newlen;    /* tamaño del nuevo valor */
+};
+</pre><p>Esta llamada efectúa una búsqueda en una estructura de árbol,
+posiblemente parecido a un árbol de directorios bajo
+<b>/proc/sys</b>, y si lo pedido se encuentra, llama a alguna
+rutina apropiada para leer o modificar el valor.</p><p><a id="lbAE"> </a></p><h2>EJEMPLO</h2><pre>
+#include &lt;<a href="file:/usr/include/linux/unistd.h">linux/unistd.h</a>&gt;
+#include &lt;<a href="file:/usr/include/linux/types.h">linux/types.h</a>&gt;
+#include &lt;<a href="file:/usr/include/linux/sysctl.h">linux/sysctl.h</a>&gt;
+
+_syscall1(int, _sysctl, struct __sysctl_args *, args);
+int sysctl(int *name, int nlen, void *oldval, size_t *oldlenp,
+           void *newval, size_t newlen)
+{
+        struct __sysctl_args args={name,nlen,oldval,oldlenp,newval,newlen};
+        return _sysctl(&amp;args);
+}
+
+#define SIZE(x) sizeof(x)/sizeof(x[0])
+#define OSNAMESZ 100
+
+char osname[OSNAMESZ];
+int osnamelth;
+int name[] = { CTL_KERN, KERN_OSTYPE };
+
+main(){
+        osnamelth = SIZE(osname);
+        if (sysctl(name, SIZE(name), osname, &amp;osnamelth, 0, 0))
+                perror("sysctl");
+        else
+                printf("Esta máquina ejecuta %*s\n", osnamelth, osname);
+        return 0;
+}
+</pre><p><a id="lbAF"> </a></p><h2>VALOR DEVUELTO</h2><p>
+
+Tras una terminación exitosa, <b>_sysctl</b> devuelve 0. En otro
+caso, se devuelve el valor -1 y se pone en <i>errno</i> un valor
+que indica el error. <a id="lbAG"> </a> 
+</p><h2>ERRORES</h2><dl compact="compact"><dt><b>ENOTDIR</b></dt>
+
+<dd><i>name</i> no se ha encontrado.</dd>
+
+<dt><b>EPERM</b></dt>
+
+<dd>No había permiso de paso para uno de los `directorios'
+encontrados, o no había permiso de lectura donde <i>oldval</i> era
+no-cero, o no había permiso de escritura donde <i>newval</i> era
+no-cero.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La llamada pidió el valor anterior poniendo <i>oldval</i> como
+no NULL, pero se permitió un espacio cero en <i>oldlenp</i>.</dd>
+</dl><a id="lbAH"> </a><h2>CONFORME A</h2><p>
+
+Esta llamada es específica de Linux, y no debería emplearse en
+programas pretendidamente transportables. Una llamada <b>sysctl</b>
+ha estado presente en Linux desde la versión 1.3.57. Se originó en
+4.4BSD. Sólo Linux tiene el espejo <i>/proc/sys</i>, y los esquemas
+de nomenclatura de objetos difieren entre Linux y BSD 4.4, pero la
+declaración de la función <b><a href="http://localhost/cgi-bin/man/man2html?2+sysctl">sysctl</a></b>(2)
+es la misma en ambos. <a id="lbAI"> </a> 
+</p><h2>FALLOS</h2><p>
+
+Los nombres de los objetos varían entre versiones del núcleo. ESTO
+HACE QUE ESTA LLAMADA AL SISTEMA SEA INÚTIL PARA LAS APLICACIONES.
+Use en su lugar la interfaz <i>/proc/sys</i>. <br />
+ No todos los objetos disponibles están correctamente documentados.
+<br />
+ Aún no es posible cambiar el sistema operativo escribiendo en
+<i>/proc/sys/kernel/ostype</i>. :-) <a id="lbAJ"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?5+proc">proc</a></b><p>(5)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">EJEMPLO</a></dt>
+
+<dt><a href="#lbAF">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAG">ERRORES</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">FALLOS</a></dt>
+
+<dt><a href="#lbAJ">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:20 GMT, January 22, 2005
+</p></body></html>

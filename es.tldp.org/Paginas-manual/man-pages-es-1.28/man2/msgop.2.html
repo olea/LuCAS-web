@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of MSGOP</title></head><body><p>
+  
+</p><h1>MSGOP</h1><p>
+
+Section: Manual del Programador de Linux (2)<br />
+Updated: 22 octubre 1996<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+msgop - operaciones con mensajes <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b># include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<br /><b># include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b>
+<br /><b># include &lt;<a href="file:/usr/include/sys/msg.h">sys/msg.h</a>&gt;</b>
+</pre><p><b>int msgsnd ( int</b> <i>msqid</i><b>,</b> <b>struct msgbuf
+*</b><i>msgp</i><b>,</b> <b>int</b> <i>msgsz</i><b>,</b> <b>int</b>
+<i>msgflg</i> <b>)</b></p><p><b>int msgrcv ( int</b> <i>msqid</i><b>,</b> <b>struct msgbuf
+*</b><i>msgp</i><b>,</b> <b>int</b> <i>msgsz</i><b>,</b>
+<b>long</b> <i>msgtyp</i><b>,</b> <b>int</b> <i>msgflg</i> <b>)</b>
+<a id="lbAD"> </a></p><h2>DESCRIPCIÓN</h2><p>
+
+Para enviar o recibir un mensaje, el proceso llamador aloja una
+estructura como la siguiente: 
+</p><p><b><tt>       </tt>struct msgbuf {</b><br /><b><tt>       </tt><tt>        </tt>long<tt>    </tt>mtype;<tt>  </tt></b>
+/* tipo de msj., debe ser &gt; 0 */<br /><br /><b><tt>       </tt><tt>        </tt>char<tt>    </tt>mtext[1];<tt>       </tt></b>
+/* datos del mensaje */<br /><br /><b><tt>       </tt>};</b></p><p>pero con un vector<br /><b>mtext</b> de tamaño <i>msgsz</i>, un valor entero no negativo.
+El miembro de la estructura <b>mtype</b> debe tener un valor entero
+estrictamente positivo que puede ser empleado por el proceso
+receptor para la selección de mensaje (vea la sección sobre
+<b>msgrcv</b>).</p><p>El proceso llamador debe tener permiso de acceso de escritura
+para enviar, y de lectura para recibir un mensaje en la cola.</p><p>La llamada al sistema <b>msgsnd</b> encola una copia del mensaje
+apuntado por el argumento <i>msgp</i> en la cola de mensaje cuyo
+identificador se especifica por el valor del argumento
+<i>msqid</i>.</p><p>El argumento <i>msgflg</i> especifica el comportamiento de la
+llamada al sistema si el poner en la cola el nuevo mensaje
+necesitara más de <b>msg_q</b> bytes en la cola. Si
+<b>IPC_NOWAIT</b> está definido, el mensaje no será enviado y la
+llamada al sistema falla regresando con el valor <b>EAGAIN</b>
+puesto en <b>errno</b>. De otro modo, el proceso se suspende hasta
+que la condición de la suspensión deje de existir (en cuyo caso el
+mensaje es enviado y la llamada al sistema acaba con éxito), o la
+cola se borra (en cuyo caso la llamada al sistema falla con el
+valor <b>EIDRM</b> en <b>errno</b>), o el proceso recibe una señal
+que ha de ser capturada (en cuyo caso la llamada al sistema falla
+con <b>EINTR</b> en <b>errno</b>).</p><p>Tras la terminación con éxito de la llamada, la estructura de
+datos de la cola de mensajes se actualiza como sigue:</p><dl compact="compact"><dd><b>msg_lspid</b> toma el valor del PID del proceso
+llamador.</dd>
+
+<dd><b>msg_qnum</b> se incrementa en una unidad.</dd>
+
+<dd><b>msg_stime</b> toma el valor de la hora actual.</dd>
+</dl><p>La llamada al sistema <b>msgrcv</b> lee un mensaje de la cola de
+mensajes especificada por <i>msqid</i> y lo guarda en la estructura
+<b>msgbuf</b> apuntada por el argumento <i>msgp</i>, borrando de la
+cola, en caso de éxito, el mensaje leído.</p><p>El argumento <i>msgsz</i> especifica el tamaño máximo en bytes
+para el miembro <b>mtext</b> de la estructura apuntada por el
+argumento <i>msgp</i>. Si el texto del mensaje tiene una longitud
+mayor de <i>msgsz</i>, entonces si el argumento <i>msgflg</i>
+contiene <b>MSG_NOERROR</b>, el texto del mensaje se truncará (y la
+parte truncada se perderá), y si no, el mensaje no se borra de la
+cola y la llamada al sistema falla regresando y poniendo el valor
+<b>E2BIG</b> en <b>errno</b>.</p><p>El argumento <i>msgtyp</i> especifica el tipo de mensaje pedido
+como se muestra a continuación:</p><dl compact="compact"><dd>Si <i>msgtyp</i> es <b>0</b>, entonces se lee el mensaje en la
+parte frontal de la cola.</dd>
+
+<dd>Si <i>msgtyp</i> es mayor que <b>0</b>, entonces se lee el
+primer mensaje en la cola del tipo <i>msgtyp</i> si
+<b>MSG_EXCEPT</b> no está contenido en el argumento <i>msgflg</i>,
+de otro modo se lee el primer mensaje en la cola de tipo distinto a
+<i>msgtyp</i>.</dd>
+
+<dd>Si <i>msgtyp</i> es menor que <b>0</b>, entonces se leerá el
+primer mensaje en la cola con el tipo más bajo menor o igual al
+valor absoluto de <i>msgtyp</i>.</dd>
+</dl><p>El argumento <i>msgflg</i> continene ninguna, una o más
+(engarzándolas con el operador OR) de entre las siguientes
+opciones:</p><dl compact="compact"><dd><b>IPC_NOWAIT</b> Para retorno inmediato si no hay en la cola
+ningún mensaje del tipo pedido. La llamada al sistema falla con el
+valor <b>ENOMSG</b> en errno.</dd>
+
+<dd><b>MSG_EXCEPT</b> Empleado con <i>msgtyp</i> mayor que <b>0</b>
+para leer el primer mensaje en la cola con tipo de mensaje
+diferente de <i>msgtyp</i>.</dd>
+
+<dd><b>MSG_NOERROR</b> Para truncar el texto del mensaje si es
+mayor que <i>msgsz</i> bytes.</dd>
+</dl><p>Si no hay disponible un mensaje del tipo pedido e
+<b>IPC_NOWAIT</b> no está contenido en <i>msgflg</i>, el proceso
+llamador se bloquea hasta que ocurra una de las siguientes
+condiciones:</p><dl compact="compact"><dd>Un mensaje del tipo deseado se ponga en la cola.</dd>
+
+<dd>La cola de mensajes se borre del sistema. En tal caso la
+llamada al sistema falla con el valor <b>EIDRM</b> en
+<b>errno</b>.</dd>
+
+<dd>El proceso llamador reciba una señal que ha de ser capturada.
+En tal caso la llamada al sistema falla con el valor <b>EINTR</b>
+en <b>errno</b>.</dd>
+</dl><p>Tras la terminación con éxito, la estructura de datos de la cola
+de mensajes se actualiza como sigue:</p><dl compact="compact"><dd><b>msg_lrpid</b> toma el valor del PID del proceso
+llamador.</dd>
+
+<dd><b>msg_qnum</b> se decrementa en una unidad.</dd>
+
+<dd><b>msg_rtime</b> toma el valor de la hora actual.</dd>
+</dl><a id="lbAE"> </a><h2>VALOR DEVUELTO</h2><p>
+
+En caso de fallo ambas funciones devuelven <b>-1</b> con
+<b>errno</b> indicando el error, en caso contrario <b>msgsnd</b>
+devuelve <b>0</b> y <b>msgrvc</b> devuelve el número de bytes
+realmente copiados en el vector <b>mtext</b>. <a id="lbAF"> </a> 
+</p><h2>ERRORES</h2><p>
+
+Si <b>msgsnd</b> falla, cuando la función regresa, <b>errno</b>
+cogerá uno de entre los siguientes valores: 
+</p><dl compact="compact"><dt><b>EAGAIN</b></dt>
+
+<dd>El mensaje no puede ser enviado debido al límite para la cola
+de <b>msg_q</b> bytes, e <b>IPC_NOWAIT</b> estaba contenido en
+<i>mgsflg</i>.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>El proceso llamador no tiene permisos de escritura en la cola
+de mensajes.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La dirección apuntada por <i>msgp</i> no es accesible.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>La cola de mensajes fue borrada.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>Durmiendo a la espera de una condición de cola de mensajes
+llena, el proceso recibió una señal que tuvo que ser
+capturada.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Valor inválido para <i>msqid</i>, o valor no positivo de
+<i>mtype</i>, o valor inválido para <i>msgsz</i> (menor que 0 ó
+mayor que el valor del sistema <b>MSGMAX</b>).</dd>
+
+<dt><b>ENOMEM</b></dt>
+
+<dd>El sistema no tiene bastante memoria para hacer una copia del
+<b>msgbuf</b> suministrado.</dd>
+</dl><p>Si <b>msgrcv</b> falla, cuando la función regresa, <b>errno</b>
+tomará uno de entre los valores siguientes:</p><dl compact="compact"><dt><b>E2BIG</b></dt>
+
+<dd>La longitud del texto del mensaje es mayor que <i>msgsz</i> y
+<b>MSG_NOERROR</b> no está contenido en <i>msgflg</i>.</dd>
+
+<dt><b>EACCES</b></dt>
+
+<dd>El proceso llamador no tiene permiso de lectura en la cola de
+mensajes.</dd>
+
+<dt><b>EFAULT</b></dt>
+
+<dd>La dirección apuntada por <i>msgp</i> no es accesible.</dd>
+
+<dt><b>EIDRM</b></dt>
+
+<dd>Mientras el proceso estaba durmiento en espera de recibir un
+mensaje, la cola de mensajes fue borrada.</dd>
+
+<dt><b>EINTR</b></dt>
+
+<dd>Mientras el proceso estaba durmiento en espera de recibir un
+mensaje, el proceso recibió una señal que tuvo que ser
+capturada.</dd>
+
+<dt><b>EINVAL</b></dt>
+
+<dd>Valor ilegal de <i>msgqid</i>, o <i>msgsz</i> menor que
+<b>0</b>.</dd>
+
+<dt><b>ENOMSG</b></dt>
+
+<dd><b>IPC_NOWAIT</b> estaba contenido en <i>msgflg</i> y no
+existía ningún mensaje del tipo requerido en la cola de
+mensajes.</dd>
+</dl><a id="lbAG"> </a><h2>OBSERVACIONES</h2><p>
+
+Los siguientes son límites del sistema que afectan a la llamada al
+sistema <b>msgsnd :</b> 
+</p><dl compact="compact"><dt><b>MSGMAX</b></dt>
+
+<dd>Tamaño máximo para un texto de mensaje: la implementación pone
+esta valor a 4080 bytes.</dd>
+
+<dt><b>MSGMNB</b></dt>
+
+<dd>Tamaño máximo predeterminado en bytes de una cola de mensaje:
+depende de la política seguida en el sistema. El super-usuario
+puede incrementar el tamaño de una cola de mensajes más allá de
+<b>MSGMNB</b> a través de la llamada al sistema <b>msgctl
+.</b></dd>
+</dl><p>La implementación no tiene límites intrínsecos para el número
+máximo, del sistema, de cabeceras de mensaje (<b>MSGTQL</b>) ni
+para el tamaño máximo, del sistema, en bytes, de la zona común de
+mensajes (<b>MSGPOOL</b>). <a id="lbAH"> </a></p><h2>CONFORME A</h2><p>
+
+SVr4, SVID. <a id="lbAI"> </a> 
+</p><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?5+ipc">ipc</a></b><p>(5),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgctl">msgctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgget">msgget</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgrcv">msgrcv</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgsnd">msgsnd</a></b>(2)
+
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dt><a href="#lbAE">VALOR DEVUELTO</a></dt>
+
+<dt><a href="#lbAF">ERRORES</a></dt>
+
+<dt><a href="#lbAG">OBSERVACIONES</a></dt>
+
+<dt><a href="#lbAH">CONFORME A</a></dt>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:19 GMT, January 22, 2005
+</p></body></html>

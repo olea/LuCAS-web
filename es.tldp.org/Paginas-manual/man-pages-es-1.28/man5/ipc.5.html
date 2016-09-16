@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html  ><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta content="HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org" /><link rel="stylesheet" type="text/css" href="../../tigris.css" /><title>Manpage of IPC</title></head><body><p>
+  
+</p><h1>IPC</h1><p>
+
+Section: Manual del Programador de Linux (5)<br />
+Updated: 1 Noviembre 1993<br /><a href="#index">Index</a> <a href="http://localhost/cgi-bin/man/man2html">Return to Main
+Contents</a>
+</p><hr /><a id="lbAB"> </a><h2>NOMBRE</h2><p>
+
+ipc - Mecanismos de comunicación entre procesos del System V <a id="lbAC"> </a> 
+</p><h2>SINOPSIS</h2><pre>
+<b># include &lt;<a href="file:/usr/include/sys/types.h">sys/types.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/msg.h">sys/msg.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/sem.h">sys/sem.h</a>&gt;</b>
+<b># include &lt;<a href="file:/usr/include/sys/shm.h">sys/shm.h</a>&gt;</b>
+</pre><a id="lbAD"> </a><h2>DESCRIPCIÓN</h2><p>
+
+Esta página del manual hace referencia a la implementación en Linux
+de los mecanismos de comunicación entre procesos del System V (IPC,
+InterProcess Communication): colas de mensajes, conjuntos de
+semáforos y segmentos de memoria compartida. En la siguiente
+descripción, la palabra <b>recurso</b> se refiere a la instancia de
+uno de dichos mecanismos. <a id="lbAE"> </a> 
+</p><h3>Permisos de Acceso a Recursos</h3><p>
+
+Para cada recurso el sistema utiliza una estructura de datos común
+de tipo <b>struct ipc_perm</b> para almacenar información necesaria
+para determinar permisos al ejecutar una operación ipc. La
+estructura <b>ipc_perm</b>, definida en el fichero de cabecera
+<i>&lt;<a href="file:/usr/include/sys/ipc.h">sys/ipc.h</a>&gt;</i>
+incluye los siguientes miembros: 
+</p><p><b><tt>       </tt>ushort cuid;<tt>    </tt></b> /* id del
+usuario creador */<br /><br /><b><tt>       </tt>ushort cgid;<tt>    </tt></b> /* id de grupo
+del usuario creador */<br /><br /><b><tt>       </tt>ushort uid;</b> /* id del usuario dueño
+*/<br /><br /><b><tt>       </tt>ushort gid;</b> /* id de grupo del usuario
+dueño */<br /><br /><b><tt>       </tt>ushort mode;</b> /* permisos de
+lectura/escritura */<br /></p><p>El miembro <b>mode</b> de la estructura <b>ipc_perm</b> define,
+con los 9 bits más bajos, los persmisos de acceso al recurso para
+cualquier proceso que realice una llamada ipc al sistema. Los
+permisos se interpretan de la siguiente manera:</p><pre>
+        0400    Lectura para el usuario.
+        0200    Escritura para el usuario.
+
+        0040    Lectura para el grupo.
+        0020    Escritura para el grupo.
+
+        0004    Lectura para otros.
+        0002    Escritura para otros.
+</pre><p>Los bits 0100, 0010 y 0001 (bits de ejecución) no se utilizan.
+Además, "write" (permiso de escritura) se interpreta efectivamente
+como "alter" (permiso de alteración) para un conjunto de
+semáforos.</p><p>El mismo fichero de cabecera del sistema también define las
+siguientes constantes simbólicas:</p><dl compact="compact"><dt><b>IPC_CREAT</b></dt>
+
+<dd>Crea la entrada si la clave no existe.</dd>
+
+<dt><b>IPC_EXCL</b></dt>
+
+<dd>Falla si la clave existe.</dd>
+
+<dt><b>IPC_NOWAIT</b></dt>
+
+<dd>Devuelve error si la petición debe esperar.</dd>
+
+<dt><b>IPC_PRIVATE</b></dt>
+
+<dd>Clave privada.</dd>
+
+<dt><b>IPC_RMID</b></dt>
+
+<dd>Elimina el recurso.</dd>
+
+<dt><b>IPC_SET</b></dt>
+
+<dd>Establece opciones del recurso.</dd>
+
+<dt><b>IPC_STAT</b></dt>
+
+<dd>Obtiene opciones del recurso.</dd>
+</dl><p>Nótese que <b>IPC_PRIVATE</b> es de tipo <b>key_t,</b> mientras
+que las otras constantes simbólicas son campos señalizadores que
+pueden combinarse usando operaciones 'or' en una variable de tipo
+<b>int</b>. <a id="lbAF"> </a></p><h3>Colas de Mensajes</h3><p>
+
+Una cola de mensajes se identifica unívocamente usando un número
+entero positivo (llamado <i>msqid</i>) y tiene una estructura de
+datos asociada de tipo <b>struct msquid_ds</b>, definida en
+<i>&lt;<a href="file:/usr/include/sys/msg.h">sys/msg.h</a>&gt;</i>.
+La estructura contiene los siguientes miembros: 
+</p><p><b><tt>       </tt>struct ipc_perm msg_perm;</b><br /><b><tt>       </tt>ushort msg_qnum;</b> /* número de mensajes en
+cola */<br /><br /><b><tt>       </tt>ushort msg_qbytes;</b> /* máximo número de
+bytes en cola */<br /><br /><b><tt>       </tt>ushort msg_lspid;</b> /* pid última llamada a
+msgsnd */<br /><br /><b><tt>       </tt>ushort msg_lrpid;</b> /* pid última llamada a
+msgrcv */<br /><br /><b><tt>       </tt>time_t msg_stime;</b> /* hora última llamada a
+msgsnd */<br /><br /><b><tt>       </tt>time_t msg_rtime;</b> /* hora última llamada a
+msgrcv */<br /><br /><b><tt>       </tt>time_t msg_ctime;</b> /* hora del último cambio
+*/<br /></p><dl compact="compact"><dt><b>msg_perm</b></dt>
+
+<dd><b>ipc_perm</b> estructura que especifica los permisos de
+acceso a la cola de mensajes.</dd>
+
+<dt><b>msg_qnum</b></dt>
+
+<dd>Número actual de mensajes en la cola de mensajes.</dd>
+
+<dt><b>msg_qbytes</b></dt>
+
+<dd>Máximo número de bytes permitidos en el texto del mensaje en la
+cola de mensajes.</dd>
+
+<dt><b>msg_lspid</b></dt>
+
+<dd>ID del proceso que ejecutó la última llamada a
+<b>msgsnd</b>.</dd>
+
+<dt><b>msg_lrpid</b></dt>
+
+<dd>ID del proceso que ejecutó la última llamada a
+<b>msgrcv</b>.</dd>
+
+<dt><b>msg_stime</b></dt>
+
+<dd>Hora de la última llamada a <b>msgsnd</b>.</dd>
+
+<dt><b>msg_rtime</b></dt>
+
+<dd>Hora de la última llamada a <b>msgrcv</b>.</dd>
+
+<dt><b>msg_ctime</b></dt>
+
+<dd>Hora de la última llamada que cambió un miembro de la
+estructura <b>msqid_ds</b>.</dd>
+</dl><a id="lbAG"> </a><h3>Conjuntos de Semáforos</h3><p>
+
+Un conjunto de semáforos se identifica unívocamente usando un
+número entero positivo (llamado <i>semid</i>) y tiene asociada la
+siguiente estructura de datos de tipo <b>struct semid_ds</b>,
+definida en <i>&lt;<a href="file:/usr/include/sys/sem.h">sys/sem.h</a>&gt;</i>. La
+estructura contiene los siguientes campos: 
+</p><p><b><tt>       </tt>struct ipc_perm sem_perm;</b><br /><b><tt>       </tt>time_t sem_otime;</b> /* hora de la última
+operación */<br /><br /><b><tt>       </tt>time_t sem_ctime;</b> /* hora del último cambio
+*/<br /><br /><b><tt>       </tt>ushort sem_nsems;</b> /* cantidad de semáforos
+en el conjunto */<br /></p><dl compact="compact"><dt><b>sem_perm</b></dt>
+
+<dd><b>ipc_perm</b> estructura que especifica los permisos de
+acceso al conjunto de semáforos.</dd>
+
+<dt><b>sem_otime</b></dt>
+
+<dd>Hora de la última llamada a <b>semop.</b></dd>
+
+<dt><b>sem_ctime</b></dt>
+
+<dd>Hora de la última llamada a <b>semctl</b> que cambió un miembro
+de la estructura anterior o un miembro de algún semáforo del
+conjunto.</dd>
+
+<dt><b>sem_nsems</b></dt>
+
+<dd>Cantidad de semáforos en el conjunto. Cada semáforo en el
+conjunto se accede usando un entero positivo en el rango <b>0</b> a
+<b>sem_nsems-1</b>.</dd>
+</dl><p>Un semáforo es una estructura de datos de tipo <b>struct sem</b>
+que contiene los siguientes miembros:</p><dl compact="compact"><dt><b><tt>        </tt>ushort semval;</b></dt>
+
+<dd>/* valor del semáforo */<br /></dd>
+
+<dt><b><tt>        </tt>short sempid;</b></dt>
+
+<dd>/* pid para la última operación */<br /></dd>
+
+<dt><b><tt>        </tt>ushort semncnt;</b></dt>
+
+<dd>/* cantidad de semval esperando a ser incrementados */<br /></dd>
+
+<dt><b><tt>        </tt>ushort semzcnt;</b></dt>
+
+<dd>/* cantidad de semáforos esperando cuyo semval = 0 */<br /></dd>
+</dl><dl compact="compact"><dt><b>semval</b></dt>
+
+<dd>Valor del semáforo: un entero no negativo.</dd>
+
+<dt><b>sempid</b></dt>
+
+<dd>ID del último proceso que realizó una operación de semáforo
+sobre este semáforo.</dd>
+
+<dt><b>semncnt</b></dt>
+
+<dd>Cantidad de procesos suspendidos esperando que <b>semval</b>
+aumente.</dd>
+
+<dt><b>semznt</b></dt>
+
+<dd>Cantidad de procesos suspendidos esperando que <b>semval</b> se
+haga cero.</dd>
+</dl><a id="lbAH"> </a><h3>Segmentos de Memoria Compartida</h3><p>
+
+Un segmento de memoria compartida se identifica unívocamente
+mediante un número entero positivo (llamado <i>shmid</i>) y tiene
+una estructura de datos asociada de tipo <b>struct shmid_ds</b>,
+definida en <i>&lt;<a href="file:/usr/include/sys/shm.h">sys/shm.h</a>&gt;</i>. La
+estructura contiene los siguiente miembros: 
+</p><p><b><tt>       </tt>struct ipc_perm shm_perm;</b><br /><b><tt>       </tt>int shm_segsz;<tt>  </tt><tt>        </tt></b>
+/* Tamaño del segmento */<br /><br /><b><tt>       </tt>ushort shm_cpid;<tt>        </tt></b> /* pid
+del creador */<br /><br /><b><tt>       </tt>ushort shm_lpid;<tt>        </tt></b> /* pid de
+la última operación */<br /><br /><b><tt>       </tt>short shm_nattch;<tt>       </tt></b> /*
+cantidad actual de conexiones */<br /><br /><b><tt>       </tt>time_t shm_atime;<tt>       </tt></b> /* hora
+de la última conexion */<br /><br /><b><tt>       </tt>time_t shm_dtime;<tt>       </tt></b> /* hora
+última desconexión */<br /><br /><b><tt>       </tt>time_t shm_ctime;<tt>       </tt></b> /* hora
+del último cambio */<br /></p><dl compact="compact"><dt><b>shm_perm</b></dt>
+
+<dd><b>ipc_perm</b> estructura que especifica los permisos de
+acceso al segmento de memoria compartida.</dd>
+
+<dt><b>shm_segsz</b></dt>
+
+<dd>Tamaño en bytes del segmento de memoria compartida.</dd>
+
+<dt><b>shm_cpid</b></dt>
+
+<dd>ID del proceso que creo el segmento de memoria compartida.</dd>
+
+<dt><b>shm_lpid</b></dt>
+
+<dd>ID del último proceso que ejecutó una llamada del sistema
+<b>shmat</b> o <b>shmdt</b>.</dd>
+
+<dt><b>shm_nattch</b></dt>
+
+<dd>Cantidad de conexiones activas actualmente para este segmento
+de memoria compartida.</dd>
+
+<dt><b>shm_atime</b></dt>
+
+<dd>Hora de la última llamada a <b>shmat</b>.</dd>
+
+<dt><b>shm_dtime</b></dt>
+
+<dd>Hora de la última llamada a <b>shmdt</b>.</dd>
+
+<dt><b>shm_ctime</b></dt>
+
+<dd>Hora de la última llamada a <b>shmctl</b> que cambió
+<b>shmid_ds</b>.</dd>
+</dl><a id="lbAI"> </a><h2>VÉASE TAMBIÉN</h2><b><a href="http://localhost/cgi-bin/man/man2html?3+ftok">ftok</a></b><p>(3),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgctl">msgctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgget">msgget</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgrcv">msgrcv</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+msgsnd">msgsnd</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semctl">semctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semget">semget</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+semop">semop</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmat">shmat</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmctl">shmctl</a></b>(2),
+<b><a href="http://localhost/cgi-bin/man/man2html?2+shmget">shmget</a></b>(2),
+<b>shmdt (2).</b> 
+</p><hr /><a id="index"> </a><h2>Index</h2><dl><dt><a href="#lbAB">NOMBRE</a></dt>
+
+<dt><a href="#lbAC">SINOPSIS</a></dt>
+
+<dt><a href="#lbAD">DESCRIPCIÓN</a></dt>
+
+<dd>
+<dl><dt><a href="#lbAE">Permisos de Acceso a Recursos</a></dt>
+
+<dt><a href="#lbAF">Colas de Mensajes</a></dt>
+
+<dt><a href="#lbAG">Conjuntos de Semáforos</a></dt>
+
+<dt><a href="#lbAH">Segmentos de Memoria Compartida</a></dt>
+</dl></dd>
+
+<dt><a href="#lbAI">VÉASE TAMBIÉN</a></dt>
+</dl><hr /><p>
+This document was created by <a href="http://localhost/cgi-bin/man/man2html">man2html</a>, using
+the manual pages.<br />
+Time: 06:16:28 GMT, January 22, 2005
+</p></body></html>
